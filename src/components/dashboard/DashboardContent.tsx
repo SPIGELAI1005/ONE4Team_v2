@@ -1,11 +1,13 @@
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Users, Calendar, Trophy, TrendingUp, Clock, Bell,
+  Users, Calendar, Trophy, TrendingUp, Clock,
   Bot, ArrowUpRight, Activity
 } from "lucide-react";
 import AnalyticsWidgets from "@/components/dashboard/AnalyticsWidgets";
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
+import NotificationBell from "@/components/dashboard/NotificationBell";
+import LiveMatchTicker from "@/components/dashboard/LiveMatchTicker";
 import SeasonProgressionChart from "@/components/analytics/SeasonProgressionChart";
 import TeamChemistry from "@/components/analytics/TeamChemistry";
 import HeadToHead from "@/components/analytics/HeadToHead";
@@ -59,7 +61,7 @@ const defaultConfig = {
   title: "Dashboard",
   greeting: "Welcome",
   kpis: [
-    { label: "Notifications", value: "3", change: "", icon: Bell },
+    { label: "Notifications", value: "3", change: "", icon: Calendar },
     { label: "Upcoming", value: "2", change: "", icon: Calendar },
   ],
 };
@@ -91,10 +93,7 @@ const DashboardContent = () => {
             <p className="text-sm text-muted-foreground">{config.greeting}</p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="w-9 h-9 rounded-lg bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors relative">
-              <Bell className="w-4 h-4" />
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full" />
-            </button>
+            <NotificationBell />
             <div className="w-9 h-9 rounded-lg bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-sm">
               {(role || "U")[0].toUpperCase()}
             </div>
@@ -103,6 +102,9 @@ const DashboardContent = () => {
       </div>
 
       <div className="p-6 lg:p-8 space-y-6">
+        {/* Live Match Ticker */}
+        <LiveMatchTicker />
+
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {config.kpis.map((kpi, i) => (
