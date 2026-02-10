@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, Loader2, Trophy, Target, AlertTriangle, Award
+  ArrowLeft, Loader2, Trophy, Target, AlertTriangle, Award, Filter
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
 import logo from "@/assets/logo.png";
 
 type PlayerStat = {
@@ -20,6 +21,8 @@ type PlayerStat = {
   red_cards: number;
 };
 
+type Competition = { id: string; name: string; season: string | null };
+
 const PlayerStats = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -29,16 +32,53 @@ const PlayerStats = () => {
   const [stats, setStats] = useState<PlayerStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"scorers" | "assists" | "cards">("scorers");
+  const [competitions, setCompetitions] = useState<Competition[]>([]);
+  const [selectedCompId, setSelectedCompId] = useState<string>("all");
+  const [seasons, setSeasons] = useState<string[]>([]);
+  const [selectedSeason, setSelectedSeason] = useState<string>("all");
+
+  // Fetch competitions for filter
+  useEffect(() => {
+    if (!clubId) return;
+    const fetchComps = async () => {
+      const { data } = await supabase
+        .from("competitions")
+        .select("id, name, season")
+        .eq("club_id", clubId)
+        .order("created_at", { ascending: false });
+      const comps = (data as Competition[]) || [];
+      setCompetitions(comps);
+      const uniqueSeasons = [...new Set(comps.map(c => c.season).filter(Boolean))] as string[];
+      setSeasons(uniqueSeasons);
+    };
+    fetchComps();
+  }, [clubId]);
 
   useEffect(() => {
     if (!clubId) return;
     const fetchStats = async () => {
       setLoading(true);
-      // Get all match events for this club's matches
-      const { data: matches } = await supabase
-        .from("matches")
-        .select("id")
-        .eq("club_id", clubId);
+
+      // Build match query with filters
+      let matchQuery = supabase.from("matches").select("id, competition_id").eq("club_id", clubId);
+
+      if (selectedCompId !== "all") {
+        matchQuery = matchQuery.eq("competition_id", selectedCompId);
+      } else if (selectedSeason !== "all") {
+        // Filter by season: get competition IDs for this season
+        const seasonCompIds = competitions
+          .filter(c => c.season === selectedSeason)
+          .map(c => c.id);
+        if (seasonCompIds.length > 0) {
+          matchQuery = matchQuery.in("competition_id", seasonCompIds);
+        } else {
+          setStats([]);
+          setLoading(false);
+          return;
+        }
+      }
+
+      const { data: matches } = await matchQuery;
 
       if (!matches || matches.length === 0) {
         setStats([]);
@@ -52,7 +92,6 @@ const PlayerStats = () => {
         .select("membership_id, event_type")
         .in("match_id", matchIds);
 
-      // Get members for names
       const { data: members } = await supabase
         .from("club_memberships")
         .select("id, profiles!club_memberships_user_id_fkey(display_name)")
@@ -63,7 +102,6 @@ const PlayerStats = () => {
         memberMap[m.id] = m.profiles?.display_name || "Unknown";
       });
 
-      // Aggregate
       const agg: Record<string, PlayerStat> = {};
       (events || []).forEach((ev: any) => {
         if (!ev.membership_id) return;
@@ -85,7 +123,7 @@ const PlayerStats = () => {
       setLoading(false);
     };
     fetchStats();
-  }, [clubId]);
+  }, [clubId, selectedCompId, selectedSeason, competitions]);
 
   const sorted = [...stats].sort((a, b) => {
     if (tab === "scorers") return b.goals - a.goals;
@@ -108,6 +146,35 @@ const PlayerStats = () => {
           <h1 className="font-display font-bold text-lg text-foreground">Player Statistics</h1>
         </div>
       </header>
+
+      {/* Filters */}
+      {(seasons.length > 0 || competitions.length > 0) && (
+        <div className="border-b border-border">
+          <div className="container mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            {seasons.length > 0 && (
+              <select
+                value={selectedSeason}
+                onChange={e => { setSelectedSeason(e.target.value); setSelectedCompId("all"); }}
+                className="h-8 rounded-md border border-border bg-background px-3 text-xs text-foreground"
+              >
+                <option value="all">All Seasons</option>
+                {seasons.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            )}
+            <select
+              value={selectedCompId}
+              onChange={e => { setSelectedCompId(e.target.value); if (e.target.value !== "all") setSelectedSeason("all"); }}
+              className="h-8 rounded-md border border-border bg-background px-3 text-xs text-foreground"
+            >
+              <option value="all">All Competitions</option>
+              {competitions
+                .filter(c => selectedSeason === "all" || c.season === selectedSeason)
+                .map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="border-b border-border">
@@ -158,11 +225,12 @@ const PlayerStats = () => {
                 {sorted.map((s, i) => (
                   <motion.tr key={s.membership_id}
                     initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
-                    className="border-b border-border last:border-0">
+                    className="border-b border-border last:border-0 cursor-pointer hover:bg-muted/30"
+                    onClick={() => navigate(`/player/${s.membership_id}`)}>
                     <td className="text-center px-3 py-3">
                       {i < 3 ? (
                         <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-                          i === 0 ? "bg-primary/20 text-primary" : i === 1 ? "bg-muted text-muted-foreground" : "bg-muted text-muted-foreground"
+                          i === 0 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
                         }`}>{i + 1}</span>
                       ) : (
                         <span className="text-muted-foreground">{i + 1}</span>
@@ -185,6 +253,7 @@ const PlayerStats = () => {
           </div>
         )}
       </div>
+      <MobileBottomNav />
     </div>
   );
 };

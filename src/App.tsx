@@ -16,6 +16,7 @@ import Payments from "./pages/Payments";
 import Events from "./pages/Events";
 import Matches from "./pages/Matches";
 import PlayerStats from "./pages/PlayerStats";
+import PlayerProfile from "./pages/PlayerProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/events" element={<Events />} />
             <Route path="/matches" element={<Matches />} />
             <Route path="/player-stats" element={<PlayerStats />} />
+            <Route path="/player/:membershipId" element={<PlayerProfile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

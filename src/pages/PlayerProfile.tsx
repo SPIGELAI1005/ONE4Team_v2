@@ -1,0 +1,331 @@
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  ArrowLeft, Loader2, Trophy, Target, AlertTriangle, Award,
+  Calendar, MapPin, CheckCircle2, XCircle, Clock, User
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { useClubId } from "@/hooks/use-club-id";
+import { supabase } from "@/integrations/supabase/client";
+import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
+import logo from "@/assets/logo.png";
+
+type MatchHistory = {
+  match_id: string;
+  opponent: string;
+  is_home: boolean;
+  match_date: string;
+  home_score: number | null;
+  away_score: number | null;
+  status: string;
+  events: { event_type: string; minute: number | null }[];
+};
+
+type EventAttendance = {
+  event_id: string;
+  title: string;
+  starts_at: string;
+  status: string;
+};
+
+const PlayerProfile = () => {
+  const navigate = useNavigate();
+  const { membershipId } = useParams();
+  const { user } = useAuth();
+  const { clubId, loading: clubLoading } = useClubId();
+
+  const [displayName, setDisplayName] = useState("");
+  const [position, setPosition] = useState<string | null>(null);
+  const [team, setTeam] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<"overview" | "matches" | "attendance">("overview");
+
+  // Stats
+  const [goals, setGoals] = useState(0);
+  const [assists, setAssists] = useState(0);
+  const [yellowCards, setYellowCards] = useState(0);
+  const [redCards, setRedCards] = useState(0);
+  const [matchesPlayed, setMatchesPlayed] = useState(0);
+
+  const [matchHistory, setMatchHistory] = useState<MatchHistory[]>([]);
+  const [attendance, setAttendance] = useState<EventAttendance[]>([]);
+
+  useEffect(() => {
+    if (!clubId || !membershipId) return;
+    const fetchAll = async () => {
+      setLoading(true);
+
+      // Get member info
+      const { data: member } = await supabase
+        .from("club_memberships")
+        .select("id, position, team, profiles!club_memberships_user_id_fkey(display_name)")
+        .eq("id", membershipId)
+        .maybeSingle() as any;
+
+      if (member) {
+        setDisplayName(member.profiles?.display_name || "Unknown");
+        setPosition(member.position);
+        setTeam(member.team);
+      }
+
+      // Get all matches for this club
+      const { data: matches } = await supabase
+        .from("matches")
+        .select("id, opponent, is_home, match_date, home_score, away_score, status")
+        .eq("club_id", clubId)
+        .order("match_date", { ascending: false });
+
+      const matchIds = (matches || []).map(m => m.id);
+
+      // Get match events for this player
+      const { data: events } = matchIds.length > 0
+        ? await supabase
+            .from("match_events")
+            .select("match_id, event_type, minute")
+            .eq("membership_id", membershipId)
+            .in("match_id", matchIds)
+        : { data: [] };
+
+      // Get lineups to know which matches they played
+      const { data: lineups } = matchIds.length > 0
+        ? await supabase
+            .from("match_lineups")
+            .select("match_id")
+            .eq("membership_id", membershipId)
+            .in("match_id", matchIds)
+        : { data: [] };
+
+      const playedMatchIds = new Set((lineups || []).map(l => l.match_id));
+      // Also include matches where they have events
+      (events || []).forEach(e => playedMatchIds.add(e.match_id));
+
+      setMatchesPlayed(playedMatchIds.size);
+
+      // Aggregate stats
+      let g = 0, a = 0, yc = 0, rc = 0;
+      (events || []).forEach(ev => {
+        if (ev.event_type === "goal") g++;
+        else if (ev.event_type === "assist") a++;
+        else if (ev.event_type === "yellow_card") yc++;
+        else if (ev.event_type === "red_card") rc++;
+      });
+      setGoals(g); setAssists(a); setYellowCards(yc); setRedCards(rc);
+
+      // Build match history
+      const evByMatch: Record<string, { event_type: string; minute: number | null }[]> = {};
+      (events || []).forEach(ev => {
+        if (!evByMatch[ev.match_id]) evByMatch[ev.match_id] = [];
+        evByMatch[ev.match_id].push({ event_type: ev.event_type, minute: ev.minute });
+      });
+
+      const history: MatchHistory[] = (matches || [])
+        .filter(m => playedMatchIds.has(m.id))
+        .map(m => ({
+          match_id: m.id,
+          opponent: m.opponent,
+          is_home: m.is_home,
+          match_date: m.match_date,
+          home_score: m.home_score,
+          away_score: m.away_score,
+          status: m.status,
+          events: evByMatch[m.id] || [],
+        }));
+      setMatchHistory(history);
+
+      // Get event attendance
+      const { data: participations } = await supabase
+        .from("event_participants")
+        .select("event_id, status, events!event_participants_event_id_fkey(title, starts_at)")
+        .eq("membership_id", membershipId) as any;
+
+      const att: EventAttendance[] = (participations || []).map((p: any) => ({
+        event_id: p.event_id,
+        title: p.events?.title || "Event",
+        starts_at: p.events?.starts_at || "",
+        status: p.status,
+      }));
+      att.sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime());
+      setAttendance(att);
+
+      setLoading(false);
+    };
+    fetchAll();
+  }, [clubId, membershipId]);
+
+  if (!user) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Please sign in.</p></div>;
+
+  const eventTypeIcon: Record<string, string> = {
+    goal: "⚽", assist: "🅰️", yellow_card: "🟨", red_card: "🟥",
+    substitution_in: "🔄", substitution_out: "🔄",
+  };
+
+  const attendanceIcon: Record<string, React.ReactNode> = {
+    confirmed: <CheckCircle2 className="w-3.5 h-3.5 text-primary" />,
+    attended: <CheckCircle2 className="w-3.5 h-3.5 text-primary" />,
+    declined: <XCircle className="w-3.5 h-3.5 text-destructive" />,
+    invited: <Clock className="w-3.5 h-3.5 text-muted-foreground" />,
+  };
+
+  return (
+    <div className="min-h-screen bg-background pb-20 lg:pb-0">
+      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
+        <div className="container mx-auto px-4 h-16 flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4" /></Button>
+          <img src={logo} alt="" className="w-7 h-7" />
+          <h1 className="font-display font-bold text-lg text-foreground">Player Profile</h1>
+        </div>
+      </header>
+
+      <div className="container mx-auto px-4 py-6">
+        {(clubLoading || loading) ? (
+          <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+        ) : (
+          <div className="max-w-2xl mx-auto space-y-6">
+            {/* Player header */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="rounded-xl bg-card border border-border p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="w-7 h-7 text-primary" />
+                </div>
+                <div>
+                  <h2 className="font-display font-bold text-xl text-foreground">{displayName}</h2>
+                  <div className="flex gap-2 mt-1">
+                    {position && <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{position}</span>}
+                    {team && <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">{team}</span>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Stat cards */}
+              <div className="grid grid-cols-5 gap-2">
+                {[
+                  { label: "Matches", value: matchesPlayed, icon: Trophy },
+                  { label: "Goals", value: goals, icon: Target },
+                  { label: "Assists", value: assists, icon: Award },
+                  { label: "Yellow", value: yellowCards, icon: AlertTriangle },
+                  { label: "Red", value: redCards, icon: AlertTriangle },
+                ].map(s => (
+                  <div key={s.label} className="rounded-lg bg-background border border-border p-3 text-center">
+                    <div className="text-lg font-bold font-display text-foreground">{s.value}</div>
+                    <div className="text-[10px] text-muted-foreground">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Tabs */}
+            <div className="border-b border-border flex gap-1">
+              {([
+                { id: "overview" as const, label: "Overview" },
+                { id: "matches" as const, label: "Match History" },
+                { id: "attendance" as const, label: "Attendance" },
+              ]).map(t => (
+                <button key={t.id} onClick={() => setTab(t.id)}
+                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    tab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {tab === "overview" && (
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground">Recent Matches</h3>
+                {matchHistory.slice(0, 5).map((m, i) => (
+                  <motion.div key={m.match_id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
+                    className="rounded-lg bg-card border border-border p-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium text-foreground">
+                        {m.is_home ? `Club vs ${m.opponent}` : `${m.opponent} vs Club`}
+                      </span>
+                      {m.status === "completed" && (
+                        <span className="text-sm font-bold text-foreground">{m.home_score} - {m.away_score}</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground mb-2">
+                      {new Date(m.match_date).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
+                    </div>
+                    {m.events.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {m.events.map((ev, j) => (
+                          <span key={j} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                            {eventTypeIcon[ev.event_type] || ev.event_type} {ev.minute != null ? `${ev.minute}'` : ""}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+                {matchHistory.length === 0 && <p className="text-sm text-muted-foreground">No match history yet.</p>}
+              </div>
+            )}
+
+            {tab === "matches" && (
+              <div className="space-y-3">
+                {matchHistory.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">No matches found.</p>
+                ) : matchHistory.map((m, i) => (
+                  <motion.div key={m.match_id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
+                    className="rounded-lg bg-card border border-border p-4">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium text-foreground">
+                        {m.is_home ? `Club vs ${m.opponent}` : `${m.opponent} vs Club`}
+                      </span>
+                      {m.status === "completed" && (
+                        <span className="text-sm font-bold text-foreground">{m.home_score} - {m.away_score}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span>{new Date(m.match_date).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}</span>
+                      <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${
+                        m.status === "completed" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                      }`}>{m.status}</span>
+                    </div>
+                    {m.events.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {m.events.map((ev, j) => (
+                          <span key={j} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                            {eventTypeIcon[ev.event_type] || ev.event_type} {ev.minute != null ? `${ev.minute}'` : ""}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            )}
+
+            {tab === "attendance" && (
+              <div className="space-y-3">
+                {attendance.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">No event attendance records.</p>
+                ) : attendance.map((a, i) => (
+                  <motion.div key={a.event_id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
+                    className="flex items-center justify-between rounded-lg bg-card border border-border p-4">
+                    <div>
+                      <span className="text-sm font-medium text-foreground">{a.title}</span>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {new Date(a.starts_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {attendanceIcon[a.status]}
+                      <span className="text-xs text-muted-foreground capitalize">{a.status}</span>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <MobileBottomNav />
+    </div>
+  );
+};
+
+export default PlayerProfile;
