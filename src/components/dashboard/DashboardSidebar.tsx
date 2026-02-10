@@ -5,6 +5,7 @@ import {
   Settings, LogOut, ChevronLeft, ChevronRight, CalendarDays, Swords, BarChart3
 } from "lucide-react";
 import { useState } from "react";
+import { motion } from "framer-motion";
 import logo from "@/assets/logo.png";
 
 type NavItem = { icon: React.ElementType; label: string; id: string; route?: string };
@@ -82,63 +83,65 @@ const DashboardSidebar = () => {
   const roleName = role ? role.charAt(0).toUpperCase() + role.slice(1) : "User";
 
   return (
-    <aside className={`h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 ${collapsed ? "w-16" : "w-60"}`}>
+    <aside className={`h-screen glass-sidebar flex flex-col transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${collapsed ? "w-[68px]" : "w-60"}`}>
       {/* Logo */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
+      <div className="h-16 flex items-center justify-between px-4" style={{ borderBottom: '0.5px solid hsl(0 0% 100% / 0.06)' }}>
         {!collapsed && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <img src={logo} alt="" className="w-7 h-7" />
-            <span className="font-display font-bold text-sm text-sidebar-foreground">
+            <span className="font-display font-bold text-sm text-foreground">
               One<span className="text-gradient-gold">4</span>Team
             </span>
           </div>
         )}
         {collapsed && <img src={logo} alt="" className="w-7 h-7 mx-auto" />}
-        <button onClick={() => setCollapsed(!collapsed)} className="text-sidebar-foreground/50 hover:text-sidebar-foreground hidden lg:block">
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        <button onClick={() => setCollapsed(!collapsed)} className="text-muted-foreground hover:text-foreground hidden lg:block haptic-press">
+          {collapsed ? <ChevronRight className="w-4 h-4" strokeWidth={1.5} /> : <ChevronLeft className="w-4 h-4" strokeWidth={1.5} />}
         </button>
       </div>
 
       {/* Role badge */}
       {!collapsed && (
-        <div className="px-4 py-3 border-b border-sidebar-border">
-          <span className="text-xs font-medium px-2 py-1 rounded-full bg-primary/10 text-primary">
+        <div className="px-4 py-3" style={{ borderBottom: '0.5px solid hsl(0 0% 100% / 0.06)' }}>
+          <span className="ios-pill text-primary bg-primary/8">
             {roleName}
           </span>
         </div>
       )}
 
       {/* Nav items */}
-      <nav className="flex-1 py-3 overflow-y-auto">
+      <nav className="flex-1 py-2 overflow-y-auto px-2">
         {items.map((item) => (
-          <button
+          <motion.button
             key={item.id}
+            whileTap={{ scale: 0.97 }}
             onClick={() => {
               setActive(item.id);
               if (item.route) navigate(item.route);
             }}
-            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+            className={`w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-medium rounded-xl transition-all duration-200 mb-0.5 ${
               active === item.id
-                ? "text-sidebar-primary bg-sidebar-accent border-r-2 border-sidebar-primary"
-                : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                ? "bg-primary/10 text-primary shadow-[inset_0_0.5px_0_hsl(0_0%_100%/0.08)]"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
             } ${collapsed ? "justify-center px-2" : ""}`}
             title={collapsed ? item.label : undefined}
           >
-            <item.icon className="w-4 h-4 shrink-0" />
+            <item.icon className="w-[18px] h-[18px] shrink-0" strokeWidth={1.5} />
             {!collapsed && <span>{item.label}</span>}
-          </button>
+          </motion.button>
         ))}
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-sidebar-border p-3">
-        <button
+      <div className="p-2" style={{ borderTop: '0.5px solid hsl(0 0% 100% / 0.06)' }}>
+        <motion.button
+          whileTap={{ scale: 0.97 }}
           onClick={() => navigate("/")}
-          className={`w-full flex items-center gap-3 px-3 py-2 text-sm text-sidebar-foreground/50 hover:text-sidebar-foreground rounded-lg hover:bg-sidebar-accent/50 transition-colors ${collapsed ? "justify-center px-2" : ""}`}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-medium text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted/40 transition-all duration-200 ${collapsed ? "justify-center px-2" : ""}`}
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="w-[18px] h-[18px]" strokeWidth={1.5} />
           {!collapsed && <span>Exit</span>}
-        </button>
+        </motion.button>
       </div>
     </aside>
   );

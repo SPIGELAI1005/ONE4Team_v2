@@ -85,48 +85,50 @@ const DashboardContent = () => {
   const config = roleConfig[role || ""] || defaultConfig;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-background pb-20 lg:pb-0">
+    <div className="flex-1 overflow-y-auto bg-background pb-20 lg:pb-0 scroll-glow">
       {/* Header */}
-      <div className="border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="px-6 lg:px-8 py-5 flex items-center justify-between">
+      <div className="sticky top-0 z-30 glass-nav">
+        <div className="px-6 lg:px-8 py-4 flex items-center justify-between">
           <div>
-            <h1 className="font-display text-xl font-bold text-foreground">{config.title}</h1>
-            <p className="text-sm text-muted-foreground">{config.greeting}</p>
+            <h1 className="font-display text-lg font-bold text-foreground tracking-tight">{config.title}</h1>
+            <p className="text-[13px] text-muted-foreground">{config.greeting}</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <NotificationBell />
-            <div className="w-9 h-9 rounded-lg bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-sm">
+            <div className="w-9 h-9 rounded-2xl bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-sm shadow-gold">
               {(role || "U")[0].toUpperCase()}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="p-6 lg:p-8 space-y-6">
+      <div className="p-5 lg:p-8 space-y-5">
         {/* Live Match Ticker */}
         <LiveMatchTicker />
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {config.kpis.map((kpi, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="p-5 rounded-xl bg-card border border-border"
+              transition={{ delay: i * 0.08, type: "spring", stiffness: 300, damping: 25 }}
+              className="p-4 rounded-2xl glass-card haptic-press cursor-default"
             >
-              <div className="flex items-center justify-between mb-3">
-                <kpi.icon className="w-4 h-4 text-primary" />
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <kpi.icon className="w-4 h-4 text-primary" strokeWidth={1.5} />
+                </div>
                 {kpi.change && (
-                  <span className="text-xs font-medium text-primary flex items-center gap-0.5">
+                  <span className="text-[11px] font-medium text-primary flex items-center gap-0.5 ios-pill bg-primary/8 border-primary/20">
                     <ArrowUpRight className="w-3 h-3" />
                     {kpi.change}
                   </span>
                 )}
               </div>
-              <div className="text-2xl font-display font-bold text-foreground">{kpi.value}</div>
-              <div className="text-xs text-muted-foreground mt-1">{kpi.label}</div>
+              <div className="text-2xl font-display font-bold text-foreground tracking-tight">{kpi.value}</div>
+              <div className="text-[11px] text-muted-foreground mt-0.5">{kpi.label}</div>
             </motion.div>
           ))}
         </div>
@@ -155,44 +157,57 @@ const DashboardContent = () => {
         {/* Admin Notification Sender - only for admin role */}
         {role === "admin" && <AdminNotificationSender />}
 
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-3 gap-5">
           {/* Upcoming events */}
-          <div className="lg:col-span-2 rounded-xl bg-card border border-border p-5">
-            <h2 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-primary" />
+          <div className="lg:col-span-2 rounded-2xl glass-card p-5">
+            <h2 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2 text-[15px]">
+              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Calendar className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
+              </div>
               Upcoming
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-1">
               {upcomingEvents.map((event, i) => (
-                <div key={i} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/50 transition-colors">
+                <motion.div
+                  key={i}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center justify-between py-3 px-3 rounded-xl hover:bg-muted/30 transition-all duration-200 cursor-default"
+                >
                   <div>
-                    <div className="text-sm font-medium text-foreground">{event.title}</div>
-                    <div className="text-xs text-muted-foreground">{event.time}</div>
+                    <div className="text-[13px] font-medium text-foreground">{event.title}</div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">{event.time}</div>
                   </div>
-                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                    event.type === "match" ? "bg-accent/10 text-accent" :
-                    event.type === "training" ? "bg-primary/10 text-primary" :
-                    event.type === "tournament" ? "bg-gold-dark/10 text-gold" :
+                  <span className={`ios-pill ${
+                    event.type === "match" ? "bg-accent/10 text-accent border-accent/20" :
+                    event.type === "training" ? "bg-primary/10 text-primary border-primary/20" :
+                    event.type === "tournament" ? "bg-gold-dark/10 text-gold border-gold/20" :
                     "bg-muted text-muted-foreground"
                   }`}>
                     {event.type}
                   </span>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
 
           {/* AI Suggestions */}
-          <div className="rounded-xl bg-card border border-primary/20 p-5 shadow-gold">
-            <h2 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Bot className="w-4 h-4 text-primary" />
+          <div className="rounded-2xl glass-card p-5 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+            <h2 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2 text-[15px] relative">
+              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Bot className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
+              </div>
               <span className="text-gradient-gold">AI Insights</span>
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-2.5 relative">
               {aiSuggestions.map((s, i) => (
-                <div key={i} className="text-sm text-muted-foreground p-3 rounded-lg bg-gradient-gold-subtle border border-primary/10">
+                <motion.div
+                  key={i}
+                  whileTap={{ scale: 0.98 }}
+                  className="text-[13px] text-muted-foreground p-3 rounded-xl bg-primary/5 border border-primary/8 leading-relaxed cursor-default"
+                >
                   {s}
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>

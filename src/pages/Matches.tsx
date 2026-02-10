@@ -227,34 +227,34 @@ const Matches = () => {
   if (!user) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Please sign in.</p></div>;
 
   return (
-    <div className="min-h-screen bg-background pb-20 lg:pb-0">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-background pb-20 lg:pb-0 scroll-glow">
+      <header className="sticky top-0 z-50 glass-nav">
+        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4" /></Button>
-            <img src={logo} alt="" className="w-7 h-7" />
-            <h1 className="font-display font-bold text-lg text-foreground">Matches & Competitions</h1>
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-xl haptic-press"><ArrowLeft className="w-4 h-4" strokeWidth={1.5} /></Button>
+            <img src={logo} alt="" className="w-6 h-6" />
+            <h1 className="font-display font-bold text-[15px] text-foreground tracking-tight">Matches</h1>
           </div>
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => setShowAddComp(true)}><Plus className="w-4 h-4 mr-1" /> Competition</Button>
-            <Button size="sm" className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={() => setShowAddMatch(true)}><Plus className="w-4 h-4 mr-1" /> Match</Button>
+            <Button size="sm" variant="outline" onClick={() => setShowAddComp(true)} className="rounded-xl glass-card text-[12px] haptic-press"><Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> Competition</Button>
+            <Button size="sm" className="bg-gradient-gold text-primary-foreground hover:opacity-90 rounded-xl text-[12px] shadow-gold haptic-press" onClick={() => setShowAddMatch(true)}><Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> Match</Button>
           </div>
         </div>
       </header>
 
-      {/* Tabs */}
-      <div className="border-b border-border">
-        <div className="container mx-auto px-4 flex gap-1">
+      {/* iOS Segmented Tabs */}
+      <div className="container mx-auto px-4 py-3">
+        <div className="ios-segment flex">
           {([
             { id: "matches" as const, label: "Matches", icon: Trophy },
             { id: "competitions" as const, label: "Competitions", icon: Award },
             { id: "standings" as const, label: "Standings", icon: Target },
           ]).map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                tab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] font-medium rounded-md transition-all duration-200 ${
+                tab === t.id ? "ios-segment-active text-foreground" : "text-muted-foreground"
               }`}>
-              <t.icon className="w-4 h-4" /> {t.label}
+              <t.icon className="w-3.5 h-3.5" strokeWidth={1.5} /> {t.label}
             </button>
           ))}
         </div>
@@ -269,15 +269,15 @@ const Matches = () => {
           <div className="max-w-3xl mx-auto space-y-4">
             {/* Form Streak */}
             {matches.length > 0 && (
-              <div className="rounded-xl bg-card border border-border p-4">
+             <div className="rounded-2xl glass-card p-4">
                 <FormStreak matches={matches} count={10} />
               </div>
             )}
             {matches.length === 0 ? (
-              <div className="rounded-xl bg-card border border-border p-8 text-center text-muted-foreground text-sm">No matches scheduled.</div>
+              <div className="rounded-2xl glass-card p-8 text-center text-muted-foreground text-[13px]">No matches scheduled.</div>
             ) : matches.map((m, i) => (
-              <motion.div key={m.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-                className="rounded-xl bg-card border border-border p-5 cursor-pointer hover:border-primary/30 transition-colors"
+               <motion.div key={m.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03, type: "spring", stiffness: 300, damping: 25 }}
+                className="rounded-2xl glass-card p-5 cursor-pointer hover:border-primary/20 transition-all duration-200 haptic-press"
                 onClick={() => openMatchDetail(m)}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">

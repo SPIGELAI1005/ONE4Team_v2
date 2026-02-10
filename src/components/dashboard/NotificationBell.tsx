@@ -127,21 +127,22 @@ const NotificationBell = () => {
 
   return (
     <div className="relative">
-      <button
+      <motion.button
+        whileTap={{ scale: 0.9 }}
         onClick={() => setOpen(!open)}
-        className="w-9 h-9 rounded-lg bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors relative"
+        className="w-9 h-9 rounded-xl glass-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-all duration-200 relative"
       >
-        <Bell className="w-4 h-4" />
+        <Bell className="w-4 h-4" strokeWidth={1.5} />
         {demoUnread > 0 && (
           <motion.span
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-accent rounded-full flex items-center justify-center text-[10px] font-bold text-accent-foreground"
+            className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-accent rounded-full flex items-center justify-center text-[9px] font-bold text-accent-foreground"
           >
             {demoUnread > 9 ? "9+" : demoUnread}
           </motion.span>
         )}
-      </button>
+      </motion.button>
 
       <AnimatePresence>
         {open && (
@@ -151,12 +152,12 @@ const NotificationBell = () => {
               initial={{ opacity: 0, y: -8, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-              className="absolute right-0 top-12 z-50 w-80 sm:w-96 rounded-xl bg-card border border-border shadow-2xl overflow-hidden"
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              className="absolute right-0 top-12 z-50 w-80 sm:w-96 rounded-2xl glass-heavy overflow-hidden"
             >
               {/* Header */}
-              <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-                <h3 className="font-display font-semibold text-sm text-foreground">
+              <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '0.5px solid hsl(0 0% 100% / 0.08)' }}>
+                <h3 className="font-display font-semibold text-[13px] text-foreground">
                   Notifications
                 </h3>
                 {demoUnread > 0 && (
@@ -185,12 +186,12 @@ const NotificationBell = () => {
                         key={n.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className={`px-4 py-3 border-b border-border/50 hover:bg-muted/30 transition-colors flex gap-3 ${
+                        className={`px-4 py-3 hover:bg-muted/20 transition-all duration-200 flex gap-3 ${
                           !n.is_read ? "bg-primary/5" : ""
-                        }`}
+                        }`} style={{ borderBottom: '0.5px solid hsl(0 0% 100% / 0.05)' }}
                       >
                         <div className={`mt-0.5 ${color}`}>
-                          <Icon className="w-4 h-4" />
+                          <Icon className="w-4 h-4" strokeWidth={1.5} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
