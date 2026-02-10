@@ -6,6 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useClubId } from "@/hooks/use-club-id";
 import ReactMarkdown from "react-markdown";
+import type { AIStatsSummary } from "@/types/ai";
+import type { MembershipWithProfile } from "@/types/supabase";
 
 const quickQueries = [
   "Who scored the most goals this season?",
@@ -28,37 +30,47 @@ const NaturalLanguageStats = () => {
     setQuery(q);
 
     // Gather stats context
-    const [matchesRes, eventsRes, membersRes] = await Promise.all([
+    const [matchesRes, _eventsRes, membersRes] = await Promise.all([
       supabase.from("matches").select("*").eq("club_id", clubId).eq("status", "completed"),
-      supabase.from("match_events").select("*").eq("match_id", "dummy").limit(0), // will fill below
-      supabase.from("club_memberships").select("id, profiles!club_memberships_user_id_fkey(display_name)").eq("club_id", clubId) as any,
+      // Keep a placeholder request to preserve the existing parallel structure; actual events fetch happens below.
+      supabase.from("match_events").select("*").eq("match_id", "dummy").limit(0),
+      supabase
+        .from("club_memberships")
+        .select("id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_user_id_fkey(display_name)")
+        .eq("club_id", clubId),
     ]);
 
-    const matches = matchesRes.data || [];
-    const matchIds = matches.map(m => m.id);
+    const matches = matchesRes.data ?? [];
+    const matchIds = matches.map((m) => m.id);
 
-    let events: any[] = [];
+    let events: Array<{ event_type: string; membership_id: string | null; minute: number | null }> = [];
     if (matchIds.length > 0) {
-      const { data } = await supabase.from("match_events").select("*").in("match_id", matchIds);
-      events = data || [];
+      const { data } = await supabase
+        .from("match_events")
+        .select("event_type, membership_id, minute")
+        .in("match_id", matchIds);
+      events = data ?? [];
     }
 
+    const members = (membersRes.data ?? []) as unknown as MembershipWithProfile[];
     const nameMap: Record<string, string> = {};
-    (membersRes.data || []).forEach((m: any) => { nameMap[m.id] = m.profiles?.display_name || "Player"; });
+    members.forEach((m) => {
+      nameMap[m.id] = m.profiles?.display_name || "Player";
+    });
 
     // Build stats summary for AI
-    const statsSummary = {
+    const statsSummary: AIStatsSummary = {
       totalMatches: matches.length,
-      matches: matches.map(m => ({
+      matches: matches.map((m) => ({
         opponent: m.opponent,
         date: m.match_date,
         home_score: m.home_score,
         away_score: m.away_score,
         is_home: m.is_home,
       })),
-      events: events.map(e => ({
+      events: events.map((e) => ({
         type: e.event_type,
-        player: nameMap[e.membership_id] || "Unknown",
+        player: e.membership_id ? nameMap[e.membership_id] || "Unknown" : "Unknown",
         minute: e.minute,
       })),
     };
@@ -103,10 +115,17 @@ const NaturalLanguageStats = () => {
           const json = line.slice(6).trim();
           if (json === "[DONE]") break;
           try {
-            const parsed = JSON.parse(json);
+            const parsed = JSON.parse(json) as {
+              choices?: Array<{ delta?: { content?: string } }>;
+            };
             const c = parsed.choices?.[0]?.delta?.content;
-            if (c) { assistantSoFar += c; setAnswer(assistantSoFar); }
-          } catch {}
+            if (c) {
+              assistantSoFar += c;
+              setAnswer(assistantSoFar);
+            }
+          } catch {
+            // ignore malformed SSE chunks
+          }
         }
       }
     } catch (e) {

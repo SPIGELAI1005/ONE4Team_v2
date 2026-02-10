@@ -4,12 +4,13 @@ import { Bot, Loader2, FileText, Eye, Dumbbell, AlertTriangle } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
+import type { AIMatchAnalysisData } from "@/types/ai";
 
 type AnalysisType = "preview" | "report" | "training" | "injury_risk";
 
 interface AIMatchAnalysisProps {
-  matchData: any;
-  teamData?: any;
+  matchData: AIMatchAnalysisData;
+  teamData?: Record<string, unknown>;
   context?: string;
   matchStatus: string;
 }
@@ -70,10 +71,17 @@ const AIMatchAnalysis = ({ matchData, teamData, context, matchStatus }: AIMatchA
           const json = line.slice(6).trim();
           if (json === "[DONE]") break;
           try {
-            const parsed = JSON.parse(json);
+            const parsed = JSON.parse(json) as {
+              choices?: Array<{ delta?: { content?: string } }>;
+            };
             const c = parsed.choices?.[0]?.delta?.content;
-            if (c) { assistantSoFar += c; setContent(assistantSoFar); }
-          } catch {}
+            if (c) {
+              assistantSoFar += c;
+              setContent(assistantSoFar);
+            }
+          } catch {
+            // ignore malformed SSE chunks
+          }
         }
       }
     } catch (e) {
