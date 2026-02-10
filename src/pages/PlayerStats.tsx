@@ -22,6 +22,7 @@ type PlayerStat = {
 };
 
 type Competition = { id: string; name: string; season: string | null };
+type Team = { id: string; name: string };
 
 const PlayerStats = () => {
   const navigate = useNavigate();
@@ -36,22 +37,24 @@ const PlayerStats = () => {
   const [selectedCompId, setSelectedCompId] = useState<string>("all");
   const [seasons, setSeasons] = useState<string[]>([]);
   const [selectedSeason, setSelectedSeason] = useState<string>("all");
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState<string>("all");
 
-  // Fetch competitions for filter
+  // Fetch competitions and teams for filter
   useEffect(() => {
     if (!clubId) return;
-    const fetchComps = async () => {
-      const { data } = await supabase
-        .from("competitions")
-        .select("id, name, season")
-        .eq("club_id", clubId)
-        .order("created_at", { ascending: false });
-      const comps = (data as Competition[]) || [];
+    const fetchFilters = async () => {
+      const [compRes, teamRes] = await Promise.all([
+        supabase.from("competitions").select("id, name, season").eq("club_id", clubId).order("created_at", { ascending: false }),
+        supabase.from("teams").select("id, name").eq("club_id", clubId).order("name"),
+      ]);
+      const comps = (compRes.data as Competition[]) || [];
       setCompetitions(comps);
+      setTeams((teamRes.data as Team[]) || []);
       const uniqueSeasons = [...new Set(comps.map(c => c.season).filter(Boolean))] as string[];
       setSeasons(uniqueSeasons);
     };
-    fetchComps();
+    fetchFilters();
   }, [clubId]);
 
   useEffect(() => {
@@ -61,6 +64,11 @@ const PlayerStats = () => {
 
       // Build match query with filters
       let matchQuery = supabase.from("matches").select("id, competition_id").eq("club_id", clubId);
+
+      // Team filter
+      if (selectedTeamId !== "all") {
+        matchQuery = matchQuery.eq("team_id", selectedTeamId);
+      }
 
       if (selectedCompId !== "all") {
         matchQuery = matchQuery.eq("competition_id", selectedCompId);
@@ -123,7 +131,7 @@ const PlayerStats = () => {
       setLoading(false);
     };
     fetchStats();
-  }, [clubId, selectedCompId, selectedSeason, competitions]);
+  }, [clubId, selectedCompId, selectedSeason, selectedTeamId, competitions]);
 
   const sorted = [...stats].sort((a, b) => {
     if (tab === "scorers") return b.goals - a.goals;
@@ -148,10 +156,20 @@ const PlayerStats = () => {
       </header>
 
       {/* Filters */}
-      {(seasons.length > 0 || competitions.length > 0) && (
+      {(seasons.length > 0 || competitions.length > 0 || teams.length > 0) && (
         <div className="border-b border-border">
           <div className="container mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
             <Filter className="w-4 h-4 text-muted-foreground" />
+            {teams.length > 0 && (
+              <select
+                value={selectedTeamId}
+                onChange={e => setSelectedTeamId(e.target.value)}
+                className="h-8 rounded-md border border-border bg-background px-3 text-xs text-foreground"
+              >
+                <option value="all">All Teams</option>
+                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            )}
             {seasons.length > 0 && (
               <select
                 value={selectedSeason}

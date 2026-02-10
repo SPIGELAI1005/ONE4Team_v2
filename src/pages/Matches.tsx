@@ -25,6 +25,7 @@ type Match = {
 };
 type MatchEvent = { id: string; match_id: string; membership_id: string | null; event_type: string; minute: number | null; notes: string | null };
 type Membership = { id: string; user_id: string; profiles?: { display_name: string | null } };
+type LineupPlayer = { id: string; match_id: string; membership_id: string; is_starter: boolean; jersey_number: number | null; position: string | null };
 
 const statusColors: Record<string, string> = {
   scheduled: "bg-muted text-muted-foreground",
@@ -57,6 +58,12 @@ const Matches = () => {
   const [matchEvents, setMatchEvents] = useState<MatchEvent[]>([]);
   const [members, setMembers] = useState<Membership[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [lineup, setLineup] = useState<LineupPlayer[]>([]);
+  const [lineupTab, setLineupTab] = useState<"events" | "lineup">("events");
+  const [addLineupMemberId, setAddLineupMemberId] = useState("");
+  const [addLineupStarter, setAddLineupStarter] = useState(true);
+  const [addLineupPosition, setAddLineupPosition] = useState("");
+  const [addLineupJersey, setAddLineupJersey] = useState("");
 
   // Match form
   const [opponent, setOpponent] = useState("");
@@ -103,12 +110,15 @@ const Matches = () => {
     setHomeScore(match.home_score?.toString() || "");
     setAwayScore(match.away_score?.toString() || "");
     setLoadingDetail(true);
-    const [evRes, memRes] = await Promise.all([
+    setLineupTab("events");
+    const [evRes, memRes, lineupRes] = await Promise.all([
       supabase.from("match_events").select("*").eq("match_id", match.id).order("minute"),
       supabase.from("club_memberships").select("id, user_id, profiles!club_memberships_user_id_fkey(display_name)").eq("club_id", clubId!) as any,
+      supabase.from("match_lineups").select("*").eq("match_id", match.id),
     ]);
     setMatchEvents((evRes.data as MatchEvent[]) || []);
     setMembers((memRes.data || []) as Membership[]);
+    setLineup((lineupRes.data as LineupPlayer[]) || []);
     setLoadingDetail(false);
   };
 
@@ -160,6 +170,32 @@ const Matches = () => {
     setMatchEvents(prev => [...prev, data as MatchEvent]);
     setEvMemberId(""); setEvMinute("");
     toast({ title: "Event recorded" });
+  };
+
+  const handleAddToLineup = async () => {
+    if (!selectedMatch || !addLineupMemberId) return;
+    if (lineup.some(l => l.membership_id === addLineupMemberId)) {
+      toast({ title: "Already in lineup", variant: "destructive" }); return;
+    }
+    const { data, error } = await supabase.from("match_lineups").insert({
+      match_id: selectedMatch.id, membership_id: addLineupMemberId,
+      is_starter: addLineupStarter, position: addLineupPosition || null,
+      jersey_number: addLineupJersey ? parseInt(addLineupJersey) : null,
+    }).select().single();
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    setLineup(prev => [...prev, data as LineupPlayer]);
+    setAddLineupMemberId(""); setAddLineupPosition(""); setAddLineupJersey("");
+    toast({ title: addLineupStarter ? "Starter added" : "Substitute added" });
+  };
+
+  const handleRemoveFromLineup = async (id: string) => {
+    await supabase.from("match_lineups").delete().eq("id", id);
+    setLineup(prev => prev.filter(l => l.id !== id));
+  };
+
+  const handleToggleStarter = async (player: LineupPlayer) => {
+    await supabase.from("match_lineups").update({ is_starter: !player.is_starter }).eq("id", player.id);
+    setLineup(prev => prev.map(l => l.id === player.id ? { ...l, is_starter: !l.is_starter } : l));
   };
 
   // Standings calculation
@@ -408,48 +444,141 @@ const Matches = () => {
               <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
             ) : (
               <>
-                {/* Match Events */}
-                <h4 className="text-sm font-semibold text-foreground mb-3">Match Events</h4>
-                {matchEvents.length === 0 ? (
-                  <p className="text-xs text-muted-foreground mb-3">No events recorded.</p>
-                ) : (
-                  <div className="space-y-1 mb-4">
-                    {matchEvents.map(ev => {
-                      const player = members.find(m => m.id === ev.membership_id);
-                      return (
-                        <div key={ev.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-background border border-border text-xs">
-                          <span>{eventTypeLabels[ev.event_type] || ev.event_type}</span>
-                          {ev.minute != null && <span className="text-muted-foreground">{ev.minute}'</span>}
-                          <span className="text-foreground">{(player as any)?.profiles?.display_name || ""}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Add event */}
-                <div className="rounded-xl bg-background border border-border p-3 space-y-2">
-                  <h5 className="text-xs font-semibold text-muted-foreground">ADD EVENT</h5>
-                  <div className="flex gap-2">
-                    <select value={evType} onChange={e => setEvType(e.target.value)}
-                      className="flex-1 h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground">
-                      <option value="goal">⚽ Goal</option>
-                      <option value="assist">🅰️ Assist</option>
-                      <option value="yellow_card">🟨 Yellow</option>
-                      <option value="red_card">🟥 Red</option>
-                      <option value="substitution_in">🔄 Sub In</option>
-                      <option value="substitution_out">🔄 Sub Out</option>
-                    </select>
-                    <select value={evMemberId} onChange={e => setEvMemberId(e.target.value)}
-                      className="flex-1 h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground">
-                      <option value="">Player</option>
-                      {members.map(m => <option key={m.id} value={m.id}>{(m as any).profiles?.display_name || "Member"}</option>)}
-                    </select>
-                    <Input type="number" placeholder="Min" value={evMinute} onChange={e => setEvMinute(e.target.value)}
-                      className="w-16 h-8 bg-card text-xs text-center" min="0" max="120" />
-                    <Button size="sm" className="h-8 bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={handleAddMatchEvent}>+</Button>
-                  </div>
+                {/* Sub-tabs: Events / Lineup */}
+                <div className="flex gap-1 mb-4 border-b border-border">
+                  <button onClick={() => setLineupTab("events")}
+                    className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${lineupTab === "events" ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>
+                    Match Events
+                  </button>
+                  <button onClick={() => setLineupTab("lineup")}
+                    className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${lineupTab === "lineup" ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>
+                    Lineup ({lineup.length})
+                  </button>
                 </div>
+
+                {lineupTab === "events" ? (
+                  <>
+                    {matchEvents.length === 0 ? (
+                      <p className="text-xs text-muted-foreground mb-3">No events recorded.</p>
+                    ) : (
+                      <div className="space-y-1 mb-4">
+                        {matchEvents.map(ev => {
+                          const player = members.find(m => m.id === ev.membership_id);
+                          return (
+                            <div key={ev.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-background border border-border text-xs">
+                              <span>{eventTypeLabels[ev.event_type] || ev.event_type}</span>
+                              {ev.minute != null && <span className="text-muted-foreground">{ev.minute}'</span>}
+                              <span className="text-foreground">{(player as any)?.profiles?.display_name || ""}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div className="rounded-xl bg-background border border-border p-3 space-y-2">
+                      <h5 className="text-xs font-semibold text-muted-foreground">ADD EVENT</h5>
+                      <div className="flex gap-2 flex-wrap">
+                        <select value={evType} onChange={e => setEvType(e.target.value)}
+                          className="flex-1 min-w-[100px] h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground">
+                          <option value="goal">⚽ Goal</option>
+                          <option value="assist">🅰️ Assist</option>
+                          <option value="yellow_card">🟨 Yellow</option>
+                          <option value="red_card">🟥 Red</option>
+                          <option value="substitution_in">🔄 Sub In</option>
+                          <option value="substitution_out">🔄 Sub Out</option>
+                        </select>
+                        <select value={evMemberId} onChange={e => setEvMemberId(e.target.value)}
+                          className="flex-1 min-w-[100px] h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground">
+                          <option value="">Player</option>
+                          {members.map(m => <option key={m.id} value={m.id}>{(m as any).profiles?.display_name || "Member"}</option>)}
+                        </select>
+                        <Input type="number" placeholder="Min" value={evMinute} onChange={e => setEvMinute(e.target.value)}
+                          className="w-16 h-8 bg-card text-xs text-center" min="0" max="120" />
+                        <Button size="sm" className="h-8 bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={handleAddMatchEvent}>+</Button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Starters */}
+                    <h5 className="text-xs font-semibold text-muted-foreground mb-2">STARTING XI ({lineup.filter(l => l.is_starter).length})</h5>
+                    {lineup.filter(l => l.is_starter).length === 0 ? (
+                      <p className="text-xs text-muted-foreground mb-3">No starters assigned.</p>
+                    ) : (
+                      <div className="space-y-1 mb-4">
+                        {lineup.filter(l => l.is_starter).map(l => {
+                          const player = members.find(m => m.id === l.membership_id);
+                          return (
+                            <div key={l.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background border border-border text-xs">
+                              <div className="flex items-center gap-2">
+                                {l.jersey_number != null && <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary font-bold text-[10px]">{l.jersey_number}</span>}
+                                <span className="font-medium text-foreground">{(player as any)?.profiles?.display_name || "Player"}</span>
+                                {l.position && <span className="text-muted-foreground">({l.position})</span>}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button onClick={() => handleToggleStarter(l)} className="text-[10px] text-muted-foreground hover:text-foreground px-1">→ Sub</button>
+                                <button onClick={() => handleRemoveFromLineup(l.id)} className="text-destructive hover:text-destructive/80 px-1"><X className="w-3 h-3" /></button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Substitutes */}
+                    <h5 className="text-xs font-semibold text-muted-foreground mb-2 mt-4">SUBSTITUTES ({lineup.filter(l => !l.is_starter).length})</h5>
+                    {lineup.filter(l => !l.is_starter).length === 0 ? (
+                      <p className="text-xs text-muted-foreground mb-3">No substitutes assigned.</p>
+                    ) : (
+                      <div className="space-y-1 mb-4">
+                        {lineup.filter(l => !l.is_starter).map(l => {
+                          const player = members.find(m => m.id === l.membership_id);
+                          return (
+                            <div key={l.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background border border-border text-xs">
+                              <div className="flex items-center gap-2">
+                                {l.jersey_number != null && <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted text-muted-foreground font-bold text-[10px]">{l.jersey_number}</span>}
+                                <span className="font-medium text-foreground">{(player as any)?.profiles?.display_name || "Player"}</span>
+                                {l.position && <span className="text-muted-foreground">({l.position})</span>}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <button onClick={() => handleToggleStarter(l)} className="text-[10px] text-muted-foreground hover:text-foreground px-1">→ Start</button>
+                                <button onClick={() => handleRemoveFromLineup(l.id)} className="text-destructive hover:text-destructive/80 px-1"><X className="w-3 h-3" /></button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Add to lineup */}
+                    <div className="rounded-xl bg-background border border-border p-3 space-y-2 mt-4">
+                      <h5 className="text-xs font-semibold text-muted-foreground">ADD TO LINEUP</h5>
+                      <div className="flex gap-2 flex-wrap">
+                        <select value={addLineupMemberId} onChange={e => setAddLineupMemberId(e.target.value)}
+                          className="flex-1 min-w-[120px] h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground">
+                          <option value="">Select player</option>
+                          {members.filter(m => !lineup.some(l => l.membership_id === m.id)).map(m => (
+                            <option key={m.id} value={m.id}>{(m as any).profiles?.display_name || "Member"}</option>
+                          ))}
+                        </select>
+                        <Input placeholder="Pos" value={addLineupPosition} onChange={e => setAddLineupPosition(e.target.value)}
+                          className="w-16 h-8 bg-card text-xs text-center" />
+                        <Input type="number" placeholder="#" value={addLineupJersey} onChange={e => setAddLineupJersey(e.target.value)}
+                          className="w-14 h-8 bg-card text-xs text-center" min="1" max="99" />
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => setAddLineupStarter(true)}
+                            className={`h-8 px-2 rounded-md text-[10px] font-medium border ${addLineupStarter ? "bg-primary/10 border-primary text-primary" : "border-border text-muted-foreground"}`}>
+                            Starter
+                          </button>
+                          <button onClick={() => setAddLineupStarter(false)}
+                            className={`h-8 px-2 rounded-md text-[10px] font-medium border ${!addLineupStarter ? "bg-primary/10 border-primary text-primary" : "border-border text-muted-foreground"}`}>
+                            Sub
+                          </button>
+                        </div>
+                        <Button size="sm" className="h-8 bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={handleAddToLineup} disabled={!addLineupMemberId}>+</Button>
+                      </div>
+                    </div>
+                  </>
+                )}
               </>
             )}
           </motion.div>
