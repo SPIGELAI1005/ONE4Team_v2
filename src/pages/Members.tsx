@@ -99,7 +99,7 @@ const Members = () => {
       setLoading(false);
     };
     fetchMembers();
-  }, [clubId]);
+  }, [clubId, toast]);
 
   const filtered = members.filter((m) => {
     const name = (m.profiles?.display_name || "").toLowerCase();

@@ -6,13 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useClubId } from "@/hooks/use-club-id";
 import { useToast } from "@/hooks/use-toast";
+import type { MembershipWithProfile } from "@/types/supabase";
 
 type VoteResult = { membership_id: string; name: string; votes: number };
 
 interface MatchVotingProps {
   matchId: string;
   matchStatus: string;
-  members: { id: string; profiles?: { display_name: string | null } }[];
+  members: MembershipWithProfile[];
 }
 
 const MatchVoting = ({ matchId, matchStatus, members }: MatchVotingProps) => {
@@ -48,7 +49,9 @@ const MatchVoting = ({ matchId, matchStatus, members }: MatchVotingProps) => {
       });
 
       const nameMap: Record<string, string> = {};
-      members.forEach(m => { nameMap[m.id] = (m as any).profiles?.display_name || "Player"; });
+      members.forEach((m) => {
+        nameMap[m.id] = m.profiles?.display_name || "Player";
+      });
 
       const sorted = Object.entries(tally)
         .map(([mid, count]) => ({ membership_id: mid, name: nameMap[mid] || "Player", votes: count }))
@@ -83,7 +86,11 @@ const MatchVoting = ({ matchId, matchStatus, members }: MatchVotingProps) => {
       if (newVote) { newVote.votes++; }
       else {
         const name = members.find(m => m.id === votedForId);
-        updated.push({ membership_id: votedForId, name: (name as any)?.profiles?.display_name || "Player", votes: 1 });
+        updated.push({
+          membership_id: votedForId,
+          name: name?.profiles?.display_name || "Player",
+          votes: 1,
+        });
       }
       return updated.filter(r => r.votes > 0).sort((a, b) => b.votes - a.votes);
     });
@@ -132,7 +139,7 @@ const MatchVoting = ({ matchId, matchStatus, members }: MatchVotingProps) => {
                   ? "bg-primary/10 border-primary text-primary"
                   : "border-border text-muted-foreground hover:text-foreground hover:border-primary/30"
               }`}>
-              {(m as any).profiles?.display_name || "Player"}
+              {m.profiles?.display_name || "Player"}
             </button>
           ))}
         </div>
