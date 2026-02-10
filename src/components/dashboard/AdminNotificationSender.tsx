@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { isErrorWithMessage } from "@/types/dashboard";
 
 const notificationTypes = [
   { value: "match", label: "Match", icon: "🏆" },
@@ -70,8 +71,12 @@ const AdminNotificationSender = () => {
         setType("announcement");
         setSent(false);
       }, 2000);
-    } catch (err: any) {
-      toast({ title: "Failed to send", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({
+        title: "Failed to send",
+        description: isErrorWithMessage(err) ? err.message : "Unknown error",
+        variant: "destructive",
+      });
     } finally {
       setSending(false);
     }

@@ -55,14 +55,14 @@ const AchievementBadges = ({ membershipId }: { membershipId?: string }) => {
       setAchievements((existing || []) as Achievement[]);
 
       // Auto-check and award new badges
-      await checkAndAwardBadges(mid, clubId, existing || []);
+      await checkAndAwardBadges(mid, clubId, (existing || []) as Achievement[]);
       setLoading(false);
     };
     fetchAchievements();
   }, [clubId, membershipId, user]);
 
-  const checkAndAwardBadges = async (mid: string, cid: string, existing: any[]) => {
-    const existingTypes = new Set(existing.map((a: any) => a.badge_type));
+  const checkAndAwardBadges = async (mid: string, cid: string, existing: Achievement[]) => {
+    const existingTypes = new Set(existing.map((a) => a.badge_type));
 
     // Get player stats
     const { data: matches } = await supabase.from("matches").select("id").eq("club_id", cid);

@@ -4,6 +4,7 @@ import { Trophy, Target, TrendingUp, Users } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useClubId } from "@/hooks/use-club-id";
+import type { MembershipWithProfile } from "@/types/supabase";
 
 type MatchResult = { month: string; wins: number; draws: number; losses: number };
 
@@ -55,13 +56,18 @@ const AnalyticsWidgets = () => {
           events.forEach(e => { if (e.membership_id) goalMap[e.membership_id] = (goalMap[e.membership_id] || 0) + 1; });
           const topIds = Object.entries(goalMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
-          const { data: members } = await supabase
+          const { data: membersRaw } = await supabase
             .from("club_memberships")
-            .select("id, profiles!club_memberships_user_id_fkey(display_name)")
-            .eq("club_id", clubId) as any;
+            .select(
+              "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_user_id_fkey(display_name)",
+            )
+            .eq("club_id", clubId);
 
+          const members = (membersRaw ?? []) as unknown as MembershipWithProfile[];
           const nameMap: Record<string, string> = {};
-          (members || []).forEach((m: any) => { nameMap[m.id] = m.profiles?.display_name || "Unknown"; });
+          members.forEach((m) => {
+            nameMap[m.id] = m.profiles?.display_name || "Unknown";
+          });
           setTopScorers(topIds.map(([id, goals]) => ({ name: nameMap[id] || "Unknown", goals })));
         }
       }
