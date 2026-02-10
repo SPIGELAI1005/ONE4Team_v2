@@ -19,6 +19,7 @@ import MatchVoting from "@/components/matches/MatchVoting";
 import MatchTimeline from "@/components/matches/MatchTimeline";
 import FormStreak from "@/components/matches/FormStreak";
 import AIMatchAnalysis from "@/components/ai/AIMatchAnalysis";
+import type { MembershipWithProfile } from "@/types/supabase";
 
 type Team = { id: string; name: string };
 type Competition = { id: string; name: string; season: string | null; competition_type: string; team_id: string | null };
@@ -29,7 +30,7 @@ type Match = {
   competitions?: { name: string } | null; teams?: { name: string } | null;
 };
 type MatchEvent = { id: string; match_id: string; membership_id: string | null; event_type: string; minute: number | null; notes: string | null };
-type Membership = { id: string; user_id: string; profiles?: { display_name: string | null } };
+type Membership = MembershipWithProfile;
 type LineupPlayer = { id: string; match_id: string; membership_id: string; is_starter: boolean; jersey_number: number | null; position: string | null };
 
 const statusColors: Record<string, string> = {
@@ -118,11 +119,14 @@ const Matches = () => {
     setLineupTab("events");
     const [evRes, memRes, lineupRes] = await Promise.all([
       supabase.from("match_events").select("*").eq("match_id", match.id).order("minute"),
-      supabase.from("club_memberships").select("id, user_id, profiles!club_memberships_user_id_fkey(display_name)").eq("club_id", clubId!) as any,
+      supabase
+        .from("club_memberships")
+        .select("id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_user_id_fkey(display_name)")
+        .eq("club_id", clubId!),
       supabase.from("match_lineups").select("*").eq("match_id", match.id),
     ]);
     setMatchEvents((evRes.data as MatchEvent[]) || []);
-    setMembers((memRes.data || []) as Membership[]);
+    setMembers(((memRes.data ?? []) as unknown as Membership[]));
     setLineup((lineupRes.data as LineupPlayer[]) || []);
     setLoadingDetail(false);
   };
@@ -475,7 +479,7 @@ const Matches = () => {
                         substitutes={lineup.filter(l => !l.is_starter)}
                         getMemberName={(mid) => {
                           const player = members.find(m => m.id === mid);
-                          return (player as any)?.profiles?.display_name || "Player";
+                          return player?.profiles?.display_name || "Player";
                         }}
                       />
                     </div>
@@ -494,7 +498,7 @@ const Matches = () => {
                             <div key={ev.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-background border border-border text-xs">
                               <span>{eventTypeLabels[ev.event_type] || ev.event_type}</span>
                               {ev.minute != null && <span className="text-muted-foreground">{ev.minute}'</span>}
-                              <span className="text-foreground">{(player as any)?.profiles?.display_name || ""}</span>
+                              <span className="text-foreground">{player?.profiles?.display_name || ""}</span>
                             </div>
                           );
                         })}
@@ -515,7 +519,7 @@ const Matches = () => {
                         <select value={evMemberId} onChange={e => setEvMemberId(e.target.value)}
                           className="flex-1 min-w-[100px] h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground">
                           <option value="">Player</option>
-                          {members.map(m => <option key={m.id} value={m.id}>{(m as any).profiles?.display_name || "Member"}</option>)}
+                          {members.map(m => <option key={m.id} value={m.id}>{m.profiles?.display_name || "Member"}</option>)}
                         </select>
                         <Input type="number" placeholder="Min" value={evMinute} onChange={e => setEvMinute(e.target.value)}
                           className="w-16 h-8 bg-card text-xs text-center" min="0" max="120" />
@@ -537,7 +541,7 @@ const Matches = () => {
                             <div key={l.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background border border-border text-xs">
                               <div className="flex items-center gap-2">
                                 {l.jersey_number != null && <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary font-bold text-[10px]">{l.jersey_number}</span>}
-                                <span className="font-medium text-foreground">{(player as any)?.profiles?.display_name || "Player"}</span>
+                                <span className="font-medium text-foreground">{player?.profiles?.display_name || "Player"}</span>
                                 {l.position && <span className="text-muted-foreground">({l.position})</span>}
                               </div>
                               <div className="flex items-center gap-1">
@@ -562,7 +566,7 @@ const Matches = () => {
                             <div key={l.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background border border-border text-xs">
                               <div className="flex items-center gap-2">
                                 {l.jersey_number != null && <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted text-muted-foreground font-bold text-[10px]">{l.jersey_number}</span>}
-                                <span className="font-medium text-foreground">{(player as any)?.profiles?.display_name || "Player"}</span>
+                                <span className="font-medium text-foreground">{player?.profiles?.display_name || "Player"}</span>
                                 {l.position && <span className="text-muted-foreground">({l.position})</span>}
                               </div>
                               <div className="flex items-center gap-1">
@@ -583,7 +587,7 @@ const Matches = () => {
                           className="flex-1 min-w-[120px] h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground">
                           <option value="">Select player</option>
                           {members.filter(m => !lineup.some(l => l.membership_id === m.id)).map(m => (
-                            <option key={m.id} value={m.id}>{(m as any).profiles?.display_name || "Member"}</option>
+                            <option key={m.id} value={m.id}>{m.profiles?.display_name || "Member"}</option>
                           ))}
                         </select>
                         <Input placeholder="Pos" value={addLineupPosition} onChange={e => setAddLineupPosition(e.target.value)}
@@ -609,7 +613,7 @@ const Matches = () => {
                 {/* Match Timeline */}
                 <MatchTimeline events={matchEvents} getMemberName={(mid) => {
                   const player = members.find(m => m.id === mid);
-                  return (player as any)?.profiles?.display_name || "Player";
+                  return player?.profiles?.display_name || "Player";
                 }} />
 
                 {/* Player of the Match Voting */}
@@ -623,7 +627,7 @@ const Matches = () => {
                     away_score: selectedMatch.away_score,
                     events: matchEvents.map(e => ({
                       type: e.event_type, minute: e.minute,
-                      player: (members.find(m => m.id === e.membership_id) as any)?.profiles?.display_name || null,
+                      player: members.find(m => m.id === e.membership_id)?.profiles?.display_name || null,
                     })),
                   }}
                   matchStatus={selectedMatch.status}
