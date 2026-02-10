@@ -82,31 +82,15 @@ const Onboarding = () => {
     try {
       const slug = clubName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
-      // Create club
-      const { data: club, error: clubError } = await supabase
-        .from("clubs")
-        .insert({
-          name: clubName.trim(),
-          slug: slug || `club-${Date.now()}`,
-          description: clubDescription.trim() || null,
-          is_public: true,
-        })
-        .select("id")
-        .single();
+      // Create club and admin membership atomically
+      const { data: clubId, error } = await supabase.rpc("create_club_with_admin", {
+        _name: clubName.trim(),
+        _slug: slug || `club-${Date.now()}`,
+        _description: clubDescription.trim() || null,
+        _is_public: true,
+      });
 
-      if (clubError) throw clubError;
-
-      // Create admin membership
-      const { error: memberError } = await supabase
-        .from("club_memberships")
-        .insert({
-          club_id: club.id,
-          user_id: user.id,
-          role: "admin" as any,
-          status: "active",
-        });
-
-      if (memberError) throw memberError;
+      if (error) throw error;
 
       toast({ title: "Club created!", description: `${clubName} is ready to go.` });
       navigate("/dashboard/admin");
