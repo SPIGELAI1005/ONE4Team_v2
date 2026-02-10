@@ -15,6 +15,7 @@ import Communication from "./pages/Communication";
 import Payments from "./pages/Payments";
 import Events from "./pages/Events";
 import Matches from "./pages/Matches";
+import PlayerStats from "./pages/PlayerStats";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/payments" element={<Payments />} />
             <Route path="/events" element={<Events />} />
             <Route path="/matches" element={<Matches />} />
+            <Route path="/player-stats" element={<PlayerStats />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

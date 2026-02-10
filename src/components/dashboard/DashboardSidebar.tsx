@@ -2,7 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   LayoutDashboard, Users, Calendar, Trophy, CreditCard,
   MessageSquare, Briefcase, ShoppingBag, Globe, Bot,
-  Settings, LogOut, ChevronLeft, ChevronRight, CalendarDays, Swords
+  Settings, LogOut, ChevronLeft, ChevronRight, CalendarDays, Swords, BarChart3
 } from "lucide-react";
 import { useState } from "react";
 import logo from "@/assets/logo.png";
@@ -16,6 +16,7 @@ const roleMenus: Record<string, NavItem[]> = {
     { icon: Calendar, label: "Training", id: "training", route: "/teams" },
     { icon: Trophy, label: "Matches", id: "matches", route: "/matches" },
     { icon: CalendarDays, label: "Events", id: "events", route: "/events" },
+    { icon: BarChart3, label: "Player Stats", id: "stats", route: "/player-stats" },
     { icon: CreditCard, label: "Payments", id: "payments", route: "/payments" },
     { icon: MessageSquare, label: "Messages", id: "messages", route: "/communication" },
     { icon: Briefcase, label: "Partners", id: "partners" },
@@ -30,6 +31,7 @@ const roleMenus: Record<string, NavItem[]> = {
     { icon: Calendar, label: "Training", id: "training", route: "/teams" },
     { icon: Trophy, label: "Matches", id: "matches", route: "/matches" },
     { icon: CalendarDays, label: "Events", id: "events", route: "/events" },
+    { icon: BarChart3, label: "Player Stats", id: "stats", route: "/player-stats" },
     { icon: MessageSquare, label: "Messages", id: "messages", route: "/communication" },
     { icon: Bot, label: "Co-Trainer", id: "ai" },
   ],
@@ -38,6 +40,7 @@ const roleMenus: Record<string, NavItem[]> = {
     { icon: Calendar, label: "Schedule", id: "schedule" },
     { icon: Trophy, label: "Matches", id: "matches", route: "/matches" },
     { icon: CalendarDays, label: "Events", id: "events", route: "/events" },
+    { icon: BarChart3, label: "Player Stats", id: "stats", route: "/player-stats" },
     { icon: MessageSquare, label: "Messages", id: "messages" },
     { icon: ShoppingBag, label: "Shop", id: "shop" },
   ],

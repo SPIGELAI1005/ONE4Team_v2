@@ -11,6 +11,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
+import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
 import logo from "@/assets/logo.png";
 
 type Team = { id: string; name: string };
@@ -184,7 +186,7 @@ const Matches = () => {
   if (!user) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Please sign in.</p></div>;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20 lg:pb-0">
       <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -453,6 +455,8 @@ const Matches = () => {
           </motion.div>
         </div>
       )}
+      {/* Mobile Nav */}
+      <MobileBottomNav />
     </div>
   );
 };
