@@ -6,6 +6,11 @@ import {
 } from "lucide-react";
 import AnalyticsWidgets from "@/components/dashboard/AnalyticsWidgets";
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
+import SeasonProgressionChart from "@/components/analytics/SeasonProgressionChart";
+import TeamChemistry from "@/components/analytics/TeamChemistry";
+import HeadToHead from "@/components/analytics/HeadToHead";
+import NaturalLanguageStats from "@/components/ai/NaturalLanguageStats";
+import SeasonAwards from "@/components/analytics/SeasonAwards";
 
 const roleConfig: Record<string, { title: string; greeting: string; kpis: { label: string; value: string; change: string; icon: React.ElementType }[] }> = {
   admin: {
@@ -126,8 +131,23 @@ const DashboardContent = () => {
         {/* Analytics Charts */}
         <AnalyticsWidgets />
 
+        {/* Season Progression */}
+        <SeasonProgressionChart />
+
+        {/* Team Chemistry */}
+        <TeamChemistry />
+
+        {/* Head-to-Head Comparison */}
+        <HeadToHead />
+
         {/* Achievement Badges */}
         <AchievementBadges />
+
+        {/* Natural Language Stats Query */}
+        <NaturalLanguageStats />
+
+        {/* Season Awards */}
+        <SeasonAwards />
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Upcoming events */}

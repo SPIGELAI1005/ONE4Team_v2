@@ -10,6 +10,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
+import PlayerRadarChart from "@/components/analytics/PlayerRadarChart";
+import AttendanceHeatmap from "@/components/analytics/AttendanceHeatmap";
+import AchievementBadges from "@/components/dashboard/AchievementBadges";
+import FormStreak from "@/components/matches/FormStreak";
 import logo from "@/assets/logo.png";
 
 type MatchHistory = {
@@ -40,7 +44,7 @@ const PlayerProfile = () => {
   const [position, setPosition] = useState<string | null>(null);
   const [team, setTeam] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"overview" | "matches" | "attendance">("overview");
+  const [tab, setTab] = useState<"overview" | "matches" | "attendance" | "analytics">("overview");
 
   // Stats
   const [goals, setGoals] = useState(0);
@@ -57,7 +61,6 @@ const PlayerProfile = () => {
     const fetchAll = async () => {
       setLoading(true);
 
-      // Get member info
       const { data: member } = await supabase
         .from("club_memberships")
         .select("id, position, team, profiles!club_memberships_user_id_fkey(display_name)")
@@ -70,7 +73,6 @@ const PlayerProfile = () => {
         setTeam(member.team);
       }
 
-      // Get all matches for this club
       const { data: matches } = await supabase
         .from("matches")
         .select("id, opponent, is_home, match_date, home_score, away_score, status")
@@ -79,31 +81,18 @@ const PlayerProfile = () => {
 
       const matchIds = (matches || []).map(m => m.id);
 
-      // Get match events for this player
       const { data: events } = matchIds.length > 0
-        ? await supabase
-            .from("match_events")
-            .select("match_id, event_type, minute")
-            .eq("membership_id", membershipId)
-            .in("match_id", matchIds)
+        ? await supabase.from("match_events").select("match_id, event_type, minute").eq("membership_id", membershipId).in("match_id", matchIds)
         : { data: [] };
 
-      // Get lineups to know which matches they played
       const { data: lineups } = matchIds.length > 0
-        ? await supabase
-            .from("match_lineups")
-            .select("match_id")
-            .eq("membership_id", membershipId)
-            .in("match_id", matchIds)
+        ? await supabase.from("match_lineups").select("match_id").eq("membership_id", membershipId).in("match_id", matchIds)
         : { data: [] };
 
       const playedMatchIds = new Set((lineups || []).map(l => l.match_id));
-      // Also include matches where they have events
       (events || []).forEach(e => playedMatchIds.add(e.match_id));
-
       setMatchesPlayed(playedMatchIds.size);
 
-      // Aggregate stats
       let g = 0, a = 0, yc = 0, rc = 0;
       (events || []).forEach(ev => {
         if (ev.event_type === "goal") g++;
@@ -113,7 +102,6 @@ const PlayerProfile = () => {
       });
       setGoals(g); setAssists(a); setYellowCards(yc); setRedCards(rc);
 
-      // Build match history
       const evByMatch: Record<string, { event_type: string; minute: number | null }[]> = {};
       (events || []).forEach(ev => {
         if (!evByMatch[ev.match_id]) evByMatch[ev.match_id] = [];
@@ -123,32 +111,24 @@ const PlayerProfile = () => {
       const history: MatchHistory[] = (matches || [])
         .filter(m => playedMatchIds.has(m.id))
         .map(m => ({
-          match_id: m.id,
-          opponent: m.opponent,
-          is_home: m.is_home,
-          match_date: m.match_date,
-          home_score: m.home_score,
-          away_score: m.away_score,
-          status: m.status,
+          match_id: m.id, opponent: m.opponent, is_home: m.is_home,
+          match_date: m.match_date, home_score: m.home_score,
+          away_score: m.away_score, status: m.status,
           events: evByMatch[m.id] || [],
         }));
       setMatchHistory(history);
 
-      // Get event attendance
       const { data: participations } = await supabase
         .from("event_participants")
         .select("event_id, status, events!event_participants_event_id_fkey(title, starts_at)")
         .eq("membership_id", membershipId) as any;
 
       const att: EventAttendance[] = (participations || []).map((p: any) => ({
-        event_id: p.event_id,
-        title: p.events?.title || "Event",
-        starts_at: p.events?.starts_at || "",
-        status: p.status,
+        event_id: p.event_id, title: p.events?.title || "Event",
+        starts_at: p.events?.starts_at || "", status: p.status,
       }));
       att.sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime());
       setAttendance(att);
-
       setLoading(false);
     };
     fetchAll();
@@ -199,6 +179,11 @@ const PlayerProfile = () => {
                 </div>
               </div>
 
+              {/* Form streak */}
+              <div className="mb-4">
+                <FormStreak matches={matchHistory} count={10} />
+              </div>
+
               {/* Stat cards */}
               <div className="grid grid-cols-5 gap-2">
                 {[
@@ -217,14 +202,15 @@ const PlayerProfile = () => {
             </motion.div>
 
             {/* Tabs */}
-            <div className="border-b border-border flex gap-1">
+            <div className="border-b border-border flex gap-1 overflow-x-auto">
               {([
                 { id: "overview" as const, label: "Overview" },
                 { id: "matches" as const, label: "Match History" },
                 { id: "attendance" as const, label: "Attendance" },
+                { id: "analytics" as const, label: "Analytics" },
               ]).map(t => (
                 <button key={t.id} onClick={() => setTab(t.id)}
-                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                     tab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
                   }`}>
                   {t.label}
@@ -234,6 +220,7 @@ const PlayerProfile = () => {
 
             {tab === "overview" && (
               <div className="space-y-4">
+                <AchievementBadges membershipId={membershipId} />
                 <h3 className="text-sm font-semibold text-foreground">Recent Matches</h3>
                 {matchHistory.slice(0, 5).map((m, i) => (
                   <motion.div key={m.match_id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
@@ -301,6 +288,7 @@ const PlayerProfile = () => {
 
             {tab === "attendance" && (
               <div className="space-y-3">
+                <AttendanceHeatmap membershipId={membershipId} />
                 {attendance.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">No event attendance records.</p>
                 ) : attendance.map((a, i) => (
@@ -318,6 +306,13 @@ const PlayerProfile = () => {
                     </div>
                   </motion.div>
                 ))}
+              </div>
+            )}
+
+            {tab === "analytics" && membershipId && (
+              <div className="space-y-6">
+                <PlayerRadarChart membershipId={membershipId} playerName={displayName} />
+                <AttendanceHeatmap membershipId={membershipId} />
               </div>
             )}
           </div>
