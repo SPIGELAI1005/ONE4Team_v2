@@ -75,7 +75,7 @@ const DashboardContent = () => {
   const config = roleConfig[role || ""] || defaultConfig;
 
   return (
-    <div className="flex-1 overflow-y-auto bg-background">
+    <div className="flex-1 overflow-y-auto bg-background pb-20 lg:pb-0">
       {/* Header */}
       <div className="border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="px-6 lg:px-8 py-5 flex items-center justify-between">
