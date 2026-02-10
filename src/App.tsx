@@ -20,6 +20,7 @@ import Matches from "./pages/Matches";
 import PlayerStats from "./pages/PlayerStats";
 import PlayerProfile from "./pages/PlayerProfile";
 import CoTrainer from "./pages/CoTrainer";
+import LiveScores from "./pages/LiveScores";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const AnimatedRoutes = () => {
         <Route path="/player-stats" element={<PageTransition><PlayerStats /></PageTransition>} />
         <Route path="/player/:membershipId" element={<PageTransition><PlayerProfile /></PageTransition>} />
         <Route path="/co-trainer" element={<PageTransition><CoTrainer /></PageTransition>} />
+        <Route path="/live-scores" element={<PageTransition><LiveScores /></PageTransition>} />
         <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
       </Routes>
     </AnimatePresence>
