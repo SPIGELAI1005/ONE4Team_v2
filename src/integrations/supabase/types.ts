@@ -241,6 +241,44 @@ export type Database = {
           },
         ]
       }
+      custom_stat_definitions: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          sport: string
+          stat_category: string
+          stat_icon: string | null
+          stat_name: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          sport?: string
+          stat_category?: string
+          stat_icon?: string | null
+          stat_name: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          sport?: string
+          stat_category?: string
+          stat_icon?: string | null
+          stat_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_stat_definitions_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_participants: {
         Row: {
           created_at: string
@@ -420,6 +458,62 @@ export type Database = {
           {
             foreignKeyName: "match_lineups_membership_id_fkey"
             columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "club_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_votes: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          match_id: string
+          voted_for_membership_id: string
+          voter_membership_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          match_id: string
+          voted_for_membership_id: string
+          voter_membership_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          match_id?: string
+          voted_for_membership_id?: string
+          voter_membership_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_votes_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_votes_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_votes_voted_for_membership_id_fkey"
+            columns: ["voted_for_membership_id"]
+            isOneToOne: false
+            referencedRelation: "club_memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_votes_voter_membership_id_fkey"
+            columns: ["voter_membership_id"]
             isOneToOne: false
             referencedRelation: "club_memberships"
             referencedColumns: ["id"]
@@ -655,6 +749,58 @@ export type Database = {
           },
         ]
       }
+      player_match_stats: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          match_id: string
+          membership_id: string
+          stat_name: string
+          stat_value: number
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          match_id: string
+          membership_id: string
+          stat_name: string
+          stat_value?: number
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          match_id?: string
+          membership_id?: string
+          stat_name?: string
+          stat_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_match_stats_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_match_stats_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_match_stats_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "club_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -684,6 +830,54 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      season_awards: {
+        Row: {
+          award_icon: string | null
+          award_name: string
+          award_type: string
+          club_id: string
+          created_at: string
+          id: string
+          membership_id: string
+          season: string
+        }
+        Insert: {
+          award_icon?: string | null
+          award_name: string
+          award_type: string
+          club_id: string
+          created_at?: string
+          id?: string
+          membership_id: string
+          season: string
+        }
+        Update: {
+          award_icon?: string | null
+          award_name?: string
+          award_type?: string
+          club_id?: string
+          created_at?: string
+          id?: string
+          membership_id?: string
+          season?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "season_awards_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "season_awards_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "club_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_players: {
         Row: {
