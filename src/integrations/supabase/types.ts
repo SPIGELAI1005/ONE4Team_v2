@@ -14,16 +14,145 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      club_memberships: {
+        Row: {
+          age_group: string | null
+          club_id: string
+          created_at: string
+          id: string
+          position: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+          team: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age_group?: string | null
+          club_id: string
+          created_at?: string
+          id?: string
+          position?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+          team?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age_group?: string | null
+          club_id?: string
+          created_at?: string
+          id?: string
+          position?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+          team?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_memberships_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clubs: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          logo_url: string | null
+          name: string
+          primary_color: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          logo_url?: string | null
+          name: string
+          primary_color?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          logo_url?: string | null
+          name?: string
+          primary_color?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_club_admin: {
+        Args: { _club_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_member_of_club: {
+        Args: { _club_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "admin"
+        | "trainer"
+        | "player"
+        | "staff"
+        | "member"
+        | "parent"
+        | "sponsor"
+        | "supplier"
+        | "service_provider"
+        | "consultant"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +279,19 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "admin",
+        "trainer",
+        "player",
+        "staff",
+        "member",
+        "parent",
+        "sponsor",
+        "supplier",
+        "service_provider",
+        "consultant",
+      ],
+    },
   },
 } as const
