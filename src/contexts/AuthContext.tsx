@@ -52,4 +52,5 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// useAuth hook moved to src/contexts/useAuth.ts
+// Re-export for backwards-compatible imports
+export { useAuth } from "@/contexts/useAuth";
