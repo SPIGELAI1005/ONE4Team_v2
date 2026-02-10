@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
 import logo from "@/assets/logo.png";
+import LineupExport from "@/components/matches/LineupExport";
 
 type Team = { id: string; name: string };
 type Competition = { id: string; name: string; season: string | null; competition_type: string; team_id: string | null };
@@ -454,6 +455,21 @@ const Matches = () => {
                     className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${lineupTab === "lineup" ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>
                     Lineup ({lineup.length})
                   </button>
+                  {lineupTab === "lineup" && lineup.length > 0 && (
+                    <div className="ml-auto flex items-center pb-2">
+                      <LineupExport
+                        matchTitle={selectedMatch.is_home ? `Club vs ${selectedMatch.opponent}` : `${selectedMatch.opponent} vs Club`}
+                        matchDate={selectedMatch.match_date}
+                        location={selectedMatch.location}
+                        starters={lineup.filter(l => l.is_starter)}
+                        substitutes={lineup.filter(l => !l.is_starter)}
+                        getMemberName={(mid) => {
+                          const player = members.find(m => m.id === mid);
+                          return (player as any)?.profiles?.display_name || "Player";
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {lineupTab === "events" ? (
