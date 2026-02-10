@@ -22,7 +22,7 @@ const roleMenus: Record<string, NavItem[]> = {
     { icon: Briefcase, label: "Partners", id: "partners" },
     { icon: ShoppingBag, label: "Shop", id: "shop" },
     { icon: Globe, label: "Club Page", id: "clubpage" },
-    { icon: Bot, label: "Co-AImin", id: "ai" },
+    { icon: Bot, label: "Co-AImin", id: "ai", route: "/co-trainer" },
     { icon: Settings, label: "Settings", id: "settings" },
   ],
   trainer: [
@@ -33,7 +33,7 @@ const roleMenus: Record<string, NavItem[]> = {
     { icon: CalendarDays, label: "Events", id: "events", route: "/events" },
     { icon: BarChart3, label: "Player Stats", id: "stats", route: "/player-stats" },
     { icon: MessageSquare, label: "Messages", id: "messages", route: "/communication" },
-    { icon: Bot, label: "Co-Trainer", id: "ai" },
+    { icon: Bot, label: "Co-Trainer", id: "ai", route: "/co-trainer" },
   ],
   player: [
     { icon: LayoutDashboard, label: "Dashboard", id: "overview" },

@@ -4,6 +4,8 @@ import {
   Users, Calendar, Trophy, TrendingUp, Clock, Bell,
   Bot, ArrowUpRight, Activity
 } from "lucide-react";
+import AnalyticsWidgets from "@/components/dashboard/AnalyticsWidgets";
+import AchievementBadges from "@/components/dashboard/AchievementBadges";
 
 const roleConfig: Record<string, { title: string; greeting: string; kpis: { label: string; value: string; change: string; icon: React.ElementType }[] }> = {
   admin: {
@@ -120,6 +122,12 @@ const DashboardContent = () => {
             </motion.div>
           ))}
         </div>
+
+        {/* Analytics Charts */}
+        <AnalyticsWidgets />
+
+        {/* Achievement Badges */}
+        <AchievementBadges />
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Upcoming events */}

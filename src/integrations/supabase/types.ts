@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          badge_icon: string
+          badge_name: string
+          badge_type: string
+          club_id: string
+          earned_at: string
+          id: string
+          membership_id: string
+        }
+        Insert: {
+          badge_icon?: string
+          badge_name: string
+          badge_type: string
+          club_id: string
+          earned_at?: string
+          id?: string
+          membership_id: string
+        }
+        Update: {
+          badge_icon?: string
+          badge_name?: string
+          badge_type?: string
+          club_id?: string
+          earned_at?: string
+          id?: string
+          membership_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "achievements_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "achievements_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "club_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcements: {
         Row: {
           author_id: string
