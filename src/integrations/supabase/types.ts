@@ -132,6 +132,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_club_with_admin: {
+        Args: {
+          _description?: string
+          _is_public?: boolean
+          _name: string
+          _slug: string
+        }
+        Returns: string
+      }
       is_club_admin: {
         Args: { _club_id: string; _user_id: string }
         Returns: boolean
