@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
+import { isErrorWithMessage } from "@/types/dashboard";
 
 type World = "club" | "partner" | null;
 type Step = "world" | "role" | "create-club";
@@ -94,8 +95,12 @@ const Onboarding = () => {
 
       toast({ title: "Club created!", description: `${clubName} is ready to go.` });
       navigate("/dashboard/admin");
-    } catch (err: any) {
-      toast({ title: "Error creating club", description: err.message, variant: "destructive" });
+    } catch (err: unknown) {
+      toast({
+        title: "Error creating club",
+        description: isErrorWithMessage(err) ? err.message : "Unknown error",
+        variant: "destructive",
+      });
     } finally {
       setCreating(false);
     }

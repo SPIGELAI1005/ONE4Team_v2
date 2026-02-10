@@ -15,6 +15,13 @@ import AttendanceHeatmap from "@/components/analytics/AttendanceHeatmap";
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
 import FormStreak from "@/components/matches/FormStreak";
 import logo from "@/assets/logo.png";
+import type {
+  ClubMembershipProfileRow,
+  MatchEventRowLite,
+  MatchLineupRowLite,
+  MatchRowLite,
+  EventParticipationWithEvent,
+} from "@/types/player";
 
 type MatchHistory = {
   match_id: string;
@@ -61,73 +68,101 @@ const PlayerProfile = () => {
     const fetchAll = async () => {
       setLoading(true);
 
-      const { data: member } = await supabase
+      const { data: memberRaw } = await supabase
         .from("club_memberships")
-        .select("id, position, team, profiles!club_memberships_user_id_fkey(display_name)")
+        .select(
+          "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_user_id_fkey(display_name)",
+        )
         .eq("id", membershipId)
-        .maybeSingle() as any;
+        .maybeSingle();
 
+      const member = memberRaw as unknown as ClubMembershipProfileRow | null;
       if (member) {
         setDisplayName(member.profiles?.display_name || "Unknown");
         setPosition(member.position);
         setTeam(member.team);
       }
 
-      const { data: matches } = await supabase
+      const { data: matchesRaw } = await supabase
         .from("matches")
         .select("id, opponent, is_home, match_date, home_score, away_score, status")
         .eq("club_id", clubId)
         .order("match_date", { ascending: false });
 
-      const matchIds = (matches || []).map(m => m.id);
+      const matches = (matchesRaw ?? []) as unknown as MatchRowLite[];
+      const matchIds = matches.map((m) => m.id);
 
-      const { data: events } = matchIds.length > 0
-        ? await supabase.from("match_events").select("match_id, event_type, minute").eq("membership_id", membershipId).in("match_id", matchIds)
-        : { data: [] };
+      const { data: eventsRaw } = matchIds.length > 0
+        ? await supabase
+            .from("match_events")
+            .select("match_id, event_type, minute")
+            .eq("membership_id", membershipId)
+            .in("match_id", matchIds)
+        : { data: [] as MatchEventRowLite[] };
 
-      const { data: lineups } = matchIds.length > 0
-        ? await supabase.from("match_lineups").select("match_id").eq("membership_id", membershipId).in("match_id", matchIds)
-        : { data: [] };
+      const { data: lineupsRaw } = matchIds.length > 0
+        ? await supabase
+            .from("match_lineups")
+            .select("match_id")
+            .eq("membership_id", membershipId)
+            .in("match_id", matchIds)
+        : { data: [] as MatchLineupRowLite[] };
 
-      const playedMatchIds = new Set((lineups || []).map(l => l.match_id));
-      (events || []).forEach(e => playedMatchIds.add(e.match_id));
+      const events = (eventsRaw ?? []) as unknown as MatchEventRowLite[];
+      const lineups = (lineupsRaw ?? []) as unknown as MatchLineupRowLite[];
+
+      const playedMatchIds = new Set(lineups.map((l) => l.match_id));
+      events.forEach((e) => playedMatchIds.add(e.match_id));
       setMatchesPlayed(playedMatchIds.size);
 
-      let g = 0, a = 0, yc = 0, rc = 0;
-      (events || []).forEach(ev => {
+      let g = 0;
+      let a = 0;
+      let yc = 0;
+      let rc = 0;
+      events.forEach((ev) => {
         if (ev.event_type === "goal") g++;
         else if (ev.event_type === "assist") a++;
         else if (ev.event_type === "yellow_card") yc++;
         else if (ev.event_type === "red_card") rc++;
       });
-      setGoals(g); setAssists(a); setYellowCards(yc); setRedCards(rc);
+      setGoals(g);
+      setAssists(a);
+      setYellowCards(yc);
+      setRedCards(rc);
 
       const evByMatch: Record<string, { event_type: string; minute: number | null }[]> = {};
-      (events || []).forEach(ev => {
+      events.forEach((ev) => {
         if (!evByMatch[ev.match_id]) evByMatch[ev.match_id] = [];
         evByMatch[ev.match_id].push({ event_type: ev.event_type, minute: ev.minute });
       });
 
-      const history: MatchHistory[] = (matches || [])
-        .filter(m => playedMatchIds.has(m.id))
-        .map(m => ({
-          match_id: m.id, opponent: m.opponent, is_home: m.is_home,
-          match_date: m.match_date, home_score: m.home_score,
-          away_score: m.away_score, status: m.status,
+      const history: MatchHistory[] = matches
+        .filter((m) => playedMatchIds.has(m.id))
+        .map((m) => ({
+          match_id: m.id,
+          opponent: m.opponent,
+          is_home: m.is_home,
+          match_date: m.match_date,
+          home_score: m.home_score,
+          away_score: m.away_score,
+          status: m.status,
           events: evByMatch[m.id] || [],
         }));
       setMatchHistory(history);
 
-      const { data: participations } = await supabase
+      const { data: participationsRaw } = await supabase
         .from("event_participants")
         .select("event_id, status, events!event_participants_event_id_fkey(title, starts_at)")
-        .eq("membership_id", membershipId) as any;
+        .eq("membership_id", membershipId);
 
-      const att: EventAttendance[] = (participations || []).map((p: any) => ({
-        event_id: p.event_id, title: p.events?.title || "Event",
-        starts_at: p.events?.starts_at || "", status: p.status,
+      const participations = (participationsRaw ?? []) as unknown as EventParticipationWithEvent[];
+      const att: EventAttendance[] = participations.map((p) => ({
+        event_id: p.event_id,
+        title: p.events?.title || "Event",
+        starts_at: p.events?.starts_at || "",
+        status: p.status,
       }));
-      att.sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime());
+      att.sort((a1, b1) => new Date(b1.starts_at).getTime() - new Date(a1.starts_at).getTime());
       setAttendance(att);
       setLoading(false);
     };

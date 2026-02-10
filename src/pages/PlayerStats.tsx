@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
 import logo from "@/assets/logo.png";
+import type { MembershipWithProfile } from "@/types/supabase";
 
 type PlayerStat = {
   membership_id: string;
@@ -100,24 +101,31 @@ const PlayerStats = () => {
         .select("membership_id, event_type")
         .in("match_id", matchIds);
 
-      const { data: members } = await supabase
+      const { data: membersRaw } = await supabase
         .from("club_memberships")
-        .select("id, profiles!club_memberships_user_id_fkey(display_name)")
-        .eq("club_id", clubId) as any;
+        .select(
+          "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_user_id_fkey(display_name)",
+        )
+        .eq("club_id", clubId);
 
+      const members = (membersRaw ?? []) as unknown as MembershipWithProfile[];
       const memberMap: Record<string, string> = {};
-      (members || []).forEach((m: any) => {
+      members.forEach((m) => {
         memberMap[m.id] = m.profiles?.display_name || "Unknown";
       });
 
       const agg: Record<string, PlayerStat> = {};
-      (events || []).forEach((ev: any) => {
+      const eventsTyped = (events ?? []) as Array<{ membership_id: string | null; event_type: string }>;
+      eventsTyped.forEach((ev) => {
         if (!ev.membership_id) return;
         if (!agg[ev.membership_id]) {
           agg[ev.membership_id] = {
             membership_id: ev.membership_id,
             display_name: memberMap[ev.membership_id] || "Unknown",
-            goals: 0, assists: 0, yellow_cards: 0, red_cards: 0,
+            goals: 0,
+            assists: 0,
+            yellow_cards: 0,
+            red_cards: 0,
           };
         }
         const s = agg[ev.membership_id];
