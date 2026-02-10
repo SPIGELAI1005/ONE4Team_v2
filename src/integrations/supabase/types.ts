@@ -679,6 +679,50 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          club_id: string
+          created_at: string
+          id: string
+          is_read: boolean
+          notification_type: string
+          reference_id: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          club_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          notification_type?: string
+          reference_id?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          club_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          notification_type?: string
+          reference_id?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
