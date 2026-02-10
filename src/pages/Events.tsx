@@ -14,18 +14,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
 import logo from "@/assets/logo.png";
+import type { EventRow, MembershipWithProfile, ParticipantWithMembershipProfile } from "@/types/supabase";
 
-type Event = {
-  id: string;
-  title: string;
-  description: string | null;
-  event_type: string;
-  location: string | null;
-  starts_at: string;
-  ends_at: string | null;
-  max_participants: number | null;
-  created_at: string;
-};
+type Event = EventRow;
 
 type Participant = {
   id: string;
@@ -35,11 +26,7 @@ type Participant = {
   profiles?: { display_name: string | null };
 };
 
-type Membership = {
-  id: string;
-  user_id: string;
-  profiles?: { display_name: string | null };
-};
+type Membership = MembershipWithProfile;
 
 const statusIcons: Record<string, React.ReactNode> = {
   confirmed: <CheckCircle2 className="w-3 h-3 text-primary" />,
@@ -89,16 +76,31 @@ const Events = () => {
   const openEventDetail = async (event: Event) => {
     setSelectedEvent(event);
     setLoadingDetail(true);
+
     const [partRes, memRes] = await Promise.all([
-      supabase.from("event_participants").select("*, club_memberships!event_participants_membership_id_fkey(user_id, profiles!club_memberships_user_id_fkey(display_name))").eq("event_id", event.id) as any,
-      supabase.from("club_memberships").select("id, user_id, profiles!club_memberships_user_id_fkey(display_name)").eq("club_id", clubId!) as any,
+      supabase
+        .from("event_participants")
+        .select(
+          "*, club_memberships!event_participants_membership_id_fkey(user_id, profiles!club_memberships_user_id_fkey(display_name))",
+        )
+        .eq("event_id", event.id),
+      supabase
+        .from("club_memberships")
+        .select("id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_user_id_fkey(display_name)")
+        .eq("club_id", clubId!),
     ]);
-    const parts = (partRes.data || []).map((p: any) => ({
-      ...p,
-      profiles: p.club_memberships?.profiles,
+
+    const rawParts = (partRes.data ?? []) as unknown as ParticipantWithMembershipProfile[];
+    const parts: Participant[] = rawParts.map((p) => ({
+      id: p.id,
+      event_id: p.event_id,
+      membership_id: p.membership_id,
+      status: p.status,
+      profiles: p.club_memberships?.profiles ?? undefined,
     }));
+
     setParticipants(parts);
-    setMembers((memRes.data || []) as Membership[]);
+    setMembers(((memRes.data ?? []) as unknown as Membership[]));
     setLoadingDetail(false);
   };
 
@@ -288,7 +290,7 @@ const Events = () => {
                     .filter(m => !participants.some(p => p.membership_id === m.id))
                     .map(m => (
                       <div key={m.id} className="flex items-center justify-between px-3 py-1.5 rounded-lg hover:bg-muted/50">
-                        <span className="text-sm text-foreground">{(m as any).profiles?.display_name || "Member"}</span>
+                        <span className="text-sm text-foreground">{m.profiles?.display_name || "Member"}</span>
                         <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] text-primary" onClick={() => handleInvite(m.id)}>
                           <Mail className="w-3 h-3 mr-1" /> Invite
                         </Button>
