@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useClubId } from "@/hooks/use-club-id";
+import type { MembershipWithProfile } from "@/types/supabase";
 
 type Combo = { players: string[]; wins: number; total: number; rate: number };
 
@@ -31,13 +32,19 @@ const TeamChemistry = () => {
       if (!lineups) return;
 
       // Get member names
-      const { data: members } = await supabase
+      const { data: membersRaw } = await supabase
         .from("club_memberships")
-        .select("id, profiles!club_memberships_user_id_fkey(display_name)")
-        .eq("club_id", clubId) as any;
+        .select(
+          "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_user_id_fkey(display_name)",
+        )
+        .eq("club_id", clubId);
+
+      const members = (membersRaw ?? []) as unknown as MembershipWithProfile[];
 
       const nameMap: Record<string, string> = {};
-      (members || []).forEach((m: any) => { nameMap[m.id] = m.profiles?.display_name || "Player"; });
+      members.forEach((m) => {
+        nameMap[m.id] = m.profiles?.display_name || "Player";
+      });
 
       // Match results
       const matchResult: Record<string, boolean> = {};

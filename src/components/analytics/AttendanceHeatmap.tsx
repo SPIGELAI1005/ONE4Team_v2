@@ -4,6 +4,7 @@ import { Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useClubId } from "@/hooks/use-club-id";
 import { useAuth } from "@/contexts/AuthContext";
+import type { AttendanceParticipationRow, LineupAppearanceRow } from "@/types/analytics";
 
 const AttendanceHeatmap = ({ membershipId }: { membershipId?: string }) => {
   const { clubId } = useClubId();
@@ -22,28 +23,35 @@ const AttendanceHeatmap = ({ membershipId }: { membershipId?: string }) => {
       if (!mid) return;
 
       // Get training attendance from event_participants
-      const { data: participations } = await supabase
+      const { data: participationsRaw } = await supabase
         .from("event_participants")
         .select("status, events!event_participants_event_id_fkey(starts_at)")
-        .eq("membership_id", mid) as any;
+        .eq("membership_id", mid);
 
       // Get match appearances
-      const { data: lineups } = await supabase
+      const { data: lineupsRaw } = await supabase
         .from("match_lineups")
         .select("match_id, matches!match_lineups_match_id_fkey(match_date)")
-        .eq("membership_id", mid) as any;
+        .eq("membership_id", mid);
+
+      const participations = (participationsRaw ?? []) as unknown as AttendanceParticipationRow[];
+      const lineups = (lineupsRaw ?? []) as unknown as LineupAppearanceRow[];
 
       const dateMap: Record<string, number> = {};
 
-      (participations || []).forEach((p: any) => {
+      participations.forEach((p) => {
         if (p.status === "confirmed" || p.status === "attended") {
-          const d = p.events?.starts_at ? new Date(p.events.starts_at).toISOString().slice(0, 10) : null;
+          const d = p.events?.starts_at
+            ? new Date(p.events.starts_at).toISOString().slice(0, 10)
+            : null;
           if (d) dateMap[d] = (dateMap[d] || 0) + 1;
         }
       });
 
-      (lineups || []).forEach((l: any) => {
-        const d = l.matches?.match_date ? new Date(l.matches.match_date).toISOString().slice(0, 10) : null;
+      lineups.forEach((l) => {
+        const d = l.matches?.match_date
+          ? new Date(l.matches.match_date).toISOString().slice(0, 10)
+          : null;
         if (d) dateMap[d] = (dateMap[d] || 0) + 1;
       });
 

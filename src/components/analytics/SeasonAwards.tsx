@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useClubId } from "@/hooks/use-club-id";
 import { useToast } from "@/hooks/use-toast";
+import type { MembershipWithProfile } from "@/types/supabase";
 
 type AwardDef = { type: string; name: string; icon: string; description: string };
 type AwardResult = { type: string; name: string; icon: string; winner: string; membershipId: string; value: string };
@@ -35,13 +36,19 @@ const SeasonAwards = () => {
       .from("match_events").select("membership_id, event_type").in("match_id", matchIds);
     const { data: lineups } = await supabase
       .from("match_lineups").select("membership_id").in("match_id", matchIds);
-    const { data: members } = await supabase
+    const { data: membersRaw } = await supabase
       .from("club_memberships")
-      .select("id, profiles!club_memberships_user_id_fkey(display_name)")
-      .eq("club_id", clubId) as any;
+      .select(
+        "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_user_id_fkey(display_name)",
+      )
+      .eq("club_id", clubId);
+
+    const members = (membersRaw ?? []) as unknown as MembershipWithProfile[];
 
     const nameMap: Record<string, string> = {};
-    (members || []).forEach((m: any) => { nameMap[m.id] = m.profiles?.display_name || "Player"; });
+    members.forEach((m) => {
+      nameMap[m.id] = m.profiles?.display_name || "Player";
+    });
 
     // Aggregate stats per player
     const stats: Record<string, { goals: number; assists: number; appearances: number }> = {};

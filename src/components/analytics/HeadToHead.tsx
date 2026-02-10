@@ -4,8 +4,9 @@ import { Users } from "lucide-react";
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Legend } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useClubId } from "@/hooks/use-club-id";
+import type { MembershipOption, MatchEventLite } from "@/types/analytics";
 
-type Member = { id: string; name: string };
+type Member = MembershipOption;
 
 const HeadToHead = () => {
   const { clubId } = useClubId();
@@ -19,9 +20,13 @@ const HeadToHead = () => {
     const fetch = async () => {
       const { data } = await supabase
         .from("club_memberships")
-        .select("id, profiles!club_memberships_user_id_fkey(display_name)")
-        .eq("club_id", clubId) as any;
-      setMembers((data || []).map((m: any) => ({ id: m.id, name: m.profiles?.display_name || "Player" })));
+        .select(
+          "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_user_id_fkey(display_name)",
+        )
+        .eq("club_id", clubId);
+
+      const members = (data ?? []) as unknown as Array<{ id: string; profiles?: { display_name: string | null } | null }>;
+      setMembers(members.map((m) => ({ id: m.id, name: m.profiles?.display_name || "Player" })));
     };
     fetch();
   }, [clubId]);
