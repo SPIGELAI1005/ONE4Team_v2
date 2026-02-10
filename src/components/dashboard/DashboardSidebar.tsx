@@ -2,7 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   LayoutDashboard, Users, Calendar, Trophy, CreditCard,
   MessageSquare, Briefcase, ShoppingBag, Globe, Bot,
-  Settings, LogOut, ChevronLeft, ChevronRight
+  Settings, LogOut, ChevronLeft, ChevronRight, CalendarDays, Swords
 } from "lucide-react";
 import { useState } from "react";
 import logo from "@/assets/logo.png";
@@ -14,7 +14,8 @@ const roleMenus: Record<string, NavItem[]> = {
     { icon: LayoutDashboard, label: "Dashboard", id: "overview" },
     { icon: Users, label: "Members", id: "members", route: "/members" },
     { icon: Calendar, label: "Training", id: "training", route: "/teams" },
-    { icon: Trophy, label: "Matches", id: "matches" },
+    { icon: Trophy, label: "Matches", id: "matches", route: "/matches" },
+    { icon: CalendarDays, label: "Events", id: "events", route: "/events" },
     { icon: CreditCard, label: "Payments", id: "payments", route: "/payments" },
     { icon: MessageSquare, label: "Messages", id: "messages", route: "/communication" },
     { icon: Briefcase, label: "Partners", id: "partners" },
@@ -27,14 +28,16 @@ const roleMenus: Record<string, NavItem[]> = {
     { icon: LayoutDashboard, label: "Dashboard", id: "overview" },
     { icon: Users, label: "My Teams", id: "teams", route: "/teams" },
     { icon: Calendar, label: "Training", id: "training", route: "/teams" },
-    { icon: Trophy, label: "Matches", id: "matches" },
+    { icon: Trophy, label: "Matches", id: "matches", route: "/matches" },
+    { icon: CalendarDays, label: "Events", id: "events", route: "/events" },
     { icon: MessageSquare, label: "Messages", id: "messages", route: "/communication" },
     { icon: Bot, label: "Co-Trainer", id: "ai" },
   ],
   player: [
     { icon: LayoutDashboard, label: "Dashboard", id: "overview" },
     { icon: Calendar, label: "Schedule", id: "schedule" },
-    { icon: Trophy, label: "Matches", id: "matches" },
+    { icon: Trophy, label: "Matches", id: "matches", route: "/matches" },
+    { icon: CalendarDays, label: "Events", id: "events", route: "/events" },
     { icon: MessageSquare, label: "Messages", id: "messages" },
     { icon: ShoppingBag, label: "Shop", id: "shop" },
   ],

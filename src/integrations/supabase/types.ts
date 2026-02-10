@@ -148,6 +148,312 @@ export type Database = {
         }
         Relationships: []
       }
+      competitions: {
+        Row: {
+          club_id: string
+          competition_type: string
+          created_at: string
+          id: string
+          name: string
+          season: string | null
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          competition_type?: string
+          created_at?: string
+          id?: string
+          name: string
+          season?: string | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          competition_type?: string
+          created_at?: string
+          id?: string
+          name?: string
+          season?: string | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitions_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_participants: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          membership_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          membership_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          membership_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_participants_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_participants_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "club_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          club_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          ends_at: string | null
+          event_type: string
+          id: string
+          location: string | null
+          max_participants: number | null
+          starts_at: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          ends_at?: string | null
+          event_type?: string
+          id?: string
+          location?: string | null
+          max_participants?: number | null
+          starts_at: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          ends_at?: string | null
+          event_type?: string
+          id?: string
+          location?: string | null
+          max_participants?: number | null
+          starts_at?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          match_id: string
+          membership_id: string | null
+          minute: number | null
+          notes: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          match_id: string
+          membership_id?: string | null
+          minute?: number | null
+          notes?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          match_id?: string
+          membership_id?: string | null
+          minute?: number | null
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_events_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "club_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_lineups: {
+        Row: {
+          created_at: string
+          id: string
+          is_starter: boolean
+          jersey_number: number | null
+          match_id: string
+          membership_id: string
+          position: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_starter?: boolean
+          jersey_number?: number | null
+          match_id: string
+          membership_id: string
+          position?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_starter?: boolean
+          jersey_number?: number | null
+          match_id?: string
+          membership_id?: string
+          position?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_lineups_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_lineups_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "club_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      matches: {
+        Row: {
+          away_score: number | null
+          club_id: string
+          competition_id: string | null
+          created_at: string
+          home_score: number | null
+          id: string
+          is_home: boolean
+          location: string | null
+          match_date: string
+          notes: string | null
+          opponent: string
+          status: string
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          away_score?: number | null
+          club_id: string
+          competition_id?: string | null
+          created_at?: string
+          home_score?: number | null
+          id?: string
+          is_home?: boolean
+          location?: string | null
+          match_date: string
+          notes?: string | null
+          opponent: string
+          status?: string
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          away_score?: number | null
+          club_id?: string
+          competition_id?: string | null
+          created_at?: string
+          home_score?: number | null
+          id?: string
+          is_home?: boolean
+          location?: string | null
+          match_date?: string
+          notes?: string | null
+          opponent?: string
+          status?: string
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       membership_fee_types: {
         Row: {
           amount: number
