@@ -8,6 +8,7 @@ import AnalyticsWidgets from "@/components/dashboard/AnalyticsWidgets";
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
 import NotificationBell from "@/components/dashboard/NotificationBell";
 import LiveMatchTicker from "@/components/dashboard/LiveMatchTicker";
+import AdminNotificationSender from "@/components/dashboard/AdminNotificationSender";
 import SeasonProgressionChart from "@/components/analytics/SeasonProgressionChart";
 import TeamChemistry from "@/components/analytics/TeamChemistry";
 import HeadToHead from "@/components/analytics/HeadToHead";
@@ -150,6 +151,9 @@ const DashboardContent = () => {
 
         {/* Season Awards */}
         <SeasonAwards />
+
+        {/* Admin Notification Sender - only for admin role */}
+        {role === "admin" && <AdminNotificationSender />}
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Upcoming events */}
