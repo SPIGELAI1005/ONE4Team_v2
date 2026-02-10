@@ -131,8 +131,10 @@ const LiveMatchTicker = () => {
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl bg-gradient-to-r from-accent/10 via-card to-accent/10 border border-accent/20 overflow-hidden"
+      transition={{ type: "spring", stiffness: 300, damping: 25 }}
+      className="rounded-2xl glass-card overflow-hidden relative"
     >
+      <div className="absolute inset-0 bg-gradient-to-r from-accent/5 via-transparent to-accent/5 pointer-events-none" />
       <div className="flex items-center gap-3 px-4 py-3">
         {/* Live indicator */}
         <div className="flex items-center gap-1.5 shrink-0">
