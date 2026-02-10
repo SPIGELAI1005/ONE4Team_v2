@@ -158,13 +158,13 @@ const PlayerStats = () => {
       {/* Filters */}
       {(seasons.length > 0 || competitions.length > 0 || teams.length > 0) && (
         <div className="border-b border-border">
-          <div className="container mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
-            <Filter className="w-4 h-4 text-muted-foreground" />
+          <div className="container mx-auto px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+            <Filter className="w-4 h-4 text-muted-foreground hidden sm:block" />
             {teams.length > 0 && (
               <select
                 value={selectedTeamId}
                 onChange={e => setSelectedTeamId(e.target.value)}
-                className="h-8 rounded-md border border-border bg-background px-3 text-xs text-foreground"
+                className="w-full sm:w-auto h-8 rounded-md border border-border bg-background px-3 text-xs text-foreground"
               >
                 <option value="all">All Teams</option>
                 {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -174,7 +174,7 @@ const PlayerStats = () => {
               <select
                 value={selectedSeason}
                 onChange={e => { setSelectedSeason(e.target.value); setSelectedCompId("all"); }}
-                className="h-8 rounded-md border border-border bg-background px-3 text-xs text-foreground"
+                className="w-full sm:w-auto h-8 rounded-md border border-border bg-background px-3 text-xs text-foreground"
               >
                 <option value="all">All Seasons</option>
                 {seasons.map(s => <option key={s} value={s}>{s}</option>)}
@@ -183,7 +183,7 @@ const PlayerStats = () => {
             <select
               value={selectedCompId}
               onChange={e => { setSelectedCompId(e.target.value); if (e.target.value !== "all") setSelectedSeason("all"); }}
-              className="h-8 rounded-md border border-border bg-background px-3 text-xs text-foreground"
+              className="w-full sm:w-auto h-8 rounded-md border border-border bg-background px-3 text-xs text-foreground"
             >
               <option value="all">All Competitions</option>
               {competitions
