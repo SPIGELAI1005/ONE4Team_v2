@@ -15,6 +15,10 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
 import logo from "@/assets/logo.png";
 import LineupExport from "@/components/matches/LineupExport";
+import MatchVoting from "@/components/matches/MatchVoting";
+import MatchTimeline from "@/components/matches/MatchTimeline";
+import FormStreak from "@/components/matches/FormStreak";
+import AIMatchAnalysis from "@/components/ai/AIMatchAnalysis";
 
 type Team = { id: string; name: string };
 type Competition = { id: string; name: string; season: string | null; competition_type: string; team_id: string | null };
@@ -263,6 +267,12 @@ const Matches = () => {
           <div className="text-center py-20 text-muted-foreground">No club found.</div>
         ) : tab === "matches" ? (
           <div className="max-w-3xl mx-auto space-y-4">
+            {/* Form Streak */}
+            {matches.length > 0 && (
+              <div className="rounded-xl bg-card border border-border p-4">
+                <FormStreak matches={matches} count={10} />
+              </div>
+            )}
             {matches.length === 0 ? (
               <div className="rounded-xl bg-card border border-border p-8 text-center text-muted-foreground text-sm">No matches scheduled.</div>
             ) : matches.map((m, i) => (
@@ -595,6 +605,29 @@ const Matches = () => {
                     </div>
                   </>
                 )}
+
+                {/* Match Timeline */}
+                <MatchTimeline events={matchEvents} getMemberName={(mid) => {
+                  const player = members.find(m => m.id === mid);
+                  return (player as any)?.profiles?.display_name || "Player";
+                }} />
+
+                {/* Player of the Match Voting */}
+                <MatchVoting matchId={selectedMatch.id} matchStatus={selectedMatch.status} members={members} />
+
+                {/* AI Match Analysis */}
+                <AIMatchAnalysis
+                  matchData={{
+                    opponent: selectedMatch.opponent, is_home: selectedMatch.is_home,
+                    date: selectedMatch.match_date, home_score: selectedMatch.home_score,
+                    away_score: selectedMatch.away_score,
+                    events: matchEvents.map(e => ({
+                      type: e.event_type, minute: e.minute,
+                      player: (members.find(m => m.id === e.membership_id) as any)?.profiles?.display_name || null,
+                    })),
+                  }}
+                  matchStatus={selectedMatch.status}
+                />
               </>
             )}
           </motion.div>
