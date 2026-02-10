@@ -1,26 +1,39 @@
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight, Shield, Users, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useRef } from "react";
 import logo from "@/assets/logo.png";
 import heroBg from "@/assets/hero-bg.jpg";
 
 const HeroSection = () => {
   const navigate = useNavigate();
+  const ref = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
+
+  const bgY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
+  const contentY = useTransform(scrollYProgress, [0, 1], ["0%", "15%"]);
+  const opacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const glowScale = useTransform(scrollYProgress, [0, 0.5], [1, 1.5]);
+  const glowOpacity = useTransform(scrollYProgress, [0, 0.6], [0.08, 0]);
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0">
+    <section ref={ref} className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Parallax Background */}
+      <motion.div className="absolute inset-0" style={{ y: bgY }}>
         <img src={heroBg} alt="" className="w-full h-full object-cover opacity-30" />
         <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/50 to-background" />
         <div className="absolute inset-0 bg-gradient-to-r from-background/70 via-transparent to-background/70" />
-        {/* Ambient glow */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/8 rounded-full blur-[120px]" />
-      </div>
+      </motion.div>
+
+      {/* Scroll-linked ambient glow */}
+      <motion.div
+        className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary rounded-full blur-[120px] pointer-events-none"
+        style={{ scale: glowScale, opacity: glowOpacity }}
+      />
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 py-20 text-center">
+      <motion.div className="relative z-10 container mx-auto px-4 py-20 text-center" style={{ y: contentY, opacity }}>
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -109,7 +122,7 @@ const HeroSection = () => {
             </motion.div>
           ))}
         </motion.div>
-      </div>
+      </motion.div>
     </section>
   );
 };

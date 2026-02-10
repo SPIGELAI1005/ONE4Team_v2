@@ -1,4 +1,5 @@
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef } from "react";
 import {
   Users, Calendar, Trophy, CreditCard, MessageSquare,
   Briefcase, ShoppingBag, Bot, BarChart3, Globe
@@ -17,16 +18,39 @@ const features = [
   { icon: BarChart3, title: "Smart Dashboards", desc: "Role-specific KPIs, insights, and AI-powered recommendations." },
 ];
 
-const FeaturesSection = () => {
+const FeatureCard = ({ feature, index }: { feature: typeof features[0]; index: number }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const y = useTransform(scrollYProgress, [0, 1], [40, -20]);
+  const opacity = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [0, 1, 1, 0.8]);
+
   return (
-    <section className="py-24 relative">
+    <motion.div
+      ref={ref}
+      style={{ y, opacity }}
+      whileTap={{ scale: 0.97 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      className="group p-5 rounded-2xl glass-card hover:border-primary/20 transition-all duration-300 hover:shadow-gold cursor-default"
+    >
+      <div className="w-10 h-10 rounded-xl bg-gradient-gold-subtle flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+        <feature.icon className="w-5 h-5 text-primary" strokeWidth={1.5} />
+      </div>
+      <h3 className="font-display font-semibold text-foreground mb-1 text-sm">{feature.title}</h3>
+      <p className="text-muted-foreground text-xs leading-relaxed">{feature.desc}</p>
+    </motion.div>
+  );
+};
+
+const FeaturesSection = () => {
+  const sectionRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start end", "center center"] });
+  const headingY = useTransform(scrollYProgress, [0, 1], [60, 0]);
+  const headingOpacity = useTransform(scrollYProgress, [0, 0.5], [0, 1]);
+
+  return (
+    <section ref={sectionRef} className="py-24 relative">
       <div className="container mx-auto px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
+        <motion.div style={{ y: headingY, opacity: headingOpacity }} className="text-center mb-16">
           <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">
             Everything your club needs.{" "}
             <span className="text-gradient-gold">One platform.</span>
@@ -38,20 +62,7 @@ const FeaturesSection = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {features.map((feature, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.05 }}
-              className="group p-5 rounded-xl bg-card border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-gold"
-            >
-              <div className="w-10 h-10 rounded-lg bg-gradient-gold-subtle flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <feature.icon className="w-5 h-5 text-primary" />
-              </div>
-              <h3 className="font-display font-semibold text-foreground mb-1 text-sm">{feature.title}</h3>
-              <p className="text-muted-foreground text-xs leading-relaxed">{feature.desc}</p>
-            </motion.div>
+            <FeatureCard key={i} feature={feature} index={i} />
           ))}
         </div>
       </div>
