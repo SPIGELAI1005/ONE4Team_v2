@@ -4,12 +4,17 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Users, Briefcase, ArrowRight, ArrowLeft,
   Shield, Dumbbell, UserCheck, Heart, Crown, Wrench,
-  HandCoins, Truck, Scale, Sparkles
+  HandCoins, Truck, Scale, Sparkles, Building2, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 
 type World = "club" | "partner" | null;
+type Step = "world" | "role" | "create-club";
 
 const clubRoles = [
   { id: "admin", label: "Club Admin", icon: Crown, desc: "Full club management access" },
@@ -23,7 +28,7 @@ const clubRoles = [
 const partnerRoles = [
   { id: "sponsor", label: "Sponsor", icon: HandCoins, desc: "Manage sponsorship & visibility" },
   { id: "supplier", label: "Supplier", icon: Truck, desc: "Provide goods & equipment" },
-  { id: "service", label: "Service Provider", icon: Wrench, desc: "Offer services to clubs" },
+  { id: "service_provider", label: "Service Provider", icon: Wrench, desc: "Offer services to clubs" },
   { id: "consultant", label: "Consultant", icon: Scale, desc: "Finance, tax, or legal advisory" },
 ];
 
@@ -32,13 +37,83 @@ const Onboarding = () => {
   const initialWorld = searchParams.get("world") as World;
   const [world, setWorld] = useState<World>(initialWorld);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [step, setStep] = useState<Step>(initialWorld ? "role" : "world");
+  const [clubName, setClubName] = useState("");
+  const [clubDescription, setClubDescription] = useState("");
+  const [creating, setCreating] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   const roles = world === "club" ? clubRoles : world === "partner" ? partnerRoles : [];
 
+  const handleSelectWorld = (w: World) => {
+    setWorld(w);
+    setStep("role");
+    setSelectedRole(null);
+  };
+
+  const handleBack = () => {
+    if (step === "create-club") {
+      setStep("role");
+    } else if (step === "role") {
+      setStep("world");
+      setWorld(null);
+      setSelectedRole(null);
+    }
+  };
+
   const handleContinue = () => {
-    if (selectedRole) {
-      navigate(`/dashboard/${selectedRole}`);
+    if (!selectedRole) return;
+
+    // If admin is selected, show Create Club step
+    if (selectedRole === "admin" && user) {
+      setStep("create-club");
+      return;
+    }
+
+    navigate(`/dashboard/${selectedRole}`);
+  };
+
+  const handleCreateClub = async () => {
+    if (!clubName.trim() || !user) return;
+
+    setCreating(true);
+    try {
+      const slug = clubName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+      // Create club
+      const { data: club, error: clubError } = await supabase
+        .from("clubs")
+        .insert({
+          name: clubName.trim(),
+          slug: slug || `club-${Date.now()}`,
+          description: clubDescription.trim() || null,
+          is_public: true,
+        })
+        .select("id")
+        .single();
+
+      if (clubError) throw clubError;
+
+      // Create admin membership
+      const { error: memberError } = await supabase
+        .from("club_memberships")
+        .insert({
+          club_id: club.id,
+          user_id: user.id,
+          role: "admin" as any,
+          status: "active",
+        });
+
+      if (memberError) throw memberError;
+
+      toast({ title: "Club created!", description: `${clubName} is ready to go.` });
+      navigate("/dashboard/admin");
+    } catch (err: any) {
+      toast({ title: "Error creating club", description: err.message, variant: "destructive" });
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -53,8 +128,8 @@ const Onboarding = () => {
               One<span className="text-gradient-gold">4</span>Team
             </span>
           </div>
-          {world && (
-            <Button variant="ghost" size="sm" onClick={() => { setWorld(null); setSelectedRole(null); }}>
+          {step !== "world" && (
+            <Button variant="ghost" size="sm" onClick={handleBack}>
               <ArrowLeft className="w-4 h-4 mr-1" /> Back
             </Button>
           )}
@@ -63,8 +138,7 @@ const Onboarding = () => {
 
       <div className="flex-1 flex items-center justify-center p-4">
         <AnimatePresence mode="wait">
-          {!world ? (
-            /* World Selection */
+          {step === "world" && (
             <motion.div
               key="world-select"
               initial={{ opacity: 0, y: 20 }}
@@ -83,7 +157,7 @@ const Onboarding = () => {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setWorld("club")}
+                  onClick={() => handleSelectWorld("club")}
                   className="text-left p-8 rounded-2xl border border-border bg-card hover:border-primary/40 transition-all duration-300 hover:shadow-gold group"
                 >
                   <div className="w-14 h-14 rounded-xl bg-gradient-gold flex items-center justify-center mb-5">
@@ -99,7 +173,7 @@ const Onboarding = () => {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setWorld("partner")}
+                  onClick={() => handleSelectWorld("partner")}
                   className="text-left p-8 rounded-2xl border border-border bg-card hover:border-accent/40 transition-all duration-300 hover:shadow-[0_0_30px_hsl(0_65%_50%/0.15)] group"
                 >
                   <div className="w-14 h-14 rounded-xl bg-accent flex items-center justify-center mb-5">
@@ -113,8 +187,9 @@ const Onboarding = () => {
                 </motion.button>
               </div>
             </motion.div>
-          ) : (
-            /* Role Selection */
+          )}
+
+          {step === "role" && (
             <motion.div
               key="role-select"
               initial={{ opacity: 0, y: 20 }}
@@ -160,7 +235,80 @@ const Onboarding = () => {
                   className="bg-gradient-gold text-primary-foreground font-semibold px-8 hover:opacity-90 disabled:opacity-40"
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Continue to Dashboard
+                  {selectedRole === "admin" && user ? "Set Up Your Club" : "Continue to Dashboard"}
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === "create-club" && (
+            <motion.div
+              key="create-club"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="w-full max-w-lg"
+            >
+              <div className="text-center mb-10">
+                <div className="w-14 h-14 rounded-xl bg-gradient-gold flex items-center justify-center mx-auto mb-4">
+                  <Building2 className="w-7 h-7 text-primary-foreground" />
+                </div>
+                <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">
+                  Create your <span className="text-gradient-gold">club</span>
+                </h1>
+                <p className="text-muted-foreground">Set up your club's home on ONE4Team.</p>
+              </div>
+
+              <div className="rounded-2xl bg-card border border-border p-6 space-y-5">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Club Name *</label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="e.g. FC Riverside"
+                      value={clubName}
+                      onChange={(e) => setClubName(e.target.value)}
+                      className="pl-9 bg-background border-border"
+                      maxLength={100}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Description (optional)</label>
+                  <textarea
+                    placeholder="Tell people about your club..."
+                    value={clubDescription}
+                    onChange={(e) => setClubDescription(e.target.value)}
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                    rows={3}
+                    maxLength={500}
+                  />
+                </div>
+
+                {clubName.trim() && (
+                  <div className="p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">Club URL: </span>
+                    one4team.com/club/{clubName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}
+                  </div>
+                )}
+
+                <Button
+                  onClick={handleCreateClub}
+                  disabled={!clubName.trim() || creating}
+                  className="w-full bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90 disabled:opacity-40"
+                  size="lg"
+                >
+                  {creating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" /> Create Club & Enter Dashboard
+                    </>
+                  )}
                 </Button>
               </div>
             </motion.div>
