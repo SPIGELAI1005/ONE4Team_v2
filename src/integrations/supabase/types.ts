@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          author_id: string
+          club_id: string
+          content: string
+          created_at: string
+          id: string
+          priority: string | null
+          team_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          club_id: string
+          content: string
+          created_at?: string
+          id?: string
+          priority?: string | null
+          team_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          club_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          priority?: string | null
+          team_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcements_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_memberships: {
         Row: {
           age_group: string | null
@@ -97,6 +148,162 @@ export type Database = {
         }
         Relationships: []
       }
+      membership_fee_types: {
+        Row: {
+          amount: number
+          club_id: string
+          created_at: string
+          currency: string | null
+          description: string | null
+          id: string
+          interval: string | null
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          amount: number
+          club_id: string
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          id?: string
+          interval?: string | null
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          amount?: number
+          club_id?: string
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          id?: string
+          interval?: string | null
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_fee_types_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          club_id: string
+          content: string
+          created_at: string
+          id: string
+          sender_id: string
+          team_id: string | null
+        }
+        Insert: {
+          club_id: string
+          content: string
+          created_at?: string
+          id?: string
+          sender_id: string
+          team_id?: string | null
+        }
+        Update: {
+          club_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          club_id: string
+          created_at: string
+          currency: string | null
+          due_date: string
+          fee_type_id: string | null
+          id: string
+          membership_id: string
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          club_id: string
+          created_at?: string
+          currency?: string | null
+          due_date: string
+          fee_type_id?: string | null
+          id?: string
+          membership_id: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          club_id?: string
+          created_at?: string
+          currency?: string | null
+          due_date?: string
+          fee_type_id?: string | null
+          id?: string
+          membership_id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_fee_type_id_fkey"
+            columns: ["fee_type_id"]
+            isOneToOne: false
+            referencedRelation: "membership_fee_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "club_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -126,6 +333,146 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      team_players: {
+        Row: {
+          created_at: string
+          id: string
+          jersey_number: number | null
+          membership_id: string
+          team_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          jersey_number?: number | null
+          membership_id: string
+          team_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          jersey_number?: number | null
+          membership_id?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_players_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "club_memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_players_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          age_group: string | null
+          club_id: string
+          coach_name: string | null
+          created_at: string
+          id: string
+          name: string
+          sport: string | null
+          updated_at: string
+        }
+        Insert: {
+          age_group?: string | null
+          club_id: string
+          coach_name?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          sport?: string | null
+          updated_at?: string
+        }
+        Update: {
+          age_group?: string | null
+          club_id?: string
+          coach_name?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          sport?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_sessions: {
+        Row: {
+          club_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          ends_at: string
+          id: string
+          location: string | null
+          recurring: string | null
+          starts_at: string
+          team_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at: string
+          id?: string
+          location?: string | null
+          recurring?: string | null
+          starts_at: string
+          team_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string
+          id?: string
+          location?: string | null
+          recurring?: string | null
+          starts_at?: string
+          team_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_sessions_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_sessions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

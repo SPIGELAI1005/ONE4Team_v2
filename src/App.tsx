@@ -10,6 +10,9 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import ClubPage from "./pages/ClubPage";
 import Members from "./pages/Members";
+import Teams from "./pages/Teams";
+import Communication from "./pages/Communication";
+import Payments from "./pages/Payments";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +31,9 @@ const App = () => (
             <Route path="/dashboard/:role" element={<Dashboard />} />
             <Route path="/club/:clubSlug" element={<ClubPage />} />
             <Route path="/members" element={<Members />} />
+            <Route path="/teams" element={<Teams />} />
+            <Route path="/communication" element={<Communication />} />
+            <Route path="/payments" element={<Payments />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

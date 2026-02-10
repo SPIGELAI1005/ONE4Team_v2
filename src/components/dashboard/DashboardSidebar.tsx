@@ -7,16 +7,16 @@ import {
 import { useState } from "react";
 import logo from "@/assets/logo.png";
 
-type NavItem = { icon: React.ElementType; label: string; id: string };
+type NavItem = { icon: React.ElementType; label: string; id: string; route?: string };
 
 const roleMenus: Record<string, NavItem[]> = {
   admin: [
     { icon: LayoutDashboard, label: "Dashboard", id: "overview" },
-    { icon: Users, label: "Members", id: "members" },
-    { icon: Calendar, label: "Training", id: "training" },
+    { icon: Users, label: "Members", id: "members", route: "/members" },
+    { icon: Calendar, label: "Training", id: "training", route: "/teams" },
     { icon: Trophy, label: "Matches", id: "matches" },
-    { icon: CreditCard, label: "Payments", id: "payments" },
-    { icon: MessageSquare, label: "Messages", id: "messages" },
+    { icon: CreditCard, label: "Payments", id: "payments", route: "/payments" },
+    { icon: MessageSquare, label: "Messages", id: "messages", route: "/communication" },
     { icon: Briefcase, label: "Partners", id: "partners" },
     { icon: ShoppingBag, label: "Shop", id: "shop" },
     { icon: Globe, label: "Club Page", id: "clubpage" },
@@ -25,10 +25,10 @@ const roleMenus: Record<string, NavItem[]> = {
   ],
   trainer: [
     { icon: LayoutDashboard, label: "Dashboard", id: "overview" },
-    { icon: Users, label: "My Teams", id: "teams" },
-    { icon: Calendar, label: "Training", id: "training" },
+    { icon: Users, label: "My Teams", id: "teams", route: "/teams" },
+    { icon: Calendar, label: "Training", id: "training", route: "/teams" },
     { icon: Trophy, label: "Matches", id: "matches" },
-    { icon: MessageSquare, label: "Messages", id: "messages" },
+    { icon: MessageSquare, label: "Messages", id: "messages", route: "/communication" },
     { icon: Bot, label: "Co-Trainer", id: "ai" },
   ],
   player: [
@@ -107,7 +107,10 @@ const DashboardSidebar = () => {
         {items.map((item) => (
           <button
             key={item.id}
-            onClick={() => setActive(item.id)}
+            onClick={() => {
+              setActive(item.id);
+              if (item.route) navigate(item.route);
+            }}
             className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
               active === item.id
                 ? "text-sidebar-primary bg-sidebar-accent border-r-2 border-sidebar-primary"
