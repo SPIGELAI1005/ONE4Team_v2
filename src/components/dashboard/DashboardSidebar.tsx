@@ -83,7 +83,7 @@ const DashboardSidebar = () => {
   const roleName = role ? role.charAt(0).toUpperCase() + role.slice(1) : "User";
 
   return (
-    <aside className={`h-screen glass-sidebar flex flex-col transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] ${collapsed ? "w-[68px]" : "w-60"}`}>
+    <aside className={`h-screen glass-sidebar flex flex-col transition-all duration-300 ease-in-out ${collapsed ? "w-[68px]" : "w-60"}`}>
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-4" style={{ borderBottom: '0.5px solid hsl(0 0% 100% / 0.06)' }}>
         {!collapsed && (
