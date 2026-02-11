@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Activity, Trophy, Clock, MapPin, RefreshCw } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
+import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 // logo is rendered by AppHeader
 
@@ -21,59 +22,92 @@ type LiveMatch = {
 };
 
 const LiveScores = () => {
+  const { user } = useAuth();
+  const [clubIds, setClubIds] = useState<string[]>([]);
   const [matches, setMatches] = useState<LiveMatch[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  const fetchMatches = async () => {
+  const fetchMatches = useCallback(async (ids = clubIds) => {
+    if (!user) return;
     setLoading(true);
+
+    if (!ids.length) {
+      setMatches([]);
+      setLastUpdated(new Date());
+      setLoading(false);
+      return;
+    }
+
     const { data } = await supabase
       .from("matches")
       .select("id, opponent, is_home, home_score, away_score, match_date, status, location, club_id, team_id, clubs(name, logo_url, primary_color), teams(name)")
       .eq("status", "in_progress")
+      .in("club_id", ids)
       .order("match_date", { ascending: true });
 
     if (data) setMatches(data as unknown as LiveMatch[]);
     setLastUpdated(new Date());
     setLoading(false);
-  };
+  }, [clubIds, user]);
 
   useEffect(() => {
-    fetchMatches();
+    const run = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("club_memberships")
+        .select("club_id")
+        .eq("user_id", user.id)
+        .eq("status", "active");
+      const ids = Array.from(new Set((data || []).map((r) => r.club_id)));
+      setClubIds(ids);
+      await fetchMatches(ids);
 
-    // Subscribe to real-time updates
-    const channel = supabase
-      .channel("public-live-scores")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "matches" },
-        (payload) => {
-          const updated = payload.new as LiveMatch;
-          if (payload.eventType === "UPDATE") {
-            setMatches((prev) => {
-              if (updated.status === "in_progress") {
-                const exists = prev.find((m) => m.id === updated.id);
-                if (exists) {
-                  return prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m));
-                }
-                // Refetch to get joins
-                fetchMatches();
-                return prev;
+      // Subscribe to real-time updates (scoped)
+      const channels = ids.map((cid) =>
+        supabase
+          .channel(`live-scores-${cid}`)
+          .on(
+            "postgres_changes",
+            { event: "*", schema: "public", table: "matches", filter: `club_id=eq.${cid}` },
+            (payload) => {
+              const updated = payload.new as LiveMatch;
+              if (payload.eventType === "UPDATE") {
+                setMatches((prev) => {
+                  if (updated.status === "in_progress") {
+                    const exists = prev.find((m) => m.id === updated.id);
+                    if (exists) {
+                      return prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m));
+                    }
+                    // Refetch to get joins
+                    fetchMatches(ids);
+                    return prev;
+                  }
+                  return prev.filter((m) => m.id !== updated.id);
+                });
+                setLastUpdated(new Date());
+              } else if (payload.eventType === "INSERT" && updated.status === "in_progress") {
+                fetchMatches(ids);
               }
-              return prev.filter((m) => m.id !== updated.id);
-            });
-            setLastUpdated(new Date());
-          } else if (payload.eventType === "INSERT" && updated.status === "in_progress") {
-            fetchMatches();
-          }
-        }
-      )
-      .subscribe();
+            }
+          )
+          .subscribe()
+      );
+
+      return () => {
+        channels.forEach((ch) => supabase.removeChannel(ch));
+      };
+    };
+
+    let cleanup: undefined | (() => void);
+    void run().then((c) => {
+      cleanup = c;
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      cleanup?.();
     };
-  }, []);
+  }, [user, fetchMatches]);
 
   const getElapsedMinutes = (matchDate: string) => {
     const elapsed = Math.floor((Date.now() - new Date(matchDate).getTime()) / 60000);
@@ -81,6 +115,20 @@ const LiveScores = () => {
     if (elapsed > 90) return "90+";
     return `${elapsed}'`;
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AppHeader title="Live Scores" subtitle="Sign in to see your clubs" back={false} />
+        <main className="container mx-auto px-4 py-16">
+          <div className="max-w-md mx-auto text-center rounded-3xl glass-card p-8">
+            <div className="text-sm font-medium text-foreground">Sign in required</div>
+            <div className="text-xs text-muted-foreground mt-1">To keep clubs isolated, live scores are shown only for clubs you belong to.</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
