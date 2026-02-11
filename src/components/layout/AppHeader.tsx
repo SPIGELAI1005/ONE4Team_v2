@@ -96,33 +96,68 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
       {/* Mobile menu */}
       {open && (
         <div className="md:hidden border-t border-border bg-background/70 backdrop-blur-2xl">
-          <div className="container mx-auto px-4 py-3 grid gap-1">
-            {items.map((item) => {
-              const active = location.pathname === item.to;
-              const Icon = item.icon;
-              return (
-                <button
-                  key={`${item.label}-${item.to}`}
-                  onClick={() => {
-                    setOpen(false);
-                    navigate(item.to);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-2xl text-sm border transition-colors ${
-                    active
-                      ? "bg-primary/10 text-primary border-primary/20"
-                      : "bg-card/40 text-foreground border-border/60 hover:bg-muted/30"
-                  }`}
-                >
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? "bg-primary/10" : "bg-muted/30"}`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div className="text-left">
-                    <div className="font-medium leading-tight">{item.label}</div>
-                    <div className="text-[11px] text-muted-foreground leading-tight truncate">{item.to}</div>
-                  </div>
-                </button>
-              );
-            })}
+          <div className="container mx-auto px-4 py-3 grid gap-3">
+            {/* Quick profile switch (A: route role-driven) */}
+            <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-3">
+              <div className="text-[11px] text-muted-foreground mb-2">Profile</div>
+              <div className="flex gap-2">
+                {(
+                  perms.isAdmin
+                    ? ["admin", "trainer", "player"]
+                    : perms.isTrainer
+                      ? ["trainer", "player"]
+                      : ["player"]
+                ).map((r) => {
+                  const isActive = (activeRole || (perms.isAdmin ? "admin" : perms.isTrainer ? "trainer" : "player")) === r;
+                  return (
+                    <button
+                      key={r}
+                      onClick={() => {
+                        localStorage.setItem("one4team.activeRole", r);
+                        setOpen(false);
+                        navigate(`/dashboard/${r}`);
+                      }}
+                      className={`flex-1 px-3 py-2 rounded-2xl text-xs font-medium border transition-colors ${
+                        isActive
+                          ? "bg-primary/10 text-primary border-primary/20"
+                          : "bg-background/40 text-foreground border-border/60 hover:bg-muted/30"
+                      }`}
+                    >
+                      {r.charAt(0).toUpperCase() + r.slice(1)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid gap-1">
+              {items.map((item) => {
+                const active = location.pathname === item.to;
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={`${item.label}-${item.to}`}
+                    onClick={() => {
+                      setOpen(false);
+                      navigate(item.to);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-2xl text-sm border transition-colors ${
+                      active
+                        ? "bg-primary/10 text-primary border-primary/20"
+                        : "bg-card/40 text-foreground border-border/60 hover:bg-muted/30"
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? "bg-primary/10" : "bg-muted/30"}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="text-left min-w-0">
+                      <div className="font-medium leading-tight truncate">{item.label}</div>
+                      <div className="text-[11px] text-muted-foreground leading-tight truncate">{item.to}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

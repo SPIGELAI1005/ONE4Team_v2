@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
+import AppHeader from "@/components/layout/AppHeader";
 import {
   Users, Calendar, Trophy, MapPin, Phone, Mail,
   Clock, ArrowRight, Star, Send, Loader2, X, ShieldQuestion
@@ -136,22 +137,11 @@ const ClubPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navbar */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="" className="w-8 h-8" />
-            <span className="font-display font-bold text-lg text-foreground">
-              FC <span className="text-gradient-gold">Riverside</span>
-            </span>
-          </div>
-          <nav className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
-            <a href="#about" className="hover:text-foreground transition-colors">About</a>
-            <a href="#teams" className="hover:text-foreground transition-colors">Teams</a>
-            <a href="#schedule" className="hover:text-foreground transition-colors">Schedule</a>
-            <a href="#events" className="hover:text-foreground transition-colors">Events</a>
-            <a href="#contact" className="hover:text-foreground transition-colors">Contact</a>
-          </nav>
+      <AppHeader
+        title={club?.name || "Club"}
+        subtitle={club?.description || "Invite-only onboarding"}
+        back={false}
+        rightSlot={
           <Button
             size="sm"
             className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
@@ -159,8 +149,19 @@ const ClubPage = () => {
           >
             Request Invite
           </Button>
+        }
+      />
+
+      {/* In-page navigation (desktop) */}
+      <div className="hidden md:block border-b border-border bg-background/40 backdrop-blur-xl">
+        <div className="container mx-auto px-4 py-2 flex items-center gap-6 text-sm text-muted-foreground">
+          <a href="#about" className="hover:text-foreground transition-colors">About</a>
+          <a href="#teams" className="hover:text-foreground transition-colors">Teams</a>
+          <a href="#schedule" className="hover:text-foreground transition-colors">Schedule</a>
+          <a href="#events" className="hover:text-foreground transition-colors">Events</a>
+          <a href="#contact" className="hover:text-foreground transition-colors">Contact</a>
         </div>
-      </header>
+      </div>
 
       {/* Hero */}
       <section className="relative py-20 md:py-32 overflow-hidden">
