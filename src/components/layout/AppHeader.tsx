@@ -144,7 +144,20 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
 
             {/* Quick profile switch (A: route role-driven) */}
             <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-3">
-              <div className="text-[11px] text-muted-foreground mb-2">Profile</div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-[11px] text-muted-foreground">Profile</div>
+                <button
+                  onClick={() => {
+                    const next = localStorage.getItem("one4team.debug") === "1" ? "0" : "1";
+                    localStorage.setItem("one4team.debug", next);
+                    // simple refresh so AppHeader re-evaluates debugEnabled
+                    window.location.reload();
+                  }}
+                  className="text-[10px] px-2 py-1 rounded-full border border-border/60 bg-background/40 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Debug {localStorage.getItem("one4team.debug") === "1" ? "On" : "Off"}
+                </button>
+              </div>
               <div className="flex gap-2">
                 {(
                   perms.isAdmin
