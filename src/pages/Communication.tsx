@@ -58,6 +58,13 @@ const Communication = () => {
   const [annContent, setAnnContent] = useState("");
   const [annPriority, setAnnPriority] = useState("normal");
 
+  // Reset page state on club switch to prevent cross-club flashes
+  useEffect(() => {
+    setAnnouncements([]);
+    setMessages([]);
+    setLoading(true);
+  }, [clubId]);
+
   useEffect(() => {
     if (!clubId) return;
     const fetchData = async () => {

@@ -69,6 +69,19 @@ const Matches = () => {
   const [lineup, setLineup] = useState<LineupPlayer[]>([]);
   const [lineupTab, setLineupTab] = useState<"events" | "lineup">("events");
 
+  // Reset page state on club switch to prevent cross-club flashes
+  useEffect(() => {
+    setMatches([]);
+    setCompetitions([]);
+    setTeams([]);
+    setSelectedMatch(null);
+    setMatchEvents([]);
+    setMembers([]);
+    setLineup([]);
+    setLoading(true);
+    setLoadingDetail(false);
+  }, [clubId]);
+
   const [openPanels, setOpenPanels] = useState({
     score: true,
     timeline: false,

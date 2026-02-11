@@ -65,6 +65,16 @@ const Events = () => {
   const [endsAt, setEndsAt] = useState("");
   const [maxPart, setMaxPart] = useState("");
 
+  // Reset page state on club switch to prevent cross-club flashes
+  useEffect(() => {
+    setEvents([]);
+    setSelectedEvent(null);
+    setParticipants([]);
+    setMembers([]);
+    setLoading(true);
+    setLoadingDetail(false);
+  }, [clubId]);
+
   useEffect(() => {
     if (!clubId) return;
     const fetchEvents = async () => {

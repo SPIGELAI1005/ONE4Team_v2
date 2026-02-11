@@ -58,6 +58,13 @@ const Teams = () => {
   const [sessionStart, setSessionStart] = useState("");
   const [sessionEnd, setSessionEnd] = useState("");
 
+  // Reset page state on club switch to prevent cross-club flashes
+  useEffect(() => {
+    setTeams([]);
+    setSessions([]);
+    setLoading(true);
+  }, [clubId]);
+
   useEffect(() => {
     if (!clubId) return;
     const fetchData = async () => {

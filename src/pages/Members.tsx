@@ -107,6 +107,23 @@ const Members = () => {
   const [createdInviteToken, setCreatedInviteToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // Reset page state on club switch to prevent cross-club flashes
+  useEffect(() => {
+    setMembers([]);
+    setSelectedMember(null);
+    setLoading(true);
+
+    setInviteRequests([]);
+    setInvites([]);
+    setInvitesLoading(false);
+    setClubSlug(null);
+    setClubName(null);
+
+    setSearch("");
+    setRoleFilter("all");
+    setInviteReqFilter("pending");
+  }, [clubId]);
+
   const toHex = (buf: ArrayBuffer) => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
 
   const hashToken = async (token: string) => {

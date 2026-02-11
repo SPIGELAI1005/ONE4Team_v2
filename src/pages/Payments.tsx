@@ -63,6 +63,13 @@ const Payments = () => {
   const [feeAmount, setFeeAmount] = useState("");
   const [feeInterval, setFeeInterval] = useState("monthly");
 
+  // Reset page state on club switch to prevent cross-club flashes
+  useEffect(() => {
+    setFeeTypes([]);
+    setPayments([]);
+    setLoading(true);
+  }, [clubId]);
+
   useEffect(() => {
     if (!clubId) return;
     const fetchData = async () => {
