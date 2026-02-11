@@ -7,6 +7,7 @@ import {
 import AnalyticsWidgets from "@/components/dashboard/AnalyticsWidgets";
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
 import NotificationBell from "@/components/dashboard/NotificationBell";
+import ClubSwitcher from "@/components/dashboard/ClubSwitcher";
 import LiveMatchTicker from "@/components/dashboard/LiveMatchTicker";
 import AdminNotificationSender from "@/components/dashboard/AdminNotificationSender";
 import SeasonProgressionChart from "@/components/analytics/SeasonProgressionChart";
@@ -94,6 +95,7 @@ const DashboardContent = () => {
             <p className="text-[13px] text-muted-foreground">{config.greeting}</p>
           </div>
           <div className="flex items-center gap-2.5">
+            <ClubSwitcher />
             <NotificationBell />
             <div className="w-9 h-9 rounded-2xl bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-sm shadow-gold">
               {(role || "U")[0].toUpperCase()}
