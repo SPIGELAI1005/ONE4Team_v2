@@ -4,7 +4,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import AppHeader from "@/components/layout/AppHeader";
 import {
   Users, Calendar, Trophy, MapPin, Phone, Mail,
-  Clock, ArrowRight, Star, Send, Loader2, X, ShieldQuestion
+  Clock, ArrowRight, Star, Send, Loader2, X, ShieldQuestion,
+  List
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,27 +31,31 @@ type InviteRequestRow = {
   created_at: string;
 };
 
-const teams = [
-  { name: "First Team", sport: "Football", players: 22, coach: "John Miller" },
-  { name: "U19 Youth", sport: "Football", players: 18, coach: "Sarah Chen" },
-  { name: "U17 Development", sport: "Football", players: 20, coach: "Marco Ruiz" },
-  { name: "Women's Team", sport: "Football", players: 16, coach: "Lisa Park" },
-];
+type TeamRowLite = {
+  id: string;
+  name: string;
+  sport: string;
+  age_group: string | null;
+  coach_name: string | null;
+};
 
-const schedule = [
-  { day: "Monday", time: "18:00 – 19:30", team: "U17 Development", location: "Field A" },
-  { day: "Tuesday", time: "18:30 – 20:00", team: "First Team", location: "Main Stadium" },
-  { day: "Wednesday", time: "17:00 – 18:30", team: "U19 Youth", location: "Field B" },
-  { day: "Thursday", time: "18:00 – 19:30", team: "Women's Team", location: "Field A" },
-  { day: "Friday", time: "18:30 – 20:00", team: "First Team", location: "Main Stadium" },
-];
+type TrainingSessionRowLite = {
+  id: string;
+  title: string;
+  location: string | null;
+  starts_at: string;
+  team_id: string | null;
+  teams?: { name: string } | null;
+};
 
-const events = [
-  { title: "Summer Tournament 2026", date: "Mar 15, 2026", type: "Tournament", desc: "Annual youth tournament with 16 clubs." },
-  { title: "Club Anniversary Gala", date: "Apr 5, 2026", type: "Social", desc: "Celebrating 50 years of community sports." },
-  { title: "Open Training Day", date: "Mar 1, 2026", type: "Open Day", desc: "Free trial training for new members." },
-  { title: "Sponsors Evening", date: "Mar 20, 2026", type: "Networking", desc: "Meet our partners and sponsors." },
-];
+type EventRowLite = {
+  id: string;
+  title: string;
+  description: string | null;
+  event_type: string;
+  starts_at: string;
+  location: string | null;
+};
 
 const sponsors = [
   { name: "SportTech Pro", tier: "Gold" },
@@ -67,6 +72,13 @@ const ClubPage = () => {
 
   const [club, setClub] = useState<Club | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [teams, setTeams] = useState<TeamRowLite[]>([]);
+  const [sessions, setSessions] = useState<TrainingSessionRowLite[]>([]);
+  const [events, setEvents] = useState<EventRowLite[]>([]);
+  const [loadingData, setLoadingData] = useState(false);
+
+  const [showSections, setShowSections] = useState(false);
 
   const [showRequestInvite, setShowRequestInvite] = useState(false);
   const [reqName, setReqName] = useState("");
@@ -94,8 +106,49 @@ const ClubPage = () => {
       }
       setLoading(false);
     };
-    run();
+    void run();
   }, [clubSlug, toast]);
+
+  useEffect(() => {
+    const run = async () => {
+      if (!club?.id) return;
+      setLoadingData(true);
+
+      const nowIso = new Date().toISOString();
+      const [teamsRes, sessionsRes, eventsRes] = await Promise.all([
+        supabase
+          .from("teams")
+          .select("id, name, sport, age_group, coach_name")
+          .eq("club_id", club.id)
+          .order("name"),
+        supabase
+          .from("training_sessions")
+          .select("id, title, location, starts_at, team_id, teams(name)")
+          .eq("club_id", club.id)
+          .gte("starts_at", nowIso)
+          .order("starts_at", { ascending: true })
+          .limit(10),
+        supabase
+          .from("events")
+          .select("id, title, description, event_type, starts_at, location")
+          .eq("club_id", club.id)
+          .gte("starts_at", nowIso)
+          .order("starts_at", { ascending: true })
+          .limit(6),
+      ]);
+
+      if (teamsRes.error) toast({ title: "Error", description: teamsRes.error.message, variant: "destructive" });
+      if (sessionsRes.error) toast({ title: "Error", description: sessionsRes.error.message, variant: "destructive" });
+      if (eventsRes.error) toast({ title: "Error", description: eventsRes.error.message, variant: "destructive" });
+
+      setTeams((teamsRes.data as unknown as TeamRowLite[]) || []);
+      setSessions((sessionsRes.data as unknown as TrainingSessionRowLite[]) || []);
+      setEvents((eventsRes.data as unknown as EventRowLite[]) || []);
+
+      setLoadingData(false);
+    };
+    void run();
+  }, [club?.id, toast]);
 
   const handleSubmitInviteRequest = async () => {
     if (!club) return;
@@ -137,13 +190,23 @@ const ClubPage = () => {
         subtitle={club?.description || "Invite-only onboarding"}
         back={false}
         rightSlot={
-          <Button
-            size="sm"
-            className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
-            onClick={() => setShowRequestInvite(true)}
-          >
-            Request Invite
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="hidden sm:inline-flex"
+              onClick={() => setShowSections(true)}
+            >
+              <List className="w-4 h-4 mr-1" /> Sections
+            </Button>
+            <Button
+              size="sm"
+              className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
+              onClick={() => setShowRequestInvite(true)}
+            >
+              Request Invite
+            </Button>
+          </div>
         }
       />
 
@@ -157,6 +220,44 @@ const ClubPage = () => {
           <a href="#contact" className="hover:text-foreground transition-colors">Contact</a>
         </div>
       </div>
+
+      {/* Sections modal (mobile + optional desktop) */}
+      {showSections && (
+        <div className="fixed inset-0 z-50 bg-background/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-4" onClick={() => setShowSections(false)}>
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            className="w-full max-w-md rounded-3xl border border-border/60 bg-card/60 backdrop-blur-2xl p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="font-display font-bold text-foreground tracking-tight">Sections</div>
+              <Button variant="ghost" size="icon" onClick={() => setShowSections(false)}><X className="w-4 h-4" /></Button>
+            </div>
+            <div className="grid gap-2">
+              {[
+                { id: "about", label: "About" },
+                { id: "teams", label: "Teams" },
+                { id: "schedule", label: "Schedule" },
+                { id: "events", label: "Events" },
+                { id: "contact", label: "Contact" },
+              ].map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => {
+                    setShowSections(false);
+                    document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-2xl border border-border/60 bg-background/40 hover:bg-muted/30 transition-colors"
+                >
+                  <span className="text-sm font-medium text-foreground">{s.label}</span>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Hero */}
       <section className="relative py-20 md:py-32 overflow-hidden">
