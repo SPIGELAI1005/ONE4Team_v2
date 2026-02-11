@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import AppHeader from "@/components/layout/AppHeader";
 import {
   Plus, Trophy, Loader2, X, MapPin, Clock,
-  Users, Target, Award, AlertTriangle
+  Users, Target, Award, AlertTriangle, ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +66,13 @@ const Matches = () => {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [lineup, setLineup] = useState<LineupPlayer[]>([]);
   const [lineupTab, setLineupTab] = useState<"events" | "lineup">("events");
+
+  const [openPanels, setOpenPanels] = useState({
+    score: true,
+    timeline: false,
+    voting: false,
+    ai: true,
+  });
   const [addLineupMemberId, setAddLineupMemberId] = useState("");
   const [addLineupStarter, setAddLineupStarter] = useState(true);
   const [addLineupPosition, setAddLineupPosition] = useState("");
@@ -117,6 +124,7 @@ const Matches = () => {
     setAwayScore(match.away_score?.toString() || "");
     setLoadingDetail(true);
     setLineupTab("events");
+    setOpenPanels({ score: true, timeline: false, voting: false, ai: true });
     const [evRes, memRes, lineupRes] = await Promise.all([
       supabase.from("match_events").select("*").eq("match_id", match.id).order("minute"),
       supabase
@@ -432,17 +440,34 @@ const Matches = () => {
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedMatch(null)}>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
             className="w-full max-w-[95vw] sm:max-w-lg rounded-2xl bg-card border border-border p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display font-bold text-foreground">
-                {selectedMatch.is_home ? `Club vs ${selectedMatch.opponent}` : `${selectedMatch.opponent} vs Club`}
-              </h3>
-              <Button variant="ghost" size="icon" onClick={() => setSelectedMatch(null)}><X className="w-4 h-4" /></Button>
+            <div className="sticky top-0 z-10 -mx-6 px-6 pt-4 pb-3 bg-card/70 backdrop-blur-2xl border-b border-border">
+              <div className="flex items-center justify-between">
+                <div className="min-w-0">
+                  <h3 className="font-display font-bold text-foreground truncate">
+                    {selectedMatch.is_home ? `Club vs ${selectedMatch.opponent}` : `${selectedMatch.opponent} vs Club`}
+                  </h3>
+                  <div className="text-[11px] text-muted-foreground truncate">
+                    {new Date(selectedMatch.match_date).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    {selectedMatch.location ? ` · ${selectedMatch.location}` : ""}
+                  </div>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setSelectedMatch(null)}><X className="w-4 h-4" /></Button>
+              </div>
             </div>
 
             {/* Score */}
-            <div className="rounded-xl bg-background border border-border p-4 mb-4">
-              <h4 className="text-xs font-semibold text-muted-foreground mb-2">RESULT</h4>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="rounded-2xl glass-card p-4 mb-4">
+              <button
+                type="button"
+                onClick={() => setOpenPanels((p) => ({ ...p, score: !p.score }))}
+                className="w-full flex items-center justify-between"
+              >
+                <h4 className="text-xs font-semibold text-muted-foreground">RESULT</h4>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openPanels.score ? "rotate-180" : ""}`} />
+              </button>
+
+              {openPanels.score && (
+                <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex-1">
                   <label className="text-[10px] text-muted-foreground">Home</label>
                   <Input type="number" value={homeScore} onChange={e => setHomeScore(e.target.value)} className="bg-card text-center text-lg font-bold" min="0" />
@@ -454,6 +479,7 @@ const Matches = () => {
                 </div>
                 <Button size="sm" className="bg-gradient-gold text-primary-foreground hover:opacity-90 sm:mt-4 w-full sm:w-auto" onClick={handleUpdateResult}>Save</Button>
               </div>
+              )}
             </div>
 
             {loadingDetail ? (
@@ -612,27 +638,69 @@ const Matches = () => {
                 )}
 
                 {/* Match Timeline */}
-                <MatchTimeline events={matchEvents} getMemberName={(mid) => {
-                  const player = members.find(m => m.id === mid);
-                  return player?.profiles?.display_name || "Player";
-                }} />
+                <div className="rounded-2xl glass-card p-4 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setOpenPanels((p) => ({ ...p, timeline: !p.timeline }))}
+                    className="w-full flex items-center justify-between"
+                  >
+                    <div className="text-sm font-display font-semibold text-foreground">Timeline</div>
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openPanels.timeline ? "rotate-180" : ""}`} />
+                  </button>
+                  {openPanels.timeline && (
+                    <div className="mt-3">
+                      <MatchTimeline events={matchEvents} getMemberName={(mid) => {
+                        const player = members.find(m => m.id === mid);
+                        return player?.profiles?.display_name || "Player";
+                      }} />
+                    </div>
+                  )}
+                </div>
 
                 {/* Player of the Match Voting */}
-                <MatchVoting matchId={selectedMatch.id} matchStatus={selectedMatch.status} members={members} />
+                <div className="rounded-2xl glass-card p-4 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setOpenPanels((p) => ({ ...p, voting: !p.voting }))}
+                    className="w-full flex items-center justify-between"
+                  >
+                    <div className="text-sm font-display font-semibold text-foreground">Player of the match</div>
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openPanels.voting ? "rotate-180" : ""}`} />
+                  </button>
+                  {openPanels.voting && (
+                    <div className="mt-3">
+                      <MatchVoting matchId={selectedMatch.id} matchStatus={selectedMatch.status} members={members} />
+                    </div>
+                  )}
+                </div>
 
                 {/* AI Match Analysis */}
-                <AIMatchAnalysis
-                  matchData={{
-                    opponent: selectedMatch.opponent, is_home: selectedMatch.is_home,
-                    date: selectedMatch.match_date, home_score: selectedMatch.home_score,
-                    away_score: selectedMatch.away_score,
-                    events: matchEvents.map(e => ({
-                      type: e.event_type, minute: e.minute,
-                      player: members.find(m => m.id === e.membership_id)?.profiles?.display_name || null,
-                    })),
-                  }}
-                  matchStatus={selectedMatch.status}
-                />
+                <div className="rounded-2xl glass-card p-4 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setOpenPanels((p) => ({ ...p, ai: !p.ai }))}
+                    className="w-full flex items-center justify-between"
+                  >
+                    <div className="text-sm font-display font-semibold text-foreground">AI analysis</div>
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openPanels.ai ? "rotate-180" : ""}`} />
+                  </button>
+                  {openPanels.ai && (
+                    <div className="mt-3">
+                      <AIMatchAnalysis
+                        matchData={{
+                          opponent: selectedMatch.opponent, is_home: selectedMatch.is_home,
+                          date: selectedMatch.match_date, home_score: selectedMatch.home_score,
+                          away_score: selectedMatch.away_score,
+                          events: matchEvents.map(e => ({
+                            type: e.event_type, minute: e.minute,
+                            player: members.find(m => m.id === e.membership_id)?.profiles?.display_name || null,
+                          })),
+                        }}
+                        matchStatus={selectedMatch.status}
+                      />
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </motion.div>
