@@ -442,17 +442,17 @@ const Matches = () => {
             {/* Score */}
             <div className="rounded-xl bg-background border border-border p-4 mb-4">
               <h4 className="text-xs font-semibold text-muted-foreground mb-2">RESULT</h4>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex-1">
                   <label className="text-[10px] text-muted-foreground">Home</label>
                   <Input type="number" value={homeScore} onChange={e => setHomeScore(e.target.value)} className="bg-card text-center text-lg font-bold" min="0" />
                 </div>
-                <span className="text-xl font-bold text-muted-foreground mt-4">:</span>
+                <span className="text-xl font-bold text-muted-foreground hidden sm:inline mt-4">:</span>
                 <div className="flex-1">
                   <label className="text-[10px] text-muted-foreground">Away</label>
                   <Input type="number" value={awayScore} onChange={e => setAwayScore(e.target.value)} className="bg-card text-center text-lg font-bold" min="0" />
                 </div>
-                <Button size="sm" className="bg-gradient-gold text-primary-foreground hover:opacity-90 mt-4" onClick={handleUpdateResult}>Save</Button>
+                <Button size="sm" className="bg-gradient-gold text-primary-foreground hover:opacity-90 sm:mt-4 w-full sm:w-auto" onClick={handleUpdateResult}>Save</Button>
               </div>
             </div>
 
@@ -461,7 +461,7 @@ const Matches = () => {
             ) : (
               <>
                 {/* Sub-tabs: Events / Lineup */}
-                <div className="flex gap-1 mb-4 border-b border-border">
+                <div className="flex gap-1 mb-4 border-b border-border overflow-x-auto">
                   <button onClick={() => setLineupTab("events")}
                     className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${lineupTab === "events" ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}>
                     Match Events

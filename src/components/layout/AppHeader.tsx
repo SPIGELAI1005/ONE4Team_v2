@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Home, Users, Trophy, Megaphone, CreditCard, Calendar, Swords } from "lucide-react";
+import { Menu, X, Home, Users, Trophy, Megaphone, CreditCard, Calendar, Swords, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useActiveClub } from "@/hooks/use-active-club";
 import logo from "@/assets/logo.png";
 
 interface NavItem {
@@ -33,21 +34,27 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
   const navigate = useNavigate();
   const location = useLocation();
   const perms = usePermissions();
+  const { activeClub } = useActiveClub();
 
   const [open, setOpen] = useState(false);
 
-  const dashboardTo = useMemo(() => {
-    const r = activeRole || (perms.isAdmin ? "admin" : perms.isTrainer ? "trainer" : "player");
-    return `/dashboard/${r}`;
-  }, [activeRole, perms.isAdmin, perms.isTrainer]);
+  const activeRole = (typeof window !== "undefined" ? localStorage.getItem("one4team.activeRole") : null) || null;
+  const effectiveRole = activeRole || (perms.isAdmin ? "admin" : perms.isTrainer ? "trainer" : "player");
+  const roleLabel = effectiveRole.charAt(0).toUpperCase() + effectiveRole.slice(1);
+
+  const subtitleResolved = useMemo(() => {
+    const club = activeClub?.name || null;
+    if (club && subtitle) return `${club} · ${subtitle}`;
+    if (club && !subtitle) return club;
+    return subtitle;
+  }, [activeClub?.name, subtitle]);
+
+  const dashboardTo = useMemo(() => `/dashboard/${effectiveRole}`, [effectiveRole]);
 
   const items = useMemo(() => {
     const base = navItems.filter((i) => (i.gate ? i.gate(perms) : true));
     return [{ label: "Dashboard", to: dashboardTo, icon: Home }, ...base];
   }, [perms, dashboardTo]);
-
-  const activeRole = (typeof window !== "undefined" ? localStorage.getItem("one4team.activeRole") : null) || null;
-  const roleLabel = activeRole ? activeRole.charAt(0).toUpperCase() + activeRole.slice(1) : (perms.isAdmin ? "Admin" : perms.isTrainer ? "Trainer" : "Member");
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/70 backdrop-blur-2xl">
@@ -80,7 +87,7 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
                   {roleLabel}
                 </span>
               </div>
-              {subtitle && <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{subtitle}</p>}
+              {subtitleResolved && <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{subtitleResolved}</p>}
             </div>
           </div>
         </div>
@@ -97,6 +104,22 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
       {open && (
         <div className="md:hidden border-t border-border bg-background/70 backdrop-blur-2xl">
           <div className="container mx-auto px-4 py-3 grid gap-3">
+            {/* Active club context */}
+            {activeClub?.name && (
+              <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-3">
+                <div className="text-[11px] text-muted-foreground mb-2">Club</div>
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center text-primary">
+                    <Building2 className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-foreground truncate">{activeClub.name}</div>
+                    <div className="text-[11px] text-muted-foreground truncate">active club</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Quick profile switch (A: route role-driven) */}
             <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-3">
               <div className="text-[11px] text-muted-foreground mb-2">Profile</div>

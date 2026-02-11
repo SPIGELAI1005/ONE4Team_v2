@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Mail, Lock, User, ArrowRight } from "lucide-react";
+import AppHeader from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/useAuth";
@@ -44,7 +45,10 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      <AppHeader title="One4Team" subtitle={mode === "login" ? "Sign in" : "Create account"} back={false} />
+
+      <div className="flex-1 flex flex-col items-center justify-center p-4">
       {/* Ambient glow */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-primary/6 rounded-full blur-[100px]" />
 
@@ -159,6 +163,7 @@ const Auth = () => {
           </div>
         </div>
       </motion.div>
+      </div>
     </div>
   );
 };
