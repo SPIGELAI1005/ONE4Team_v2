@@ -38,6 +38,7 @@ const Onboarding = () => {
   const [searchParams] = useSearchParams();
   const initialWorld = searchParams.get("world") as World;
   const inviteTokenParam = searchParams.get("invite");
+  const inviteClubParam = searchParams.get("club");
 
   const [world, setWorld] = useState<World>(initialWorld);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
@@ -48,6 +49,7 @@ const Onboarding = () => {
   const [redeeming, setRedeeming] = useState(false);
   const [redeemToken, setRedeemToken] = useState(inviteTokenParam || "");
   const [redeemSuccess, setRedeemSuccess] = useState<{ role: string; clubId: string | null } | null>(null);
+  const [redeemClubName, setRedeemClubName] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -62,6 +64,26 @@ const Onboarding = () => {
       setStep("redeem-invite");
     }
   }, [inviteTokenParam]);
+
+  useEffect(() => {
+    const run = async () => {
+      if (!inviteClubParam) {
+        setRedeemClubName(null);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("clubs")
+        .select("name")
+        .eq("slug", inviteClubParam)
+        .maybeSingle();
+      if (error) {
+        setRedeemClubName(null);
+        return;
+      }
+      setRedeemClubName(data?.name ?? null);
+    };
+    void run();
+  }, [inviteClubParam]);
 
   const roles = world === "club" ? clubRoles : world === "partner" ? partnerRoles : [];
 
@@ -208,6 +230,11 @@ const Onboarding = () => {
                   Redeem your <span className="text-gradient-gold">invite</span>
                 </h1>
                 <p className="text-muted-foreground">Invite-only onboarding — clean, iOS-like, and secure.</p>
+                {redeemClubName && (
+                  <div className="mt-3 inline-flex items-center gap-2 text-[11px] px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/15">
+                    {redeemClubName}
+                  </div>
+                )}
               </div>
 
               <div className="rounded-3xl bg-card/55 border border-border/70 backdrop-blur-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)] space-y-4">

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import AppHeader from "@/components/layout/AppHeader";
 import {
   Users, Search, Plus, ArrowLeft,
   Shield, Dumbbell, Crown, UserCheck, Heart, MoreHorizontal,
@@ -93,6 +94,8 @@ const Members = () => {
   const [inviteRequests, setInviteRequests] = useState<InviteRequestRow[]>([]);
   const [invites, setInvites] = useState<ClubInviteRow[]>([]);
   const [invitesLoading, setInvitesLoading] = useState(false);
+  const [clubSlug, setClubSlug] = useState<string | null>(null);
+  const [clubName, setClubName] = useState<string | null>(null);
 
   const [showCreateInvite, setShowCreateInvite] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -119,6 +122,14 @@ const Members = () => {
   const fetchInvitesData = useCallback(async () => {
     if (!clubId) return;
     setInvitesLoading(true);
+
+    const clubRes = await supabase.from("clubs").select("slug, name").eq("id", clubId).maybeSingle();
+    if (clubRes.error) {
+      toast({ title: "Error", description: clubRes.error.message, variant: "destructive" });
+    } else {
+      setClubSlug(clubRes.data?.slug ?? null);
+      setClubName(clubRes.data?.name ?? null);
+    }
     const [reqRes, invRes] = await Promise.all([
       supabase.from("club_invite_requests").select("*").eq("club_id", clubId).order("created_at", { ascending: false }).limit(100),
       supabase.from("club_invites").select("*").eq("club_id", clubId).order("created_at", { ascending: false }).limit(100),
@@ -256,19 +267,11 @@ const Members = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <img src={logo} alt="" className="w-7 h-7" />
-              <h1 className="font-display font-bold text-lg text-foreground">Members</h1>
-            </div>
-          </div>
-          {tab === "members" ? (
+      <AppHeader
+        title="Members"
+        subtitle={tab === "members" ? "Roster" : (clubName ? `${clubName} · Invites` : "Invites")}
+        rightSlot={
+          tab === "members" ? (
             <Button size="sm" className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90">
               <Plus className="w-4 h-4 mr-1" /> Add Member
             </Button>
@@ -286,9 +289,9 @@ const Members = () => {
             >
               <UserPlus className="w-4 h-4 mr-1" /> Create Invite
             </Button>
-          )}
-        </div>
-      </header>
+          )
+        }
+      />
 
       {/* Tabs */}
       <div className="border-b border-border">
@@ -680,7 +683,9 @@ const Members = () => {
                               <Button
                                 variant="outline"
                                 onClick={() => {
-                                  const link = `${window.location.origin}/onboarding?invite=${encodeURIComponent(createdInviteToken)}`;
+                                  const qs = new URLSearchParams({ invite: createdInviteToken });
+                                  if (clubSlug) qs.set("club", clubSlug);
+                                  const link = `${window.location.origin}/onboarding?${qs.toString()}`;
                                   void handleCopy(link);
                                 }}
                                 className="w-full"

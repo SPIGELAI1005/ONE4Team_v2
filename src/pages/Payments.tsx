@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import AppHeader from "@/components/layout/AppHeader";
 import {
-  ArrowLeft, Plus, CreditCard, Loader2, X,
+  Plus, CreditCard, Loader2, X,
   CheckCircle2, Clock, AlertTriangle, Ban,
   TrendingUp
 } from "lucide-react";
@@ -13,7 +13,7 @@ import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
-import logo from "@/assets/logo.png";
+// logo is rendered by AppHeader
 
 type FeeType = {
   id: string;
@@ -47,7 +47,7 @@ const statusConfig: Record<string, { icon: React.ElementType; color: string }> =
 };
 
 const Payments = () => {
-  const navigate = useNavigate();
+  // navigation is handled by AppHeader
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
   const { toast } = useToast();
@@ -116,13 +116,10 @@ const Payments = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4" /></Button>
-            <img src={logo} alt="" className="w-7 h-7" />
-            <h1 className="font-display font-bold text-lg text-foreground">Payments & Fees</h1>
-          </div>
+      <AppHeader
+        title="Payments & Fees"
+        subtitle="Admin-only"
+        rightSlot={
           <Button
             size="sm"
             className="bg-gradient-gold text-primary-foreground hover:opacity-90"
@@ -131,8 +128,8 @@ const Payments = () => {
           >
             <Plus className="w-4 h-4 mr-1" /> Add Fee Type
           </Button>
-        </div>
-      </header>
+        }
+      />
 
       {/* Tabs */}
       <div className="border-b border-border">

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import AppHeader from "@/components/layout/AppHeader";
 import {
-  ArrowLeft, Plus, Users, Trophy, Dumbbell, Loader2,
+  Plus, Users, Trophy, Dumbbell, Loader2,
   Calendar, MapPin, Clock, Trash2, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
-import logo from "@/assets/logo.png";
+// logo is rendered by AppHeader
 
 type Team = {
   id: string;
@@ -34,7 +34,7 @@ type TrainingSession = {
 };
 
 const Teams = () => {
-  const navigate = useNavigate();
+  // navigation is handled by AppHeader
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
   const { toast } = useToast();
@@ -130,13 +130,10 @@ const Teams = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4" /></Button>
-            <img src={logo} alt="" className="w-7 h-7" />
-            <h1 className="font-display font-bold text-lg text-foreground">Teams & Training</h1>
-          </div>
+      <AppHeader
+        title="Teams & Training"
+        subtitle="Trainer/Admin"
+        rightSlot={
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={() => setShowAddSession(true)} disabled={!perms.isTrainer}>
               <Calendar className="w-4 h-4 mr-1" /> Add Session
@@ -145,8 +142,8 @@ const Teams = () => {
               <Plus className="w-4 h-4 mr-1" /> Add Team
             </Button>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <div className="container mx-auto px-4 py-6">
         {(clubLoading || loading) ? (

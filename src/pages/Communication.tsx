@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import AppHeader from "@/components/layout/AppHeader";
 import {
-  ArrowLeft, Plus, Megaphone, MessageSquare, Send, Loader2,
+  Plus, Megaphone, MessageSquare, Send, Loader2,
   AlertTriangle, X, Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
-import logo from "@/assets/logo.png";
+// logo is rendered by AppHeader
 
 type Announcement = {
   id: string;
@@ -39,7 +39,7 @@ const priorityColors: Record<string, string> = {
 };
 
 const Communication = () => {
-  const navigate = useNavigate();
+  // navigation is handled by AppHeader
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
   const { toast } = useToast();
@@ -120,14 +120,11 @@ const Communication = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4" /></Button>
-            <img src={logo} alt="" className="w-7 h-7" />
-            <h1 className="font-display font-bold text-lg text-foreground">Communication</h1>
-          </div>
-          {tab === "announcements" && (
+      <AppHeader
+        title="Communication"
+        subtitle="Announcements + Club chat"
+        rightSlot={
+          tab === "announcements" ? (
             <Button
               size="sm"
               className="bg-gradient-gold text-primary-foreground hover:opacity-90"
@@ -136,9 +133,9 @@ const Communication = () => {
             >
               <Plus className="w-4 h-4 mr-1" /> Announce
             </Button>
-          )}
-        </div>
-      </header>
+          ) : null
+        }
+      />
 
       {/* Tabs */}
       <div className="border-b border-border">
