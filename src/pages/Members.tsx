@@ -98,7 +98,15 @@ const Members = () => {
   const allRoles = ["all", "admin", "trainer", "player", "staff", "member", "parent", "sponsor"];
 
   const handleDeleteMember = async (membershipId: string) => {
-    const { error } = await supabase.from("club_memberships").delete().eq("id", membershipId);
+    if (!perms.isAdmin || !clubId) {
+      toast({ title: "Not authorized", description: "Only admins can manage members.", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase
+      .from("club_memberships")
+      .delete()
+      .eq("club_id", clubId)
+      .eq("id", membershipId);
     if (error) {
       toast({ title: "Error removing member", description: error.message, variant: "destructive" });
     } else {

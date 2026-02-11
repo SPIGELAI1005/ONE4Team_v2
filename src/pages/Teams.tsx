@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 import logo from "@/assets/logo.png";
 
 type Team = {
@@ -37,6 +38,7 @@ const Teams = () => {
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
   const { toast } = useToast();
+  const perms = usePermissions();
 
   const [teams, setTeams] = useState<Team[]>([]);
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
@@ -108,8 +110,20 @@ const Teams = () => {
   };
 
   const handleDeleteTeam = async (id: string) => {
-    const { error } = await supabase.from("teams").delete().eq("id", id);
-    if (!error) setTeams(prev => prev.filter(t => t.id !== id));
+    if (!perms.isTrainer || !clubId) {
+      toast({ title: "Not authorized", description: "Only trainers/admins can manage teams.", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase
+      .from("teams")
+      .delete()
+      .eq("club_id", clubId)
+      .eq("id", id);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return;
+    }
+    setTeams(prev => prev.filter(t => t.id !== id));
   };
 
   if (!user) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Please sign in.</p></div>;
@@ -124,10 +138,10 @@ const Teams = () => {
             <h1 className="font-display font-bold text-lg text-foreground">Teams & Training</h1>
           </div>
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => setShowAddSession(true)}>
+            <Button size="sm" variant="outline" onClick={() => setShowAddSession(true)} disabled={!perms.isTrainer}>
               <Calendar className="w-4 h-4 mr-1" /> Add Session
             </Button>
-            <Button size="sm" className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={() => setShowAddTeam(true)}>
+            <Button size="sm" className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={() => setShowAddTeam(true)} disabled={!perms.isTrainer}>
               <Plus className="w-4 h-4 mr-1" /> Add Team
             </Button>
           </div>
@@ -139,6 +153,8 @@ const Teams = () => {
           <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
         ) : !clubId ? (
           <div className="text-center py-20 text-muted-foreground">No club found. Create one first.</div>
+        ) : !perms.isTrainer ? (
+          <div className="text-center py-20 text-muted-foreground">Only trainers/admins can manage teams and sessions.</div>
         ) : (
           <div className="grid lg:grid-cols-2 gap-6">
             {/* Teams */}

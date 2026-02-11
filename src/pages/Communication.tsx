@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 import logo from "@/assets/logo.png";
 
 type Announcement = {
@@ -42,6 +43,7 @@ const Communication = () => {
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
   const { toast } = useToast();
+  const perms = usePermissions();
 
   const [tab, setTab] = useState<"announcements" | "messages">("announcements");
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -97,6 +99,10 @@ const Communication = () => {
   };
 
   const handleAddAnnouncement = async () => {
+    if (!perms.isAdmin) {
+      toast({ title: "Not authorized", description: "Only admins can post announcements.", variant: "destructive" });
+      return;
+    }
     if (!annTitle.trim() || !annContent.trim() || !clubId || !user) return;
     const { data, error } = await supabase
       .from("announcements")
@@ -122,7 +128,12 @@ const Communication = () => {
             <h1 className="font-display font-bold text-lg text-foreground">Communication</h1>
           </div>
           {tab === "announcements" && (
-            <Button size="sm" className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={() => setShowAddAnnouncement(true)}>
+            <Button
+              size="sm"
+              className="bg-gradient-gold text-primary-foreground hover:opacity-90"
+              onClick={() => setShowAddAnnouncement(true)}
+              disabled={!perms.isAdmin}
+            >
               <Plus className="w-4 h-4 mr-1" /> Announce
             </Button>
           )}
@@ -203,7 +214,7 @@ const Communication = () => {
       </div>
 
       {/* Add Announcement Modal */}
-      {showAddAnnouncement && (
+      {showAddAnnouncement && perms.isAdmin && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowAddAnnouncement(false)}>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-2xl bg-card border border-border p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">

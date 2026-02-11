@@ -74,7 +74,13 @@ const NotificationBell = () => {
   }, [user, clubId]);
 
   const markAsRead = async (id: string) => {
-    await supabase.from("notifications").update({ is_read: true }).eq("id", id);
+    if (!clubId || !user) return;
+    await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("club_id", clubId)
+      .eq("user_id", user.id)
+      .eq("id", id);
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
     );
@@ -92,7 +98,13 @@ const NotificationBell = () => {
   };
 
   const dismissNotification = async (id: string) => {
-    await supabase.from("notifications").delete().eq("id", id);
+    if (!clubId || !user) return;
+    await supabase
+      .from("notifications")
+      .delete()
+      .eq("club_id", clubId)
+      .eq("user_id", user.id)
+      .eq("id", id);
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 

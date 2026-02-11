@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 import logo from "@/assets/logo.png";
 
 type FeeType = {
@@ -50,6 +51,7 @@ const Payments = () => {
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
   const { toast } = useToast();
+  const perms = usePermissions();
 
   const [feeTypes, setFeeTypes] = useState<FeeType[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -91,9 +93,18 @@ const Payments = () => {
   };
 
   const handleMarkPaid = async (paymentId: string) => {
-    const { error } = await supabase.from("payments").update({ status: "paid", paid_at: new Date().toISOString() }).eq("id", paymentId);
+    if (!perms.isAdmin || !clubId) {
+      toast({ title: "Not authorized", description: "Only admins can manage payments.", variant: "destructive" });
+      return;
+    }
+    const paidAt = new Date().toISOString();
+    const { error } = await supabase
+      .from("payments")
+      .update({ status: "paid", paid_at: paidAt })
+      .eq("club_id", clubId)
+      .eq("id", paymentId);
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: "paid", paid_at: new Date().toISOString() } : p));
+    setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: "paid", paid_at: paidAt } : p));
     toast({ title: "Payment marked as paid" });
   };
 
@@ -112,7 +123,12 @@ const Payments = () => {
             <img src={logo} alt="" className="w-7 h-7" />
             <h1 className="font-display font-bold text-lg text-foreground">Payments & Fees</h1>
           </div>
-          <Button size="sm" className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={() => setShowAddFee(true)}>
+          <Button
+            size="sm"
+            className="bg-gradient-gold text-primary-foreground hover:opacity-90"
+            onClick={() => setShowAddFee(true)}
+            disabled={!perms.isAdmin}
+          >
             <Plus className="w-4 h-4 mr-1" /> Add Fee Type
           </Button>
         </div>
@@ -140,6 +156,8 @@ const Payments = () => {
           <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
         ) : !clubId ? (
           <div className="text-center py-20 text-muted-foreground">No club found.</div>
+        ) : !perms.isAdmin ? (
+          <div className="text-center py-20 text-muted-foreground">Only admins can manage payments.</div>
         ) : tab === "overview" ? (
           <>
             {/* KPIs */}
