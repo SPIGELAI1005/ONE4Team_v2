@@ -13,10 +13,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", to: "/dashboard/admin", icon: Home, gate: (p) => p.isAdmin },
-  { label: "Dashboard", to: "/dashboard/trainer", icon: Home, gate: (p) => p.isTrainer && !p.isAdmin },
-  { label: "Dashboard", to: "/dashboard/player", icon: Home, gate: (p) => !p.isTrainer && !p.isAdmin },
-
+  // Dashboard link is injected dynamically from activeRole (route-driven)
   { label: "Members", to: "/members", icon: Users, gate: (p) => p.isAdmin },
   { label: "Teams", to: "/teams", icon: Trophy, gate: (p) => p.isTrainer },
   { label: "Communication", to: "/communication", icon: Megaphone, gate: () => true },
@@ -39,9 +36,18 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
 
   const [open, setOpen] = useState(false);
 
-  const items = useMemo(() => navItems.filter((i) => (i.gate ? i.gate(perms) : true)), [perms]);
+  const dashboardTo = useMemo(() => {
+    const r = activeRole || (perms.isAdmin ? "admin" : perms.isTrainer ? "trainer" : "player");
+    return `/dashboard/${r}`;
+  }, [activeRole, perms.isAdmin, perms.isTrainer]);
 
-  const roleLabel = perms.isAdmin ? "Admin" : perms.isTrainer ? "Trainer" : "Member";
+  const items = useMemo(() => {
+    const base = navItems.filter((i) => (i.gate ? i.gate(perms) : true));
+    return [{ label: "Dashboard", to: dashboardTo, icon: Home }, ...base];
+  }, [perms, dashboardTo]);
+
+  const activeRole = (typeof window !== "undefined" ? localStorage.getItem("one4team.activeRole") : null) || null;
+  const roleLabel = activeRole ? activeRole.charAt(0).toUpperCase() + activeRole.slice(1) : (perms.isAdmin ? "Admin" : perms.isTrainer ? "Trainer" : "Member");
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/70 backdrop-blur-2xl">

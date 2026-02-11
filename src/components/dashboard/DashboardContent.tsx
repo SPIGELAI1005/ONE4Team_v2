@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -84,6 +85,12 @@ const aiSuggestions = [
 const DashboardContent = () => {
   const { role } = useParams();
   const config = roleConfig[role || ""] || defaultConfig;
+
+  // Route-driven profile (A): persist selected role so AppHeader can reflect it on every page.
+  useEffect(() => {
+    if (!role) return;
+    localStorage.setItem("one4team.activeRole", role);
+  }, [role]);
 
   return (
     <div className="flex-1 overflow-y-auto bg-background pb-20 lg:pb-0 scroll-glow">

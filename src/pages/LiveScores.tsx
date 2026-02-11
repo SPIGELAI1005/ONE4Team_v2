@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Activity, Trophy, Clock, MapPin, RefreshCw } from "lucide-react";
+import AppHeader from "@/components/layout/AppHeader";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/logo.png";
+// logo is rendered by AppHeader
 
 type LiveMatch = {
   id: string;
@@ -83,36 +84,25 @@ const LiveScores = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img src={logo} alt="" className="w-8 h-8" />
-              <div>
-                <h1 className="font-display text-xl font-bold text-foreground flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-accent" />
-                  Live Scores
-                </h1>
-                <p className="text-xs text-muted-foreground">
-                  Real-time match updates — no login required
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="text-[10px] text-muted-foreground hidden sm:block">
-                Updated {lastUpdated.toLocaleTimeString()}
-              </span>
-              <button
-                onClick={fetchMatches}
-                className="w-8 h-8 rounded-lg bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              </button>
-            </div>
+      <AppHeader
+        title="Live Scores"
+        subtitle="Real-time match updates"
+        back={false}
+        rightSlot={
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-muted-foreground hidden sm:block">
+              Updated {lastUpdated.toLocaleTimeString()}
+            </span>
+            <button
+              onClick={fetchMatches}
+              className="w-8 h-8 rounded-2xl bg-card/40 border border-border/60 backdrop-blur-xl flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Refresh"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            </button>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       <main className="container mx-auto px-4 py-8">
         {/* Live indicator banner */}

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import AppHeader from "@/components/layout/AppHeader";
 import {
-  ArrowLeft, Plus, Trophy, Loader2, X, MapPin, Clock,
+  Plus, Trophy, Loader2, X, MapPin, Clock,
   Users, Target, Award, AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
-import logo from "@/assets/logo.png";
+// logo is rendered by AppHeader
 import LineupExport from "@/components/matches/LineupExport";
 import MatchVoting from "@/components/matches/MatchVoting";
 import MatchTimeline from "@/components/matches/MatchTimeline";
@@ -46,7 +46,7 @@ const eventTypeLabels: Record<string, string> = {
 };
 
 const Matches = () => {
-  const navigate = useNavigate();
+  // navigation is handled by AppHeader
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
   const { toast } = useToast();
@@ -232,19 +232,20 @@ const Matches = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0 scroll-glow">
-      <header className="sticky top-0 z-50 glass-nav">
-        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-xl haptic-press"><ArrowLeft className="w-4 h-4" strokeWidth={1.5} /></Button>
-            <img src={logo} alt="" className="w-6 h-6" />
-            <h1 className="font-display font-bold text-[15px] text-foreground tracking-tight">Matches</h1>
-          </div>
+      <AppHeader
+        title="Matches"
+        subtitle="Competitions · lineups · voting"
+        rightSlot={
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => setShowAddComp(true)} className="rounded-xl glass-card text-[12px] haptic-press"><Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> Competition</Button>
-            <Button size="sm" className="bg-gradient-gold text-primary-foreground hover:opacity-90 rounded-xl text-[12px] shadow-gold haptic-press" onClick={() => setShowAddMatch(true)}><Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> Match</Button>
+            <Button size="sm" variant="outline" onClick={() => setShowAddComp(true)} className="rounded-xl glass-card text-[12px] haptic-press">
+              <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> Competition
+            </Button>
+            <Button size="sm" className="bg-gradient-gold text-primary-foreground hover:opacity-90 rounded-xl text-[12px] shadow-gold haptic-press" onClick={() => setShowAddMatch(true)}>
+              <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> Match
+            </Button>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       {/* iOS Segmented Tabs */}
       <div className="container mx-auto px-4 py-3">

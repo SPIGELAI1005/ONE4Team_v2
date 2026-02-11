@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import AppHeader from "@/components/layout/AppHeader";
 import {
-  ArrowLeft, Loader2, Trophy, Target, AlertTriangle, Award, Filter
+  Loader2, Trophy, Target, AlertTriangle, Award, Filter
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+// Button not needed on this page
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
-import logo from "@/assets/logo.png";
+// logo is rendered by AppHeader
 import type { MembershipWithProfile } from "@/types/supabase";
 
 type PlayerStat = {
@@ -26,7 +26,7 @@ type Competition = { id: string; name: string; season: string | null };
 type Team = { id: string; name: string };
 
 const PlayerStats = () => {
-  const navigate = useNavigate();
+  // navigation is handled by AppHeader
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
   const isMobile = useIsMobile();
@@ -155,13 +155,7 @@ const PlayerStats = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 h-16 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4" /></Button>
-          <img src={logo} alt="" className="w-7 h-7" />
-          <h1 className="font-display font-bold text-lg text-foreground">Player Statistics</h1>
-        </div>
-      </header>
+      <AppHeader title="Player Statistics" subtitle="Goals, assists, cards" back />
 
       {/* Filters */}
       {(seasons.length > 0 || competitions.length > 0 || teams.length > 0) && (

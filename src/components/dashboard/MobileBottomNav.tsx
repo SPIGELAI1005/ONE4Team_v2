@@ -49,9 +49,11 @@ interface MobileBottomNavProps {
 
 const MobileBottomNav = ({ active, onNavigate }: MobileBottomNavProps) => {
   const { role } = useParams();
+  const activeRole = (typeof window !== "undefined" ? localStorage.getItem("one4team.activeRole") : null) || null;
+  const effectiveRole = role || activeRole || "";
   const navigate = useNavigate();
   const location = useLocation();
-  const items = roleMobileNav[role || ""] || defaultMobileNav;
+  const items = roleMobileNav[effectiveRole] || defaultMobileNav;
 
   const currentActive = active || (() => {
     const path = location.pathname;
@@ -66,8 +68,8 @@ const MobileBottomNav = ({ active, onNavigate }: MobileBottomNavProps) => {
     if (onNavigate) onNavigate(item.id);
     if (item.route) {
       navigate(item.route);
-    } else if (item.id === "overview" && role) {
-      navigate(`/dashboard/${role}`);
+    } else if (item.id === "overview" && effectiveRole) {
+      navigate(`/dashboard/${effectiveRole}`);
     }
   };
 

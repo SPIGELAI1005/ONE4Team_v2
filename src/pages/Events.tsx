@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import AppHeader from "@/components/layout/AppHeader";
 import {
-  ArrowLeft, Plus, CalendarDays, MapPin, Clock, Users,
+  Plus, CalendarDays, MapPin, Clock, Users,
   Loader2, X, Trophy, CheckCircle2, XCircle, Mail
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
-import logo from "@/assets/logo.png";
+// logo is rendered by AppHeader
 import type { EventRow, MembershipWithProfile, ParticipantWithMembershipProfile } from "@/types/supabase";
 
 type Event = EventRow;
@@ -36,7 +36,7 @@ const statusIcons: Record<string, React.ReactNode> = {
 };
 
 const Events = () => {
-  const navigate = useNavigate();
+  // navigation is handled by AppHeader
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
   const { toast } = useToast();
@@ -150,18 +150,15 @@ const Events = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4" /></Button>
-            <img src={logo} alt="" className="w-7 h-7" />
-            <h1 className="font-display font-bold text-lg text-foreground">Events & Tournaments</h1>
-          </div>
+      <AppHeader
+        title="Events"
+        subtitle="Events & tournaments"
+        rightSlot={
           <Button size="sm" className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={() => setShowAdd(true)}>
-            <Plus className="w-4 h-4 mr-1" /> New Event
+            <Plus className="w-4 h-4 mr-1" /> New
           </Button>
-        </div>
-      </header>
+        }
+      />
 
       <div className="container mx-auto px-4 py-6">
         {(clubLoading || loading) ? (

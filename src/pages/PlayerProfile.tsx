@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import AppHeader from "@/components/layout/AppHeader";
 import {
-  ArrowLeft, Loader2, Trophy, Target, AlertTriangle, Award,
+  Loader2, Trophy, Target, AlertTriangle, Award,
   Calendar, MapPin, CheckCircle2, XCircle, Clock, User
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+// Button not needed on this page
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +15,7 @@ import PlayerRadarChart from "@/components/analytics/PlayerRadarChart";
 import AttendanceHeatmap from "@/components/analytics/AttendanceHeatmap";
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
 import FormStreak from "@/components/matches/FormStreak";
-import logo from "@/assets/logo.png";
+// logo is rendered by AppHeader
 import type {
   ClubMembershipProfileRow,
   MatchEventRowLite,
@@ -42,7 +43,7 @@ type EventAttendance = {
 };
 
 const PlayerProfile = () => {
-  const navigate = useNavigate();
+  // navigation is handled by AppHeader
   const { membershipId } = useParams();
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
@@ -185,13 +186,7 @@ const PlayerProfile = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0">
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 h-16 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4" /></Button>
-          <img src={logo} alt="" className="w-7 h-7" />
-          <h1 className="font-display font-bold text-lg text-foreground">Player Profile</h1>
-        </div>
-      </header>
+      <AppHeader title="Player Profile" subtitle="Overview, history, attendance" back />
 
       <div className="container mx-auto px-4 py-6">
         {(clubLoading || loading) ? (
