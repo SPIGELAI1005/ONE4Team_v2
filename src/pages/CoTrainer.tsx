@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Bot, Send, Loader2, Sparkles, Trash2 } from "lucide-react";
+import AppHeader from "@/components/layout/AppHeader";
+import { Bot, Send, Loader2, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
-import logo from "@/assets/logo.png";
+// logo is rendered by AppHeader
 import ReactMarkdown from "react-markdown";
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -21,7 +21,7 @@ const quickPrompts = [
 ];
 
 const CoTrainer = () => {
-  const navigate = useNavigate();
+  // navigation is handled by AppHeader
   const { user } = useAuth();
   const { clubId } = useClubId();
   const { toast } = useToast();
@@ -119,24 +119,25 @@ const CoTrainer = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-20 lg:pb-0">
-      {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-        <div className="container mx-auto px-4 h-16 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="w-4 h-4" /></Button>
-          <div className="w-8 h-8 rounded-lg bg-gradient-gold flex items-center justify-center">
-            <Bot className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="font-display font-bold text-foreground">Co-Trainer AI</h1>
-            <p className="text-[10px] text-muted-foreground">Your intelligent coaching assistant</p>
-          </div>
-          {messages.length > 0 && (
-            <Button variant="ghost" size="icon" className="ml-auto" onClick={() => setMessages([])}>
+      <AppHeader
+        title="Co-Trainer"
+        subtitle="AI coaching assistant"
+        rightSlot={
+          messages.length > 0 ? (
+            <button
+              onClick={() => setMessages([])}
+              className="w-9 h-9 rounded-2xl bg-card/40 border border-border/60 backdrop-blur-xl flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Clear chat"
+            >
               <Trash2 className="w-4 h-4" />
-            </Button>
-          )}
-        </div>
-      </header>
+            </button>
+          ) : (
+            <div className="w-9 h-9 rounded-2xl bg-gradient-gold flex items-center justify-center text-primary-foreground shadow-gold">
+              <Bot className="w-4 h-4" />
+            </div>
+          )
+        }
+      />
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
