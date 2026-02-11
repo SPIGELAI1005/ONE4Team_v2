@@ -3,6 +3,7 @@ import { Bell, Check, X, Trophy, Calendar, Megaphone, Info } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
+import { useClubId } from "@/hooks/use-club-id";
 import { formatDistanceToNow } from "date-fns";
 
 type Notification = {
@@ -30,17 +31,19 @@ const typeColors: Record<string, string> = {
 
 const NotificationBell = () => {
   const { user } = useAuth();
+  const { clubId } = useClubId();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !clubId) return;
 
     const fetchNotifications = async () => {
       const { data } = await supabase
         .from("notifications")
         .select("*")
+        .eq("club_id", clubId)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -57,7 +60,7 @@ const NotificationBell = () => {
           event: "INSERT",
           schema: "public",
           table: "notifications",
-          filter: `user_id=eq.${user.id}`,
+          filter: `club_id=eq.${clubId},user_id=eq.${user.id}`,
         },
         (payload) => {
           setNotifications((prev) => [payload.new as Notification, ...prev]);
@@ -68,7 +71,7 @@ const NotificationBell = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, clubId]);
 
   const markAsRead = async (id: string) => {
     await supabase.from("notifications").update({ is_read: true }).eq("id", id);
@@ -78,10 +81,11 @@ const NotificationBell = () => {
   };
 
   const markAllRead = async () => {
-    if (!user) return;
+    if (!user || !clubId) return;
     await supabase
       .from("notifications")
       .update({ is_read: true })
+      .eq("club_id", clubId)
       .eq("user_id", user.id)
       .eq("is_read", false);
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));

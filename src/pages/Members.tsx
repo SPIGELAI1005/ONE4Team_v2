@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useClubId } from "@/hooks/use-club-id";
+import { usePermissions } from "@/hooks/use-permissions";
 import logo from "@/assets/logo.png";
 
 type MemberRow = {
@@ -57,28 +59,13 @@ const Members = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { clubId, loading: clubLoading } = useClubId();
+  const perms = usePermissions();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMember, setSelectedMember] = useState<MemberRow | null>(null);
-  const [clubId, setClubId] = useState<string | null>(null);
-
-  // Get user's admin club
-  useEffect(() => {
-    if (!user) return;
-    const fetchClub = async () => {
-      const { data } = await supabase
-        .from("club_memberships")
-        .select("club_id")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
-      if (data) setClubId(data.club_id);
-      else setLoading(false);
-    };
-    fetchClub();
-  }, [user]);
 
   // Fetch members
   useEffect(() => {
@@ -154,7 +141,7 @@ const Members = () => {
       </header>
 
       <div className="container mx-auto px-4 py-6">
-        {loading ? (
+        {(clubLoading || loading) ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
@@ -162,8 +149,15 @@ const Members = () => {
           <div className="text-center py-20">
             <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h2 className="font-display text-xl font-bold text-foreground mb-2">No Club Found</h2>
-            <p className="text-muted-foreground mb-4">You need to be an admin of a club to manage members.</p>
+            <p className="text-muted-foreground mb-4">Join a club to manage members.</p>
             <Button onClick={() => navigate("/onboarding")} variant="outline">Go to Onboarding</Button>
+          </div>
+        ) : !perms.isAdmin ? (
+          <div className="text-center py-20">
+            <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h2 className="font-display text-xl font-bold text-foreground mb-2">Not authorized</h2>
+            <p className="text-muted-foreground mb-4">Only club admins can manage members.</p>
+            <Button onClick={() => navigate(-1)} variant="outline">Go Back</Button>
           </div>
         ) : (
           <>
