@@ -47,6 +47,7 @@ const Onboarding = () => {
   const [creating, setCreating] = useState(false);
   const [redeeming, setRedeeming] = useState(false);
   const [redeemToken, setRedeemToken] = useState(inviteTokenParam || "");
+  const [redeemSuccess, setRedeemSuccess] = useState<{ role: string; clubId: string | null } | null>(null);
 
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -109,6 +110,7 @@ const Onboarding = () => {
     if (!canRedeem) return;
 
     setRedeeming(true);
+    setRedeemSuccess(null);
     try {
       const { data, error } = await supabase.rpc("redeem_club_invite", { _token: redeemToken.trim() });
       if (error) throw error;
@@ -121,8 +123,13 @@ const Onboarding = () => {
         localStorage.setItem("one4team.activeClubId", clubId);
       }
 
+      // UX polish: show success glass card briefly before routing.
+      setRedeemSuccess({ role, clubId });
       toast({ title: "Invite redeemed", description: "Welcome to the club." });
-      navigate(`/dashboard/${role}`);
+
+      window.setTimeout(() => {
+        navigate(`/dashboard/${role}`);
+      }, 1200);
     } catch (err: unknown) {
       toast({
         title: "Invite failed",
@@ -204,41 +211,91 @@ const Onboarding = () => {
               </div>
 
               <div className="rounded-3xl bg-card/55 border border-border/70 backdrop-blur-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)] space-y-4">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Invite token</label>
-                  <Input
-                    placeholder="Paste invite token"
-                    value={redeemToken}
-                    onChange={(e) => setRedeemToken(e.target.value)}
-                    className="bg-background/60 border-border"
-                    maxLength={2000}
-                  />
-                  <div className="mt-2 text-[11px] text-muted-foreground">
-                    Tip: tokens are stored as hashes server-side. This token is only used for verification.
-                  </div>
-                </div>
+                {redeemSuccess ? (
+                  <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-background/45 backdrop-blur-xl p-5">
+                    <motion.div
+                      aria-hidden
+                      className="absolute inset-0"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <div className="absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
+                      <div className="absolute -bottom-24 left-1/3 h-48 w-48 -translate-x-1/2 rounded-full bg-accent/15 blur-3xl" />
+                    </motion.div>
 
-                <Button
-                  onClick={handleRedeemInvite}
-                  disabled={!canRedeem || redeeming}
-                  className="w-full bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90 disabled:opacity-40"
-                  size="lg"
-                >
-                  {redeeming ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Redeeming…
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 mr-2" /> Join club
-                    </>
-                  )}
-                </Button>
+                    <div className="relative flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+                        <CheckCircle2 className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-display font-bold text-foreground tracking-tight">You’re in.</div>
+                        <div className="text-xs text-muted-foreground">
+                          Setting up your dashboard…
+                        </div>
+                        <div className="mt-2 inline-flex items-center gap-2 text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary">
+                          role: {redeemSuccess.role}
+                        </div>
+                      </div>
+                    </div>
 
-                {!user && (
-                  <div className="text-xs text-muted-foreground text-center">
-                    You’ll be asked to sign in before we add you to the club.
+                    <div className="mt-4 flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <motion.div
+                        className="h-1.5 w-1.5 rounded-full bg-primary"
+                        animate={{ opacity: [0.2, 1, 0.2] }}
+                        transition={{ duration: 1.0, repeat: Infinity }}
+                      />
+                      <motion.div
+                        className="h-1.5 w-1.5 rounded-full bg-primary"
+                        animate={{ opacity: [0.2, 1, 0.2] }}
+                        transition={{ duration: 1.0, repeat: Infinity, delay: 0.15 }}
+                      />
+                      <motion.div
+                        className="h-1.5 w-1.5 rounded-full bg-primary"
+                        animate={{ opacity: [0.2, 1, 0.2] }}
+                        transition={{ duration: 1.0, repeat: Infinity, delay: 0.3 }}
+                      />
+                      Redirecting
+                    </div>
                   </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Invite token</label>
+                      <Input
+                        placeholder="Paste invite token"
+                        value={redeemToken}
+                        onChange={(e) => setRedeemToken(e.target.value)}
+                        className="bg-background/60 border-border"
+                        maxLength={2000}
+                      />
+                      <div className="mt-2 text-[11px] text-muted-foreground">
+                        Tip: tokens are stored as hashes server-side. This token is only used for verification.
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={handleRedeemInvite}
+                      disabled={!canRedeem || redeeming}
+                      className="w-full bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90 disabled:opacity-40"
+                      size="lg"
+                    >
+                      {redeeming ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Redeeming…
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 mr-2" /> Join club
+                        </>
+                      )}
+                    </Button>
+
+                    {!user && (
+                      <div className="text-xs text-muted-foreground text-center">
+                        You’ll be asked to sign in before we add you to the club.
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </motion.div>
