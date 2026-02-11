@@ -211,7 +211,7 @@ const Teams = () => {
       {/* Add Team Modal */}
       {showAddTeam && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowAddTeam(false)}>
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-2xl bg-card border border-border p-6" onClick={e => e.stopPropagation()}>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-[95vw] sm:max-w-md rounded-2xl bg-card border border-border p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-display font-bold text-foreground">Add Team</h3>
               <Button variant="ghost" size="icon" onClick={() => setShowAddTeam(false)}><X className="w-4 h-4" /></Button>
@@ -232,7 +232,7 @@ const Teams = () => {
       {/* Add Session Modal */}
       {showAddSession && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowAddSession(false)}>
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-2xl bg-card border border-border p-6" onClick={e => e.stopPropagation()}>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-[95vw] sm:max-w-md rounded-2xl bg-card border border-border p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-display font-bold text-foreground">Schedule Training</h3>
               <Button variant="ghost" size="icon" onClick={() => setShowAddSession(false)}><X className="w-4 h-4" /></Button>

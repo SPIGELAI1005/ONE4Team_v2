@@ -158,7 +158,7 @@ const Payments = () => {
         ) : tab === "overview" ? (
           <>
             {/* KPIs */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               {[
                 { label: "Total Collected", value: `€${totalRevenue.toFixed(2)}`, color: "text-emerald-400" },
                 { label: "Pending", value: `€${pendingAmount.toFixed(2)}`, color: "text-primary" },

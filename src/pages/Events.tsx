@@ -197,7 +197,7 @@ const Events = () => {
       {showAdd && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowAdd(false)}>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-md rounded-2xl bg-card border border-border p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            className="w-full max-w-[95vw] sm:max-w-md rounded-2xl bg-card border border-border p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-display font-bold text-foreground">New Event</h3>
               <Button variant="ghost" size="icon" onClick={() => setShowAdd(false)}><X className="w-4 h-4" /></Button>
@@ -237,7 +237,7 @@ const Events = () => {
       {selectedEvent && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedEvent(null)}>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-lg rounded-2xl bg-card border border-border p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            className="w-full max-w-[95vw] sm:max-w-lg rounded-2xl bg-card border border-border p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-display font-bold text-foreground">{selectedEvent.title}</h3>
               <Button variant="ghost" size="icon" onClick={() => setSelectedEvent(null)}><X className="w-4 h-4" /></Button>
