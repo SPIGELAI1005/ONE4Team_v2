@@ -1,11 +1,33 @@
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   Users, Calendar, Trophy, MapPin, Phone, Mail,
-  Clock, ArrowRight, ChevronRight, Star
+  Clock, ArrowRight, Star, Send, Loader2, X, ShieldQuestion
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
+
+type Club = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  is_public: boolean;
+};
+
+type InviteRequestRow = {
+  id: string;
+  club_id: string;
+  name: string;
+  email: string;
+  message: string | null;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+};
 
 const teams = [
   { name: "First Team", sport: "Football", players: 22, coach: "John Miller" },
@@ -39,6 +61,78 @@ const sponsors = [
 
 const ClubPage = () => {
   const navigate = useNavigate();
+  const { clubSlug } = useParams();
+  const { toast } = useToast();
+
+  const [club, setClub] = useState<Club | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [showRequestInvite, setShowRequestInvite] = useState(false);
+  const [reqName, setReqName] = useState("");
+  const [reqEmail, setReqEmail] = useState("");
+  const [reqMessage, setReqMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const canRequestInvite = useMemo(() => Boolean(club?.is_public), [club?.is_public]);
+
+  useEffect(() => {
+    const run = async () => {
+      if (!clubSlug) return;
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("clubs")
+        .select("id, name, slug, description, is_public")
+        .eq("slug", clubSlug)
+        .maybeSingle();
+
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+        setClub(null);
+      } else {
+        setClub((data as unknown as Club) || null);
+      }
+      setLoading(false);
+    };
+    run();
+  }, [clubSlug, toast]);
+
+  const handleSubmitInviteRequest = async () => {
+    if (!club) return;
+    if (!canRequestInvite) {
+      toast({ title: "Invite requests disabled", description: "This club is not accepting public invite requests." });
+      return;
+    }
+    if (!reqName.trim() || !reqEmail.trim()) return;
+
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase
+        .from("club_invite_requests")
+        .insert({
+          club_id: club.id,
+          name: reqName.trim(),
+          email: reqEmail.trim().toLowerCase(),
+          message: reqMessage.trim() || null,
+          status: "pending",
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      void data;
+      toast({ title: "Request sent", description: "The club admins will review your request shortly." });
+      setReqName("");
+      setReqEmail("");
+      setReqMessage("");
+      setShowRequestInvite(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -61,40 +155,67 @@ const ClubPage = () => {
           <Button
             size="sm"
             className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
-            onClick={() => navigate("/onboarding")}
+            onClick={() => setShowRequestInvite(true)}
           >
-            Join Club
+            Request Invite
           </Button>
         </div>
       </header>
 
       {/* Hero */}
       <section className="relative py-20 md:py-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-transparent" />
         <div className="container mx-auto px-4 relative">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-center max-w-3xl mx-auto"
           >
-            <div className="w-20 h-20 rounded-2xl bg-gradient-gold flex items-center justify-center mx-auto mb-6">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-gold flex items-center justify-center mx-auto mb-6 shadow-gold">
               <img src={logo} alt="" className="w-12 h-12" />
             </div>
-            <h1 className="font-display text-4xl md:text-6xl font-bold mb-4">
-              FC <span className="text-gradient-gold">Riverside</span>
-            </h1>
-            <p className="text-lg text-muted-foreground mb-2">Est. 1976 · Community Football Club</p>
-            <p className="text-muted-foreground max-w-xl mx-auto mb-8">
-              Building champions and community spirit for over 50 years. Join our family of athletes, supporters, and friends.
-            </p>
-            <div className="flex items-center justify-center gap-3">
-              <Button size="lg" className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90">
-                Become a Member <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-              <Button size="lg" variant="outline" className="border-border">
-                Contact Us
-              </Button>
-            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                <Loader2 className="w-4 h-4 animate-spin" /> Loading club…
+              </div>
+            ) : !club ? (
+              <div className="rounded-2xl border border-border bg-card/60 backdrop-blur-xl p-6">
+                <div className="flex items-center justify-center gap-2 text-muted-foreground mb-2">
+                  <ShieldQuestion className="w-5 h-5" />
+                  Club not found
+                </div>
+                <Button variant="outline" onClick={() => navigate("/")}>Go Home</Button>
+              </div>
+            ) : (
+              <>
+                <h1 className="font-display text-4xl md:text-6xl font-bold mb-4">
+                  {club.name.split(" ").slice(0, -1).join(" ") || club.name}{" "}
+                  <span className="text-gradient-gold">{club.name.split(" ").slice(-1)[0]}</span>
+                </h1>
+                <p className="text-lg text-muted-foreground mb-2">Invite-only club onboarding · iOS-style glass UI</p>
+                <p className="text-muted-foreground max-w-xl mx-auto mb-8">
+                  {club.description || "Join our community of athletes, supporters, and friends."}
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <Button
+                    size="lg"
+                    className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
+                    onClick={() => setShowRequestInvite(true)}
+                  >
+                    Request Invite <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                  <Button size="lg" variant="outline" className="border-border" onClick={() => navigate("/onboarding")}>
+                    Create a Club
+                  </Button>
+                </div>
+                {!canRequestInvite && (
+                  <div className="mt-6 text-xs text-muted-foreground">
+                    This club is private and does not accept public invite requests.
+                  </div>
+                )}
+              </>
+            )}
           </motion.div>
         </div>
       </section>
@@ -197,14 +318,16 @@ const ClubPage = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.08 }}
-                className="p-5 rounded-xl bg-card border border-border hover:border-primary/30 transition-colors"
+                className="p-5 rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] hover:border-primary/30 transition-colors"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">{event.type}</span>
-                  <span className="text-xs text-muted-foreground">{event.date}</span>
+                  <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">{event.type}</span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" /> {event.date}
+                  </span>
                 </div>
-                <h3 className="font-display font-semibold text-foreground mb-1">{event.title}</h3>
-                <p className="text-xs text-muted-foreground">{event.desc}</p>
+                <h3 className="font-display font-semibold text-foreground mb-1 tracking-tight">{event.title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">{event.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -251,6 +374,75 @@ const ClubPage = () => {
           </div>
         </div>
       </section>
+
+      {/* Request Invite Modal */}
+      {showRequestInvite && (
+        <div className="fixed inset-0 z-50 bg-background/40 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowRequestInvite(false)}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98, y: 6 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="w-full max-w-md rounded-3xl border border-border/60 bg-card/60 backdrop-blur-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,0.22)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-display font-bold text-foreground tracking-tight">Request an invite</h3>
+                <p className="text-xs text-muted-foreground">We’ll notify the club admins.</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowRequestInvite(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {!club ? (
+              <div className="text-sm text-muted-foreground">Club not available.</div>
+            ) : !canRequestInvite ? (
+              <div className="text-sm text-muted-foreground">This club is not accepting public invite requests.</div>
+            ) : (
+              <div className="space-y-3">
+                <Input
+                  placeholder="Your name *"
+                  value={reqName}
+                  onChange={(e) => setReqName(e.target.value)}
+                  className="bg-background/60"
+                  maxLength={120}
+                />
+                <Input
+                  placeholder="Email *"
+                  type="email"
+                  value={reqEmail}
+                  onChange={(e) => setReqEmail(e.target.value)}
+                  className="bg-background/60"
+                  maxLength={254}
+                />
+                <textarea
+                  placeholder="Optional message (e.g. age group / team / role)"
+                  value={reqMessage}
+                  onChange={(e) => setReqMessage(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-background/60 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                  rows={4}
+                  maxLength={800}
+                />
+                <Button
+                  onClick={handleSubmitInviteRequest}
+                  disabled={submitting || !reqName.trim() || !reqEmail.trim()}
+                  className="w-full bg-gradient-gold text-primary-foreground hover:opacity-90 disabled:opacity-40"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending…
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" /> Send request
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-border py-8">
