@@ -107,17 +107,12 @@ const ClubPage = () => {
 
     setSubmitting(true);
     try {
-      const { data, error } = await supabase
-        .from("club_invite_requests")
-        .insert({
-          club_id: club.id,
-          name: reqName.trim(),
-          email: reqEmail.trim().toLowerCase(),
-          message: reqMessage.trim() || null,
-          status: "pending",
-        })
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc("request_club_invite", {
+        _club_id: club.id,
+        _name: reqName.trim(),
+        _email: reqEmail.trim().toLowerCase(),
+        _message: reqMessage.trim() || null,
+      });
 
       if (error) throw error;
 

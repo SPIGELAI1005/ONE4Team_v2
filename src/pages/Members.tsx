@@ -56,6 +56,8 @@ type ClubInviteRow = {
   created_at: string;
 };
 
+const canRevokeInvite = (inv: ClubInviteRow) => !inv.used_at;
+
 const roleIcons: Record<string, React.ElementType> = {
   admin: Crown,
   trainer: Dumbbell,
@@ -599,6 +601,30 @@ const Members = () => {
                               <div className="flex items-center justify-between mt-3 text-[10px] text-muted-foreground">
                                 <span>created {new Date(inv.created_at).toLocaleDateString()}</span>
                                 <span>{inv.expires_at ? `expires ${new Date(inv.expires_at).toLocaleDateString()}` : "no expiry"}</span>
+                              </div>
+                              <div className="mt-3 flex justify-end">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={!canRevokeInvite(inv)}
+                                  onClick={async () => {
+                                    if (!clubId) return;
+                                    const { error } = await supabase
+                                      .from("club_invites")
+                                      .delete()
+                                      .eq("club_id", clubId)
+                                      .eq("id", inv.id);
+                                    if (error) {
+                                      toast({ title: "Error", description: error.message, variant: "destructive" });
+                                      return;
+                                    }
+                                    setInvites((prev) => prev.filter((x) => x.id !== inv.id));
+                                    toast({ title: "Invite revoked" });
+                                  }}
+                                  className="h-7 text-[10px]"
+                                >
+                                  Revoke
+                                </Button>
                               </div>
                             </div>
                           ))}
