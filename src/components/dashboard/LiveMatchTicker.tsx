@@ -52,35 +52,37 @@ const LiveMatchTicker = () => {
 
     fetchLiveMatches();
 
-    // Subscribe to real-time match updates
-    const channel = supabase
-      .channel("live-matches")
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "matches",
-        },
-        (payload) => {
-          const updated = payload.new as LiveMatch;
-          setMatches((prev) => {
-            if (updated.status === "in_progress") {
-              const exists = prev.find((m) => m.id === updated.id);
-              if (exists) {
-                return prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m));
+    // Subscribe to real-time match updates (scoped to the user's clubs)
+    const channels = clubIds.map((cid) =>
+      supabase
+        .channel(`live-matches-${cid}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "matches",
+            filter: `club_id=eq.${cid}`,
+          },
+          (payload) => {
+            const updated = payload.new as LiveMatch;
+            setMatches((prev) => {
+              if (updated.status === "in_progress") {
+                const exists = prev.find((m) => m.id === updated.id);
+                if (exists) {
+                  return prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m));
+                }
+                return [...prev, updated];
               }
-              return [...prev, updated];
-            } else {
               return prev.filter((m) => m.id !== updated.id);
-            }
-          });
-        }
-      )
-      .subscribe();
+            });
+          }
+        )
+        .subscribe()
+    );
 
     return () => {
-      supabase.removeChannel(channel);
+      channels.forEach((ch) => supabase.removeChannel(ch));
     };
   }, [user]);
 
