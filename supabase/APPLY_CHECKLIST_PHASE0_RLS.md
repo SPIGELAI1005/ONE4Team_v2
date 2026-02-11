@@ -7,6 +7,8 @@ This checklist goes with `supabase/APPLY_BUNDLE_PHASE0_RLS.sql`.
 - Tightens write permissions so **trainers/admins** can manage:
   - `teams`, `training_sessions`, `events`, `event_participants` (invite/delete),
   - `competitions`, `matches`, `match_lineups`, `match_events`
+- Makes **announcements** admin-only for insert/update/delete (matches app UI).
+- Tightens **match_votes** invariants (vote must be from your own membership and within the match/club).
 - Adds additional safety on `notifications`: user must be a member of the club.
 
 ## Before you apply

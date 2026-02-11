@@ -287,7 +287,99 @@ create policy "Trainers/admins can delete match events"
   );
 
 -- -------------------------------------------------------------
--- 9) NOTIFICATIONS — add club membership check for select/update/delete
+-- 9) ANNOUNCEMENTS — admin-only write (matches app behavior)
+-- -------------------------------------------------------------
+drop policy if exists "Admins can create announcements" on public.announcements;
+drop policy if exists "Authors can update announcements" on public.announcements;
+drop policy if exists "Admins can delete announcements" on public.announcements;
+
+create policy "Admins can create announcements"
+  on public.announcements for insert to authenticated
+  with check (public.is_club_admin(auth.uid(), club_id) and author_id = auth.uid());
+
+create policy "Admins can update announcements"
+  on public.announcements for update to authenticated
+  using (public.is_club_admin(auth.uid(), club_id))
+  with check (public.is_club_admin(auth.uid(), club_id));
+
+create policy "Admins can delete announcements"
+  on public.announcements for delete to authenticated
+  using (public.is_club_admin(auth.uid(), club_id));
+
+-- -------------------------------------------------------------
+-- 10) MATCH VOTES — tighten invariants
+--   - voter_membership_id must belong to auth user
+--   - vote must be within same club as match + memberships
+-- -------------------------------------------------------------
+drop policy if exists "Members can vote in their club" on public.match_votes;
+drop policy if exists "Members can view votes in their club" on public.match_votes;
+drop policy if exists "Members can update own vote" on public.match_votes;
+drop policy if exists "Members can delete own vote" on public.match_votes;
+
+create policy "Members can view votes in their club"
+  on public.match_votes for select to authenticated
+  using (public.is_member_of_club(auth.uid(), club_id));
+
+create policy "Members can vote (own membership, same club/match)"
+  on public.match_votes for insert to authenticated
+  with check (
+    public.is_member_of_club(auth.uid(), club_id)
+    and exists (
+      select 1
+      from public.club_memberships cm
+      where cm.id = match_votes.voter_membership_id
+        and cm.user_id = auth.uid()
+        and cm.club_id = match_votes.club_id
+    )
+    and exists (
+      select 1
+      from public.club_memberships cm2
+      where cm2.id = match_votes.voted_for_membership_id
+        and cm2.club_id = match_votes.club_id
+    )
+    and exists (
+      select 1
+      from public.matches m
+      where m.id = match_votes.match_id
+        and m.club_id = match_votes.club_id
+    )
+  );
+
+create policy "Members can update own vote"
+  on public.match_votes for update to authenticated
+  using (
+    exists (
+      select 1
+      from public.club_memberships cm
+      where cm.id = match_votes.voter_membership_id
+        and cm.user_id = auth.uid()
+        and cm.club_id = match_votes.club_id
+    )
+  )
+  with check (
+    exists (
+      select 1
+      from public.club_memberships cm
+      where cm.id = match_votes.voter_membership_id
+        and cm.user_id = auth.uid()
+        and cm.club_id = match_votes.club_id
+    )
+  );
+
+create policy "Members can delete own vote"
+  on public.match_votes for delete to authenticated
+  using (
+    exists (
+      select 1
+      from public.club_memberships cm
+      where cm.id = match_votes.voter_membership_id
+        and cm.user_id = auth.uid()
+        and cm.club_id = match_votes.club_id
+    )
+  );
+
+-- -------------------------------------------------------------
+-- 11) NOTIFICATIONS — add club membership check for select/update/delete
 -- -------------------------------------------------------------
 drop policy if exists "Users can view their own notifications" on public.notifications;
 drop policy if exists "Users can update their own notifications" on public.notifications;
