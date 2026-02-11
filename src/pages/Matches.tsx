@@ -166,11 +166,17 @@ const Matches = () => {
 
   const handleUpdateResult = async () => {
     if (!selectedMatch) return;
-    const { error } = await supabase.from("matches").update({
-      home_score: homeScore ? parseInt(homeScore) : null,
-      away_score: awayScore ? parseInt(awayScore) : null,
-      status: "completed",
-    }).eq("id", selectedMatch.id);
+    if (!clubId) return;
+    if (!clubId) return;
+    const { error } = await supabase
+      .from("matches")
+      .update({
+        home_score: homeScore ? parseInt(homeScore) : null,
+        away_score: awayScore ? parseInt(awayScore) : null,
+        status: "completed",
+      })
+      .eq("club_id", clubId)
+      .eq("id", selectedMatch.id);
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     setMatches(prev => prev.map(m => m.id === selectedMatch.id ? { ...m, home_score: parseInt(homeScore) || null, away_score: parseInt(awayScore) || null, status: "completed" } : m));
     setSelectedMatch(prev => prev ? { ...prev, home_score: parseInt(homeScore) || null, away_score: parseInt(awayScore) || null, status: "completed" } : null);
@@ -206,12 +212,22 @@ const Matches = () => {
   };
 
   const handleRemoveFromLineup = async (id: string) => {
-    await supabase.from("match_lineups").delete().eq("id", id);
+    if (!selectedMatch) return;
+    await supabase
+      .from("match_lineups")
+      .delete()
+      .eq("match_id", selectedMatch.id)
+      .eq("id", id);
     setLineup(prev => prev.filter(l => l.id !== id));
   };
 
   const handleToggleStarter = async (player: LineupPlayer) => {
-    await supabase.from("match_lineups").update({ is_starter: !player.is_starter }).eq("id", player.id);
+    if (!selectedMatch) return;
+    await supabase
+      .from("match_lineups")
+      .update({ is_starter: !player.is_starter })
+      .eq("match_id", selectedMatch.id)
+      .eq("id", player.id);
     setLineup(prev => prev.map(l => l.id === player.id ? { ...l, is_starter: !l.is_starter } : l));
   };
 

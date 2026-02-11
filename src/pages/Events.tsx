@@ -147,7 +147,12 @@ const Events = () => {
   };
 
   const handleRSVP = async (participantId: string, status: string) => {
-    const { error } = await supabase.from("event_participants").update({ status }).eq("id", participantId);
+    if (!selectedEvent) return;
+    const { error } = await supabase
+      .from("event_participants")
+      .update({ status })
+      .eq("event_id", selectedEvent.id)
+      .eq("id", participantId);
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     if (selectedEvent) openEventDetail(selectedEvent);
   };
