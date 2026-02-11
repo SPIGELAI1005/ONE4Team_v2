@@ -94,6 +94,7 @@ const Members = () => {
   const [selectedMember, setSelectedMember] = useState<MemberRow | null>(null);
 
   const [inviteRequests, setInviteRequests] = useState<InviteRequestRow[]>([]);
+  const [inviteReqFilter, setInviteReqFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
   const [invites, setInvites] = useState<ClubInviteRow[]>([]);
   const [invitesLoading, setInvitesLoading] = useState(false);
   const [clubSlug, setClubSlug] = useState<string | null>(null);
@@ -520,11 +521,29 @@ const Members = () => {
                         <Button variant="outline" size="sm" onClick={() => fetchInvitesData()}>Refresh</Button>
                       </div>
 
-                      {inviteRequests.length === 0 ? (
-                        <div className="text-sm text-muted-foreground py-8 text-center">No invite requests yet.</div>
+                      <div className="flex gap-2 mb-4">
+                        {(["pending", "approved", "rejected", "all"] as const).map((s) => (
+                          <button
+                            key={s}
+                            onClick={() => setInviteReqFilter(s)}
+                            className={`text-xs font-medium px-3 py-1.5 rounded-full whitespace-nowrap transition-colors border ${
+                              inviteReqFilter === s
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-card/40 border-border/60 text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+
+                      {inviteRequests.filter((r) => inviteReqFilter === "all" || r.status === inviteReqFilter).length === 0 ? (
+                        <div className="text-sm text-muted-foreground py-8 text-center">No {inviteReqFilter === "all" ? "requests" : inviteReqFilter} requests.</div>
                       ) : (
                         <div className="space-y-3">
-                          {inviteRequests.map((r) => (
+                          {inviteRequests
+                            .filter((r) => inviteReqFilter === "all" || r.status === inviteReqFilter)
+                            .map((r) => (
                             <div key={r.id} className="p-4 rounded-2xl border border-border/60 bg-background/40 backdrop-blur-xl">
                               <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">
