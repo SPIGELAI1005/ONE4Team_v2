@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import AppHeader from "@/components/layout/AppHeader";
 import {
   Plus, CalendarDays, MapPin, Clock, Users,
-  Loader2, X, Trophy, CheckCircle2, XCircle, Mail
+  Loader2, X, Trophy, CheckCircle2, XCircle, Mail, ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +49,11 @@ const Events = () => {
   const [members, setMembers] = useState<Membership[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
+  const [openPanels, setOpenPanels] = useState({
+    participants: true,
+    invite: false,
+  });
+
   // Form
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -76,6 +81,7 @@ const Events = () => {
   const openEventDetail = async (event: Event) => {
     setSelectedEvent(event);
     setLoadingDetail(true);
+    setOpenPanels({ participants: true, invite: false });
 
     const [partRes, memRes] = await Promise.all([
       supabase
@@ -238,61 +244,92 @@ const Events = () => {
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedEvent(null)}>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
             className="w-full max-w-[95vw] sm:max-w-lg rounded-2xl bg-card border border-border p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display font-bold text-foreground">{selectedEvent.title}</h3>
-              <Button variant="ghost" size="icon" onClick={() => setSelectedEvent(null)}><X className="w-4 h-4" /></Button>
+            <div className="sticky top-0 z-10 -mx-6 px-6 pt-4 pb-3 bg-card/70 backdrop-blur-2xl border-b border-border">
+              <div className="flex items-center justify-between">
+                <div className="min-w-0">
+                  <h3 className="font-display font-bold text-foreground truncate">{selectedEvent.title}</h3>
+                  <div className="text-[11px] text-muted-foreground truncate">
+                    {new Date(selectedEvent.starts_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    {selectedEvent.location ? ` · ${selectedEvent.location}` : ""}
+                  </div>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setSelectedEvent(null)}><X className="w-4 h-4" /></Button>
+              </div>
             </div>
-            {selectedEvent.description && <p className="text-sm text-muted-foreground mb-4">{selectedEvent.description}</p>}
-            <div className="flex items-center gap-4 text-xs text-muted-foreground mb-6">
-              <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(selectedEvent.starts_at).toLocaleString()}</span>
-              {selectedEvent.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {selectedEvent.location}</span>}
-            </div>
+
+            {selectedEvent.description && <p className="text-sm text-muted-foreground mt-4 mb-4">{selectedEvent.description}</p>}
 
             {loadingDetail ? (
               <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
             ) : (
               <>
                 {/* Participants */}
-                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary" /> Participants ({participants.length})
-                </h4>
-                {participants.length === 0 ? (
-                  <p className="text-xs text-muted-foreground mb-4">No participants invited yet.</p>
-                ) : (
-                  <div className="space-y-2 mb-4">
-                    {participants.map(p => (
-                      <div key={p.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background border border-border">
-                        <div className="flex items-center gap-2">
-                          {statusIcons[p.status]}
-                          <span className="text-sm text-foreground">{p.profiles?.display_name || "Member"}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-muted-foreground capitalize">{p.status}</span>
-                          {p.status === "invited" && members.find(m => m.user_id === user?.id && m.id === p.membership_id) && (
-                            <div className="flex gap-1 ml-2">
-                              <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] text-primary" onClick={() => handleRSVP(p.id, "confirmed")}>Accept</Button>
-                              <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] text-accent" onClick={() => handleRSVP(p.id, "declined")}>Decline</Button>
+                <div className="rounded-2xl glass-card p-4 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setOpenPanels((p) => ({ ...p, participants: !p.participants }))}
+                    className="w-full flex items-center justify-between"
+                  >
+                    <h4 className="text-sm font-display font-semibold text-foreground flex items-center gap-2">
+                      <Users className="w-4 h-4 text-primary" /> Participants ({participants.length})
+                    </h4>
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openPanels.participants ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {openPanels.participants && (
+                    <>
+                      {participants.length === 0 ? (
+                        <p className="text-xs text-muted-foreground mt-3">No participants invited yet.</p>
+                      ) : (
+                        <div className="space-y-2 mt-3">
+                          {participants.map(p => (
+                            <div key={p.id} className="flex items-center justify-between px-3 py-2 rounded-xl bg-background/60 border border-border/60">
+                              <div className="flex items-center gap-2 min-w-0">
+                                {statusIcons[p.status]}
+                                <span className="text-sm text-foreground truncate">{p.profiles?.display_name || "Member"}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] text-muted-foreground capitalize">{p.status}</span>
+                                {p.status === "invited" && members.find(m => m.user_id === user?.id && m.id === p.membership_id) && (
+                                  <div className="flex gap-1 ml-2">
+                                    <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px] text-primary" onClick={() => handleRSVP(p.id, "confirmed")}>Accept</Button>
+                                    <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px] text-accent" onClick={() => handleRSVP(p.id, "declined")}>Decline</Button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          )}
+                          ))}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      )}
+                    </>
+                  )}
+                </div>
 
                 {/* Invite members */}
-                <h4 className="text-sm font-semibold text-foreground mb-2">Invite Members</h4>
-                <div className="space-y-1 max-h-40 overflow-y-auto">
-                  {members
-                    .filter(m => !participants.some(p => p.membership_id === m.id))
-                    .map(m => (
-                      <div key={m.id} className="flex items-center justify-between px-3 py-1.5 rounded-lg hover:bg-muted/50">
-                        <span className="text-sm text-foreground">{m.profiles?.display_name || "Member"}</span>
-                        <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] text-primary" onClick={() => handleInvite(m.id)}>
-                          <Mail className="w-3 h-3 mr-1" /> Invite
-                        </Button>
-                      </div>
-                    ))}
+                <div className="rounded-2xl glass-card p-4 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setOpenPanels((p) => ({ ...p, invite: !p.invite }))}
+                    className="w-full flex items-center justify-between"
+                  >
+                    <h4 className="text-sm font-display font-semibold text-foreground">Invite members</h4>
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openPanels.invite ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {openPanels.invite && (
+                    <div className="space-y-1 max-h-52 overflow-y-auto mt-3">
+                      {members
+                        .filter(m => !participants.some(p => p.membership_id === m.id))
+                        .map(m => (
+                          <div key={m.id} className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-muted/30">
+                            <span className="text-sm text-foreground truncate">{m.profiles?.display_name || "Member"}</span>
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px] text-primary" onClick={() => handleInvite(m.id)}>
+                              <Mail className="w-3 h-3 mr-1" /> Invite
+                            </Button>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
               </>
             )}
