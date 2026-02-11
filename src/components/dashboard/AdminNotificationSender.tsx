@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
+import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { isErrorWithMessage } from "@/types/dashboard";
@@ -20,6 +21,7 @@ const AdminNotificationSender = () => {
   const { user } = useAuth();
   const { clubId } = useClubId();
   const { toast } = useToast();
+  const perms = usePermissions();
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -28,7 +30,11 @@ const AdminNotificationSender = () => {
   const [sent, setSent] = useState(false);
 
   const handleSend = async () => {
-    if (!title.trim() || !clubId || !user) return;
+    if (!perms.isAdmin || !clubId || !user) {
+      toast({ title: "Not authorized", description: "Only admins can send notifications.", variant: "destructive" });
+      return;
+    }
+    if (!title.trim()) return;
 
     setSending(true);
     try {
@@ -81,6 +87,18 @@ const AdminNotificationSender = () => {
       setSending(false);
     }
   };
+
+  if (!perms.isAdmin) {
+    return (
+      <div className="rounded-xl bg-card border border-border p-5">
+        <h2 className="font-display font-semibold text-foreground mb-2 flex items-center gap-2">
+          <Megaphone className="w-4 h-4 text-primary" />
+          Send Notification
+        </h2>
+        <div className="text-sm text-muted-foreground">Admin-only.</div>
+      </div>
+    );
+  }
 
   return (
     <motion.div

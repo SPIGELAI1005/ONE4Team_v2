@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
+import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -39,6 +40,7 @@ const Events = () => {
   // navigation is handled by AppHeader
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
+  const perms = usePermissions();
   const { toast } = useToast();
 
   const [events, setEvents] = useState<Event[]>([]);
@@ -111,6 +113,10 @@ const Events = () => {
   };
 
   const handleCreate = async () => {
+    if (!perms.isTrainer) {
+      toast({ title: "Not authorized", description: "Only trainers/admins can create events.", variant: "destructive" });
+      return;
+    }
     if (!title.trim() || !startsAt || !clubId || !user) return;
     const { data, error } = await supabase
       .from("events")
@@ -135,6 +141,10 @@ const Events = () => {
   };
 
   const handleInvite = async (membershipId: string) => {
+    if (!perms.isTrainer) {
+      toast({ title: "Not authorized", description: "Only trainers/admins can invite participants.", variant: "destructive" });
+      return;
+    }
     if (!selectedEvent) return;
     const { error } = await supabase.from("event_participants").insert({
       event_id: selectedEvent.id,

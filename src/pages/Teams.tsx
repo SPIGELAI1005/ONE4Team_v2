@@ -74,7 +74,11 @@ const Teams = () => {
   }, [clubId]);
 
   const handleAddTeam = async () => {
-    if (!teamName.trim() || !clubId) return;
+    if (!perms.isTrainer || !clubId) {
+      toast({ title: "Not authorized", description: "Only trainers/admins can manage teams.", variant: "destructive" });
+      return;
+    }
+    if (!teamName.trim()) return;
     const { data, error } = await supabase
       .from("teams")
       .insert({ club_id: clubId, name: teamName.trim(), sport: teamSport, age_group: teamAge || null, coach_name: teamCoach || null })
@@ -88,7 +92,11 @@ const Teams = () => {
   };
 
   const handleAddSession = async () => {
-    if (!sessionTitle.trim() || !sessionStart || !sessionEnd || !clubId) return;
+    if (!perms.isTrainer || !clubId) {
+      toast({ title: "Not authorized", description: "Only trainers/admins can manage sessions.", variant: "destructive" });
+      return;
+    }
+    if (!sessionTitle.trim() || !sessionStart || !sessionEnd) return;
     const { data, error } = await supabase
       .from("training_sessions")
       .insert({

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
+import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -49,6 +50,7 @@ const Matches = () => {
   // navigation is handled by AppHeader
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
+  const perms = usePermissions();
   const { toast } = useToast();
 
   const [tab, setTab] = useState<"matches" | "competitions" | "standings">("matches");
@@ -140,6 +142,10 @@ const Matches = () => {
   };
 
   const handleCreateMatch = async () => {
+    if (!perms.isTrainer) {
+      toast({ title: "Not authorized", description: "Only trainers/admins can schedule matches.", variant: "destructive" });
+      return;
+    }
     if (!opponent.trim() || !matchDate || !clubId) return;
     const { data, error } = await supabase.from("matches").insert({
       club_id: clubId, opponent: opponent.trim(), is_home: isHome, match_date: matchDate,
@@ -153,6 +159,10 @@ const Matches = () => {
   };
 
   const handleCreateComp = async () => {
+    if (!perms.isTrainer) {
+      toast({ title: "Not authorized", description: "Only trainers/admins can create competitions.", variant: "destructive" });
+      return;
+    }
     if (!compName.trim() || !clubId) return;
     const { data, error } = await supabase.from("competitions").insert({
       club_id: clubId, name: compName.trim(), season: compSeason || null, competition_type: compType, team_id: compTeamId || null,
@@ -165,8 +175,11 @@ const Matches = () => {
   };
 
   const handleUpdateResult = async () => {
+    if (!perms.isTrainer) {
+      toast({ title: "Not authorized", description: "Only trainers/admins can finalize results.", variant: "destructive" });
+      return;
+    }
     if (!selectedMatch) return;
-    if (!clubId) return;
     if (!clubId) return;
     const { error } = await supabase
       .from("matches")
@@ -184,6 +197,10 @@ const Matches = () => {
   };
 
   const handleAddMatchEvent = async () => {
+    if (!perms.isTrainer) {
+      toast({ title: "Not authorized", description: "Only trainers/admins can edit match timeline.", variant: "destructive" });
+      return;
+    }
     if (!selectedMatch || !evType) return;
     const { data, error } = await supabase.from("match_events").insert({
       match_id: selectedMatch.id, event_type: evType,
@@ -196,6 +213,10 @@ const Matches = () => {
   };
 
   const handleAddToLineup = async () => {
+    if (!perms.isTrainer) {
+      toast({ title: "Not authorized", description: "Only trainers/admins can manage lineups.", variant: "destructive" });
+      return;
+    }
     if (!selectedMatch || !addLineupMemberId) return;
     if (lineup.some(l => l.membership_id === addLineupMemberId)) {
       toast({ title: "Already in lineup", variant: "destructive" }); return;
@@ -212,6 +233,10 @@ const Matches = () => {
   };
 
   const handleRemoveFromLineup = async (id: string) => {
+    if (!perms.isTrainer) {
+      toast({ title: "Not authorized", description: "Only trainers/admins can manage lineups.", variant: "destructive" });
+      return;
+    }
     if (!selectedMatch) return;
     await supabase
       .from("match_lineups")
@@ -222,6 +247,10 @@ const Matches = () => {
   };
 
   const handleToggleStarter = async (player: LineupPlayer) => {
+    if (!perms.isTrainer) {
+      toast({ title: "Not authorized", description: "Only trainers/admins can manage lineups.", variant: "destructive" });
+      return;
+    }
     if (!selectedMatch) return;
     await supabase
       .from("match_lineups")

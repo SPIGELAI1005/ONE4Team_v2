@@ -79,7 +79,11 @@ const Payments = () => {
   }, [clubId]);
 
   const handleAddFeeType = async () => {
-    if (!feeName.trim() || !feeAmount || !clubId) return;
+    if (!perms.isAdmin || !clubId) {
+      toast({ title: "Not authorized", description: "Only admins can manage fees.", variant: "destructive" });
+      return;
+    }
+    if (!feeName.trim() || !feeAmount) return;
     const { data, error } = await supabase
       .from("membership_fee_types")
       .insert({ club_id: clubId, name: feeName.trim(), amount: parseFloat(feeAmount), interval: feeInterval })
