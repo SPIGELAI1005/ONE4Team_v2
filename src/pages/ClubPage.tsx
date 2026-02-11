@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
@@ -69,6 +70,7 @@ const ClubPage = () => {
   const navigate = useNavigate();
   const { clubSlug } = useParams();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const [club, setClub] = useState<Club | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,6 +79,8 @@ const ClubPage = () => {
   const [sessions, setSessions] = useState<TrainingSessionRowLite[]>([]);
   const [events, setEvents] = useState<EventRowLite[]>([]);
   const [loadingData, setLoadingData] = useState(false);
+  const [isMember, setIsMember] = useState<boolean>(false);
+  const [checkingMembership, setCheckingMembership] = useState(false);
 
   const [showSections, setShowSections] = useState(false);
 
@@ -112,6 +116,24 @@ const ClubPage = () => {
   useEffect(() => {
     const run = async () => {
       if (!club?.id) return;
+
+      // Membership check (for UX: show Open Dashboard)
+      if (user) {
+        setCheckingMembership(true);
+        const { data: mem, error: memErr } = await supabase
+          .from("club_memberships")
+          .select("id")
+          .eq("club_id", club.id)
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .maybeSingle();
+        if (!memErr && mem?.id) setIsMember(true);
+        else setIsMember(false);
+        setCheckingMembership(false);
+      } else {
+        setIsMember(false);
+      }
+
       setLoadingData(true);
 
       const nowIso = new Date().toISOString();
@@ -148,7 +170,14 @@ const ClubPage = () => {
       setLoadingData(false);
     };
     void run();
-  }, [club?.id, toast]);
+  }, [club?.id, toast, user]);
+
+  const handleOpenDashboard = () => {
+    if (!club?.id) return;
+    localStorage.setItem("one4team.activeClubId", club.id);
+    const role = localStorage.getItem("one4team.activeRole") || "player";
+    navigate(`/dashboard/${role}`);
+  };
 
   const handleSubmitInviteRequest = async () => {
     if (!club) return;
@@ -199,13 +228,24 @@ const ClubPage = () => {
             >
               <List className="w-4 h-4 mr-1" /> Sections
             </Button>
-            <Button
-              size="sm"
-              className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
-              onClick={() => setShowRequestInvite(true)}
-            >
-              Request Invite
-            </Button>
+            {isMember ? (
+              <Button
+                size="sm"
+                className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
+                onClick={handleOpenDashboard}
+                disabled={checkingMembership}
+              >
+                Open Dashboard
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
+                onClick={() => setShowRequestInvite(true)}
+              >
+                Request Invite
+              </Button>
+            )}
           </div>
         }
       />
@@ -294,14 +334,24 @@ const ClubPage = () => {
                 <p className="text-muted-foreground max-w-xl mx-auto mb-8">
                   {club.description || "Join our community of athletes, supporters, and friends."}
                 </p>
-                <div className="flex items-center justify-center gap-3">
-                  <Button
-                    size="lg"
-                    className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
-                    onClick={() => setShowRequestInvite(true)}
-                  >
-                    Request Invite <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
+                <div className="flex items-center justify-center gap-3 flex-wrap">
+                  {isMember ? (
+                    <Button
+                      size="lg"
+                      className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
+                      onClick={handleOpenDashboard}
+                    >
+                      Open Dashboard <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  ) : (
+                    <Button
+                      size="lg"
+                      className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
+                      onClick={() => setShowRequestInvite(true)}
+                    >
+                      Request Invite <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  )}
                   <Button size="lg" variant="outline" className="border-border" onClick={() => navigate("/onboarding")}>
                     Create a Club
                   </Button>
@@ -349,28 +399,39 @@ const ClubPage = () => {
           <h2 className="font-display text-3xl font-bold text-center mb-10">
             Our <span className="text-gradient-gold">Teams</span>
           </h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {teams.map((team, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.08 }}
-                className="p-5 rounded-xl bg-card border border-border hover:border-primary/30 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-lg bg-gradient-gold flex items-center justify-center mb-3">
-                  <Trophy className="w-5 h-5 text-primary-foreground" />
-                </div>
-                <h3 className="font-display font-semibold text-foreground mb-1">{team.name}</h3>
-                <p className="text-xs text-muted-foreground mb-2">{team.sport}</p>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{team.players} players</span>
-                  <span>{team.coach}</span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+
+          {loadingData ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+          ) : teams.length === 0 ? (
+            <div className="max-w-2xl mx-auto rounded-2xl glass-card p-8 text-center">
+              <div className="text-sm font-medium text-foreground">No teams yet</div>
+              <div className="text-xs text-muted-foreground mt-1">Teams created in the app will appear here automatically.</div>
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <Button variant="outline" onClick={() => navigate("/onboarding")}>Create / join a club</Button>
+                {isMember && <Button className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={handleOpenDashboard}>Open Dashboard</Button>}
+              </div>
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {teams.map((team, i) => (
+                <motion.div
+                  key={team.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.06 }}
+                  className="p-5 rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.10)] hover:border-primary/30 transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-gradient-gold flex items-center justify-center mb-3">
+                    <Trophy className="w-5 h-5 text-primary-foreground" />
+                  </div>
+                  <h3 className="font-display font-semibold text-foreground mb-1 tracking-tight truncate">{team.name}</h3>
+                  <p className="text-xs text-muted-foreground mb-2">{team.sport}{team.age_group ? ` · ${team.age_group}` : ""}</p>
+                  {team.coach_name && <div className="text-xs text-muted-foreground truncate">Coach: {team.coach_name}</div>}
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -380,24 +441,31 @@ const ClubPage = () => {
           <h2 className="font-display text-3xl font-bold text-center mb-10">
             Training <span className="text-gradient-gold">Schedule</span>
           </h2>
-          <div className="max-w-2xl mx-auto rounded-xl bg-card border border-border overflow-hidden">
-            {schedule.map((s, i) => (
-              <div key={i} className={`flex items-center justify-between px-5 py-4 ${i < schedule.length - 1 ? "border-b border-border" : ""}`}>
-                <div className="flex items-center gap-4">
-                  <div className="w-20 text-sm font-medium text-primary">{s.day}</div>
-                  <div>
-                    <div className="text-sm font-medium text-foreground">{s.team}</div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1">
-                      <MapPin className="w-3 h-3" /> {s.location}
+
+          {loadingData ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+          ) : sessions.length === 0 ? (
+            <div className="max-w-2xl mx-auto rounded-2xl glass-card p-8 text-center">
+              <div className="text-sm font-medium text-foreground">No upcoming sessions</div>
+              <div className="text-xs text-muted-foreground mt-1">Scheduled sessions will show here once trainers add them.</div>
+              {isMember && <div className="mt-4"><Button className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={handleOpenDashboard}>Open Dashboard</Button></div>}
+            </div>
+          ) : (
+            <div className="max-w-2xl mx-auto rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
+              {sessions.map((s, i) => (
+                <div key={s.id} className={`flex items-center justify-between px-5 py-4 ${i < sessions.length - 1 ? "border-b border-border" : ""}`}>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-foreground truncate">{s.title}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(s.starts_at).toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                      {s.location && <span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3" /> {s.location}</span>}
+                      {s.teams?.name && <span className="inline-flex items-center gap-1"><Trophy className="w-3 h-3" /> {s.teams.name}</span>}
                     </div>
                   </div>
                 </div>
-                <div className="text-sm text-muted-foreground flex items-center gap-1">
-                  <Clock className="w-3 h-3" /> {s.time}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -407,27 +475,39 @@ const ClubPage = () => {
           <h2 className="font-display text-3xl font-bold text-center mb-10">
             Upcoming <span className="text-gradient-gold">Events</span>
           </h2>
-          <div className="grid sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
-            {events.map((event, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.08 }}
-                className="p-5 rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] hover:border-primary/30 transition-colors"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">{event.type}</span>
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" /> {event.date}
-                  </span>
-                </div>
-                <h3 className="font-display font-semibold text-foreground mb-1 tracking-tight">{event.title}</h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">{event.desc}</p>
-              </motion.div>
-            ))}
-          </div>
+
+          {loadingData ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+          ) : events.length === 0 ? (
+            <div className="max-w-2xl mx-auto rounded-2xl glass-card p-8 text-center">
+              <div className="text-sm font-medium text-foreground">No upcoming events</div>
+              <div className="text-xs text-muted-foreground mt-1">Events created in the app will appear here.</div>
+              {isMember && <div className="mt-4"><Button className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={handleOpenDashboard}>Open Dashboard</Button></div>}
+            </div>
+          ) : (
+            <div className="grid sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
+              {events.map((event, i) => (
+                <motion.div
+                  key={event.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.06 }}
+                  className="p-5 rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.12)] hover:border-primary/30 transition-colors"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary capitalize">{event.event_type}</span>
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5" /> {new Date(event.starts_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
+                    </span>
+                  </div>
+                  <h3 className="font-display font-semibold text-foreground mb-1 tracking-tight">{event.title}</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">{event.description || ""}</p>
+                  {event.location && <div className="mt-3 text-xs text-muted-foreground flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> {event.location}</div>}
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
