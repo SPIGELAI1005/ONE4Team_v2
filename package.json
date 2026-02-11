@@ -10,7 +10,10 @@
     "lint": "eslint . --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "audit:phase0": "node scripts/audit-phase0.cjs",
+    "audit:realtime": "node scripts/audit-realtime.cjs",
+    "audit:writes": "node scripts/audit-supabase-writes.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
