@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Users, Briefcase, ArrowRight, ArrowLeft,
   Shield, Dumbbell, UserCheck, Heart, Crown, Wrench,
-  HandCoins, Truck, Scale, Sparkles, Building2, Loader2
+  HandCoins, Truck, Scale, Sparkles, Building2, Loader2,
+  Link2, CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,7 @@ import logo from "@/assets/logo.png";
 import { isErrorWithMessage } from "@/types/dashboard";
 
 type World = "club" | "partner" | null;
-type Step = "world" | "role" | "create-club";
+type Step = "world" | "role" | "create-club" | "redeem-invite";
 
 const clubRoles = [
   { id: "admin", label: "Club Admin", icon: Crown, desc: "Full club management access" },
@@ -36,15 +37,30 @@ const partnerRoles = [
 const Onboarding = () => {
   const [searchParams] = useSearchParams();
   const initialWorld = searchParams.get("world") as World;
+  const inviteTokenParam = searchParams.get("invite");
+
   const [world, setWorld] = useState<World>(initialWorld);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
-  const [step, setStep] = useState<Step>(initialWorld ? "role" : "world");
+  const [step, setStep] = useState<Step>(inviteTokenParam ? "redeem-invite" : (initialWorld ? "role" : "world"));
   const [clubName, setClubName] = useState("");
   const [clubDescription, setClubDescription] = useState("");
   const [creating, setCreating] = useState(false);
+  const [redeeming, setRedeeming] = useState(false);
+  const [redeemToken, setRedeemToken] = useState(inviteTokenParam || "");
+
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const canRedeem = useMemo(() => redeemToken.trim().length >= 10, [redeemToken]);
+
+  useEffect(() => {
+    // Keep state in sync if user edits URL
+    if (inviteTokenParam) {
+      setRedeemToken(inviteTokenParam);
+      setStep("redeem-invite");
+    }
+  }, [inviteTokenParam]);
 
   const roles = world === "club" ? clubRoles : world === "partner" ? partnerRoles : [];
 
@@ -55,6 +71,13 @@ const Onboarding = () => {
   };
 
   const handleBack = () => {
+    if (step === "redeem-invite") {
+      // If they came here by link, going back should take them to world-select.
+      setStep("world");
+      setWorld(null);
+      setSelectedRole(null);
+      return;
+    }
     if (step === "create-club") {
       setStep("role");
     } else if (step === "role") {
@@ -74,6 +97,41 @@ const Onboarding = () => {
     }
 
     navigate(`/dashboard/${selectedRole}`);
+  };
+
+  const handleRedeemInvite = async () => {
+    if (!user) {
+      toast({ title: "Sign in required", description: "Please sign in to redeem an invite." });
+      navigate("/auth");
+      return;
+    }
+
+    if (!canRedeem) return;
+
+    setRedeeming(true);
+    try {
+      const { data, error } = await supabase.rpc("redeem_club_invite", { _token: redeemToken.trim() });
+      if (error) throw error;
+
+      const row = Array.isArray(data) ? data[0] : null;
+      const role = (row?.role as string | undefined) || "member";
+      const clubId = (row?.club_id as string | undefined) || null;
+
+      if (clubId) {
+        localStorage.setItem("one4team.activeClubId", clubId);
+      }
+
+      toast({ title: "Invite redeemed", description: "Welcome to the club." });
+      navigate(`/dashboard/${role}`);
+    } catch (err: unknown) {
+      toast({
+        title: "Invite failed",
+        description: err instanceof Error ? err.message : "Unknown error",
+        variant: "destructive",
+      });
+    } finally {
+      setRedeeming(false);
+    }
   };
 
   const handleCreateClub = async () => {
@@ -127,7 +185,67 @@ const Onboarding = () => {
 
       <div className="flex-1 flex items-center justify-center p-4">
         <AnimatePresence mode="wait">
+          {step === "redeem-invite" && (
+            <motion.div
+              key="redeem-invite"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="w-full max-w-lg"
+            >
+              <div className="text-center mb-10">
+                <div className="w-14 h-14 rounded-2xl bg-card border border-border bg-background/60 backdrop-blur-xl flex items-center justify-center mx-auto mb-4 shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
+                  <Link2 className="w-6 h-6 text-primary" />
+                </div>
+                <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">
+                  Redeem your <span className="text-gradient-gold">invite</span>
+                </h1>
+                <p className="text-muted-foreground">Invite-only onboarding — clean, iOS-like, and secure.</p>
+              </div>
+
+              <div className="rounded-3xl bg-card/55 border border-border/70 backdrop-blur-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,0.18)] space-y-4">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Invite token</label>
+                  <Input
+                    placeholder="Paste invite token"
+                    value={redeemToken}
+                    onChange={(e) => setRedeemToken(e.target.value)}
+                    className="bg-background/60 border-border"
+                    maxLength={2000}
+                  />
+                  <div className="mt-2 text-[11px] text-muted-foreground">
+                    Tip: tokens are stored as hashes server-side. This token is only used for verification.
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleRedeemInvite}
+                  disabled={!canRedeem || redeeming}
+                  className="w-full bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90 disabled:opacity-40"
+                  size="lg"
+                >
+                  {redeeming ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Redeeming…
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 mr-2" /> Join club
+                    </>
+                  )}
+                </Button>
+
+                {!user && (
+                  <div className="text-xs text-muted-foreground text-center">
+                    You’ll be asked to sign in before we add you to the club.
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+
           {step === "world" && (
+
             <motion.div
               key="world-select"
               initial={{ opacity: 0, y: 20 }}
