@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Bell, Check, X, Trophy, Calendar, Megaphone, Info } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import { formatDistanceToNow } from "date-fns";
 
 type Notification = {

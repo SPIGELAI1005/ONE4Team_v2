@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useClubId } from "@/hooks/use-club-id";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import type { AttendanceParticipationRow, LineupAppearanceRow } from "@/types/analytics";
 
 const AttendanceHeatmap = ({ membershipId }: { membershipId?: string }) => {

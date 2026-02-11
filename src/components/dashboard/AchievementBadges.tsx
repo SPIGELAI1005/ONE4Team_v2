@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useClubId } from "@/hooks/use-club-id";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 
 type Achievement = {
   id: string;

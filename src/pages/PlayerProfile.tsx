@@ -6,7 +6,7 @@ import {
   Calendar, MapPin, CheckCircle2, XCircle, Clock, User
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import MobileBottomNav from "@/components/dashboard/MobileBottomNav";

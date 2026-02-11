@@ -5,7 +5,7 @@ import {
   ArrowLeft, Loader2, Trophy, Target, AlertTriangle, Award, Filter
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";

@@ -52,5 +52,4 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Re-export for backwards-compatible imports
-export { useAuth } from "@/contexts/useAuth";
+// (no exports besides AuthProvider)

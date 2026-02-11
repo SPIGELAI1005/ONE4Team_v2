@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Trophy, Star, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { useToast } from "@/hooks/use-toast";
 import type { MembershipWithProfile } from "@/types/supabase";
