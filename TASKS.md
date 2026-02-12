@@ -68,6 +68,12 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **P4-010c** Add Dues page + route + nav.
 - [x] **P4-010d** Confirm Phase 4 local readiness gates are green (lint/test/build/audit) and mark PASS.
 
+### P5-010 Partner portal stub
+- [x] **P5-010a** Create Phase 5 apply bundle (`supabase/APPLY_BUNDLE_PHASE5.sql`) + checklist.
+- [x] **P5-010b** Add `PHASE5_INDEX.md`.
+- [x] **P5-010c** Add Partners placeholder page + route + nav.
+- [x] **P5-010d** Confirm Phase 5 local readiness gates are green (lint/test/build/audit) and mark PASS.
+
 ---
 
 ## QUALITY / DELIVERY

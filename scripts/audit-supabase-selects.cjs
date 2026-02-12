@@ -42,6 +42,7 @@ const CLUB_SCOPED = new Set([
   "activities",
   "activity_attendance",
   "membership_dues",
+  "partners",
 ]);
 
 /** Tables that are safely scoped via a parent id (still tenant-safe if parent is tenant-scoped). */

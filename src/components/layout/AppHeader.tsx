@@ -23,6 +23,7 @@ const navItems: NavItem[] = [
   { label: "Events", to: "/events", icon: Calendar, gate: () => true },
   { label: "Schedule", to: "/activities", icon: ClipboardList, gate: () => true },
   { label: "Matches", to: "/matches", icon: Swords, gate: () => true },
+  { label: "Partners", to: "/partners", icon: Building2, gate: (p) => p.has("partners:read") },
 ];
 
 export interface AppHeaderProps {
