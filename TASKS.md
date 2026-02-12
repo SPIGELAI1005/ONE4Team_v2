@@ -74,6 +74,12 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **P5-010c** Add Partners placeholder page + route + nav.
 - [x] **P5-010d** Confirm Phase 5 local readiness gates are green (lint/test/build/audit) and mark PASS.
 
+### P6-010 AI copilots v1
+- [x] **P6-010a** Create Phase 6 apply bundle (`supabase/APPLY_BUNDLE_PHASE6.sql`) + checklist.
+- [x] **P6-010b** Add `PHASE6_INDEX.md`.
+- [x] **P6-010c** Add AI hub page (Co‑Trainer + Co‑AImin) with club-scoped logging.
+- [x] **P6-010d** Confirm Phase 6 local readiness gates are green (lint/test/build/audit) and mark PASS.
+
 ---
 
 ## QUALITY / DELIVERY

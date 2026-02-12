@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Home, Users, Trophy, Megaphone, CreditCard, Calendar, Swords, Building2, ClipboardList } from "lucide-react";
+import { Menu, X, Home, Users, Trophy, Megaphone, CreditCard, Calendar, Swords, Building2, ClipboardList, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useActiveClub } from "@/hooks/use-active-club";
@@ -24,6 +24,7 @@ const navItems: NavItem[] = [
   { label: "Schedule", to: "/activities", icon: ClipboardList, gate: () => true },
   { label: "Matches", to: "/matches", icon: Swords, gate: () => true },
   { label: "Partners", to: "/partners", icon: Building2, gate: (p) => p.has("partners:read") },
+  { label: "AI", to: "/ai", icon: Sparkles, gate: () => true },
 ];
 
 export interface AppHeaderProps {
