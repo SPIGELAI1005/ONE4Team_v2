@@ -80,6 +80,17 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **P6-010c** Add AI hub page (Co‑Trainer + Co‑AImin) with club-scoped logging.
 - [x] **P6-010d** Confirm Phase 6 local readiness gates are green (lint/test/build/audit) and mark PASS.
 
+### P7-010 Production hardening (Supabase-independent)
+- [x] **P7-010a** Add ErrorBoundary + minimal logger.
+- [x] **P7-010b** Add Playwright E2E scaffold + smoke test.
+- [x] **P7-010c** Wire e2e smoke into CI.
+- [x] **P7-010d** Add deployment docs (`DEPLOYMENT.md`) and `PHASE7_INDEX.md`.
+
+### P7-020 Production hardening (HOLD — needs Supabase)
+- [ ] **P7-020a** Add invite-request rate limits / spam controls.
+- [ ] **P7-020b** Staging + prod Supabase projects and env separation.
+- [ ] **P7-020c** Tenant isolation verification on staging.
+
 ---
 
 ## QUALITY / DELIVERY

@@ -30,3 +30,9 @@ jobs:
 
       - name: Phase 0 audits
         run: npm run audit:phase0
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E (smoke)
+        run: npx playwright test

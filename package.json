@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "e2e": "playwright test",
     "audit:phase0": "node scripts/audit-phase0.cjs",
     "audit:realtime": "node scripts/audit-realtime.cjs",
     "audit:writes": "node scripts/audit-supabase-writes.cjs",
@@ -73,6 +74,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
