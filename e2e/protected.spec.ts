@@ -6,6 +6,7 @@ const protectedRoutes = [
   "/dues",
   "/partners",
   "/ai",
+  "/members",
 ];
 
 test.describe("protected routes", () => {
@@ -15,10 +16,12 @@ test.describe("protected routes", () => {
 
       // Some pages render a local prompt, others redirect to /auth.
       const prompt = page.locator("text=Please sign in.");
-      if (await prompt.count()) {
-        await expect(prompt, `Expected sign-in prompt on ${p}`).toBeVisible();
-      } else {
-        await expect(page, `Expected redirect to /auth from ${p}`).toHaveURL(/\/auth(\b|\/|\?|#)/);
+      const redirected = /\/auth(\b|\/|\?|#)/;
+
+      try {
+        await expect(prompt).toBeVisible({ timeout: 8000 });
+      } catch {
+        await expect(page, `Expected redirect to /auth from ${p}`).toHaveURL(redirected);
       }
     });
   }

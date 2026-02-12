@@ -279,7 +279,17 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AnimatedRoutes />
+          <div className="min-h-screen flex flex-col">
+            <div className="flex-1">
+              <AnimatedRoutes />
+            </div>
+            <footer className="border-t border-border/60 bg-background/70 backdrop-blur-2xl">
+              <div className="container mx-auto px-4 py-3 text-[11px] text-muted-foreground flex items-center justify-between">
+                <span>ONE4Team</span>
+                <a href="/health" className="hover:text-foreground">/health</a>
+              </div>
+            </footer>
+          </div>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

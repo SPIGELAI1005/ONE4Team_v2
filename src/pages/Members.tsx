@@ -278,7 +278,7 @@ const Members = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-muted-foreground mb-4">Please sign in to manage members.</p>
+          <p className="text-muted-foreground mb-4">Please sign in.</p>
           <Button onClick={() => navigate("/auth")} className="bg-gradient-gold text-primary-foreground">Sign In</Button>
         </div>
       </div>
