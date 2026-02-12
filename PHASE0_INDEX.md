@@ -39,6 +39,10 @@ Artifacts:
 Recommended order (see full guide):
 - `supabase/APPLY_ORDER_GUIDE.md`
 
+### Baseline (fresh Supabase project)
+- SQL: `supabase/APPLY_BUNDLE_BASELINE.sql`
+- Checklist: `supabase/APPLY_CHECKLIST_BASELINE.md`
+
 ### Phase 1 (invites) bundle
 - SQL: `supabase/APPLY_BUNDLE_PHASE1.sql`
 - Checklist: `supabase/APPLY_CHECKLIST_PHASE1.md`
@@ -48,8 +52,8 @@ Recommended order (see full guide):
 - Checklist: `supabase/APPLY_CHECKLIST_PHASE0_RLS.md`
 - Rollback: `supabase/ROLLBACK_PHASE0_RLS.sql`
 
-### Baseline schema
-- MVP schema draft: `supabase/MVP_SCHEMA_RLS.sql`
+### MVP schema draft (older / broader)
+- `supabase/MVP_SCHEMA_RLS.sql`
 
 ---
 

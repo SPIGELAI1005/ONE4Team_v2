@@ -22,9 +22,9 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [ ] **P0-020b** Re-run `npm run audit:phase0` and fix any findings.
 
 ### P0-030 Database: schema + RLS baseline
-- [ ] **P0-030a** Consolidate baseline schema into a clean Supabase apply bundle (ensure `clubs`, `club_memberships`, helpers, core tables).
-- [ ] **P0-030b** Validate/align `supabase/MVP_SCHEMA_RLS.sql` with existing `APPLY_BUNDLE_PHASE0_RLS.sql` + migrations (remove duplicates, ensure idempotency).
-- [ ] **P0-030c** Add a “seed/dev helper” (SQL or script) to create first club + admin membership for the logged-in user.
+- [x] **P0-030a** Consolidate baseline schema into a clean Supabase apply bundle (see `supabase/APPLY_BUNDLE_BASELINE.sql`).
+- [ ] **P0-030b** Validate/align `supabase/MVP_SCHEMA_RLS.sql` with existing bundles + migrations (remove duplicates, ensure idempotency).
+- [x] **P0-030c** Add a “seed/dev helper” to create first club + admin membership for the logged-in user (included in baseline bundle as `create_club_with_admin`).
 
 ### P0-040 RBAC baseline
 - [ ] **P0-040a** Define roles + permissions mapping (admin/trainer/player/member/parent_fan/partner) and store it (DB seed or code map).
