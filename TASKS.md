@@ -1,0 +1,59 @@
+# ONE4Team — TASKS
+
+Legend: **NOW** / NEXT / BLOCKED / DONE
+
+This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and Phase 0 artifacts.
+
+---
+
+## NOW (top priority)
+
+### P0-001 Project index + execution hygiene
+- [ ] **P0-001a** Create `PHASE0_INDEX.md` linking all Phase 0 artifacts (audits, RLS bundles, apply order, rollback, checklists).
+- [ ] **P0-001b** Keep `TASKS.md` updated as source-of-truth for what’s next.
+
+### P0-010 Tenant isolation: active club context (app)
+- [ ] **P0-010a** Locate current “active club” mechanism (storage key, context/provider) and document it in `PHASE0_INDEX.md`.
+- [ ] **P0-010b** Implement/confirm **Active Club selector UI** and persistence (localStorage + user settings if present).
+- [ ] **P0-010c** Add a guardrail: any data-fetch hook must require an active `clubId` and return empty/loading without it.
+
+### P0-020 Code audit: scoping correctness
+- [ ] **P0-020a** Audit codebase for Supabase reads/writes and ensure scoping by `club_id` (or parent key) is consistently enforced.
+- [ ] **P0-020b** Re-run `npm run audit:phase0` and fix any findings.
+
+### P0-030 Database: schema + RLS baseline
+- [ ] **P0-030a** Consolidate baseline schema into a clean Supabase apply bundle (ensure `clubs`, `club_memberships`, helpers, core tables).
+- [ ] **P0-030b** Validate/align `supabase/MVP_SCHEMA_RLS.sql` with existing `APPLY_BUNDLE_PHASE0_RLS.sql` + migrations (remove duplicates, ensure idempotency).
+- [ ] **P0-030c** Add a “seed/dev helper” (SQL or script) to create first club + admin membership for the logged-in user.
+
+### P0-040 RBAC baseline
+- [ ] **P0-040a** Define roles + permissions mapping (admin/trainer/player/member/parent_fan/partner) and store it (DB seed or code map).
+- [ ] **P0-040b** Implement `hasPermission()` helper used by nav + actions.
+- [ ] **P0-040c** Enforce permissions server-side (RLS/RPC where feasible) for privileged writes.
+
+---
+
+## NEXT (once Phase 0 is stable)
+
+### P1-010 Invite-only onboarding
+- [ ] **P1-010a** Ensure Phase 1 bundles are correct and documented: `supabase/APPLY_BUNDLE_PHASE1.sql` + checklist.
+- [ ] **P1-010b** Implement admin invite creation UI + copy-link flow.
+- [ ] **P1-010c** Implement invite acceptance flow → membership activation.
+- [ ] **P1-010d** Implement public “request invite” form on club page.
+- [ ] **P1-010e** Implement admin inbox for invite requests.
+
+### P2-010 Scheduling engine
+- [ ] **P2-010a** Add `activities` table (training/match/event) + RLS.
+- [ ] **P2-010b** Add `activity_attendance` + RLS.
+- [ ] **P2-010c** Implement activities list/create + RSVP UI.
+
+---
+
+## QUALITY / DELIVERY
+- [ ] **Q-001** Add CI workflow: lint + test + build + `audit:phase0`.
+- [ ] **Q-002** Add/extend Supabase apply checklists + rollback notes for the full Phase 0/1 set.
+
+---
+
+## BLOCKED
+- **Applying Supabase bundles** requires you to run SQL in the Supabase Dashboard (unless we set up CLI/service access).
