@@ -48,9 +48,14 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **P1-020c** Ensure no legacy `is_club_admin(...::text)` calls remain in SQL bundles (search + assert).
 
 ### P2-010 Scheduling engine
-- [ ] **P2-010a** Add `activities` table (training/match/event) + RLS.
-- [ ] **P2-010b** Add `activity_attendance` + RLS.
-- [ ] **P2-010c** Implement activities list/create + RSVP UI.
+- [x] **P2-010a** Add `activities` table (training/match/event) + RLS (`supabase/APPLY_BUNDLE_PHASE2.sql`).
+- [x] **P2-010b** Add `activity_attendance` + RLS (`supabase/APPLY_BUNDLE_PHASE2.sql`).
+- [x] **P2-010c** Implement activities list/create + RSVP UI (`src/pages/Activities.tsx`).
+
+### P2-020 Phase 2 closure (local readiness)
+- [x] **P2-020a** Add `PHASE2_INDEX.md` with apply order + exit criteria.
+- [x] **P2-020b** Add Phase 2 apply checklist (`supabase/APPLY_CHECKLIST_PHASE2.md`).
+- [x] **P2-020c** Ensure Phase 0 audits include the new tables (writes/selects).
 
 ---
 

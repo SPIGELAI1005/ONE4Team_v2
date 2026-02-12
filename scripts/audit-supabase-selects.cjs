@@ -39,6 +39,8 @@ const CLUB_SCOPED = new Set([
   "player_match_stats",
   "custom_stat_definitions",
   "season_awards",
+  "activities",
+  "activity_attendance",
 ]);
 
 /** Tables that are safely scoped via a parent id (still tenant-safe if parent is tenant-scoped). */

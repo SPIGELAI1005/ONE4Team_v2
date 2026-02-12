@@ -20,6 +20,7 @@ const Communication = lazy(() => import("./pages/Communication"));
 const Payments = lazy(() => import("./pages/Payments"));
 const Events = lazy(() => import("./pages/Events"));
 const Matches = lazy(() => import("./pages/Matches"));
+const Activities = lazy(() => import("./pages/Activities"));
 const PlayerStats = lazy(() => import("./pages/PlayerStats"));
 const PlayerProfile = lazy(() => import("./pages/PlayerProfile"));
 const CoTrainer = lazy(() => import("./pages/CoTrainer"));
@@ -137,6 +138,16 @@ const AnimatedRoutes = () => {
             <PageTransition>
               <Suspense fallback={<RouteFallback />}>
                 <Events />
+              </Suspense>
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/activities"
+          element={
+            <PageTransition>
+              <Suspense fallback={<RouteFallback />}>
+                <Activities />
               </Suspense>
             </PageTransition>
           }

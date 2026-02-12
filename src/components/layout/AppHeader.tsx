@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Home, Users, Trophy, Megaphone, CreditCard, Calendar, Swords, Building2 } from "lucide-react";
+import { Menu, X, Home, Users, Trophy, Megaphone, CreditCard, Calendar, Swords, Building2, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useActiveClub } from "@/hooks/use-active-club";
@@ -20,6 +20,7 @@ const navItems: NavItem[] = [
   { label: "Communication", to: "/communication", icon: Megaphone, gate: () => true },
   { label: "Payments", to: "/payments", icon: CreditCard, gate: (p) => p.isAdmin },
   { label: "Events", to: "/events", icon: Calendar, gate: () => true },
+  { label: "Schedule", to: "/activities", icon: ClipboardList, gate: () => true },
   { label: "Matches", to: "/matches", icon: Swords, gate: () => true },
 ];
 
