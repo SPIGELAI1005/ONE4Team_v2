@@ -84,3 +84,9 @@ Add a GitHub Actions workflow to run:
 - `npm run audit:phase0`
 
 (Tracked as **Q-001** in `TASKS.md`.)
+
+---
+
+## Phase 0 exit criteria: PASS
+- `npm run audit:phase0` ✅
+- CI workflow present (lint/test/build/audit) ✅
