@@ -36,11 +36,11 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 ## NEXT (once Phase 0 is stable)
 
 ### P1-010 Invite-only onboarding
-- [ ] **P1-010a** Ensure Phase 1 bundles are correct and documented: `supabase/APPLY_BUNDLE_PHASE1.sql` + checklist.
-- [ ] **P1-010b** Implement admin invite creation UI + copy-link flow.
-- [ ] **P1-010c** Implement invite acceptance flow → membership activation.
-- [ ] **P1-010d** Implement public “request invite” form on club page.
-- [ ] **P1-010e** Implement admin inbox for invite requests.
+- [x] **P1-010a** Ensure Phase 1 bundles are correct and documented: `supabase/APPLY_BUNDLE_PHASE1.sql` + checklist (fixed policy arg types; added `PHASE1_INDEX.md`).
+- [x] **P1-010b** Implement admin invite creation UI + copy-link flow (see `src/pages/Members.tsx`).
+- [x] **P1-010c** Implement invite acceptance flow → membership activation (see `src/pages/Onboarding.tsx` + RPC `redeem_club_invite`).
+- [x] **P1-010d** Implement public “request invite” form on club page (see `src/pages/ClubPage.tsx` + RPC `request_club_invite`).
+- [x] **P1-010e** Implement admin inbox for invite requests (see `src/pages/Members.tsx`).
 
 ### P2-010 Scheduling engine
 - [ ] **P2-010a** Add `activities` table (training/match/event) + RLS.

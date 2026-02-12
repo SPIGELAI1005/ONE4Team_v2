@@ -35,16 +35,16 @@ alter table public.club_invites enable row level security;
 
 create policy if not exists "club_invites_select_admin"
   on public.club_invites for select
-  using (public.is_club_admin(club_id::text, auth.uid()::text));
+  using (public.is_club_admin(auth.uid(), club_id));
 
 create policy if not exists "club_invites_insert_admin"
   on public.club_invites for insert
-  with check (public.is_club_admin(club_id::text, auth.uid()::text));
+  with check (public.is_club_admin(auth.uid(), club_id));
 
 create policy if not exists "club_invites_update_admin"
   on public.club_invites for update
-  using (public.is_club_admin(club_id::text, auth.uid()::text))
-  with check (public.is_club_admin(club_id::text, auth.uid()::text));
+  using (public.is_club_admin(auth.uid(), club_id))
+  with check (public.is_club_admin(auth.uid(), club_id));
 
 create table if not exists public.club_invite_requests (
   id uuid primary key default gen_random_uuid(),
@@ -63,12 +63,12 @@ alter table public.club_invite_requests enable row level security;
 
 create policy if not exists "club_invite_requests_select_admin"
   on public.club_invite_requests for select
-  using (public.is_club_admin(club_id::text, auth.uid()::text));
+  using (public.is_club_admin(auth.uid(), club_id));
 
 create policy if not exists "club_invite_requests_update_admin"
   on public.club_invite_requests for update
-  using (public.is_club_admin(club_id::text, auth.uid()::text))
-  with check (public.is_club_admin(club_id::text, auth.uid()::text));
+  using (public.is_club_admin(auth.uid(), club_id))
+  with check (public.is_club_admin(auth.uid(), club_id));
 
 -- ============================================================
 -- 2) Invite redemption RPC
@@ -146,7 +146,7 @@ grant execute on function public.redeem_club_invite(text) to authenticated;
 -- ============================================================
 create policy if not exists "club_invites_delete_admin"
   on public.club_invites for delete
-  using (public.is_club_admin(club_id::text, auth.uid()::text));
+  using (public.is_club_admin(auth.uid(), club_id));
 
 -- Ensure public cannot insert directly; use RPC below
 -- If the old public policy exists, drop it.
