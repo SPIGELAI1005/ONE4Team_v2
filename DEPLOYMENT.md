@@ -32,6 +32,16 @@ Then configure Vercel:
 - Production deployments → prod Supabase
 
 ## Release checklist
-- CI green: lint/test/build/audit + e2e smoke
+- CI green: lint / test / build / audit:phase0 / e2e
 - Manual smoke in deployed URL
+  - Create club
+  - Invite member (admin)
+  - Member accepts invite
+  - Create activity + RSVP
+  - Create match + event
+  - Create dues + export CSV
+  - Partners create/list
+  - AI generate plan/digest (and confirm ai_requests is written)
 - Tenant isolation spot-check (two users in two clubs)
+- Verify logs
+  - Set `VITE_LOG_LEVEL=debug` for a repro run if needed
