@@ -60,7 +60,13 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 ### P3-010 Matches + football stats
 - [x] **P3-010a** Create Phase 3 apply bundle (`supabase/APPLY_BUNDLE_PHASE3.sql`) + checklist.
 - [x] **P3-010b** Add `PHASE3_INDEX.md`.
-- [ ] **P3-010c** Confirm Phase 3 local readiness gates are green (lint/test/build/audit) and mark PASS.
+- [x] **P3-010c** Confirm Phase 3 local readiness gates are green (lint/test/build/audit) and mark PASS.
+
+### P4-010 Manual dues tracking
+- [x] **P4-010a** Create Phase 4 apply bundle (`supabase/APPLY_BUNDLE_PHASE4.sql`) + checklist.
+- [x] **P4-010b** Add `PHASE4_INDEX.md`.
+- [x] **P4-010c** Add Dues page + route + nav.
+- [x] **P4-010d** Confirm Phase 4 local readiness gates are green (lint/test/build/audit) and mark PASS.
 
 ---
 

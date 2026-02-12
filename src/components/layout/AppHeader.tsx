@@ -19,6 +19,7 @@ const navItems: NavItem[] = [
   { label: "Teams", to: "/teams", icon: Trophy, gate: (p) => p.isTrainer },
   { label: "Communication", to: "/communication", icon: Megaphone, gate: () => true },
   { label: "Payments", to: "/payments", icon: CreditCard, gate: (p) => p.isAdmin },
+  { label: "Dues", to: "/dues", icon: CreditCard, gate: (p) => p.isTrainer },
   { label: "Events", to: "/events", icon: Calendar, gate: () => true },
   { label: "Schedule", to: "/activities", icon: ClipboardList, gate: () => true },
   { label: "Matches", to: "/matches", icon: Swords, gate: () => true },
