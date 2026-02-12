@@ -4,7 +4,7 @@
 const { spawnSync } = require("child_process");
 const path = require("path");
 
-const scripts = ["audit-realtime.cjs", "audit-supabase-writes.cjs"];
+const scripts = ["audit-realtime.cjs", "audit-supabase-writes.cjs", "audit-supabase-selects.cjs"];
 
 for (const s of scripts) {
   const p = path.join(__dirname, s);

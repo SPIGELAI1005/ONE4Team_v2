@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "audit:phase0": "node scripts/audit-phase0.cjs",
     "audit:realtime": "node scripts/audit-realtime.cjs",
-    "audit:writes": "node scripts/audit-supabase-writes.cjs"
+    "audit:writes": "node scripts/audit-supabase-writes.cjs",
+    "audit:selects": "node scripts/audit-supabase-selects.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

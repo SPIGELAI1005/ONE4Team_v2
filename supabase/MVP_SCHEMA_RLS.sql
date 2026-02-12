@@ -1,7 +1,19 @@
 -- ONE4Team — MVP Schema + RLS (Football-first)
 --
+-- STATUS: DRAFT / REFERENCE ONLY
+--
+-- This file is a conceptual MVP schema draft. It overlaps with the actual
+-- schema used by the app (`supabase/migrations/*.sql`) and also defines tables
+-- that are not migrated in this repo.
+--
+-- Source of truth:
+-- - `supabase/migrations/*.sql`
+-- - `supabase/APPLY_BUNDLE_BASELINE.sql` + Phase bundles
+--
+-- For details, see: `supabase/SCHEMA_STATUS.md`
+--
 -- Intent: MVP-minimal, SaaS-correct tenant isolation by club_id.
--- Apply in Supabase SQL Editor.
+-- Apply in Supabase SQL Editor ONLY if you understand the overlap.
 --
 -- Notes:
 -- - Uses TEXT columns + CHECK constraints (keeps migrations simple).

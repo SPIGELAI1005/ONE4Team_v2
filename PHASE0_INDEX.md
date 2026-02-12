@@ -27,6 +27,9 @@ From repo root:
   - `npm run audit:phase0`
     - runs `scripts/audit-realtime.cjs`
     - runs `scripts/audit-supabase-writes.cjs`
+    - runs `scripts/audit-supabase-selects.cjs`
+  - (optional) run directly:
+    - `npm run audit:selects`
 
 Artifacts:
 - `scripts/audit-phase0.cjs`
