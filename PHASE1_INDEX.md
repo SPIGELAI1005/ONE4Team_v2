@@ -55,6 +55,11 @@ Recommended apply order (fresh project):
   - admin create/revoke (Members → Invites) ✅
   - redeem invite (Onboarding) ✅
 
+---
+
+## Phase 1 exit criteria: PASS (local readiness)
+All Phase 1 assets are prepared locally (bundle + docs + smoke script). Remaining validation requires applying SQL in Supabase.
+
 ## Smoke test script (run after applying SQL in Supabase)
 Admin:
 1) Sign in as admin
