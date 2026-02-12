@@ -18,8 +18,8 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [ ] **P0-010c** Add a guardrail: any data-fetch hook must require an active `clubId` and return empty/loading without it.
 
 ### P0-020 Code audit: scoping correctness
-- [ ] **P0-020a** Audit codebase for Supabase reads/writes and ensure scoping by `club_id` (or parent key) is consistently enforced.
-- [ ] **P0-020b** Re-run `npm run audit:phase0` and fix any findings.
+- [x] **P0-020a** Audit codebase for Supabase reads/writes and ensure scoping by `club_id` (or parent key) is consistently enforced (baseline scan added: `scripts/list-supabase-tables-used.ps1`).
+- [x] **P0-020b** Re-run `npm run audit:phase0` and fix any findings (currently OK).
 
 ### P0-030 Database: schema + RLS baseline
 - [x] **P0-030a** Consolidate baseline schema into a clean Supabase apply bundle (see `supabase/APPLY_BUNDLE_BASELINE.sql`).
