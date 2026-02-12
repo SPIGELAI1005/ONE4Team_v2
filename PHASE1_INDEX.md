@@ -47,6 +47,33 @@ Recommended apply order (fresh project):
 
 ---
 
+## Phase 1 exit criteria (local readiness)
+- Phase 1 SQL bundle uses correct policy helper calls (`is_club_admin(auth.uid(), club_id)`) ✅
+- Apply order documented (baseline → phase1 → phase0) ✅
+- UI flows exist:
+  - request invite (ClubPage) ✅
+  - admin create/revoke (Members → Invites) ✅
+  - redeem invite (Onboarding) ✅
+
+## Smoke test script (run after applying SQL in Supabase)
+Admin:
+1) Sign in as admin
+2) Members → Invites
+3) Create invite
+4) Copy link/token
+5) Revoke unused invite (optional)
+
+Public/new user:
+1) Open club page → Request Invite (public club)
+2) Admin approves/rejects request in Members → Invites
+3) Open invite link: `/onboarding?invite=...&club=...`
+4) Sign in and redeem → routes to `/dashboard/<role>`
+
+Expected:
+- `club_invites.used_at` set on redeem
+- membership exists for the invited user
+- request inserts only via `request_club_invite` RPC
+
 ## Next tightening (after Phase 1)
 - Add email verification enforcement for invites (optional): if invite has email set, require matching authenticated email.
 - Add audit log entries for invite redemption + approvals.
