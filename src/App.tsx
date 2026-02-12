@@ -3,9 +3,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/useAuth";
 import PageTransition from "@/components/layout/PageTransition";
 
 // Route-level code splitting (reduces initial bundle size)
@@ -33,6 +34,12 @@ const Health = lazy(() => import("./pages/Health"));
 const Crash = lazy(() => import("./pages/Crash"));
 
 const queryClient = new QueryClient();
+
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/auth" replace />;
+  return <>{children}</>;
+}
 
 function RouteFallback() {
   return (
@@ -100,11 +107,13 @@ const AnimatedRoutes = () => {
         <Route
           path="/members"
           element={
-            <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <Members />
-              </Suspense>
-            </PageTransition>
+            <RequireAuth>
+              <PageTransition>
+                <Suspense fallback={<RouteFallback />}>
+                  <Members />
+                </Suspense>
+              </PageTransition>
+            </RequireAuth>
           }
         />
         <Route
@@ -120,81 +129,97 @@ const AnimatedRoutes = () => {
         <Route
           path="/communication"
           element={
-            <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <Communication />
-              </Suspense>
-            </PageTransition>
+            <RequireAuth>
+              <PageTransition>
+                <Suspense fallback={<RouteFallback />}>
+                  <Communication />
+                </Suspense>
+              </PageTransition>
+            </RequireAuth>
           }
         />
         <Route
           path="/payments"
           element={
-            <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <Payments />
-              </Suspense>
-            </PageTransition>
+            <RequireAuth>
+              <PageTransition>
+                <Suspense fallback={<RouteFallback />}>
+                  <Payments />
+                </Suspense>
+              </PageTransition>
+            </RequireAuth>
           }
         />
         <Route
           path="/events"
           element={
-            <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <Events />
-              </Suspense>
-            </PageTransition>
+            <RequireAuth>
+              <PageTransition>
+                <Suspense fallback={<RouteFallback />}>
+                  <Events />
+                </Suspense>
+              </PageTransition>
+            </RequireAuth>
           }
         />
         <Route
           path="/activities"
           element={
-            <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <Activities />
-              </Suspense>
-            </PageTransition>
+            <RequireAuth>
+              <PageTransition>
+                <Suspense fallback={<RouteFallback />}>
+                  <Activities />
+                </Suspense>
+              </PageTransition>
+            </RequireAuth>
           }
         />
         <Route
           path="/matches"
           element={
-            <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <Matches />
-              </Suspense>
-            </PageTransition>
+            <RequireAuth>
+              <PageTransition>
+                <Suspense fallback={<RouteFallback />}>
+                  <Matches />
+                </Suspense>
+              </PageTransition>
+            </RequireAuth>
           }
         />
         <Route
           path="/dues"
           element={
-            <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <Dues />
-              </Suspense>
-            </PageTransition>
+            <RequireAuth>
+              <PageTransition>
+                <Suspense fallback={<RouteFallback />}>
+                  <Dues />
+                </Suspense>
+              </PageTransition>
+            </RequireAuth>
           }
         />
         <Route
           path="/partners"
           element={
-            <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <Partners />
-              </Suspense>
-            </PageTransition>
+            <RequireAuth>
+              <PageTransition>
+                <Suspense fallback={<RouteFallback />}>
+                  <Partners />
+                </Suspense>
+              </PageTransition>
+            </RequireAuth>
           }
         />
         <Route
           path="/ai"
           element={
-            <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <AI />
-              </Suspense>
-            </PageTransition>
+            <RequireAuth>
+              <PageTransition>
+                <Suspense fallback={<RouteFallback />}>
+                  <AI />
+                </Suspense>
+              </PageTransition>
+            </RequireAuth>
           }
         />
         <Route
@@ -220,21 +245,25 @@ const AnimatedRoutes = () => {
         <Route
           path="/player-stats"
           element={
-            <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <PlayerStats />
-              </Suspense>
-            </PageTransition>
+            <RequireAuth>
+              <PageTransition>
+                <Suspense fallback={<RouteFallback />}>
+                  <PlayerStats />
+                </Suspense>
+              </PageTransition>
+            </RequireAuth>
           }
         />
         <Route
           path="/player/:membershipId"
           element={
-            <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <PlayerProfile />
-              </Suspense>
-            </PageTransition>
+            <RequireAuth>
+              <PageTransition>
+                <Suspense fallback={<RouteFallback />}>
+                  <PlayerProfile />
+                </Suspense>
+              </PageTransition>
+            </RequireAuth>
           }
         />
         <Route
