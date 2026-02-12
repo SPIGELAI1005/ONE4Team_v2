@@ -9,13 +9,13 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 ## NOW (top priority)
 
 ### P0-001 Project index + execution hygiene
-- [ ] **P0-001a** Create `PHASE0_INDEX.md` linking all Phase 0 artifacts (audits, RLS bundles, apply order, rollback, checklists).
-- [ ] **P0-001b** Keep `TASKS.md` updated as source-of-truth for what’s next.
+- [x] **P0-001a** Create `PHASE0_INDEX.md` linking all Phase 0 artifacts (audits, RLS bundles, apply order, rollback, checklists).
+- [x] **P0-001b** Keep `TASKS.md` updated as source-of-truth for what’s next.
 
 ### P0-010 Tenant isolation: active club context (app)
-- [ ] **P0-010a** Locate current “active club” mechanism (storage key, context/provider) and document it in `PHASE0_INDEX.md`.
-- [ ] **P0-010b** Implement/confirm **Active Club selector UI** and persistence (localStorage + user settings if present).
-- [ ] **P0-010c** Add a guardrail: any data-fetch hook must require an active `clubId` and return empty/loading without it.
+- [x] **P0-010a** Locate current “active club” mechanism (storage key, context/provider) and document it in `PHASE0_INDEX.md`.
+- [x] **P0-010b** Implement/confirm **Active Club selector UI** and persistence (localStorage + user settings if present).
+- [x] **P0-010c** Add a guardrail: any data-fetch hook must require an active `clubId` and return empty/loading without it.
 
 ### P0-020 Code audit: scoping correctness
 - [x] **P0-020a** Audit codebase for Supabase reads/writes and ensure scoping by `club_id` (or parent key) is consistently enforced (baseline scan added: `scripts/list-supabase-tables-used.ps1`).
@@ -27,9 +27,9 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **P0-030c** Add a “seed/dev helper” to create first club + admin membership for the logged-in user (included in baseline bundle as `create_club_with_admin`).
 
 ### P0-040 RBAC baseline
-- [ ] **P0-040a** Define roles + permissions mapping (admin/trainer/player/member/parent_fan/partner) and store it (DB seed or code map).
-- [ ] **P0-040b** Implement `hasPermission()` helper used by nav + actions.
-- [ ] **P0-040c** Enforce permissions server-side (RLS/RPC where feasible) for privileged writes.
+- [x] **P0-040a** Define roles + permissions mapping (code map: `src/lib/permissions.ts`).
+- [x] **P0-040b** Implement `hasPermission()` helper used by nav + actions (`usePermissions`).
+- [x] **P0-040c** Enforce permissions server-side (RLS bundles Phase 0/1/2 + audits).
 
 ---
 
@@ -57,11 +57,16 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **P2-020b** Add Phase 2 apply checklist (`supabase/APPLY_CHECKLIST_PHASE2.md`).
 - [x] **P2-020c** Ensure Phase 0 audits include the new tables (writes/selects).
 
+### P3-010 Matches + football stats
+- [x] **P3-010a** Create Phase 3 apply bundle (`supabase/APPLY_BUNDLE_PHASE3.sql`) + checklist.
+- [x] **P3-010b** Add `PHASE3_INDEX.md`.
+- [ ] **P3-010c** Confirm Phase 3 local readiness gates are green (lint/test/build/audit) and mark PASS.
+
 ---
 
 ## QUALITY / DELIVERY
-- [ ] **Q-001** Add CI workflow: lint + test + build + `audit:phase0`.
-- [ ] **Q-002** Add/extend Supabase apply checklists + rollback notes for the full Phase 0/1 set.
+- [x] **Q-001** Add CI workflow: lint + test + build + `audit:phase0`.
+- [ ] **Q-002** Add/extend Supabase apply checklists + rollback notes for the full Phase 0/1/2/3 set.
 
 ---
 
