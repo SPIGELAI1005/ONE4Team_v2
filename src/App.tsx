@@ -29,6 +29,8 @@ const PlayerProfile = lazy(() => import("./pages/PlayerProfile"));
 const CoTrainer = lazy(() => import("./pages/CoTrainer"));
 const LiveScores = lazy(() => import("./pages/LiveScores"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Health = lazy(() => import("./pages/Health"));
+const Crash = lazy(() => import("./pages/Crash"));
 
 const queryClient = new QueryClient();
 
@@ -191,6 +193,26 @@ const AnimatedRoutes = () => {
             <PageTransition>
               <Suspense fallback={<RouteFallback />}>
                 <AI />
+              </Suspense>
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/health"
+          element={
+            <PageTransition>
+              <Suspense fallback={<RouteFallback />}>
+                <Health />
+              </Suspense>
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/__crash"
+          element={
+            <PageTransition>
+              <Suspense fallback={<RouteFallback />}>
+                {import.meta.env.DEV ? <Crash /> : <NotFound />}
               </Suspense>
             </PageTransition>
           }

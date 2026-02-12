@@ -27,3 +27,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local scratch / temp artifacts
+/tmp_*.txt
+/tmp_*.md
+/tmp_*.json
+/tmp_*.sql
+/tmp_*.ps1
+/tmp_*.js
+scripts/tmp_*

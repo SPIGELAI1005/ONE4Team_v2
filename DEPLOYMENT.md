@@ -31,6 +31,11 @@ Then configure Vercel:
 - Preview deployments → staging Supabase
 - Production deployments → prod Supabase
 
+## Rollback plan (simple)
+- **Vercel:** redeploy the previous production deployment.
+- **Supabase:** apply rollback SQL bundles (when we start doing Supabase changes in phases).
+- **Client safety:** if a release introduces a crash, ErrorBoundary should show a fallback instead of a blank screen.
+
 ## Release checklist
 - CI green: lint / test / build / audit:phase0 / e2e
 - Manual smoke in deployed URL
