@@ -43,6 +43,7 @@ Recommended apply order (fresh project):
 ## Notes / gotchas
 - RLS policies must call `is_club_admin(auth.uid(), club_id)` (uuid, uuid). Avoid legacy casts.
 - The raw invite token must only be shown once (client-side) and never stored in DB.
+- The current Admin invite creation UI generates token hashes **client-side**. Phase 1 RPCs assume SHA-256 hex hashing (`encode(digest(token,'sha256'),'hex')`).
 
 ---
 
