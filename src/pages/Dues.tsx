@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Download, Plus } from "lucide-react";
+import { Loader2, Download, Plus, Layers } from "lucide-react";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { useMembershipId } from "@/hooks/use-membership-id";
@@ -31,6 +31,7 @@ type MembershipRow = {
   user_id: string;
   role: string;
   status: string;
+  profiles?: { display_name: string | null } | null;
 };
 
 function toCsv(rows: Array<Record<string, unknown>>): string {
@@ -46,6 +47,14 @@ function toCsv(rows: Array<Record<string, unknown>>): string {
     return s;
   };
   return [keys.join(","), ...rows.map((r) => keys.map((k) => esc(r[k])).join(","))].join("\n");
+}
+
+function eurToCents(v: string): number | null {
+  const s = v.trim();
+  if (!s) return null;
+  const n = Number(s.replace(",", "."));
+  if (!Number.isFinite(n)) return null;
+  return Math.round(n * 100);
 }
 
 export default function Dues() {
@@ -67,6 +76,12 @@ export default function Dues() {
   const [newAmountEur, setNewAmountEur] = useState("");
   const [newNote, setNewNote] = useState("");
 
+  const [showBulk, setShowBulk] = useState(false);
+  const [bulkDueDate, setBulkDueDate] = useState("");
+  const [bulkAmountEur, setBulkAmountEur] = useState("");
+  const [bulkNote, setBulkNote] = useState("");
+  const [bulkRole, setBulkRole] = useState<string>("all");
+
   const fetchData = useCallback(async () => {
     if (!clubId) return;
 
@@ -78,16 +93,16 @@ export default function Dues() {
           .select("*")
           .eq("club_id", clubId)
           .order("due_date", { ascending: false })
-          .limit(200);
+          .limit(400);
         if (error) throw error;
         setDues((data as unknown as MembershipDueRow[]) ?? []);
 
         const { data: ms, error: msErr } = await supabase
           .from("club_memberships")
-          .select("id, user_id, role, status")
+          .select("id, user_id, role, status, profiles!club_memberships_user_id_fkey(display_name)")
           .eq("club_id", clubId)
           .order("created_at", { ascending: true })
-          .limit(300);
+          .limit(500);
         if (msErr) throw msErr;
         setMemberships((ms as unknown as MembershipRow[]) ?? []);
       } else if (membershipId) {
@@ -115,10 +130,15 @@ export default function Dues() {
     void fetchData();
   }, [fetchData]);
 
-  const unpaidCount = useMemo(
-    () => dues.filter((d) => d.status === "due").length,
-    [dues]
-  );
+  const memberNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const m of memberships) {
+      map[m.id] = m.profiles?.display_name || m.id.slice(0, 8);
+    }
+    return map;
+  }, [memberships]);
+
+  const unpaidCount = useMemo(() => dues.filter((d) => d.status === "due").length, [dues]);
 
   const updateStatus = async (row: MembershipDueRow, status: DuesStatus) => {
     if (!clubId || !canManage) return;
@@ -147,15 +167,13 @@ export default function Dues() {
     if (!clubId || !canManage) return;
     if (!newMembershipId || !newDueDate) return;
 
-    const amountCents = newAmountEur.trim()
-      ? Math.round(Number(newAmountEur.replace(",", ".")) * 100)
-      : null;
+    const amountCents = eurToCents(newAmountEur);
 
     const { error } = await supabase.from("membership_dues").insert({
       club_id: clubId,
       membership_id: newMembershipId,
       due_date: newDueDate,
-      amount_cents: Number.isFinite(amountCents as number) ? amountCents : null,
+      amount_cents: amountCents,
       currency: "EUR",
       status: "due",
       note: newNote.trim() ? newNote.trim() : null,
@@ -175,11 +193,51 @@ export default function Dues() {
     await fetchData();
   };
 
+  const bulkCreate = async () => {
+    if (!clubId || !canManage) return;
+    if (!bulkDueDate) return;
+
+    const amountCents = eurToCents(bulkAmountEur);
+    const targets = memberships
+      .filter((m) => m.status === "active")
+      .filter((m) => (bulkRole === "all" ? true : m.role === bulkRole));
+
+    if (targets.length === 0) {
+      toast({ title: "No members", description: "No active members match this filter." });
+      return;
+    }
+
+    const rows = targets.map((m) => ({
+      club_id: clubId,
+      membership_id: m.id,
+      due_date: bulkDueDate,
+      amount_cents: amountCents,
+      currency: "EUR",
+      status: "due" as const,
+      note: bulkNote.trim() ? bulkNote.trim() : null,
+    }));
+
+    const { error } = await supabase.from("membership_dues").insert(rows);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Bulk dues created", description: `${targets.length} members` });
+    setShowBulk(false);
+    setBulkDueDate("");
+    setBulkAmountEur("");
+    setBulkNote("");
+    setBulkRole("all");
+    await fetchData();
+  };
+
   const exportCsv = () => {
     const csv = toCsv(
       dues.map((d) => ({
         id: d.id,
         due_date: d.due_date,
+        member_name: memberNameById[d.membership_id] ?? "",
         membership_id: d.membership_id,
         amount_cents: d.amount_cents,
         currency: d.currency,
@@ -219,14 +277,19 @@ export default function Dues() {
               </Button>
             )}
             {canManage && (
-              <Button
-                size="sm"
-                className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
-                onClick={() => setShowCreate(true)}
-                disabled={!clubId}
-              >
-                <Plus className="w-4 h-4 mr-1" /> New
-              </Button>
+              <>
+                <Button size="sm" variant="outline" className="rounded-2xl" onClick={() => setShowBulk(true)} disabled={!clubId}>
+                  <Layers className="w-4 h-4 mr-1" /> Bulk
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
+                  onClick={() => setShowCreate(true)}
+                  disabled={!clubId}
+                >
+                  <Plus className="w-4 h-4 mr-1" /> New
+                </Button>
+              </>
             )}
           </div>
         }
@@ -248,17 +311,14 @@ export default function Dues() {
         ) : (
           <div className="grid gap-3">
             {dues.map((d) => (
-              <div
-                key={d.id}
-                className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4"
-              >
+              <div key={d.id} className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="text-xs text-muted-foreground">Due date</div>
                     <div className="font-display font-bold text-foreground">{d.due_date}</div>
                     <div className="mt-1 text-sm text-muted-foreground">
                       {d.amount_cents !== null ? `${(d.amount_cents / 100).toFixed(2)} ${d.currency ?? "EUR"}` : "—"}
-                      {canManage ? ` • member ${d.membership_id.slice(0, 8)}…` : ""}
+                      {canManage ? ` • ${memberNameById[d.membership_id] ?? d.membership_id.slice(0, 8)}` : ""}
                     </div>
                     {d.note && <div className="mt-2 text-xs text-muted-foreground">{d.note}</div>}
                   </div>
@@ -297,6 +357,7 @@ export default function Dues() {
         )}
       </div>
 
+      {/* Create single */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowCreate(false)} />
@@ -310,18 +371,18 @@ export default function Dues() {
 
             <div className="grid gap-3">
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Membership</div>
+                <div className="text-xs text-muted-foreground mb-1">Member</div>
                 <select
                   className="w-full h-10 rounded-2xl border border-border/60 bg-background/50 px-3 text-sm"
                   value={newMembershipId}
                   onChange={(e) => setNewMembershipId(e.target.value)}
                 >
-                  <option value="">Select member…</option>
+                  <option value="">Select…</option>
                   {memberships
                     .filter((m) => m.status === "active")
                     .map((m) => (
                       <option key={m.id} value={m.id}>
-                        {m.id.slice(0, 8)}… ({m.role})
+                        {(m.profiles?.display_name || m.id.slice(0, 8))} ({m.role})
                       </option>
                     ))}
                 </select>
@@ -345,6 +406,61 @@ export default function Dues() {
               <Button className="bg-gradient-gold text-primary-foreground font-semibold" onClick={createDue}>
                 Create
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk */}
+      {showBulk && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowBulk(false)} />
+          <div className="relative w-full max-w-lg rounded-3xl border border-border/60 bg-card/60 backdrop-blur-2xl p-5 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <div className="font-display font-bold text-foreground">Bulk create dues</div>
+              <Button variant="ghost" size="sm" onClick={() => setShowBulk(false)}>
+                Close
+              </Button>
+            </div>
+
+            <div className="grid gap-3">
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Role filter</div>
+                <select
+                  className="w-full h-10 rounded-2xl border border-border/60 bg-background/50 px-3 text-sm"
+                  value={bulkRole}
+                  onChange={(e) => setBulkRole(e.target.value)}
+                >
+                  <option value="all">All active members</option>
+                  <option value="player">Players</option>
+                  <option value="member">Members</option>
+                  <option value="parent">Parents</option>
+                  <option value="trainer">Trainers</option>
+                </select>
+              </div>
+
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Due date</div>
+                <Input value={bulkDueDate} onChange={(e) => setBulkDueDate(e.target.value)} placeholder="YYYY-MM-DD" />
+              </div>
+
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Amount (EUR)</div>
+                <Input value={bulkAmountEur} onChange={(e) => setBulkAmountEur(e.target.value)} placeholder="e.g. 15" />
+              </div>
+
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Note (optional)</div>
+                <Input value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder="e.g. March dues" />
+              </div>
+
+              <Button className="bg-gradient-gold text-primary-foreground font-semibold" onClick={bulkCreate}>
+                Create for matching members
+              </Button>
+
+              <div className="text-[10px] text-muted-foreground">
+                Tip: we enforce uniqueness by (club_id, membership_id, due_date) in DB.
+              </div>
             </div>
           </div>
         </div>

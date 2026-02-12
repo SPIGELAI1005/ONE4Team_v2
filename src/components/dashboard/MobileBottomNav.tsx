@@ -17,8 +17,8 @@ const roleMobileNav: Record<string, NavItem[]> = {
   ],
   trainer: [
     { icon: LayoutDashboard, label: "Home", id: "overview" },
+    { icon: CalendarDays, label: "Schedule", id: "schedule", route: "/activities" },
     { icon: Trophy, label: "Matches", id: "matches", route: "/matches" },
-    { icon: CalendarDays, label: "Events", id: "events", route: "/events" },
     { icon: BarChart3, label: "Stats", id: "stats", route: "/player-stats" },
     { icon: MessageSquare, label: "Chat", id: "messages", route: "/communication" },
   ],
@@ -57,6 +57,7 @@ const MobileBottomNav = ({ active, onNavigate }: MobileBottomNavProps) => {
 
   const currentActive = active || (() => {
     const path = location.pathname;
+    if (path.includes("/activities")) return "schedule";
     if (path.includes("/matches")) return "matches";
     if (path.includes("/events")) return "events";
     if (path.includes("/player-stats")) return "stats";

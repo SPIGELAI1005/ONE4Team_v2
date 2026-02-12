@@ -28,8 +28,8 @@ const roleMenus: Record<string, NavItem[]> = {
   ],
   trainer: [
     { icon: LayoutDashboard, label: "Dashboard", id: "overview" },
+    { icon: Calendar, label: "Schedule", id: "schedule", route: "/activities" },
     { icon: Users, label: "My Teams", id: "teams", route: "/teams" },
-    { icon: Calendar, label: "Training", id: "training", route: "/teams" },
     { icon: Trophy, label: "Matches", id: "matches", route: "/matches" },
     { icon: CalendarDays, label: "Events", id: "events", route: "/events" },
     { icon: BarChart3, label: "Player Stats", id: "stats", route: "/player-stats" },

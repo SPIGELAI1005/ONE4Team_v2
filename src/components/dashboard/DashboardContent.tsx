@@ -1,9 +1,16 @@
-import { useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Users, Calendar, Trophy, TrendingUp, Clock,
-  Bot, ArrowUpRight, Activity
+  Users,
+  Calendar,
+  Trophy,
+  TrendingUp,
+  Clock,
+  Bot,
+  ArrowUpRight,
+  Activity,
+  CheckCircle2,
 } from "lucide-react";
 import AnalyticsWidgets from "@/components/dashboard/AnalyticsWidgets";
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
@@ -16,81 +23,175 @@ import TeamChemistry from "@/components/analytics/TeamChemistry";
 import HeadToHead from "@/components/analytics/HeadToHead";
 import NaturalLanguageStats from "@/components/ai/NaturalLanguageStats";
 import SeasonAwards from "@/components/analytics/SeasonAwards";
+import { supabase } from "@/integrations/supabase/client";
+import { useActiveClub } from "@/hooks/use-active-club";
 
-const roleConfig: Record<string, { title: string; greeting: string; kpis: { label: string; value: string; change: string; icon: React.ElementType }[] }> = {
+type UpcomingItem = {
+  title: string;
+  time: string;
+  type: string;
+};
+
+type Kpi = { label: string; value: string; change: string; icon: React.ElementType };
+
+type RoleConfig = {
+  title: string;
+  greeting: string;
+  kpis: Kpi[];
+};
+
+const roleConfig: Record<string, RoleConfig> = {
   admin: {
     title: "Club Admin Dashboard",
     greeting: "Welcome back, Admin",
     kpis: [
-      { label: "Total Members", value: "247", change: "+12", icon: Users },
-      { label: "Active Teams", value: "8", change: "+1", icon: Trophy },
-      { label: "Upcoming Events", value: "5", change: "", icon: Calendar },
-      { label: "Revenue (MTD)", value: "€4,280", change: "+8%", icon: TrendingUp },
+      { label: "Total Members", value: "—", change: "", icon: Users },
+      { label: "Active Teams", value: "—", change: "", icon: Trophy },
+      { label: "Upcoming", value: "—", change: "", icon: Calendar },
+      { label: "Unpaid Dues", value: "—", change: "", icon: TrendingUp },
     ],
   },
   trainer: {
     title: "Trainer Dashboard",
     greeting: "Welcome back, Coach",
     kpis: [
-      { label: "My Players", value: "32", change: "", icon: Users },
-      { label: "Sessions This Week", value: "4", change: "", icon: Calendar },
-      { label: "Attendance Rate", value: "87%", change: "+3%", icon: Activity },
-      { label: "Next Match", value: "Sat 15:00", change: "", icon: Trophy },
+      { label: "My Players", value: "—", change: "", icon: Users },
+      { label: "Sessions This Week", value: "—", change: "", icon: Calendar },
+      { label: "Attendance Rate", value: "—", change: "", icon: Activity },
+      { label: "Next Match", value: "—", change: "", icon: Trophy },
     ],
   },
   player: {
     title: "Player Dashboard",
-    greeting: "Welcome back, Player",
+    greeting: "Welcome back",
     kpis: [
-      { label: "Next Training", value: "Tomorrow", change: "18:00", icon: Calendar },
-      { label: "Matches Played", value: "14", change: "", icon: Trophy },
-      { label: "Attendance", value: "92%", change: "+2%", icon: Activity },
-      { label: "Team Rank", value: "#3", change: "", icon: TrendingUp },
+      { label: "Next Training", value: "—", change: "", icon: Calendar },
+      { label: "Matches Played", value: "—", change: "", icon: Trophy },
+      { label: "Attendance", value: "—", change: "", icon: Activity },
+      { label: "Team Rank", value: "—", change: "", icon: TrendingUp },
     ],
   },
   sponsor: {
-    title: "Sponsor Dashboard",
-    greeting: "Welcome, Partner",
+    title: "Partner Dashboard",
+    greeting: "Welcome",
     kpis: [
-      { label: "Active Contracts", value: "2", change: "", icon: Trophy },
-      { label: "Brand Impressions", value: "12.4K", change: "+18%", icon: TrendingUp },
-      { label: "Pending Invoices", value: "1", change: "", icon: Clock },
-      { label: "Club Events", value: "3", change: "", icon: Calendar },
+      { label: "Club Events", value: "—", change: "", icon: Calendar },
+      { label: "Contacts", value: "—", change: "", icon: Users },
+      { label: "Messages", value: "—", change: "", icon: Clock },
+      { label: "Insights", value: "—", change: "", icon: Bot },
     ],
   },
 };
 
-const defaultConfig = {
+const defaultConfig: RoleConfig = {
   title: "Dashboard",
   greeting: "Welcome",
   kpis: [
-    { label: "Notifications", value: "3", change: "", icon: Calendar },
-    { label: "Upcoming", value: "2", change: "", icon: Calendar },
+    { label: "Upcoming", value: "—", change: "", icon: Calendar },
+    { label: "Members", value: "—", change: "", icon: Users },
   ],
 };
 
-const upcomingEvents = [
-  { title: "U17 Training Session", time: "Today, 18:00", type: "training" },
-  { title: "FC Riverside vs FC Thunder", time: "Saturday, 15:00", type: "match" },
-  { title: "Club Annual Meeting", time: "Next Monday, 19:00", type: "event" },
-  { title: "Youth Tournament", time: "Feb 22, 09:00", type: "tournament" },
-];
-
-const aiSuggestions = [
-  "3 players have missed 2+ sessions — consider a check-in.",
-  "Training field B is available Friday 16:00–18:00.",
-  "Membership renewals due for 12 members this month.",
+const defaultUpcoming: UpcomingItem[] = [
+  { title: "Add your first training", time: "This week", type: "training" },
+  { title: "Invite your players", time: "Today", type: "members" },
 ];
 
 const DashboardContent = () => {
   const { role } = useParams();
   const config = roleConfig[role || ""] || defaultConfig;
+  const { activeClubId, activeClub } = useActiveClub();
+
+  const [kpis, setKpis] = useState<Kpi[]>(config.kpis);
+  const [upcoming, setUpcoming] = useState<UpcomingItem[]>(defaultUpcoming);
 
   // Route-driven profile (A): persist selected role so AppHeader can reflect it on every page.
   useEffect(() => {
     if (!role) return;
     localStorage.setItem("one4team.activeRole", role);
   }, [role]);
+
+  useEffect(() => {
+    // reset on role change
+    setKpis(config.kpis);
+  }, [config.kpis]);
+
+  useEffect(() => {
+    if (!activeClubId) {
+      setUpcoming(defaultUpcoming);
+      return;
+    }
+
+    const run = async () => {
+      // Best-effort. If Supabase isn't applied yet, pages should still render.
+      try {
+        const now = new Date();
+        const to = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+        const [{ data: acts }, { data: members }, { data: dues }] = await Promise.all([
+          supabase
+            .from("activities")
+            .select("title, type, starts_at")
+            .eq("club_id", activeClubId)
+            .gte("starts_at", now.toISOString())
+            .lt("starts_at", to.toISOString())
+            .order("starts_at", { ascending: true })
+            .limit(6),
+          supabase
+            .from("club_memberships")
+            .select("id")
+            .eq("club_id", activeClubId)
+            .eq("status", "active")
+            .limit(1000),
+          supabase
+            .from("membership_dues")
+            .select("id")
+            .eq("club_id", activeClubId)
+            .eq("status", "due")
+            .limit(1000),
+        ]);
+
+        const nextUpcoming: UpcomingItem[] = (acts ?? []).map((a) => ({
+          title: (a as { title: string }).title,
+          type: (a as { type: string }).type,
+          time: new Date((a as { starts_at: string }).starts_at).toLocaleString([], {
+            weekday: "short",
+            hour: "2-digit",
+            minute: "2-digit",
+            month: "short",
+            day: "numeric",
+          }),
+        }));
+
+        setUpcoming(nextUpcoming.length ? nextUpcoming : defaultUpcoming);
+
+        const membersCount = (members ?? []).length;
+        const dueCount = (dues ?? []).length;
+
+        // Only fill the KPIs we can compute cheaply.
+        setKpis((prev) =>
+          prev.map((k) => {
+            if (k.label === "My Players") return { ...k, value: String(membersCount) };
+            if (k.label === "Total Members") return { ...k, value: String(membersCount) };
+            if (k.label === "Upcoming") return { ...k, value: String(nextUpcoming.length) };
+            if (k.label === "Sessions This Week") return { ...k, value: String(nextUpcoming.filter((x) => x.type === "training").length) };
+            if (k.label === "Unpaid Dues") return { ...k, value: String(dueCount) };
+            return k;
+          })
+        );
+      } catch {
+        // keep placeholders
+      }
+    };
+
+    void run();
+  }, [activeClubId]);
+
+  const showGettingStarted = useMemo(() => {
+    // Keep it simple: if no club or no upcoming, show.
+    if (!activeClubId) return true;
+    return upcoming.length === 0 || upcoming === defaultUpcoming;
+  }, [activeClubId, upcoming]);
 
   return (
     <div className="flex-1 overflow-y-auto bg-background pb-20 lg:pb-0 scroll-glow">
@@ -99,7 +200,9 @@ const DashboardContent = () => {
         <div className="px-6 lg:px-8 py-4 flex items-center justify-between">
           <div>
             <h1 className="font-display text-lg font-bold text-foreground tracking-tight">{config.title}</h1>
-            <p className="text-[13px] text-muted-foreground">{config.greeting}</p>
+            <p className="text-[13px] text-muted-foreground">
+              {config.greeting}{activeClub?.name ? ` · ${activeClub.name}` : ""}
+            </p>
           </div>
           <div className="flex items-center gap-2.5">
             <ClubSwitcher />
@@ -112,14 +215,36 @@ const DashboardContent = () => {
       </div>
 
       <div className="p-5 lg:p-8 space-y-5">
+        {showGettingStarted && (role === "trainer" || role === "admin") && (
+          <div className="rounded-2xl glass-card p-5">
+            <div className="font-display font-semibold text-foreground text-[15px] flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-primary" /> Getting started (trainer)
+            </div>
+            <div className="mt-3 grid gap-2 text-[13px] text-muted-foreground">
+              <div>
+                1) <Link className="text-foreground hover:underline" to="/members">Invite players</Link>
+              </div>
+              <div>
+                2) <Link className="text-foreground hover:underline" to="/activities">Schedule the week</Link>
+              </div>
+              <div>
+                3) Track confirmations in <Link className="text-foreground hover:underline" to="/activities">Schedule</Link>
+              </div>
+              <div>
+                4) After the session: log match events in <Link className="text-foreground hover:underline" to="/matches">Matches</Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Live Match Ticker */}
         <LiveMatchTicker />
 
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {config.kpis.map((kpi, i) => (
+          {kpis.map((kpi, i) => (
             <motion.div
-              key={i}
+              key={kpi.label}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.08, type: "spring", stiffness: 300, damping: 25 }}
@@ -167,7 +292,7 @@ const DashboardContent = () => {
         {role === "admin" && <AdminNotificationSender />}
 
         <div className="grid lg:grid-cols-3 gap-5">
-          {/* Upcoming events */}
+          {/* Upcoming */}
           <div className="lg:col-span-2 rounded-2xl glass-card p-5">
             <h2 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2 text-[15px]">
               <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -176,7 +301,7 @@ const DashboardContent = () => {
               Upcoming
             </h2>
             <div className="space-y-1">
-              {upcomingEvents.map((event, i) => (
+              {upcoming.map((event, i) => (
                 <motion.div
                   key={i}
                   whileTap={{ scale: 0.98 }}
@@ -186,12 +311,15 @@ const DashboardContent = () => {
                     <div className="text-[13px] font-medium text-foreground">{event.title}</div>
                     <div className="text-[11px] text-muted-foreground mt-0.5">{event.time}</div>
                   </div>
-                  <span className={`ios-pill ${
-                    event.type === "match" ? "bg-accent/10 text-accent border-accent/20" :
-                    event.type === "training" ? "bg-primary/10 text-primary border-primary/20" :
-                    event.type === "tournament" ? "bg-gold-dark/10 text-gold border-gold/20" :
-                    "bg-muted text-muted-foreground"
-                  }`}>
+                  <span
+                    className={`ios-pill ${
+                      event.type === "match"
+                        ? "bg-accent/10 text-accent border-accent/20"
+                        : event.type === "training"
+                        ? "bg-primary/10 text-primary border-primary/20"
+                        : "bg-muted text-muted-foreground"
+                    }`}
+                  >
                     {event.type}
                   </span>
                 </motion.div>
@@ -209,7 +337,11 @@ const DashboardContent = () => {
               <span className="text-gradient-gold">AI Insights</span>
             </h2>
             <div className="space-y-2.5 relative">
-              {aiSuggestions.map((s, i) => (
+              {[
+                "Use Schedule to track confirmations for this week.",
+                "After each match, log events — stats update automatically.",
+                "Try AI → Weekly plan for a structured session outline.",
+              ].map((s, i) => (
                 <motion.div
                   key={i}
                   whileTap={{ scale: 0.98 }}
@@ -220,6 +352,10 @@ const DashboardContent = () => {
               ))}
             </div>
           </div>
+        </div>
+
+        <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+          <Clock className="w-3.5 h-3.5" /> Best-effort data: if Supabase isn’t applied yet, this dashboard shows placeholders.
         </div>
       </div>
     </div>

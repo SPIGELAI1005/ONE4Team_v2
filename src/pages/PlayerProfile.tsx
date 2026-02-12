@@ -63,6 +63,8 @@ const PlayerProfile = () => {
 
   const [matchHistory, setMatchHistory] = useState<MatchHistory[]>([]);
   const [attendance, setAttendance] = useState<EventAttendance[]>([]);
+  const [duesDueCount, setDuesDueCount] = useState(0);
+  const [duesPaidCount, setDuesPaidCount] = useState(0);
 
   useEffect(() => {
     if (!clubId || !membershipId) return;
@@ -165,6 +167,20 @@ const PlayerProfile = () => {
       }));
       att.sort((a1, b1) => new Date(b1.starts_at).getTime() - new Date(a1.starts_at).getTime());
       setAttendance(att);
+
+      // Dues summary (best-effort)
+      const { data: duesRaw } = await supabase
+        .from("membership_dues")
+        .select("status")
+        .eq("membership_id", membershipId)
+        .eq("club_id", clubId)
+        .limit(1000);
+
+      const due = (duesRaw ?? []).filter((d) => (d as { status?: string }).status === "due").length;
+      const paid = (duesRaw ?? []).filter((d) => (d as { status?: string }).status === "paid").length;
+      setDuesDueCount(due);
+      setDuesPaidCount(paid);
+
       setLoading(false);
     };
     fetchAll();
@@ -250,6 +266,24 @@ const PlayerProfile = () => {
 
             {tab === "overview" && (
               <div className="space-y-4">
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div className="rounded-lg bg-card border border-border p-4">
+                    <div className="text-xs text-muted-foreground">Dues</div>
+                    <div className="mt-1 text-sm text-foreground">
+                      <span className="font-semibold">{duesDueCount}</span> due • <span className="font-semibold">{duesPaidCount}</span> paid
+                    </div>
+                    <div className="mt-2 text-[11px] text-muted-foreground">(Shown for this member only)</div>
+                  </div>
+                  <div className="rounded-lg bg-card border border-border p-4">
+                    <div className="text-xs text-muted-foreground">Quick links</div>
+                    <div className="mt-2 grid gap-1 text-[13px]">
+                      <a className="text-primary hover:underline" href="/activities">Schedule</a>
+                      <a className="text-primary hover:underline" href="/matches">Matches</a>
+                      <a className="text-primary hover:underline" href="/dues">Dues</a>
+                    </div>
+                  </div>
+                </div>
+
                 <AchievementBadges membershipId={membershipId} />
                 <h3 className="text-sm font-semibold text-foreground">Recent Matches</h3>
                 {matchHistory.slice(0, 5).map((m, i) => (

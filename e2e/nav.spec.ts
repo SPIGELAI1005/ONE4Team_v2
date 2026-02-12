@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 
 const paths = [
   "/",
+  "/health",
   "/events",
   "/activities",
   "/matches",
