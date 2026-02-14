@@ -36,3 +36,7 @@ dist-ssr
 /tmp_*.ps1
 /tmp_*.js
 scripts/tmp_*
+
+# Test artifacts
+/test-results/
+/playwright-report/
