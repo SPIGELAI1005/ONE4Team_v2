@@ -1,7 +1,7 @@
 -- MVP: Invite-only onboarding + invite requests
 -- Adds: club_invites, club_invite_requests
 -- RLS uses existing helper functions in this project:
---   public.is_club_admin(_club_id text, _user_id text)
+--   public.is_club_admin(uuid, uuid)
 --
 -- NOTE: token_hash should store a hash of the raw invite token (never store raw token).
 
@@ -21,20 +21,23 @@ create index if not exists idx_club_invites_club_id on public.club_invites(club_
 alter table public.club_invites enable row level security;
 
 -- Admins can view invites for their club
-create policy if not exists "club_invites_select_admin"
+drop policy if exists "club_invites_select_admin" on public.club_invites;
+create policy "club_invites_select_admin"
   on public.club_invites for select
-  using (public.is_club_admin(club_id::text, auth.uid()::text));
+  using (public.is_club_admin(auth.uid(), club_id));
 
 -- Admins can create invites
-create policy if not exists "club_invites_insert_admin"
+drop policy if exists "club_invites_insert_admin" on public.club_invites;
+create policy "club_invites_insert_admin"
   on public.club_invites for insert
-  with check (public.is_club_admin(club_id::text, auth.uid()::text));
+  with check (public.is_club_admin(auth.uid(), club_id));
 
 -- Admins can update invites (e.g. mark used_at)
-create policy if not exists "club_invites_update_admin"
+drop policy if exists "club_invites_update_admin" on public.club_invites;
+create policy "club_invites_update_admin"
   on public.club_invites for update
-  using (public.is_club_admin(club_id::text, auth.uid()::text))
-  with check (public.is_club_admin(club_id::text, auth.uid()::text));
+  using (public.is_club_admin(auth.uid(), club_id))
+  with check (public.is_club_admin(auth.uid(), club_id));
 
 -- ============================================================
 -- Public invite request funnel
@@ -56,7 +59,8 @@ create index if not exists idx_club_invite_requests_status on public.club_invite
 alter table public.club_invite_requests enable row level security;
 
 -- Anyone can submit an invite request IF club is public
-create policy if not exists "club_invite_requests_insert_public"
+drop policy if exists "club_invite_requests_insert_public" on public.club_invite_requests;
+create policy "club_invite_requests_insert_public"
   on public.club_invite_requests for insert
   with check (
     exists (
@@ -67,12 +71,14 @@ create policy if not exists "club_invite_requests_insert_public"
   );
 
 -- Admins can view requests
-create policy if not exists "club_invite_requests_select_admin"
+drop policy if exists "club_invite_requests_select_admin" on public.club_invite_requests;
+create policy "club_invite_requests_select_admin"
   on public.club_invite_requests for select
-  using (public.is_club_admin(club_id::text, auth.uid()::text));
+  using (public.is_club_admin(auth.uid(), club_id));
 
 -- Admins can update requests (approve/reject)
-create policy if not exists "club_invite_requests_update_admin"
+drop policy if exists "club_invite_requests_update_admin" on public.club_invite_requests;
+create policy "club_invite_requests_update_admin"
   on public.club_invite_requests for update
-  using (public.is_club_admin(club_id::text, auth.uid()::text))
-  with check (public.is_club_admin(club_id::text, auth.uid()::text));
+  using (public.is_club_admin(auth.uid(), club_id))
+  with check (public.is_club_admin(auth.uid(), club_id));

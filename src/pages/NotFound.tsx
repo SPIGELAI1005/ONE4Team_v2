@@ -24,7 +24,7 @@ const NotFound = () => {
             <Button variant="outline" onClick={() => navigate(-1)}>
               {t.notFound.goBack}
             </Button>
-            <Button className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={() => navigate("/")}>
+            <Button className="bg-gradient-gold-static text-primary-foreground hover:brightness-110" onClick={() => navigate("/")}>
               {t.notFound.home}
             </Button>
           </div>

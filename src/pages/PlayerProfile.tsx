@@ -10,7 +10,6 @@ import {
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
-import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
 import PlayerRadarChart from "@/components/analytics/PlayerRadarChart";
 import AttendanceHeatmap from "@/components/analytics/AttendanceHeatmap";
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
@@ -74,7 +73,7 @@ const PlayerProfile = () => {
       const { data: memberRaw } = await supabase
         .from("club_memberships")
         .select(
-          "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_user_id_fkey(display_name)",
+          "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_profile_fk(display_name)",
         )
         .eq("id", membershipId)
         .maybeSingle();
@@ -380,7 +379,6 @@ const PlayerProfile = () => {
           </div>
         )}
       </div>
-      <MobileBottomNav />
     </div>
   );
 };

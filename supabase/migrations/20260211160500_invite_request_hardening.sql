@@ -10,9 +10,10 @@
 -- ============================================================
 -- 1) Admin revoke (delete) invites
 -- ============================================================
-create policy if not exists "club_invites_delete_admin"
+drop policy if exists "club_invites_delete_admin" on public.club_invites;
+create policy "club_invites_delete_admin"
   on public.club_invites for delete
-  using (public.is_club_admin(club_id::text, auth.uid()::text));
+  using (public.is_club_admin(auth.uid(), club_id));
 
 -- ============================================================
 -- 2) Invite request funnel: RPC-only inserts

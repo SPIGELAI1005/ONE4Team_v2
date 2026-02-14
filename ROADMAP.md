@@ -166,6 +166,29 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 ---
 
+## Phase 9 — Dashboard Pages & Personalization (Week 8) ✅
+**Goal:** complete the dashboard experience with Shop, Club Page management, and Settings.
+
+**Deliverables**
+- EPIC M: Dashboard pages
+  - Shop page with Products/Orders/Categories (local state, demo data)
+  - Club Page Admin with General Info, Branding, Contact, Social, SEO
+  - Settings with Profile, Club, Notifications, Account tabs
+  - Sidebar routes and pathToId mappings for all new pages
+  - Comprehensive EN + DE translations for all three pages
+- EPIC N: UX personalization
+  - Dashboard greeting uses user's first name from profile data
+  - Fallback to email prefix when no display name is set
+
+**Exit criteria**
+- All three pages render correctly with full translations ✅
+- Sidebar highlights active page for shop/clubpage/settings ✅
+- Shop CRUD works with demo data ✅
+- Settings toggles persist in localStorage ✅
+- Dashboard greeting shows personalized first name ✅
+
+---
+
 ## v2 Roadmap (post-MVP)
 
 ### v2.1 Payments & billing

@@ -122,6 +122,16 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **P8-040f** Fix `DEPLOYMENT.md` env var name mismatch.
 - [x] **P8-040g** Verify production build (`vite build`) succeeds.
 
+### P9-010 Dashboard pages: Shop, Club Page Admin, Settings
+- [x] **P9-010a** Add EN + DE translation keys for Shop, ClubPageAdmin, and Settings pages (`shopPage`, `clubPageAdmin`, `settingsPage`).
+- [x] **P9-010b** Create Shop page (`/shop`) with Products/Orders/Categories tabs, product cards, modal forms, demo data.
+- [x] **P9-010c** Create Club Page Admin (`/club-page-admin`) with General Info, Branding, Contact, Social Links, SEO sections.
+- [x] **P9-010d** Create Settings page (`/settings`) with Profile/Club/Notifications/Account tabs.
+- [x] **P9-010e** Add routes in `App.tsx`, sidebar routes + `pathToId` in `DashboardSidebar.tsx`.
+
+### P9-020 Dashboard UX improvements
+- [x] **P9-020a** Personalize dashboard greeting with user's first name from `profiles.display_name`.
+
 ---
 
 ## QUALITY / DELIVERY

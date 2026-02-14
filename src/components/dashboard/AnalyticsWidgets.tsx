@@ -59,7 +59,7 @@ const AnalyticsWidgets = () => {
           const { data: membersRaw } = await supabase
             .from("club_memberships")
             .select(
-              "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_user_id_fkey(display_name)",
+              "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_profile_fk(display_name)",
             )
             .eq("club_id", clubId);
 

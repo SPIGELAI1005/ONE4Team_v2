@@ -103,7 +103,7 @@ const AIMatchAnalysis = ({ matchData, teamData, context, matchStatus }: AIMatchA
       <div className="flex flex-wrap gap-1 mb-3">
         {available.map(a => (
           <Button key={a.type} size="sm" variant={activeType === a.type ? "default" : "outline"}
-            className={`text-[10px] h-7 ${activeType === a.type ? "bg-gradient-gold text-primary-foreground" : ""}`}
+            className={`text-[10px] h-7 ${activeType === a.type ? "bg-gradient-gold-static text-primary-foreground" : ""}`}
             onClick={() => streamAnalysis(a.type)} disabled={loading}>
             <a.icon className="w-3 h-3 mr-1" /> {a.label}
           </Button>

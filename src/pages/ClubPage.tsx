@@ -233,7 +233,7 @@ const ClubPage = () => {
             {isMember ? (
               <Button
                 size="sm"
-                className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
+                className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
                 onClick={handleOpenDashboard}
                 disabled={checkingMembership}
               >
@@ -242,7 +242,7 @@ const ClubPage = () => {
             ) : (
               <Button
                 size="sm"
-                className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
+                className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
                 onClick={() => setShowRequestInvite(true)}
               >
                 {t.clubPage.requestInvite}
@@ -338,7 +338,7 @@ const ClubPage = () => {
                   {isMember ? (
                     <Button
                       size="lg"
-                      className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
+                      className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
                       onClick={handleOpenDashboard}
                     >
                       {t.clubPage.openDashboard} <ArrowRight className="w-4 h-4 ml-2" />
@@ -346,7 +346,7 @@ const ClubPage = () => {
                   ) : (
                     <Button
                       size="lg"
-                      className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
+                      className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
                       onClick={() => setShowRequestInvite(true)}
                     >
                       {t.clubPage.requestInvite} <ArrowRight className="w-4 h-4 ml-2" />
@@ -408,7 +408,7 @@ const ClubPage = () => {
               <div className="text-xs text-muted-foreground mt-1">{t.clubPage.teamsWillAppear}</div>
               <div className="mt-4 flex items-center justify-center gap-2">
                 <Button variant="outline" onClick={() => navigate("/onboarding")}>{t.clubPage.createJoinClub}</Button>
-                {isMember && <Button className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={handleOpenDashboard}>{t.clubPage.openDashboard}</Button>}
+                {isMember && <Button className="bg-gradient-gold-static text-primary-foreground hover:brightness-110" onClick={handleOpenDashboard}>{t.clubPage.openDashboard}</Button>}
               </div>
             </div>
           ) : (
@@ -448,7 +448,7 @@ const ClubPage = () => {
             <div className="max-w-2xl mx-auto rounded-2xl glass-card p-8 text-center">
               <div className="text-sm font-medium text-foreground">{t.clubPage.noUpcomingSessions}</div>
               <div className="text-xs text-muted-foreground mt-1">{t.clubPage.sessionsWillShow}</div>
-              {isMember && <div className="mt-4"><Button className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={handleOpenDashboard}>{t.clubPage.openDashboard}</Button></div>}
+              {isMember && <div className="mt-4"><Button className="bg-gradient-gold-static text-primary-foreground hover:brightness-110" onClick={handleOpenDashboard}>{t.clubPage.openDashboard}</Button></div>}
             </div>
           ) : (
             <div className="max-w-2xl mx-auto rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
@@ -482,7 +482,7 @@ const ClubPage = () => {
             <div className="max-w-2xl mx-auto rounded-2xl glass-card p-8 text-center">
               <div className="text-sm font-medium text-foreground">{t.clubPage.noUpcomingEvents}</div>
               <div className="text-xs text-muted-foreground mt-1">{t.clubPage.eventsWillAppear}</div>
-              {isMember && <div className="mt-4"><Button className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={handleOpenDashboard}>{t.clubPage.openDashboard}</Button></div>}
+              {isMember && <div className="mt-4"><Button className="bg-gradient-gold-static text-primary-foreground hover:brightness-110" onClick={handleOpenDashboard}>{t.clubPage.openDashboard}</Button></div>}
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
@@ -603,7 +603,7 @@ const ClubPage = () => {
                 <Button
                   onClick={handleSubmitInviteRequest}
                   disabled={submitting || !reqName.trim() || !reqEmail.trim()}
-                  className="w-full bg-gradient-gold text-primary-foreground hover:opacity-90 disabled:opacity-40"
+                  className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110 disabled:opacity-40"
                 >
                   {submitting ? (
                     <>

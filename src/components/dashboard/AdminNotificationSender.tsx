@@ -165,7 +165,7 @@ const AdminNotificationSender = () => {
               size="sm"
               onClick={handleSend}
               disabled={!title.trim() || sending}
-              className="bg-gradient-gold text-primary-foreground hover:opacity-90"
+              className="bg-gradient-gold-static text-primary-foreground hover:brightness-110"
             >
               {sending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

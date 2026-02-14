@@ -99,7 +99,7 @@ export default function Dues() {
 
         const { data: ms, error: msErr } = await supabase
           .from("club_memberships")
-          .select("id, user_id, role, status, profiles!club_memberships_user_id_fkey(display_name)")
+          .select("id, user_id, role, status, profiles!club_memberships_profile_fk(display_name)")
           .eq("club_id", clubId)
           .order("created_at", { ascending: true })
           .limit(500);
@@ -275,7 +275,7 @@ export default function Dues() {
                 </Button>
                 <Button
                   size="sm"
-                  className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
+                  className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
                   onClick={() => setShowCreate(true)}
                   disabled={!clubId}
                 >
@@ -395,7 +395,7 @@ export default function Dues() {
                 <Input value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="e.g. February dues" />
               </div>
 
-              <Button className="bg-gradient-gold text-primary-foreground font-semibold" onClick={createDue}>
+              <Button className="bg-gradient-gold-static text-primary-foreground font-semibold" onClick={createDue}>
                 Create
               </Button>
             </div>
@@ -446,7 +446,7 @@ export default function Dues() {
                 <Input value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder="e.g. March dues" />
               </div>
 
-              <Button className="bg-gradient-gold text-primary-foreground font-semibold" onClick={bulkCreate}>
+              <Button className="bg-gradient-gold-static text-primary-foreground font-semibold" onClick={bulkCreate}>
                 Create for matching members
               </Button>
 

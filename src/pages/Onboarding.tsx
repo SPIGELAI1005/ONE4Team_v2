@@ -305,7 +305,7 @@ const Onboarding = () => {
                     <Button
                       onClick={handleRedeemInvite}
                       disabled={!canRedeem || redeeming}
-                      className="w-full bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90 disabled:opacity-40"
+                      className="w-full bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110 disabled:opacity-40"
                       size="lg"
                     >
                       {redeeming ? (
@@ -425,7 +425,7 @@ const Onboarding = () => {
                   size="lg"
                   disabled={!selectedRole}
                   onClick={handleContinue}
-                  className="bg-gradient-gold text-primary-foreground font-semibold px-8 hover:opacity-90 disabled:opacity-40"
+                  className="bg-gradient-gold-static text-primary-foreground font-semibold px-8 hover:brightness-110 disabled:opacity-40"
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
                   {selectedRole === "admin" && user ? t.onboarding.setUpYourClub : t.onboarding.continueToDashboard}
@@ -490,7 +490,7 @@ const Onboarding = () => {
                 <Button
                   onClick={handleCreateClub}
                   disabled={!clubName.trim() || creating}
-                  className="w-full bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90 disabled:opacity-40"
+                  className="w-full bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110 disabled:opacity-40"
                   size="lg"
                 >
                   {creating ? (

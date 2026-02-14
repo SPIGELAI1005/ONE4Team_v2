@@ -172,7 +172,7 @@ const Members = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from("club_memberships")
-        .select("*, profiles!club_memberships_user_id_fkey(display_name, avatar_url, phone, user_id)")
+        .select("*, profiles!club_memberships_profile_fk(display_name, avatar_url, phone, user_id)")
         .eq("club_id", clubId)
         .order("created_at", { ascending: false });
 
@@ -282,13 +282,13 @@ const Members = () => {
         subtitle={tab === "members" ? t.membersPage.roster : (clubName ? `${clubName} · ${t.membersPage.invites}` : t.membersPage.invites)}
         rightSlot={
           tab === "members" ? (
-            <Button size="sm" className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90">
+            <Button size="sm" className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110">
               <Plus className="w-4 h-4 mr-1" /> {t.membersPage.addMember}
             </Button>
           ) : (
             <Button
               size="sm"
-              className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
+              className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
               onClick={() => {
                 setCreatedInviteToken(null);
                 setInviteEmail("");
@@ -577,7 +577,7 @@ const Members = () => {
                                   </Button>
                                   <Button
                                     size="sm"
-                                    className="bg-gradient-gold text-primary-foreground hover:opacity-90"
+                                    className="bg-gradient-gold-static text-primary-foreground hover:brightness-110"
                                     disabled={r.status !== "pending"}
                                     onClick={async () => {
                                       await handleUpdateInviteRequestStatus(r.id, "approved");
@@ -714,7 +714,7 @@ const Members = () => {
 
                         <Button
                           onClick={() => handleCreateInvite()}
-                          className="w-full bg-gradient-gold text-primary-foreground hover:opacity-90"
+                          className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110"
                         >
                           <UserPlus className="w-4 h-4 mr-2" /> {t.membersPage.createToken}
                         </Button>

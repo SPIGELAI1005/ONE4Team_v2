@@ -23,7 +23,9 @@ const LiveMatchTicker = () => {
   useEffect(() => {
     if (!user) return;
 
-    const fetchLiveMatches = async () => {
+    let channels: ReturnType<typeof supabase.channel>[] = [];
+
+    const bootstrap = async () => {
       // Get user's club memberships
       const { data: memberships } = await supabase
         .from("club_memberships")
@@ -48,38 +50,38 @@ const LiveMatchTicker = () => {
           }))
         );
       }
+
+      // Subscribe to real-time match updates (scoped to the user's clubs)
+      channels = clubIds.map((cid) =>
+        supabase
+          .channel(`live-matches-${cid}`)
+          .on(
+            "postgres_changes",
+            {
+              event: "UPDATE",
+              schema: "public",
+              table: "matches",
+              filter: `club_id=eq.${cid}`,
+            },
+            (payload) => {
+              const updated = payload.new as LiveMatch;
+              setMatches((prev) => {
+                if (updated.status === "in_progress") {
+                  const exists = prev.find((m) => m.id === updated.id);
+                  if (exists) {
+                    return prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m));
+                  }
+                  return [...prev, updated];
+                }
+                return prev.filter((m) => m.id !== updated.id);
+              });
+            }
+          )
+          .subscribe()
+      );
     };
 
-    fetchLiveMatches();
-
-    // Subscribe to real-time match updates (scoped to the user's clubs)
-    const channels = clubIds.map((cid) =>
-      supabase
-        .channel(`live-matches-${cid}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "UPDATE",
-            schema: "public",
-            table: "matches",
-            filter: `club_id=eq.${cid}`,
-          },
-          (payload) => {
-            const updated = payload.new as LiveMatch;
-            setMatches((prev) => {
-              if (updated.status === "in_progress") {
-                const exists = prev.find((m) => m.id === updated.id);
-                if (exists) {
-                  return prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m));
-                }
-                return [...prev, updated];
-              }
-              return prev.filter((m) => m.id !== updated.id);
-            });
-          }
-        )
-        .subscribe()
-    );
+    bootstrap();
 
     return () => {
       channels.forEach((ch) => supabase.removeChannel(ch));

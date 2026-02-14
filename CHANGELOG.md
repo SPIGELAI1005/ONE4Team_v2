@@ -3,6 +3,20 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-02-14 (Session 2)
+### New dashboard pages: Shop, Club Page Admin, Settings
+- **Shop page** (`/shop`): Tabbed page with Products (grid cards, search, category filter, add/edit/delete modals), Orders (status management: pending/confirmed/shipped/delivered), and Categories management. Uses local state with demo data (Supabase tables planned for v2.2). Full CRUD for admins, browse-only for players.
+- **Club Page Admin** (`/club-page-admin`): Admin tool for managing the public club page. Sections: General Info (name, slug, description, public toggle), Branding (logo, color picker, cover image), Contact Details (address, phone, email, website), Social Links (Facebook, Instagram, X/Twitter), and SEO (meta title, meta description). Reads/saves club data via Supabase.
+- **Settings page** (`/settings`): Four-tab settings page. Profile (display name, avatar, phone, read-only email), Club (default language, timezone, season start month - admin only), Notifications (5 toggle switches stored in localStorage), Account (password reset via Supabase, sign out, danger zone with placeholder account deletion).
+- Added routes for `/shop`, `/club-page-admin`, `/settings` inside the `DashboardLayout` route group
+- Updated `DashboardSidebar` with `route` properties for shop, clubpage, and settings nav items (admin + player menus) and `pathToId` entries for active-state highlighting
+- Added comprehensive EN + DE translation keys for all three pages (`shopPage`, `clubPageAdmin`, `settingsPage`)
+
+### Dashboard greeting personalization
+- Dashboard header now shows "Welcome back, {FirstName}" instead of hardcoded "Welcome back, Admin"
+- First name is fetched from the user's `profiles.display_name` field (takes first word)
+- Falls back to capitalized email prefix if no display name is set
+
 ## 2026-02-14
 ### Internationalization (i18n) — Full DE/EN support
 - Added `LanguageContext` + `useLanguage` hook + `LanguageToggle` component

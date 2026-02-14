@@ -377,7 +377,7 @@ const ClubsAndPartners = () => {
                 </p>
                 <Button
                   onClick={() => navigate("/onboarding")}
-                  className="w-full rounded-xl font-semibold text-sm bg-gradient-gold text-primary-foreground hover:brightness-110 shadow-gold"
+                  className="w-full rounded-xl font-semibold text-sm bg-gradient-gold-static text-primary-foreground hover:brightness-110 shadow-gold"
                 >
                   {t.clubsAndPartnersPage.joinClubCta}
                   <ArrowRight className="ml-2 w-4 h-4" />

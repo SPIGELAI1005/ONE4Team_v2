@@ -9,7 +9,6 @@ import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
-import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
 // logo is rendered by AppHeader
 import type { MembershipWithProfile } from "@/types/supabase";
 
@@ -104,7 +103,7 @@ const PlayerStats = () => {
       const { data: membersRaw } = await supabase
         .from("club_memberships")
         .select(
-          "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_user_id_fkey(display_name)",
+          "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_profile_fk(display_name)",
         )
         .eq("club_id", clubId);
 
@@ -271,7 +270,6 @@ const PlayerStats = () => {
           </div>
         )}
       </div>
-      <MobileBottomNav />
     </div>
   );
 };

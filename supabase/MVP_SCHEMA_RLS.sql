@@ -68,6 +68,8 @@ alter table public.club_memberships enable row level security;
 -- =============================================================
 
 -- Membership check: active membership only
+-- CASCADE: drops dependent policies; this file recreates them all below.
+drop function if exists public.is_club_member(uuid, uuid) cascade;
 create or replace function public.is_club_member(p_club_id uuid, p_user_id uuid)
 returns boolean
 language sql
@@ -85,6 +87,8 @@ as $$
 $$;
 
 -- Admin check
+-- CASCADE: drops dependent policies; this file recreates them all below.
+drop function if exists public.is_club_admin(uuid, uuid) cascade;
 create or replace function public.is_club_admin(p_club_id uuid, p_user_id uuid)
 returns boolean
 language sql
@@ -103,6 +107,8 @@ as $$
 $$;
 
 -- Trainer check
+-- CASCADE: drops dependent policies; this file recreates them all below.
+drop function if exists public.is_club_trainer(uuid, uuid) cascade;
 create or replace function public.is_club_trainer(p_club_id uuid, p_user_id uuid)
 returns boolean
 language sql
@@ -129,7 +135,8 @@ grant execute on function public.is_club_trainer(uuid, uuid) to anon, authentica
 -- =============================================================
 
 -- Members can read their clubs; public can read public club front data (minimal)
-create policy if not exists "clubs_select_member_or_public"
+drop policy if exists "clubs_select_member_or_public" on public.clubs;
+create policy "clubs_select_member_or_public"
 on public.clubs for select
 using (
   is_public = true
@@ -137,12 +144,14 @@ using (
 );
 
 -- Any authenticated user can create a club
-create policy if not exists "clubs_insert_authenticated"
+drop policy if exists "clubs_insert_authenticated" on public.clubs;
+create policy "clubs_insert_authenticated"
 on public.clubs for insert
 with check (auth.uid() is not null);
 
 -- Only admins can update their club
-create policy if not exists "clubs_update_admin"
+drop policy if exists "clubs_update_admin" on public.clubs;
+create policy "clubs_update_admin"
 on public.clubs for update
 using (public.is_club_admin(id, auth.uid()))
 with check (public.is_club_admin(id, auth.uid()));
@@ -152,22 +161,26 @@ with check (public.is_club_admin(id, auth.uid()));
 -- =============================================================
 
 -- Members can view memberships within their club
-create policy if not exists "club_memberships_select_club_members"
+drop policy if exists "club_memberships_select_club_members" on public.club_memberships;
+create policy "club_memberships_select_club_members"
 on public.club_memberships for select
 using (public.is_club_member(club_id, auth.uid()));
 
 -- Admins can manage memberships (insert/update)
-create policy if not exists "club_memberships_insert_admin"
+drop policy if exists "club_memberships_insert_admin" on public.club_memberships;
+create policy "club_memberships_insert_admin"
 on public.club_memberships for insert
 with check (public.is_club_admin(club_id, auth.uid()));
 
-create policy if not exists "club_memberships_update_admin"
+drop policy if exists "club_memberships_update_admin" on public.club_memberships;
+create policy "club_memberships_update_admin"
 on public.club_memberships for update
 using (public.is_club_admin(club_id, auth.uid()))
 with check (public.is_club_admin(club_id, auth.uid()));
 
 -- Members can update their own profile attributes (position/team/age_group)
-create policy if not exists "club_memberships_update_self_attributes"
+drop policy if exists "club_memberships_update_self_attributes" on public.club_memberships;
+create policy "club_memberships_update_self_attributes"
 on public.club_memberships for update
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
@@ -191,15 +204,18 @@ create index if not exists idx_club_invites_club_id on public.club_invites(club_
 
 alter table public.club_invites enable row level security;
 
-create policy if not exists "club_invites_select_admin"
+drop policy if exists "club_invites_select_admin" on public.club_invites;
+create policy "club_invites_select_admin"
 on public.club_invites for select
 using (public.is_club_admin(club_id, auth.uid()));
 
-create policy if not exists "club_invites_insert_admin"
+drop policy if exists "club_invites_insert_admin" on public.club_invites;
+create policy "club_invites_insert_admin"
 on public.club_invites for insert
 with check (public.is_club_admin(club_id, auth.uid()));
 
-create policy if not exists "club_invites_update_admin"
+drop policy if exists "club_invites_update_admin" on public.club_invites;
+create policy "club_invites_update_admin"
 on public.club_invites for update
 using (public.is_club_admin(club_id, auth.uid()))
 with check (public.is_club_admin(club_id, auth.uid()));
@@ -221,18 +237,21 @@ create index if not exists idx_club_invite_requests_status on public.club_invite
 alter table public.club_invite_requests enable row level security;
 
 -- Anyone can submit a request if the club is public
-create policy if not exists "club_invite_requests_insert_public"
+drop policy if exists "club_invite_requests_insert_public" on public.club_invite_requests;
+create policy "club_invite_requests_insert_public"
 on public.club_invite_requests for insert
 with check (
   exists (select 1 from public.clubs c where c.id = club_id and c.is_public = true)
 );
 
 -- Admins can read/manage requests
-create policy if not exists "club_invite_requests_select_admin"
+drop policy if exists "club_invite_requests_select_admin" on public.club_invite_requests;
+create policy "club_invite_requests_select_admin"
 on public.club_invite_requests for select
 using (public.is_club_admin(club_id, auth.uid()));
 
-create policy if not exists "club_invite_requests_update_admin"
+drop policy if exists "club_invite_requests_update_admin" on public.club_invite_requests;
+create policy "club_invite_requests_update_admin"
 on public.club_invite_requests for update
 using (public.is_club_admin(club_id, auth.uid()))
 with check (public.is_club_admin(club_id, auth.uid()));
@@ -264,15 +283,18 @@ create index if not exists idx_activities_starts_at on public.activities(starts_
 
 alter table public.activities enable row level security;
 
-create policy if not exists "activities_select_members"
+drop policy if exists "activities_select_members" on public.activities;
+create policy "activities_select_members"
 on public.activities for select
 using (public.is_club_member(club_id, auth.uid()));
 
-create policy if not exists "activities_write_trainer"
+drop policy if exists "activities_write_trainer" on public.activities;
+create policy "activities_write_trainer"
 on public.activities for insert
 with check (public.is_club_trainer(club_id, auth.uid()));
 
-create policy if not exists "activities_update_trainer"
+drop policy if exists "activities_update_trainer" on public.activities;
+create policy "activities_update_trainer"
 on public.activities for update
 using (public.is_club_trainer(club_id, auth.uid()))
 with check (public.is_club_trainer(club_id, auth.uid()));
@@ -292,7 +314,8 @@ create index if not exists idx_activity_attendance_membership_id on public.activ
 alter table public.activity_attendance enable row level security;
 
 -- Read attendance if member of the club that owns the activity
-create policy if not exists "attendance_select_members"
+drop policy if exists "attendance_select_members" on public.activity_attendance;
+create policy "attendance_select_members"
 on public.activity_attendance for select
 using (
   exists (
@@ -304,7 +327,8 @@ using (
 );
 
 -- Trainers/admin can write attendance for their club
-create policy if not exists "attendance_write_trainer"
+drop policy if exists "attendance_write_trainer" on public.activity_attendance;
+create policy "attendance_write_trainer"
 on public.activity_attendance for insert
 with check (
   exists (
@@ -315,7 +339,8 @@ with check (
   )
 );
 
-create policy if not exists "attendance_update_trainer"
+drop policy if exists "attendance_update_trainer" on public.activity_attendance;
+create policy "attendance_update_trainer"
 on public.activity_attendance for update
 using (
   exists (
@@ -352,7 +377,8 @@ create index if not exists idx_match_events_membership_id on public.match_events
 
 alter table public.match_events enable row level security;
 
-create policy if not exists "match_events_select_members"
+drop policy if exists "match_events_select_members" on public.match_events;
+create policy "match_events_select_members"
 on public.match_events for select
 using (
   exists (
@@ -363,7 +389,8 @@ using (
   )
 );
 
-create policy if not exists "match_events_write_trainer"
+drop policy if exists "match_events_write_trainer" on public.match_events;
+create policy "match_events_write_trainer"
 on public.match_events for insert
 with check (
   exists (
@@ -397,15 +424,18 @@ create index if not exists idx_membership_dues_status on public.membership_dues(
 
 alter table public.membership_dues enable row level security;
 
-create policy if not exists "dues_select_members"
+drop policy if exists "dues_select_members" on public.membership_dues;
+create policy "dues_select_members"
 on public.membership_dues for select
 using (public.is_club_member(club_id, auth.uid()));
 
-create policy if not exists "dues_write_admin"
+drop policy if exists "dues_write_admin" on public.membership_dues;
+create policy "dues_write_admin"
 on public.membership_dues for insert
 with check (public.is_club_admin(club_id, auth.uid()));
 
-create policy if not exists "dues_update_admin"
+drop policy if exists "dues_update_admin" on public.membership_dues;
+create policy "dues_update_admin"
 on public.membership_dues for update
 using (public.is_club_admin(club_id, auth.uid()))
 with check (public.is_club_admin(club_id, auth.uid()));
@@ -427,15 +457,18 @@ create index if not exists idx_partners_club_id on public.partners(club_id);
 
 alter table public.partners enable row level security;
 
-create policy if not exists "partners_select_members"
+drop policy if exists "partners_select_members" on public.partners;
+create policy "partners_select_members"
 on public.partners for select
 using (public.is_club_member(club_id, auth.uid()));
 
-create policy if not exists "partners_write_admin"
+drop policy if exists "partners_write_admin" on public.partners;
+create policy "partners_write_admin"
 on public.partners for insert
 with check (public.is_club_admin(club_id, auth.uid()));
 
-create policy if not exists "partners_update_admin"
+drop policy if exists "partners_update_admin" on public.partners;
+create policy "partners_update_admin"
 on public.partners for update
 using (public.is_club_admin(club_id, auth.uid()))
 with check (public.is_club_admin(club_id, auth.uid()));
@@ -456,10 +489,12 @@ create index if not exists idx_ai_requests_club_id on public.ai_requests(club_id
 
 alter table public.ai_requests enable row level security;
 
-create policy if not exists "ai_requests_select_members"
+drop policy if exists "ai_requests_select_members" on public.ai_requests;
+create policy "ai_requests_select_members"
 on public.ai_requests for select
 using (public.is_club_member(club_id, auth.uid()));
 
-create policy if not exists "ai_requests_insert_members"
+drop policy if exists "ai_requests_insert_members" on public.ai_requests;
+create policy "ai_requests_insert_members"
 on public.ai_requests for insert
 with check (public.is_club_member(club_id, auth.uid()) and auth.uid() = user_id);

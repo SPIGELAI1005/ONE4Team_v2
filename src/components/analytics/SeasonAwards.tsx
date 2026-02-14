@@ -39,7 +39,7 @@ const SeasonAwards = () => {
     const { data: membersRaw } = await supabase
       .from("club_memberships")
       .select(
-        "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_user_id_fkey(display_name)",
+        "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_profile_fk(display_name)",
       )
       .eq("club_id", clubId);
 
@@ -95,7 +95,7 @@ const SeasonAwards = () => {
         <Trophy className="w-8 h-8 text-primary mx-auto mb-3" />
         <h3 className="font-display font-semibold text-foreground mb-2 text-sm">Season Awards Ceremony</h3>
         <p className="text-xs text-muted-foreground mb-4">Generate end-of-season awards based on performance data</p>
-        <Button onClick={generateAwards} className="bg-gradient-gold text-primary-foreground hover:opacity-90" size="sm">
+        <Button onClick={generateAwards} className="bg-gradient-gold-static text-primary-foreground hover:brightness-110" size="sm">
           <Award className="w-4 h-4 mr-1" /> Generate Awards
         </Button>
       </motion.div>

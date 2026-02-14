@@ -36,24 +36,29 @@ create trigger update_membership_dues_updated_at before update on public.members
 for each row execute function public.update_updated_at();
 
 -- Admins/trainers can manage dues (club-scoped)
-create policy if not exists "Admins can read dues" on public.membership_dues
+drop policy if exists "Admins can read dues" on public.membership_dues;
+create policy "Admins can read dues" on public.membership_dues
 for select to authenticated
 using (public.is_club_trainer(auth.uid(), club_id));
 
-create policy if not exists "Admins can create dues" on public.membership_dues
+drop policy if exists "Admins can create dues" on public.membership_dues;
+create policy "Admins can create dues" on public.membership_dues
 for insert to authenticated
 with check (public.is_club_trainer(auth.uid(), club_id));
 
-create policy if not exists "Admins can update dues" on public.membership_dues
+drop policy if exists "Admins can update dues" on public.membership_dues;
+create policy "Admins can update dues" on public.membership_dues
 for update to authenticated
 using (public.is_club_trainer(auth.uid(), club_id));
 
-create policy if not exists "Admins can delete dues" on public.membership_dues
+drop policy if exists "Admins can delete dues" on public.membership_dues;
+create policy "Admins can delete dues" on public.membership_dues
 for delete to authenticated
 using (public.is_club_trainer(auth.uid(), club_id));
 
 -- Members can view their own dues
-create policy if not exists "Members can view own dues" on public.membership_dues
+drop policy if exists "Members can view own dues" on public.membership_dues;
+create policy "Members can view own dues" on public.membership_dues
 for select to authenticated
 using (
   exists (

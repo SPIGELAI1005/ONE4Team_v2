@@ -17,6 +17,8 @@ import AnalyticsWidgets from "@/components/dashboard/AnalyticsWidgets";
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
 import NotificationBell from "@/components/dashboard/NotificationBell";
 import ClubSwitcher from "@/components/dashboard/ClubSwitcher";
+import { LanguageToggle } from "@/components/ui/language-toggle";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import LiveMatchTicker from "@/components/dashboard/LiveMatchTicker";
 import AdminNotificationSender from "@/components/dashboard/AdminNotificationSender";
 import SeasonProgressionChart from "@/components/analytics/SeasonProgressionChart";
@@ -25,6 +27,7 @@ import HeadToHead from "@/components/analytics/HeadToHead";
 import NaturalLanguageStats from "@/components/ai/NaturalLanguageStats";
 import SeasonAwards from "@/components/analytics/SeasonAwards";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/useAuth";
 import { useActiveClub } from "@/hooks/use-active-club";
 
 type UpcomingItem = {
@@ -44,7 +47,35 @@ type RoleConfig = {
 const DashboardContent = () => {
   const { role } = useParams();
   const { t } = useLanguage();
+  const { user } = useAuth();
   const { activeClubId, activeClub } = useActiveClub();
+  const [firstName, setFirstName] = useState<string>("");
+
+  // Fetch user's display name for the greeting
+  useEffect(() => {
+    if (!user) return;
+    const fetchName = async () => {
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("user_id", user.id)
+          .single();
+        const displayName = (data as Record<string, unknown> | null)?.display_name as string | null;
+        if (displayName) {
+          setFirstName(displayName.split(" ")[0]);
+        } else {
+          // Fallback: derive from email
+          const emailLocal = user.email?.split("@")[0] || "";
+          setFirstName(emailLocal.charAt(0).toUpperCase() + emailLocal.slice(1));
+        }
+      } catch {
+        const emailLocal = user.email?.split("@")[0] || "";
+        setFirstName(emailLocal.charAt(0).toUpperCase() + emailLocal.slice(1));
+      }
+    };
+    fetchName();
+  }, [user]);
 
   const roleConfig: Record<string, RoleConfig> = useMemo(
     () => ({
@@ -206,20 +237,22 @@ const DashboardContent = () => {
   }, [activeClubId, upcoming, defaultUpcoming]);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-background pb-20 lg:pb-0 scroll-glow">
+    <div className="bg-background pb-20 lg:pb-0 scroll-glow">
       {/* Header */}
       <div className="sticky top-0 z-30 glass-nav">
         <div className="px-6 lg:px-8 py-4 flex items-center justify-between">
           <div>
             <h1 className="font-display text-lg font-bold text-foreground tracking-tight">{config.title}</h1>
             <p className="text-[13px] text-muted-foreground">
-              {config.greeting}{activeClub?.name ? ` · ${activeClub.name}` : ""}
+              {t.dashboard.welcomeBack}{firstName ? `, ${firstName}` : ""}{activeClub?.name ? ` · ${activeClub.name}` : ""}
             </p>
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5">
             <ClubSwitcher />
             <NotificationBell />
-            <div className="w-9 h-9 rounded-2xl bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-sm shadow-gold">
+            <LanguageToggle size="sm" />
+            <ThemeToggle size="sm" />
+            <div className="w-9 h-9 rounded-2xl bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-sm shadow-gold ml-1">
               {(role || "U")[0].toUpperCase()}
             </div>
           </div>

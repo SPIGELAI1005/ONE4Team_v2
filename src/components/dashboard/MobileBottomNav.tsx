@@ -49,7 +49,7 @@ interface MobileBottomNavProps {
 
 const MobileBottomNav = ({ active, onNavigate }: MobileBottomNavProps) => {
   const { role } = useParams();
-  const activeRole = (typeof window !== "undefined" ? localStorage.getItem("one4team.activeRole") : null) || null;
+  const activeRole = (typeof window !== "undefined" ? localStorage.getItem("one4team_role") : null) || null;
   const effectiveRole = role || activeRole || "";
   const navigate = useNavigate();
   const location = useLocation();

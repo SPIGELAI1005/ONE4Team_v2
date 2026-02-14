@@ -13,7 +13,6 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
 // logo is rendered by AppHeader
 import type { EventRow, MembershipWithProfile, ParticipantWithMembershipProfile } from "@/types/supabase";
 
@@ -99,12 +98,12 @@ const Events = () => {
       supabase
         .from("event_participants")
         .select(
-          "*, club_memberships!event_participants_membership_id_fkey(user_id, profiles!club_memberships_user_id_fkey(display_name))",
+          "*, club_memberships!event_participants_membership_id_fkey(user_id, profiles!club_memberships_profile_fk(display_name))",
         )
         .eq("event_id", event.id),
       supabase
         .from("club_memberships")
-        .select("id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_user_id_fkey(display_name)")
+        .select("id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_profile_fk(display_name)")
         .eq("club_id", clubId!),
     ]);
 
@@ -183,7 +182,7 @@ const Events = () => {
         title="Events"
         subtitle="Events & tournaments"
         rightSlot={
-          <Button size="sm" className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={() => setShowAdd(true)}>
+          <Button size="sm" className="bg-gradient-gold-static text-primary-foreground hover:brightness-110" onClick={() => setShowAdd(true)}>
             <Plus className="w-4 h-4 mr-1" /> New
           </Button>
         }
@@ -254,7 +253,7 @@ const Events = () => {
               </div>
               <Input placeholder="Max participants (optional)" type="number" value={maxPart} onChange={e => setMaxPart(e.target.value)} className="bg-background" />
               <Button onClick={handleCreate} disabled={!title.trim() || !startsAt}
-                className="w-full bg-gradient-gold text-primary-foreground hover:opacity-90">
+                className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110">
                 Create Event
               </Button>
             </div>
@@ -359,8 +358,6 @@ const Events = () => {
           </motion.div>
         </div>
       )}
-      {/* Mobile Nav */}
-      <MobileBottomNav />
     </div>
   );
 };

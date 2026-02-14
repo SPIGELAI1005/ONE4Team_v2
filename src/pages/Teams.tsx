@@ -151,7 +151,7 @@ const Teams = () => {
             <Button size="sm" variant="outline" onClick={() => setShowAddSession(true)} disabled={!perms.isTrainer}>
               <Calendar className="w-4 h-4 mr-1" /> Add Session
             </Button>
-            <Button size="sm" className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={() => setShowAddTeam(true)} disabled={!perms.isTrainer}>
+            <Button size="sm" className="bg-gradient-gold-static text-primary-foreground hover:brightness-110" onClick={() => setShowAddTeam(true)} disabled={!perms.isTrainer}>
               <Plus className="w-4 h-4 mr-1" /> Add Team
             </Button>
           </div>
@@ -234,7 +234,7 @@ const Teams = () => {
               <Input placeholder="Sport" value={teamSport} onChange={e => setTeamSport(e.target.value)} className="bg-background" />
               <Input placeholder="Age group (e.g. U17)" value={teamAge} onChange={e => setTeamAge(e.target.value)} className="bg-background" />
               <Input placeholder="Coach name" value={teamCoach} onChange={e => setTeamCoach(e.target.value)} className="bg-background" />
-              <Button onClick={handleAddTeam} disabled={!teamName.trim()} className="w-full bg-gradient-gold text-primary-foreground hover:opacity-90">
+              <Button onClick={handleAddTeam} disabled={!teamName.trim()} className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110">
                 Create Team
               </Button>
             </div>
@@ -269,7 +269,7 @@ const Teams = () => {
                 </div>
               </div>
               <Button onClick={handleAddSession} disabled={!sessionTitle.trim() || !sessionStart || !sessionEnd}
-                className="w-full bg-gradient-gold text-primary-foreground hover:opacity-90">
+                className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110">
                 Schedule Session
               </Button>
             </div>

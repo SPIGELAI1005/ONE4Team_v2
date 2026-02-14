@@ -36,20 +36,24 @@ create trigger update_partners_updated_at before update on public.partners
 for each row execute function public.update_updated_at();
 
 -- Read: club members can view partners (club-scoped)
-create policy if not exists "Members can view partners" on public.partners
+drop policy if exists "Members can view partners" on public.partners;
+create policy "Members can view partners" on public.partners
 for select to authenticated
 using (public.is_member_of_club(auth.uid(), club_id));
 
 -- Write: admins/trainers can manage partners (club-scoped)
-create policy if not exists "Admins can create partners" on public.partners
+drop policy if exists "Admins can create partners" on public.partners;
+create policy "Admins can create partners" on public.partners
 for insert to authenticated
 with check (public.is_club_trainer(auth.uid(), club_id) and (created_by is null or created_by = auth.uid()));
 
-create policy if not exists "Admins can update partners" on public.partners
+drop policy if exists "Admins can update partners" on public.partners;
+create policy "Admins can update partners" on public.partners
 for update to authenticated
 using (public.is_club_trainer(auth.uid(), club_id));
 
-create policy if not exists "Admins can delete partners" on public.partners
+drop policy if exists "Admins can delete partners" on public.partners;
+create policy "Admins can delete partners" on public.partners
 for delete to authenticated
 using (public.is_club_trainer(auth.uid(), club_id));
 

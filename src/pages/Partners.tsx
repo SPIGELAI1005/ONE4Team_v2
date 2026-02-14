@@ -117,7 +117,7 @@ export default function Partners() {
           canManage ? (
             <Button
               size="sm"
-              className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
+              className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
               onClick={() => setShowCreate(true)}
               disabled={!clubId}
             >
@@ -243,7 +243,7 @@ export default function Partners() {
                 </div>
               </div>
 
-              <Button className="bg-gradient-gold text-primary-foreground font-semibold" onClick={createPartner}>
+              <Button className="bg-gradient-gold-static text-primary-foreground font-semibold" onClick={createPartner}>
                 Create
               </Button>
             </div>

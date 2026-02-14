@@ -7,7 +7,10 @@ Club/team management SaaS with an iOS-style glass UI, full internationalization 
 - **Dark/Light theme**: System preference detection + manual toggle
 - **Animated football field**: Canvas-based match simulation with translated chat bubbles
 - **Public pages**: Features, Clubs & Partners, Pricing, About
-- **Dashboard**: Role-based views (Admin, Trainer, Player, Sponsor, Supplier, etc.)
+- **Dashboard**: Role-based views (Admin, Trainer, Player, Sponsor, Supplier, etc.) with personalized greeting
+- **Shop**: Product catalog, orders management, categories (demo data)
+- **Club Page Admin**: Manage public club page (branding, contact, social, SEO)
+- **Settings**: Profile, club config, notification preferences, account security
 - **AI copilots**: Co-Trainer + Co-AImin with club-scoped logging
 - **Partner showcase**: TSV Allach 09 + Sportecke München with images and testimonials
 - **Test Mode Banner**: Dismissible beta disclaimer across all pages

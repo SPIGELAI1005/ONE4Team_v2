@@ -13,7 +13,6 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
 // logo is rendered by AppHeader
 import LineupExport from "@/components/matches/LineupExport";
 import MatchVoting from "@/components/matches/MatchVoting";
@@ -144,7 +143,7 @@ const Matches = () => {
       supabase.from("match_events").select("*").eq("match_id", match.id).order("minute"),
       supabase
         .from("club_memberships")
-        .select("id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_user_id_fkey(display_name)")
+        .select("id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_profile_fk(display_name)")
         .eq("club_id", clubId!),
       supabase.from("match_lineups").select("*").eq("match_id", match.id),
     ]);
@@ -304,7 +303,7 @@ const Matches = () => {
             <Button size="sm" variant="outline" onClick={() => setShowAddComp(true)} className="rounded-xl glass-card text-[12px] haptic-press">
               <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> Competition
             </Button>
-            <Button size="sm" className="bg-gradient-gold text-primary-foreground hover:opacity-90 rounded-xl text-[12px] shadow-gold haptic-press" onClick={() => setShowAddMatch(true)}>
+            <Button size="sm" className="bg-gradient-gold-static text-primary-foreground hover:brightness-110 rounded-xl text-[12px] shadow-gold haptic-press" onClick={() => setShowAddMatch(true)}>
               <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> Match
             </Button>
           </div>
@@ -436,8 +435,8 @@ const Matches = () => {
             <div className="space-y-3">
               <Input placeholder="Opponent *" value={opponent} onChange={e => setOpponent(e.target.value)} className="bg-background" maxLength={200} />
               <div className="flex gap-2">
-                <Button size="sm" variant={isHome ? "default" : "outline"} onClick={() => setIsHome(true)} className={isHome ? "bg-gradient-gold text-primary-foreground" : ""}>Home</Button>
-                <Button size="sm" variant={!isHome ? "default" : "outline"} onClick={() => setIsHome(false)} className={!isHome ? "bg-gradient-gold text-primary-foreground" : ""}>Away</Button>
+                <Button size="sm" variant={isHome ? "default" : "outline"} onClick={() => setIsHome(true)} className={isHome ? "bg-gradient-gold-static text-primary-foreground" : ""}>Home</Button>
+                <Button size="sm" variant={!isHome ? "default" : "outline"} onClick={() => setIsHome(false)} className={!isHome ? "bg-gradient-gold-static text-primary-foreground" : ""}>Away</Button>
               </div>
               <div>
                 <label className="text-[10px] text-muted-foreground mb-1 block">Date & Time *</label>
@@ -455,7 +454,7 @@ const Matches = () => {
                 {competitions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
               <Button onClick={handleCreateMatch} disabled={!opponent.trim() || !matchDate}
-                className="w-full bg-gradient-gold text-primary-foreground hover:opacity-90">Schedule Match</Button>
+                className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110">Schedule Match</Button>
             </div>
           </motion.div>
         </div>
@@ -485,7 +484,7 @@ const Matches = () => {
                 {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
               <Button onClick={handleCreateComp} disabled={!compName.trim()}
-                className="w-full bg-gradient-gold text-primary-foreground hover:opacity-90">Create Competition</Button>
+                className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110">Create Competition</Button>
             </div>
           </motion.div>
         </div>
@@ -533,7 +532,7 @@ const Matches = () => {
                   <label className="text-[10px] text-muted-foreground">Away</label>
                   <Input type="number" value={awayScore} onChange={e => setAwayScore(e.target.value)} className="bg-card text-center text-lg font-bold" min="0" />
                 </div>
-                <Button size="sm" className="bg-gradient-gold text-primary-foreground hover:opacity-90 sm:mt-4 w-full sm:w-auto" onClick={handleUpdateResult}>Save</Button>
+                <Button size="sm" className="bg-gradient-gold-static text-primary-foreground hover:brightness-110 sm:mt-4 w-full sm:w-auto" onClick={handleUpdateResult}>Save</Button>
               </div>
               )}
             </div>
@@ -606,7 +605,7 @@ const Matches = () => {
                         </select>
                         <Input type="number" placeholder="Min" value={evMinute} onChange={e => setEvMinute(e.target.value)}
                           className="w-16 h-8 bg-card text-xs text-center" min="0" max="120" />
-                        <Button size="sm" className="h-8 bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={handleAddMatchEvent}>+</Button>
+                        <Button size="sm" className="h-8 bg-gradient-gold-static text-primary-foreground hover:brightness-110" onClick={handleAddMatchEvent}>+</Button>
                       </div>
                     </div>
                   </>
@@ -687,7 +686,7 @@ const Matches = () => {
                             Sub
                           </button>
                         </div>
-                        <Button size="sm" className="h-8 bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={handleAddToLineup} disabled={!addLineupMemberId}>+</Button>
+                        <Button size="sm" className="h-8 bg-gradient-gold-static text-primary-foreground hover:brightness-110" onClick={handleAddToLineup} disabled={!addLineupMemberId}>+</Button>
                       </div>
                     </div>
                   </>
@@ -762,8 +761,6 @@ const Matches = () => {
           </motion.div>
         </div>
       )}
-      {/* Mobile Nav */}
-      <MobileBottomNav />
     </div>
   );
 };

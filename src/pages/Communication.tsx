@@ -132,7 +132,7 @@ const Communication = () => {
           tab === "announcements" ? (
             <Button
               size="sm"
-              className="bg-gradient-gold text-primary-foreground hover:opacity-90"
+              className="bg-gradient-gold-static text-primary-foreground hover:brightness-110"
               onClick={() => setShowAddAnnouncement(true)}
               disabled={!perms.isAdmin}
             >
@@ -207,7 +207,7 @@ const Communication = () => {
             <div className="flex gap-2">
               <Input placeholder="Type a message..." value={newMessage} onChange={e => setNewMessage(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleSendMessage()} className="bg-card border-border" maxLength={1000} />
-              <Button onClick={handleSendMessage} disabled={!newMessage.trim()} className="bg-gradient-gold text-primary-foreground hover:opacity-90">
+              <Button onClick={handleSendMessage} disabled={!newMessage.trim()} className="bg-gradient-gold-static text-primary-foreground hover:brightness-110">
                 <Send className="w-4 h-4" />
               </Button>
             </div>
@@ -236,7 +236,7 @@ const Communication = () => {
                 <option value="urgent">Urgent</option>
               </select>
               <Button onClick={handleAddAnnouncement} disabled={!annTitle.trim() || !annContent.trim()}
-                className="w-full bg-gradient-gold text-primary-foreground hover:opacity-90">
+                className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110">
                 Post Announcement
               </Button>
             </div>

@@ -36,7 +36,7 @@ const NaturalLanguageStats = () => {
       supabase.from("match_events").select("*").eq("match_id", "dummy").limit(0),
       supabase
         .from("club_memberships")
-        .select("id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_user_id_fkey(display_name)")
+        .select("id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_profile_fk(display_name)")
         .eq("club_id", clubId),
     ]);
 
@@ -152,7 +152,7 @@ const NaturalLanguageStats = () => {
           className="flex-1 h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <Button size="sm" onClick={() => askQuestion(query)} disabled={loading || !query.trim()}
-          className="h-9 bg-gradient-gold text-primary-foreground hover:opacity-90">
+          className="h-9 bg-gradient-gold-static text-primary-foreground hover:brightness-110">
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </Button>
       </div>

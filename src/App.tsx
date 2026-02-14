@@ -15,7 +15,8 @@ import PageTransition from "@/components/layout/PageTransition";
 const Index = lazy(() => import("./pages/Index"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
+const DashboardLayout = lazy(() => import("./components/dashboard/DashboardLayout"));
+const DashboardContent = lazy(() => import("./components/dashboard/DashboardContent"));
 const ClubPage = lazy(() => import("./pages/ClubPage"));
 const Members = lazy(() => import("./pages/Members"));
 const Teams = lazy(() => import("./pages/Teams"));
@@ -31,6 +32,9 @@ const PlayerStats = lazy(() => import("./pages/PlayerStats"));
 const PlayerProfile = lazy(() => import("./pages/PlayerProfile"));
 const CoTrainer = lazy(() => import("./pages/CoTrainer"));
 const LiveScores = lazy(() => import("./pages/LiveScores"));
+const Shop = lazy(() => import("./pages/Shop"));
+const ClubPageAdmin = lazy(() => import("./pages/ClubPageAdmin"));
+const SettingsPage = lazy(() => import("./pages/Settings"));
 const About = lazy(() => import("./pages/About"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const ClubsAndPartners = lazy(() => import("./pages/ClubsAndPartners"));
@@ -134,18 +138,6 @@ const AnimatedRoutes = () => {
           }
         />
         <Route
-          path="/dashboard/:role"
-          element={
-            <RequireAuth>
-              <PageTransition>
-                <Suspense fallback={<RouteFallback />}>
-                  <Dashboard />
-                </Suspense>
-              </PageTransition>
-            </RequireAuth>
-          }
-        />
-        <Route
           path="/club/:clubSlug"
           element={
             <PageTransition>
@@ -155,126 +147,29 @@ const AnimatedRoutes = () => {
             </PageTransition>
           }
         />
-        <Route
-          path="/members"
-          element={
-            <RequireAuth>
-              <PageTransition>
-                <Suspense fallback={<RouteFallback />}>
-                  <Members />
-                </Suspense>
-              </PageTransition>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/teams"
-          element={
-            <RequireAuth>
-              <PageTransition>
-                <Suspense fallback={<RouteFallback />}>
-                  <Teams />
-                </Suspense>
-              </PageTransition>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/communication"
-          element={
-            <RequireAuth>
-              <PageTransition>
-                <Suspense fallback={<RouteFallback />}>
-                  <Communication />
-                </Suspense>
-              </PageTransition>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/payments"
-          element={
-            <RequireAuth>
-              <PageTransition>
-                <Suspense fallback={<RouteFallback />}>
-                  <Payments />
-                </Suspense>
-              </PageTransition>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/events"
-          element={
-            <RequireAuth>
-              <PageTransition>
-                <Suspense fallback={<RouteFallback />}>
-                  <Events />
-                </Suspense>
-              </PageTransition>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/activities"
-          element={
-            <RequireAuth>
-              <PageTransition>
-                <Suspense fallback={<RouteFallback />}>
-                  <Activities />
-                </Suspense>
-              </PageTransition>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/matches"
-          element={
-            <RequireAuth>
-              <PageTransition>
-                <Suspense fallback={<RouteFallback />}>
-                  <Matches />
-                </Suspense>
-              </PageTransition>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/dues"
-          element={
-            <RequireAuth>
-              <PageTransition>
-                <Suspense fallback={<RouteFallback />}>
-                  <Dues />
-                </Suspense>
-              </PageTransition>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/partners"
-          element={
-            <RequireAuth>
-              <PageTransition>
-                <Suspense fallback={<RouteFallback />}>
-                  <Partners />
-                </Suspense>
-              </PageTransition>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/ai"
-          element={
-            <RequireAuth>
-              <PageTransition>
-                <Suspense fallback={<RouteFallback />}>
-                  <AI />
-                </Suspense>
-              </PageTransition>
-            </RequireAuth>
-          }
-        />
+
+        {/* Dashboard layout: sidebar persists across all these pages */}
+        <Route element={<RequireAuth><Suspense fallback={<RouteFallback />}><DashboardLayout /></Suspense></RequireAuth>}>
+          <Route path="/dashboard/:role" element={<Suspense fallback={<RouteFallback />}><DashboardContent /></Suspense>} />
+          <Route path="/members" element={<Suspense fallback={<RouteFallback />}><Members /></Suspense>} />
+          <Route path="/teams" element={<Suspense fallback={<RouteFallback />}><Teams /></Suspense>} />
+          <Route path="/communication" element={<Suspense fallback={<RouteFallback />}><Communication /></Suspense>} />
+          <Route path="/payments" element={<Suspense fallback={<RouteFallback />}><Payments /></Suspense>} />
+          <Route path="/events" element={<Suspense fallback={<RouteFallback />}><Events /></Suspense>} />
+          <Route path="/activities" element={<Suspense fallback={<RouteFallback />}><Activities /></Suspense>} />
+          <Route path="/matches" element={<Suspense fallback={<RouteFallback />}><Matches /></Suspense>} />
+          <Route path="/dues" element={<Suspense fallback={<RouteFallback />}><Dues /></Suspense>} />
+          <Route path="/partners" element={<Suspense fallback={<RouteFallback />}><Partners /></Suspense>} />
+          <Route path="/ai" element={<Suspense fallback={<RouteFallback />}><AI /></Suspense>} />
+          <Route path="/player-stats" element={<Suspense fallback={<RouteFallback />}><PlayerStats /></Suspense>} />
+          <Route path="/player/:membershipId" element={<Suspense fallback={<RouteFallback />}><PlayerProfile /></Suspense>} />
+          <Route path="/co-trainer" element={<Suspense fallback={<RouteFallback />}><CoTrainer /></Suspense>} />
+          <Route path="/live-scores" element={<Suspense fallback={<RouteFallback />}><LiveScores /></Suspense>} />
+          <Route path="/shop" element={<Suspense fallback={<RouteFallback />}><Shop /></Suspense>} />
+          <Route path="/club-page-admin" element={<Suspense fallback={<RouteFallback />}><ClubPageAdmin /></Suspense>} />
+          <Route path="/settings" element={<Suspense fallback={<RouteFallback />}><SettingsPage /></Suspense>} />
+        </Route>
+
         <Route
           path="/health"
           element={
@@ -293,54 +188,6 @@ const AnimatedRoutes = () => {
                 {import.meta.env.DEV ? <Crash /> : <NotFound />}
               </Suspense>
             </PageTransition>
-          }
-        />
-        <Route
-          path="/player-stats"
-          element={
-            <RequireAuth>
-              <PageTransition>
-                <Suspense fallback={<RouteFallback />}>
-                  <PlayerStats />
-                </Suspense>
-              </PageTransition>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/player/:membershipId"
-          element={
-            <RequireAuth>
-              <PageTransition>
-                <Suspense fallback={<RouteFallback />}>
-                  <PlayerProfile />
-                </Suspense>
-              </PageTransition>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/co-trainer"
-          element={
-            <RequireAuth>
-              <PageTransition>
-                <Suspense fallback={<RouteFallback />}>
-                  <CoTrainer />
-                </Suspense>
-              </PageTransition>
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/live-scores"
-          element={
-            <RequireAuth>
-              <PageTransition>
-                <Suspense fallback={<RouteFallback />}>
-                  <LiveScores />
-                </Suspense>
-              </PageTransition>
-            </RequireAuth>
           }
         />
         <Route

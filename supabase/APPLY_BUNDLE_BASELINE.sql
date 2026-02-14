@@ -174,32 +174,39 @@ create trigger on_auth_user_created
 
 -- clubs
 -- Public clubs are visible; members can see their clubs.
-create policy if not exists "Public clubs visible to everyone"
+drop policy if exists "Public clubs visible to everyone" on public.clubs;
+create policy "Public clubs visible to everyone"
   on public.clubs for select
   using (is_public = true);
 
-create policy if not exists "Members can see their clubs"
+drop policy if exists "Members can see their clubs" on public.clubs;
+create policy "Members can see their clubs"
   on public.clubs for select
   using (public.is_member_of_club(auth.uid(), id));
 
-create policy if not exists "Authenticated users can create clubs"
+drop policy if exists "Authenticated users can create clubs" on public.clubs;
+create policy "Authenticated users can create clubs"
   on public.clubs for insert
   with check (auth.uid() is not null);
 
-create policy if not exists "Admins can update their club"
+drop policy if exists "Admins can update their club" on public.clubs;
+create policy "Admins can update their club"
   on public.clubs for update
   using (public.is_club_admin(auth.uid(), id));
 
 -- profiles
-create policy if not exists "Users can view own profile"
+drop policy if exists "Users can view own profile" on public.profiles;
+create policy "Users can view own profile"
   on public.profiles for select
   using (auth.uid() = user_id);
 
-create policy if not exists "Users can update own profile"
+drop policy if exists "Users can update own profile" on public.profiles;
+create policy "Users can update own profile"
   on public.profiles for update
   using (auth.uid() = user_id);
 
-create policy if not exists "Club members can view fellow members profiles"
+drop policy if exists "Club members can view fellow members profiles" on public.profiles;
+create policy "Club members can view fellow members profiles"
   on public.profiles for select
   using (
     exists (
@@ -211,23 +218,28 @@ create policy if not exists "Club members can view fellow members profiles"
   );
 
 -- club_memberships
-create policy if not exists "Users can view own memberships"
+drop policy if exists "Users can view own memberships" on public.club_memberships;
+create policy "Users can view own memberships"
   on public.club_memberships for select
   using (auth.uid() = user_id);
 
-create policy if not exists "Admins can view all club memberships"
+drop policy if exists "Admins can view all club memberships" on public.club_memberships;
+create policy "Admins can view all club memberships"
   on public.club_memberships for select
   using (public.is_club_admin(auth.uid(), club_id));
 
-create policy if not exists "Admins can add members"
+drop policy if exists "Admins can add members" on public.club_memberships;
+create policy "Admins can add members"
   on public.club_memberships for insert
   with check (public.is_club_admin(auth.uid(), club_id));
 
-create policy if not exists "Admins can update memberships"
+drop policy if exists "Admins can update memberships" on public.club_memberships;
+create policy "Admins can update memberships"
   on public.club_memberships for update
   using (public.is_club_admin(auth.uid(), club_id));
 
-create policy if not exists "Admins can remove members"
+drop policy if exists "Admins can remove members" on public.club_memberships;
+create policy "Admins can remove members"
   on public.club_memberships for delete
   using (public.is_club_admin(auth.uid(), club_id));
 

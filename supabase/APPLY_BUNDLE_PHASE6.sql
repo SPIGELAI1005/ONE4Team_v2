@@ -33,7 +33,8 @@ create table if not exists public.ai_requests (
 alter table public.ai_requests enable row level security;
 
 -- Members can insert requests for their own club (self-authored)
-create policy if not exists "Members can create ai requests" on public.ai_requests
+drop policy if exists "Members can create ai requests" on public.ai_requests;
+create policy "Members can create ai requests" on public.ai_requests
 for insert to authenticated
 with check (
   public.is_member_of_club(auth.uid(), club_id)
@@ -41,17 +42,20 @@ with check (
 );
 
 -- Users can read their own requests
-create policy if not exists "Users can read own ai requests" on public.ai_requests
+drop policy if exists "Users can read own ai requests" on public.ai_requests;
+create policy "Users can read own ai requests" on public.ai_requests
 for select to authenticated
 using (user_id = auth.uid());
 
 -- Trainers/admins can read all requests in their club (for audit/debug)
-create policy if not exists "Trainers can read club ai requests" on public.ai_requests
+drop policy if exists "Trainers can read club ai requests" on public.ai_requests;
+create policy "Trainers can read club ai requests" on public.ai_requests
 for select to authenticated
 using (public.is_club_trainer(auth.uid(), club_id));
 
 -- Admins/trainers can delete requests in their club (optional cleanup)
-create policy if not exists "Trainers can delete club ai requests" on public.ai_requests
+drop policy if exists "Trainers can delete club ai requests" on public.ai_requests;
+create policy "Trainers can delete club ai requests" on public.ai_requests
 for delete to authenticated
 using (public.is_club_trainer(auth.uid(), club_id));
 

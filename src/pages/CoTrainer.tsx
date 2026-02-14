@@ -7,7 +7,6 @@ import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import MobileBottomNav from "@/components/dashboard/MobileBottomNav";
 // logo is rendered by AppHeader
 import ReactMarkdown from "react-markdown";
 
@@ -19,6 +18,118 @@ const quickPrompts = [
   { label: "Analyze performance", prompt: "Analyze our recent match performance and identify key areas for improvement." },
   { label: "Motivate the team", prompt: "Write a motivational pre-match speech for an important cup game." },
 ];
+
+const DEMO_RESPONSES: Record<string, string> = {
+  lineup: `## Suggested Starting XI (4-3-3)
+
+**GK:** #1 M. Weber
+**RB:** #2 L. Fischer | **CB:** #5 T. Braun | **CB:** #4 S. Hoffmann | **LB:** #3 A. Koch
+**CM:** #8 J. Meier | **CM:** #6 D. Wagner | **CAM:** #10 K. Bauer
+**RW:** #7 P. Richter | **ST:** #9 N. Schmidt | **LW:** #11 F. Schulz
+
+**Key rationale:**
+- Schmidt is in top form (4 goals in last 3 matches)
+- Wagner provides stability in the midfield pivot
+- Richter's pace on the right will exploit their slower left-back
+
+**Bench:** #12 R. Klein (GK), #14 C. Wolf, #16 M. Hartmann, #20 J. Lang, #22 O. Berger`,
+
+  training: `## Weekly Training Plan: Defensive Organization
+
+### Monday: Recovery + Video Analysis
+- Light jog (15 min) + stretching
+- Video session: Review last match defensive errors
+- Individual positional analysis
+
+### Tuesday: Pressing Triggers & Shape
+- Warm-up rondos (15 min)
+- **Pressing drill:** 6v4 in half-field, trigger on back-pass
+- **Defensive shape:** 11v0 walk-through of compact 4-4-2 block
+- Small-sided game 8v8 with defensive focus
+
+### Wednesday: Rest Day
+
+### Thursday: Set Pieces & Transition
+- Warm-up (15 min)
+- **Defensive set pieces:** Corners (zonal marking) + free kicks
+- **Counter-pressing:** 5v5+2 transition game
+- **Match simulation:** 11v11 (25 min)
+
+### Friday: Tactical Polish + Pre-Match
+- Activation warm-up
+- **Shadow play:** Defensive movements against expected opponent formation
+- Set piece review
+- Team talk + mental preparation
+
+**Focus areas:** Compactness between lines, communication, recovery runs.`,
+
+  performance: `## Post-Match Performance Analysis
+
+### Overall Rating: 6.5/10
+
+**Strengths:**
+- Ball possession: 58% (above average)
+- Successful passes: 412/478 (86.2%)
+- Corners won: 7
+
+**Areas for Improvement:**
+- **Defensive transitions:** 3 goals conceded from counter-attacks
+- **Set piece defending:** Conceded 1 goal from corner
+- **Final third efficiency:** 14 shots, only 4 on target (28.6%)
+
+### Player Highlights
+| Player | Rating | Key Stat |
+|--------|--------|----------|
+| N. Schmidt | 8.0 | 2 goals, 1 assist |
+| K. Bauer | 7.5 | 89% pass accuracy, 3 key passes |
+| D. Wagner | 7.0 | 8 ball recoveries |
+
+### Tactical Recommendation
+Switch to a **4-2-3-1** in defensive transitions to add cover in midfield and reduce exposure to counter-attacks.`,
+
+  motivate: `## Pre-Match Speech
+
+Team, listen up.
+
+Every one of you has earned your place here today. Not through luck, not through talent alone, but through **relentless dedication** every single day in training.
+
+Today is not just another match. Today is the match where we show what this team is truly made of. When you step on that pitch, I want you to remember three things:
+
+**Play for each other.** Every sprint, every tackle, every pass is for your teammate next to you. We win as a team or we don't win at all.
+
+**Trust the process.** We have prepared for this. You know the game plan. Trust it, trust your training, trust each other.
+
+**Leave everything on the pitch.** When that final whistle blows, I want every single one of you to know that you gave absolutely everything.
+
+They may have their strengths, but they don't have what we have. They don't have **our bond, our hunger, our belief**.
+
+Now let's go out there and make this club proud. Together.
+
+**ONE4Team!**`,
+};
+
+function getDemoResponse(userMessage: string): string {
+  const lower = userMessage.toLowerCase();
+  if (lower.includes("lineup") || lower.includes("starting xi") || lower.includes("formation"))
+    return DEMO_RESPONSES.lineup;
+  if (lower.includes("training") || lower.includes("plan") || lower.includes("session") || lower.includes("week"))
+    return DEMO_RESPONSES.training;
+  if (lower.includes("analy") || lower.includes("performance") || lower.includes("review") || lower.includes("improve"))
+    return DEMO_RESPONSES.performance;
+  if (lower.includes("motiv") || lower.includes("speech") || lower.includes("inspire") || lower.includes("cup"))
+    return DEMO_RESPONSES.motivate;
+  return `Great question! As your AI Co-Trainer, I can help you with:
+
+- **Lineup suggestions** based on player form and opponent analysis
+- **Training plans** tailored to your team's needs
+- **Performance analysis** after matches
+- **Tactical insights** and formation advice
+- **Motivational content** for your team
+
+Try asking me something specific, like "Suggest a lineup for our next match" or "Create a training plan for this week."
+
+*Note: This is a demo response. Once the AI backend is connected, you'll receive personalized insights based on your actual club data.*`;
+}
 
 const CoTrainer = () => {
   // navigation is handled by AppHeader
@@ -50,8 +161,24 @@ const CoTrainer = () => {
       });
     };
 
+    // Simulate streaming for demo mode: reveal text word-by-word
+    const simulateStream = async (text: string) => {
+      const words = text.split(" ");
+      for (let i = 0; i < words.length; i++) {
+        upsertAssistant((i === 0 ? "" : " ") + words[i]);
+        // Variable delay: shorter for common words, slightly longer at punctuation
+        const delay = words[i].endsWith(".") || words[i].endsWith("!") || words[i].endsWith(":") ? 40 : 18;
+        await new Promise(r => setTimeout(r, delay));
+      }
+    };
+
     try {
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/co-trainer`, {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+      // If no Supabase URL is configured, go straight to demo mode
+      if (!supabaseUrl) throw new Error("demo");
+
+      const resp = await fetch(`${supabaseUrl}/functions/v1/co-trainer`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -63,13 +190,7 @@ const CoTrainer = () => {
         }),
       });
 
-      if (!resp.ok) {
-        const errorData = await resp.json().catch(() => ({ error: "Connection failed" }));
-        toast({ title: "Co-Trainer Error", description: errorData.error || "Something went wrong", variant: "destructive" });
-        setIsLoading(false);
-        return;
-      }
-
+      if (!resp.ok) throw new Error("edge-fn-error");
       if (!resp.body) throw new Error("No stream");
 
       const reader = resp.body.getReader();
@@ -97,13 +218,15 @@ const CoTrainer = () => {
           } catch { /* partial JSON */ }
         }
       }
-    } catch (e) {
-      console.error(e);
-      toast({ title: "Error", description: "Failed to connect to Co-Trainer", variant: "destructive" });
+    } catch {
+      // Fallback: demo mode with simulated streaming
+      const lastUserMsg = allMessages[allMessages.length - 1]?.content || "";
+      const demoText = getDemoResponse(lastUserMsg);
+      await simulateStream(demoText);
     } finally {
       setIsLoading(false);
     }
-  }, [clubId, toast]);
+  }, [clubId]);
 
   const handleSend = async (text?: string) => {
     const msg = text || input.trim();
@@ -205,13 +328,12 @@ const CoTrainer = () => {
               className="flex-1 resize-none rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             />
             <Button onClick={() => handleSend()} disabled={!input.trim() || isLoading}
-              className="h-11 w-11 rounded-xl bg-gradient-gold text-primary-foreground hover:opacity-90 shrink-0">
+              className="h-11 w-11 rounded-xl bg-gradient-gold-static text-primary-foreground hover:brightness-110 shrink-0">
               <Send className="w-4 h-4" />
             </Button>
           </div>
         </div>
       </div>
-      <MobileBottomNav />
     </div>
   );
 };

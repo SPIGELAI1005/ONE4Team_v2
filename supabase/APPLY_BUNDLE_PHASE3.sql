@@ -37,19 +37,23 @@ drop trigger if exists update_competitions_updated_at on public.competitions;
 create trigger update_competitions_updated_at before update on public.competitions
 for each row execute function public.update_updated_at();
 
-create policy if not exists "Members can view competitions" on public.competitions
+drop policy if exists "Members can view competitions" on public.competitions;
+create policy "Members can view competitions" on public.competitions
 for select to authenticated
 using (public.is_member_of_club(auth.uid(), club_id));
 
-create policy if not exists "Admins can create competitions" on public.competitions
+drop policy if exists "Admins can create competitions" on public.competitions;
+create policy "Admins can create competitions" on public.competitions
 for insert to authenticated
 with check (public.is_club_admin(auth.uid(), club_id));
 
-create policy if not exists "Admins can update competitions" on public.competitions
+drop policy if exists "Admins can update competitions" on public.competitions;
+create policy "Admins can update competitions" on public.competitions
 for update to authenticated
 using (public.is_club_admin(auth.uid(), club_id));
 
-create policy if not exists "Admins can delete competitions" on public.competitions
+drop policy if exists "Admins can delete competitions" on public.competitions;
+create policy "Admins can delete competitions" on public.competitions
 for delete to authenticated
 using (public.is_club_admin(auth.uid(), club_id));
 
@@ -79,19 +83,23 @@ drop trigger if exists update_matches_updated_at on public.matches;
 create trigger update_matches_updated_at before update on public.matches
 for each row execute function public.update_updated_at();
 
-create policy if not exists "Members can view matches" on public.matches
+drop policy if exists "Members can view matches" on public.matches;
+create policy "Members can view matches" on public.matches
 for select to authenticated
 using (public.is_member_of_club(auth.uid(), club_id));
 
-create policy if not exists "Admins can create matches" on public.matches
+drop policy if exists "Admins can create matches" on public.matches;
+create policy "Admins can create matches" on public.matches
 for insert to authenticated
 with check (public.is_club_admin(auth.uid(), club_id));
 
-create policy if not exists "Admins can update matches" on public.matches
+drop policy if exists "Admins can update matches" on public.matches;
+create policy "Admins can update matches" on public.matches
 for update to authenticated
 using (public.is_club_admin(auth.uid(), club_id));
 
-create policy if not exists "Admins can delete matches" on public.matches
+drop policy if exists "Admins can delete matches" on public.matches;
+create policy "Admins can delete matches" on public.matches
 for delete to authenticated
 using (public.is_club_admin(auth.uid(), club_id));
 
@@ -111,19 +119,23 @@ create table if not exists public.match_lineups (
 
 alter table public.match_lineups enable row level security;
 
-create policy if not exists "Members can view lineups" on public.match_lineups
+drop policy if exists "Members can view lineups" on public.match_lineups;
+create policy "Members can view lineups" on public.match_lineups
 for select to authenticated
 using (exists (select 1 from public.matches m where m.id = match_id and public.is_member_of_club(auth.uid(), m.club_id)));
 
-create policy if not exists "Admins can manage lineups" on public.match_lineups
+drop policy if exists "Admins can manage lineups" on public.match_lineups;
+create policy "Admins can manage lineups" on public.match_lineups
 for insert to authenticated
 with check (exists (select 1 from public.matches m where m.id = match_id and public.is_club_admin(auth.uid(), m.club_id)));
 
-create policy if not exists "Admins can update lineups" on public.match_lineups
+drop policy if exists "Admins can update lineups" on public.match_lineups;
+create policy "Admins can update lineups" on public.match_lineups
 for update to authenticated
 using (exists (select 1 from public.matches m where m.id = match_id and public.is_club_admin(auth.uid(), m.club_id)));
 
-create policy if not exists "Admins can delete lineups" on public.match_lineups
+drop policy if exists "Admins can delete lineups" on public.match_lineups;
+create policy "Admins can delete lineups" on public.match_lineups
 for delete to authenticated
 using (exists (select 1 from public.matches m where m.id = match_id and public.is_club_admin(auth.uid(), m.club_id)));
 
@@ -142,19 +154,23 @@ create table if not exists public.match_events (
 
 alter table public.match_events enable row level security;
 
-create policy if not exists "Members can view match events" on public.match_events
+drop policy if exists "Members can view match events" on public.match_events;
+create policy "Members can view match events" on public.match_events
 for select to authenticated
 using (exists (select 1 from public.matches m where m.id = match_id and public.is_member_of_club(auth.uid(), m.club_id)));
 
-create policy if not exists "Admins can create match events" on public.match_events
+drop policy if exists "Admins can create match events" on public.match_events;
+create policy "Admins can create match events" on public.match_events
 for insert to authenticated
 with check (exists (select 1 from public.matches m where m.id = match_id and public.is_club_admin(auth.uid(), m.club_id)));
 
-create policy if not exists "Admins can update match events" on public.match_events
+drop policy if exists "Admins can update match events" on public.match_events;
+create policy "Admins can update match events" on public.match_events
 for update to authenticated
 using (exists (select 1 from public.matches m where m.id = match_id and public.is_club_admin(auth.uid(), m.club_id)));
 
-create policy if not exists "Admins can delete match events" on public.match_events
+drop policy if exists "Admins can delete match events" on public.match_events;
+create policy "Admins can delete match events" on public.match_events
 for delete to authenticated
 using (exists (select 1 from public.matches m where m.id = match_id and public.is_club_admin(auth.uid(), m.club_id)));
 
@@ -173,19 +189,23 @@ create table if not exists public.match_votes (
 
 alter table public.match_votes enable row level security;
 
-create policy if not exists "Members can vote in their club" on public.match_votes
+drop policy if exists "Members can vote in their club" on public.match_votes;
+create policy "Members can vote in their club" on public.match_votes
 for insert to authenticated
 with check (public.is_member_of_club(auth.uid(), club_id));
 
-create policy if not exists "Members can view votes in their club" on public.match_votes
+drop policy if exists "Members can view votes in their club" on public.match_votes;
+create policy "Members can view votes in their club" on public.match_votes
 for select to authenticated
 using (public.is_member_of_club(auth.uid(), club_id));
 
-create policy if not exists "Members can update own vote" on public.match_votes
+drop policy if exists "Members can update own vote" on public.match_votes;
+create policy "Members can update own vote" on public.match_votes
 for update to authenticated
 using (exists (select 1 from public.club_memberships cm where cm.id = match_votes.voter_membership_id and cm.user_id = auth.uid()));
 
-create policy if not exists "Members can delete own vote" on public.match_votes
+drop policy if exists "Members can delete own vote" on public.match_votes;
+create policy "Members can delete own vote" on public.match_votes
 for delete to authenticated
 using (exists (select 1 from public.club_memberships cm where cm.id = match_votes.voter_membership_id and cm.user_id = auth.uid()));
 
@@ -205,11 +225,13 @@ create table if not exists public.player_match_stats (
 
 alter table public.player_match_stats enable row level security;
 
-create policy if not exists "Members can view stats" on public.player_match_stats
+drop policy if exists "Members can view stats" on public.player_match_stats;
+create policy "Members can view stats" on public.player_match_stats
 for select to authenticated
 using (public.is_member_of_club(auth.uid(), club_id));
 
-create policy if not exists "Admins can manage stats" on public.player_match_stats
+drop policy if exists "Admins can manage stats" on public.player_match_stats;
+create policy "Admins can manage stats" on public.player_match_stats
 for all to authenticated
 using (public.is_club_admin(auth.uid(), club_id));
 
@@ -229,11 +251,13 @@ create table if not exists public.custom_stat_definitions (
 
 alter table public.custom_stat_definitions enable row level security;
 
-create policy if not exists "Members can view stat definitions" on public.custom_stat_definitions
+drop policy if exists "Members can view stat definitions" on public.custom_stat_definitions;
+create policy "Members can view stat definitions" on public.custom_stat_definitions
 for select to authenticated
 using (public.is_member_of_club(auth.uid(), club_id));
 
-create policy if not exists "Admins can manage stat definitions" on public.custom_stat_definitions
+drop policy if exists "Admins can manage stat definitions" on public.custom_stat_definitions;
+create policy "Admins can manage stat definitions" on public.custom_stat_definitions
 for all to authenticated
 using (public.is_club_admin(auth.uid(), club_id));
 
@@ -254,11 +278,13 @@ create table if not exists public.season_awards (
 
 alter table public.season_awards enable row level security;
 
-create policy if not exists "Members can view awards" on public.season_awards
+drop policy if exists "Members can view awards" on public.season_awards;
+create policy "Members can view awards" on public.season_awards
 for select to authenticated
 using (public.is_member_of_club(auth.uid(), club_id));
 
-create policy if not exists "Admins can manage awards" on public.season_awards
+drop policy if exists "Admins can manage awards" on public.season_awards;
+create policy "Admins can manage awards" on public.season_awards
 for all to authenticated
 using (public.is_club_admin(auth.uid(), club_id));
 

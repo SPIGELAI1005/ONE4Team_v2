@@ -133,7 +133,7 @@ const Payments = () => {
         rightSlot={
           <Button
             size="sm"
-            className="bg-gradient-gold text-primary-foreground hover:opacity-90"
+            className="bg-gradient-gold-static text-primary-foreground hover:brightness-110"
             onClick={() => setShowAddFee(true)}
             disabled={!perms.isAdmin}
           >
@@ -252,7 +252,7 @@ const Payments = () => {
                 <option value="one_time">{t.common.oneTime}</option>
               </select>
               <Button onClick={handleAddFeeType} disabled={!feeName.trim() || !feeAmount}
-                className="w-full bg-gradient-gold text-primary-foreground hover:opacity-90">
+                className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110">
                 {t.payments.createFeeType}
               </Button>
             </div>

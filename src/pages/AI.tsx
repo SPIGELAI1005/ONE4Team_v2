@@ -238,7 +238,7 @@ export default function AI() {
               <p className="text-xs text-muted-foreground mt-1">{t.ai.coTrainerDesc}</p>
               <div className="mt-3">
                 <Button
-                  className="bg-gradient-gold text-primary-foreground font-semibold"
+                  className="bg-gradient-gold-static text-primary-foreground font-semibold"
                   onClick={() => generate("training_plan")}
                   disabled={busy !== null}
                 >
@@ -255,7 +255,7 @@ export default function AI() {
               <p className="text-xs text-muted-foreground mt-1">{t.ai.coAIminDesc}</p>
               <div className="mt-3">
                 <Button
-                  className="bg-gradient-gold text-primary-foreground font-semibold"
+                  className="bg-gradient-gold-static text-primary-foreground font-semibold"
                   onClick={() => generate("admin_digest")}
                   disabled={busy !== null}
                 >

@@ -1,9 +1,9 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-02-14 (Europe/Berlin)
+Last updated: 2026-02-14 (Session 2, Europe/Berlin)
 
 ## Summary
-The project is **roadmap-complete through Phase 7** with **full internationalization (DE/EN)**, **4 new public pages** (Features, Clubs & Partners, About, Pricing), **animated football background**, **dark/light theme**, and **Vercel deployment readiness**.
+The project is **roadmap-complete through Phase 9** with **full internationalization (DE/EN)**, **4 new public pages**, **3 new dashboard pages** (Shop, Club Page Admin, Settings), **animated football background**, **dark/light theme**, **personalized greetings**, and **Vercel deployment readiness**.
 All remaining work is primarily **Supabase/infra-dependent** (apply bundles, staging/prod separation, abuse controls).
 
 ## What is DONE (local readiness)
@@ -60,6 +60,14 @@ All remaining work is primarily **Supabase/infra-dependent** (apply bundles, sta
 - **Dashboard sidebar fixes**: All nav items properly routed
 - **NotFound page**: Fully translated 404 page
 
+### Dashboard Pages — Shop, Club Page Admin, Settings (2026-02-14, Session 2)
+- **Shop page** (`/shop`): Products grid with CRUD, Orders management, Categories. Demo data with local state (Supabase tables planned for v2.2).
+- **Club Page Admin** (`/club-page-admin`): Manage public club page (info, branding, contact, social, SEO). Reads/saves via Supabase.
+- **Settings page** (`/settings`): Profile, Club settings (admin-only), Notification preferences (localStorage), Account & Security (password reset, sign out, danger zone).
+- **Personalized greeting**: Dashboard header shows "Welcome back, {FirstName}" from profile data
+- All three pages fully translated (EN/DE) with comprehensive translation keys
+- Sidebar routes and pathToId mappings updated for all new pages
+
 ## Current UX focus
 - Full i18n (German/English) across all pages and components
 - Animated football field background on landing hero and auth page
@@ -79,6 +87,9 @@ See `HOLD.md`. Key items:
 3) After apply: run Phase smoke scripts in PHASE*_INDEX.md docs.
 4) Set up staging/prod Supabase + Vercel envs.
 5) Implement invite-request abuse controls.
+6) Create Supabase tables for Shop (products, orders, categories) — v2.2 roadmap.
+7) Wire Club Page Admin save to full Supabase columns (branding, contact, social, SEO).
+8) Implement real push notification preferences (backend integration).
 
 ## Repo
 - GitHub: https://github.com/SPIGELAI1005/ONE4Team_v2

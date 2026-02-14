@@ -154,7 +154,7 @@ export default function Activities() {
             : Promise.resolve({ data: [] as AttendanceRow[], error: null } as { data: AttendanceRow[]; error: null }),
           supabase
             .from("club_memberships")
-            .select("id, role, status, profiles!club_memberships_user_id_fkey(display_name)")
+            .select("id, role, status, profiles!club_memberships_profile_fk(display_name)")
             .eq("club_id", clubId)
             .eq("status", "active")
             .order("created_at", { ascending: true })
@@ -402,7 +402,7 @@ export default function Activities() {
             {canCreate ? (
               <Button
                 size="sm"
-                className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
+                className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
                 onClick={() => setShowCreate(true)}
                 disabled={!clubId}
               >
@@ -636,7 +636,7 @@ export default function Activities() {
                 <div className="mt-1 text-[10px] text-muted-foreground">We parse via Date().</div>
               </div>
 
-              <Button className="bg-gradient-gold text-primary-foreground font-semibold" onClick={handleCreate}>
+              <Button className="bg-gradient-gold-static text-primary-foreground font-semibold" onClick={handleCreate}>
                 Create
               </Button>
             </div>

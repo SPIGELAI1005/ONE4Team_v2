@@ -165,7 +165,7 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
       }`}
     >
       {plan.badge && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-gold text-primary-foreground text-[10px] sm:text-xs font-semibold whitespace-nowrap">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-gold-static text-primary-foreground text-[10px] sm:text-xs font-semibold whitespace-nowrap">
           {plan.badge}
         </div>
       )}
@@ -228,7 +228,7 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
         }
         className={`w-full rounded-xl font-semibold text-sm ${
           plan.highlighted
-            ? "bg-gradient-gold text-primary-foreground hover:brightness-110 shadow-gold"
+            ? "bg-gradient-gold-static text-primary-foreground hover:brightness-110 shadow-gold"
             : "glass-card bg-gold-on-hover text-foreground"
         }`}
       >
@@ -271,7 +271,7 @@ function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
               onClick={() => setSelectedPlan(p.id)}
               className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
                 selectedPlan === p.id
-                  ? "bg-gradient-gold text-primary-foreground shadow-gold"
+                  ? "bg-gradient-gold-static text-primary-foreground shadow-gold"
                   : "glass-card text-foreground hover:border-primary/20"
               }`}
             >
@@ -312,7 +312,7 @@ function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
               onClick={() => setBilling(cycle)}
               className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
                 billing === cycle
-                  ? "bg-gradient-gold text-primary-foreground shadow-gold"
+                  ? "bg-gradient-gold-static text-primary-foreground shadow-gold"
                   : "glass-card text-foreground hover:border-primary/20"
               }`}
             >
@@ -517,7 +517,7 @@ const Pricing = () => {
                 onClick={() => setBilling("yearly")}
                 className={`relative px-5 sm:px-8 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
                   billing === "yearly"
-                    ? "bg-gradient-gold text-primary-foreground shadow-gold"
+                    ? "bg-gradient-gold-static text-primary-foreground shadow-gold"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -532,7 +532,7 @@ const Pricing = () => {
                 onClick={() => setBilling("monthly")}
                 className={`px-5 sm:px-8 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
                   billing === "monthly"
-                    ? "bg-gradient-gold text-primary-foreground shadow-gold"
+                    ? "bg-gradient-gold-static text-primary-foreground shadow-gold"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
