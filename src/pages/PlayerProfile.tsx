@@ -186,8 +186,6 @@ const PlayerProfile = () => {
     fetchAll();
   }, [clubId, membershipId]);
 
-  if (!user) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Please sign in.</p></div>;
-
   const eventTypeIcon: Record<string, string> = {
     goal: "⚽", assist: "🅰️", yellow_card: "🟨", red_card: "🟥",
     substitution_in: "🔄", substitution_out: "🔄",

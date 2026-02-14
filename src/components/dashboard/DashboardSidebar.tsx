@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
+import { useLanguage } from "@/hooks/use-language";
 import {
   LayoutDashboard, Users, Calendar, Trophy, CreditCard,
   MessageSquare, Briefcase, ShoppingBag, Globe, Bot,
@@ -6,78 +7,79 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/one4team-logo.png";
 
 type NavItem = { icon: React.ElementType; label: string; id: string; route?: string };
-
-const roleMenus: Record<string, NavItem[]> = {
-  admin: [
-    { icon: LayoutDashboard, label: "Dashboard", id: "overview" },
-    { icon: Users, label: "Members", id: "members", route: "/members" },
-    { icon: Calendar, label: "Training", id: "training", route: "/teams" },
-    { icon: Trophy, label: "Matches", id: "matches", route: "/matches" },
-    { icon: CalendarDays, label: "Events", id: "events", route: "/events" },
-    { icon: BarChart3, label: "Player Stats", id: "stats", route: "/player-stats" },
-    { icon: CreditCard, label: "Payments", id: "payments", route: "/payments" },
-    { icon: MessageSquare, label: "Messages", id: "messages", route: "/communication" },
-    { icon: Briefcase, label: "Partners", id: "partners" },
-    { icon: ShoppingBag, label: "Shop", id: "shop" },
-    { icon: Globe, label: "Club Page", id: "clubpage" },
-    { icon: Bot, label: "Co-AImin", id: "ai", route: "/co-trainer" },
-    { icon: Settings, label: "Settings", id: "settings" },
-  ],
-  trainer: [
-    { icon: LayoutDashboard, label: "Dashboard", id: "overview" },
-    { icon: Calendar, label: "Schedule", id: "schedule", route: "/activities" },
-    { icon: Users, label: "My Teams", id: "teams", route: "/teams" },
-    { icon: Trophy, label: "Matches", id: "matches", route: "/matches" },
-    { icon: CalendarDays, label: "Events", id: "events", route: "/events" },
-    { icon: BarChart3, label: "Player Stats", id: "stats", route: "/player-stats" },
-    { icon: MessageSquare, label: "Messages", id: "messages", route: "/communication" },
-    { icon: Bot, label: "Co-Trainer", id: "ai", route: "/co-trainer" },
-  ],
-  player: [
-    { icon: LayoutDashboard, label: "Dashboard", id: "overview" },
-    { icon: Calendar, label: "Schedule", id: "schedule" },
-    { icon: Trophy, label: "Matches", id: "matches", route: "/matches" },
-    { icon: CalendarDays, label: "Events", id: "events", route: "/events" },
-    { icon: BarChart3, label: "Player Stats", id: "stats", route: "/player-stats" },
-    { icon: MessageSquare, label: "Messages", id: "messages" },
-    { icon: ShoppingBag, label: "Shop", id: "shop" },
-  ],
-  sponsor: [
-    { icon: LayoutDashboard, label: "Dashboard", id: "overview" },
-    { icon: Briefcase, label: "Contracts", id: "contracts" },
-    { icon: CreditCard, label: "Invoices", id: "invoices" },
-    { icon: MessageSquare, label: "Messages", id: "messages" },
-  ],
-  supplier: [
-    { icon: LayoutDashboard, label: "Dashboard", id: "overview" },
-    { icon: Briefcase, label: "Orders", id: "orders" },
-    { icon: MessageSquare, label: "Messages", id: "messages" },
-  ],
-  service: [
-    { icon: LayoutDashboard, label: "Dashboard", id: "overview" },
-    { icon: Briefcase, label: "Contracts", id: "contracts" },
-    { icon: MessageSquare, label: "Messages", id: "messages" },
-  ],
-  consultant: [
-    { icon: LayoutDashboard, label: "Dashboard", id: "overview" },
-    { icon: Briefcase, label: "Engagements", id: "engagements" },
-    { icon: MessageSquare, label: "Messages", id: "messages" },
-  ],
-};
-
-const defaultMenu: NavItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard", id: "overview" },
-  { icon: MessageSquare, label: "Messages", id: "messages" },
-];
 
 const DashboardSidebar = () => {
   const { role } = useParams();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [active, setActive] = useState("overview");
+  const { t } = useLanguage();
+
+  const roleMenus: Record<string, NavItem[]> = {
+    admin: [
+      { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview" },
+      { icon: Users, label: t.sidebar.members, id: "members", route: "/members" },
+      { icon: Calendar, label: t.sidebar.training, id: "training", route: "/teams" },
+      { icon: Trophy, label: t.sidebar.matches, id: "matches", route: "/matches" },
+      { icon: CalendarDays, label: t.sidebar.events, id: "events", route: "/events" },
+      { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/player-stats" },
+      { icon: CreditCard, label: t.sidebar.payments, id: "payments", route: "/payments" },
+      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+      { icon: Briefcase, label: t.sidebar.partners, id: "partners", route: "/partners" },
+      { icon: ShoppingBag, label: t.sidebar.shop, id: "shop" },
+      { icon: Globe, label: t.sidebar.clubPage, id: "clubpage" },
+      { icon: Bot, label: t.sidebar.coAImin, id: "ai", route: "/co-trainer" },
+      { icon: Settings, label: t.sidebar.settings, id: "settings" },
+    ],
+    trainer: [
+      { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview" },
+      { icon: Calendar, label: t.sidebar.schedule, id: "schedule", route: "/activities" },
+      { icon: Users, label: t.sidebar.myTeams, id: "teams", route: "/teams" },
+      { icon: Trophy, label: t.sidebar.matches, id: "matches", route: "/matches" },
+      { icon: CalendarDays, label: t.sidebar.events, id: "events", route: "/events" },
+      { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/player-stats" },
+      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+      { icon: Bot, label: t.sidebar.coTrainer, id: "ai", route: "/co-trainer" },
+    ],
+    player: [
+      { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview" },
+      { icon: Calendar, label: t.sidebar.schedule, id: "schedule", route: "/activities" },
+      { icon: Trophy, label: t.sidebar.matches, id: "matches", route: "/matches" },
+      { icon: CalendarDays, label: t.sidebar.events, id: "events", route: "/events" },
+      { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/player-stats" },
+      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+      { icon: ShoppingBag, label: t.sidebar.shop, id: "shop" },
+    ],
+    sponsor: [
+      { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview" },
+      { icon: Briefcase, label: t.sidebar.contracts, id: "contracts" },
+      { icon: CreditCard, label: t.sidebar.invoices, id: "invoices" },
+      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+    ],
+    supplier: [
+      { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview" },
+      { icon: Briefcase, label: t.sidebar.orders, id: "orders" },
+      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+    ],
+    service: [
+      { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview" },
+      { icon: Briefcase, label: t.sidebar.contracts, id: "contracts" },
+      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+    ],
+    consultant: [
+      { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview" },
+      { icon: Briefcase, label: t.sidebar.engagements, id: "engagements" },
+      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+    ],
+  };
+
+  const defaultMenu: NavItem[] = [
+    { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview" },
+    { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+  ];
 
   const items = roleMenus[role || ""] || defaultMenu;
   const roleName = role ? role.charAt(0).toUpperCase() + role.slice(1) : "User";
@@ -85,12 +87,12 @@ const DashboardSidebar = () => {
   return (
     <aside className={`h-screen glass-sidebar flex flex-col transition-all duration-300 ease-in-out ${collapsed ? "w-[68px]" : "w-60"}`}>
       {/* Logo */}
-      <div className="h-16 flex items-center justify-between px-4" style={{ borderBottom: '0.5px solid hsl(0 0% 100% / 0.06)' }}>
+      <div className="h-16 flex items-center justify-between px-4 border-b border-border/60">
         {!collapsed && (
           <div className="flex items-center gap-2.5">
             <img src={logo} alt="" className="w-7 h-7" />
-            <span className="font-display font-bold text-sm text-foreground">
-              One<span className="text-gradient-gold">4</span>Team
+            <span className="font-logo text-sm text-foreground">
+              ONE <span className="text-gradient-gold-animated">4</span> Team
             </span>
           </div>
         )}
@@ -102,7 +104,7 @@ const DashboardSidebar = () => {
 
       {/* Role badge */}
       {!collapsed && (
-        <div className="px-4 py-3" style={{ borderBottom: '0.5px solid hsl(0 0% 100% / 0.06)' }}>
+        <div className="px-4 py-3 border-b border-border/60">
           <span className="ios-pill text-primary bg-primary/8">
             {roleName}
           </span>
@@ -121,7 +123,7 @@ const DashboardSidebar = () => {
             }}
             className={`w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-medium rounded-xl transition-all duration-200 mb-0.5 ${
               active === item.id
-                ? "bg-primary/10 text-primary shadow-[inset_0_0.5px_0_hsl(0_0%_100%/0.08)]"
+                ? "bg-primary/10 text-primary"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
             } ${collapsed ? "justify-center px-2" : ""}`}
             title={collapsed ? item.label : undefined}
@@ -133,14 +135,14 @@ const DashboardSidebar = () => {
       </nav>
 
       {/* Footer */}
-      <div className="p-2" style={{ borderTop: '0.5px solid hsl(0 0% 100% / 0.06)' }}>
+      <div className="p-2 border-t border-border/60">
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={() => navigate("/")}
           className={`w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-medium text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted/40 transition-all duration-200 ${collapsed ? "justify-center px-2" : ""}`}
         >
           <LogOut className="w-[18px] h-[18px]" strokeWidth={1.5} />
-          {!collapsed && <span>Exit</span>}
+          {!collapsed && <span>{t.sidebar.exit}</span>}
         </motion.button>
       </div>
     </aside>

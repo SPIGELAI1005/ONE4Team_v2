@@ -2,9 +2,12 @@ import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, Home, Users, Trophy, Megaphone, CreditCard, Calendar, Swords, Building2, ClipboardList, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LanguageToggle } from "@/components/ui/language-toggle";
+import { TestModeBanner } from "@/components/ui/test-mode-banner";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useActiveClub } from "@/hooks/use-active-club";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/one4team-logo.png";
 
 interface NavItem {
   label: string;
@@ -106,6 +109,8 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
 
         <div className="flex items-center gap-2">
           {rightSlot}
+          <LanguageToggle />
+          <ThemeToggle />
           <span className="md:hidden text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/15">
             {roleLabel}
           </span>
@@ -223,6 +228,9 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
           </div>
         </div>
       )}
+
+      {/* Test mode disclaimer banner */}
+      <TestModeBanner />
     </header>
   );
 }

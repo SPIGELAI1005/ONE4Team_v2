@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, Lock, User, ArrowRight } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, ArrowLeft } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/useAuth";
+import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
-import logo from "@/assets/logo.png";
+import FootballFieldAnimation from "@/components/landing/FootballFieldAnimation";
+import logo from "@/assets/one4team-logo.png";
 
 const Auth = () => {
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -18,6 +20,7 @@ const Auth = () => {
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t, language } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,18 +29,18 @@ const Auth = () => {
     if (mode === "login") {
       const { error } = await signIn(email, password);
       if (error) {
-        toast({ title: "Login failed", description: error.message, variant: "destructive" });
+        toast({ title: t.auth.loginFailed, description: error.message, variant: "destructive" });
       } else {
         navigate("/onboarding");
       }
     } else {
       const { error } = await signUp(email, password, displayName);
       if (error) {
-        toast({ title: "Signup failed", description: error.message, variant: "destructive" });
+        toast({ title: t.auth.signupFailed, description: error.message, variant: "destructive" });
       } else {
         toast({
-          title: "Check your email",
-          description: "We sent you a confirmation link. Please verify your email to continue.",
+          title: t.auth.checkEmail,
+          description: t.auth.checkEmailDesc,
         });
       }
     }
@@ -46,11 +49,16 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
-      <AppHeader title="One4Team" subtitle={mode === "login" ? "Sign in" : "Create account"} back={false} />
+      <AppHeader title="ONE4Team" subtitle={mode === "login" ? t.common.signIn : t.auth.createAccount} back={false} />
 
-      <div className="flex-1 flex flex-col items-center justify-center p-4">
-      {/* Ambient glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-primary/6 rounded-full blur-[100px]" />
+      {/* Animated football field background */}
+      <div className="absolute inset-0">
+        <FootballFieldAnimation lang={language} />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-transparent to-background/70 dark:from-background/80 dark:via-background/40 dark:to-background" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/20 via-transparent to-background/20 dark:from-background/60 dark:via-transparent dark:to-background/60" />
+      </div>
+
+      <div className="flex-1 flex flex-col items-center justify-center p-4 pb-[12vh] relative z-10">
 
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -64,14 +72,12 @@ const Auth = () => {
           className="text-center mb-8 cursor-pointer"
           onClick={() => navigate("/")}
         >
-          <div className="w-16 h-16 rounded-2xl glass-card flex items-center justify-center mx-auto mb-4 shadow-gold">
-            <img src={logo} alt="" className="w-10 h-10" />
-          </div>
-          <h1 className="font-display text-2xl font-bold tracking-tight">
-            One<span className="text-gradient-gold">4</span>Team
+          <img src={logo} alt="ONE4Team" className="w-16 h-16 mx-auto mb-4 drop-shadow-xl" />
+          <h1 className="font-logo text-2xl tracking-tight">
+            ONE <span className="text-gradient-gold-animated">4</span> Team
           </h1>
           <p className="text-[13px] text-muted-foreground mt-1">
-            {mode === "login" ? "Welcome back" : "Create your account"}
+            {mode === "login" ? t.auth.welcomeBack : t.auth.createYourAccount}
           </p>
         </motion.div>
 
@@ -85,7 +91,7 @@ const Auth = () => {
                 mode === m ? "ios-segment-active text-foreground" : "text-muted-foreground"
               }`}
             >
-              {m === "login" ? "Sign In" : "Sign Up"}
+              {m === "login" ? t.common.signIn : t.common.signUp}
             </button>
           ))}
         </div>
@@ -95,11 +101,11 @@ const Auth = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "signup" && (
               <div>
-                <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">Full Name</label>
+                <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">{t.auth.fullName}</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
                   <Input
-                    placeholder="Your name"
+                    placeholder={t.auth.yourName}
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     className="pl-9 glass-input rounded-xl text-[13px] h-11"
@@ -110,7 +116,7 @@ const Auth = () => {
             )}
 
             <div>
-              <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">Email</label>
+              <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">{t.auth.email}</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
                 <Input
@@ -125,7 +131,7 @@ const Auth = () => {
             </div>
 
             <div>
-              <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">Password</label>
+              <label className="text-[11px] font-medium text-muted-foreground mb-1.5 block uppercase tracking-wider">{t.auth.password}</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
                 <Input
@@ -143,9 +149,9 @@ const Auth = () => {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90 rounded-xl h-11 text-[13px] shadow-gold haptic-press"
+              className="w-full bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110 rounded-xl h-11 text-[13px] shadow-gold haptic-press"
             >
-              {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
+              {loading ? t.auth.pleaseWait : mode === "login" ? t.common.signIn : t.auth.createAccount}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </form>
@@ -155,13 +161,22 @@ const Auth = () => {
               onClick={() => setMode(mode === "login" ? "signup" : "login")}
               className="text-[13px] text-muted-foreground hover:text-foreground transition-colors"
             >
-              {mode === "login" ? "Don't have an account? " : "Already have an account? "}
+              {mode === "login" ? t.auth.dontHaveAccount : t.auth.alreadyHaveAccount}
               <span className="text-primary font-medium">
-                {mode === "login" ? "Sign Up" : "Sign In"}
+                {mode === "login" ? t.common.signUp : t.common.signIn}
               </span>
             </button>
           </div>
         </div>
+
+        {/* Back to Landing Page pill */}
+        <button
+          onClick={() => navigate("/")}
+          className="mt-5 mx-auto flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-medium text-muted-foreground bg-background/60 backdrop-blur-xl border border-border/60 hover:bg-background/80 hover:text-foreground transition-all"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          {t.common.back}
+        </button>
       </motion.div>
       </div>
     </div>

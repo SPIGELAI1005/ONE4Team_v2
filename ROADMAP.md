@@ -132,6 +132,40 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 ---
 
+## Phase 8 — Internationalization, Public Pages & Deploy Readiness (Week 7–8) ✅
+**Goal:** make the app presentable, multi-language, and deployment-ready.
+
+**Deliverables**
+- EPIC I: Full i18n (DE/EN)
+  - LanguageContext + useLanguage hook + LanguageToggle
+  - Centralized translations (en.ts, de.ts) covering all pages
+  - Browser language auto-detection + localStorage persistence
+  - Animated football background chat bubbles translated
+- EPIC J: Public pages
+  - Features page with feature showcase + use cases
+  - Clubs & Partners page (TSV Allach 09 + Sportecke München)
+  - Pricing page with translated cards + comparison table
+  - About page
+- EPIC K: Theme & UX
+  - Dark/light mode toggle
+  - Animated football background on Auth page
+  - Test Mode Banner (dismissible, translated)
+  - Auth improvements (Back button, RequireAuth guard)
+- EPIC L: Deployment
+  - vercel.json with SPA rewrites
+  - Production build verified
+  - Dashboard sidebar routes fixed
+  - NotFound page translated
+
+**Exit criteria**
+- All pages translated EN/DE ✅
+- Language toggle works across all pages ✅
+- Public pages render correctly ✅
+- Production build succeeds ✅
+- vercel.json present for Vercel deployment ✅
+
+---
+
 ## v2 Roadmap (post-MVP)
 
 ### v2.1 Payments & billing

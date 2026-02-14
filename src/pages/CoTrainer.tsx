@@ -115,8 +115,6 @@ const CoTrainer = () => {
     await streamChat(newMessages);
   };
 
-  if (!user) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Please sign in.</p></div>;
-
   return (
     <div className="min-h-screen bg-background flex flex-col pb-20 lg:pb-0">
       <AppHeader

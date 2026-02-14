@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/layout/AppHeader";
+import { useLanguage } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, ClipboardList, Shield, ScrollText } from "lucide-react";
 import { useAuth } from "@/contexts/useAuth";
@@ -61,6 +62,7 @@ export default function AI() {
   const { clubId, loading: clubLoading } = useClubId();
   const perms = usePermissions();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<ActivityRow[]>([]);
@@ -119,12 +121,12 @@ export default function AI() {
         setAiLog([]);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to load AI inputs";
+      const msg = err instanceof Error ? err.message : t.ai.failedToLoadInputs;
       toast({ title: "Error", description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [clubId, canSeeLog, toast]);
+  }, [clubId, canSeeLog, toast, t]);
 
   useEffect(() => {
     void fetchData();
@@ -156,7 +158,7 @@ export default function AI() {
       if (kind === "training_plan") {
         const days = Object.keys(upcomingByDay).sort();
         const lines: string[] = [];
-        lines.push("CO‑TRAINER v1 — Weekly plan (stub)\n");
+        lines.push("CO‑TRAINER v1: Weekly plan (stub)\n");
         lines.push("Inputs used:");
         lines.push(`- upcoming activities next 7 days: ${activities.length}`);
         lines.push(duesUnpaid !== null ? `- unpaid dues count (admin view): ${duesUnpaid}` : `- unpaid dues count: (not available)`);
@@ -176,7 +178,7 @@ export default function AI() {
         text = lines.join("\n");
       } else {
         const lines: string[] = [];
-        lines.push("CO‑AImin v1 — Admin digest (stub)\n");
+        lines.push("CO‑AImin v1: Admin digest (stub)\n");
         lines.push("This is a deterministic digest generated locally; it is still logged to ai_requests.");
         lines.push("\nHighlights:");
         lines.push(`- Upcoming activities (7d): ${activities.length}`);
@@ -204,27 +206,19 @@ export default function AI() {
 
       if (error) throw error;
 
-      toast({ title: "Generated", description: "Saved to ai_requests" });
+      toast({ title: t.ai.generated, description: t.ai.savedToRequests });
       await fetchData();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to generate";
+      const msg = err instanceof Error ? err.message : t.ai.failedToGenerate;
       toast({ title: "Error", description: msg, variant: "destructive" });
     } finally {
       setBusy(null);
     }
   };
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Please sign in.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader title="AI" subtitle="Copilots v1 (logged + club-scoped)" />
+      <AppHeader title={t.ai.title} subtitle={t.ai.subtitle} />
 
       <div className="container mx-auto px-4 py-6">
         {(clubLoading || loading) ? (
@@ -233,15 +227,15 @@ export default function AI() {
           </div>
         ) : !clubId ? (
           <div className="text-center py-20">
-            <p className="text-muted-foreground">Select a club to use copilots.</p>
+            <p className="text-muted-foreground">{t.ai.selectClub}</p>
           </div>
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
               <div className="flex items-center gap-2 font-display font-bold">
-                <ClipboardList className="w-5 h-5" /> Co‑Trainer
+                <ClipboardList className="w-5 h-5" /> {t.ai.coTrainer}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Weekly training plan (deterministic stub for now).</p>
+              <p className="text-xs text-muted-foreground mt-1">{t.ai.coTrainerDesc}</p>
               <div className="mt-3">
                 <Button
                   className="bg-gradient-gold text-primary-foreground font-semibold"
@@ -249,16 +243,16 @@ export default function AI() {
                   disabled={busy !== null}
                 >
                   {busy === "training_plan" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                  Generate plan
+                  {t.ai.generatePlan}
                 </Button>
               </div>
             </div>
 
             <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
               <div className="flex items-center gap-2 font-display font-bold">
-                <ScrollText className="w-5 h-5" /> Co‑AImin
+                <ScrollText className="w-5 h-5" /> {t.ai.coAImin}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Admin digest (uses upcoming schedule + dues if allowed).</p>
+              <p className="text-xs text-muted-foreground mt-1">{t.ai.coAIminDesc}</p>
               <div className="mt-3">
                 <Button
                   className="bg-gradient-gold text-primary-foreground font-semibold"
@@ -266,26 +260,26 @@ export default function AI() {
                   disabled={busy !== null}
                 >
                   {busy === "admin_digest" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                  Generate digest
+                  {t.ai.generateDigest}
                 </Button>
               </div>
             </div>
 
             <div className="lg:col-span-2 rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
               <div className="flex items-center gap-2 font-display font-bold">
-                <Shield className="w-5 h-5" /> Output
+                <Shield className="w-5 h-5" /> {t.ai.output}
               </div>
               <pre className="mt-3 whitespace-pre-wrap text-xs text-foreground/80 leading-relaxed">
-{outputText || "Generate a plan or digest to see output here."}
+{outputText || t.ai.outputPlaceholder}
               </pre>
             </div>
 
             {canSeeLog && (
               <div className="lg:col-span-2 rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
-                <div className="font-display font-bold">Recent ai_requests (club)</div>
+                <div className="font-display font-bold">{t.ai.recentRequests}</div>
                 <div className="mt-2 grid gap-2">
                   {aiLog.length === 0 ? (
-                    <div className="text-xs text-muted-foreground">No requests yet.</div>
+                    <div className="text-xs text-muted-foreground">{t.ai.noRequests}</div>
                   ) : (
                     aiLog.map((r) => (
                       <div key={r.id} className="rounded-2xl border border-border/60 bg-background/40 p-3">

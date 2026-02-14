@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLanguage } from "@/hooks/use-language";
 import { Activity, Trophy, Clock, MapPin, RefreshCw } from "lucide-react";
 import AppHeader from "@/components/layout/AppHeader";
 import { useAuth } from "@/contexts/useAuth";
@@ -23,6 +24,7 @@ type LiveMatch = {
 
 const LiveScores = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [clubIds, setClubIds] = useState<string[]>([]);
   const [matches, setMatches] = useState<LiveMatch[]>([]);
   const [loading, setLoading] = useState(true);
@@ -119,11 +121,11 @@ const LiveScores = () => {
   if (!user) {
     return (
       <div className="min-h-screen bg-background">
-        <AppHeader title="Live Scores" subtitle="Sign in to see your clubs" back={false} />
+        <AppHeader title={t.liveScores.title} subtitle={t.liveScores.signInToSeeClubs} back={false} />
         <main className="container mx-auto px-4 py-16">
           <div className="max-w-md mx-auto text-center rounded-3xl glass-card p-8">
-            <div className="text-sm font-medium text-foreground">Sign in required</div>
-            <div className="text-xs text-muted-foreground mt-1">To keep clubs isolated, live scores are shown only for clubs you belong to.</div>
+            <div className="text-sm font-medium text-foreground">{t.liveScores.signInRequired}</div>
+            <div className="text-xs text-muted-foreground mt-1">{t.liveScores.signInRequiredDesc}</div>
           </div>
         </main>
       </div>
@@ -133,13 +135,13 @@ const LiveScores = () => {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader
-        title="Live Scores"
-        subtitle="Real-time match updates"
+        title={t.liveScores.title}
+        subtitle={t.liveScores.realTimeUpdates}
         back={false}
         rightSlot={
           <div className="flex items-center gap-3">
             <span className="text-[10px] text-muted-foreground hidden sm:block">
-              Updated {lastUpdated.toLocaleTimeString()}
+              {t.liveScores.updated} {lastUpdated.toLocaleTimeString()}
             </span>
             <button
               onClick={fetchMatches}
@@ -160,7 +162,7 @@ const LiveScores = () => {
             <span className="relative inline-flex rounded-full h-3 w-3 bg-accent" />
           </span>
           <span className="text-sm font-semibold text-accent uppercase tracking-wider">
-            {matches.length > 0 ? `${matches.length} Match${matches.length > 1 ? "es" : ""} In Progress` : "No Live Matches"}
+            {matches.length > 0 ? `${matches.length} ${t.liveScores.matchesInProgress}` : t.liveScores.noLiveMatches}
           </span>
         </div>
 
@@ -168,10 +170,10 @@ const LiveScores = () => {
           <div className="text-center py-20">
             <Trophy className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
             <h2 className="font-display text-lg font-semibold text-foreground mb-2">
-              No matches in progress
+              {t.liveScores.noMatchesInProgress}
             </h2>
             <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Live scores will appear here automatically when matches are underway. Check back during game time!
+              {t.liveScores.liveScoresWillAppear}
             </p>
           </div>
         ) : (
@@ -284,7 +286,7 @@ const LiveScores = () => {
         {/* Demo section when no real data */}
         {matches.length === 0 && !loading && (
           <div className="mt-12">
-            <h3 className="text-sm font-medium text-muted-foreground mb-4 text-center">Preview — Demo Scores</h3>
+            <h3 className="text-sm font-medium text-muted-foreground mb-4 text-center">{t.liveScores.previewDemoScores}</h3>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 opacity-60">
               {[
                 { home: "FC Riverside", away: "FC Thunder", hs: 2, as: 1, min: "67'", loc: "Main Stadium" },
@@ -294,7 +296,7 @@ const LiveScores = () => {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex-1 text-center">
                       <p className="text-sm font-semibold text-foreground">{demo.home}</p>
-                      <p className="text-[10px] text-muted-foreground">HOME</p>
+                      <p className="text-[10px] text-muted-foreground">{t.common.home.toUpperCase()}</p>
                     </div>
                     <div className="flex items-center gap-3 px-4">
                       <span className="text-3xl font-display font-bold text-foreground">{demo.hs}</span>
@@ -303,7 +305,7 @@ const LiveScores = () => {
                     </div>
                     <div className="flex-1 text-center">
                       <p className="text-sm font-semibold text-foreground">{demo.away}</p>
-                      <p className="text-[10px] text-muted-foreground">AWAY</p>
+                      <p className="text-[10px] text-muted-foreground">{t.common.away.toUpperCase()}</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">

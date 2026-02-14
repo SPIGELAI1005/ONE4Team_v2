@@ -177,8 +177,6 @@ const Events = () => {
     if (selectedEvent) openEventDetail(selectedEvent);
   };
 
-  if (!user) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Please sign in.</p></div>;
-
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0">
       <AppHeader

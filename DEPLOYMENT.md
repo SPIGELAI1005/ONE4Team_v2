@@ -16,7 +16,7 @@ This doc describes how to deploy the app to Vercel and how to structure environm
 ## Environment variables
 The app uses Supabase. You will need:
 - `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
 
 Recommended additional env:
 - `VITE_APP_ENV=staging|prod`

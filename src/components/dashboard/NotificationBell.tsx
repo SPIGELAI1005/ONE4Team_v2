@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Bell, Check, X, Trophy, Calendar, Megaphone, Info } from "lucide-react";
+import { useLanguage } from "@/hooks/use-language";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
@@ -32,6 +33,7 @@ const typeColors: Record<string, string> = {
 const NotificationBell = () => {
   const { user } = useAuth();
   const { clubId } = useClubId();
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const unreadCount = notifications.filter((n) => !n.is_read).length;
@@ -115,24 +117,24 @@ const NotificationBell = () => {
       : [
           {
             id: "demo-1",
-            title: "U17 Match Tomorrow",
-            body: "FC Riverside vs FC Thunder — Saturday at 15:00",
+            title: t.notifications.demoMatch,
+            body: t.notifications.demoMatchBody,
             notification_type: "match",
             is_read: false,
             created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
           },
           {
             id: "demo-2",
-            title: "Club Meeting Announced",
-            body: "Annual general meeting next Monday at 19:00",
+            title: t.notifications.demoMeeting,
+            body: t.notifications.demoMeetingBody,
             notification_type: "announcement",
             is_read: false,
             created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
           },
           {
             id: "demo-3",
-            title: "Training Cancelled",
-            body: "Thursday's U14 session moved to Friday 17:00",
+            title: t.notifications.demoCancelled,
+            body: t.notifications.demoCancelledBody,
             notification_type: "event",
             is_read: true,
             created_at: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
@@ -172,9 +174,9 @@ const NotificationBell = () => {
               className="absolute right-0 top-12 z-50 w-80 sm:w-96 rounded-2xl glass-heavy overflow-hidden"
             >
               {/* Header */}
-              <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '0.5px solid hsl(0 0% 100% / 0.08)' }}>
+              <div className="px-4 py-3 flex items-center justify-between border-b border-border/60">
                 <h3 className="font-display font-semibold text-[13px] text-foreground">
-                  Notifications
+                  {t.notifications.title}
                 </h3>
                 {demoUnread > 0 && (
                   <button
@@ -182,7 +184,7 @@ const NotificationBell = () => {
                     className="text-xs text-primary hover:underline flex items-center gap-1"
                   >
                     <Check className="w-3 h-3" />
-                    Mark all read
+                    {t.notifications.markAllRead}
                   </button>
                 )}
               </div>
@@ -191,7 +193,7 @@ const NotificationBell = () => {
               <div className="max-h-80 overflow-y-auto">
                 {displayNotifications.length === 0 ? (
                   <div className="p-6 text-center text-sm text-muted-foreground">
-                    No notifications yet
+                    {t.notifications.noNotifications}
                   </div>
                 ) : (
                   displayNotifications.map((n) => {
@@ -204,7 +206,7 @@ const NotificationBell = () => {
                         animate={{ opacity: 1 }}
                         className={`px-4 py-3 hover:bg-muted/20 transition-all duration-200 flex gap-3 ${
                           !n.is_read ? "bg-primary/5" : ""
-                        }`} style={{ borderBottom: '0.5px solid hsl(0 0% 100% / 0.05)' }}
+                        } border-b border-border/40`}
                       >
                         <div className={`mt-0.5 ${color}`}>
                           <Icon className="w-4 h-4" strokeWidth={1.5} />
@@ -238,7 +240,7 @@ const NotificationBell = () => {
                                 onClick={() => markAsRead(n.id)}
                                 className="text-[10px] text-primary hover:underline"
                               >
-                                Mark read
+                                {t.notifications.markRead}
                               </button>
                             )}
                           </div>

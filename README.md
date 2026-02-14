@@ -1,11 +1,23 @@
 # ONE4Team (clubhub-connect)
 
-Club/team management app with an iOS-style glass UI.
+Club/team management SaaS with an iOS-style glass UI, full internationalization (DE/EN), and an animated football field background.
+
+## Features
+- **Multi-language**: Full German and English support with auto-detection
+- **Dark/Light theme**: System preference detection + manual toggle
+- **Animated football field**: Canvas-based match simulation with translated chat bubbles
+- **Public pages**: Features, Clubs & Partners, Pricing, About
+- **Dashboard**: Role-based views (Admin, Trainer, Player, Sponsor, Supplier, etc.)
+- **AI copilots**: Co-Trainer + Co-AImin with club-scoped logging
+- **Partner showcase**: TSV Allach 09 + Sportecke München with images and testimonials
+- **Test Mode Banner**: Dismissible beta disclaimer across all pages
 
 ## Stack
 - Vite + React + TypeScript
-- shadcn-ui + Tailwind
+- shadcn-ui + Radix UI + Tailwind CSS
+- Framer Motion (animations)
 - Supabase (Auth + Postgres)
+- Vercel (deployment-ready)
 
 ## Local development
 
@@ -29,11 +41,26 @@ npm run dev
 
 ## Scripts
 ```bash
-npm run build
-npm run lint
-npm test
+npm run build        # Production build
+npm run lint         # Lint check
+npm test             # Run tests
+npm run build:report # Bundle size report
 ```
+
+## Deployment (Vercel)
+- `vercel.json` is configured with SPA rewrite rules
+- See `DEPLOYMENT.md` for full deployment guide
+- Set environment variables in Vercel dashboard
+
+## Project documentation
+- `CHANGELOG.md` — detailed change log
+- `PROJECT_STATUS.md` — current project state
+- `ROADMAP.md` — development roadmap (Phase 0–8 + v2)
+- `TASKS.md` — execution queue with task status
+- `DEPLOYMENT.md` — Vercel deployment guide
+- `HOLD.md` — items blocked on Supabase/infra
 
 ## Notes
 - Do **not** commit `.env` (use `.env.example`).
-- Bundle size warnings can be reduced via route-level code splitting and/or Vite manualChunks.
+- Route-level code splitting is already implemented for all pages.
+- All pages are fully translated (EN/DE) via `src/i18n/`.

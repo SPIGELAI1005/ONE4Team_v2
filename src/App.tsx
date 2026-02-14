@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-route
 import { AnimatePresence } from "framer-motion";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useAuth } from "@/contexts/useAuth";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import PageTransition from "@/components/layout/PageTransition";
 
 // Route-level code splitting (reduces initial bundle size)
@@ -29,6 +31,10 @@ const PlayerStats = lazy(() => import("./pages/PlayerStats"));
 const PlayerProfile = lazy(() => import("./pages/PlayerProfile"));
 const CoTrainer = lazy(() => import("./pages/CoTrainer"));
 const LiveScores = lazy(() => import("./pages/LiveScores"));
+const About = lazy(() => import("./pages/About"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const ClubsAndPartners = lazy(() => import("./pages/ClubsAndPartners"));
+const Features = lazy(() => import("./pages/Features"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Health = lazy(() => import("./pages/Health"));
 const Crash = lazy(() => import("./pages/Crash"));
@@ -36,7 +42,8 @@ const Crash = lazy(() => import("./pages/Crash"));
 const queryClient = new QueryClient();
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return <RouteFallback />;
   if (!user) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 }
@@ -65,6 +72,46 @@ const AnimatedRoutes = () => {
           }
         />
         <Route
+          path="/about"
+          element={
+            <PageTransition>
+              <Suspense fallback={<RouteFallback />}>
+                <About />
+              </Suspense>
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/pricing"
+          element={
+            <PageTransition>
+              <Suspense fallback={<RouteFallback />}>
+                <Pricing />
+              </Suspense>
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/features"
+          element={
+            <PageTransition>
+              <Suspense fallback={<RouteFallback />}>
+                <Features />
+              </Suspense>
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/clubs-and-partners"
+          element={
+            <PageTransition>
+              <Suspense fallback={<RouteFallback />}>
+                <ClubsAndPartners />
+              </Suspense>
+            </PageTransition>
+          }
+        />
+        <Route
           path="/auth"
           element={
             <PageTransition>
@@ -77,21 +124,25 @@ const AnimatedRoutes = () => {
         <Route
           path="/onboarding"
           element={
-            <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <Onboarding />
-              </Suspense>
-            </PageTransition>
+            <RequireAuth>
+              <PageTransition>
+                <Suspense fallback={<RouteFallback />}>
+                  <Onboarding />
+                </Suspense>
+              </PageTransition>
+            </RequireAuth>
           }
         />
         <Route
           path="/dashboard/:role"
           element={
-            <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <Dashboard />
-              </Suspense>
-            </PageTransition>
+            <RequireAuth>
+              <PageTransition>
+                <Suspense fallback={<RouteFallback />}>
+                  <Dashboard />
+                </Suspense>
+              </PageTransition>
+            </RequireAuth>
           }
         />
         <Route
@@ -119,11 +170,13 @@ const AnimatedRoutes = () => {
         <Route
           path="/teams"
           element={
-            <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <Teams />
-              </Suspense>
-            </PageTransition>
+            <RequireAuth>
+              <PageTransition>
+                <Suspense fallback={<RouteFallback />}>
+                  <Teams />
+                </Suspense>
+              </PageTransition>
+            </RequireAuth>
           }
         />
         <Route
@@ -269,21 +322,25 @@ const AnimatedRoutes = () => {
         <Route
           path="/co-trainer"
           element={
-            <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <CoTrainer />
-              </Suspense>
-            </PageTransition>
+            <RequireAuth>
+              <PageTransition>
+                <Suspense fallback={<RouteFallback />}>
+                  <CoTrainer />
+                </Suspense>
+              </PageTransition>
+            </RequireAuth>
           }
         />
         <Route
           path="/live-scores"
           element={
-            <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <LiveScores />
-              </Suspense>
-            </PageTransition>
+            <RequireAuth>
+              <PageTransition>
+                <Suspense fallback={<RouteFallback />}>
+                  <LiveScores />
+                </Suspense>
+              </PageTransition>
+            </RequireAuth>
           }
         />
         <Route
@@ -302,27 +359,31 @@ const AnimatedRoutes = () => {
 };
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <div className="min-h-screen flex flex-col">
-            <div className="flex-1">
-              <AnimatedRoutes />
-            </div>
-            <footer className="border-t border-border/60 bg-background/70 backdrop-blur-2xl">
-              <div className="container mx-auto px-4 py-3 text-[11px] text-muted-foreground flex items-center justify-between">
-                <span>ONE4Team</span>
-                <a href="/health" className="hover:text-foreground">/health</a>
+  <ThemeProvider>
+    <LanguageProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <div className="min-h-screen flex flex-col">
+              <div className="flex-1">
+                <AnimatedRoutes />
               </div>
-            </footer>
-          </div>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+              <footer className="border-t border-border/60 bg-background/70 backdrop-blur-2xl">
+                <div className="container mx-auto px-4 py-3 text-[11px] text-muted-foreground flex items-center justify-between">
+                  <span>ONE4Team</span>
+                  <a href="/health" className="hover:text-foreground transition-colors">/health</a>
+                </div>
+              </footer>
+            </div>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+    </LanguageProvider>
+  </ThemeProvider>
 );
 
 export default App;

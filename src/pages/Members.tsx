@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "@/hooks/use-language";
 import { motion } from "framer-motion";
 import AppHeader from "@/components/layout/AppHeader";
 import {
@@ -15,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/one4team-logo.png";
 
 type MemberRow = {
   id: string;
@@ -84,6 +85,7 @@ const Members = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const { clubId, loading: clubLoading } = useClubId();
   const perms = usePermissions();
   const [tab, setTab] = useState<"members" | "invites">("members");
@@ -161,7 +163,7 @@ const Members = () => {
     setInviteRequests((reqRes.data as unknown as InviteRequestRow[]) || []);
     setInvites((invRes.data as unknown as ClubInviteRow[]) || []);
     setInvitesLoading(false);
-  }, [clubId, toast]);
+  }, [clubId, toast, t]);
 
   // Fetch members
   useEffect(() => {
@@ -175,14 +177,14 @@ const Members = () => {
         .order("created_at", { ascending: false });
 
       if (error) {
-        toast({ title: "Error loading members", description: error.message, variant: "destructive" });
+        toast({ title: t.membersPage.errorLoadingMembers, description: error.message, variant: "destructive" });
       } else {
         setMembers((data as unknown as MemberRow[]) || []);
       }
       setLoading(false);
     };
     fetchMembers();
-  }, [clubId, toast]);
+  }, [clubId, toast, t]);
 
   useEffect(() => {
     if (tab !== "invites") return;
@@ -202,7 +204,7 @@ const Members = () => {
 
   const handleDeleteMember = async (membershipId: string) => {
     if (!perms.isAdmin || !clubId) {
-      toast({ title: "Not authorized", description: "Only admins can manage members.", variant: "destructive" });
+      toast({ title: t.common.notAuthorized, description: t.membersPage.onlyAdminsMembers, variant: "destructive" });
       return;
     }
     const { error } = await supabase
@@ -211,11 +213,11 @@ const Members = () => {
       .eq("club_id", clubId)
       .eq("id", membershipId);
     if (error) {
-      toast({ title: "Error removing member", description: error.message, variant: "destructive" });
+      toast({ title: t.membersPage.errorRemovingMember, description: error.message, variant: "destructive" });
     } else {
       setMembers((prev) => prev.filter((m) => m.id !== membershipId));
       setSelectedMember(null);
-      toast({ title: "Member removed" });
+      toast({ title: t.membersPage.memberRemoved });
     }
   };
 
@@ -233,7 +235,7 @@ const Members = () => {
     }
 
     setInviteRequests((prev) => prev.map((r) => (r.id === requestId ? { ...r, status } : r)));
-    toast({ title: status === "approved" ? "Approved" : "Updated" });
+    toast({ title: status === "approved" ? t.common.approved : t.common.updated });
   };
 
   const handleCreateInvite = async (prefillEmail?: string) => {
@@ -263,7 +265,7 @@ const Members = () => {
     }
 
     setCreatedInviteToken(token);
-    toast({ title: "Invite created", description: "Copy the token/link now — it won’t be shown again." });
+    toast({ title: t.membersPage.inviteCreated, description: t.membersPage.inviteCreatedDesc });
     await fetchInvitesData();
   };
 
@@ -273,27 +275,15 @@ const Members = () => {
     window.setTimeout(() => setCopied(false), 1200);
   };
 
-  // Show message if no club or not authenticated
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground mb-4">Please sign in.</p>
-          <Button onClick={() => navigate("/auth")} className="bg-gradient-gold text-primary-foreground">Sign In</Button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <AppHeader
-        title="Members"
-        subtitle={tab === "members" ? "Roster" : (clubName ? `${clubName} · Invites` : "Invites")}
+        title={t.membersPage.title}
+        subtitle={tab === "members" ? t.membersPage.roster : (clubName ? `${clubName} · ${t.membersPage.invites}` : t.membersPage.invites)}
         rightSlot={
           tab === "members" ? (
             <Button size="sm" className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90">
-              <Plus className="w-4 h-4 mr-1" /> Add Member
+              <Plus className="w-4 h-4 mr-1" /> {t.membersPage.addMember}
             </Button>
           ) : (
             <Button
@@ -307,7 +297,7 @@ const Members = () => {
                 setShowCreateInvite(true);
               }}
             >
-              <UserPlus className="w-4 h-4 mr-1" /> Create Invite
+              <UserPlus className="w-4 h-4 mr-1" /> {t.membersPage.createInvite}
             </Button>
           )
         }
@@ -322,7 +312,7 @@ const Members = () => {
               tab === "members" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Users className="w-4 h-4" /> Members
+            <Users className="w-4 h-4" /> {t.membersPage.title}
           </button>
           <button
             onClick={() => setTab("invites")}
@@ -330,7 +320,7 @@ const Members = () => {
               tab === "invites" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Inbox className="w-4 h-4" /> Invites
+            <Inbox className="w-4 h-4" /> {t.membersPage.invites}
           </button>
         </div>
       </div>
@@ -343,16 +333,16 @@ const Members = () => {
         ) : !clubId ? (
           <div className="text-center py-20">
             <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h2 className="font-display text-xl font-bold text-foreground mb-2">No Club Found</h2>
-            <p className="text-muted-foreground mb-4">Join a club to manage members.</p>
-            <Button onClick={() => navigate("/onboarding")} variant="outline">Go to Onboarding</Button>
+            <h2 className="font-display text-xl font-bold text-foreground mb-2">{t.membersPage.noClubFound}</h2>
+            <p className="text-muted-foreground mb-4">{t.membersPage.joinClubToManage}</p>
+            <Button onClick={() => navigate("/onboarding")} variant="outline">{t.membersPage.goToOnboarding}</Button>
           </div>
         ) : !perms.isAdmin ? (
           <div className="text-center py-20">
             <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h2 className="font-display text-xl font-bold text-foreground mb-2">Not authorized</h2>
-            <p className="text-muted-foreground mb-4">Only club admins can manage members.</p>
-            <Button onClick={() => navigate(-1)} variant="outline">Go Back</Button>
+            <h2 className="font-display text-xl font-bold text-foreground mb-2">{t.common.notAuthorized}</h2>
+            <p className="text-muted-foreground mb-4">{t.membersPage.onlyAdminsMembers}</p>
+            <Button onClick={() => navigate(-1)} variant="outline">{t.membersPage.goBack}</Button>
           </div>
         ) : (
           <>
@@ -363,7 +353,7 @@ const Members = () => {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search members..."
+                  placeholder={t.membersPage.searchMembers}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9 bg-card border-border"
@@ -380,7 +370,7 @@ const Members = () => {
                         : "bg-card border border-border text-muted-foreground hover:text-foreground"
                     }`}
                   >
-                    {r === "all" ? "All Roles" : r.charAt(0).toUpperCase() + r.slice(1).replace("_", " ")}
+                    {r === "all" ? t.membersPage.allRoles : r.charAt(0).toUpperCase() + r.slice(1).replace("_", " ")}
                   </button>
                 ))}
               </div>
@@ -389,10 +379,10 @@ const Members = () => {
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
               {[
-                { label: "Total", value: members.length, color: "text-foreground" },
-                { label: "Active", value: members.filter(m => m.status === "active").length, color: "text-primary" },
-                { label: "Players", value: members.filter(m => m.role === "player").length, color: "text-blue-400" },
-                { label: "Trainers", value: members.filter(m => m.role === "trainer").length, color: "text-accent" },
+                { label: t.membersPage.total, value: members.length, color: "text-foreground" },
+                { label: t.membersPage.active, value: members.filter(m => m.status === "active").length, color: "text-primary" },
+                { label: t.common.players, value: members.filter(m => m.role === "player").length, color: "text-blue-400" },
+                { label: t.common.trainers, value: members.filter(m => m.role === "trainer").length, color: "text-accent" },
               ].map((s, i) => (
                 <div key={i} className="p-4 rounded-xl bg-card border border-border text-center">
                   <div className={`text-2xl font-display font-bold ${s.color}`}>{s.value}</div>
@@ -407,7 +397,7 @@ const Members = () => {
                 <div className="rounded-xl bg-card border border-border overflow-hidden">
                   {filtered.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground text-sm">
-                      {members.length === 0 ? "No members yet. Add your first member!" : "No members found."}
+                      {members.length === 0 ? t.membersPage.noMembersYet : t.membersPage.noMembersFound}
                     </div>
                   ) : (
                     filtered.map((member, i) => (
@@ -428,7 +418,7 @@ const Members = () => {
                             </div>
                             <div>
                               <div className="text-sm font-medium text-foreground">{member.profiles?.display_name || "Unknown"}</div>
-                              <div className="text-xs text-muted-foreground">{member.team || "No team"}</div>
+                              <div className="text-xs text-muted-foreground">{member.team || t.membersPage.noTeam}</div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -453,9 +443,9 @@ const Members = () => {
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="w-full lg:w-80 shrink-0">
                   <div className="rounded-xl bg-card border border-border p-5 sticky top-24">
                     <div className="flex items-center justify-between mb-4 lg:hidden">
-                      <span className="text-sm text-muted-foreground">Details</span>
+                      <span className="text-sm text-muted-foreground">{t.membersPage.details}</span>
                       <Button variant="ghost" size="sm" onClick={() => setSelectedMember(null)}>
-                        <ArrowLeft className="w-4 h-4 mr-1" /> Back
+                        <ArrowLeft className="w-4 h-4 mr-1" /> {t.common.back}
                       </Button>
                     </div>
                     <div className="text-center mb-5">
@@ -475,26 +465,26 @@ const Members = () => {
                         </div>
                       )}
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Users className="w-4 h-4" /> {selectedMember.team || "No team"}
+                        <Users className="w-4 h-4" /> {selectedMember.team || t.membersPage.noTeam}
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="w-4 h-4" /> Joined {new Date(selectedMember.created_at).toLocaleDateString()}
+                        <Calendar className="w-4 h-4" /> {t.membersPage.joined} {new Date(selectedMember.created_at).toLocaleDateString()}
                       </div>
                     </div>
 
                     {(selectedMember.position || selectedMember.age_group) && (
                       <div className="mt-4 pt-4 border-t border-border">
-                        <h4 className="text-xs font-medium text-muted-foreground mb-2">Player Attributes</h4>
+                        <h4 className="text-xs font-medium text-muted-foreground mb-2">{t.membersPage.playerAttributes}</h4>
                         <div className="grid grid-cols-2 gap-2">
                           {selectedMember.position && (
                             <div className="p-2 rounded-lg bg-muted/50">
-                              <div className="text-[10px] text-muted-foreground">Position</div>
+                              <div className="text-[10px] text-muted-foreground">{t.membersPage.position}</div>
                               <div className="text-sm font-medium text-foreground">{selectedMember.position}</div>
                             </div>
                           )}
                           {selectedMember.age_group && (
                             <div className="p-2 rounded-lg bg-muted/50">
-                              <div className="text-[10px] text-muted-foreground">Age Group</div>
+                              <div className="text-[10px] text-muted-foreground">{t.membersPage.ageGroup}</div>
                               <div className="text-sm font-medium text-foreground">{selectedMember.age_group}</div>
                             </div>
                           )}
@@ -503,14 +493,14 @@ const Members = () => {
                     )}
 
                     <div className="mt-4 pt-4 border-t border-border flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1">Edit</Button>
+                      <Button variant="outline" size="sm" className="flex-1">{t.common.edit}</Button>
                       <Button
                         variant="outline"
                         size="sm"
                         className="flex-1 text-accent border-accent/30 hover:bg-accent/10"
                         onClick={() => handleDeleteMember(selectedMember.id)}
                       >
-                        Remove
+                        {t.common.remove}
                       </Button>
                     </div>
                   </div>
@@ -531,11 +521,11 @@ const Members = () => {
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <div className="text-sm font-display font-bold text-foreground tracking-tight flex items-center gap-2">
-                            <Inbox className="w-4 h-4 text-primary" /> Invite Requests
+                            <Inbox className="w-4 h-4 text-primary" /> {t.membersPage.inviteRequests}
                           </div>
-                          <div className="text-xs text-muted-foreground">Approve → then create an invite token for them.</div>
+                          <div className="text-xs text-muted-foreground">{t.membersPage.approveHint}</div>
                         </div>
-                        <Button variant="outline" size="sm" onClick={() => fetchInvitesData()}>Refresh</Button>
+                        <Button variant="outline" size="sm" onClick={() => fetchInvitesData()}>{t.common.refresh}</Button>
                       </div>
 
                       <div className="flex gap-2 mb-4">
@@ -549,13 +539,13 @@ const Members = () => {
                                 : "bg-card/40 border-border/60 text-muted-foreground hover:text-foreground"
                             }`}
                           >
-                            {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+                            {s === "all" ? t.common.all : s.charAt(0).toUpperCase() + s.slice(1)}
                           </button>
                         ))}
                       </div>
 
                       {inviteRequests.filter((r) => inviteReqFilter === "all" || r.status === inviteReqFilter).length === 0 ? (
-                        <div className="text-sm text-muted-foreground py-8 text-center">No {inviteReqFilter === "all" ? "requests" : inviteReqFilter} requests.</div>
+                        <div className="text-sm text-muted-foreground py-8 text-center">{inviteReqFilter === "all" ? t.membersPage.noRequestsAll : t.membersPage.noRequests.replace("{status}", inviteReqFilter === "pending" ? t.common.pending : inviteReqFilter === "approved" ? t.common.approved : t.common.rejected)}</div>
                       ) : (
                         <div className="space-y-3">
                           {inviteRequests
@@ -583,7 +573,7 @@ const Members = () => {
                                     disabled={r.status !== "pending"}
                                     onClick={() => handleUpdateInviteRequestStatus(r.id, "rejected")}
                                   >
-                                    Reject
+                                    {t.membersPage.reject}
                                   </Button>
                                   <Button
                                     size="sm"
@@ -598,7 +588,7 @@ const Members = () => {
                                       setShowCreateInvite(true);
                                     }}
                                   >
-                                    Approve
+                                    {t.membersPage.approve}
                                   </Button>
                                 </div>
                               </div>
@@ -613,30 +603,30 @@ const Members = () => {
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <div className="text-sm font-display font-bold text-foreground tracking-tight flex items-center gap-2">
-                            <Link2 className="w-4 h-4 text-primary" /> Active Invites
+                            <Link2 className="w-4 h-4 text-primary" /> {t.membersPage.activeInvites}
                           </div>
-                          <div className="text-xs text-muted-foreground">Tokens are hashed in DB. Raw tokens are shown only at creation time.</div>
+                          <div className="text-xs text-muted-foreground">{t.membersPage.tokensHashedHint}</div>
                         </div>
                       </div>
 
                       {invites.length === 0 ? (
-                        <div className="text-sm text-muted-foreground py-8 text-center">No invites created yet.</div>
+                        <div className="text-sm text-muted-foreground py-8 text-center">{t.membersPage.noInvitesYet}</div>
                       ) : (
                         <div className="space-y-3">
                           {invites.map((inv) => (
                             <div key={inv.id} className="p-4 rounded-2xl border border-border/60 bg-background/40 backdrop-blur-xl">
                               <div className="flex items-center justify-between gap-3">
                                 <div className="min-w-0">
-                                  <div className="text-sm font-medium text-foreground truncate">{inv.email || "(no email)"}</div>
-                                  <div className="text-xs text-muted-foreground">role: {inv.role}</div>
+                                  <div className="text-sm font-medium text-foreground truncate">{inv.email || t.membersPage.noEmail}</div>
+                                  <div className="text-xs text-muted-foreground">{t.onboarding.role}: {inv.role}</div>
                                 </div>
                                 <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
                                   inv.used_at ? "bg-emerald-500/10 text-emerald-400" : "bg-primary/10 text-primary"
-                                }`}>{inv.used_at ? "used" : "unused"}</span>
+                                }`}>{inv.used_at ? t.common.used : t.common.unused}</span>
                               </div>
                               <div className="flex items-center justify-between mt-3 text-[10px] text-muted-foreground">
-                                <span>created {new Date(inv.created_at).toLocaleDateString()}</span>
-                                <span>{inv.expires_at ? `expires ${new Date(inv.expires_at).toLocaleDateString()}` : "no expiry"}</span>
+                                <span>{t.membersPage.created} {new Date(inv.created_at).toLocaleDateString()}</span>
+                                <span>{inv.expires_at ? `${t.membersPage.expires} ${new Date(inv.expires_at).toLocaleDateString()}` : t.membersPage.noExpiry}</span>
                               </div>
                               <div className="mt-3 flex justify-end">
                                 <Button
@@ -655,11 +645,11 @@ const Members = () => {
                                       return;
                                     }
                                     setInvites((prev) => prev.filter((x) => x.id !== inv.id));
-                                    toast({ title: "Invite revoked" });
+                                    toast({ title: t.membersPage.inviteRevoked });
                                   }}
                                   className="h-7 text-[10px]"
                                 >
-                                  Revoke
+                                  {t.membersPage.revoke}
                                 </Button>
                               </div>
                             </div>
@@ -681,8 +671,8 @@ const Members = () => {
                     >
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h3 className="font-display font-bold text-foreground tracking-tight">Create invite</h3>
-                          <p className="text-xs text-muted-foreground">iOS-style: simple, clear, fast.</p>
+                          <h3 className="font-display font-bold text-foreground tracking-tight">{t.membersPage.createInviteTitle}</h3>
+                          <p className="text-xs text-muted-foreground">{t.membersPage.createInviteDesc}</p>
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => setShowCreateInvite(false)}>
                           <X className="w-4 h-4" />
@@ -691,7 +681,7 @@ const Members = () => {
 
                       <div className="space-y-3">
                         <Input
-                          placeholder="Email (optional)"
+                          placeholder={t.membersPage.emailOptional}
                           value={inviteEmail}
                           onChange={(e) => setInviteEmail(e.target.value)}
                           className="bg-background/60"
@@ -704,21 +694,21 @@ const Members = () => {
                             onChange={(e) => setInviteRole(e.target.value)}
                             className="w-full h-10 rounded-xl border border-border bg-background/60 px-3 text-sm text-foreground"
                           >
-                            <option value="member">Member</option>
-                            <option value="player">Player</option>
-                            <option value="trainer">Trainer</option>
-                            <option value="admin">Admin</option>
+                            <option value="member">{t.onboarding.member}</option>
+                            <option value="player">{t.onboarding.player}</option>
+                            <option value="trainer">{t.onboarding.trainer}</option>
+                            <option value="admin">{t.onboarding.clubAdmin}</option>
                           </select>
                           <select
                             value={inviteDays}
                             onChange={(e) => setInviteDays(e.target.value)}
                             className="w-full h-10 rounded-xl border border-border bg-background/60 px-3 text-sm text-foreground"
                           >
-                            <option value="1">1 day</option>
-                            <option value="3">3 days</option>
-                            <option value="7">7 days</option>
-                            <option value="14">14 days</option>
-                            <option value="0">No expiry</option>
+                            <option value="1">{t.membersPage.day1}</option>
+                            <option value="3">{t.membersPage.days3}</option>
+                            <option value="7">{t.membersPage.days7}</option>
+                            <option value="14">{t.membersPage.days14}</option>
+                            <option value="0">{t.membersPage.noExpiryOption}</option>
                           </select>
                         </div>
 
@@ -726,12 +716,12 @@ const Members = () => {
                           onClick={() => handleCreateInvite()}
                           className="w-full bg-gradient-gold text-primary-foreground hover:opacity-90"
                         >
-                          <UserPlus className="w-4 h-4 mr-2" /> Create token
+                          <UserPlus className="w-4 h-4 mr-2" /> {t.membersPage.createToken}
                         </Button>
 
                         {createdInviteToken && (
                           <div className="mt-2 p-4 rounded-2xl border border-border/60 bg-background/40">
-                            <div className="text-[10px] text-muted-foreground mb-1">Invite token (copy now)</div>
+                            <div className="text-[10px] text-muted-foreground mb-1">{t.membersPage.inviteTokenLabel}</div>
                             <div className="font-mono text-xs text-foreground break-all">{createdInviteToken}</div>
                             <div className="mt-3 grid gap-2">
                               <Button
@@ -740,7 +730,7 @@ const Members = () => {
                                 className="w-full"
                               >
                                 {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                                {copied ? "Copied" : "Copy token"}
+                                {copied ? t.membersPage.copied : t.membersPage.copyToken}
                               </Button>
                               <Button
                                 variant="outline"
@@ -753,7 +743,7 @@ const Members = () => {
                                 className="w-full"
                               >
                                 {copied ? <Check className="w-4 h-4 mr-2" /> : <Link2 className="w-4 h-4 mr-2" />}
-                                Copy invite link
+                                {t.membersPage.copyInviteLink}
                               </Button>
                             </div>
                           </div>

@@ -10,9 +10,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/useAuth";
+import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/one4team-logo.png";
 
 type Club = {
   id: string;
@@ -71,6 +72,7 @@ const ClubPage = () => {
   const { clubSlug } = useParams();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const [club, setClub] = useState<Club | null>(null);
   const [loading, setLoading] = useState(true);
@@ -182,7 +184,7 @@ const ClubPage = () => {
   const handleSubmitInviteRequest = async () => {
     if (!club) return;
     if (!canRequestInvite) {
-      toast({ title: "Invite requests disabled", description: "This club is not accepting public invite requests." });
+      toast({ title: t.clubPage.inviteRequestsDisabled, description: t.clubPage.notAcceptingRequests });
       return;
     }
     if (!reqName.trim() || !reqEmail.trim()) return;
@@ -199,7 +201,7 @@ const ClubPage = () => {
       if (error) throw error;
 
       void data;
-      toast({ title: "Request sent", description: "The club admins will review your request shortly." });
+      toast({ title: t.clubPage.requestSent, description: t.clubPage.requestSentDesc });
       setReqName("");
       setReqEmail("");
       setReqMessage("");
@@ -215,8 +217,8 @@ const ClubPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader
-        title={club?.name || "Club"}
-        subtitle={club?.description || "Invite-only onboarding"}
+        title={club?.name || t.common.club}
+        subtitle={club?.description || t.clubPage.inviteOnlyOnboarding}
         back={false}
         rightSlot={
           <div className="flex items-center gap-2">
@@ -226,7 +228,7 @@ const ClubPage = () => {
               className="hidden sm:inline-flex"
               onClick={() => setShowSections(true)}
             >
-              <List className="w-4 h-4 mr-1" /> Sections
+              <List className="w-4 h-4 mr-1" /> {t.clubPage.sections}
             </Button>
             {isMember ? (
               <Button
@@ -235,7 +237,7 @@ const ClubPage = () => {
                 onClick={handleOpenDashboard}
                 disabled={checkingMembership}
               >
-                Open Dashboard
+                {t.clubPage.openDashboard}
               </Button>
             ) : (
               <Button
@@ -243,7 +245,7 @@ const ClubPage = () => {
                 className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
                 onClick={() => setShowRequestInvite(true)}
               >
-                Request Invite
+                {t.clubPage.requestInvite}
               </Button>
             )}
           </div>
@@ -253,11 +255,11 @@ const ClubPage = () => {
       {/* In-page navigation (desktop) */}
       <div className="hidden md:block border-b border-border bg-background/40 backdrop-blur-xl">
         <div className="container mx-auto px-4 py-2 flex items-center gap-6 text-sm text-muted-foreground">
-          <a href="#about" className="hover:text-foreground transition-colors">About</a>
-          <a href="#teams" className="hover:text-foreground transition-colors">Teams</a>
-          <a href="#schedule" className="hover:text-foreground transition-colors">Schedule</a>
-          <a href="#events" className="hover:text-foreground transition-colors">Events</a>
-          <a href="#contact" className="hover:text-foreground transition-colors">Contact</a>
+          <a href="#about" className="hover:text-foreground transition-colors">{t.clubPage.aboutSection}</a>
+          <a href="#teams" className="hover:text-foreground transition-colors">{t.clubPage.teamsSection}</a>
+          <a href="#schedule" className="hover:text-foreground transition-colors">{t.clubPage.scheduleSection}</a>
+          <a href="#events" className="hover:text-foreground transition-colors">{t.clubPage.eventsSection}</a>
+          <a href="#contact" className="hover:text-foreground transition-colors">{t.clubPage.contactSection}</a>
         </div>
       </div>
 
@@ -271,16 +273,16 @@ const ClubPage = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">
-              <div className="font-display font-bold text-foreground tracking-tight">Sections</div>
+              <div className="font-display font-bold text-foreground tracking-tight">{t.clubPage.sections}</div>
               <Button variant="ghost" size="icon" onClick={() => setShowSections(false)}><X className="w-4 h-4" /></Button>
             </div>
             <div className="grid gap-2">
               {[
-                { id: "about", label: "About" },
-                { id: "teams", label: "Teams" },
-                { id: "schedule", label: "Schedule" },
-                { id: "events", label: "Events" },
-                { id: "contact", label: "Contact" },
+                { id: "about", label: t.clubPage.aboutSection },
+                { id: "teams", label: t.clubPage.teamsSection },
+                { id: "schedule", label: t.clubPage.scheduleSection },
+                { id: "events", label: t.clubPage.eventsSection },
+                { id: "contact", label: t.clubPage.contactSection },
               ].map((s) => (
                 <button
                   key={s.id}
@@ -308,21 +310,19 @@ const ClubPage = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-center max-w-3xl mx-auto"
           >
-            <div className="w-20 h-20 rounded-2xl bg-gradient-gold flex items-center justify-center mx-auto mb-6 shadow-gold">
-              <img src={logo} alt="" className="w-12 h-12" />
-            </div>
+            <img src={logo} alt="ONE4Team" className="w-20 h-20 mx-auto mb-6 drop-shadow-xl" />
 
             {loading ? (
               <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin" /> Loading club…
+                <Loader2 className="w-4 h-4 animate-spin" /> {t.clubPage.loadingClub}
               </div>
             ) : !club ? (
               <div className="rounded-2xl border border-border bg-card/60 backdrop-blur-xl p-6">
                 <div className="flex items-center justify-center gap-2 text-muted-foreground mb-2">
                   <ShieldQuestion className="w-5 h-5" />
-                  Club not found
+                  {t.clubPage.clubNotFound}
                 </div>
-                <Button variant="outline" onClick={() => navigate("/")}>Go Home</Button>
+                <Button variant="outline" onClick={() => navigate("/")}>{t.clubPage.goHome}</Button>
               </div>
             ) : (
               <>
@@ -330,9 +330,9 @@ const ClubPage = () => {
                   {club.name.split(" ").slice(0, -1).join(" ") || club.name}{" "}
                   <span className="text-gradient-gold">{club.name.split(" ").slice(-1)[0]}</span>
                 </h1>
-                <p className="text-lg text-muted-foreground mb-2">Invite-only club onboarding · iOS-style glass UI</p>
+                <p className="text-lg text-muted-foreground mb-2">{t.clubPage.clubOnboardingSubtitle}</p>
                 <p className="text-muted-foreground max-w-xl mx-auto mb-8">
-                  {club.description || "Join our community of athletes, supporters, and friends."}
+                  {club.description || t.clubPage.joinCommunity}
                 </p>
                 <div className="flex items-center justify-center gap-3 flex-wrap">
                   {isMember ? (
@@ -341,7 +341,7 @@ const ClubPage = () => {
                       className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
                       onClick={handleOpenDashboard}
                     >
-                      Open Dashboard <ArrowRight className="w-4 h-4 ml-2" />
+                      {t.clubPage.openDashboard} <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   ) : (
                     <Button
@@ -349,16 +349,16 @@ const ClubPage = () => {
                       className="bg-gradient-gold text-primary-foreground font-semibold hover:opacity-90"
                       onClick={() => setShowRequestInvite(true)}
                     >
-                      Request Invite <ArrowRight className="w-4 h-4 ml-2" />
+                      {t.clubPage.requestInvite} <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   )}
                   <Button size="lg" variant="outline" className="border-border" onClick={() => navigate("/onboarding")}>
-                    Create a Club
+                    {t.clubPage.createAClub}
                   </Button>
                 </div>
                 {!canRequestInvite && (
                   <div className="mt-6 text-xs text-muted-foreground">
-                    This club is private and does not accept public invite requests.
+                    {t.clubPage.privateClub}
                   </div>
                 )}
               </>
@@ -372,9 +372,9 @@ const ClubPage = () => {
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { icon: Users, label: "247 Members", desc: "Active community across all age groups" },
-              { icon: Trophy, label: "8 Teams", desc: "From youth to senior competitive squads" },
-              { icon: Star, label: "3 Leagues", desc: "Competing at regional and district level" },
+              { icon: Users, label: t.clubPage.membersCount, desc: t.clubPage.membersCountDesc },
+              { icon: Trophy, label: t.clubPage.teamsCount, desc: t.clubPage.teamsCountDesc },
+              { icon: Star, label: t.clubPage.leaguesCount, desc: t.clubPage.leaguesCountDesc },
             ].map((stat, i) => (
               <motion.div
                 key={i}
@@ -397,18 +397,18 @@ const ClubPage = () => {
       <section id="teams" className="py-16 border-t border-border">
         <div className="container mx-auto px-4">
           <h2 className="font-display text-3xl font-bold text-center mb-10">
-            Our <span className="text-gradient-gold">Teams</span>
+            {t.clubPage.ourTeams} <span className="text-gradient-gold">{t.clubPage.teamsHighlight}</span>
           </h2>
 
           {loadingData ? (
             <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
           ) : teams.length === 0 ? (
             <div className="max-w-2xl mx-auto rounded-2xl glass-card p-8 text-center">
-              <div className="text-sm font-medium text-foreground">No teams yet</div>
-              <div className="text-xs text-muted-foreground mt-1">Teams created in the app will appear here automatically.</div>
+              <div className="text-sm font-medium text-foreground">{t.clubPage.noTeamsYet}</div>
+              <div className="text-xs text-muted-foreground mt-1">{t.clubPage.teamsWillAppear}</div>
               <div className="mt-4 flex items-center justify-center gap-2">
-                <Button variant="outline" onClick={() => navigate("/onboarding")}>Create / join a club</Button>
-                {isMember && <Button className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={handleOpenDashboard}>Open Dashboard</Button>}
+                <Button variant="outline" onClick={() => navigate("/onboarding")}>{t.clubPage.createJoinClub}</Button>
+                {isMember && <Button className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={handleOpenDashboard}>{t.clubPage.openDashboard}</Button>}
               </div>
             </div>
           ) : (
@@ -427,7 +427,7 @@ const ClubPage = () => {
                   </div>
                   <h3 className="font-display font-semibold text-foreground mb-1 tracking-tight truncate">{team.name}</h3>
                   <p className="text-xs text-muted-foreground mb-2">{team.sport}{team.age_group ? ` · ${team.age_group}` : ""}</p>
-                  {team.coach_name && <div className="text-xs text-muted-foreground truncate">Coach: {team.coach_name}</div>}
+                  {team.coach_name && <div className="text-xs text-muted-foreground truncate">{t.clubPage.coach}: {team.coach_name}</div>}
                 </motion.div>
               ))}
             </div>
@@ -439,16 +439,16 @@ const ClubPage = () => {
       <section id="schedule" className="py-16 border-t border-border">
         <div className="container mx-auto px-4">
           <h2 className="font-display text-3xl font-bold text-center mb-10">
-            Training <span className="text-gradient-gold">Schedule</span>
+            {t.clubPage.trainingSchedule} <span className="text-gradient-gold">{t.clubPage.scheduleHighlight}</span>
           </h2>
 
           {loadingData ? (
             <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
           ) : sessions.length === 0 ? (
             <div className="max-w-2xl mx-auto rounded-2xl glass-card p-8 text-center">
-              <div className="text-sm font-medium text-foreground">No upcoming sessions</div>
-              <div className="text-xs text-muted-foreground mt-1">Scheduled sessions will show here once trainers add them.</div>
-              {isMember && <div className="mt-4"><Button className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={handleOpenDashboard}>Open Dashboard</Button></div>}
+              <div className="text-sm font-medium text-foreground">{t.clubPage.noUpcomingSessions}</div>
+              <div className="text-xs text-muted-foreground mt-1">{t.clubPage.sessionsWillShow}</div>
+              {isMember && <div className="mt-4"><Button className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={handleOpenDashboard}>{t.clubPage.openDashboard}</Button></div>}
             </div>
           ) : (
             <div className="max-w-2xl mx-auto rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
@@ -473,16 +473,16 @@ const ClubPage = () => {
       <section id="events" className="py-16 border-t border-border">
         <div className="container mx-auto px-4">
           <h2 className="font-display text-3xl font-bold text-center mb-10">
-            Upcoming <span className="text-gradient-gold">Events</span>
+            {t.clubPage.upcomingEvents} <span className="text-gradient-gold">{t.clubPage.eventsHighlight}</span>
           </h2>
 
           {loadingData ? (
             <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
           ) : events.length === 0 ? (
             <div className="max-w-2xl mx-auto rounded-2xl glass-card p-8 text-center">
-              <div className="text-sm font-medium text-foreground">No upcoming events</div>
-              <div className="text-xs text-muted-foreground mt-1">Events created in the app will appear here.</div>
-              {isMember && <div className="mt-4"><Button className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={handleOpenDashboard}>Open Dashboard</Button></div>}
+              <div className="text-sm font-medium text-foreground">{t.clubPage.noUpcomingEvents}</div>
+              <div className="text-xs text-muted-foreground mt-1">{t.clubPage.eventsWillAppear}</div>
+              {isMember && <div className="mt-4"><Button className="bg-gradient-gold text-primary-foreground hover:opacity-90" onClick={handleOpenDashboard}>{t.clubPage.openDashboard}</Button></div>}
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
@@ -515,7 +515,7 @@ const ClubPage = () => {
       <section className="py-16 border-t border-border">
         <div className="container mx-auto px-4">
           <h2 className="font-display text-3xl font-bold text-center mb-10">
-            Our <span className="text-gradient-gold">Partners</span>
+            {t.clubPage.ourPartners} <span className="text-gradient-gold">{t.clubPage.partnersHighlight}</span>
           </h2>
           <div className="flex flex-wrap items-center justify-center gap-4">
             {sponsors.map((s, i) => (
@@ -523,7 +523,7 @@ const ClubPage = () => {
                 <div className="text-sm font-medium text-foreground">{s.name}</div>
                 <div className={`text-[10px] font-medium mt-1 ${
                   s.tier === "Gold" ? "text-primary" : s.tier === "Silver" ? "text-muted-foreground" : "text-gold-dark"
-                }`}>{s.tier} Partner</div>
+                }`}>{s.tier} {t.clubPage.partner}</div>
               </div>
             ))}
           </div>
@@ -534,13 +534,13 @@ const ClubPage = () => {
       <section id="contact" className="py-16 border-t border-border">
         <div className="container mx-auto px-4 max-w-2xl">
           <h2 className="font-display text-3xl font-bold text-center mb-10">
-            Get in <span className="text-gradient-gold">Touch</span>
+            {t.clubPage.getInTouch} <span className="text-gradient-gold">{t.clubPage.touchHighlight}</span>
           </h2>
           <div className="grid sm:grid-cols-3 gap-4">
             {[
-              { icon: MapPin, label: "Address", value: "Riverside Sports Park\n12345 Riverside, DE" },
-              { icon: Phone, label: "Phone", value: "+49 123 456 789" },
-              { icon: Mail, label: "Email", value: "info@fc-riverside.de" },
+              { icon: MapPin, label: t.clubPage.address, value: "Riverside Sports Park\n12345 Riverside, DE" },
+              { icon: Phone, label: t.clubPage.phone, value: "+49 123 456 789" },
+              { icon: Mail, label: t.clubPage.emailLabel, value: "info@fc-riverside.de" },
             ].map((c, i) => (
               <div key={i} className="p-5 rounded-xl bg-card border border-border text-center">
                 <c.icon className="w-6 h-6 text-primary mx-auto mb-2" />
@@ -563,8 +563,8 @@ const ClubPage = () => {
           >
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="font-display font-bold text-foreground tracking-tight">Request an invite</h3>
-                <p className="text-xs text-muted-foreground">We’ll notify the club admins.</p>
+                <h3 className="font-display font-bold text-foreground tracking-tight">{t.clubPage.requestAnInvite}</h3>
+                <p className="text-xs text-muted-foreground">{t.clubPage.weWillNotify}</p>
               </div>
               <Button variant="ghost" size="icon" onClick={() => setShowRequestInvite(false)}>
                 <X className="w-4 h-4" />
@@ -572,20 +572,20 @@ const ClubPage = () => {
             </div>
 
             {!club ? (
-              <div className="text-sm text-muted-foreground">Club not available.</div>
+              <div className="text-sm text-muted-foreground">{t.clubPage.clubNotAvailable}</div>
             ) : !canRequestInvite ? (
-              <div className="text-sm text-muted-foreground">This club is not accepting public invite requests.</div>
+              <div className="text-sm text-muted-foreground">{t.clubPage.notAcceptingRequests}</div>
             ) : (
               <div className="space-y-3">
                 <Input
-                  placeholder="Your name *"
+                  placeholder={t.clubPage.yourNameRequired}
                   value={reqName}
                   onChange={(e) => setReqName(e.target.value)}
                   className="bg-background/60"
                   maxLength={120}
                 />
                 <Input
-                  placeholder="Email *"
+                  placeholder={t.clubPage.emailRequired}
                   type="email"
                   value={reqEmail}
                   onChange={(e) => setReqEmail(e.target.value)}
@@ -593,7 +593,7 @@ const ClubPage = () => {
                   maxLength={254}
                 />
                 <textarea
-                  placeholder="Optional message (e.g. age group / team / role)"
+                  placeholder={t.clubPage.optionalMessage}
                   value={reqMessage}
                   onChange={(e) => setReqMessage(e.target.value)}
                   className="w-full rounded-xl border border-border bg-background/60 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
@@ -607,11 +607,11 @@ const ClubPage = () => {
                 >
                   {submitting ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending…
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t.clubPage.sending}
                     </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4 mr-2" /> Send request
+                      <Send className="w-4 h-4 mr-2" /> {t.clubPage.sendRequest}
                     </>
                   )}
                 </Button>

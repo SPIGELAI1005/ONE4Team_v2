@@ -294,8 +294,6 @@ const Matches = () => {
     return Object.values(stats).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga));
   };
 
-  if (!user) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Please sign in.</p></div>;
-
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0 scroll-glow">
       <AppHeader

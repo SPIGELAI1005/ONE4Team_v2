@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/hooks/use-language";
 import AppHeader from "@/components/layout/AppHeader";
 import {
   Plus, CreditCard, Loader2, X,
@@ -49,6 +50,7 @@ const statusConfig: Record<string, { icon: React.ElementType; color: string }> =
 const Payments = () => {
   // navigation is handled by AppHeader
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { clubId, loading: clubLoading } = useClubId();
   const { toast } = useToast();
   const perms = usePermissions();
@@ -87,7 +89,7 @@ const Payments = () => {
 
   const handleAddFeeType = async () => {
     if (!perms.isAdmin || !clubId) {
-      toast({ title: "Not authorized", description: "Only admins can manage fees.", variant: "destructive" });
+      toast({ title: t.common.notAuthorized, description: t.payments.onlyAdminsFees, variant: "destructive" });
       return;
     }
     if (!feeName.trim() || !feeAmount) return;
@@ -100,12 +102,12 @@ const Payments = () => {
     setFeeTypes(prev => [...prev, data as FeeType]);
     setShowAddFee(false);
     setFeeName(""); setFeeAmount(""); setFeeInterval("monthly");
-    toast({ title: "Fee type created" });
+    toast({ title: t.payments.feeTypeCreated });
   };
 
   const handleMarkPaid = async (paymentId: string) => {
     if (!perms.isAdmin || !clubId) {
-      toast({ title: "Not authorized", description: "Only admins can manage payments.", variant: "destructive" });
+      toast({ title: t.common.notAuthorized, description: t.payments.onlyAdminsPayments, variant: "destructive" });
       return;
     }
     const paidAt = new Date().toISOString();
@@ -116,20 +118,18 @@ const Payments = () => {
       .eq("id", paymentId);
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status: "paid", paid_at: paidAt } : p));
-    toast({ title: "Payment marked as paid" });
+    toast({ title: t.payments.paymentMarkedPaid });
   };
 
   const totalRevenue = payments.filter(p => p.status === "paid").reduce((sum, p) => sum + Number(p.amount), 0);
   const pendingAmount = payments.filter(p => p.status === "pending").reduce((sum, p) => sum + Number(p.amount), 0);
   const overdueCount = payments.filter(p => p.status === "overdue").length;
 
-  if (!user) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Please sign in.</p></div>;
-
   return (
     <div className="min-h-screen bg-background">
       <AppHeader
-        title="Payments & Fees"
-        subtitle="Admin-only"
+        title={t.payments.title}
+        subtitle={t.payments.adminOnly}
         rightSlot={
           <Button
             size="sm"
@@ -137,7 +137,7 @@ const Payments = () => {
             onClick={() => setShowAddFee(true)}
             disabled={!perms.isAdmin}
           >
-            <Plus className="w-4 h-4 mr-1" /> Add Fee Type
+            <Plus className="w-4 h-4 mr-1" /> {t.payments.addFeeType}
           </Button>
         }
       />
@@ -146,8 +146,8 @@ const Payments = () => {
       <div className="border-b border-border">
         <div className="container mx-auto px-4 flex gap-1">
           {[
-            { id: "overview" as const, label: "Payments", icon: CreditCard },
-            { id: "fees" as const, label: "Fee Types", icon: TrendingUp },
+            { id: "overview" as const, label: t.payments.paymentsTab, icon: CreditCard },
+            { id: "fees" as const, label: t.payments.feeTypes, icon: TrendingUp },
           ].map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
@@ -163,17 +163,17 @@ const Payments = () => {
         {(clubLoading || loading) ? (
           <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
         ) : !clubId ? (
-          <div className="text-center py-20 text-muted-foreground">No club found.</div>
+          <div className="text-center py-20 text-muted-foreground">{t.payments.noClubFound}</div>
         ) : !perms.isAdmin ? (
-          <div className="text-center py-20 text-muted-foreground">Only admins can manage payments.</div>
+          <div className="text-center py-20 text-muted-foreground">{t.payments.onlyAdminsPayments}</div>
         ) : tab === "overview" ? (
           <>
             {/* KPIs */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               {[
-                { label: "Total Collected", value: `€${totalRevenue.toFixed(2)}`, color: "text-emerald-400" },
-                { label: "Pending", value: `€${pendingAmount.toFixed(2)}`, color: "text-primary" },
-                { label: "Overdue", value: overdueCount.toString(), color: "text-accent" },
+                { label: t.payments.totalCollected, value: `€${totalRevenue.toFixed(2)}`, color: "text-emerald-400" },
+                { label: t.common.pending, value: `€${pendingAmount.toFixed(2)}`, color: "text-primary" },
+                { label: t.payments.overdue, value: overdueCount.toString(), color: "text-accent" },
               ].map((kpi, i) => (
                 <div key={i} className="p-4 rounded-xl bg-card border border-border text-center">
                   <div className={`text-2xl font-display font-bold ${kpi.color}`}>{kpi.value}</div>
@@ -185,7 +185,7 @@ const Payments = () => {
             {/* Payments list */}
             <div className="rounded-xl bg-card border border-border overflow-hidden">
               {payments.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground text-sm">No payment records yet.</div>
+                <div className="text-center py-12 text-muted-foreground text-sm">{t.payments.noPaymentRecords}</div>
               ) : payments.map((payment) => {
                 const cfg = statusConfig[payment.status] || statusConfig.pending;
                 const StatusIcon = cfg.icon;
@@ -197,16 +197,16 @@ const Payments = () => {
                       </div>
                       <div>
                         <div className="text-sm font-medium text-foreground">
-                          {payment.fee_types?.name || "Payment"} — {payment.club_memberships?.profiles?.display_name || "Member"}
+                          {payment.fee_types?.name || "Payment"} · {payment.club_memberships?.profiles?.display_name || "Member"}
                         </div>
-                        <div className="text-xs text-muted-foreground">Due: {payment.due_date}</div>
+                        <div className="text-xs text-muted-foreground">{t.payments.due}: {payment.due_date}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-display font-bold text-foreground">€{Number(payment.amount).toFixed(2)}</span>
                       {payment.status === "pending" && (
                         <Button size="sm" variant="outline" onClick={() => handleMarkPaid(payment.id)} className="text-xs">
-                          Mark Paid
+                          {t.payments.markPaid}
                         </Button>
                       )}
                     </div>
@@ -218,13 +218,13 @@ const Payments = () => {
         ) : (
           <div className="max-w-xl mx-auto space-y-3">
             {feeTypes.length === 0 ? (
-              <div className="rounded-xl bg-card border border-border p-8 text-center text-muted-foreground text-sm">No fee types configured.</div>
+              <div className="rounded-xl bg-card border border-border p-8 text-center text-muted-foreground text-sm">{t.payments.noFeeTypesConfigured}</div>
             ) : feeTypes.map((fee, i) => (
               <motion.div key={fee.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                 className="p-4 rounded-xl bg-card border border-border flex items-center justify-between">
                 <div>
                   <div className="text-sm font-medium text-foreground">{fee.name}</div>
-                  <div className="text-xs text-muted-foreground">{fee.interval} · {fee.is_active ? "Active" : "Inactive"}</div>
+                  <div className="text-xs text-muted-foreground">{fee.interval} · {fee.is_active ? t.common.active : t.common.inactive}</div>
                 </div>
                 <span className="text-lg font-display font-bold text-primary">€{Number(fee.amount).toFixed(2)}</span>
               </motion.div>
@@ -238,22 +238,22 @@ const Payments = () => {
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowAddFee(false)}>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-2xl bg-card border border-border p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display font-bold text-foreground">Add Fee Type</h3>
+              <h3 className="font-display font-bold text-foreground">{t.payments.addFeeType}</h3>
               <Button variant="ghost" size="icon" onClick={() => setShowAddFee(false)}><X className="w-4 h-4" /></Button>
             </div>
             <div className="space-y-3">
-              <Input placeholder="Fee name *" value={feeName} onChange={e => setFeeName(e.target.value)} className="bg-background" maxLength={100} />
-              <Input type="number" placeholder="Amount (€) *" value={feeAmount} onChange={e => setFeeAmount(e.target.value)} className="bg-background" min="0" step="0.01" />
+              <Input placeholder={t.payments.feeNameRequired} value={feeName} onChange={e => setFeeName(e.target.value)} className="bg-background" maxLength={100} />
+              <Input type="number" placeholder={t.payments.amountRequired} value={feeAmount} onChange={e => setFeeAmount(e.target.value)} className="bg-background" min="0" step="0.01" />
               <select value={feeInterval} onChange={e => setFeeInterval(e.target.value)}
                 className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground">
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="yearly">Yearly</option>
-                <option value="one_time">One-time</option>
+                <option value="monthly">{t.common.monthly}</option>
+                <option value="quarterly">{t.common.quarterly}</option>
+                <option value="yearly">{t.common.yearly}</option>
+                <option value="one_time">{t.common.oneTime}</option>
               </select>
               <Button onClick={handleAddFeeType} disabled={!feeName.trim() || !feeAmount}
                 className="w-full bg-gradient-gold text-primary-foreground hover:opacity-90">
-                Create Fee Type
+                {t.payments.createFeeType}
               </Button>
             </div>
           </motion.div>

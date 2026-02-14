@@ -91,6 +91,37 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [ ] **P7-020b** Staging + prod Supabase projects and env separation.
 - [ ] **P7-020c** Tenant isolation verification on staging.
 
+### P8-010 Internationalization (i18n)
+- [x] **P8-010a** Create `LanguageContext`, `useLanguage` hook, and `LanguageToggle` component.
+- [x] **P8-010b** Create centralized translation files (`src/i18n/en.ts`, `src/i18n/de.ts`).
+- [x] **P8-010c** Translate all pages and components (Landing, Auth, Pricing, Dashboard, Members, etc.).
+- [x] **P8-010d** Add browser language auto-detection with localStorage persistence.
+- [x] **P8-010e** Translate animated football background chat bubbles (player, coach, supporter, ref phrases).
+
+### P8-020 Public pages
+- [x] **P8-020a** Create Features page (`/features`) with feature showcase, use cases, and CTA.
+- [x] **P8-020b** Create Clubs & Partners page (`/clubs-and-partners`) with TSV Allach 09 and Sportecke München.
+- [x] **P8-020c** Integrate partner images with custom green/blue chrome gradients.
+- [x] **P8-020d** Create About page (`/about`).
+- [x] **P8-020e** Create translated Pricing page (`/pricing`) with comparison table.
+
+### P8-030 Theme & UX polish
+- [x] **P8-030a** Add dark/light theme toggle (`ThemeContext`, `ThemeToggle`).
+- [x] **P8-030b** Apply animated football background on Auth page.
+- [x] **P8-030c** Add "Back" pill button on Auth page.
+- [x] **P8-030d** Add Test Mode Banner (dismissible, translated, all pages).
+- [x] **P8-030e** Fix flickering registration button.
+- [x] **P8-030f** Rename "Watch Demo" → "Find out More" linked to Features page.
+
+### P8-040 Deployment readiness & bug fixes
+- [x] **P8-040a** Create `vercel.json` with SPA rewrite rules.
+- [x] **P8-040b** Fix dashboard sidebar missing routes (partners, schedule, messages).
+- [x] **P8-040c** Add `RequireAuth` with loading state to all protected routes.
+- [x] **P8-040d** Remove inline "Please sign in" fallbacks from 13 pages.
+- [x] **P8-040e** Translate NotFound (404) page.
+- [x] **P8-040f** Fix `DEPLOYMENT.md` env var name mismatch.
+- [x] **P8-040g** Verify production build (`vite build`) succeeds.
+
 ---
 
 ## QUALITY / DELIVERY

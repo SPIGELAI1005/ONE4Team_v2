@@ -32,6 +32,9 @@ This phase includes some items that require Supabase Dashboard / additional infr
 ## P7-040 Deploy plan
 **Implemented (local readiness):**
 - `DEPLOYMENT.md` (Vercel + env var checklist)
+- `vercel.json` with SPA rewrite rules (added 2026-02-14)
+- Production build verified (`vite build` succeeds)
+- Fixed env var name in `DEPLOYMENT.md` (`VITE_SUPABASE_PUBLISHABLE_KEY`)
 
 **HOLD (needs Supabase):** staging/prod projects + secrets.
 
@@ -41,4 +44,6 @@ This phase includes some items that require Supabase Dashboard / additional infr
 - E2E framework present + smoke test runs locally ✅
 - Error boundary + logger in app ✅
 - Deployment doc present ✅
+- `vercel.json` SPA rewrites configured ✅
+- Production build passes ✅
 - `npm run lint` / `npm test` / `npm run build` / `npm run audit:phase0` ✅

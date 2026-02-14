@@ -10,29 +10,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/useAuth";
+import { useLanguage } from "@/hooks/use-language";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/one4team-logo.png";
 import { isErrorWithMessage } from "@/types/dashboard";
 
 type World = "club" | "partner" | null;
 type Step = "world" | "role" | "create-club" | "redeem-invite";
-
-const clubRoles = [
-  { id: "admin", label: "Club Admin", icon: Crown, desc: "Full club management access" },
-  { id: "trainer", label: "Trainer", icon: Dumbbell, desc: "Manage training, teams & squads" },
-  { id: "player", label: "Player", icon: Shield, desc: "View schedule, stats & team info" },
-  { id: "staff", label: "Team Staff", icon: UserCheck, desc: "Support team operations" },
-  { id: "member", label: "Member", icon: Users, desc: "General club membership" },
-  { id: "parent", label: "Parent / Supporter", icon: Heart, desc: "Follow your child's activities" },
-];
-
-const partnerRoles = [
-  { id: "sponsor", label: "Sponsor", icon: HandCoins, desc: "Manage sponsorship & visibility" },
-  { id: "supplier", label: "Supplier", icon: Truck, desc: "Provide goods & equipment" },
-  { id: "service_provider", label: "Service Provider", icon: Wrench, desc: "Offer services to clubs" },
-  { id: "consultant", label: "Consultant", icon: Scale, desc: "Finance, tax, or legal advisory" },
-];
 
 const Onboarding = () => {
   const [searchParams] = useSearchParams();
@@ -54,6 +39,23 @@ const Onboarding = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
+
+  const clubRoles = [
+    { id: "admin", label: t.onboarding.clubAdmin, icon: Crown, desc: t.onboarding.clubAdminDesc },
+    { id: "trainer", label: t.onboarding.trainer, icon: Dumbbell, desc: t.onboarding.trainerDesc },
+    { id: "player", label: t.onboarding.player, icon: Shield, desc: t.onboarding.playerDesc },
+    { id: "staff", label: t.onboarding.teamStaff, icon: UserCheck, desc: t.onboarding.teamStaffDesc },
+    { id: "member", label: t.onboarding.member, icon: Users, desc: t.onboarding.memberDesc },
+    { id: "parent", label: t.onboarding.parentSupporter, icon: Heart, desc: t.onboarding.parentSupporterDesc },
+  ];
+
+  const partnerRoles = [
+    { id: "sponsor", label: t.onboarding.sponsor, icon: HandCoins, desc: t.onboarding.sponsorDesc },
+    { id: "supplier", label: t.onboarding.supplier, icon: Truck, desc: t.onboarding.supplierDesc },
+    { id: "service_provider", label: t.onboarding.serviceProvider, icon: Wrench, desc: t.onboarding.serviceProviderDesc },
+    { id: "consultant", label: t.onboarding.consultant, icon: Scale, desc: t.onboarding.consultantDesc },
+  ];
 
   const canRedeem = useMemo(() => redeemToken.trim().length >= 10, [redeemToken]);
 
@@ -124,7 +126,7 @@ const Onboarding = () => {
 
   const handleRedeemInvite = async () => {
     if (!user) {
-      toast({ title: "Sign in required", description: "Please sign in to redeem an invite." });
+      toast({ title: t.onboarding.signInRequired, description: t.onboarding.signInToRedeem });
       navigate("/auth");
       return;
     }
@@ -147,14 +149,14 @@ const Onboarding = () => {
 
       // UX polish: show success glass card briefly before routing.
       setRedeemSuccess({ role, clubId });
-      toast({ title: "Invite redeemed", description: "Welcome to the club." });
+      toast({ title: t.onboarding.inviteRedeemed, description: t.onboarding.welcomeToClub });
 
       window.setTimeout(() => {
         navigate(`/dashboard/${role}`);
       }, 1200);
     } catch (err: unknown) {
       toast({
-        title: "Invite failed",
+        title: t.onboarding.inviteFailed,
         description: err instanceof Error ? err.message : "Unknown error",
         variant: "destructive",
       });
@@ -180,11 +182,11 @@ const Onboarding = () => {
 
       if (error) throw error;
 
-      toast({ title: "Club created!", description: `${clubName} is ready to go.` });
+      toast({ title: t.onboarding.clubCreated, description: `${clubName} ${t.onboarding.clubReadyToGo}` });
       navigate("/dashboard/admin");
     } catch (err: unknown) {
       toast({
-        title: "Error creating club",
+        title: t.onboarding.errorCreatingClub,
         description: isErrorWithMessage(err) ? err.message : "Unknown error",
         variant: "destructive",
       });
@@ -200,13 +202,13 @@ const Onboarding = () => {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/")}>
             <img src={logo} alt="ONE4Team" className="w-8 h-8" />
-            <span className="font-display font-bold text-lg text-foreground">
-              One<span className="text-gradient-gold">4</span>Team
+            <span className="font-logo text-lg text-foreground">
+              ONE <span className="text-gradient-gold-animated">4</span> Team
             </span>
           </div>
           {step !== "world" && (
             <Button variant="ghost" size="sm" onClick={handleBack}>
-              <ArrowLeft className="w-4 h-4 mr-1" /> Back
+              <ArrowLeft className="w-4 h-4 mr-1" /> {t.common.back}
             </Button>
           )}
         </div>
@@ -229,7 +231,7 @@ const Onboarding = () => {
                 <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">
                   Redeem your <span className="text-gradient-gold">invite</span>
                 </h1>
-                <p className="text-muted-foreground">Invite-only onboarding — clean, iOS-like, and secure.</p>
+                <p className="text-muted-foreground">{t.onboarding.inviteOnlyDesc}</p>
                 {redeemClubName && (
                   <div className="mt-3 inline-flex items-center gap-2 text-[11px] px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/15">
                     {redeemClubName}
@@ -257,10 +259,10 @@ const Onboarding = () => {
                       <div className="min-w-0">
                         <div className="font-display font-bold text-foreground tracking-tight">You’re in.</div>
                         <div className="text-xs text-muted-foreground">
-                          Setting up your dashboard…
+                          {t.onboarding.settingUpDashboard}
                         </div>
                         <div className="mt-2 inline-flex items-center gap-2 text-[10px] px-2 py-1 rounded-full bg-primary/10 text-primary">
-                          role: {redeemSuccess.role}
+                          {t.onboarding.role}: {redeemSuccess.role}
                         </div>
                       </div>
                     </div>
@@ -281,22 +283,22 @@ const Onboarding = () => {
                         animate={{ opacity: [0.2, 1, 0.2] }}
                         transition={{ duration: 1.0, repeat: Infinity, delay: 0.3 }}
                       />
-                      Redirecting
+                      {t.onboarding.redirecting}
                     </div>
                   </div>
                 ) : (
                   <>
                     <div>
-                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Invite token</label>
+                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">{t.onboarding.inviteToken}</label>
                       <Input
-                        placeholder="Paste invite token"
+                        placeholder={t.onboarding.pasteInviteToken}
                         value={redeemToken}
                         onChange={(e) => setRedeemToken(e.target.value)}
                         className="bg-background/60 border-border"
                         maxLength={2000}
                       />
                       <div className="mt-2 text-[11px] text-muted-foreground">
-                        Tip: tokens are stored as hashes server-side. This token is only used for verification.
+                        {t.onboarding.tokenTip}
                       </div>
                     </div>
 
@@ -308,18 +310,18 @@ const Onboarding = () => {
                     >
                       {redeeming ? (
                         <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Redeeming…
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t.onboarding.redeeming}
                         </>
                       ) : (
                         <>
-                          <CheckCircle2 className="w-4 h-4 mr-2" /> Join club
+                          <CheckCircle2 className="w-4 h-4 mr-2" /> {t.onboarding.joinClub}
                         </>
                       )}
                     </Button>
 
                     {!user && (
                       <div className="text-xs text-muted-foreground text-center">
-                        You’ll be asked to sign in before we add you to the club.
+                        {t.onboarding.signInBeforeJoin}
                       </div>
                     )}
                   </>
@@ -339,9 +341,9 @@ const Onboarding = () => {
             >
               <div className="text-center mb-12">
                 <h1 className="font-display text-4xl md:text-5xl font-bold mb-3">
-                  Choose your <span className="text-gradient-gold">world</span>
+                  {t.onboarding.chooseYourWorld} <span className="text-gradient-gold">{t.onboarding.worldHighlight}</span>
                 </h1>
-                <p className="text-muted-foreground text-lg">How will you use ONE4Team?</p>
+                <p className="text-muted-foreground text-lg">{t.onboarding.howWillYouUse}</p>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">
@@ -354,10 +356,10 @@ const Onboarding = () => {
                   <div className="w-14 h-14 rounded-xl bg-gradient-gold flex items-center justify-center mb-5">
                     <Users className="w-7 h-7 text-primary-foreground" />
                   </div>
-                  <h2 className="font-display text-2xl font-bold mb-2 text-foreground">Club World</h2>
-                  <p className="text-muted-foreground mb-4">Players, trainers, admins, members, and supporters.</p>
+                  <h2 className="font-display text-2xl font-bold mb-2 text-foreground">{t.onboarding.clubWorldOnboarding}</h2>
+                  <p className="text-muted-foreground mb-4">{t.onboarding.clubWorldOnboardingDesc}</p>
                   <div className="flex items-center text-primary font-medium gap-2 group-hover:gap-3 transition-all">
-                    Enter <ArrowRight className="w-4 h-4" />
+                    {t.onboarding.enter} <ArrowRight className="w-4 h-4" />
                   </div>
                 </motion.button>
 
@@ -370,10 +372,10 @@ const Onboarding = () => {
                   <div className="w-14 h-14 rounded-xl bg-accent flex items-center justify-center mb-5">
                     <Briefcase className="w-7 h-7 text-accent-foreground" />
                   </div>
-                  <h2 className="font-display text-2xl font-bold mb-2 text-foreground">Partner World</h2>
-                  <p className="text-muted-foreground mb-4">Sponsors, suppliers, service providers, and consultants.</p>
+                  <h2 className="font-display text-2xl font-bold mb-2 text-foreground">{t.onboarding.partnerWorldOnboarding}</h2>
+                  <p className="text-muted-foreground mb-4">{t.onboarding.partnerWorldOnboardingDesc}</p>
                   <div className="flex items-center text-accent font-medium gap-2 group-hover:gap-3 transition-all">
-                    Enter <ArrowRight className="w-4 h-4" />
+                    {t.onboarding.enter} <ArrowRight className="w-4 h-4" />
                   </div>
                 </motion.button>
               </div>
@@ -393,9 +395,9 @@ const Onboarding = () => {
                   {world === "club" ? <Users className="w-6 h-6 text-primary-foreground" /> : <Briefcase className="w-6 h-6 text-accent-foreground" />}
                 </div>
                 <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">
-                  Select your <span className="text-gradient-gold">role</span>
+                  {t.onboarding.selectYourRole} <span className="text-gradient-gold">{t.onboarding.roleHighlight}</span>
                 </h1>
-                <p className="text-muted-foreground">You can hold multiple roles — choose your primary one to start.</p>
+                <p className="text-muted-foreground">{t.onboarding.multipleRolesHint}</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
@@ -426,7 +428,7 @@ const Onboarding = () => {
                   className="bg-gradient-gold text-primary-foreground font-semibold px-8 hover:opacity-90 disabled:opacity-40"
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
-                  {selectedRole === "admin" && user ? "Set Up Your Club" : "Continue to Dashboard"}
+                  {selectedRole === "admin" && user ? t.onboarding.setUpYourClub : t.onboarding.continueToDashboard}
                 </Button>
               </div>
             </motion.div>
@@ -445,18 +447,18 @@ const Onboarding = () => {
                   <Building2 className="w-7 h-7 text-primary-foreground" />
                 </div>
                 <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">
-                  Create your <span className="text-gradient-gold">club</span>
+                  {t.onboarding.createYourClub} <span className="text-gradient-gold">{t.onboarding.clubHighlight}</span>
                 </h1>
-                <p className="text-muted-foreground">Set up your club's home on ONE4Team.</p>
+                <p className="text-muted-foreground">{t.onboarding.clubHomeDesc}</p>
               </div>
 
               <div className="rounded-2xl bg-card border border-border p-6 space-y-5">
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Club Name *</label>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">{t.onboarding.clubName}</label>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                      placeholder="e.g. FC Riverside"
+                      placeholder={t.onboarding.clubNamePlaceholder}
                       value={clubName}
                       onChange={(e) => setClubName(e.target.value)}
                       className="pl-9 bg-background border-border"
@@ -467,9 +469,9 @@ const Onboarding = () => {
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Description (optional)</label>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">{t.onboarding.descriptionOptional}</label>
                   <textarea
-                    placeholder="Tell people about your club..."
+                    placeholder={t.onboarding.tellPeopleAbout}
                     value={clubDescription}
                     onChange={(e) => setClubDescription(e.target.value)}
                     className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
@@ -480,7 +482,7 @@ const Onboarding = () => {
 
                 {clubName.trim() && (
                   <div className="p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">Club URL: </span>
+                    <span className="font-medium text-foreground">{t.onboarding.clubUrl}</span>
                     one4team.com/club/{clubName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}
                   </div>
                 )}
@@ -493,11 +495,11 @@ const Onboarding = () => {
                 >
                   {creating ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating...
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t.onboarding.creating}
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-4 h-4 mr-2" /> Create Club & Enter Dashboard
+                      <Sparkles className="w-4 h-4 mr-2" /> {t.onboarding.createClubEnterDashboard}
                     </>
                   )}
                 </Button>
