@@ -1,9 +1,9 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-02-14 (Session 2, Europe/Berlin)
+Last updated: 2026-02-14 (Session 3, Europe/Berlin)
 
 ## Summary
-The project is **roadmap-complete through Phase 9** with **full internationalization (DE/EN)**, **4 new public pages**, **3 new dashboard pages** (Shop, Club Page Admin, Settings), **animated football background**, **dark/light theme**, **personalized greetings**, and **Vercel deployment readiness**.
+The project is **roadmap-complete through Phase 10** with **full internationalization (DE/EN)**, **4 new public pages**, **3 new dashboard pages**, **3 legal pages** (Terms, Privacy, Impressum), **cookie consent banner**, **animated football background**, **dark/light theme**, **personalized greetings**, and **Vercel deployment (live)**.
 All remaining work is primarily **Supabase/infra-dependent** (apply bundles, staging/prod separation, abuse controls).
 
 ## What is DONE (local readiness)
@@ -67,6 +67,14 @@ All remaining work is primarily **Supabase/infra-dependent** (apply bundles, sta
 - **Personalized greeting**: Dashboard header shows "Welcome back, {FirstName}" from profile data
 - All three pages fully translated (EN/DE) with comprehensive translation keys
 - Sidebar routes and pathToId mappings updated for all new pages
+
+### Legal & Compliance (2026-02-14, Session 3)
+- **Terms of Service** (`/terms`): 14-section AGB, German law compliant (TMG, BGB, GDPR)
+- **Privacy Policy** (`/privacy`): 11-section DSGVO/GDPR-compliant policy
+- **Impressum** (`/impressum`): 8-section German legal notice per Section 5 TMG
+- **Cookie Consent Banner**: GDPR-compliant with Accept All / Essential Only, localStorage persistence
+- **Footer**: Legal links, X.com social icon, email contact icon
+- **Deployment fix**: Supabase client handles missing env vars gracefully (no more blank page on Vercel)
 
 ## Current UX focus
 - Full i18n (German/English) across all pages and components

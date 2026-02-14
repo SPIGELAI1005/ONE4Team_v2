@@ -140,7 +140,7 @@ const en = {
     sections: [
       {
         title: "1. Scope and Provider",
-        content: 'These Terms of Service ("Terms") govern your use of the ONE4Team platform ("Service"), operated by SPIGEL AI UG (haftungsbeschrankt), represented by Georg Spigel, Munich, Germany ("Provider", "we", "us"). By accessing or using our Service, you agree to be bound by these Terms. If you do not agree, please do not use the Service.',
+        content: 'These Terms of Service ("Terms") govern your use of the ONE4Team platform ("Service"), operated by SPIGEL AI UG (haftungsbeschrankt), represented by George Neacsu, Munich, Germany ("Provider", "we", "us"). By accessing or using our Service, you agree to be bound by these Terms. If you do not agree, please do not use the Service.',
       },
       {
         title: "2. Service Description",
@@ -205,7 +205,7 @@ const en = {
     sections: [
       {
         title: "1. Controller",
-        content: "The controller responsible for data processing is SPIGEL AI UG (haftungsbeschrankt), represented by Georg Spigel, Munich, Germany. For data protection inquiries, please contact us at spigelai@gmail.com.",
+        content: "The controller responsible for data processing is SPIGEL AI UG (haftungsbeschrankt), represented by George Neacsu, Munich, Germany. For data protection inquiries, please contact us at spigelai@gmail.com.",
       },
       {
         title: "2. Data We Collect",
@@ -256,39 +256,39 @@ const en = {
     titleDe: "Impressum",
     subtitle: "Information in accordance with Section 5 TMG",
     companyInfo: {
-      heading: "Service Provider",
+      heading: "1. Service Provider",
       name: "SPIGEL AI UG (haftungsbeschrankt)",
-      represented: "Represented by: Georg Spigel",
+      represented: "Represented by: George Neacsu",
       address: "Munich, Germany",
       email: "Email: spigelai@gmail.com",
-      website: "Website: https://one4team.app",
+      website: "Website: https://www.one4team.com",
     },
     registration: {
-      heading: "Registration",
+      heading: "2. Registration",
       content: "Commercial Register: Amtsgericht Munchen (registration pending)",
     },
     vat: {
-      heading: "VAT Identification Number",
+      heading: "3. VAT Identification Number",
       content: "VAT ID pursuant to Section 27a of the German VAT Act (Umsatzsteuergesetz): pending registration",
     },
     responsibility: {
-      heading: "Responsible for Content",
-      content: "Georg Spigel (address as above), in accordance with Section 18(2) of the German Interstate Media Treaty (Medienstaatsvertrag, MStV).",
+      heading: "4. Responsible for Content",
+      content: "George Neacsu (address as above), in accordance with Section 18(2) of the German Interstate Media Treaty (Medienstaatsvertrag, MStV).",
     },
     disputeResolution: {
-      heading: "EU Dispute Resolution",
+      heading: "5. EU Dispute Resolution",
       content: "The European Commission provides an online dispute resolution (ODR) platform: https://ec.europa.eu/consumers/odr. We are not obligated and not willing to participate in dispute resolution proceedings before a consumer arbitration board.",
     },
     liability: {
-      heading: "Liability for Content",
+      heading: "6. Liability for Content",
       content: "As a service provider, we are responsible for our own content on these pages in accordance with general laws pursuant to Section 7(1) TMG. According to Sections 8 to 10 TMG, however, we are not obligated to monitor transmitted or stored third-party information or to investigate circumstances that indicate illegal activity. Obligations to remove or block the use of information under general law remain unaffected. Liability in this regard is only possible from the time of knowledge of a specific legal violation. Upon becoming aware of corresponding legal violations, we will remove this content immediately.",
     },
     liabilityLinks: {
-      heading: "Liability for Links",
+      heading: "7. Liability for Links",
       content: "Our offer contains links to external third-party websites, the content of which we have no influence over. Therefore, we cannot assume any liability for this external content. The respective provider or operator of the pages is always responsible for the content of the linked pages. The linked pages were checked for possible legal violations at the time of linking. Illegal content was not recognizable at the time of linking. Permanent monitoring of the content of linked pages is not reasonable without concrete evidence of a legal violation. Upon becoming aware of legal violations, we will remove such links immediately.",
     },
     copyright: {
-      heading: "Copyright",
+      heading: "8. Copyright",
       content: "The content and works created by the site operators on these pages are subject to German copyright law. Duplication, processing, distribution, and any kind of exploitation beyond the limits of copyright law require the written consent of the respective author or creator. Downloads and copies of this site are only permitted for private, non-commercial use. Insofar as the content on this site was not created by the operator, the copyrights of third parties are respected. In particular, third-party content is marked as such. Should you nevertheless become aware of a copyright infringement, please inform us accordingly. Upon becoming aware of legal violations, we will remove such content immediately.",
     },
   },

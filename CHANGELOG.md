@@ -3,6 +3,32 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-02-14 (Session 3)
+### Legal pages & compliance
+- **Terms of Service** (`/terms`): 14-section AGB compliant with German law (TMG, BGB, GDPR). Covers scope, service description, registration, user obligations, data protection, intellectual property, availability, subscriptions, liability (Kardinalpflichten), termination, governing law (Munich jurisdiction), dispute resolution (EU ODR), and severability.
+- **Privacy Policy** (`/privacy`): 11-section DSGVO/GDPR-compliant policy covering data controller, data categories, legal basis (Art. 6 GDPR), data sharing (Supabase, Vercel), cookies, retention, GDPR rights (Art. 15-21), security measures, children's privacy (Art. 8), and supervisory authority (BayLDA Ansbach).
+- **Legal Notice / Impressum** (`/impressum`): Full German legal notice per Section 5 TMG with numbered sections (1-8): company info (SPIGEL AI UG), registration, VAT ID, content responsibility (Section 18(2) MStV), EU dispute resolution, liability for content/links, copyright.
+- All legal pages follow the About page design language: parallax hero, glass-card sections, FadeInSection animations
+- Full EN + DE translations for all legal content
+- Company representative: George Neacsu, Website: https://www.one4team.com
+
+### Cookie Consent Banner
+- GDPR-compliant cookie consent banner with "Accept All" and "Essential Only" options
+- Animated slide-up glass-card design on first visit
+- Links to Privacy Policy for detailed information
+- Consent stored in localStorage with timestamp
+- Fully translated (EN/DE)
+
+### Footer enhancements
+- Added legal navigation links: Terms of Service, Privacy Policy, Legal Notice / Impressum
+- Added X.com icon linking to https://x.com/CO_FE_X
+- Added email icon linking to spigelai@gmail.com
+- Improved layout with social icons next to logo and legal links on the right
+
+### Deployment fix
+- Fixed blank page on Vercel: Supabase client now handles missing env vars gracefully with fallback values
+- Added explicit `framework`, `buildCommand`, `outputDirectory` to `vercel.json`
+
 ## 2026-02-14 (Session 2)
 ### New dashboard pages: Shop, Club Page Admin, Settings
 - **Shop page** (`/shop`): Tabbed page with Products (grid cards, search, category filter, add/edit/delete modals), Orders (status management: pending/confirmed/shipped/delivered), and Categories management. Uses local state with demo data (Supabase tables planned for v2.2). Full CRUD for admins, browse-only for players.

@@ -132,6 +132,22 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 ### P9-020 Dashboard UX improvements
 - [x] **P9-020a** Personalize dashboard greeting with user's first name from `profiles.display_name`.
 
+### P10-010 Legal pages & compliance
+- [x] **P10-010a** Create Terms of Service page (`/terms`) with 14 sections, German law compliant.
+- [x] **P10-010b** Create Privacy Policy page (`/privacy`) with 11 sections, DSGVO/GDPR compliant.
+- [x] **P10-010c** Create Impressum page (`/impressum`) with 8 numbered sections per Section 5 TMG.
+- [x] **P10-010d** Add EN + DE translations for all legal content.
+- [x] **P10-010e** Add routes in `App.tsx` for `/terms`, `/privacy`, `/impressum`.
+
+### P10-020 Cookie Consent & Footer
+- [x] **P10-020a** Create GDPR-compliant Cookie Consent Banner component.
+- [x] **P10-020b** Update Footer with legal navigation links.
+- [x] **P10-020c** Add X.com and email social icons to Footer.
+
+### P10-030 Deployment fixes
+- [x] **P10-030a** Fix blank page on Vercel (Supabase client handles missing env vars gracefully).
+- [x] **P10-030b** Add explicit `framework`, `buildCommand`, `outputDirectory` to `vercel.json`.
+
 ---
 
 ## QUALITY / DELIVERY

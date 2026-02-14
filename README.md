@@ -7,6 +7,8 @@ Club/team management SaaS with an iOS-style glass UI, full internationalization 
 - **Dark/Light theme**: System preference detection + manual toggle
 - **Animated football field**: Canvas-based match simulation with translated chat bubbles
 - **Public pages**: Features, Clubs & Partners, Pricing, About
+- **Legal pages**: Terms of Service, Privacy Policy, Impressum (GDPR/TMG compliant)
+- **Cookie Consent**: GDPR-compliant banner with Accept All / Essential Only
 - **Dashboard**: Role-based views (Admin, Trainer, Player, Sponsor, Supplier, etc.) with personalized greeting
 - **Shop**: Product catalog, orders management, categories (demo data)
 - **Club Page Admin**: Manage public club page (branding, contact, social, SEO)
@@ -58,7 +60,7 @@ npm run build:report # Bundle size report
 ## Project documentation
 - `CHANGELOG.md` — detailed change log
 - `PROJECT_STATUS.md` — current project state
-- `ROADMAP.md` — development roadmap (Phase 0–8 + v2)
+- `ROADMAP.md` — development roadmap (Phase 0–10 + v2)
 - `TASKS.md` — execution queue with task status
 - `DEPLOYMENT.md` — Vercel deployment guide
 - `HOLD.md` — items blocked on Supabase/infra

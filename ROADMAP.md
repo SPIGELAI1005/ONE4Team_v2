@@ -189,6 +189,33 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 ---
 
+## Phase 10 — Legal, Compliance & Deployment (Week 8) ✅
+**Goal:** make the app legally compliant for German market and fix deployment issues.
+
+**Deliverables**
+- EPIC O: Legal pages
+  - Terms of Service (14 sections, TMG/BGB/GDPR compliant)
+  - Privacy Policy (11 sections, DSGVO/GDPR compliant)
+  - Impressum (8 numbered sections, Section 5 TMG)
+  - All pages translated EN + DE
+- EPIC P: Cookie Consent
+  - GDPR-compliant cookie consent banner (Accept All / Essential Only)
+  - localStorage persistence with timestamp
+- EPIC Q: Footer & social
+  - Legal navigation links in footer
+  - X.com and email social icons
+- EPIC R: Deployment hardening
+  - Supabase client graceful fallback for missing env vars
+  - Explicit Vite framework config in vercel.json
+
+**Exit criteria**
+- All legal pages render correctly in EN + DE ✅
+- Cookie consent banner appears on first visit ✅
+- Footer shows legal links and social icons ✅
+- App loads on Vercel even without env vars ✅
+
+---
+
 ## v2 Roadmap (post-MVP)
 
 ### v2.1 Payments & billing

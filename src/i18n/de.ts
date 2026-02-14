@@ -142,7 +142,7 @@ const de: Translations = {
     sections: [
       {
         title: "1. Geltungsbereich und Anbieter",
-        content: 'Diese Allgemeinen Geschaftsbedingungen ("AGB") regeln die Nutzung der ONE4Team-Plattform ("Dienst"), betrieben von der SPIGEL AI UG (haftungsbeschrankt), vertreten durch Georg Spigel, Munchen, Deutschland ("Anbieter", "wir", "uns"). Durch den Zugriff auf oder die Nutzung unseres Dienstes erklaren Sie sich mit diesen AGB einverstanden. Wenn Sie nicht einverstanden sind, nutzen Sie den Dienst bitte nicht.',
+        content: 'Diese Allgemeinen Geschaftsbedingungen ("AGB") regeln die Nutzung der ONE4Team-Plattform ("Dienst"), betrieben von der SPIGEL AI UG (haftungsbeschrankt), vertreten durch George Neacsu, Munchen, Deutschland ("Anbieter", "wir", "uns"). Durch den Zugriff auf oder die Nutzung unseres Dienstes erklaren Sie sich mit diesen AGB einverstanden. Wenn Sie nicht einverstanden sind, nutzen Sie den Dienst bitte nicht.',
       },
       {
         title: "2. Leistungsbeschreibung",
@@ -207,7 +207,7 @@ const de: Translations = {
     sections: [
       {
         title: "1. Verantwortlicher",
-        content: "Verantwortlich fur die Datenverarbeitung ist die SPIGEL AI UG (haftungsbeschrankt), vertreten durch Georg Spigel, Munchen, Deutschland. Fur Datenschutzanfragen kontaktieren Sie uns bitte unter spigelai@gmail.com.",
+        content: "Verantwortlich fur die Datenverarbeitung ist die SPIGEL AI UG (haftungsbeschrankt), vertreten durch George Neacsu, Munchen, Deutschland. Fur Datenschutzanfragen kontaktieren Sie uns bitte unter spigelai@gmail.com.",
       },
       {
         title: "2. Erhobene Daten",
@@ -258,39 +258,39 @@ const de: Translations = {
     titleDe: "Impressum",
     subtitle: "Angaben gemas Section 5 TMG",
     companyInfo: {
-      heading: "Dienstanbieter",
+      heading: "1. Dienstanbieter",
       name: "SPIGEL AI UG (haftungsbeschrankt)",
-      represented: "Vertreten durch: Georg Spigel",
+      represented: "Vertreten durch: George Neacsu",
       address: "Munchen, Deutschland",
       email: "E-Mail: spigelai@gmail.com",
-      website: "Webseite: https://one4team.app",
+      website: "Webseite: https://www.one4team.com",
     },
     registration: {
-      heading: "Registrierung",
+      heading: "2. Registrierung",
       content: "Handelsregister: Amtsgericht Munchen (Eintragung ausstehend)",
     },
     vat: {
-      heading: "Umsatzsteuer-Identifikationsnummer",
+      heading: "3. Umsatzsteuer-Identifikationsnummer",
       content: "USt-IdNr. gemas Section 27a Umsatzsteuergesetz: Eintragung ausstehend",
     },
     responsibility: {
-      heading: "Inhaltlich Verantwortlicher",
-      content: "Georg Spigel (Anschrift wie oben), gemas Section 18 Abs. 2 Medienstaatsvertrag (MStV).",
+      heading: "4. Inhaltlich Verantwortlicher",
+      content: "George Neacsu (Anschrift wie oben), gemas Section 18 Abs. 2 Medienstaatsvertrag (MStV).",
     },
     disputeResolution: {
-      heading: "EU-Streitbeilegung",
+      heading: "5. EU-Streitbeilegung",
       content: "Die Europaische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: https://ec.europa.eu/consumers/odr. Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.",
     },
     liability: {
-      heading: "Haftung fur Inhalte",
+      heading: "6. Haftung fur Inhalte",
       content: "Als Diensteanbieter sind wir gemas Section 7 Abs. 1 TMG fur eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach Sections 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, ubermittelte oder gespeicherte fremde Informationen zu uberwachen oder nach Umstanden zu forschen, die auf eine rechtswidrige Tatigkeit hinweisen. Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen Gesetzen bleiben hiervon unberuhrt. Eine diesbezugliche Haftung ist jedoch erst ab dem Zeitpunkt der Kenntnis einer konkreten Rechtsverletzung moglich. Bei Bekanntwerden von entsprechenden Rechtsverletzungen werden wir diese Inhalte umgehend entfernen.",
     },
     liabilityLinks: {
-      heading: "Haftung fur Links",
+      heading: "7. Haftung fur Links",
       content: "Unser Angebot enthalt Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb konnen wir fur diese fremden Inhalte auch keine Gewahr ubernehmen. Fur die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich. Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf mogliche Rechtsverstasse uberpruft. Rechtswidrige Inhalte waren zum Zeitpunkt der Verlinkung nicht erkennbar. Eine permanente inhaltliche Kontrolle der verlinkten Seiten ist jedoch ohne konkrete Anhaltspunkte einer Rechtsverletzung nicht zumutbar. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Links umgehend entfernen.",
     },
     copyright: {
-      heading: "Urheberrecht",
+      heading: "8. Urheberrecht",
       content: "Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfaltigung, Bearbeitung, Verbreitung und jede Art der Verwertung ausserhalb der Grenzen des Urheberrechtes bedurfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers. Downloads und Kopien dieser Seite sind nur fur den privaten, nicht kommerziellen Gebrauch gestattet. Soweit die Inhalte auf dieser Seite nicht vom Betreiber erstellt wurden, werden die Urheberrechte Dritter beachtet. Insbesondere werden Inhalte Dritter als solche gekennzeichnet. Sollten Sie trotzdem auf eine Urheberrechtsverletzung aufmerksam werden, bitten wir um einen entsprechenden Hinweis. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Inhalte umgehend entfernen.",
     },
   },
