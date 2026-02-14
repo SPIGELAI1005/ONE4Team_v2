@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import PageTransition from "@/components/layout/PageTransition";
+import { CookieConsent } from "@/components/ui/cookie-consent";
 
 // Route-level code splitting (reduces initial bundle size)
 const Index = lazy(() => import("./pages/Index"));
@@ -39,6 +40,9 @@ const About = lazy(() => import("./pages/About"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const ClubsAndPartners = lazy(() => import("./pages/ClubsAndPartners"));
 const Features = lazy(() => import("./pages/Features"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Impressum = lazy(() => import("./pages/Impressum"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Health = lazy(() => import("./pages/Health"));
 const Crash = lazy(() => import("./pages/Crash"));
@@ -111,6 +115,36 @@ const AnimatedRoutes = () => {
             <PageTransition>
               <Suspense fallback={<RouteFallback />}>
                 <ClubsAndPartners />
+              </Suspense>
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/terms"
+          element={
+            <PageTransition>
+              <Suspense fallback={<RouteFallback />}>
+                <Terms />
+              </Suspense>
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/privacy"
+          element={
+            <PageTransition>
+              <Suspense fallback={<RouteFallback />}>
+                <Privacy />
+              </Suspense>
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/impressum"
+          element={
+            <PageTransition>
+              <Suspense fallback={<RouteFallback />}>
+                <Impressum />
               </Suspense>
             </PageTransition>
           }
@@ -225,6 +259,7 @@ const App = () => (
                 </div>
               </footer>
             </div>
+            <CookieConsent />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

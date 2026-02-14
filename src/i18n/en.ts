@@ -117,6 +117,180 @@ const en = {
   // ─── Footer ───
   footer: {
     copyright: "© 2026 ONE4Team. The complete operating system for hobby clubs.",
+    termsOfService: "Terms of Service",
+    privacyPolicy: "Privacy Policy",
+    legalNotice: "Legal Notice",
+  },
+
+  // ─── Cookie Consent ───
+  cookieConsent: {
+    title: "Cookie Settings",
+    description: "We use cookies to enhance your experience. Essential cookies are required for the app to function. Analytics cookies help us improve the platform.",
+    acceptAll: "Accept All",
+    acceptEssential: "Essential Only",
+    learnMore: "Learn more in our",
+    privacyPolicyLink: "Privacy Policy",
+  },
+
+  // ─── Terms of Service ───
+  termsPage: {
+    title: "Terms of Service",
+    subtitle: "Terms & Conditions for using ONE4Team",
+    lastUpdated: "Last updated: February 14, 2026",
+    sections: [
+      {
+        title: "1. Scope and Provider",
+        content: 'These Terms of Service ("Terms") govern your use of the ONE4Team platform ("Service"), operated by SPIGEL AI UG (haftungsbeschrankt), represented by Georg Spigel, Munich, Germany ("Provider", "we", "us"). By accessing or using our Service, you agree to be bound by these Terms. If you do not agree, please do not use the Service.',
+      },
+      {
+        title: "2. Service Description",
+        content: "ONE4Team is a cloud-based club management platform that enables sports clubs, their members, trainers, and partners to organize, communicate, and collaborate. The Service includes member management, scheduling, match tracking, payment management, communication tools, AI-assisted coaching features, and a partner portal.",
+      },
+      {
+        title: "3. Registration and Account",
+        content: "To use ONE4Team, you must register with a valid email address and create an account. You are responsible for maintaining the confidentiality of your login credentials and for all activities under your account. You must provide accurate, current, and complete information during registration. Accounts are personal and may not be transferred to third parties.",
+      },
+      {
+        title: "4. User Obligations",
+        content: "You agree to use the Service only for lawful purposes and in accordance with these Terms. You shall not: (a) violate any applicable law or regulation; (b) upload content that infringes third-party rights; (c) attempt to gain unauthorized access to the Service or its systems; (d) use the Service to distribute spam, malware, or harmful content; (e) impersonate another person or entity.",
+      },
+      {
+        title: "5. Data Protection",
+        content: "We process personal data in accordance with the EU General Data Protection Regulation (GDPR) and the German Federal Data Protection Act (BDSG). For details, please refer to our Privacy Policy. By using the Service, you acknowledge that your data will be processed as described in our Privacy Policy.",
+      },
+      {
+        title: "6. Intellectual Property",
+        content: "All content, trademarks, logos, and software provided through the Service are the property of the Provider or its licensors. You may not copy, modify, distribute, or create derivative works based on any part of the Service without prior written consent.",
+      },
+      {
+        title: "7. Availability and Maintenance",
+        content: "We strive to maintain high availability of the Service but do not guarantee uninterrupted access. Scheduled maintenance will be announced in advance where possible. We are not liable for temporary unavailability due to maintenance, updates, or circumstances beyond our control.",
+      },
+      {
+        title: "8. Subscription and Payment",
+        content: "Certain features of the Service may require a paid subscription. Prices, payment terms, and subscription details are displayed within the Service. All prices are inclusive of applicable VAT (Mehrwertsteuer). Subscriptions renew automatically unless cancelled before the renewal date. Cancellation is possible at any time with effect at the end of the current billing period.",
+      },
+      {
+        title: "9. Liability",
+        content: "The Provider is liable without limitation for damages caused by intent or gross negligence. For slight negligence, liability is limited to foreseeable, contract-typical damages and only in cases of breach of essential contractual obligations (Kardinalpflichten). Liability for damages to life, body, or health remains unaffected. The above limitations do not apply to claims under the German Product Liability Act (Produkthaftungsgesetz).",
+      },
+      {
+        title: "10. Termination",
+        content: "Either party may terminate the agreement at any time. You may delete your account through the Settings page. Upon termination, your data will be deleted in accordance with our data retention policy and applicable law. We reserve the right to suspend or terminate accounts that violate these Terms.",
+      },
+      {
+        title: "11. Changes to Terms",
+        content: "We may update these Terms from time to time. You will be notified of material changes via email or in-app notification at least 30 days before they take effect. Continued use of the Service after changes take effect constitutes acceptance of the revised Terms.",
+      },
+      {
+        title: "12. Governing Law and Jurisdiction",
+        content: "These Terms are governed by the laws of the Federal Republic of Germany, excluding the UN Convention on Contracts for the International Sale of Goods (CISG). The exclusive place of jurisdiction for all disputes is Munich, Germany, to the extent permitted by law.",
+      },
+      {
+        title: "13. Dispute Resolution",
+        content: "The European Commission provides an online dispute resolution (ODR) platform at https://ec.europa.eu/consumers/odr. We are not obligated and not willing to participate in dispute resolution proceedings before a consumer arbitration board.",
+      },
+      {
+        title: "14. Severability",
+        content: "If any provision of these Terms is found to be invalid or unenforceable, the remaining provisions shall remain in full force and effect. The invalid provision shall be replaced by a valid provision that most closely achieves the economic purpose of the invalid provision.",
+      },
+    ],
+  },
+
+  // ─── Privacy Policy ───
+  privacyPage: {
+    title: "Privacy Policy",
+    subtitle: "How we handle your data",
+    lastUpdated: "Last updated: February 14, 2026",
+    sections: [
+      {
+        title: "1. Controller",
+        content: "The controller responsible for data processing is SPIGEL AI UG (haftungsbeschrankt), represented by Georg Spigel, Munich, Germany. For data protection inquiries, please contact us at spigelai@gmail.com.",
+      },
+      {
+        title: "2. Data We Collect",
+        content: "We collect and process the following categories of personal data: (a) Account data: email address, display name, avatar URL, phone number; (b) Club data: club memberships, roles, team assignments; (c) Activity data: training attendance, match participation, event RSVPs; (d) Payment data: dues records, payment status (no credit card data is stored on our servers); (e) Communication data: messages sent through the platform; (f) Technical data: IP address, browser type, device information, access times; (g) Usage data: pages visited, features used, interaction patterns.",
+      },
+      {
+        title: "3. Legal Basis for Processing",
+        content: "We process your data based on: (a) Contract performance (Art. 6(1)(b) GDPR) - to provide the Service you registered for; (b) Legitimate interests (Art. 6(1)(f) GDPR) - to improve our Service, ensure security, and prevent abuse; (c) Consent (Art. 6(1)(a) GDPR) - for analytics cookies and optional communications; (d) Legal obligation (Art. 6(1)(c) GDPR) - to comply with tax and commercial law requirements.",
+      },
+      {
+        title: "4. Data Sharing",
+        content: "We share data with: (a) Supabase Inc. (hosting and database services, servers in the EU); (b) Vercel Inc. (web hosting and CDN); (c) Other members of your club (only data necessary for club operations, as controlled by your club administrator). We do not sell your personal data to third parties. Data transfers to countries outside the EU/EEA are covered by Standard Contractual Clauses (SCCs) or adequacy decisions.",
+      },
+      {
+        title: "5. Cookies",
+        content: "We use: (a) Essential cookies: required for authentication, session management, and language/theme preferences. These are strictly necessary and do not require consent. (b) Analytics cookies: used to understand how visitors interact with our platform. These are only set with your explicit consent. You can manage your cookie preferences at any time through the cookie settings banner.",
+      },
+      {
+        title: "6. Data Retention",
+        content: "We retain your data for as long as your account is active or as needed to provide the Service. After account deletion, personal data is deleted within 30 days, except where longer retention is required by law (e.g., commercial records under HGB: 6-10 years). Anonymized usage statistics may be retained indefinitely.",
+      },
+      {
+        title: "7. Your Rights (GDPR)",
+        content: "Under the GDPR, you have the right to: (a) Access your personal data (Art. 15 GDPR); (b) Rectification of inaccurate data (Art. 16 GDPR); (c) Erasure of your data (Art. 17 GDPR); (d) Restriction of processing (Art. 18 GDPR); (e) Data portability (Art. 20 GDPR); (f) Object to processing (Art. 21 GDPR); (g) Withdraw consent at any time (Art. 7(3) GDPR). To exercise these rights, contact us at spigelai@gmail.com.",
+      },
+      {
+        title: "8. Data Security",
+        content: "We implement appropriate technical and organizational measures to protect your data, including: encryption in transit (TLS/SSL), encryption at rest, Row Level Security (RLS) policies for multi-tenant data isolation, regular security audits, and access controls based on the principle of least privilege.",
+      },
+      {
+        title: "9. Children",
+        content: "Our Service is not directed to children under 16. If a child under 16 uses the Service (e.g., as a club member), parental or guardian consent is required in accordance with Art. 8 GDPR. Club administrators are responsible for ensuring appropriate consent is obtained.",
+      },
+      {
+        title: "10. Changes to This Policy",
+        content: "We may update this Privacy Policy from time to time. Material changes will be communicated via email or in-app notification. The current version is always available at /privacy.",
+      },
+      {
+        title: "11. Supervisory Authority",
+        content: "You have the right to lodge a complaint with a data protection supervisory authority. The competent authority for our company is: Bayerisches Landesamt fur Datenschutzaufsicht (BayLDA), Promenade 18, 91522 Ansbach, Germany.",
+      },
+    ],
+  },
+
+  // ─── Impressum / Legal Notice ───
+  impressumPage: {
+    title: "Legal Notice",
+    titleDe: "Impressum",
+    subtitle: "Information in accordance with Section 5 TMG",
+    companyInfo: {
+      heading: "Service Provider",
+      name: "SPIGEL AI UG (haftungsbeschrankt)",
+      represented: "Represented by: Georg Spigel",
+      address: "Munich, Germany",
+      email: "Email: spigelai@gmail.com",
+      website: "Website: https://one4team.app",
+    },
+    registration: {
+      heading: "Registration",
+      content: "Commercial Register: Amtsgericht Munchen (registration pending)",
+    },
+    vat: {
+      heading: "VAT Identification Number",
+      content: "VAT ID pursuant to Section 27a of the German VAT Act (Umsatzsteuergesetz): pending registration",
+    },
+    responsibility: {
+      heading: "Responsible for Content",
+      content: "Georg Spigel (address as above), in accordance with Section 18(2) of the German Interstate Media Treaty (Medienstaatsvertrag, MStV).",
+    },
+    disputeResolution: {
+      heading: "EU Dispute Resolution",
+      content: "The European Commission provides an online dispute resolution (ODR) platform: https://ec.europa.eu/consumers/odr. We are not obligated and not willing to participate in dispute resolution proceedings before a consumer arbitration board.",
+    },
+    liability: {
+      heading: "Liability for Content",
+      content: "As a service provider, we are responsible for our own content on these pages in accordance with general laws pursuant to Section 7(1) TMG. According to Sections 8 to 10 TMG, however, we are not obligated to monitor transmitted or stored third-party information or to investigate circumstances that indicate illegal activity. Obligations to remove or block the use of information under general law remain unaffected. Liability in this regard is only possible from the time of knowledge of a specific legal violation. Upon becoming aware of corresponding legal violations, we will remove this content immediately.",
+    },
+    liabilityLinks: {
+      heading: "Liability for Links",
+      content: "Our offer contains links to external third-party websites, the content of which we have no influence over. Therefore, we cannot assume any liability for this external content. The respective provider or operator of the pages is always responsible for the content of the linked pages. The linked pages were checked for possible legal violations at the time of linking. Illegal content was not recognizable at the time of linking. Permanent monitoring of the content of linked pages is not reasonable without concrete evidence of a legal violation. Upon becoming aware of legal violations, we will remove such links immediately.",
+    },
+    copyright: {
+      heading: "Copyright",
+      content: "The content and works created by the site operators on these pages are subject to German copyright law. Duplication, processing, distribution, and any kind of exploitation beyond the limits of copyright law require the written consent of the respective author or creator. Downloads and copies of this site are only permitted for private, non-commercial use. Insofar as the content on this site was not created by the operator, the copyrights of third parties are respected. In particular, third-party content is marked as such. Should you nevertheless become aware of a copyright infringement, please inform us accordingly. Upon becoming aware of legal violations, we will remove such content immediately.",
+    },
   },
 
   // ─── Auth Page ───

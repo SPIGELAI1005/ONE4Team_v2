@@ -118,7 +118,181 @@ const de: Translations = {
 
   // ─── Footer ───
   footer: {
-    copyright: "© 2026 ONE4Team. Das komplette Betriebssystem für Hobbyvereine.",
+    copyright: "© 2026 ONE4Team. Das komplette Betriebssystem fur Hobbyvereine.",
+    termsOfService: "AGB",
+    privacyPolicy: "Datenschutz",
+    legalNotice: "Impressum",
+  },
+
+  // ─── Cookie Consent ───
+  cookieConsent: {
+    title: "Cookie-Einstellungen",
+    description: "Wir verwenden Cookies, um Ihre Erfahrung zu verbessern. Essenzielle Cookies sind fur die Funktion der App erforderlich. Analyse-Cookies helfen uns, die Plattform zu verbessern.",
+    acceptAll: "Alle akzeptieren",
+    acceptEssential: "Nur essenzielle",
+    learnMore: "Mehr erfahren in unserer",
+    privacyPolicyLink: "Datenschutzerklarung",
+  },
+
+  // ─── Terms of Service ───
+  termsPage: {
+    title: "Allgemeine Geschaftsbedingungen",
+    subtitle: "Nutzungsbedingungen fur ONE4Team",
+    lastUpdated: "Letzte Aktualisierung: 14. Februar 2026",
+    sections: [
+      {
+        title: "1. Geltungsbereich und Anbieter",
+        content: 'Diese Allgemeinen Geschaftsbedingungen ("AGB") regeln die Nutzung der ONE4Team-Plattform ("Dienst"), betrieben von der SPIGEL AI UG (haftungsbeschrankt), vertreten durch Georg Spigel, Munchen, Deutschland ("Anbieter", "wir", "uns"). Durch den Zugriff auf oder die Nutzung unseres Dienstes erklaren Sie sich mit diesen AGB einverstanden. Wenn Sie nicht einverstanden sind, nutzen Sie den Dienst bitte nicht.',
+      },
+      {
+        title: "2. Leistungsbeschreibung",
+        content: "ONE4Team ist eine cloudbasierte Vereinsverwaltungsplattform, die Sportvereinen, ihren Mitgliedern, Trainern und Partnern ermoglicht, zu organisieren, zu kommunizieren und zusammenzuarbeiten. Der Dienst umfasst Mitgliederverwaltung, Terminplanung, Spielverfolgung, Zahlungsmanagement, Kommunikationstools, KI-gestutzte Coaching-Funktionen und ein Partnerportal.",
+      },
+      {
+        title: "3. Registrierung und Konto",
+        content: "Um ONE4Team zu nutzen, mussen Sie sich mit einer gultigen E-Mail-Adresse registrieren und ein Konto erstellen. Sie sind fur die Vertraulichkeit Ihrer Anmeldedaten und fur alle Aktivitaten unter Ihrem Konto verantwortlich. Sie mussen bei der Registrierung genaue, aktuelle und vollstandige Angaben machen. Konten sind personengebunden und durfen nicht an Dritte ubertragen werden.",
+      },
+      {
+        title: "4. Pflichten des Nutzers",
+        content: "Sie verpflichten sich, den Dienst nur fur rechtmassige Zwecke und in Ubereinstimmung mit diesen AGB zu nutzen. Sie durfen nicht: (a) gegen geltendes Recht verstossen; (b) Inhalte hochladen, die Rechte Dritter verletzen; (c) versuchen, unbefugten Zugang zum Dienst oder seinen Systemen zu erlangen; (d) den Dienst zur Verbreitung von Spam, Malware oder schadlichen Inhalten nutzen; (e) eine andere Person oder Organisation nachahmen.",
+      },
+      {
+        title: "5. Datenschutz",
+        content: "Wir verarbeiten personenbezogene Daten in Ubereinstimmung mit der EU-Datenschutz-Grundverordnung (DSGVO) und dem Bundesdatenschutzgesetz (BDSG). Einzelheiten entnehmen Sie bitte unserer Datenschutzerklarung. Durch die Nutzung des Dienstes erkennen Sie an, dass Ihre Daten wie in unserer Datenschutzerklarung beschrieben verarbeitet werden.",
+      },
+      {
+        title: "6. Geistiges Eigentum",
+        content: "Alle uber den Dienst bereitgestellten Inhalte, Marken, Logos und Software sind Eigentum des Anbieters oder seiner Lizenzgeber. Sie durfen keinen Teil des Dienstes ohne vorherige schriftliche Zustimmung kopieren, andern, verbreiten oder davon abgeleitete Werke erstellen.",
+      },
+      {
+        title: "7. Verfugbarkeit und Wartung",
+        content: "Wir sind bestrebt, eine hohe Verfugbarkeit des Dienstes aufrechtzuerhalten, garantieren jedoch keinen ununterbrochenen Zugang. Geplante Wartungsarbeiten werden nach Moglichkeit im Voraus angekundigt. Wir haften nicht fur vorubergehende Nichtverfugbarkeit aufgrund von Wartung, Updates oder Umstanden ausserhalb unserer Kontrolle.",
+      },
+      {
+        title: "8. Abonnement und Zahlung",
+        content: "Bestimmte Funktionen des Dienstes erfordern moglicherweise ein kostenpflichtiges Abonnement. Preise, Zahlungsbedingungen und Abonnementdetails werden innerhalb des Dienstes angezeigt. Alle Preise verstehen sich inklusive der geltenden Mehrwertsteuer. Abonnements verlangern sich automatisch, sofern sie nicht vor dem Verlangierungsdatum gekundigt werden. Eine Kundigung ist jederzeit zum Ende des laufenden Abrechnungszeitraums moglich.",
+      },
+      {
+        title: "9. Haftung",
+        content: "Der Anbieter haftet unbeschrankt fur Schaden, die durch Vorsatz oder grobe Fahrlassigkeit verursacht wurden. Bei leichter Fahrlassigkeit ist die Haftung auf vorhersehbare, vertragstypische Schaden beschrankt und nur bei Verletzung wesentlicher Vertragspflichten (Kardinalpflichten). Die Haftung fur Schaden an Leben, Korper oder Gesundheit bleibt unberuhrt. Die vorstehenden Einschrankungen gelten nicht fur Anspruche nach dem Produkthaftungsgesetz.",
+      },
+      {
+        title: "10. Kundigung",
+        content: "Jede Partei kann den Vertrag jederzeit kundigen. Sie konnen Ihr Konto uber die Einstellungsseite loschen. Nach der Kundigung werden Ihre Daten gemas unserer Datenaufbewahrungsrichtlinie und geltendem Recht geloscht. Wir behalten uns das Recht vor, Konten, die gegen diese AGB verstossen, zu sperren oder zu loschen.",
+      },
+      {
+        title: "11. Anderung der AGB",
+        content: "Wir konnen diese AGB von Zeit zu Zeit aktualisieren. Sie werden uber wesentliche Anderungen per E-Mail oder In-App-Benachrichtigung mindestens 30 Tage vor Inkrafttreten informiert. Die fortgesetzte Nutzung des Dienstes nach Inkrafttreten der Anderungen gilt als Zustimmung zu den geanderten AGB.",
+      },
+      {
+        title: "12. Anwendbares Recht und Gerichtsstand",
+        content: "Diese AGB unterliegen dem Recht der Bundesrepublik Deutschland unter Ausschluss des UN-Kaufrechts (CISG). Ausschliesslicher Gerichtsstand fur alle Streitigkeiten ist Munchen, soweit gesetzlich zulassig.",
+      },
+      {
+        title: "13. Streitbeilegung",
+        content: "Die Europaische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: https://ec.europa.eu/consumers/odr. Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.",
+      },
+      {
+        title: "14. Salvatorische Klausel",
+        content: "Sollte eine Bestimmung dieser AGB unwirksam oder undurchfuhrbar sein, bleiben die ubrigen Bestimmungen in vollem Umfang wirksam. Die unwirksame Bestimmung wird durch eine wirksame Bestimmung ersetzt, die dem wirtschaftlichen Zweck der unwirksamen Bestimmung am nachsten kommt.",
+      },
+    ],
+  },
+
+  // ─── Privacy Policy ───
+  privacyPage: {
+    title: "Datenschutzerklarung",
+    subtitle: "Wie wir Ihre Daten verarbeiten",
+    lastUpdated: "Letzte Aktualisierung: 14. Februar 2026",
+    sections: [
+      {
+        title: "1. Verantwortlicher",
+        content: "Verantwortlich fur die Datenverarbeitung ist die SPIGEL AI UG (haftungsbeschrankt), vertreten durch Georg Spigel, Munchen, Deutschland. Fur Datenschutzanfragen kontaktieren Sie uns bitte unter spigelai@gmail.com.",
+      },
+      {
+        title: "2. Erhobene Daten",
+        content: "Wir erheben und verarbeiten folgende Kategorien personenbezogener Daten: (a) Kontodaten: E-Mail-Adresse, Anzeigename, Avatar-URL, Telefonnummer; (b) Vereinsdaten: Vereinsmitgliedschaften, Rollen, Teamzuordnungen; (c) Aktivitatsdaten: Trainingsanwesenheit, Spielteilnahme, Veranstaltungszusagen; (d) Zahlungsdaten: Beitragserfassung, Zahlungsstatus (keine Kreditkartendaten werden auf unseren Servern gespeichert); (e) Kommunikationsdaten: uber die Plattform gesendete Nachrichten; (f) Technische Daten: IP-Adresse, Browsertyp, Gerateinformationen, Zugriffszeiten; (g) Nutzungsdaten: besuchte Seiten, genutzte Funktionen, Interaktionsmuster.",
+      },
+      {
+        title: "3. Rechtsgrundlagen der Verarbeitung",
+        content: "Wir verarbeiten Ihre Daten auf Grundlage von: (a) Vertragserfullung (Art. 6 Abs. 1 lit. b DSGVO) - zur Erbringung des Dienstes, fur den Sie sich registriert haben; (b) Berechtigte Interessen (Art. 6 Abs. 1 lit. f DSGVO) - zur Verbesserung unseres Dienstes, Gewahrleistung der Sicherheit und Missbrauchspravention; (c) Einwilligung (Art. 6 Abs. 1 lit. a DSGVO) - fur Analyse-Cookies und optionale Kommunikation; (d) Rechtliche Verpflichtung (Art. 6 Abs. 1 lit. c DSGVO) - zur Erfullung steuer- und handelsrechtlicher Anforderungen.",
+      },
+      {
+        title: "4. Datenweitergabe",
+        content: "Wir teilen Daten mit: (a) Supabase Inc. (Hosting- und Datenbankdienste, Server in der EU); (b) Vercel Inc. (Webhosting und CDN); (c) Anderen Mitgliedern Ihres Vereins (nur Daten, die fur den Vereinsbetrieb erforderlich sind, gesteuert durch Ihren Vereinsadministrator). Wir verkaufen Ihre personenbezogenen Daten nicht an Dritte. Datenubertragungen in Lander ausserhalb der EU/des EWR sind durch Standardvertragsklauseln (SCCs) oder Angemessenheitsbeschlusse abgesichert.",
+      },
+      {
+        title: "5. Cookies",
+        content: "Wir verwenden: (a) Essenzielle Cookies: erforderlich fur Authentifizierung, Sitzungsverwaltung und Sprach-/Designpraferenzen. Diese sind unbedingt notwendig und erfordern keine Einwilligung. (b) Analyse-Cookies: werden verwendet, um zu verstehen, wie Besucher mit unserer Plattform interagieren. Diese werden nur mit Ihrer ausdrucklichen Einwilligung gesetzt. Sie konnen Ihre Cookie-Praferenzen jederzeit uber das Cookie-Einstellungsbanner verwalten.",
+      },
+      {
+        title: "6. Datenspeicherung",
+        content: "Wir speichern Ihre Daten, solange Ihr Konto aktiv ist oder zur Erbringung des Dienstes erforderlich. Nach Kontoloschung werden personenbezogene Daten innerhalb von 30 Tagen geloscht, es sei denn, eine langere Aufbewahrung ist gesetzlich vorgeschrieben (z.B. Handelsunterlagen nach HGB: 6-10 Jahre). Anonymisierte Nutzungsstatistiken konnen unbegrenzt aufbewahrt werden.",
+      },
+      {
+        title: "7. Ihre Rechte (DSGVO)",
+        content: "Gemas der DSGVO haben Sie das Recht auf: (a) Auskunft uber Ihre personenbezogenen Daten (Art. 15 DSGVO); (b) Berichtigung unrichtiger Daten (Art. 16 DSGVO); (c) Loschung Ihrer Daten (Art. 17 DSGVO); (d) Einschrankung der Verarbeitung (Art. 18 DSGVO); (e) Datenubertragbarkeit (Art. 20 DSGVO); (f) Widerspruch gegen die Verarbeitung (Art. 21 DSGVO); (g) Widerruf der Einwilligung jederzeit (Art. 7 Abs. 3 DSGVO). Zur Ausubung dieser Rechte kontaktieren Sie uns unter spigelai@gmail.com.",
+      },
+      {
+        title: "8. Datensicherheit",
+        content: "Wir setzen angemessene technische und organisatorische Massnahmen zum Schutz Ihrer Daten ein, darunter: Verschlusselung bei der Ubertragung (TLS/SSL), Verschlusselung im Ruhezustand, Row Level Security (RLS) Richtlinien fur mandantenfahige Datenisolierung, regelmassige Sicherheitsuberprufungen und Zugriffskontrollen nach dem Prinzip der geringsten Berechtigung.",
+      },
+      {
+        title: "9. Kinder",
+        content: "Unser Dienst richtet sich nicht an Kinder unter 16 Jahren. Wenn ein Kind unter 16 Jahren den Dienst nutzt (z.B. als Vereinsmitglied), ist die Einwilligung der Eltern oder Erziehungsberechtigten gemas Art. 8 DSGVO erforderlich. Vereinsadministratoren sind dafur verantwortlich, die entsprechende Einwilligung einzuholen.",
+      },
+      {
+        title: "10. Anderungen dieser Richtlinie",
+        content: "Wir konnen diese Datenschutzerklarung von Zeit zu Zeit aktualisieren. Wesentliche Anderungen werden per E-Mail oder In-App-Benachrichtigung kommuniziert. Die aktuelle Version ist jederzeit unter /privacy abrufbar.",
+      },
+      {
+        title: "11. Aufsichtsbehorde",
+        content: "Sie haben das Recht, eine Beschwerde bei einer Datenschutzaufsichtsbehorde einzureichen. Die fur unser Unternehmen zustandige Behorde ist: Bayerisches Landesamt fur Datenschutzaufsicht (BayLDA), Promenade 18, 91522 Ansbach, Deutschland.",
+      },
+    ],
+  },
+
+  // ─── Impressum / Legal Notice ───
+  impressumPage: {
+    title: "Impressum",
+    titleDe: "Impressum",
+    subtitle: "Angaben gemas Section 5 TMG",
+    companyInfo: {
+      heading: "Dienstanbieter",
+      name: "SPIGEL AI UG (haftungsbeschrankt)",
+      represented: "Vertreten durch: Georg Spigel",
+      address: "Munchen, Deutschland",
+      email: "E-Mail: spigelai@gmail.com",
+      website: "Webseite: https://one4team.app",
+    },
+    registration: {
+      heading: "Registrierung",
+      content: "Handelsregister: Amtsgericht Munchen (Eintragung ausstehend)",
+    },
+    vat: {
+      heading: "Umsatzsteuer-Identifikationsnummer",
+      content: "USt-IdNr. gemas Section 27a Umsatzsteuergesetz: Eintragung ausstehend",
+    },
+    responsibility: {
+      heading: "Inhaltlich Verantwortlicher",
+      content: "Georg Spigel (Anschrift wie oben), gemas Section 18 Abs. 2 Medienstaatsvertrag (MStV).",
+    },
+    disputeResolution: {
+      heading: "EU-Streitbeilegung",
+      content: "Die Europaische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: https://ec.europa.eu/consumers/odr. Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.",
+    },
+    liability: {
+      heading: "Haftung fur Inhalte",
+      content: "Als Diensteanbieter sind wir gemas Section 7 Abs. 1 TMG fur eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach Sections 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, ubermittelte oder gespeicherte fremde Informationen zu uberwachen oder nach Umstanden zu forschen, die auf eine rechtswidrige Tatigkeit hinweisen. Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen Gesetzen bleiben hiervon unberuhrt. Eine diesbezugliche Haftung ist jedoch erst ab dem Zeitpunkt der Kenntnis einer konkreten Rechtsverletzung moglich. Bei Bekanntwerden von entsprechenden Rechtsverletzungen werden wir diese Inhalte umgehend entfernen.",
+    },
+    liabilityLinks: {
+      heading: "Haftung fur Links",
+      content: "Unser Angebot enthalt Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb konnen wir fur diese fremden Inhalte auch keine Gewahr ubernehmen. Fur die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich. Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf mogliche Rechtsverstasse uberpruft. Rechtswidrige Inhalte waren zum Zeitpunkt der Verlinkung nicht erkennbar. Eine permanente inhaltliche Kontrolle der verlinkten Seiten ist jedoch ohne konkrete Anhaltspunkte einer Rechtsverletzung nicht zumutbar. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Links umgehend entfernen.",
+    },
+    copyright: {
+      heading: "Urheberrecht",
+      content: "Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfaltigung, Bearbeitung, Verbreitung und jede Art der Verwertung ausserhalb der Grenzen des Urheberrechtes bedurfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers. Downloads und Kopien dieser Seite sind nur fur den privaten, nicht kommerziellen Gebrauch gestattet. Soweit die Inhalte auf dieser Seite nicht vom Betreiber erstellt wurden, werden die Urheberrechte Dritter beachtet. Insbesondere werden Inhalte Dritter als solche gekennzeichnet. Sollten Sie trotzdem auf eine Urheberrechtsverletzung aufmerksam werden, bitten wir um einen entsprechenden Hinweis. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Inhalte umgehend entfernen.",
+    },
   },
 
   // ─── Auth Page ───
