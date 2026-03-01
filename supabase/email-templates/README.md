@@ -17,11 +17,12 @@ Branded email templates for Supabase Authentication.
 | **Reset password** | `reset-password.html` | `Reset your ONE4Team password` |
 | **Invite user** | `invite-user.html` | `You're invited to join ONE4Team` |
 | **Change email** | `email-change.html` | `Confirm your new email for ONE4Team` |
+| **Reauthentication** | `reauthentication.html` | `Verify your ONE4Team session` |
 
 ## Design
 
 - **Brand color:** Gold `#C4952A` (gradient: `#8B6914` -> `#C4952A` -> `#D4A843`)
-- **Logo:** Football icon with gold gradient background + "ONE4Team" text branding
+- **Branding:** Clean "ONE4Team" wordmark with premium gold accent
 - **Layout:** Centered card with gold top bar, rounded corners, subtle shadow
 - **Typography:** System font stack (Apple, Segoe UI, Roboto, Arial)
 - **Consistent elements:** Gold CTA button, fallback link, footer branding

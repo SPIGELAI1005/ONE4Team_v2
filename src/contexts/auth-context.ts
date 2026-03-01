@@ -12,7 +12,9 @@ export type AuthContextType = {
     metadata?: Record<string, unknown>
   ) => Promise<{ error: Error | null; user: User | null; session: Session | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithMagicLink: (email: string) => Promise<{ error: Error | null }>;
   resendConfirmation: (email: string) => Promise<{ error: Error | null }>;
+  changeEmail: (newEmail: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 };
 

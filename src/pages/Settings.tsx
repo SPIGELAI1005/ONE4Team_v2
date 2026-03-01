@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Settings2, User, Building2, Bell, Shield,
-  Save, Loader2, LogOut, KeyRound, Trash2, AlertTriangle,
+  Save, Loader2, LogOut, KeyRound, Trash2, AlertTriangle, Mail,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
@@ -41,7 +41,7 @@ function loadNotifPrefs(): NotifPrefs {
 }
 
 export default function Settings() {
-  const { user, signOut } = useAuth();
+  const { user, changeEmail, signOut } = useAuth();
   const { activeClubId, loading: activeClubLoading } = useActiveClub();
   const perms = usePermissions();
   const { t, setLanguage } = useLanguage();
@@ -69,6 +69,8 @@ export default function Settings() {
 
   // Account
   const [resetSending, setResetSending] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [changeEmailSending, setChangeEmailSending] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -164,6 +166,27 @@ export default function Settings() {
       toast({ title: "Error", description: msg, variant: "destructive" });
     } finally {
       setResetSending(false);
+    }
+  };
+
+  const sendChangeEmail = async () => {
+    const targetEmail = newEmail.trim().toLowerCase();
+    if (!targetEmail || !user?.email || changeEmailSending) return;
+    if (targetEmail === user.email.toLowerCase()) {
+      toast({ title: t.settingsPage.changeEmailSameAddress, variant: "destructive" });
+      return;
+    }
+    setChangeEmailSending(true);
+    try {
+      const { error } = await changeEmail(targetEmail);
+      if (error) throw error;
+      toast({ title: t.settingsPage.changeEmailLinkSent });
+      setNewEmail("");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to send change email link";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setChangeEmailSending(false);
     }
   };
 
@@ -410,6 +433,38 @@ export default function Settings() {
                 {resetSending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <KeyRound className="w-4 h-4 mr-1" />}
                 {t.settingsPage.sendResetLink}
               </Button>
+            </div>
+
+            {/* Change email */}
+            <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <User className="w-4.5 h-4.5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="font-display font-bold text-foreground">{t.settingsPage.changeEmail}</h2>
+                  <p className="text-[11px] text-muted-foreground">{t.settingsPage.changeEmailDesc}</p>
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-[1fr_auto] items-end">
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">{t.settingsPage.newEmailAddress}</div>
+                  <Input
+                    type="email"
+                    value={newEmail}
+                    onChange={(event) => setNewEmail(event.target.value)}
+                    placeholder="you@example.com"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={sendChangeEmail}
+                  disabled={changeEmailSending || !newEmail.trim()}
+                >
+                  {changeEmailSending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Mail className="w-4 h-4 mr-1" />}
+                  {t.settingsPage.sendChangeEmailLink}
+                </Button>
+              </div>
             </div>
 
             {/* Sign out */}

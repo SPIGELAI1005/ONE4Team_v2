@@ -125,6 +125,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [magicLinkSending, setMagicLinkSending] = useState(false);
   const [resending, setResending] = useState(false);
   const [resendingFromLogin, setResendingFromLogin] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -132,6 +133,7 @@ const Auth = () => {
   const [deliveryHint, setDeliveryHint] = useState("");
   const [step, setStep] = useState<RegistrationStep>(1);
   const [track, setTrack] = useState<RegistrationTrack>("club_admin");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showFastPassword, setShowFastPassword] = useState(false);
@@ -177,7 +179,7 @@ const Auth = () => {
     acceptPrivacy: false,
   });
 
-  const { signIn, signUp, resendConfirmation } = useAuth();
+  const { user, signIn, signInWithMagicLink, signUp, resendConfirmation } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t, language } = useLanguage();
@@ -187,6 +189,12 @@ const Auth = () => {
     const timeoutId = window.setTimeout(() => setResendCooldown((previous) => previous - 1), 1000);
     return () => window.clearTimeout(timeoutId);
   }, [resendCooldown]);
+
+  useEffect(() => {
+    if (mode === "login" && user) {
+      navigate("/onboarding");
+    }
+  }, [mode, navigate, user]);
 
   const detailedPasswordChecks = useMemo(() => getPasswordChecks(accountForm.password), [accountForm.password]);
   const detailedPasswordScore = useMemo(
@@ -504,6 +512,27 @@ const Auth = () => {
     setResendingFromLogin(false);
   };
 
+  const handleMagicLinkFromLogin = async () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      toast({
+        title: t.auth.emailRequiredForMagicLink,
+        description: t.auth.emailRequiredForMagicLinkDesc,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setMagicLinkSending(true);
+    const { error } = await signInWithMagicLink(trimmedEmail);
+    if (error) {
+      toast({ title: t.auth.loginFailed, description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: t.auth.magicLinkSent, description: t.auth.magicLinkSentDesc });
+    }
+    setMagicLinkSending(false);
+  };
+
   return (
     <div className="min-h-screen bg-background relative">
       <AppHeader title="ONE4Team" subtitle={mode === "login" ? t.common.signIn : t.auth.createAccount} back={false} />
@@ -580,14 +609,21 @@ const Auth = () => {
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
                       <Input
-                        type="password"
+                        type={showLoginPassword ? "text" : "password"}
                         placeholder="••••••••"
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
-                        className="pl-9 glass-input rounded-xl text-[13px] h-11"
+                        className="pl-9 pr-10 glass-input rounded-xl text-[13px] h-11"
                         required
                         minLength={6}
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPassword((value) => !value)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      >
+                        {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
                     </div>
                   </div>
 
@@ -598,6 +634,16 @@ const Auth = () => {
                   >
                     {loading ? t.auth.pleaseWait : t.common.signIn}
                     <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleMagicLinkFromLogin}
+                    disabled={magicLinkSending}
+                    className="w-full"
+                  >
+                    {magicLinkSending ? t.auth.pleaseWait : t.auth.sendMagicLink}
                   </Button>
 
                   <Button
