@@ -1,20 +1,10 @@
-import { createContext, useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { en, de } from "@/i18n";
 import type { Translations, Language } from "@/i18n";
+import { LanguageContext } from "@/contexts/language-context";
 
-interface LanguageContextValue {
-  language: Language;
-  setLanguage: (lang: Language) => void;
-  toggleLanguage: () => void;
-  t: Translations;
-}
-
-export const LanguageContext = createContext<LanguageContextValue>({
-  language: "en",
-  setLanguage: () => {},
-  toggleLanguage: () => {},
-  t: en,
-});
+// Backward-compatible named export for legacy imports.
+export { LanguageContext };
 
 const STORAGE_KEY = "one4team.language";
 

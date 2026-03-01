@@ -1,5 +1,5 @@
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import {
   Check, X as XIcon, ArrowRight, Sparkles, Crown, Rocket, Shield, Star,
   Users, Calendar, Trophy, CreditCard, MessageSquare, Bot, BarChart3,
@@ -73,7 +73,7 @@ const comparisonGrid: { kickoff: boolean; squad: boolean; pro: boolean; champion
 /* ─── Promo Banner ─── */
 function PromoBanner() {
   const { t } = useLanguage();
-  const deadline = new Date("2026-03-14T23:59:59").getTime();
+  const deadline = useMemo(() => new Date("2026-03-14T23:59:59").getTime(), []);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
@@ -90,7 +90,7 @@ function PromoBanner() {
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [deadline]);
 
   const pad = (n: number) => String(n).padStart(2, "0");
 

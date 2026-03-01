@@ -16,6 +16,17 @@ Recommended apply order (fresh project):
 Then run smoke scripts in:
 - `PHASE0_INDEX.md`, `PHASE1_INDEX.md`, `PHASE2_INDEX.md`, …
 
+## Incremental migrations to apply (current project)
+Apply these in the same Supabase project used by your app environment:
+1) `supabase/migrations/20260301152000_add_chat_bridge_connectors_and_events.sql`
+2) `supabase/migrations/20260301164000_ensure_messages_table_exists.sql`
+3) `supabase/migrations/20260301173500_add_message_attachments_and_storage.sql`
+4) `supabase/migrations/20260301181500_ensure_announcements_table_exists.sql`
+
+Why this is critical now:
+- `/communication` depends on `public.messages`, `public.announcements`, bridge connector/event tables, and attachment storage policies.
+- Missing any of the above in the active environment causes schema-cache/runtime errors.
+
 ## Phase 7 items (need Supabase / infra)
 - Staging + prod Supabase projects
 - Vercel Preview → staging env vars; Production → prod env vars

@@ -60,10 +60,19 @@ npm run build:report # Bundle size report
 ## Project documentation
 - `CHANGELOG.md` — detailed change log
 - `PROJECT_STATUS.md` — current project state
-- `ROADMAP.md` — development roadmap (Phase 0–10 + v2)
+- `ROADMAP.md` — development roadmap (Phase 0–12 + v2)
 - `TASKS.md` — execution queue with task status
 - `DEPLOYMENT.md` — Vercel deployment guide
 - `HOLD.md` — items blocked on Supabase/infra
+
+## Current Release Snapshot
+Go-live readiness checklist:
+
+- [ ] **DB ready:** baseline bundles + incremental communication migrations applied (`20260301152000`, `20260301164000`, `20260301173500`, `20260301181500`).
+- [ ] **Env vars correct:** `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` match the intended Supabase project per environment.
+- [ ] **Smoke tests pass:** auth, onboarding/invites, members flow, settings save, club-page admin save, public club preview.
+- [ ] **Communication verified:** announcements, chat send/retry, attachments, connector save/list, and no schema-cache missing-table errors.
+- [ ] **Quality gates green:** `npm run lint`, `npm test`, `npm run build` pass for the release branch.
 
 ## Notes
 - Do **not** commit `.env` (use `.env.example`).

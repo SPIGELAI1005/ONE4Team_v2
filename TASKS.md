@@ -8,6 +8,30 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ## NOW (top priority)
 
+### P12-010 Environment integrity + migration parity
+- [ ] **P12-010a** Apply latest incremental migrations in the active Supabase project:
+  - `20260301152000_add_chat_bridge_connectors_and_events.sql`
+  - `20260301164000_ensure_messages_table_exists.sql`
+  - `20260301173500_add_message_attachments_and_storage.sql`
+  - `20260301181500_ensure_announcements_table_exists.sql`
+- [ ] **P12-010b** Validate `/communication` in target environment for:
+  - announcements channel load
+  - chat send/retry
+  - attachment upload/open
+  - connector save/list health
+- [ ] **P12-010c** Document environment matrix (local/staging/prod) and confirm each uses intended Supabase project + env vars.
+
+### P12-020 Abuse controls + quality gates
+- [ ] **P12-020a** Add invite-request abuse controls/rate limiting (RPC + policy checks).
+- [ ] **P12-020b** Add high-risk tests for invite/onboarding/chat/save paths (unit + integration + Playwright).
+
+### P11 closure (completed in current run)
+- [x] **P11-010a** Communication hub upgraded to channel-first model with reliable send state + retries + date separators.
+- [x] **P11-010b** Connector settings modal + bridge health panel implemented.
+- [x] **P11-010c** Attachments + in-thread search implemented.
+- [x] **P11-010d** EN/DE localization completed for all new communication/bridge UI strings.
+- [x] **P11-010e** Added schema-missing resilience for `messages` + `announcements` tables.
+
 ### P0-001 Project index + execution hygiene
 - [x] **P0-001a** Create `PHASE0_INDEX.md` linking all Phase 0 artifacts (audits, RLS bundles, apply order, rollback, checklists).
 - [x] **P0-001b** Keep `TASKS.md` updated as source-of-truth for what’s next.

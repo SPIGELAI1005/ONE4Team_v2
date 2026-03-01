@@ -159,37 +159,91 @@ export type Database = {
       }
       clubs: {
         Row: {
+          address: string | null
+          cover_image_url: string | null
           created_at: string
+          default_language: string
           description: string | null
+          email: string | null
+          facebook_url: string | null
+          favicon_url: string | null
           id: string
+          instagram_url: string | null
           is_public: boolean
           logo_url: string | null
+          meta_description: string | null
+          meta_title: string | null
           name: string
+          phone: string | null
           primary_color: string | null
+          reference_images: Json
+          season_start_month: number
+          secondary_color: string | null
           slug: string
+          support_color: string | null
+          tertiary_color: string | null
+          timezone: string
+          twitter_url: string | null
           updated_at: string
+          website: string | null
         }
         Insert: {
+          address?: string | null
+          cover_image_url?: string | null
           created_at?: string
+          default_language?: string
           description?: string | null
+          email?: string | null
+          facebook_url?: string | null
+          favicon_url?: string | null
           id?: string
+          instagram_url?: string | null
           is_public?: boolean
           logo_url?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
           name: string
+          phone?: string | null
           primary_color?: string | null
+          reference_images?: Json
+          season_start_month?: number
+          secondary_color?: string | null
           slug: string
+          support_color?: string | null
+          tertiary_color?: string | null
+          timezone?: string
+          twitter_url?: string | null
           updated_at?: string
+          website?: string | null
         }
         Update: {
+          address?: string | null
+          cover_image_url?: string | null
           created_at?: string
+          default_language?: string
           description?: string | null
+          email?: string | null
+          facebook_url?: string | null
+          favicon_url?: string | null
           id?: string
+          instagram_url?: string | null
           is_public?: boolean
           logo_url?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
           name?: string
+          phone?: string | null
           primary_color?: string | null
+          reference_images?: Json
+          season_start_month?: number
+          secondary_color?: string | null
           slug?: string
+          support_color?: string | null
+          tertiary_color?: string | null
+          timezone?: string
+          twitter_url?: string | null
           updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }
@@ -639,6 +693,7 @@ export type Database = {
       }
       messages: {
         Row: {
+          attachments: Json
           club_id: string
           content: string
           created_at: string
@@ -647,6 +702,7 @@ export type Database = {
           team_id: string | null
         }
         Insert: {
+          attachments?: Json
           club_id: string
           content: string
           created_at?: string
@@ -655,6 +711,7 @@ export type Database = {
           team_id?: string | null
         }
         Update: {
+          attachments?: Json
           club_id?: string
           content?: string
           created_at?: string

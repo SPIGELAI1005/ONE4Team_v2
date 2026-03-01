@@ -3,6 +3,45 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-03-01 (Session 4)
+### Communication hub overhaul (channels + bridge foundation)
+- Reworked `Communication` into a channel-first experience with announcements, club general chat, and team chat channels.
+- Added bridge backend skeleton integration path (Supabase Edge Function + connector/event tables) for WhatsApp/Telegram connector lifecycle.
+- Added connector settings modal with provider config fields and a bridge health panel showing processed/failed counters.
+
+### Reliable chat delivery + UX reliability
+- Implemented optimistic send states (`sending`, `failed`) with in-thread retry action.
+- Added date separators in message timeline and improved message rendering consistency.
+- Added robust fallback behavior for schema-missing environments:
+  - `public.messages` missing
+  - `public.announcements` missing
+  - `messages.attachments` column missing
+
+### Attachments + search
+- Added chat attachments upload flow and signed URL rendering in message bubbles.
+- Added `chat-attachments` storage bucket migration + member-scoped storage RLS.
+- Added in-thread message search (content + sender name).
+
+### Members + invites hardening
+- Upgraded member invite modal with professional bulk import flow (Excel/CSV), row-level validation, template download, and issue reporting.
+- Added invite payload persistence (`team`, `age_group`, `position`) and redemption propagation into memberships.
+- Added RPC `lookup_club_member_emails` to detect already-registered members during import.
+
+### Club page branding + storage diagnostics
+- Extended Club Page Admin with richer brand system (secondary/tertiary/support colors, favicon, reference images, uploads).
+- Added live brand preview and preview-mode banner (`?preview=1`) on public club pages.
+- Added in-app storage diagnostics line with live read/write/delete check + last-checked timestamp.
+
+### New safety migrations
+- Added `20260301152000_add_chat_bridge_connectors_and_events.sql`.
+- Added `20260301164000_ensure_messages_table_exists.sql`.
+- Added `20260301173500_add_message_attachments_and_storage.sql`.
+- Added `20260301181500_ensure_announcements_table_exists.sql`.
+
+### i18n completion for communication
+- Added `communicationPage` translations in EN/DE and localized newly introduced chat/bridge strings.
+- Localized provider/status UI labels for connector-related surfaces.
+
 ## 2026-02-14 (Session 3)
 ### Legal pages & compliance
 - **Terms of Service** (`/terms`): 14-section AGB compliant with German law (TMG, BGB, GDPR). Covers scope, service description, registration, user obligations, data protection, intellectual property, availability, subscriptions, liability (Kardinalpflichten), termination, governing law (Munich jurisdiction), dispute resolution (EU ODR), and severability.

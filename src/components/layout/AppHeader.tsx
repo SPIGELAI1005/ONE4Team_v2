@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Home, Users, Trophy, Megaphone, CreditCard, Calendar, Swords, Building2, ClipboardList, Sparkles } from "lucide-react";
+import { Menu, X, Home, Users, Trophy, Megaphone, CreditCard, Calendar, Swords, Building2, ClipboardList, Sparkles, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageToggle } from "@/components/ui/language-toggle";
 import { TestModeBanner } from "@/components/ui/test-mode-banner";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useActiveClub } from "@/hooks/use-active-club";
+import { useAuth } from "@/contexts/useAuth";
+import { useLanguage } from "@/hooks/use-language";
 import logo from "@/assets/one4team-logo.png";
 
 interface NavItem {
@@ -42,8 +44,11 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
   const location = useLocation();
   const perms = usePermissions();
   const { activeClub } = useActiveClub();
+  const { user, signOut } = useAuth();
+  const { t } = useLanguage();
 
   const [open, setOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const activeRole = (typeof window !== "undefined" ? localStorage.getItem("one4team.activeRole") : null) || null;
   const effectiveRole = activeRole || (perms.isAdmin ? "admin" : perms.isTrainer ? "trainer" : "player");
@@ -70,6 +75,18 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
     const base = navItems.filter((i) => (i.gate ? i.gate(perms) : true));
     return [{ label: "Dashboard", to: dashboardTo, icon: Home }, ...base];
   }, [perms, dashboardTo]);
+
+  const handleSignOut = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    try {
+      await signOut();
+      setOpen(false);
+      navigate("/");
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/70 backdrop-blur-2xl">
@@ -111,6 +128,22 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
           {rightSlot}
           <LanguageToggle />
           <ThemeToggle />
+          {user && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSignOut}
+              disabled={isSigningOut}
+              className="h-9 rounded-2xl border-border/60 bg-card/50 backdrop-blur-xl text-muted-foreground hover:text-foreground"
+              aria-label={t.appHeader.signOut}
+              title={t.appHeader.signOut}
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline ml-1.5 text-xs">
+                {isSigningOut ? t.appHeader.signingOut : t.appHeader.signOut}
+              </span>
+            </Button>
+          )}
           <span className="md:hidden text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/15">
             {roleLabel}
           </span>
@@ -225,6 +258,17 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
                 );
               })}
             </div>
+
+            {user && (
+              <button
+                onClick={handleSignOut}
+                disabled={isSigningOut}
+                className="w-full mt-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-2xl text-sm border border-border/60 bg-card/40 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors disabled:opacity-60"
+              >
+                <LogOut className="w-4 h-4" />
+                {isSigningOut ? t.appHeader.signingOut : t.appHeader.signOut}
+              </button>
+            )}
           </div>
         </div>
       )}

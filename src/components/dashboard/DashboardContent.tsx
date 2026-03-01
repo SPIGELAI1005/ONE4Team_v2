@@ -12,6 +12,8 @@ import {
   ArrowUpRight,
   Activity,
   CheckCircle2,
+  Building2,
+  Briefcase,
 } from "lucide-react";
 import AnalyticsWidgets from "@/components/dashboard/AnalyticsWidgets";
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
@@ -43,6 +45,27 @@ type RoleConfig = {
   greeting: string;
   kpis: Kpi[];
 };
+
+type RegistrationTrack = "club_admin" | "partner";
+
+type RegistrationSummary = {
+  registration_track?: RegistrationTrack;
+  club_setup?: {
+    clubName?: string;
+    clubType?: string;
+    country?: string;
+  };
+  partner_setup?: {
+    companyName?: string;
+    partnerType?: string;
+    country?: string;
+  };
+};
+
+function parseRegistrationSummary(raw: unknown): RegistrationSummary | null {
+  if (!raw || typeof raw !== "object") return null;
+  return raw as RegistrationSummary;
+}
 
 const DashboardContent = () => {
   const { role } = useParams();
@@ -228,13 +251,28 @@ const DashboardContent = () => {
     };
 
     void run();
-  }, [activeClubId]);
+  }, [activeClubId, defaultUpcoming]);
 
   const showGettingStarted = useMemo(() => {
     // Keep it simple: if no club or no upcoming, show.
     if (!activeClubId) return true;
     return upcoming.length === 0 || upcoming === defaultUpcoming;
   }, [activeClubId, upcoming, defaultUpcoming]);
+
+  const registrationSummary = useMemo(() => {
+    const fromMetadata = parseRegistrationSummary((user?.user_metadata as Record<string, unknown> | undefined) ?? null);
+    if (fromMetadata?.registration_track) return fromMetadata;
+
+    try {
+      const raw = localStorage.getItem("one4team.registrationSummary");
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as unknown;
+      const summary = parseRegistrationSummary(parsed);
+      return summary?.registration_track ? summary : null;
+    } catch {
+      return null;
+    }
+  }, [user?.user_metadata]);
 
   return (
     <div className="bg-background pb-20 lg:pb-0 scroll-glow">
@@ -277,6 +315,46 @@ const DashboardContent = () => {
               </div>
               <div>
                 4) {t.dashboard.afterSession} <Link className="text-foreground hover:underline" to="/matches">{t.dashboard.matches}</Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {registrationSummary && (
+          <div className="rounded-2xl glass-card p-5 border border-primary/20 bg-primary/5">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center">
+                {registrationSummary.registration_track === "club_admin" ? (
+                  <Building2 className="w-4 h-4" />
+                ) : (
+                  <Briefcase className="w-4 h-4" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <div className="font-display font-semibold text-foreground text-[15px]">
+                  {t.dashboard.registrationSummaryTitle}
+                </div>
+                <p className="text-[12px] text-muted-foreground mt-1">
+                  {t.dashboard.registrationSummaryDesc}
+                </p>
+                <div className="mt-3 text-[12px] text-foreground/85 grid sm:grid-cols-2 gap-1">
+                  {registrationSummary.registration_track === "club_admin" ? (
+                    <>
+                      <span>{t.onboarding.clubName}: {registrationSummary.club_setup?.clubName || "—"}</span>
+                      <span>{t.onboarding.clubType}: {registrationSummary.club_setup?.clubType || "—"}</span>
+                      <span>{t.onboarding.country}: {registrationSummary.club_setup?.country || "—"}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{t.onboarding.companyName}: {registrationSummary.partner_setup?.companyName || "—"}</span>
+                      <span>{t.onboarding.partnerType}: {registrationSummary.partner_setup?.partnerType || "—"}</span>
+                      <span>{t.onboarding.country}: {registrationSummary.partner_setup?.country || "—"}</span>
+                    </>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-3">
+                  {t.onboarding.professionalInfoNotice}
+                </p>
               </div>
             </div>
           </div>

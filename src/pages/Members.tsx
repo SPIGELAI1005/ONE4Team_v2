@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/hooks/use-language";
 import { motion } from "framer-motion";
@@ -7,7 +7,7 @@ import {
   Users, Search, Plus, ArrowLeft,
   Shield, Dumbbell, Crown, UserCheck, Heart, MoreHorizontal,
   Mail, Phone, Calendar, Loader2,
-  Link2, Copy, Check, Inbox, UserPlus, Clock, X
+  Link2, Copy, Check, Inbox, UserPlus, Clock, X, Upload, Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,6 +58,45 @@ type ClubInviteRow = {
 };
 
 const canRevokeInvite = (inv: ClubInviteRow) => !inv.used_at;
+type BulkMemberDraft = {
+  id: string;
+  include: boolean;
+  name: string;
+  email: string;
+  role: string;
+  unknownRole: boolean;
+  team: string;
+  ageGroup: string;
+  position: string;
+};
+
+type ImportSummary = {
+  imported: number;
+  usable: number;
+  invalidEmail: number;
+  duplicateInFile: number;
+  unknownRole: number;
+};
+
+type BulkRowIssue =
+  | "invalid_email"
+  | "duplicate_email"
+  | "already_in_club"
+  | "invite_exists"
+  | "unknown_role";
+
+const SUPPORTED_ROLES = [
+  "admin",
+  "trainer",
+  "player",
+  "staff",
+  "member",
+  "parent",
+  "sponsor",
+  "supplier",
+  "service_provider",
+  "consultant",
+] as const;
 
 const roleIcons: Record<string, React.ElementType> = {
   admin: Crown,
@@ -81,6 +120,12 @@ const roleColors: Record<string, string> = {
   consultant: "bg-cyan-500/10 text-cyan-400",
 };
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
 const Members = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -103,11 +148,45 @@ const Members = () => {
   const [clubName, setClubName] = useState<string | null>(null);
 
   const [showCreateInvite, setShowCreateInvite] = useState(false);
+  const [showAddMembers, setShowAddMembers] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("member");
   const [inviteDays, setInviteDays] = useState("7");
   const [createdInviteToken, setCreatedInviteToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [bulkRows, setBulkRows] = useState<BulkMemberDraft[]>([
+    {
+      id: crypto.randomUUID(),
+      include: true,
+      name: "",
+      email: "",
+      role: "member",
+      unknownRole: false,
+      team: "",
+      ageGroup: "",
+      position: "",
+    },
+  ]);
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [existingMemberEmails, setExistingMemberEmails] = useState<Set<string>>(new Set());
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
+
+  const getBulkIssueLabel = useCallback((issue: BulkRowIssue) => {
+    switch (issue) {
+      case "invalid_email":
+        return t.membersPage.importIssueInvalidEmail;
+      case "duplicate_email":
+        return t.membersPage.importIssueDuplicateInImport;
+      case "already_in_club":
+        return t.membersPage.importIssueAlreadyInClub;
+      case "invite_exists":
+        return t.membersPage.importIssueInviteExists;
+      case "unknown_role":
+        return t.membersPage.importIssueUnknownRoleMapped;
+      default:
+        return issue;
+    }
+  }, [t]);
 
   // Reset page state on club switch to prevent cross-club flashes
   useEffect(() => {
@@ -141,6 +220,211 @@ const Members = () => {
     return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
   };
 
+  const normalizeRole = (value: string) => {
+    const normalized = value.trim().toLowerCase().replace(/\s+/g, "_");
+    const supported = [...SUPPORTED_ROLES];
+    return {
+      role: supported.includes(normalized as (typeof SUPPORTED_ROLES)[number]) ? normalized : "member",
+      unknownRole: normalized.length > 0 && !supported.includes(normalized as (typeof SUPPORTED_ROLES)[number]),
+    };
+  };
+
+  const addDraftRow = () => {
+    setBulkRows((previous) => [
+      ...previous,
+      {
+        id: crypto.randomUUID(),
+        include: true,
+        name: "",
+        email: "",
+        role: "member",
+        unknownRole: false,
+        team: "",
+        ageGroup: "",
+        position: "",
+      },
+    ]);
+  };
+
+  const updateDraftRow = (id: string, key: keyof BulkMemberDraft, value: string | boolean) => {
+    setBulkRows((previous) => previous.map((row) => (row.id === id ? { ...row, [key]: value } : row)));
+  };
+
+  const removeDraftRow = (id: string) => {
+    setBulkRows((previous) => previous.filter((row) => row.id !== id));
+  };
+
+  const handleImportSpreadsheet = async (file: File) => {
+    const isCsv = file.name.toLowerCase().endsWith(".csv");
+    if (isCsv) {
+      const raw = await file.text();
+      const rows = raw
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+      if (rows.length < 2) {
+        toast({ title: t.membersPage.importFailed, description: t.membersPage.importCsvNoDataRows, variant: "destructive" });
+        return;
+      }
+      const headers = rows[0].split(",").map((h) => h.trim().toLowerCase());
+      const dataRows = rows.slice(1).map((line) => line.split(","));
+      const imported = dataRows.map((columns) => {
+        const get = (key: string) => {
+          const index = headers.indexOf(key);
+          return index >= 0 ? (columns[index] ?? "").trim() : "";
+        };
+        const parsedRole = normalizeRole(get("role"));
+        return {
+          id: crypto.randomUUID(),
+          include: true,
+          name: get("name") || get("full_name"),
+          email: get("email"),
+          role: parsedRole.role,
+          unknownRole: parsedRole.unknownRole,
+          team: get("team"),
+          ageGroup: get("age_group"),
+          position: get("position"),
+        } as BulkMemberDraft;
+      });
+
+      const usable = imported.filter((item) => normalizeEmail(item.email));
+      const duplicates = new Set<string>();
+      const seen = new Set<string>();
+      let invalid = 0;
+      let unknownRole = 0;
+      for (const item of usable) {
+        const email = normalizeEmail(item.email);
+        if (!EMAIL_PATTERN.test(email)) invalid += 1;
+        if (item.unknownRole) unknownRole += 1;
+        if (seen.has(email)) duplicates.add(email);
+        seen.add(email);
+      }
+
+      setBulkRows((previous) => [...previous, ...usable]);
+      setImportSummary({
+        imported: imported.length,
+        usable: usable.length,
+        invalidEmail: invalid,
+        duplicateInFile: duplicates.size,
+        unknownRole,
+      });
+      toast({
+        title: t.membersPage.importComplete,
+        description: t.membersPage.importedRowsFromCsv.replace("{count}", String(usable.length)),
+      });
+      return;
+    }
+
+    const xlsx = await import("xlsx");
+    const buffer = await file.arrayBuffer();
+    const workbook = xlsx.read(buffer, { type: "array" });
+    const firstSheetName = workbook.SheetNames[0];
+    const firstSheet = workbook.Sheets[firstSheetName];
+    const records = xlsx.utils.sheet_to_json<Record<string, unknown>>(firstSheet, { defval: "" });
+
+    const imported = records.map((record) => {
+      const get = (...keys: string[]) => {
+        for (const key of keys) {
+          const entry = Object.entries(record).find(([k]) => k.toLowerCase().trim() === key);
+          if (entry) return String(entry[1] ?? "").trim();
+        }
+        return "";
+      };
+      const parsedRole = normalizeRole(get("role"));
+      return {
+        id: crypto.randomUUID(),
+        include: true,
+        name: get("name", "full_name"),
+        email: get("email"),
+        role: parsedRole.role,
+        unknownRole: parsedRole.unknownRole,
+        team: get("team"),
+        ageGroup: get("age_group"),
+        position: get("position"),
+      } as BulkMemberDraft;
+    });
+
+    const usable = imported.filter((row) => row.email);
+    if (!usable.length) {
+      toast({
+        title: t.membersPage.importFailed,
+        description: t.membersPage.importNoValidRows,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const duplicates = new Set<string>();
+    const seen = new Set<string>();
+    let invalid = 0;
+    let unknownRole = 0;
+    for (const item of usable) {
+      const email = normalizeEmail(item.email);
+      if (!EMAIL_PATTERN.test(email)) invalid += 1;
+      if (item.unknownRole) unknownRole += 1;
+      if (seen.has(email)) duplicates.add(email);
+      seen.add(email);
+    }
+
+    setBulkRows((previous) => [...previous, ...usable]);
+    setImportSummary({
+      imported: imported.length,
+      usable: usable.length,
+      invalidEmail: invalid,
+      duplicateInFile: duplicates.size,
+      unknownRole,
+    });
+    toast({
+      title: t.membersPage.importComplete,
+      description: t.membersPage.importedRowsFromSpreadsheet.replace("{count}", String(usable.length)),
+    });
+  };
+
+  const handleDownloadTemplate = () => {
+    const lines = [
+      "name,email,role,team,age_group,position",
+      "Alex Example,alex@example.com,player,U16,U16,Midfield",
+      "Sam Trainer,sam@example.com,trainer,Senior,Adult,Head Coach",
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "one4team-members-import-template.csv");
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const createInviteRecord = async (
+    emailValue: string,
+    roleValue: string,
+    daysValue: string,
+    payload?: { name?: string; team?: string; age_group?: string; position?: string }
+  ) => {
+    if (!clubId) return { ok: false as const, error: t.membersPage.noClubSelected };
+    const token = generateToken();
+    const tokenHash = await hashToken(token);
+    const days = Number(daysValue);
+    const expiresAt = Number.isFinite(days) && days > 0
+      ? new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+
+    const { error } = await supabase
+      .from("club_invites")
+      .insert({
+        club_id: clubId,
+        email: emailValue.trim().toLowerCase() || null,
+        role: roleValue,
+        token_hash: tokenHash,
+        expires_at: expiresAt,
+        invite_payload: payload ?? {},
+      });
+    if (error) return { ok: false as const, error: error.message };
+    return { ok: true as const, token };
+  };
+
   const fetchInvitesData = useCallback(async () => {
     if (!clubId) return;
     setInvitesLoading(true);
@@ -163,27 +447,51 @@ const Members = () => {
     setInviteRequests((reqRes.data as unknown as InviteRequestRow[]) || []);
     setInvites((invRes.data as unknown as ClubInviteRow[]) || []);
     setInvitesLoading(false);
-  }, [clubId, toast, t]);
+  }, [clubId, toast]);
 
   // Fetch members
   useEffect(() => {
     if (!clubId) return;
     const fetchMembers = async () => {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data: membershipData, error: membershipError } = await supabase
         .from("club_memberships")
-        .select("*, profiles!club_memberships_profile_fk(display_name, avatar_url, phone, user_id)")
+        .select("*")
         .eq("club_id", clubId)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        toast({ title: t.membersPage.errorLoadingMembers, description: error.message, variant: "destructive" });
+      if (membershipError) {
+        toast({ title: t.membersPage.errorLoadingMembers, description: membershipError.message, variant: "destructive" });
       } else {
-        setMembers((data as unknown as MemberRow[]) || []);
+        const memberships = (membershipData as unknown as MemberRow[]) || [];
+        const userIds = Array.from(new Set(memberships.map((item) => item.user_id))).filter(Boolean);
+
+        let profileByUserId = new Map<string, MemberRow["profiles"]>();
+        if (userIds.length) {
+          const { data: profileData, error: profileError } = await supabase
+            .from("profiles")
+            .select("display_name, avatar_url, phone, user_id")
+            .in("user_id", userIds);
+
+          if (profileError) {
+            toast({ title: t.membersPage.errorLoadingMembers, description: profileError.message, variant: "destructive" });
+          } else {
+            profileByUserId = new Map(
+              ((profileData as MemberRow["profiles"][]) || []).map((profile) => [profile.user_id, profile])
+            );
+          }
+        }
+
+        setMembers(
+          memberships.map((membership) => ({
+            ...membership,
+            profiles: profileByUserId.get(membership.user_id),
+          }))
+        );
       }
       setLoading(false);
     };
-    fetchMembers();
+    void fetchMembers();
   }, [clubId, toast, t]);
 
   useEffect(() => {
@@ -193,14 +501,105 @@ const Members = () => {
     void fetchInvitesData();
   }, [tab, clubId, perms.isAdmin, fetchInvitesData]);
 
+  useEffect(() => {
+    const run = async () => {
+      if (!showAddMembers || !clubId || !perms.isAdmin) return;
+      const { data } = await supabase
+        .from("club_invites")
+        .select("*")
+        .eq("club_id", clubId)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (data) setInvites(data as unknown as ClubInviteRow[]);
+    };
+    void run();
+  }, [showAddMembers, clubId, perms.isAdmin]);
+
+  useEffect(() => {
+    const run = async () => {
+      if (!showAddMembers || !clubId || !perms.isAdmin) {
+        setExistingMemberEmails(new Set());
+        return;
+      }
+
+      const emails = Array.from(
+        new Set(
+          bulkRows
+            .map((row) => normalizeEmail(row.email))
+            .filter(Boolean)
+        )
+      );
+
+      if (!emails.length) {
+        setExistingMemberEmails(new Set());
+        return;
+      }
+
+      const { data, error } = await supabase.rpc("lookup_club_member_emails", {
+        _club_id: clubId,
+        _emails: emails,
+      });
+
+      if (error) {
+        setExistingMemberEmails(new Set());
+        return;
+      }
+
+      const matched = new Set<string>();
+      for (const row of (data as { email: string; is_member: boolean }[] | null) ?? []) {
+        if (row.is_member && row.email) matched.add(normalizeEmail(row.email));
+      }
+      setExistingMemberEmails(matched);
+    };
+
+    void run();
+  }, [showAddMembers, clubId, perms.isAdmin, bulkRows]);
+
   const filtered = members.filter((m) => {
     const name = (m.profiles?.display_name || "").toLowerCase();
-    const matchSearch = name.includes(search.toLowerCase());
+    const phoneValue = (m.profiles?.phone || "").toLowerCase();
+    const query = search.toLowerCase();
+    const matchSearch = name.includes(query) || phoneValue.includes(query);
     const matchRole = roleFilter === "all" || m.role === roleFilter;
     return matchSearch && matchRole;
   });
 
   const allRoles = ["all", "admin", "trainer", "player", "staff", "member", "parent", "sponsor"];
+  const existingInviteEmails = useMemo(
+    () =>
+      new Set(
+        invites
+          .map((invite) => normalizeEmail(invite.email || ""))
+          .filter(Boolean)
+      ),
+    [invites]
+  );
+
+  const bulkRowIssues = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const row of bulkRows) {
+      const email = normalizeEmail(row.email);
+      if (!email) continue;
+      counts.set(email, (counts.get(email) ?? 0) + 1);
+    }
+
+    const byRowId = new Map<string, BulkRowIssue[]>();
+    for (const row of bulkRows) {
+      const issues: BulkRowIssue[] = [];
+      const email = normalizeEmail(row.email);
+      if (!email) {
+        byRowId.set(row.id, issues);
+        continue;
+      }
+      if (!EMAIL_PATTERN.test(email)) issues.push("invalid_email");
+      if ((counts.get(email) ?? 0) > 1) issues.push("duplicate_email");
+      if (existingMemberEmails.has(email)) issues.push("already_in_club");
+      if (existingInviteEmails.has(email)) issues.push("invite_exists");
+      if (row.unknownRole) issues.push("unknown_role");
+      byRowId.set(row.id, issues);
+    }
+    return byRowId;
+  }, [bulkRows, existingInviteEmails, existingMemberEmails]);
 
   const handleDeleteMember = async (membershipId: string) => {
     if (!perms.isAdmin || !clubId) {
@@ -241,32 +640,65 @@ const Members = () => {
   const handleCreateInvite = async (prefillEmail?: string) => {
     if (!clubId) return;
 
-    const token = generateToken();
-    const tokenHash = await hashToken(token);
-
-    const days = Number(inviteDays);
-    const expiresAt = Number.isFinite(days) && days > 0
-      ? new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
-      : null;
-
-    const { error } = await supabase
-      .from("club_invites")
-      .insert({
-        club_id: clubId,
-        email: (prefillEmail ?? inviteEmail).trim() ? (prefillEmail ?? inviteEmail).trim().toLowerCase() : null,
-        role: inviteRole,
-        token_hash: tokenHash,
-        expires_at: expiresAt,
-      });
-
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+    const response = await createInviteRecord(prefillEmail ?? inviteEmail, inviteRole, inviteDays);
+    if (!response.ok) {
+      toast({ title: "Error", description: response.error, variant: "destructive" });
       return;
     }
 
-    setCreatedInviteToken(token);
+    setCreatedInviteToken(response.token);
     toast({ title: t.membersPage.inviteCreated, description: t.membersPage.inviteCreatedDesc });
     await fetchInvitesData();
+  };
+
+  const handleSubmitBulkInvites = async () => {
+    if (!clubId || bulkSubmitting) return;
+    const selected = bulkRows.filter((row) => {
+      if (!row.include || !normalizeEmail(row.email)) return false;
+      const issues = bulkRowIssues.get(row.id) ?? [];
+      const hasBlockingIssue = issues.some((issue) =>
+        ["invalid_email", "duplicate_email", "already_in_club", "invite_exists"].includes(issue)
+      );
+      return !hasBlockingIssue;
+    });
+    if (!selected.length) {
+      toast({
+        title: t.membersPage.noMembersSelected,
+        description: t.membersPage.selectRowsWithoutBlockingIssues,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setBulkSubmitting(true);
+    let successCount = 0;
+    let failedCount = 0;
+
+    for (const row of selected) {
+      const result = await createInviteRecord(row.email, row.role, inviteDays, {
+        name: row.name || undefined,
+        team: row.team || undefined,
+        age_group: row.ageGroup || undefined,
+        position: row.position || undefined,
+      });
+      if (result.ok) successCount += 1;
+      else failedCount += 1;
+    }
+
+    setBulkSubmitting(false);
+    toast({
+      title: t.membersPage.memberInvitesProcessed,
+      description: t.membersPage.memberInvitesProcessedDesc
+        .replace("{successCount}", String(successCount))
+        .replace("{failedPart}", failedCount ? t.membersPage.memberInvitesFailedPart.replace("{failedCount}", String(failedCount)) : ""),
+      variant: failedCount ? "destructive" : "default",
+    });
+
+    if (successCount > 0) {
+      setShowAddMembers(false);
+      setTab("invites");
+      await fetchInvitesData();
+    }
   };
 
   const handleCopy = async (text: string) => {
@@ -282,7 +714,11 @@ const Members = () => {
         subtitle={tab === "members" ? t.membersPage.roster : (clubName ? `${clubName} · ${t.membersPage.invites}` : t.membersPage.invites)}
         rightSlot={
           tab === "members" ? (
-            <Button size="sm" className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110">
+            <Button
+              size="sm"
+              className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
+              onClick={() => setShowAddMembers(true)}
+            >
               <Plus className="w-4 h-4 mr-1" /> {t.membersPage.addMember}
             </Button>
           ) : (
@@ -757,6 +1193,200 @@ const Members = () => {
           </>
         )}
       </div>
+
+      {showAddMembers && (
+        <div
+          className="fixed inset-0 z-50 bg-background/45 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setShowAddMembers(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98, y: 6 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="w-full max-w-5xl rounded-3xl border border-border/60 bg-card/65 backdrop-blur-2xl p-6 shadow-[0_24px_60px_rgba(0,0,0,0.22)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-display font-bold text-foreground tracking-tight text-lg">{t.membersPage.addMembersProfessionally}</h3>
+                <p className="text-xs text-muted-foreground">
+                  {t.membersPage.addMemberDesc}
+                </p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowAddMembers(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 mb-4">
+              <Button variant="outline" onClick={addDraftRow}>
+                <Plus className="w-4 h-4 mr-1.5" /> {t.membersPage.addDraftRow}
+              </Button>
+              <Button variant="outline" onClick={handleDownloadTemplate}>
+                <Download className="w-4 h-4 mr-1.5" /> {t.membersPage.downloadImportTemplate}
+              </Button>
+              <label className="inline-flex">
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  className="hidden"
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    await handleImportSpreadsheet(file);
+                    event.currentTarget.value = "";
+                  }}
+                />
+                <span className="inline-flex items-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium cursor-pointer hover:bg-accent hover:text-accent-foreground">
+                  <Upload className="w-4 h-4 mr-1.5" /> {t.membersPage.importSpreadsheet}
+                </span>
+              </label>
+              <div className="sm:ml-auto flex items-center gap-2">
+                <div className="text-xs text-muted-foreground">{t.membersPage.inviteValidity}</div>
+                <select
+                  value={inviteDays}
+                  onChange={(event) => setInviteDays(event.target.value)}
+                  className="h-9 rounded-xl border border-border bg-background/60 px-3 text-sm text-foreground"
+                >
+                  <option value="1">{t.membersPage.day1}</option>
+                  <option value="3">{t.membersPage.days3}</option>
+                  <option value="7">{t.membersPage.days7}</option>
+                  <option value="14">{t.membersPage.days14}</option>
+                  <option value="0">{t.membersPage.noExpiryOption}</option>
+                </select>
+              </div>
+            </div>
+
+            {importSummary && (
+              <div className="mb-4 rounded-2xl border border-border/60 bg-background/40 p-3 text-xs">
+                <div className="font-medium text-foreground mb-1">{t.membersPage.importValidationReport}</div>
+                <div className="text-muted-foreground">
+                  {t.membersPage.importValidationReportDesc
+                    .replace("{imported}", String(importSummary.imported))
+                    .replace("{usable}", String(importSummary.usable))
+                    .replace("{invalidEmail}", String(importSummary.invalidEmail))
+                    .replace("{duplicateInFile}", String(importSummary.duplicateInFile))
+                    .replace("{unknownRole}", String(importSummary.unknownRole))}
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-2xl border border-border/60 overflow-hidden max-h-[52vh] overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-background/70 sticky top-0">
+                  <tr className="text-left text-xs text-muted-foreground">
+                    <th className="px-3 py-2 w-10">{t.membersPage.useColumn}</th>
+                    <th className="px-3 py-2">{t.membersPage.nameColumn}</th>
+                    <th className="px-3 py-2">{t.membersPage.emailRequiredColumn}</th>
+                    <th className="px-3 py-2">{t.onboarding.role}</th>
+                    <th className="px-3 py-2">{t.membersPage.teamColumn}</th>
+                    <th className="px-3 py-2">{t.membersPage.ageGroupColumn}</th>
+                    <th className="px-3 py-2">{t.membersPage.positionColumn}</th>
+                    <th className="px-3 py-2">{t.membersPage.validationColumn}</th>
+                    <th className="px-3 py-2 w-10"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bulkRows.map((row) => (
+                    <tr key={row.id} className="border-t border-border/50">
+                      <td className="px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={row.include}
+                          onChange={(event) => updateDraftRow(row.id, "include", event.target.checked)}
+                          className="accent-primary"
+                        />
+                      </td>
+                      <td className="px-2 py-2">
+                        <Input value={row.name} onChange={(event) => updateDraftRow(row.id, "name", event.target.value)} placeholder={t.membersPage.fullNamePlaceholder} />
+                      </td>
+                      <td className="px-2 py-2">
+                        <Input
+                          type="email"
+                          value={row.email}
+                          onChange={(event) => updateDraftRow(row.id, "email", event.target.value)}
+                          placeholder={t.membersPage.memberEmailPlaceholder}
+                        />
+                      </td>
+                      <td className="px-2 py-2">
+                        <select
+                          value={row.role}
+                          onChange={(event) => {
+                            const parsedRole = normalizeRole(event.target.value);
+                            updateDraftRow(row.id, "role", parsedRole.role);
+                            updateDraftRow(row.id, "unknownRole", false);
+                          }}
+                          className="w-full h-10 rounded-xl border border-border bg-background/60 px-3 text-sm text-foreground"
+                        >
+                          <option value="member">{t.onboarding.member}</option>
+                          <option value="player">{t.onboarding.player}</option>
+                          <option value="trainer">{t.onboarding.trainer}</option>
+                          <option value="staff">{t.onboarding.teamStaff}</option>
+                          <option value="parent">{t.onboarding.parentSupporter}</option>
+                          <option value="sponsor">{t.onboarding.sponsor}</option>
+                          <option value="supplier">{t.onboarding.supplier}</option>
+                          <option value="service_provider">{t.onboarding.serviceProvider}</option>
+                          <option value="consultant">{t.onboarding.consultant}</option>
+                          <option value="admin">{t.onboarding.clubAdmin}</option>
+                        </select>
+                      </td>
+                      <td className="px-2 py-2">
+                        <Input value={row.team} onChange={(event) => updateDraftRow(row.id, "team", event.target.value)} placeholder={t.membersPage.teamPlaceholder} />
+                      </td>
+                      <td className="px-2 py-2">
+                        <Input value={row.ageGroup} onChange={(event) => updateDraftRow(row.id, "ageGroup", event.target.value)} placeholder={t.membersPage.ageGroupPlaceholder} />
+                      </td>
+                      <td className="px-2 py-2">
+                        <Input value={row.position} onChange={(event) => updateDraftRow(row.id, "position", event.target.value)} placeholder={t.membersPage.positionPlaceholder} />
+                      </td>
+                      <td className="px-2 py-2">
+                        <div className="flex flex-wrap gap-1">
+                          {(bulkRowIssues.get(row.id) ?? []).length === 0 ? (
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
+                              {t.membersPage.ready}
+                            </span>
+                          ) : (
+                            (bulkRowIssues.get(row.id) ?? []).map((issue) => (
+                              <span
+                                key={`${row.id}-${issue}`}
+                                className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                                  issue === "unknown_role"
+                                    ? "bg-amber-500/10 text-amber-500"
+                                    : "bg-accent/10 text-accent"
+                                }`}
+                              >
+                                {getBulkIssueLabel(issue)}
+                              </span>
+                            ))
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-2 py-2">
+                        <Button variant="ghost" size="icon" onClick={() => removeDraftRow(row.id)} disabled={bulkRows.length <= 1}>
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <div className="text-xs text-muted-foreground">
+                {t.membersPage.tipExcelCsvColumns} <code>email</code>, <code>name</code>, <code>role</code>, <code>team</code>, <code>age_group</code>, <code>position</code>.
+              </div>
+              <Button
+                className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
+                onClick={handleSubmitBulkInvites}
+                disabled={bulkSubmitting}
+              >
+                {bulkSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <UserPlus className="w-4 h-4 mr-1.5" />}
+                {t.membersPage.createInvitesForSelected}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

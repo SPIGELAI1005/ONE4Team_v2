@@ -216,6 +216,50 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 ---
 
+## Phase 11 — Communication Platform & Club Operations (Week 9–10) ✅
+**Goal:** transform communication and member operations from baseline flows into robust day-to-day workflows.
+
+**Deliverables**
+- EPIC S: Communication platform
+  - Channel-first communication UI (announcements + club/team chats)
+  - Reliable send states with retry UX
+  - Date separators and improved chat readability
+  - Message search and attachment support
+- EPIC T: External bridge foundation
+  - Supabase Edge Function skeleton (`chat-bridge`)
+  - Connector config + events tables
+  - In-app connector settings and bridge health panel
+- EPIC U: Member operations
+  - Bulk member import (Excel/CSV) with validation report
+  - Invite payload enrichment (`team`, `age_group`, `position`) persisted to memberships
+- EPIC V: Club branding and public page polish
+  - Expanded club branding controls + media references
+  - Preview-mode flow + storage diagnostics
+
+**Exit criteria**
+- Communication hub supports reliable send/retry and channel-scoped chat ✅
+- Bridge skeleton is callable and connector lifecycle is manageable in-app ✅
+- Bulk member import handles validation and invite payload mapping ✅
+- Club branding changes flow through admin and public club page ✅
+
+---
+
+## Phase 12 — Environment Integrity & Production Rollout (Week 10–11) ⏳
+**Goal:** eliminate schema/environment drift and harden production operations.
+
+**Deliverables**
+- Apply-order enforcement for bundles + incremental migrations
+- Staging/prod Supabase separation + Vercel env alignment
+- Abuse controls/rate limiting for invite requests
+- Expanded high-risk automated tests (invite/onboarding/chat/save flows)
+
+**Exit criteria**
+- No schema-cache missing-table incidents in active environments
+- Staging and production are reproducible and isolated
+- Abuse controls and regression tests are active in CI
+
+---
+
 ## v2 Roadmap (post-MVP)
 
 ### v2.1 Payments & billing

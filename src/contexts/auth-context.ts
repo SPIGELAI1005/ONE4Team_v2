@@ -5,8 +5,14 @@ export type AuthContextType = {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, displayName: string) => Promise<{ error: Error | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    displayName: string,
+    metadata?: Record<string, unknown>
+  ) => Promise<{ error: Error | null; user: User | null; session: Session | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  resendConfirmation: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 };
 

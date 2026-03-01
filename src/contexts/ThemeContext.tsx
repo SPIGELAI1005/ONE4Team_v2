@@ -1,21 +1,9 @@
-import { createContext, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ThemeContext } from "@/contexts/theme-context";
+import type { Theme, ResolvedTheme } from "@/contexts/theme-context";
 
-type Theme = "light" | "dark" | "system";
-type ResolvedTheme = "light" | "dark";
-
-interface ThemeContextValue {
-  theme: Theme;
-  resolvedTheme: ResolvedTheme;
-  setTheme: (theme: Theme) => void;
-  toggleTheme: () => void;
-}
-
-export const ThemeContext = createContext<ThemeContextValue>({
-  theme: "system",
-  resolvedTheme: "dark",
-  setTheme: () => {},
-  toggleTheme: () => {},
-});
+// Backward-compatible named export for legacy imports.
+export { ThemeContext };
 
 const STORAGE_KEY = "one4team.theme";
 

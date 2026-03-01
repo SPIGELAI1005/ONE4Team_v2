@@ -24,20 +24,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, displayName: string) => {
-    const { error } = await supabase.auth.signUp({
+  const signUp = async (
+    email: string,
+    password: string,
+    displayName: string,
+    metadata?: Record<string, unknown>
+  ) => {
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin,
-        data: { display_name: displayName },
+        emailRedirectTo: `${window.location.origin}/auth`,
+        data: { display_name: displayName, ...(metadata ?? {}) },
       },
     });
-    return { error: error as Error | null };
+    return {
+      error: error as Error | null,
+      user: data.user ?? null,
+      session: data.session ?? null,
+    };
   };
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error: error as Error | null };
+  };
+
+  const resendConfirmation = async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth` },
+    });
     return { error: error as Error | null };
   };
 
@@ -46,7 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, resendConfirmation, signOut }}>
       {children}
     </AuthContext.Provider>
   );

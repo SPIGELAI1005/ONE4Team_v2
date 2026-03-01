@@ -10,6 +10,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useActiveClub } from "@/hooks/use-active-club";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 
@@ -41,8 +42,9 @@ function loadNotifPrefs(): NotifPrefs {
 
 export default function Settings() {
   const { user, signOut } = useAuth();
+  const { activeClubId, loading: activeClubLoading } = useActiveClub();
   const perms = usePermissions();
-  const { t } = useLanguage();
+  const { t, setLanguage } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -59,6 +61,8 @@ export default function Settings() {
   const [defaultLang, setDefaultLang] = useState("en");
   const [timezone, setTimezone] = useState("Europe/Berlin");
   const [seasonStart, setSeasonStart] = useState("8");
+  const [clubLoading, setClubLoading] = useState(true);
+  const [clubSaving, setClubSaving] = useState(false);
 
   // Notifications
   const [notifs, setNotifs] = useState<NotifPrefs>(loadNotifPrefs);
@@ -86,6 +90,37 @@ export default function Settings() {
     };
     fetchProfile();
   }, [user]);
+
+  useEffect(() => {
+    if (!activeClubId) {
+      setClubLoading(false);
+      return;
+    }
+
+    const fetchClubSettings = async () => {
+      setClubLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("clubs")
+          .select("default_language, timezone, season_start_month")
+          .eq("id", activeClubId)
+          .single();
+        if (error) throw error;
+
+        if (data) {
+          setDefaultLang((data.default_language || "en") as string);
+          setTimezone((data.timezone || "Europe/Berlin") as string);
+          setSeasonStart(String(data.season_start_month ?? 8));
+        }
+      } catch {
+        // Fallback values keep screen usable if columns are not migrated yet.
+      } finally {
+        setClubLoading(false);
+      }
+    };
+
+    void fetchClubSettings();
+  }, [activeClubId]);
 
   const saveProfile = async () => {
     if (!user || profileSaving) return;
@@ -129,6 +164,30 @@ export default function Settings() {
       toast({ title: "Error", description: msg, variant: "destructive" });
     } finally {
       setResetSending(false);
+    }
+  };
+
+  const saveClubSettings = async () => {
+    if (!activeClubId || clubSaving) return;
+    setClubSaving(true);
+    try {
+      const { error } = await supabase
+        .from("clubs")
+        .update({
+          default_language: defaultLang,
+          timezone,
+          season_start_month: Number.parseInt(seasonStart, 10),
+        })
+        .eq("id", activeClubId);
+      if (error) throw error;
+
+      if (defaultLang === "en" || defaultLang === "de") setLanguage(defaultLang);
+      toast({ title: t.settingsPage.clubSettingsSaved });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Save failed";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setClubSaving(false);
     }
   };
 
@@ -240,6 +299,14 @@ export default function Settings() {
                 <div className="text-center py-8">
                   <p className="text-sm text-muted-foreground">{t.settingsPage.adminOnly}</p>
                 </div>
+              ) : !activeClubId ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-muted-foreground">{t.clubPageAdmin.noClubDesc}</p>
+                </div>
+              ) : clubLoading || activeClubLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                </div>
               ) : (
                 <div className="grid gap-4">
                   <div>
@@ -284,9 +351,11 @@ export default function Settings() {
                   <div className="flex justify-end pt-2">
                     <Button
                       className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
-                      onClick={() => toast({ title: t.settingsPage.clubSettingsSaved })}
+                      onClick={saveClubSettings}
+                      disabled={clubSaving}
                     >
-                      <Save className="w-4 h-4 mr-1" /> {t.clubPageAdmin.saveChanges}
+                      {clubSaving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />}
+                      {t.clubPageAdmin.saveChanges}
                     </Button>
                   </div>
                 </div>
