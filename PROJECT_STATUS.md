@@ -1,13 +1,14 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-03-01 (Session 4, Europe/Berlin)
+Last updated: 2026-03-05 (Session 5, Europe/Berlin)
 
 ## Summary
-The project is **beyond Phase 10** and now includes a significantly expanded operations layer:
+The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
 - channel-based communication hub with bridge connector foundation (WhatsApp/Telegram),
 - reliable chat send/retry UX, attachments, and search,
 - professional member import/invite workflows (Excel/CSV + validation),
-- enhanced club-page branding studio and public club experience.
+- enhanced club-page branding studio and public club experience,
+- authenticated public club-page join flow with configurable approval/reviewer policy.
 
 The main remaining blockers are still **environment consistency + infrastructure rollout**:
 apply all required Supabase migrations/bundles in the same active project, then complete staging/prod separation and abuse controls.
@@ -15,11 +16,13 @@ apply all required Supabase migrations/bundles in the same active project, then 
 ## Current Release Snapshot
 Go-live readiness checklist (one-screen):
 
-- [ ] **DB bundles/migrations:** Baseline bundles applied and incremental communication migrations applied:
+- [ ] **DB bundles/migrations:** Baseline bundles applied and incremental migrations applied:
   - `20260301152000_add_chat_bridge_connectors_and_events.sql`
   - `20260301164000_ensure_messages_table_exists.sql`
   - `20260301173500_add_message_attachments_and_storage.sql`
   - `20260301181500_ensure_announcements_table_exists.sql`
+  - `20260305193000_member_drafts.sql`
+  - `20260305204500_club_public_join_flow.sql`
 - [ ] **Environment variables:** app points to the intended Supabase project (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`) in each environment (local/staging/prod).
 - [ ] **Core smoke tests:** auth, onboarding/invite, members, settings save, club page admin save, and club public page preview pass.
 - [ ] **Communication checks:** announcements load, chat send/retry works, attachments upload/open works, connector save/list works, no missing-table schema errors.
@@ -126,6 +129,24 @@ Go-live readiness checklist (one-screen):
   - storage diagnostics with last-checked timestamp
   - preview mode support on public club page (`?preview=1`)
 
+### Session 5 execution snapshot (2026-03-05)
+- **Auth/onboarding continuity fixed**:
+  - returning users now resume dashboard context after login,
+  - onboarding is skipped for existing memberships (except invite/forced flows),
+  - role/club local state keys normalized and user-scoped.
+- **Members workflow upgraded**:
+  - save-first member drafts before invite send,
+  - per-member invite send from saved list,
+  - expanded member import workbook output (template + current snapshot).
+- **Public club-page join model expanded**:
+  - manual vs auto join approval per club,
+  - reviewer policy toggle (admin-only vs admin+trainer),
+  - default role/team assignment for incoming members from public club page.
+- **UX/polish delivered**:
+  - Club Page Admin form input focus stability fix,
+  - unauth footer visibility and legal/nav branding improvements,
+  - invite modal copy + design consistency.
+
 ### i18n status (2026-03-01)
 - Full EN/DE localization expanded to include all newly added communication and bridge strings (`communicationPage` keys).
 - Provider/status labels for connector UI are localized consistently.
@@ -145,13 +166,13 @@ See `HOLD.md`. Key items:
 - True end-to-end golden path e2e with real auth + data
 
 ## Recommended next actions
-1) In the active Supabase project, apply missing bundles + incremental migrations listed in `HOLD.md`.
-2) Verify `/communication` end-to-end after apply (announcements, messages, attachments, bridge connectors).
+1) Apply missing migrations in active Supabase project (including Session 5 migrations listed above).
+2) Verify public club join flow in both modes (manual + auto) and both reviewer policies (admin-only + admin+trainer).
 3) Set up staging/prod Supabase + Vercel env separation and validate tenant isolation on staging.
 4) Implement invite-request abuse controls/rate limiting.
 5) Move AI from deterministic local output to server-side model calls with audit trail preservation.
 6) Replace Shop demo/local state with real tables (`products`, `orders`, `categories`).
-7) Expand meaningful unit/integration/E2E coverage for invite, onboarding, chat, and save flows.
+7) Expand meaningful unit/integration/E2E coverage for invite, onboarding, chat, join-approval, and save flows.
 
 ## Repo
 - GitHub: https://github.com/SPIGELAI1005/ONE4Team_v2

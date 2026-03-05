@@ -29,6 +29,9 @@ type Club = {
   phone: string | null;
   email: string | null;
   website: string | null;
+  join_approval_mode: "manual" | "auto";
+  join_default_role: string | null;
+  join_default_team: string | null;
 };
 
 type TeamRowLite = {
@@ -102,7 +105,7 @@ const ClubPage = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from("clubs")
-        .select("id, name, slug, description, is_public, logo_url, cover_image_url, favicon_url, primary_color, secondary_color, tertiary_color, support_color, reference_images, address, phone, email, website")
+        .select("id, name, slug, description, is_public, logo_url, cover_image_url, favicon_url, primary_color, secondary_color, tertiary_color, support_color, reference_images, address, phone, email, website, join_approval_mode, join_default_role, join_default_team")
         .eq("slug", clubSlug)
         .maybeSingle();
       if (error) {
@@ -130,6 +133,9 @@ const ClubPage = () => {
                 phone: (record.phone as string | null) ?? null,
                 email: (record.email as string | null) ?? null,
                 website: (record.website as string | null) ?? null,
+                join_approval_mode: ((record.join_approval_mode as "manual" | "auto") || "manual"),
+                join_default_role: (record.join_default_role as string | null) ?? "member",
+                join_default_team: (record.join_default_team as string | null) ?? null,
               }
             : null
         );
@@ -203,15 +209,27 @@ const ClubPage = () => {
     void run();
   }, [club?.id, t.common.error, toast, user]);
 
+  useEffect(() => {
+    if (!user) return;
+    const displayName = (user.user_metadata?.display_name as string | undefined) || "";
+    if (displayName && !reqName) setReqName(displayName);
+    if (user.email && !reqEmail) setReqEmail(user.email);
+  }, [reqEmail, reqName, user]);
+
   const handleOpenDashboard = () => {
     if (!club?.id) return;
-    localStorage.setItem("one4team.activeClubId", club.id);
+    if (user) localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
     const role = localStorage.getItem("one4team.activeRole") || "player";
     navigate(`/dashboard/${role}`);
   };
 
   const handleSubmitInviteRequest = async () => {
     if (!club) return;
+    if (!user) {
+      toast({ title: t.clubPage.signInRequired, description: t.clubPage.signInBeforeJoin });
+      navigate("/auth");
+      return;
+    }
     if (!canRequestInvite) {
       toast({ title: t.clubPage.inviteRequestsDisabled, description: t.clubPage.notAcceptingRequests });
       return;
@@ -219,16 +237,33 @@ const ClubPage = () => {
     if (!reqName.trim() || !reqEmail.trim()) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase.rpc("request_club_invite", {
+      const { data, error } = await supabase.rpc("register_club_join_request", {
         _club_id: club.id,
         _name: reqName.trim(),
-        _email: reqEmail.trim().toLowerCase(),
         _message: reqMessage.trim() || null,
       });
       if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : null;
+      const outcome = (row?.outcome as string | undefined) || "pending";
+      const role = (row?.role as string | undefined) || "member";
+
+      if (outcome === "joined") {
+        if (user) localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
+        localStorage.setItem("one4team.activeRole", role);
+        toast({ title: t.clubPage.joinApproved, description: t.clubPage.joinApprovedDesc });
+        navigate(`/dashboard/${role}`);
+        return;
+      }
+      if (outcome === "already_member") {
+        if (user) localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
+        toast({ title: t.clubPage.alreadyMember, description: t.clubPage.alreadyMemberDesc });
+        navigate(`/dashboard/${localStorage.getItem("one4team.activeRole") || "player"}`);
+        return;
+      }
+
       toast({ title: t.clubPage.requestSent, description: t.clubPage.requestSentDesc });
       setReqName("");
-      setReqEmail("");
+      setReqEmail(user.email || "");
       setReqMessage("");
       setShowRequestInvite(false);
     } catch (error) {
@@ -372,6 +407,9 @@ const ClubPage = () => {
                   </Button>
                 </div>
                 {!canRequestInvite ? <div className="mt-6 text-xs text-white/70">{t.clubPage.privateClub}</div> : null}
+                {club?.join_approval_mode === "auto" ? (
+                  <div className="mt-2 text-xs text-white/70">{t.clubPage.autoJoinEnabled}</div>
+                ) : null}
               </>
             )}
           </motion.div>

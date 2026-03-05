@@ -3,6 +3,46 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-03-05 (Session 5)
+### Auth + onboarding continuity hardening (SaaS resume behavior)
+- Fixed login return flow so existing users with active memberships land back in dashboard context instead of being forced into onboarding every time.
+- Added onboarding short-circuit for returning users (keeps invite flow and `force=1` override behavior intact).
+- Standardized role persistence (`one4team.activeRole`) and removed legacy role-key drift across dashboard surfaces.
+- Scoped active-club persistence by user (`one4team.activeClubId:{userId}`) to avoid cross-account club bleed on shared browsers.
+
+### Club Page Admin UX + form stability + footer/legal polish
+- Fixed `ClubPageAdmin` input blur/remount behavior by moving inline helper components to module scope.
+- Added unauthenticated fixed footer behavior on auth/public pre-login pages with legal links and branded ONE4Team text styling.
+- Updated auth copy and onboarding progress visuals (step-track adjustments + branded logo marker).
+
+### Members operations upgrade (save-first invite workflow)
+- Added persisted draft-member workflow:
+  - save imported/manual rows first,
+  - invite selected members later (individually) from saved list.
+- Added migration: `20260305193000_member_drafts.sql` (`club_member_drafts` + RLS/policies).
+- Improved import template export to formatted `.xlsx` with:
+  - template sheet,
+  - current-members snapshot sheet,
+  - richer profile-oriented columns.
+- Localized members roles and upload/import helper content in DE/EN.
+
+### Club website onboarding flow (public registration with controlled approval)
+- Added club-level onboarding controls in Club Page Admin:
+  - join mode: manual vs auto approve,
+  - reviewer policy: admin-only vs admin+trainer,
+  - default role/team for new joins.
+- Implemented authenticated club-page join RPC flow:
+  - auto mode: immediate membership activation + dashboard redirect,
+  - manual mode: join request appears for reviewers.
+- Added reviewer-aware approval flow in Members invites tab:
+  - trainers can review if club policy allows,
+  - members tab remains admin-only.
+- Added migration: `20260305204500_club_public_join_flow.sql` (columns, reviewer helper, RLS policies, join/approve RPCs).
+
+### Create Invite modal consistency
+- Updated invite modal subtitle copy to “ONE4Team: simple, clear, fast.”
+- Replaced native selects with app-consistent styled Select components.
+
 ## 2026-03-01 (Session 4)
 ### Communication hub overhaul (channels + bridge foundation)
 - Reworked `Communication` into a channel-first experience with announcements, club general chat, and team chat channels.

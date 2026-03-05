@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, ExternalLink, Globe, Palette, MapPin, Share2, Search as SearchIcon, Save, Eye, EyeOff, Image as ImageIcon, UploadCloud } from "lucide-react";
+import { Loader2, ExternalLink, Globe, Palette, MapPin, Share2, Search as SearchIcon, Save, Eye, EyeOff, Image as ImageIcon, UploadCloud, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveClub } from "@/hooks/use-active-club";
 import { useLanguage } from "@/hooks/use-language";
@@ -32,6 +32,31 @@ interface ClubFormData {
   twitter_url: string;
   meta_title: string;
   meta_description: string;
+  join_approval_mode: "manual" | "auto";
+  join_reviewer_policy: "admin_only" | "admin_trainer";
+  join_default_role: string;
+  join_default_team: string;
+}
+
+interface SectionCardProps {
+  icon: React.ElementType;
+  title: string;
+  children: React.ReactNode;
+}
+
+interface FieldRowProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  type?: string;
+  helper?: string;
+}
+
+interface ColorFieldProps {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
 }
 
 const EMPTY_FORM: ClubFormData = {
@@ -56,7 +81,52 @@ const EMPTY_FORM: ClubFormData = {
   twitter_url: "",
   meta_title: "",
   meta_description: "",
+  join_approval_mode: "manual",
+  join_reviewer_policy: "admin_only",
+  join_default_role: "member",
+  join_default_team: "",
 };
+
+function SectionCard({ icon: Icon, title, children }: SectionCardProps) {
+  return (
+    <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-5">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+          <Icon className="w-4.5 h-4.5 text-primary" />
+        </div>
+        <h2 className="font-display font-bold text-foreground">{title}</h2>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function FieldRow({ label, value, onChange, placeholder, type = "text", helper }: FieldRowProps) {
+  return (
+    <div>
+      <div className="text-xs text-muted-foreground mb-1">{label}</div>
+      <Input type={type} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
+      {helper ? <div className="text-[10px] text-muted-foreground mt-1">{helper}</div> : null}
+    </div>
+  );
+}
+
+function ColorField({ label, value, onChange }: ColorFieldProps) {
+  return (
+    <div>
+      <div className="text-xs text-muted-foreground mb-1">{label}</div>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="w-11 h-10 rounded-xl border border-border/60 cursor-pointer bg-transparent"
+        />
+        <Input value={value} onChange={(event) => onChange(event.target.value)} />
+      </div>
+    </div>
+  );
+}
 
 export default function ClubPageAdmin() {
   const { activeClub, activeClubId, loading: clubLoading } = useActiveClub();
@@ -109,6 +179,10 @@ export default function ClubPageAdmin() {
           twitter_url: (record.twitter_url as string) || "",
           meta_title: (record.meta_title as string) || "",
           meta_description: (record.meta_description as string) || "",
+          join_approval_mode: (record.join_approval_mode as "manual" | "auto") || "manual",
+          join_reviewer_policy: (record.join_reviewer_policy as "admin_only" | "admin_trainer") || "admin_only",
+          join_default_role: (record.join_default_role as string) || "member",
+          join_default_team: (record.join_default_team as string) || "",
         });
       }
     } catch {
@@ -241,6 +315,10 @@ export default function ClubPageAdmin() {
       if (clubColumns.has("tertiary_color")) payload.tertiary_color = form.tertiary_color.trim() || null;
       if (clubColumns.has("support_color")) payload.support_color = form.support_color.trim() || null;
       if (clubColumns.has("reference_images")) payload.reference_images = referenceList;
+      if (clubColumns.has("join_approval_mode")) payload.join_approval_mode = form.join_approval_mode;
+      if (clubColumns.has("join_reviewer_policy")) payload.join_reviewer_policy = form.join_reviewer_policy;
+      if (clubColumns.has("join_default_role")) payload.join_default_role = form.join_default_role || "member";
+      if (clubColumns.has("join_default_team")) payload.join_default_team = form.join_default_team.trim() || null;
 
       const { error } = await supabase.from("clubs").update(payload).eq("id", activeClubId);
       if (error) throw error;
@@ -256,48 +334,6 @@ export default function ClubPageAdmin() {
       setSaving(false);
     }
   };
-
-  const SectionCard = ({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children: React.ReactNode }) => (
-    <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-5">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Icon className="w-4.5 h-4.5 text-primary" />
-        </div>
-        <h2 className="font-display font-bold text-foreground">{title}</h2>
-      </div>
-      {children}
-    </div>
-  );
-
-  const FieldRow = ({ label, value, onChange, placeholder, type = "text", helper }: {
-    label: string;
-    value: string;
-    onChange: (value: string) => void;
-    placeholder?: string;
-    type?: string;
-    helper?: string;
-  }) => (
-    <div>
-      <div className="text-xs text-muted-foreground mb-1">{label}</div>
-      <Input type={type} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
-      {helper ? <div className="text-[10px] text-muted-foreground mt-1">{helper}</div> : null}
-    </div>
-  );
-
-  const ColorField = ({ label, keyName }: { label: string; keyName: "primary_color" | "secondary_color" | "tertiary_color" | "support_color" }) => (
-    <div>
-      <div className="text-xs text-muted-foreground mb-1">{label}</div>
-      <div className="flex items-center gap-2">
-        <input
-          type="color"
-          value={form[keyName]}
-          onChange={(event) => updateField(keyName, event.target.value)}
-          className="w-11 h-10 rounded-xl border border-border/60 cursor-pointer bg-transparent"
-        />
-        <Input value={form[keyName]} onChange={(event) => updateField(keyName, event.target.value)} />
-      </div>
-    </div>
-  );
 
   if (clubLoading || loading) {
     return (
@@ -448,10 +484,10 @@ export default function ClubPageAdmin() {
         <SectionCard icon={Palette} title={t.clubPageAdmin.branding}>
           <div className="grid gap-4">
             <div className="grid md:grid-cols-2 gap-3">
-              <ColorField label={t.clubPageAdmin.primaryColor} keyName="primary_color" />
-              <ColorField label={t.clubPageAdmin.secondaryColor} keyName="secondary_color" />
-              <ColorField label={t.clubPageAdmin.tertiaryColor} keyName="tertiary_color" />
-              <ColorField label={t.clubPageAdmin.supportColor} keyName="support_color" />
+              <ColorField label={t.clubPageAdmin.primaryColor} value={form.primary_color} onChange={(value) => updateField("primary_color", value)} />
+              <ColorField label={t.clubPageAdmin.secondaryColor} value={form.secondary_color} onChange={(value) => updateField("secondary_color", value)} />
+              <ColorField label={t.clubPageAdmin.tertiaryColor} value={form.tertiary_color} onChange={(value) => updateField("tertiary_color", value)} />
+              <ColorField label={t.clubPageAdmin.supportColor} value={form.support_color} onChange={(value) => updateField("support_color", value)} />
             </div>
           </div>
         </SectionCard>
@@ -555,6 +591,57 @@ export default function ClubPageAdmin() {
             <FieldRow label={t.clubPageAdmin.email} value={form.email} onChange={(value) => updateField("email", value)} placeholder="info@club.de" />
             <div className="sm:col-span-2">
               <FieldRow label={t.clubPageAdmin.website} value={form.website} onChange={(value) => updateField("website", value)} placeholder="https://www.club.de" />
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard icon={Users} title={t.clubPageAdmin.memberOnboarding}>
+          <div className="grid gap-3">
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">{t.clubPageAdmin.joinApprovalMode}</div>
+              <select
+                value={form.join_approval_mode}
+                onChange={(event) => updateField("join_approval_mode", event.target.value as "manual" | "auto")}
+                className="w-full h-10 rounded-xl border border-border/60 bg-background/50 px-3 text-sm text-foreground"
+              >
+                <option value="manual">{t.clubPageAdmin.joinApprovalManual}</option>
+                <option value="auto">{t.clubPageAdmin.joinApprovalAuto}</option>
+              </select>
+              <div className="text-[10px] text-muted-foreground mt-1">{t.clubPageAdmin.joinApprovalModeDesc}</div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">{t.clubPageAdmin.joinReviewerPolicy}</div>
+              <select
+                value={form.join_reviewer_policy}
+                onChange={(event) => updateField("join_reviewer_policy", event.target.value as "admin_only" | "admin_trainer")}
+                className="w-full h-10 rounded-xl border border-border/60 bg-background/50 px-3 text-sm text-foreground"
+              >
+                <option value="admin_only">{t.clubPageAdmin.joinReviewerAdminOnly}</option>
+                <option value="admin_trainer">{t.clubPageAdmin.joinReviewerAdminTrainer}</option>
+              </select>
+              <div className="text-[10px] text-muted-foreground mt-1">{t.clubPageAdmin.joinReviewerPolicyDesc}</div>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">{t.clubPageAdmin.defaultRoleForNewMembers}</div>
+                <select
+                  value={form.join_default_role}
+                  onChange={(event) => updateField("join_default_role", event.target.value)}
+                  className="w-full h-10 rounded-xl border border-border/60 bg-background/50 px-3 text-sm text-foreground"
+                >
+                  <option value="member">{t.onboarding.member}</option>
+                  <option value="player">{t.onboarding.player}</option>
+                  <option value="trainer">{t.onboarding.trainer}</option>
+                  <option value="staff">{t.onboarding.teamStaff}</option>
+                  <option value="parent">{t.onboarding.parentSupporter}</option>
+                </select>
+              </div>
+              <FieldRow
+                label={t.clubPageAdmin.defaultTeamForNewMembers}
+                value={form.join_default_team}
+                onChange={(value) => updateField("join_default_team", value)}
+                placeholder="U16 / Senior"
+              />
             </div>
           </div>
         </SectionCard>

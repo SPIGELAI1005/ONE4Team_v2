@@ -19,9 +19,11 @@ const DashboardSidebar = () => {
   const { t } = useLanguage();
 
   // Persist role: URL param takes priority, then localStorage
-  const role = urlRole || localStorage.getItem("one4team_role") || "admin";
+  const role = urlRole || localStorage.getItem("one4team.activeRole") || localStorage.getItem("one4team_role") || "admin";
   useEffect(() => {
-    if (urlRole) localStorage.setItem("one4team_role", urlRole);
+    if (!urlRole) return;
+    localStorage.setItem("one4team.activeRole", urlRole);
+    localStorage.removeItem("one4team_role");
   }, [urlRole]);
 
   // Derive active section from current pathname

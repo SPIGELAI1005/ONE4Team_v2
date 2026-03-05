@@ -18,12 +18,15 @@ import { isErrorWithMessage } from "@/types/dashboard";
 
 type World = "club" | "partner" | null;
 type Step = "world" | "role" | "create-club" | "redeem-invite";
+const ACTIVE_ROLE_KEY = "one4team.activeRole";
+const ACTIVE_CLUB_KEY_PREFIX = "one4team.activeClubId";
 
 const Onboarding = () => {
   const [searchParams] = useSearchParams();
   const initialWorld = searchParams.get("world") as World;
   const inviteTokenParam = searchParams.get("invite");
   const inviteClubParam = searchParams.get("club");
+  const forceOnboarding = searchParams.get("force") === "1";
 
   const [world, setWorld] = useState<World>(initialWorld);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
@@ -66,6 +69,43 @@ const Onboarding = () => {
       setStep("redeem-invite");
     }
   }, [inviteTokenParam]);
+
+  useEffect(() => {
+    if (inviteTokenParam || forceOnboarding) return;
+    if (!user) return;
+
+    let isActive = true;
+    const redirectReturningUser = async () => {
+      const { data, error } = await supabase
+        .from("club_memberships")
+        .select("club_id, role")
+        .eq("user_id", user.id)
+        .eq("status", "active");
+
+      if (!isActive || error || !data?.length) return;
+
+      const memberships = data as Array<{ club_id: string; role: string }>;
+      const roles = memberships.map((membership) => membership.role);
+      const preferredRole = localStorage.getItem(ACTIVE_ROLE_KEY);
+      const nextRole = preferredRole && roles.includes(preferredRole) ? preferredRole : roles[0] || "player";
+      localStorage.setItem(ACTIVE_ROLE_KEY, nextRole);
+
+      const scopedClubKey = `${ACTIVE_CLUB_KEY_PREFIX}:${user.id}`;
+      const globalClubKey = ACTIVE_CLUB_KEY_PREFIX;
+      const preferredClub = localStorage.getItem(scopedClubKey) ?? localStorage.getItem(globalClubKey);
+      const hasPreferredClub = Boolean(preferredClub && memberships.some((membership) => membership.club_id === preferredClub));
+      const nextClubId = hasPreferredClub ? preferredClub! : memberships[0].club_id;
+      localStorage.setItem(scopedClubKey, nextClubId);
+      localStorage.removeItem(globalClubKey);
+
+      navigate(`/dashboard/${nextRole}`, { replace: true });
+    };
+
+    void redirectReturningUser();
+    return () => {
+      isActive = false;
+    };
+  }, [forceOnboarding, inviteTokenParam, navigate, user]);
 
   useEffect(() => {
     const run = async () => {
@@ -114,6 +154,7 @@ const Onboarding = () => {
 
   const handleContinue = () => {
     if (!selectedRole) return;
+    localStorage.setItem(ACTIVE_ROLE_KEY, selectedRole);
 
     // If admin is selected, show Create Club step
     if (selectedRole === "admin" && user) {
@@ -143,9 +184,8 @@ const Onboarding = () => {
       const role = (row?.role as string | undefined) || "member";
       const clubId = (row?.club_id as string | undefined) || null;
 
-      if (clubId) {
-        localStorage.setItem("one4team.activeClubId", clubId);
-      }
+      localStorage.setItem(ACTIVE_ROLE_KEY, role);
+      if (clubId && user) localStorage.setItem(`${ACTIVE_CLUB_KEY_PREFIX}:${user.id}`, clubId);
 
       // UX polish: show success glass card briefly before routing.
       setRedeemSuccess({ role, clubId });
@@ -181,6 +221,8 @@ const Onboarding = () => {
       });
 
       if (error) throw error;
+      if (clubId && user) localStorage.setItem(`${ACTIVE_CLUB_KEY_PREFIX}:${user.id}`, clubId);
+      localStorage.setItem(ACTIVE_ROLE_KEY, "admin");
 
       toast({ title: t.onboarding.clubCreated, description: `${clubName} ${t.onboarding.clubReadyToGo}` });
       navigate("/dashboard/admin");

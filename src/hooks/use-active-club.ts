@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 
-const LS_KEY = "one4team.activeClubId";
+const CLUB_KEY_PREFIX = "one4team.activeClubId";
 
 export interface ClubOption {
   id: string;
@@ -26,6 +26,8 @@ export function useActiveClub() {
   const [clubs, setClubs] = useState<ClubOption[]>([]);
   const [activeClubId, setActiveClubId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const userClubKey = user ? `${CLUB_KEY_PREFIX}:${user.id}` : null;
 
   useEffect(() => {
     if (!user) {
@@ -65,19 +67,20 @@ export function useActiveClub() {
 
       setClubs(options);
 
-      const stored = localStorage.getItem(LS_KEY);
+      const stored = (userClubKey ? localStorage.getItem(userClubKey) : null) ?? localStorage.getItem(CLUB_KEY_PREFIX);
       const preferred = stored && options.some((c) => c.id === stored) ? stored : null;
       const next = preferred ?? options[0]?.id ?? null;
 
       setActiveClubId(next);
-      if (next) localStorage.setItem(LS_KEY, next);
-      else localStorage.removeItem(LS_KEY);
+      if (next && userClubKey) localStorage.setItem(userClubKey, next);
+      localStorage.removeItem(CLUB_KEY_PREFIX);
+      if (!next && userClubKey) localStorage.removeItem(userClubKey);
 
       setLoading(false);
     };
 
     fetchClubs();
-  }, [user]);
+  }, [user, userClubKey]);
 
   const activeClub = useMemo(
     () => clubs.find((c) => c.id === activeClubId) ?? null,
@@ -85,8 +88,10 @@ export function useActiveClub() {
   );
 
   const setActive = (clubId: string) => {
+    if (!userClubKey) return;
     setActiveClubId(clubId);
-    localStorage.setItem(LS_KEY, clubId);
+    localStorage.setItem(userClubKey, clubId);
+    localStorage.removeItem(CLUB_KEY_PREFIX);
   };
 
   return { clubs, activeClubId, activeClub, setActiveClubId: setActive, loading };

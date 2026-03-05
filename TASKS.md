@@ -14,12 +14,33 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
   - `20260301164000_ensure_messages_table_exists.sql`
   - `20260301173500_add_message_attachments_and_storage.sql`
   - `20260301181500_ensure_announcements_table_exists.sql`
+  - `20260305193000_member_drafts.sql`
+  - `20260305204500_club_public_join_flow.sql`
 - [ ] **P12-010b** Validate `/communication` in target environment for:
   - announcements channel load
   - chat send/retry
   - attachment upload/open
   - connector save/list health
 - [ ] **P12-010c** Document environment matrix (local/staging/prod) and confirm each uses intended Supabase project + env vars.
+
+### P12-030 Public club onboarding rollout validation (Session 5)
+- [ ] **P12-030a** Validate club-page join flow in both modes:
+  - `join_approval_mode=manual` -> request lands in invites inbox
+  - `join_approval_mode=auto` -> user joins directly and lands in dashboard
+- [ ] **P12-030b** Validate reviewer policy:
+  - `join_reviewer_policy=admin_only` -> trainer cannot approve
+  - `join_reviewer_policy=admin_trainer` -> trainer can approve
+- [ ] **P12-030c** Verify default assignment behavior from club page:
+  - `join_default_role` and `join_default_team` propagate to membership.
+
+### P12-040 Members operations stabilization (Session 5)
+- [ ] **P12-040a** Validate `club_member_drafts` workflow end-to-end:
+  - save selected rows,
+  - per-row invite send,
+  - invited/draft status transitions.
+- [ ] **P12-040b** Validate workbook export in real admin usage:
+  - template headers accepted by import parser,
+  - current-members snapshot useful for club operators.
 
 ### P12-020 Abuse controls + quality gates
 - [ ] **P12-020a** Add invite-request abuse controls/rate limiting (RPC + policy checks).

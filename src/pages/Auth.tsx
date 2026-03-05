@@ -32,6 +32,7 @@ import {
 import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import FootballFieldAnimation from "@/components/landing/FootballFieldAnimation";
 import logo from "@/assets/one4team-logo.png";
 
@@ -92,6 +93,9 @@ const FACILITY_OPTIONS = [
   "cafeteria",
   "meeting_rooms",
 ] as const;
+
+const ACTIVE_ROLE_KEY = "one4team.activeRole";
+const ACTIVE_CLUB_KEY_PREFIX = "one4team.activeClubId";
 
 function hasUppercase(value: string) {
   return /[A-Z]/.test(value);
@@ -191,9 +195,47 @@ const Auth = () => {
   }, [resendCooldown]);
 
   useEffect(() => {
-    if (mode === "login" && user) {
-      navigate("/onboarding");
-    }
+    if (mode !== "login" || !user) return;
+
+    let isActive = true;
+    const resolveDestination = async () => {
+      const { data, error } = await supabase
+        .from("club_memberships")
+        .select("club_id, role")
+        .eq("user_id", user.id)
+        .eq("status", "active");
+
+      if (!isActive) return;
+
+      if (error || !data?.length) {
+        navigate("/onboarding", { replace: true });
+        return;
+      }
+
+      const memberships = data as Array<{ club_id: string; role: string }>;
+      const roles = memberships.map((membership) => membership.role);
+      const preferredRole = localStorage.getItem(ACTIVE_ROLE_KEY);
+      const nextRole = preferredRole && roles.includes(preferredRole) ? preferredRole : roles[0] || "player";
+      localStorage.setItem(ACTIVE_ROLE_KEY, nextRole);
+
+      const scopedClubKey = `${ACTIVE_CLUB_KEY_PREFIX}:${user.id}`;
+      const globalClubKey = ACTIVE_CLUB_KEY_PREFIX;
+      const preferredClub =
+        localStorage.getItem(scopedClubKey) ??
+        localStorage.getItem(globalClubKey);
+      const hasPreferredClub = Boolean(preferredClub && memberships.some((membership) => membership.club_id === preferredClub));
+      const nextClubId = hasPreferredClub ? preferredClub! : memberships[0].club_id;
+      localStorage.setItem(scopedClubKey, nextClubId);
+      localStorage.removeItem(globalClubKey);
+
+      navigate(`/dashboard/${nextRole}`, { replace: true });
+    };
+
+    void resolveDestination();
+
+    return () => {
+      isActive = false;
+    };
   }, [mode, navigate, user]);
 
   const detailedPasswordChecks = useMemo(() => getPasswordChecks(accountForm.password), [accountForm.password]);
@@ -475,8 +517,6 @@ const Auth = () => {
           description: isInvalidCredentials ? t.auth.loginFailedUnconfirmedHint : error.message,
           variant: "destructive",
         });
-      } else {
-        navigate("/onboarding");
       }
     } else {
       if (signupPath === "fast_track") {
@@ -932,23 +972,34 @@ const Auth = () => {
 
                   {!verificationEmail && signupPath === "detailed" && (
                     <>
-                      <div className="grid grid-cols-3 gap-2 items-center">
-                        {[1, 2, 3].map((value) => {
+                      <div className="grid grid-cols-[auto,1fr,auto,1fr,auto,1fr,auto] items-center w-full">
+                        {[1, 2, 3, 4].map((value) => {
                           const isComplete = step > value;
                           const isActive = step === value;
+                          const isBrandStep = value === 4;
                           return (
-                            <div key={value} className="flex items-center gap-2">
+                            <div key={value} className="contents">
                               <div
-                                className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold border ${
-                                  isComplete || isActive
-                                    ? "bg-gradient-gold-static text-primary-foreground border-primary/60"
-                                    : "bg-background/40 text-muted-foreground border-border/60"
-                                }`}
+                                className={
+                                  isBrandStep
+                                    ? "w-[1.4rem] h-[1.4rem] flex items-center justify-center justify-self-center"
+                                    : `w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold border ${
+                                        isComplete || isActive
+                                          ? "bg-gradient-gold-static text-primary-foreground border-primary/60"
+                                          : "bg-background/40 text-muted-foreground border-border/60"
+                                      } justify-self-center`
+                                }
                               >
-                                {isComplete ? <Check className="w-3.5 h-3.5" /> : value}
+                                {isBrandStep ? (
+                                  <img src={logo} alt="" className="w-[1.4rem] h-[1.4rem] object-contain" />
+                                ) : isComplete ? (
+                                  <Check className="w-3.5 h-3.5" />
+                                ) : (
+                                  value
+                                )}
                               </div>
-                              {value < 3 && (
-                                <div className={`h-[2px] flex-1 ${step > value ? "bg-primary" : "bg-border/70"}`} />
+                              {value < 4 && (
+                                <div className={`h-[2px] w-full ${step > value ? "bg-primary" : "bg-border/70"}`} />
                               )}
                             </div>
                           );

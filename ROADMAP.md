@@ -249,6 +249,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Deliverables**
 - Apply-order enforcement for bundles + incremental migrations
+- Public club-page join onboarding model (manual/auto + reviewer policy) integrated and migration-backed
+- Save-first member list workflow (draft members before invite send) integrated and migration-backed
 - Staging/prod Supabase separation + Vercel env alignment
 - Abuse controls/rate limiting for invite requests
 - Expanded high-risk automated tests (invite/onboarding/chat/save flows)

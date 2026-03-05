@@ -239,6 +239,33 @@ const AnimatedRoutes = () => {
   );
 };
 
+function AppShell() {
+  const { user } = useAuth();
+  const hasFooter = !user;
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <div className={`flex-1 ${hasFooter ? "pb-12" : ""}`}>
+        <AnimatedRoutes />
+      </div>
+      {hasFooter && (
+        <footer className="fixed bottom-0 left-0 right-0 z-[70] border-t border-border/60 bg-background/90 backdrop-blur-2xl">
+          <div className="container mx-auto px-4 py-2.5 text-[11px] text-muted-foreground flex items-center justify-between gap-4">
+            <span className="font-logo text-[15px] tracking-tight sm:text-sm text-foreground">
+              ONE <span className="text-gradient-gold-animated">4</span> Team
+            </span>
+            <div className="flex items-center gap-4">
+              <a href="/terms" className="hover:text-foreground transition-colors">Terms of Service</a>
+              <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
+              <a href="/impressum" className="hover:text-foreground transition-colors">Legal Notice</a>
+            </div>
+          </div>
+        </footer>
+      )}
+    </div>
+  );
+}
+
 const App = () => (
   <ThemeProvider>
     <LanguageProvider>
@@ -248,17 +275,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <div className="min-h-screen flex flex-col">
-              <div className="flex-1">
-                <AnimatedRoutes />
-              </div>
-              <footer className="border-t border-border/60 bg-background/70 backdrop-blur-2xl">
-                <div className="container mx-auto px-4 py-3 text-[11px] text-muted-foreground flex items-center justify-between">
-                  <span>ONE4Team</span>
-                  <a href="/health" className="hover:text-foreground transition-colors">/health</a>
-                </div>
-              </footer>
-            </div>
+            <AppShell />
             <CookieConsent />
           </AuthProvider>
         </BrowserRouter>
