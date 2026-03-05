@@ -24,6 +24,13 @@ The onboarding/member operations module now additionally expects:
 - Function `public.can_review_club_join_requests(uuid, uuid)`
 - RPC `public.register_club_join_request(uuid, text, text)`
 - RPC `public.approve_club_join_request(uuid)`
+- `public.request_rate_limits` table (abuse-control ledger)
+- Function `public.enforce_request_rate_limit(text, uuid, text, int, interval)`
+- RPC `public.get_club_request_abuse_audit(uuid, int)`
+- `public.abuse_alerts` table (sustained abuse alerts)
+- Function `public.raise_abuse_alert(uuid, text, text, text, int, jsonb)`
+- RPC `public.get_club_abuse_alerts(uuid, text, int)`
+- RPC `public.resolve_club_abuse_alert(uuid, text)`
 - Reviewer policies on `public.club_invites` and `public.club_invite_requests` based on `can_review_club_join_requests(...)`
 
 ## Required incremental migrations (post-baseline)
@@ -34,6 +41,9 @@ Apply these in order when the environment is missing newer communication/member 
 4) `20260301181500_ensure_announcements_table_exists.sql`
 5) `20260305193000_member_drafts.sql`
 6) `20260305204500_club_public_join_flow.sql`
+7) `20260305220000_invite_join_rate_limits.sql`
+8) `20260305224500_abuse_slice2_device_escalation_audit.sql`
+9) `20260305231500_abuse_slice3_gateway_alert_hooks.sql`
 
 ## Environment consistency note
 Most runtime issues reported recently were caused by migration drift (app connected to a Supabase project missing one or more tables/columns/policies/functions).  

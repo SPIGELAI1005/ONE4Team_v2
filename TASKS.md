@@ -16,6 +16,9 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
   - `20260301181500_ensure_announcements_table_exists.sql`
   - `20260305193000_member_drafts.sql`
   - `20260305204500_club_public_join_flow.sql`
+  - `20260305220000_invite_join_rate_limits.sql`
+  - `20260305224500_abuse_slice2_device_escalation_audit.sql`
+  - `20260305231500_abuse_slice3_gateway_alert_hooks.sql`
 - [ ] **P12-010b** Validate `/communication` in target environment for:
   - announcements channel load
   - chat send/retry
@@ -43,7 +46,18 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
   - current-members snapshot useful for club operators.
 
 ### P12-020 Abuse controls + quality gates
-- [ ] **P12-020a** Add invite-request abuse controls/rate limiting (RPC + policy checks).
+- [x] **P12-020a** Add first abuse-control slice for invite/join rate limiting (DB ledger + RPC enforcement + user feedback).
+- [x] **P12-020a.1** Add second abuse-control slice:
+  - IP/device-aware signal from request headers (DB-level),
+  - escalation cooldown path for repeated blocked attempts,
+  - minimal reviewer/admin abuse audit panel in invites flow.
+- [x] **P12-020a.2** Add third abuse-control slice:
+  - gateway heuristics and bot-score signal scoring,
+  - sustained abuse alert hooks with resolve workflow,
+  - reviewer alert visibility in Members invites surface.
+- [ ] **P12-020a.3** Add fourth abuse-control slice:
+  - outbound webhook/notification integration for high-severity alerts,
+  - automated escalation policies per club risk profile.
 - [ ] **P12-020b** Add high-risk tests for invite/onboarding/chat/save paths (unit + integration + Playwright).
 
 ### P11 closure (completed in current run)

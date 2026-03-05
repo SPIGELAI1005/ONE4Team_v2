@@ -268,7 +268,15 @@ const ClubPage = () => {
       setShowRequestInvite(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
-      toast({ title: t.common.error, description: message, variant: "destructive" });
+      if (message.toLowerCase().includes("too many requests")) {
+        toast({
+          title: t.clubPage.rateLimitReachedTitle,
+          description: t.clubPage.rateLimitReachedDesc,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: t.common.error, description: message, variant: "destructive" });
+      }
     } finally {
       setSubmitting(false);
     }

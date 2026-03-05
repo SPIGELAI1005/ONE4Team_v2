@@ -43,6 +43,33 @@ It records notable changes, features, and hardening steps.
 - Updated invite modal subtitle copy to “ONE4Team: simple, clear, fast.”
 - Replaced native selects with app-consistent styled Select components.
 
+### Abuse controls slice (rate limiting)
+- Added migration: `20260305220000_invite_join_rate_limits.sql`.
+- Added centralized request limiter ledger (`request_rate_limits`) and helper `enforce_request_rate_limit(...)`.
+- Enforced rate limits in:
+  - `request_club_invite` (3 requests / 24h per club+email),
+  - `register_club_join_request` (10 requests / hour per club+user).
+- Added user-facing rate-limit feedback on public club page request flow (EN/DE localized).
+
+### Abuse controls slice 2 (device signals + escalation + audit)
+- Added migration: `20260305224500_abuse_slice2_device_escalation_audit.sql`.
+- Upgraded limiter helper to capture request-header signals (IP + user-agent fingerprint/device key) for device-aware throttling.
+- Added escalation cooldown behavior after repeated blocked attempts from the same device in 24h windows.
+- Added reviewer/admin audit RPC `get_club_request_abuse_audit(...)` for minimal operational visibility.
+- Added lightweight abuse overview panel in Members → Invites with last-24h totals, blocked attempts, unique identifiers/devices, and last attempt time.
+
+### Abuse controls slice 3 (gateway heuristics + alert hooks)
+- Added migration: `20260305231500_abuse_slice3_gateway_alert_hooks.sql`.
+- Added sustained-abuse alert table `abuse_alerts` with reviewer RLS and status lifecycle (`open`/`resolved`).
+- Extended limiter helper with gateway-aware heuristics:
+  - bot-score-aware risk scoring (`x-bot-score` / `cf-bot-score`),
+  - user-agent risk markers,
+  - country/IP signal capture for alert metadata.
+- Added alert hook function `raise_abuse_alert(...)` and reviewer RPCs:
+  - `get_club_abuse_alerts(...)`,
+  - `resolve_club_abuse_alert(...)`.
+- Added active alert panel to Members → Invites with inline resolve action.
+
 ## 2026-03-01 (Session 4)
 ### Communication hub overhaul (channels + bridge foundation)
 - Reworked `Communication` into a channel-first experience with announcements, club general chat, and team chat channels.

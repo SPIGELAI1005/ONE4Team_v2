@@ -26,10 +26,25 @@ Persistent handoff context for future agents so work can continue without re-dis
 - DE/EN localization expanded for updated member and onboarding flows.
 - Public club page registration flow moved to authenticated, policy-aware join requests.
 - Reviewer policy enforcement added to both UI and Supabase access paths.
+- Abuse-control first slice implemented:
+  - request limiter table + helper in Supabase,
+  - rate limits enforced in `request_club_invite` and `register_club_join_request`,
+  - user-facing rate-limit toast added to public club-page flow.
+- Abuse-control second slice implemented:
+  - device-aware signals captured from request headers (IP + user-agent fingerprint),
+  - escalation cooldown path after repeated blocked attempts,
+  - reviewer/admin abuse audit RPC and minimal invites-tab dashboard.
+- Abuse-control third slice implemented:
+  - gateway heuristics (bot-score + user-agent + country/IP signals),
+  - sustained-abuse alert hooks (`abuse_alerts` + `raise_abuse_alert`),
+  - reviewer alert retrieval/resolve RPCs with invites-tab alert queue UI.
 
 ## New Migrations To Apply In Supabase
 1. `20260305193000_member_drafts.sql`
 2. `20260305204500_club_public_join_flow.sql`
+3. `20260305220000_invite_join_rate_limits.sql`
+4. `20260305224500_abuse_slice2_device_escalation_audit.sql`
+5. `20260305231500_abuse_slice3_gateway_alert_hooks.sql`
 
 Also ensure previously listed communication migrations remain applied in the same project:
 - `20260301152000_add_chat_bridge_connectors_and_events.sql`
@@ -53,6 +68,12 @@ Also ensure previously listed communication migrations remain applied in the sam
   - new user without membership lands on onboarding.
 
 ## Suggested Next Implementation Steps
-- Add abuse controls/rate limiting for join/invite requests.
+- Add abuse-control slice 2:
+  - done in current session.
+- Add abuse-control slice 3:
+  - done in current session.
+- Add abuse-control slice 4:
+  - outbound notifications/webhooks for high-severity alerts,
+  - club-level risk tuning and automated escalation policies.
 - Add Playwright coverage for join policy matrix and save-first draft flow.
 - Complete staging/prod Supabase separation and release checklist run.

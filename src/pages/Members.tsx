@@ -7,7 +7,7 @@ import {
   Users, Search, Plus, ArrowLeft,
   Shield, Dumbbell, Crown, UserCheck, Heart, MoreHorizontal,
   Mail, Phone, Calendar, Loader2,
-  Link2, Copy, Check, Inbox, UserPlus, Clock, X, Upload, Download
+  Link2, Copy, Check, Inbox, UserPlus, Clock, X, Upload, Download, AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,6 +102,30 @@ type BulkRowIssue =
   | "invite_exists"
   | "unknown_role";
 
+type AbuseAuditRow = {
+  action: "public_invite_request" | "public_join_request";
+  total_attempts: number;
+  allowed_attempts: number;
+  blocked_attempts: number;
+  unique_identifiers: number;
+  unique_devices: number;
+  last_attempt_at: string | null;
+};
+
+type AbuseAlertRow = {
+  id: string;
+  action: "public_invite_request" | "public_join_request";
+  reason: string;
+  severity: "low" | "medium" | "high";
+  status: "open" | "resolved";
+  blocked_count: number;
+  total_count: number;
+  first_seen_at: string;
+  last_seen_at: string;
+  resolved_at: string | null;
+  resolution_note: string | null;
+};
+
 const SUPPORTED_ROLES = [
   "admin",
   "trainer",
@@ -161,6 +185,11 @@ const Members = () => {
   const [inviteReqFilter, setInviteReqFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
   const [invites, setInvites] = useState<ClubInviteRow[]>([]);
   const [invitesLoading, setInvitesLoading] = useState(false);
+  const [abuseAuditLoading, setAbuseAuditLoading] = useState(false);
+  const [abuseAudit, setAbuseAudit] = useState<AbuseAuditRow[]>([]);
+  const [abuseAlertsLoading, setAbuseAlertsLoading] = useState(false);
+  const [abuseAlerts, setAbuseAlerts] = useState<AbuseAlertRow[]>([]);
+  const [resolvingAlertId, setResolvingAlertId] = useState<string | null>(null);
   const [memberDrafts, setMemberDrafts] = useState<MemberDraftRow[]>([]);
   const [draftsLoading, setDraftsLoading] = useState(false);
   const [draftActionId, setDraftActionId] = useState<string | null>(null);
@@ -730,6 +759,49 @@ const Members = () => {
     setInvitesLoading(false);
   }, [clubId, toast]);
 
+  const fetchAbuseAudit = useCallback(async () => {
+    if (!clubId) return;
+    setAbuseAuditLoading(true);
+    const { data, error } = await supabase.rpc("get_club_request_abuse_audit", { _club_id: clubId, _hours: 24 });
+    if (error) {
+      setAbuseAudit([]);
+      setAbuseAuditLoading(false);
+      return;
+    }
+    setAbuseAudit((data as unknown as AbuseAuditRow[]) || []);
+    setAbuseAuditLoading(false);
+  }, [clubId]);
+
+  const fetchAbuseAlerts = useCallback(async () => {
+    if (!clubId) return;
+    setAbuseAlertsLoading(true);
+    const { data, error } = await supabase.rpc("get_club_abuse_alerts", {
+      _club_id: clubId,
+      _status: "open",
+      _limit: 20,
+    });
+    if (error) {
+      setAbuseAlerts([]);
+      setAbuseAlertsLoading(false);
+      return;
+    }
+    setAbuseAlerts((data as unknown as AbuseAlertRow[]) || []);
+    setAbuseAlertsLoading(false);
+  }, [clubId]);
+
+  const handleResolveAbuseAlert = useCallback(async (alertId: string) => {
+    setResolvingAlertId(alertId);
+    const { error } = await supabase.rpc("resolve_club_abuse_alert", { _alert_id: alertId, _note: null });
+    if (error) {
+      toast({ title: t.common.error, description: error.message, variant: "destructive" });
+      setResolvingAlertId(null);
+      return;
+    }
+    setAbuseAlerts((previous) => previous.filter((entry) => entry.id !== alertId));
+    toast({ title: t.membersPage.abuseAlertResolved });
+    setResolvingAlertId(null);
+  }, [t, toast]);
+
   const canManageMembers = perms.isAdmin;
   const canReviewJoinRequests = perms.isAdmin || (perms.isTrainer && joinReviewerPolicy === "admin_trainer");
   const canAccessMembersPage = perms.isAdmin || perms.isTrainer;
@@ -785,6 +857,26 @@ const Members = () => {
     if (!canAccessMembersPage) return;
     void fetchInvitesData();
   }, [tab, clubId, canAccessMembersPage, fetchInvitesData]);
+
+  useEffect(() => {
+    if (tab !== "invites") return;
+    if (!clubId) return;
+    if (!canReviewJoinRequests) {
+      setAbuseAudit([]);
+      return;
+    }
+    void fetchAbuseAudit();
+  }, [tab, clubId, canReviewJoinRequests, fetchAbuseAudit]);
+
+  useEffect(() => {
+    if (tab !== "invites") return;
+    if (!clubId) return;
+    if (!canReviewJoinRequests) {
+      setAbuseAlerts([]);
+      return;
+    }
+    void fetchAbuseAlerts();
+  }, [tab, clubId, canReviewJoinRequests, fetchAbuseAlerts]);
 
   useEffect(() => {
     if (tab !== "members") return;
@@ -1422,7 +1514,131 @@ const Members = () => {
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                   </div>
                 ) : (
-                  <div className="grid lg:grid-cols-2 gap-6">
+                  <div className="space-y-6">
+                    <div className="rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl p-5 shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <div className="text-sm font-display font-bold text-foreground tracking-tight flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4 text-primary" /> {t.membersPage.abuseAuditTitle}
+                          </div>
+                          <div className="text-xs text-muted-foreground">{t.membersPage.abuseAuditDesc}</div>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => void fetchAbuseAudit()} disabled={abuseAuditLoading}>
+                          {t.common.refresh}
+                        </Button>
+                      </div>
+
+                      {abuseAuditLoading ? (
+                        <div className="flex items-center justify-center py-6">
+                          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                        </div>
+                      ) : abuseAudit.length === 0 ? (
+                        <div className="text-sm text-muted-foreground py-4">{t.membersPage.abuseAuditEmpty}</div>
+                      ) : (
+                        <div className="grid sm:grid-cols-2 gap-3">
+                          {abuseAudit.map((entry) => (
+                            <div key={entry.action} className="rounded-xl border border-border/60 bg-background/40 p-4">
+                              <div className="text-xs font-medium text-foreground">
+                                {entry.action === "public_invite_request"
+                                  ? t.membersPage.abuseAuditInviteAction
+                                  : t.membersPage.abuseAuditJoinAction}
+                              </div>
+                              <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+                                <div className="rounded-lg bg-muted/40 px-2 py-1.5">
+                                  <div className="text-muted-foreground">{t.membersPage.abuseAuditTotal}</div>
+                                  <div className="font-semibold text-foreground">{entry.total_attempts}</div>
+                                </div>
+                                <div className="rounded-lg bg-muted/40 px-2 py-1.5">
+                                  <div className="text-muted-foreground">{t.membersPage.abuseAuditBlocked}</div>
+                                  <div className="font-semibold text-foreground">{entry.blocked_attempts}</div>
+                                </div>
+                                <div className="rounded-lg bg-muted/40 px-2 py-1.5">
+                                  <div className="text-muted-foreground">{t.membersPage.abuseAuditUniqueIds}</div>
+                                  <div className="font-semibold text-foreground">{entry.unique_identifiers}</div>
+                                </div>
+                                <div className="rounded-lg bg-muted/40 px-2 py-1.5">
+                                  <div className="text-muted-foreground">{t.membersPage.abuseAuditDevices}</div>
+                                  <div className="font-semibold text-foreground">{entry.unique_devices}</div>
+                                </div>
+                              </div>
+                              <div className="mt-2 text-[10px] text-muted-foreground">
+                                {t.membersPage.abuseAuditLastAttempt}:{" "}
+                                {entry.last_attempt_at ? new Date(entry.last_attempt_at).toLocaleString() : "-"}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl p-5 shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <div className="text-sm font-display font-bold text-foreground tracking-tight flex items-center gap-2">
+                            <Shield className="w-4 h-4 text-primary" /> {t.membersPage.abuseAlertsTitle}
+                          </div>
+                          <div className="text-xs text-muted-foreground">{t.membersPage.abuseAlertsDesc}</div>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => void fetchAbuseAlerts()} disabled={abuseAlertsLoading}>
+                          {t.common.refresh}
+                        </Button>
+                      </div>
+
+                      {abuseAlertsLoading ? (
+                        <div className="flex items-center justify-center py-6">
+                          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                        </div>
+                      ) : abuseAlerts.length === 0 ? (
+                        <div className="text-sm text-muted-foreground py-4">{t.membersPage.abuseAlertsEmpty}</div>
+                      ) : (
+                        <div className="space-y-3">
+                          {abuseAlerts.map((entry) => (
+                            <div key={entry.id} className="rounded-xl border border-border/60 bg-background/40 p-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <div className="text-xs font-medium text-foreground">
+                                    {entry.action === "public_invite_request"
+                                      ? t.membersPage.abuseAuditInviteAction
+                                      : t.membersPage.abuseAuditJoinAction}
+                                  </div>
+                                  <div className="text-[11px] text-muted-foreground mt-0.5">{entry.reason}</div>
+                                </div>
+                                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                                  entry.severity === "high"
+                                    ? "bg-red-500/15 text-red-300"
+                                    : entry.severity === "medium"
+                                      ? "bg-amber-500/15 text-amber-300"
+                                      : "bg-primary/10 text-primary"
+                                }`}>
+                                  {entry.severity}
+                                </span>
+                              </div>
+                              <div className="mt-2 text-[11px] text-muted-foreground flex flex-wrap items-center gap-3">
+                                <span>{t.membersPage.abuseAlertsBlocked}: {entry.blocked_count}</span>
+                                <span>{t.membersPage.abuseAlertsTotal}: {entry.total_count}</span>
+                                <span>{t.membersPage.abuseAuditLastAttempt}: {new Date(entry.last_seen_at).toLocaleString()}</span>
+                              </div>
+                              <div className="mt-3 flex justify-end">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={resolvingAlertId === entry.id}
+                                  onClick={() => void handleResolveAbuseAlert(entry.id)}
+                                >
+                                  {resolvingAlertId === entry.id ? (
+                                    <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> {t.membersPage.resolvingAlert}</>
+                                  ) : (
+                                    t.membersPage.resolveAlert
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid lg:grid-cols-2 gap-6">
                     {/* Invite requests */}
                     <div className="rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl p-5 shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
                       <div className="flex items-center justify-between mb-4">
@@ -1556,6 +1772,7 @@ const Members = () => {
                           ))}
                         </div>
                       )}
+                    </div>
                     </div>
                   </div>
                 )}
