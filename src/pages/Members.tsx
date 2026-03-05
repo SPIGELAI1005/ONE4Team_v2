@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
+import { trackEvent } from "@/lib/telemetry";
 import logo from "@/assets/one4team-logo.png";
 
 type MemberRow = {
@@ -1027,6 +1028,10 @@ const Members = () => {
 
   const handleCreateInvite = async (prefillEmail?: string) => {
     if (!clubId) return;
+    if (!canReviewJoinRequests) {
+      toast({ title: t.common.notAuthorized, description: t.membersPage.invitesTabRestrictedDesc, variant: "destructive" });
+      return;
+    }
 
     const response = await createInviteRecord(prefillEmail ?? inviteEmail, inviteRole, inviteDays);
     if (!response.ok) {
@@ -1035,6 +1040,11 @@ const Members = () => {
     }
 
     setCreatedInviteToken(response.token);
+    trackEvent("invite_created", {
+      role: inviteRole,
+      hasPrefillEmail: Boolean((prefillEmail ?? inviteEmail).trim()),
+      inviteDays: Number(inviteDays),
+    });
     toast({ title: t.membersPage.inviteCreated, description: t.membersPage.inviteCreatedDesc });
     await fetchInvitesData();
   };
@@ -1054,11 +1064,13 @@ const Members = () => {
     const outcome = (row?.outcome as string | undefined) || "requires_invite";
 
     if (outcome === "joined") {
+      trackEvent("join_request_approved", { outcome: "joined_directly" });
       setInviteRequests((prev) => prev.map((r) => (r.id === request.id ? { ...r, status: "approved" } : r)));
       toast({ title: t.common.approved, description: t.membersPage.requestApprovedAndJoined });
       return;
     }
 
+    trackEvent("join_request_approved", { outcome: "requires_invite" });
     await handleUpdateInviteRequestStatus(request.id, "approved");
     setInviteEmail(request.email);
     setInviteRole("member");
@@ -1204,7 +1216,7 @@ const Members = () => {
             >
               <Plus className="w-4 h-4 mr-1" /> {t.membersPage.addMember}
             </Button>
-          ) : null) : (
+          ) : null) : canReviewJoinRequests ? (
             <Button
               size="sm"
               className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
@@ -1218,7 +1230,7 @@ const Members = () => {
             >
               <UserPlus className="w-4 h-4 mr-1" /> {t.membersPage.createInvite}
             </Button>
-          )
+          ) : null
         }
       />
 

@@ -51,8 +51,13 @@ const queryClient = new QueryClient();
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return <RouteFallback />;
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!user) {
+    const returnTo = `${location.pathname}${location.search}${location.hash}`;
+    const authTarget = `/auth?returnTo=${encodeURIComponent(returnTo)}`;
+    return <Navigate to={authTarget} replace />;
+  }
   return <>{children}</>;
 }
 

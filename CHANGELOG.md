@@ -70,6 +70,16 @@ It records notable changes, features, and hardening steps.
   - `resolve_club_abuse_alert(...)`.
 - Added active alert panel to Members → Invites with inline resolve action.
 
+### Phase 12 rollout package (execution + gates)
+- Added `supabase/PHASE12_VERIFY.sql` to verify required Phase 12 tables/columns/functions/policies in one pass.
+- Added `supabase/APPLY_CHECKLIST_PHASE12.md` with strict apply order and fail-fast rule.
+- Added `ENVIRONMENT_MATRIX.md`, `PHASE12_VALIDATION_MATRIX.md`, and `PHASE12_GO_NO_GO_CHECKLIST.md` to operationalize staging/prod rollout.
+- Added `scripts/audit-phase12.cjs` + `npm run audit:phase12` and wired it into CI.
+- Added continuity hardening and tests:
+  - protected-route redirects preserve `returnTo`,
+  - auth honors sanitized `returnTo` after login,
+  - Playwright suite `e2e/continuity.spec.ts` verifies deep-link continuity.
+
 ## 2026-03-01 (Session 4)
 ### Communication hub overhaul (channels + bridge foundation)
 - Reworked `Communication` into a channel-first experience with announcements, club general chat, and team chat channels.

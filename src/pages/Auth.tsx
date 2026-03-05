@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -34,6 +34,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import FootballFieldAnimation from "@/components/landing/FootballFieldAnimation";
+import { trackEvent } from "@/lib/telemetry";
 import logo from "@/assets/one4team-logo.png";
 
 type RegistrationTrack = "club_admin" | "partner";
@@ -123,6 +124,15 @@ function getPasswordChecks(value: string) {
   };
 }
 
+function sanitizeReturnTo(value: string | null) {
+  const nextPath = (value || "").trim();
+  if (!nextPath) return null;
+  if (!nextPath.startsWith("/")) return null;
+  if (nextPath.startsWith("//")) return null;
+  if (nextPath.startsWith("/auth")) return null;
+  return nextPath;
+}
+
 const Auth = () => {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [signupPath, setSignupPath] = useState<SignupPath>("fast_track");
@@ -185,6 +195,7 @@ const Auth = () => {
 
   const { user, signIn, signInWithMagicLink, signUp, resendConfirmation } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { t, language } = useLanguage();
 
@@ -198,7 +209,13 @@ const Auth = () => {
     if (mode !== "login" || !user) return;
 
     let isActive = true;
+    const requestedReturnTo = sanitizeReturnTo(searchParams.get("returnTo"));
     const resolveDestination = async () => {
+      if (requestedReturnTo) {
+        navigate(requestedReturnTo, { replace: true });
+        return;
+      }
+
       const { data, error } = await supabase
         .from("club_memberships")
         .select("club_id, role")
@@ -236,7 +253,7 @@ const Auth = () => {
     return () => {
       isActive = false;
     };
-  }, [mode, navigate, user]);
+  }, [mode, navigate, searchParams, user]);
 
   const detailedPasswordChecks = useMemo(() => getPasswordChecks(accountForm.password), [accountForm.password]);
   const detailedPasswordScore = useMemo(
@@ -439,6 +456,10 @@ const Auth = () => {
     saveRegistrationSummary(registeredEmail);
     setVerificationEmail(registeredEmail);
     setResendCooldown(30);
+    trackEvent("signup_verification_sent", {
+      registrationTrack: track,
+      registrationPath: signupPath,
+    });
     toast({
       title: t.auth.checkEmail,
       description: t.auth.checkEmailDesc,
@@ -517,7 +538,7 @@ const Auth = () => {
           description: isInvalidCredentials ? t.auth.loginFailedUnconfirmedHint : error.message,
           variant: "destructive",
         });
-      }
+      } else trackEvent("login_success", { hasReturnTo: Boolean(searchParams.get("returnTo")) });
     } else {
       if (signupPath === "fast_track") {
         await registerFastTrack();

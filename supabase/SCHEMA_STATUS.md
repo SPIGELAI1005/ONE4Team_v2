@@ -45,6 +45,10 @@ Apply these in order when the environment is missing newer communication/member 
 8) `20260305224500_abuse_slice2_device_escalation_audit.sql`
 9) `20260305231500_abuse_slice3_gateway_alert_hooks.sql`
 
+## Verification artifact
+- Run `supabase/PHASE12_VERIFY.sql` after applying the migrations above.
+- Treat any `ok = false` row as a rollout blocker.
+
 ## Environment consistency note
 Most runtime issues reported recently were caused by migration drift (app connected to a Supabase project missing one or more tables/columns/policies/functions).  
 When troubleshooting, verify that the frontend environment variables point to the same Supabase project where these migrations were applied.

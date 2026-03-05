@@ -1,6 +1,6 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-03-05
+Last updated: 2026-03-06
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
@@ -38,6 +38,20 @@ Persistent handoff context for future agents so work can continue without re-dis
   - gateway heuristics (bot-score + user-agent + country/IP signals),
   - sustained-abuse alert hooks (`abuse_alerts` + `raise_abuse_alert`),
   - reviewer alert retrieval/resolve RPCs with invites-tab alert queue UI.
+- Phase 12 rollout guardrail package implemented:
+  - `supabase/PHASE12_VERIFY.sql` (single verification block),
+  - `supabase/APPLY_CHECKLIST_PHASE12.md`,
+  - `ENVIRONMENT_MATRIX.md`,
+  - `PHASE12_VALIDATION_MATRIX.md`,
+  - `PHASE12_GO_NO_GO_CHECKLIST.md`.
+- CI/test gate hardening implemented:
+  - `scripts/audit-phase12.cjs` + `npm run audit:phase12`,
+  - CI step for Phase 12 audit,
+  - Playwright continuity suite `e2e/continuity.spec.ts`.
+- Auth continuity hardening implemented:
+  - protected route redirects preserve `returnTo`,
+  - auth consumes sanitized `returnTo`,
+  - club public join request flow preserves return context when redirecting to auth.
 
 ## New Migrations To Apply In Supabase
 1. `20260305193000_member_drafts.sql`
@@ -75,5 +89,5 @@ Also ensure previously listed communication migrations remain applied in the sam
 - Add abuse-control slice 4:
   - outbound notifications/webhooks for high-severity alerts,
   - club-level risk tuning and automated escalation policies.
-- Add Playwright coverage for join policy matrix and save-first draft flow.
+- Expand Playwright coverage for authenticated join policy matrix and save-first draft flow.
 - Complete staging/prod Supabase separation and release checklist run.

@@ -25,6 +25,7 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
   - attachment upload/open
   - connector save/list health
 - [ ] **P12-010c** Document environment matrix (local/staging/prod) and confirm each uses intended Supabase project + env vars.
+- [ ] **P12-010d** Run `supabase/PHASE12_VERIFY.sql` in staging + production and archive results in release notes.
 
 ### P12-030 Public club onboarding rollout validation (Session 5)
 - [ ] **P12-030a** Validate club-page join flow in both modes:
@@ -59,6 +60,8 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
   - outbound webhook/notification integration for high-severity alerts,
   - automated escalation policies per club risk profile.
 - [ ] **P12-020b** Add high-risk tests for invite/onboarding/chat/save paths (unit + integration + Playwright).
+  - Added: continuity E2E (`e2e/continuity.spec.ts`) and CI Phase 12 audits.
+  - Remaining: authenticated join-policy/member-drafts end-to-end tests in staging data.
 
 ### P11 closure (completed in current run)
 - [x] **P11-010a** Communication hub upgraded to channel-first model with reliable send state + retries + date separators.

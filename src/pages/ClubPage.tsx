@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { trackEvent } from "@/lib/telemetry";
 import logo from "@/assets/one4team-logo.png";
 
 type Club = {
@@ -227,7 +228,9 @@ const ClubPage = () => {
     if (!club) return;
     if (!user) {
       toast({ title: t.clubPage.signInRequired, description: t.clubPage.signInBeforeJoin });
-      navigate("/auth");
+      trackEvent("club_join_auth_redirect", { clubSlug: club.slug });
+      const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      navigate(`/auth?returnTo=${encodeURIComponent(returnTo)}`);
       return;
     }
     if (!canRequestInvite) {
@@ -248,6 +251,7 @@ const ClubPage = () => {
       const role = (row?.role as string | undefined) || "member";
 
       if (outcome === "joined") {
+        trackEvent("club_join_outcome", { clubSlug: club.slug, outcome: "joined", role });
         if (user) localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
         localStorage.setItem("one4team.activeRole", role);
         toast({ title: t.clubPage.joinApproved, description: t.clubPage.joinApprovedDesc });
@@ -255,12 +259,14 @@ const ClubPage = () => {
         return;
       }
       if (outcome === "already_member") {
+        trackEvent("club_join_outcome", { clubSlug: club.slug, outcome: "already_member" });
         if (user) localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
         toast({ title: t.clubPage.alreadyMember, description: t.clubPage.alreadyMemberDesc });
         navigate(`/dashboard/${localStorage.getItem("one4team.activeRole") || "player"}`);
         return;
       }
 
+      trackEvent("club_join_outcome", { clubSlug: club.slug, outcome: "pending_review" });
       toast({ title: t.clubPage.requestSent, description: t.clubPage.requestSentDesc });
       setReqName("");
       setReqEmail(user.email || "");
@@ -269,12 +275,14 @@ const ClubPage = () => {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       if (message.toLowerCase().includes("too many requests")) {
+        trackEvent("club_join_outcome", { clubSlug: club.slug, outcome: "rate_limited" });
         toast({
           title: t.clubPage.rateLimitReachedTitle,
           description: t.clubPage.rateLimitReachedDesc,
           variant: "destructive",
         });
       } else {
+        trackEvent("club_join_outcome", { clubSlug: club.slug, outcome: "error" });
         toast({ title: t.common.error, description: message, variant: "destructive" });
       }
     } finally {
