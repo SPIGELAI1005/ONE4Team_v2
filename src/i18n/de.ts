@@ -67,7 +67,7 @@ const de: Translations = {
 
   // ─── Hero Section ───
   hero: {
-    tagline: "Das komplette Betriebssystem für Hobbyvereine.",
+    tagline: "Das komplette Betriebssystem für Sportvereine.",
     subtitle: "Menschen · Teams · Infrastruktur · Partner · Gemeinschaft",
     subtitleLine2: "Alles auf einer KI-gestützten Plattform.",
     watchDemo: "Mehr erfahren",
@@ -118,7 +118,7 @@ const de: Translations = {
 
   // ─── Footer ───
   footer: {
-    copyright: "© 2026 ONE4Team. Das komplette Betriebssystem fur Hobbyvereine.",
+    copyright: "© 2026 ONE4Team. Das komplette Betriebssystem fur Sportvereine.",
     termsOfService: "AGB",
     privacyPolicy: "Datenschutz",
     legalNotice: "Impressum",
@@ -840,12 +840,12 @@ const de: Translations = {
   // ─── About Page ───
   aboutPage: {
     title: "Über uns",
-    heroLine1: "ONE4Team ist das komplette Betriebssystem für Hobbyvereine.",
-    heroLine2: "Wir befähigen Gemeinschaften, sich zu organisieren, zu verbinden und zu gedeihen – durch eine einheitliche,",
+    heroLine1: "ONE4Team ist das komplette Betriebssystem für Sportvereine.",
+    heroLine2: "Wir befähigen Gemeinschaften, sich zu organisieren, zu verbinden und zu gedeihen durch eine einheitliche,",
     heroLine3: "KI-gestützte Plattform.",
     ourMission: "Unsere",
     missionHighlight: "Mission",
-    missionDesc: "Einen Hobbyverein zu leiten sollte bereichernd sein, nicht überwältigend. Dennoch jonglieren die meisten Vereine immer noch mit Tabellen, Chat-Gruppen, Papierformularen und unverbundenen Werkzeugen, nur um den Betrieb aufrechtzuerhalten.",
+    missionDesc: "Einen Sportverein zu leiten sollte bereichernd sein, nicht überwältigend. Dennoch jonglieren die meisten Vereine immer noch mit Tabellen, Chat-Gruppen, Papierformularen und unverbundenen Werkzeugen, nur um den Betrieb aufrechtzuerhalten.",
     theProblem: "Das Problem",
     theProblemDesc: "Vereine verschwenden unzählige Stunden mit Verwaltungsaufgaben. Mitgliederdaten liegen verstreut. Die Kommunikation zwischen Teams bricht zusammen. Zahlungen gehen verloren. Trainern fehlen Einblicke. Partner fühlen sich abgekoppelt.",
     ourSolution: "Unsere Lösung",
@@ -1181,7 +1181,7 @@ const de: Translations = {
     descriptionLine2: "Keine versteckten Gebühren. Keine Überraschungen. Jederzeit kündbar.",
     earlyBird: "Early-Bird-Aktion:",
     earlyBirdOff: "20% RABATT",
-    earlyBirdUntil: "auf alle Pläne bis zum 14. März!",
+    earlyBirdUntil: "auf alle Pläne bis zum 10. April!",
     timeLeft: "verbleibend",
     freeTrial: "Kostenlose Testphase",
     setupFee: "Einrichtungsgebühr",

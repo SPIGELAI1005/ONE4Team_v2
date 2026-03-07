@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-03-06 (Session 6, Europe/Berlin)
+Last updated: 2026-03-05 (Session 7, Europe/Berlin)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -169,6 +169,14 @@ Go-live readiness checklist (one-screen):
   - public join request flow sends unauth users to auth with return context.
 - Added continuity Playwright coverage:
   - `e2e/continuity.spec.ts` validates deep-link context retention.
+
+### Session 7 product copy snapshot (2026-03-05)
+- Pricing promo countdown deadline moved to April 10 (`2026-04-10T23:59:59`) and synchronized with EN/DE banner copy.
+- Live check confirmed promo countdown is rendering and ticking correctly on `/pricing`.
+- German About copy standardized:
+  - hero line updated to "Sportvereine",
+  - all remaining `Hobbyverein`/`Hobbyvereine` instances replaced with `Sportverein`/`Sportvereine`,
+  - dash punctuation removed from the DE hero second line.
 
 ### i18n status (2026-03-01)
 - Full EN/DE localization expanded to include all newly added communication and bridge strings (`communicationPage` keys).

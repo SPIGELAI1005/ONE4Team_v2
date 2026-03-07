@@ -1179,7 +1179,7 @@ const en = {
     descriptionLine2: "No hidden fees. No surprises. Cancel anytime.",
     earlyBird: "Early Bird Special:",
     earlyBirdOff: "20% OFF",
-    earlyBirdUntil: "all plans until March 14th!",
+    earlyBirdUntil: "all plans until April 10th!",
     timeLeft: "left",
     freeTrial: "Free Trial",
     setupFee: "Setup Fee",

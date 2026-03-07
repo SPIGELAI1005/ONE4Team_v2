@@ -1,6 +1,6 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-03-06
+Last updated: 2026-03-05
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
@@ -14,6 +14,10 @@ Persistent handoff context for future agents so work can continue without re-dis
   - manual request approval,
   - auto-join,
   - reviewer policy (admin-only or admin+trainer).
+- Pricing promo banner now targets April 10 with aligned EN/DE copy and verified live countdown behavior on `/pricing`.
+- German brand copy standardization pass completed:
+  - About hero wording now uses `Sportvereine`,
+  - all known `Hobbyverein`/`Hobbyvereine` occurrences were replaced.
 
 ## Session 5 Realized Work (code complete, needs migration parity in target env)
 - `ClubPageAdmin` input remount issue fixed (field typing stable).

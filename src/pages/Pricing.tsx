@@ -73,7 +73,7 @@ const comparisonGrid: { kickoff: boolean; squad: boolean; pro: boolean; champion
 /* ─── Promo Banner ─── */
 function PromoBanner() {
   const { t } = useLanguage();
-  const deadline = useMemo(() => new Date("2026-03-14T23:59:59").getTime(), []);
+  const deadline = useMemo(() => new Date("2026-04-10T23:59:59").getTime(), []);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
@@ -171,7 +171,7 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
       )}
 
       {/* Header — icon + name + description */}
-      <div className="mb-4">
+      <div className="mb-4 min-h-[4.25rem]">
         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-gold-subtle flex items-center justify-center mb-3">
           <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" strokeWidth={1.5} />
         </div>
@@ -185,17 +185,31 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
       {/* Price */}
       <div className="mb-4">
         {isBespoke ? (
-          <div className="text-2xl sm:text-3xl font-display font-bold text-foreground">{t.pricingPage.custom}</div>
+          <>
+            <div className="text-2xl sm:text-3xl font-display font-bold text-foreground">{t.pricingPage.custom}</div>
+            <div className="text-muted-foreground text-[9px] sm:text-[10px] mt-1 leading-snug invisible">
+              EUR 0 base + EUR 0/member/{billing === "yearly" ? "yr" : "mo"}
+            </div>
+            <div className="text-muted-foreground text-[9px] sm:text-[10px] mt-1 leading-snug invisible">
+              (* {memberCount} members)
+            </div>
+          </>
         ) : (
           <>
             <div className="flex items-baseline gap-1 flex-wrap">
               <span className="text-2xl sm:text-3xl font-display font-bold text-foreground">
                 EUR {total < 0 ? "—" : total.toFixed(2)}
               </span>
-              <span className="text-muted-foreground text-[10px] sm:text-xs">/{billing === "yearly" ? "yr" : "mo"}</span>
+              <span className="relative inline-flex items-baseline text-muted-foreground text-[10px] sm:text-xs leading-none">
+                <span className="leading-none">/{billing === "yearly" ? "yr" : "mo"}</span>
+                <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] sm:text-[10px] leading-none">*</span>
+              </span>
             </div>
             <div className="text-muted-foreground text-[9px] sm:text-[10px] mt-1 leading-snug">
               EUR {plan.basePrice[billing]} base + EUR {plan.memberPrice[billing]}/member/{billing === "yearly" ? "yr" : "mo"}
+            </div>
+            <div className="text-muted-foreground text-[9px] sm:text-[10px] mt-1 leading-snug">
+              (* {memberCount} members)
             </div>
             {discount && (
               <div className="text-primary text-[9px] sm:text-[10px] font-medium mt-0.5">
@@ -242,12 +256,19 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
 /* ─── Price Calculator ─── */
 function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
   const { t } = useLanguage();
+  const minMembers = 1;
   const [selectedPlan, setSelectedPlan] = useState<string>("squad");
   const [members, setMembers] = useState(100);
   const [billing, setBilling] = useState<"yearly" | "monthly">("yearly");
+  const sliderMaxMembers = useMemo(() => Math.max(10000, members), [members]);
 
   const plan = plans.find((p) => p.id === selectedPlan)!;
   const { total, base, memberCost, discount, discountPct } = calculatePrice(plan, members, billing);
+
+  const normalizeMembers = useCallback((value: number) => {
+    if (Number.isNaN(value)) return members;
+    return Math.max(minMembers, Math.floor(value));
+  }, [members, minMembers]);
 
   return (
     <div className="glass-card rounded-2xl p-6 sm:p-8 max-w-2xl mx-auto">
@@ -285,20 +306,33 @@ function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
       <div className="mb-5">
         <div className="flex justify-between items-center mb-2">
           <label className="text-xs sm:text-sm font-medium text-foreground">{t.pricingPage.numberOfMembers}</label>
-          <span className="text-sm sm:text-base font-display font-bold text-foreground">{members.toLocaleString()}</span>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              step={1}
+              value={members}
+              onChange={(event) => {
+                const parsed = Number(event.target.value);
+                if (Number.isNaN(parsed)) return;
+                setMembers(normalizeMembers(parsed));
+              }}
+              className="w-24 h-8 rounded-lg border border-border bg-background/60 px-2 text-right text-xs sm:text-sm font-semibold text-foreground"
+              aria-label={t.pricingPage.numberOfMembers}
+            />
+          </div>
         </div>
         <input
           type="range"
-          min={10}
-          max={10000}
+          min={minMembers}
+          max={sliderMaxMembers}
           step={10}
           value={members}
-          onChange={(e) => setMembers(Number(e.target.value))}
+          onChange={(e) => setMembers(normalizeMembers(Number(e.target.value)))}
           className="w-full accent-primary h-2 rounded-full appearance-none bg-muted cursor-pointer"
         />
         <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-          <span>10</span>
-          <span>10,000</span>
+          <span>{minMembers}</span>
+          <span>{sliderMaxMembers.toLocaleString()}</span>
         </div>
       </div>
 

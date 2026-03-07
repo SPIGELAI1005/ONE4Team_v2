@@ -3,6 +3,19 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-03-05 (Session 7)
+### Pricing promo countdown + copy alignment
+- Updated pricing promo countdown deadline to `2026-04-10T23:59:59` in `src/pages/Pricing.tsx`.
+- Updated promo banner copy in EN and DE translations:
+  - EN: "🔥 Early Bird Special: 20% OFF all plans until April 10th!"
+  - DE: "... bis zum 10. April!"
+- Live-verified `/pricing` countdown rendering and second-by-second ticking behavior at `http://localhost:8081/pricing`.
+
+### About page DE wording standardization
+- Updated German About hero copy from "Hobbyvereine" to "Sportvereine".
+- Removed dash punctuation in the DE hero second line for cleaner sentence flow.
+- Replaced all remaining `Hobbyverein`/`Hobbyvereine` occurrences with `Sportverein`/`Sportvereine` in German translations.
+
 ## 2026-03-05 (Session 5)
 ### Auth + onboarding continuity hardening (SaaS resume behavior)
 - Fixed login return flow so existing users with active memberships land back in dashboard context instead of being forced into onboarding every time.
