@@ -16,7 +16,32 @@ export function TestModeBanner() {
   };
 
   const handleReport = () => {
-    window.open("mailto:support@one4team.app?subject=Bug%20Report%20-%20ONE4Team%20Beta", "_blank");
+    const subject = "Issue Report for ONE4Team";
+    const body = [
+      "Hello ONE4Team Team,",
+      "",
+      "I would like to report an issue I encountered while using ONE4Team.",
+      "",
+      "Issue details:",
+      "- What happened:",
+      "- Expected behavior:",
+      "- Steps to reproduce:",
+      "- Page/feature:",
+      "",
+      "Recommendation for improvement:",
+      "-",
+      "",
+      "Additional context:",
+      "- Browser/device:",
+      "- Time observed:",
+      "",
+      "Thank you,",
+      "",
+    ].join("\n");
+
+    const mailtoUrl = `mailto:spigelai@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    // Use same-tab navigation so mailto is handled reliably by the OS/browser.
+    window.location.href = mailtoUrl;
   };
 
   return (

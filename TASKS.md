@@ -149,9 +149,18 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **P7-010d** Add deployment docs (`DEPLOYMENT.md`) and `PHASE7_INDEX.md`.
 
 ### P7-020 Production hardening (HOLD — needs Supabase)
-- [ ] **P7-020a** Add invite-request rate limits / spam controls.
+- [x] **P7-020a** Add invite-request rate limits / spam controls.
 - [ ] **P7-020b** Staging + prod Supabase projects and env separation.
 - [ ] **P7-020c** Tenant isolation verification on staging.
+
+### V2 execution waves (implemented in repo; rollout depends on migrations/env)
+- [x] **V2-020a** Abuse controls slice 4 schema + policy automation + notification queue migration added.
+- [x] **V2-030a** Billing subscription schema and pricing-page plan selection persistence added.
+- [x] **V2-030b** Shop backend schema and live table wiring added (with fallback mode if schema missing).
+- [x] **V2-040a** Partner workflows schema added (contracts, invoices, tasks) and Partners page upgraded with tabs.
+- [x] **V2-050a** Multi-sport abstraction baseline added (`sports.ts` + Teams sport catalog selection).
+- [x] **V2-060a** AI server-first generation path enabled via edge invocation with deterministic fallback.
+- [x] **V2-060b** Automation schema baseline added with manual queue trigger on AI page.
 
 ### P8-010 Internationalization (i18n)
 - [x] **P8-010a** Create `LanguageContext`, `useLanguage` hook, and `LanguageToggle` component.

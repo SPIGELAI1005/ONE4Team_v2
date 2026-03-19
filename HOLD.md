@@ -22,6 +22,10 @@ Apply these in the same Supabase project used by your app environment:
 2) `supabase/migrations/20260301164000_ensure_messages_table_exists.sql`
 3) `supabase/migrations/20260301173500_add_message_attachments_and_storage.sql`
 4) `supabase/migrations/20260301181500_ensure_announcements_table_exists.sql`
+5) `supabase/migrations/20260319190000_abuse_slice4_notifications.sql`
+6) `supabase/migrations/20260319191500_v21_v22_billing_shop.sql`
+7) `supabase/migrations/20260319193000_v23_partner_workflows.sql`
+8) `supabase/migrations/20260319194500_v24_v25_multisport_automation.sql`
 
 Why this is critical now:
 - `/communication` depends on `public.messages`, `public.announcements`, bridge connector/event tables, and attachment storage policies.
@@ -31,7 +35,7 @@ Why this is critical now:
 - Staging + prod Supabase projects
 - Vercel Preview → staging env vars; Production → prod env vars
 - Tenant isolation verification on staging
-- Invite-request spam controls / rate limiting (RPC)
+- Invite-request spam controls / rate limiting (RPC) (implemented locally, pending apply/verify in target env)
 
 ## CLAW-FE blockers (Dashboard)
 - Run: `OPENCLAW_CAFE/claw-fe/supabase/MIGRATIONS_BUNDLE_001_006.sql`

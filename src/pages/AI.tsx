@@ -9,8 +9,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-// v1: deterministic, local stub generator that still logs to ai_requests.
-// Later: swap generator to an Edge Function / server-side model call.
+// Server-first generation path with deterministic fallback if edge function is unavailable.
 
 type ActivityRow = {
   id: string;
@@ -155,7 +154,23 @@ export default function AI() {
       };
 
       let text = "";
-      if (kind === "training_plan") {
+      const serverModel = "edge:co-aimin:v1";
+      let generatedByServer = false;
+
+      const serverPayload = {
+        kind,
+        range: { from: fmtDate(startOfDay(new Date())), to: fmtDate(addDays(startOfDay(new Date()), 7)) },
+        activities: activities.map((a) => ({ id: a.id, type: a.type, title: a.title, starts_at: a.starts_at })),
+        dues_unpaid_count: duesUnpaid,
+      };
+
+      const serverAttempt = await supabase.functions.invoke("co-aimin", { body: { payload: serverPayload } });
+      if (!serverAttempt.error && serverAttempt.data && typeof (serverAttempt.data as { output?: unknown }).output === "string") {
+        text = (serverAttempt.data as { output: string }).output;
+        generatedByServer = true;
+      }
+
+      if (!generatedByServer && kind === "training_plan") {
         const days = Object.keys(upcomingByDay).sort();
         const lines: string[] = [];
         lines.push("CO‑TRAINER v1: Weekly plan (stub)\n");
@@ -176,7 +191,7 @@ export default function AI() {
           }
         }
         text = lines.join("\n");
-      } else {
+      } else if (!generatedByServer) {
         const lines: string[] = [];
         lines.push("CO‑AImin v1: Admin digest (stub)\n");
         lines.push("This is a deterministic digest generated locally; it is still logged to ai_requests.");
@@ -201,7 +216,7 @@ export default function AI() {
         kind,
         input,
         output,
-        model: "stub:v1",
+        model: generatedByServer ? serverModel : "stub:v1",
       });
 
       if (error) throw error;
@@ -214,6 +229,20 @@ export default function AI() {
     } finally {
       setBusy(null);
     }
+  };
+
+  const triggerAutomationDigest = async () => {
+    if (!clubId) return;
+    const { error } = await supabase.rpc("enqueue_automation_run", {
+      _club_id: clubId,
+      _rule_type: "weekly_digest",
+      _payload: { requested_by: user?.id, source: "ai_page_manual_trigger" },
+    });
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Automation queued", description: "Weekly digest run was queued successfully." });
   };
 
   return (
@@ -261,6 +290,14 @@ export default function AI() {
                 >
                   {busy === "admin_digest" ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
                   {t.ai.generateDigest}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="ml-2"
+                  onClick={triggerAutomationDigest}
+                  disabled={busy !== null}
+                >
+                  Queue digest automation
                 </Button>
               </div>
             </div>

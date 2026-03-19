@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-03-05 (Session 7, Europe/Berlin)
+Last updated: 2026-03-19 (Execution Waves 2–6, Europe/Berlin)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -177,6 +177,21 @@ Go-live readiness checklist (one-screen):
   - hero line updated to "Sportvereine",
   - all remaining `Hobbyverein`/`Hobbyvereine` instances replaced with `Sportverein`/`Sportvereine`,
   - dash punctuation removed from the DE hero second line.
+
+### Execution waves 2–6 snapshot (2026-03-19)
+- Added abuse-control slice 4 migration package:
+  - endpoint registry, escalation policy table, and notification queue/events.
+- Added commercial core schema and runtime wiring:
+  - billing subscriptions/events,
+  - shop categories/products/orders with RLS and order-total trigger,
+  - pricing plan selection persistence for authenticated club context.
+- Upgraded partner module from contact cards to workflow-ready tabs:
+  - contracts, invoices, tasks (schema + UI load/create paths).
+- Added multi-sport baseline:
+  - shared sports catalog helper and Teams sport-id normalization.
+- Added automation + AI operational layer:
+  - automation rules/runs schema and queue RPC,
+  - server-first AI generation via new `co-aimin` edge function with deterministic fallback.
 
 ### i18n status (2026-03-01)
 - Full EN/DE localization expanded to include all newly added communication and bridge strings (`communicationPage` keys).

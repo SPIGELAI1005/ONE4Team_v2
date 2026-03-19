@@ -16,6 +16,37 @@ It records notable changes, features, and hardening steps.
 - Removed dash punctuation in the DE hero second line for cleaner sentence flow.
 - Replaced all remaining `Hobbyverein`/`Hobbyvereine` occurrences with `Sportverein`/`Sportvereine` in German translations.
 
+## 2026-03-19 (Execution Waves 2–6)
+### Abuse-control slice 4 (schema + policy automation)
+- Added migration `20260319190000_abuse_slice4_notifications.sql`.
+- Added endpoint registry + escalation policy tables and notification event queue.
+- Added helper RPCs `queue_abuse_notifications(...)` and `apply_abuse_escalation_policy(...)`.
+
+### v2.1 Billing + v2.2 Shop operationalization
+- Added migration `20260319191500_v21_v22_billing_shop.sql` with:
+  - `billing_subscriptions`, `billing_events`,
+  - `shop_categories`, `shop_products`, `shop_orders`,
+  - RLS policies and order-total trigger.
+- Updated `src/pages/Pricing.tsx` to persist selected plan/cycle to `billing_subscriptions` when user + active club are available.
+- Refactored `src/pages/Shop.tsx` to load/write live Supabase shop tables with fallback mode when schema is unavailable.
+
+### v2.3 Partner workflows
+- Added migration `20260319193000_v23_partner_workflows.sql` with:
+  - `partner_contracts`, `partner_invoices`, `partner_tasks` (+ RLS).
+- Upgraded `src/pages/Partners.tsx` from contacts-only to tabbed workflows (Partners, Contracts, Invoices, Tasks) with create/read operations.
+
+### v2.4 Multi-sport baseline
+- Added `src/lib/sports.ts` catalog + helpers (`resolveSportId`, `resolveSportLabel`).
+- Updated `src/pages/Teams.tsx` to use catalog-driven sport selection and normalized sport IDs.
+
+### v2.5 Automation + AI server path
+- Added migration `20260319194500_v24_v25_multisport_automation.sql` with:
+  - `sports_catalog`, `club_sports`, `sport_stat_templates`,
+  - `automation_rules`, `automation_runs`,
+  - RPC `enqueue_automation_run(...)`.
+- Added edge function `supabase/functions/co-aimin/index.ts`.
+- Updated `src/pages/AI.tsx` to use server-first generation via edge function, keep deterministic fallback, and allow queuing digest automation runs.
+
 ## 2026-03-05 (Session 5)
 ### Auth + onboarding continuity hardening (SaaS resume behavior)
 - Fixed login return flow so existing users with active memberships land back in dashboard context instead of being forced into onboarding every time.

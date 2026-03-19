@@ -31,3 +31,7 @@ This matrix is the source of truth for environment-to-Supabase alignment.
 ## Evidence recording
 - Archive completed matrix values and verification references in `RELEASE_NOTES_PHASE12.md`.
 
+## Current execution status (2026-03-19)
+- Application-side rollout work is complete for Waves 2–6.
+- Final matrix values for `staging` and `production` remain an external environment step and must be filled by release owner before go decision.
+

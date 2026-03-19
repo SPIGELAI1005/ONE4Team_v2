@@ -12,6 +12,7 @@ import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
+import { resolveSportId, resolveSportLabel, SPORTS_CATALOG } from "@/lib/sports";
 // logo is rendered by AppHeader
 
 type Team = {
@@ -48,7 +49,7 @@ const Teams = () => {
 
   // Form state
   const [teamName, setTeamName] = useState("");
-  const [teamSport, setTeamSport] = useState("Football");
+  const [teamSport, setTeamSport] = useState("football");
   const [teamAge, setTeamAge] = useState("");
   const [teamCoach, setTeamCoach] = useState("");
 
@@ -88,13 +89,13 @@ const Teams = () => {
     if (!teamName.trim()) return;
     const { data, error } = await supabase
       .from("teams")
-      .insert({ club_id: clubId, name: teamName.trim(), sport: teamSport, age_group: teamAge || null, coach_name: teamCoach || null })
+      .insert({ club_id: clubId, name: teamName.trim(), sport: resolveSportId(teamSport), age_group: teamAge || null, coach_name: teamCoach || null })
       .select()
       .single();
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     setTeams(prev => [...prev, data as Team]);
     setShowAddTeam(false);
-    setTeamName(""); setTeamAge(""); setTeamCoach("");
+    setTeamName(""); setTeamAge(""); setTeamCoach(""); setTeamSport("football");
     toast({ title: "Team created" });
   };
 
@@ -181,7 +182,7 @@ const Teams = () => {
                       className="p-4 rounded-xl bg-card border border-border flex items-center justify-between">
                       <div>
                         <div className="text-sm font-medium text-foreground">{team.name}</div>
-                        <div className="text-xs text-muted-foreground">{team.sport} {team.age_group ? `· ${team.age_group}` : ""} {team.coach_name ? `· Coach: ${team.coach_name}` : ""}</div>
+                        <div className="text-xs text-muted-foreground">{resolveSportLabel(team.sport)} {team.age_group ? `· ${team.age_group}` : ""} {team.coach_name ? `· Coach: ${team.coach_name}` : ""}</div>
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => handleDeleteTeam(team.id)} className="text-muted-foreground hover:text-accent">
                         <Trash2 className="w-4 h-4" />
@@ -231,7 +232,15 @@ const Teams = () => {
             </div>
             <div className="space-y-3">
               <Input placeholder="Team name *" value={teamName} onChange={e => setTeamName(e.target.value)} className="bg-background" maxLength={100} />
-              <Input placeholder="Sport" value={teamSport} onChange={e => setTeamSport(e.target.value)} className="bg-background" />
+              <select
+                value={teamSport}
+                onChange={e => setTeamSport(e.target.value)}
+                className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground"
+              >
+                {SPORTS_CATALOG.map((sport) => (
+                  <option key={sport.id} value={sport.id}>{sport.label}</option>
+                ))}
+              </select>
               <Input placeholder="Age group (e.g. U17)" value={teamAge} onChange={e => setTeamAge(e.target.value)} className="bg-background" />
               <Input placeholder="Coach name" value={teamCoach} onChange={e => setTeamCoach(e.target.value)} className="bg-background" />
               <Button onClick={handleAddTeam} disabled={!teamName.trim()} className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110">

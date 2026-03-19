@@ -8,6 +8,10 @@ import {
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/use-language";
+import { useAuth } from "@/contexts/useAuth";
+import { useClubId } from "@/hooks/use-club-id";
+import { useToast } from "@/hooks/use-toast";
+import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import FootballFieldAnimation from "@/components/landing/FootballFieldAnimation";
@@ -149,9 +153,39 @@ function FadeInSection({ children, className = "", delay = 0 }: { children: Reac
 function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing: "yearly" | "monthly"; memberCount: number }) {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { clubId } = useClubId();
+  const { toast } = useToast();
   const { total, discount } = calculatePrice(plan, memberCount, billing);
   const isBespoke = plan.id === "bespoke";
   const Icon = plan.icon;
+
+  async function handlePlanAction() {
+    if (isBespoke) {
+      navigate("/onboarding?plan=bespoke");
+      return;
+    }
+
+    if (user && clubId) {
+      const { error } = await supabaseDynamic
+        .from("billing_subscriptions")
+        .upsert({
+          club_id: clubId,
+          plan_id: plan.id,
+          billing_cycle: billing,
+          status: "trialing",
+          metadata: { member_count: memberCount, source: "pricing_page" },
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "club_id" });
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Plan selected", description: `${plan.name} (${billing}) saved for your club.` });
+      }
+    }
+
+    navigate(`/onboarding?plan=${plan.id}&members=${memberCount}&billing=${billing}`);
+  }
 
   return (
     <motion.div
@@ -236,10 +270,7 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
       </div>
 
       <Button
-        onClick={() => isBespoke
-          ? navigate("/onboarding?plan=bespoke")
-          : navigate(`/onboarding?plan=${plan.id}&members=${memberCount}&billing=${billing}`)
-        }
+        onClick={() => { void handlePlanAction(); }}
         className={`w-full rounded-xl font-semibold text-sm ${
           plan.highlighted
             ? "bg-gradient-gold-static text-primary-foreground hover:brightness-110 shadow-gold"
