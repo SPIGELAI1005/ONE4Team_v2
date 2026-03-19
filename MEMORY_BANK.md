@@ -1,6 +1,6 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-03-19 (Phase 12 closed)
+Last updated: 2026-03-19 (Session 8 property planner + Teams modal UX)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
@@ -24,6 +24,16 @@ Persistent handoff context for future agents so work can continue without re-dis
   - partner workflows schema and tabbed UI,
   - multi-sport catalog baseline and team sport normalization,
   - automation schema + AI server-first generation path (with fallback).
+- Property planner model now includes full map element and booking primitives:
+  - pitch/element grid definitions (`club_pitches`),
+  - booking records (`pitch_bookings`),
+  - optional parent split relation and reconfirmation workflow fields.
+- Club property mapping now supports layer contexts and typed elements:
+  - layer catalog (`club_property_layers`) for training/admin/operations views,
+  - element type classification and optional per-element `display_color`.
+- Teams map create/edit element modal UX has been hardened for density:
+  - scrollable modal body with fixed save footer,
+  - color section collapses by default and expands on demand.
 - Phase 12 closure status:
   - Supabase migrations applied and verified in target environments,
   - validation matrix signed off,
@@ -77,6 +87,10 @@ Persistent handoff context for future agents so work can continue without re-dis
 7. `20260319191500_v21_v22_billing_shop.sql`
 8. `20260319193000_v23_partner_workflows.sql`
 9. `20260319194500_v24_v25_multisport_automation.sql`
+10. `20260319212000_pitch_planner_and_bookings.sql`
+11. `20260319220000_pitch_split_and_confirmation.sql`
+12. `20260319231500_club_property_layers_and_elements.sql`
+13. `20260319233000_club_pitches_display_color.sql`
 
 Also ensure previously listed communication migrations remain applied in the same project:
 - `20260301152000_add_chat_bridge_connectors_and_events.sql`

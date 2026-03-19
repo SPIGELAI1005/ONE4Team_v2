@@ -247,6 +247,117 @@ export type Database = {
         }
         Relationships: []
       }
+      club_pitches: {
+        Row: {
+          club_id: string
+          created_at: string
+          created_by: string | null
+          display_color: string | null
+          element_type: string
+          grid_cells: Json
+          id: string
+          layer_id: string | null
+          name: string
+          notes: string | null
+          parent_pitch_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          created_by?: string | null
+          display_color?: string | null
+          element_type?: string
+          grid_cells?: Json
+          id?: string
+          layer_id?: string | null
+          name: string
+          notes?: string | null
+          parent_pitch_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          created_by?: string | null
+          display_color?: string | null
+          element_type?: string
+          grid_cells?: Json
+          id?: string
+          layer_id?: string | null
+          name?: string
+          notes?: string | null
+          parent_pitch_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_pitches_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_pitches_parent_pitch_id_fkey"
+            columns: ["parent_pitch_id"]
+            isOneToOne: false
+            referencedRelation: "club_pitches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_pitches_layer_id_fkey"
+            columns: ["layer_id"]
+            isOneToOne: false
+            referencedRelation: "club_property_layers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_property_layers: {
+        Row: {
+          club_id: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_default: boolean
+          name: string
+          purpose: string
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          name: string
+          purpose?: string
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          name?: string
+          purpose?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_property_layers_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competitions: {
         Row: {
           club_id: string
@@ -846,6 +957,92 @@ export type Database = {
             columns: ["membership_id"]
             isOneToOne: false
             referencedRelation: "club_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pitch_bookings: {
+        Row: {
+          booking_type: string
+          club_id: string
+          created_at: string
+          created_by: string | null
+          ends_at: string
+          id: string
+          needs_reconfirmation: boolean
+          overridden_by_booking_id: string | null
+          pitch_id: string
+          reconfirmation_requested_at: string | null
+          reconfirmation_status: string
+          starts_at: string
+          status: string
+          team_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          booking_type?: string
+          club_id: string
+          created_at?: string
+          created_by?: string | null
+          ends_at: string
+          id?: string
+          needs_reconfirmation?: boolean
+          overridden_by_booking_id?: string | null
+          pitch_id: string
+          reconfirmation_requested_at?: string | null
+          reconfirmation_status?: string
+          starts_at: string
+          status?: string
+          team_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          booking_type?: string
+          club_id?: string
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string
+          id?: string
+          needs_reconfirmation?: boolean
+          overridden_by_booking_id?: string | null
+          pitch_id?: string
+          reconfirmation_requested_at?: string | null
+          reconfirmation_status?: string
+          starts_at?: string
+          status?: string
+          team_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pitch_bookings_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pitch_bookings_pitch_id_fkey"
+            columns: ["pitch_id"]
+            isOneToOne: false
+            referencedRelation: "club_pitches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pitch_bookings_overridden_by_booking_id_fkey"
+            columns: ["overridden_by_booking_id"]
+            isOneToOne: false
+            referencedRelation: "pitch_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pitch_bookings_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]

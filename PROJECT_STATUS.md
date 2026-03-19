@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-03-19 (Phase 12 closed, Europe/Berlin)
+Last updated: 2026-03-19 (Session 8 status sync, Europe/Berlin)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -28,6 +28,14 @@ Go-live readiness checklist (one-screen):
   - `20260305220000_invite_join_rate_limits.sql`
   - `20260305224500_abuse_slice2_device_escalation_audit.sql`
   - `20260305231500_abuse_slice3_gateway_alert_hooks.sql`
+  - `20260319190000_abuse_slice4_notifications.sql`
+  - `20260319191500_v21_v22_billing_shop.sql`
+  - `20260319193000_v23_partner_workflows.sql`
+  - `20260319194500_v24_v25_multisport_automation.sql`
+  - `20260319212000_pitch_planner_and_bookings.sql`
+  - `20260319220000_pitch_split_and_confirmation.sql`
+  - `20260319231500_club_property_layers_and_elements.sql`
+  - `20260319233000_club_pitches_display_color.sql`
 - [x] **Environment variables:** app points to the intended Supabase project (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`) in each environment (local/staging/prod).
 - [x] **Core smoke tests:** auth, onboarding/invite, members, settings save, club page admin save, and club public page preview pass.
 - [x] **Communication checks:** announcements load, chat send/retry works, attachments upload/open works, connector save/list works, no missing-table schema errors.
@@ -191,6 +199,21 @@ Go-live readiness checklist (one-screen):
 - Added automation + AI operational layer:
   - automation rules/runs schema and queue RPC,
   - server-first AI generation via new `co-aimin` edge function with deterministic fallback.
+
+### Session 8 property planner + Teams UX snapshot (2026-03-19)
+- Added pitch/property planner schema baseline:
+  - `club_pitches` and `pitch_bookings` tables with RLS and update triggers.
+- Extended planner workflow:
+  - pitch split hierarchy (`parent_pitch_id`),
+  - reconfirmation lifecycle fields for booking updates.
+- Added club property layer and typed element model:
+  - `club_property_layers` with admin-managed creation,
+  - `club_pitches.layer_id` and `club_pitches.element_type` for map contexts.
+- Added optional per-element map color persistence:
+  - `club_pitches.display_color`.
+- Improved Teams element modal usability for dense layouts:
+  - scrollable properties body with fixed save footer,
+  - collapsible color section (collapsed-by-default) with preview swatch.
 
 ### i18n status (2026-03-01)
 - Full EN/DE localization expanded to include all newly added communication and bridge strings (`communicationPage` keys).

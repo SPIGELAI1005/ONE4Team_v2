@@ -16,6 +16,31 @@ It records notable changes, features, and hardening steps.
   - `TASKS.md`,
   - `MEMORY_BANK.md`.
 
+## 2026-03-19 (Session 8)
+### Property planner schema expansion
+- Added migration `20260319212000_pitch_planner_and_bookings.sql`:
+  - `club_pitches` (grid-based property elements),
+  - `pitch_bookings` (time-boxed pitch reservations),
+  - RLS policies for member read and admin/trainer management.
+- Added migration `20260319220000_pitch_split_and_confirmation.sql`:
+  - parent-child pitch hierarchy (`parent_pitch_id`),
+  - booking reconfirmation workflow fields and indexes.
+- Added migration `20260319231500_club_property_layers_and_elements.sql`:
+  - `club_property_layers` for map contexts (training/admin/ops),
+  - `club_pitches.layer_id` and typed element support (`element_type`).
+- Added migration `20260319233000_club_pitches_display_color.sql`:
+  - optional per-element color storage (`display_color`) for map rendering.
+
+### Teams map element modal UX hardening
+- Updated `src/pages/Teams.tsx` create/edit element modal to support large forms safely:
+  - bounded modal height with scrollable body,
+  - fixed footer action row for always-visible save action.
+- Added a collapsible color section in the element modal:
+  - collapsed by default,
+  - inline color preview in collapsed state,
+  - expandable advanced color controls (picker, hex, swatches).
+- Added new EN/DE i18n keys in `src/i18n/en.ts` and `src/i18n/de.ts` for expand/collapse labels.
+
 ## 2026-03-05 (Session 7)
 ### Pricing promo countdown + copy alignment
 - Updated pricing promo countdown deadline to `2026-04-10T23:59:59` in `src/pages/Pricing.tsx`.

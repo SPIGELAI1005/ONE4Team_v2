@@ -161,6 +161,20 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **V2-050a** Multi-sport abstraction baseline added (`sports.ts` + Teams sport catalog selection).
 - [x] **V2-060a** AI server-first generation path enabled via edge invocation with deterministic fallback.
 - [x] **V2-060b** Automation schema baseline added with manual queue trigger on AI page.
+- [x] **V2-070a** Pitch planner foundation migrations added:
+  - `club_pitches` + `pitch_bookings`,
+  - RLS policies for member visibility and admin/trainer management.
+- [x] **V2-070b** Pitch split and booking reconfirmation schema added:
+  - `parent_pitch_id`,
+  - reconfirmation status/request metadata.
+- [x] **V2-070c** Club property layers and typed map elements added:
+  - `club_property_layers`,
+  - `club_pitches.layer_id` and `club_pitches.element_type`.
+- [x] **V2-070d** Per-element map color persistence added:
+  - `club_pitches.display_color`.
+- [x] **V2-070e** Teams create/edit element modal UX optimized for large forms:
+  - scrollable properties window with fixed footer actions,
+  - collapsible color section to reduce vertical clutter.
 
 ### P8-010 Internationalization (i18n)
 - [x] **P8-010a** Create `LanguageContext`, `useLanguage` hook, and `LanguageToggle` component.
