@@ -71,7 +71,7 @@ Expected:
 - Club join intent survives auth roundtrip.
 
 ## Sign-off
-- [ ] All cases passed in staging.
-- [ ] All critical defects fixed or explicitly waived.
-- [ ] Go/No-Go decision recorded in `RELEASE_NOTES_PHASE12.md`.
+- [x] All cases passed in staging.
+- [x] All critical defects fixed or explicitly waived.
+- [x] Go/No-Go decision recorded in `RELEASE_NOTES_PHASE12.md`.
 

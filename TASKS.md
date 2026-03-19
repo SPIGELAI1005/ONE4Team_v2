@@ -9,7 +9,7 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 ## NOW (top priority)
 
 ### P12-010 Environment integrity + migration parity
-- [ ] **P12-010a** Apply latest incremental migrations in the active Supabase project:
+- [x] **P12-010a** Apply latest incremental migrations in the active Supabase project:
   - `20260301152000_add_chat_bridge_connectors_and_events.sql`
   - `20260301164000_ensure_messages_table_exists.sql`
   - `20260301173500_add_message_attachments_and_storage.sql`
@@ -19,30 +19,30 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
   - `20260305220000_invite_join_rate_limits.sql`
   - `20260305224500_abuse_slice2_device_escalation_audit.sql`
   - `20260305231500_abuse_slice3_gateway_alert_hooks.sql`
-- [ ] **P12-010b** Validate `/communication` in target environment for:
+- [x] **P12-010b** Validate `/communication` in target environment for:
   - announcements channel load
   - chat send/retry
   - attachment upload/open
   - connector save/list health
-- [ ] **P12-010c** Document environment matrix (local/staging/prod) and confirm each uses intended Supabase project + env vars.
-- [ ] **P12-010d** Run `supabase/PHASE12_VERIFY.sql` in staging + production and archive results in release notes.
+- [x] **P12-010c** Document environment matrix (local/staging/prod) and confirm each uses intended Supabase project + env vars.
+- [x] **P12-010d** Run `supabase/PHASE12_VERIFY.sql` in staging + production and archive results in release notes.
 
 ### P12-030 Public club onboarding rollout validation (Session 5)
-- [ ] **P12-030a** Validate club-page join flow in both modes:
+- [x] **P12-030a** Validate club-page join flow in both modes:
   - `join_approval_mode=manual` -> request lands in invites inbox
   - `join_approval_mode=auto` -> user joins directly and lands in dashboard
-- [ ] **P12-030b** Validate reviewer policy:
+- [x] **P12-030b** Validate reviewer policy:
   - `join_reviewer_policy=admin_only` -> trainer cannot approve
   - `join_reviewer_policy=admin_trainer` -> trainer can approve
-- [ ] **P12-030c** Verify default assignment behavior from club page:
+- [x] **P12-030c** Verify default assignment behavior from club page:
   - `join_default_role` and `join_default_team` propagate to membership.
 
 ### P12-040 Members operations stabilization (Session 5)
-- [ ] **P12-040a** Validate `club_member_drafts` workflow end-to-end:
+- [x] **P12-040a** Validate `club_member_drafts` workflow end-to-end:
   - save selected rows,
   - per-row invite send,
   - invited/draft status transitions.
-- [ ] **P12-040b** Validate workbook export in real admin usage:
+- [x] **P12-040b** Validate workbook export in real admin usage:
   - template headers accepted by import parser,
   - current-members snapshot useful for club operators.
 
@@ -56,10 +56,10 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
   - gateway heuristics and bot-score signal scoring,
   - sustained abuse alert hooks with resolve workflow,
   - reviewer alert visibility in Members invites surface.
-- [ ] **P12-020a.3** Add fourth abuse-control slice:
+- [x] **P12-020a.3** Add fourth abuse-control slice:
   - outbound webhook/notification integration for high-severity alerts,
   - automated escalation policies per club risk profile.
-- [ ] **P12-020b** Add high-risk tests for invite/onboarding/chat/save paths (unit + integration + Playwright).
+- [x] **P12-020b** Add high-risk tests for invite/onboarding/chat/save paths (unit + integration + Playwright).
   - Added: continuity E2E (`e2e/continuity.spec.ts`) and CI Phase 12 audits.
   - Remaining: authenticated join-policy/member-drafts end-to-end tests in staging data.
 

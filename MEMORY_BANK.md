@@ -1,6 +1,6 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-03-19
+Last updated: 2026-03-19 (Phase 12 closed)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
@@ -24,6 +24,10 @@ Persistent handoff context for future agents so work can continue without re-dis
   - partner workflows schema and tabbed UI,
   - multi-sport catalog baseline and team sport normalization,
   - automation schema + AI server-first generation path (with fallback).
+- Phase 12 closure status:
+  - Supabase migrations applied and verified in target environments,
+  - validation matrix signed off,
+  - go/no-go checklist completed and governance gate moved to Continue.
 
 ## Session 5 Realized Work (code complete, needs migration parity in target env)
 - `ClubPageAdmin` input remount issue fixed (field typing stable).
@@ -63,12 +67,16 @@ Persistent handoff context for future agents so work can continue without re-dis
   - auth consumes sanitized `returnTo`,
   - club public join request flow preserves return context when redirecting to auth.
 
-## New Migrations To Apply In Supabase
+## Recently Applied Migrations In Supabase
 1. `20260305193000_member_drafts.sql`
 2. `20260305204500_club_public_join_flow.sql`
 3. `20260305220000_invite_join_rate_limits.sql`
 4. `20260305224500_abuse_slice2_device_escalation_audit.sql`
 5. `20260305231500_abuse_slice3_gateway_alert_hooks.sql`
+6. `20260319190000_abuse_slice4_notifications.sql`
+7. `20260319191500_v21_v22_billing_shop.sql`
+8. `20260319193000_v23_partner_workflows.sql`
+9. `20260319194500_v24_v25_multisport_automation.sql`
 
 Also ensure previously listed communication migrations remain applied in the same project:
 - `20260301152000_add_chat_bridge_connectors_and_events.sql`
@@ -80,24 +88,11 @@ Also ensure previously listed communication migrations remain applied in the sam
 - Most regressions seen recently come from migration/environment drift rather than frontend code defects.
 - If behavior mismatches local code expectations, verify app env vars point to the same Supabase project where all required migrations are applied.
 
-## Immediate Next Validation Pass
-- Validate public join flow in all combinations:
-  - manual + admin-only,
-  - manual + admin+trainer,
-  - auto + admin-only.
-- Validate member draft lifecycle:
-  - save draft -> send invite -> status update.
-- Validate post-login continuity:
-  - existing member resumes dashboard,
-  - new user without membership lands on onboarding.
-
 ## Suggested Next Implementation Steps
-- Add abuse-control slice 2:
-  - done in current session.
-- Add abuse-control slice 3:
-  - done in current session.
-- Add abuse-control slice 4:
-  - outbound notifications/webhooks for high-severity alerts,
-  - club-level risk tuning and automated escalation policies.
-- Expand Playwright coverage for authenticated join policy matrix and save-first draft flow.
-- Complete staging/prod Supabase separation and release checklist run.
+- Add production workers/dispatch for:
+  - abuse notification event delivery,
+  - automation run execution lifecycle.
+- Harden Stripe integration:
+  - webhook event ingestion and idempotency handling,
+  - entitlement transitions tied to billing state.
+- Expand authenticated E2E coverage for new v2 flows (shop/partners/billing/automation).

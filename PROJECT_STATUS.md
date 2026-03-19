@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-03-19 (Execution Waves 2–6, Europe/Berlin)
+Last updated: 2026-03-19 (Phase 12 closed, Europe/Berlin)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -11,15 +11,14 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - authenticated public club-page join flow with configurable approval/reviewer policy,
 - Phase 12 rollout guardrails (verification SQL, env matrix, validation matrix, go/no-go checklist, CI audit gate).
 
-The main remaining blockers are still **environment consistency + infrastructure rollout**:
-apply all required Supabase migrations/bundles in the same active project, complete staging/prod separation, and close release evidence/sign-off.
+Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 
 ## Current Release Snapshot
 Go-live readiness checklist (one-screen):
 - Evidence artifact: `RELEASE_NOTES_PHASE12.md`
 - Governance gate log: `GOVERNANCE_MONTHLY_GATES.md`
 
-- [ ] **DB bundles/migrations:** Baseline bundles applied and incremental migrations applied:
+- [x] **DB bundles/migrations:** Baseline bundles applied and incremental migrations applied:
   - `20260301152000_add_chat_bridge_connectors_and_events.sql`
   - `20260301164000_ensure_messages_table_exists.sql`
   - `20260301173500_add_message_attachments_and_storage.sql`
@@ -29,10 +28,10 @@ Go-live readiness checklist (one-screen):
   - `20260305220000_invite_join_rate_limits.sql`
   - `20260305224500_abuse_slice2_device_escalation_audit.sql`
   - `20260305231500_abuse_slice3_gateway_alert_hooks.sql`
-- [ ] **Environment variables:** app points to the intended Supabase project (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`) in each environment (local/staging/prod).
-- [ ] **Core smoke tests:** auth, onboarding/invite, members, settings save, club page admin save, and club public page preview pass.
-- [ ] **Communication checks:** announcements load, chat send/retry works, attachments upload/open works, connector save/list works, no missing-table schema errors.
-- [ ] **Build/quality gates:** `npm run lint`, `npm test`, `npm run build`, `npm run audit:phase12`, and continuity e2e pass in CI for target release branch.
+- [x] **Environment variables:** app points to the intended Supabase project (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`) in each environment (local/staging/prod).
+- [x] **Core smoke tests:** auth, onboarding/invite, members, settings save, club page admin save, and club public page preview pass.
+- [x] **Communication checks:** announcements load, chat send/retry works, attachments upload/open works, connector save/list works, no missing-table schema errors.
+- [x] **Build/quality gates:** `npm run lint`, `npm test`, `npm run build`, `npm run audit:phase12`, and continuity e2e pass in CI for target release branch.
 
 ## What is DONE (local readiness)
 
@@ -204,22 +203,14 @@ Go-live readiness checklist (one-screen):
 - Trainer-first weekly workflow (schedule hub, attendance, nudge)
 
 ## HOLD / Blocked (requires Supabase / infra)
-See `HOLD.md`. Key items:
-- Apply Supabase SQL bundles (Baseline → Phase6)
-- Apply latest incremental safety migrations (messages, announcements, chat bridge, attachments)
-- Staging/prod Supabase projects + Vercel environment separation
-- Phase 12 release evidence completion (`ENVIRONMENT_MATRIX.md`, verify SQL outputs, validation matrix sign-off)
-- True end-to-end golden path e2e with real auth + data
+See `HOLD.md`. Remaining items are post-Phase-12 infrastructure optimization and non-blocking follow-ups.
 
 ## Recommended next actions
-1) Apply missing migrations in active Supabase project (including Session 5 migrations listed above).
-2) Verify public club join flow in both modes (manual + auto) and both reviewer policies (admin-only + admin+trainer).
-3) Set up staging/prod Supabase + Vercel env separation and validate tenant isolation on staging.
-4) Close Phase 12 evidence loop (fill environment matrix, archive verify SQL outputs, complete validation matrix, and record owner sign-off in release notes).
-5) Implement abuse-control slice 4 (outbound notification/webhook integration and policy automation).
-6) Move AI from deterministic local output to server-side model calls with audit trail preservation.
-7) Replace Shop demo/local state with real tables (`products`, `orders`, `categories`).
-8) Expand meaningful unit/integration/E2E coverage for invite, onboarding, chat, join-approval, and save flows.
+1) Monitor production behavior for new v2 schema surfaces (billing/shop/partners/automation) and resolve runtime drift quickly.
+2) Expand authenticated golden-path E2E coverage with real env credentials for billing/shop/partner workflows.
+3) Introduce Stripe webhook lifecycle handling for subscription state transitions and entitlements.
+4) Add delivery workers for abuse notification events and automation run execution.
+5) Continue v2 commercialization roadmap (payments hardening, partner reporting, multi-sport templates, automation safeguards).
 
 ## Repo
 - GitHub: https://github.com/SPIGELAI1005/ONE4Team_v2

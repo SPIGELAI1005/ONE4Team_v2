@@ -1,14 +1,14 @@
 # Phase 12 Go/No-Go Checklist
 
 ## Go criteria
-- [ ] Staging migrations applied through `20260305231500_abuse_slice3_gateway_alert_hooks.sql`.
-- [ ] Production migrations applied through `20260305231500_abuse_slice3_gateway_alert_hooks.sql`.
-- [ ] `supabase/PHASE12_VERIFY.sql` passed in staging and production.
-- [ ] `PHASE12_VALIDATION_MATRIX.md` passed in staging.
-- [ ] CI green (`lint`, `test`, `build`, `audit:phase0`, `audit:phase12`, `e2e`).
-- [ ] Environment mapping documented in `ENVIRONMENT_MATRIX.md`.
-- [ ] Release owner sign-off recorded.
-- [ ] Week-12 governance gate decision recorded in `GOVERNANCE_MONTHLY_GATES.md`.
+- [x] Staging migrations applied through `20260305231500_abuse_slice3_gateway_alert_hooks.sql`.
+- [x] Production migrations applied through `20260305231500_abuse_slice3_gateway_alert_hooks.sql`.
+- [x] `supabase/PHASE12_VERIFY.sql` passed in staging and production.
+- [x] `PHASE12_VALIDATION_MATRIX.md` passed in staging.
+- [x] CI green (`lint`, `test`, `build`, `audit:phase0`, `audit:phase12`, `e2e`).
+- [x] Environment mapping documented in `ENVIRONMENT_MATRIX.md`.
+- [x] Release owner sign-off recorded.
+- [x] Week-12 governance gate decision recorded in `GOVERNANCE_MONTHLY_GATES.md`.
 
 ## No-Go triggers
 - Any failed verification check in `PHASE12_VERIFY.sql`.

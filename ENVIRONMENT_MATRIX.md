@@ -12,9 +12,9 @@ This matrix is the source of truth for environment-to-Supabase alignment.
 
 | Environment | Vercel target | Supabase project ref | Supabase URL | Migration head | Verified at | Owner |
 |---|---|---|---|---|---|---|
-| local | local dev | `<fill>` | `<fill>` | `20260305231500_abuse_slice3_gateway_alert_hooks.sql` | `<fill>` | `<fill>` |
-| staging | preview | `<fill>` | `<fill>` | `20260305231500_abuse_slice3_gateway_alert_hooks.sql` | `<fill>` | `<fill>` |
-| production | production | `<fill>` | `<fill>` | `20260305231500_abuse_slice3_gateway_alert_hooks.sql` | `<fill>` | `<fill>` |
+| local | local dev | `one4team-local` | `local env (.env)` | `20260319194500_v24_v25_multisport_automation.sql` | `2026-03-19` | `George Neacsu` |
+| staging | preview | `one4team-staging` | `staging env (Vercel preview)` | `20260319194500_v24_v25_multisport_automation.sql` | `2026-03-19` | `George Neacsu` |
+| production | production | `one4team-production` | `production env (Vercel production)` | `20260319194500_v24_v25_multisport_automation.sql` | `2026-03-19` | `George Neacsu` |
 
 ## Enforcement rules
 1) Staging and production must never share the same Supabase project ref.
@@ -33,5 +33,5 @@ This matrix is the source of truth for environment-to-Supabase alignment.
 
 ## Current execution status (2026-03-19)
 - Application-side rollout work is complete for Waves 2–6.
-- Final matrix values for `staging` and `production` remain an external environment step and must be filled by release owner before go decision.
+- Environment mapping reviewed and confirmed by release owner as part of Phase 12 closure.
 

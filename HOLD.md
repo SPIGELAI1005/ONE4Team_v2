@@ -32,10 +32,10 @@ Why this is critical now:
 - Missing any of the above in the active environment causes schema-cache/runtime errors.
 
 ## Phase 7 items (need Supabase / infra)
-- Staging + prod Supabase projects
-- Vercel Preview → staging env vars; Production → prod env vars
-- Tenant isolation verification on staging
-- Invite-request spam controls / rate limiting (RPC) (implemented locally, pending apply/verify in target env)
+- Staging + prod Supabase projects (completed for Phase 12 closure)
+- Vercel Preview → staging env vars; Production → prod env vars (completed for Phase 12 closure)
+- Tenant isolation verification on staging (completed for Phase 12 closure)
+- Invite-request spam controls / rate limiting (RPC) (implemented and verified in target environment)
 
 ## CLAW-FE blockers (Dashboard)
 - Run: `OPENCLAW_CAFE/claw-fe/supabase/MIGRATIONS_BUNDLE_001_006.sql`
