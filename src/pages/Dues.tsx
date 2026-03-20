@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Download, Plus, Layers } from "lucide-react";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
@@ -364,20 +365,21 @@ export default function Dues() {
             <div className="grid gap-3">
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Member</div>
-                <select
-                  className="w-full h-10 rounded-2xl border border-border/60 bg-background/50 px-3 text-sm"
-                  value={newMembershipId}
-                  onChange={(e) => setNewMembershipId(e.target.value)}
-                >
-                  <option value="">Select…</option>
-                  {memberships
-                    .filter((m) => m.status === "active")
-                    .map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {(m.profiles?.display_name || m.id.slice(0, 8))} ({m.role})
-                      </option>
-                    ))}
-                </select>
+                <Select value={newMembershipId || "__none"} onValueChange={(value) => setNewMembershipId(value === "__none" ? "" : value)}>
+                  <SelectTrigger className="w-full h-10 rounded-xl border-border/60 bg-background/50 px-3 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">Select...</SelectItem>
+                    {memberships
+                      .filter((membership) => membership.status === "active")
+                      .map((membership) => (
+                        <SelectItem key={membership.id} value={membership.id}>
+                          {(membership.profiles?.display_name || membership.id.slice(0, 8))} ({membership.role})
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
@@ -418,17 +420,18 @@ export default function Dues() {
             <div className="grid gap-3">
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Role filter</div>
-                <select
-                  className="w-full h-10 rounded-2xl border border-border/60 bg-background/50 px-3 text-sm"
-                  value={bulkRole}
-                  onChange={(e) => setBulkRole(e.target.value)}
-                >
-                  <option value="all">All active members</option>
-                  <option value="player">Players</option>
-                  <option value="member">Members</option>
-                  <option value="parent">Parents</option>
-                  <option value="trainer">Trainers</option>
-                </select>
+                <Select value={bulkRole} onValueChange={setBulkRole}>
+                  <SelectTrigger className="w-full h-10 rounded-xl border-border/60 bg-background/50 px-3 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All active members</SelectItem>
+                    <SelectItem value="player">Players</SelectItem>
+                    <SelectItem value="member">Members</SelectItem>
+                    <SelectItem value="parent">Parents</SelectItem>
+                    <SelectItem value="trainer">Trainers</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/hooks/use-language";
 import { motion } from "framer-motion";
 import {
@@ -69,10 +69,25 @@ function parseRegistrationSummary(raw: unknown): RegistrationSummary | null {
 
 const DashboardContent = () => {
   const { role } = useParams();
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const { user } = useAuth();
   const { activeClubId, activeClub } = useActiveClub();
   const [firstName, setFirstName] = useState<string>("");
+  const [displayName, setDisplayName] = useState<string>("");
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+
+  const userInitials = useMemo(() => {
+    const cleanName = displayName.trim();
+    if (cleanName) {
+      const parts = cleanName.split(/\s+/).filter(Boolean);
+      if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    }
+
+    const emailLocal = user?.email?.split("@")[0]?.replace(/[^a-zA-Z]/g, "") ?? "";
+    return (emailLocal.slice(0, 2) || "U").toUpperCase();
+  }, [displayName, user?.email]);
 
   // Fetch user's display name for the greeting
   useEffect(() => {
@@ -81,19 +96,25 @@ const DashboardContent = () => {
       try {
         const { data } = await supabase
           .from("profiles")
-          .select("display_name")
+          .select("display_name, avatar_url")
           .eq("user_id", user.id)
           .single();
         const displayName = (data as Record<string, unknown> | null)?.display_name as string | null;
+        const avatar = (data as Record<string, unknown> | null)?.avatar_url as string | null;
+        setAvatarUrl(avatar || "");
         if (displayName) {
+          setDisplayName(displayName);
           setFirstName(displayName.split(" ")[0]);
         } else {
           // Fallback: derive from email
           const emailLocal = user.email?.split("@")[0] || "";
+          setDisplayName("");
           setFirstName(emailLocal.charAt(0).toUpperCase() + emailLocal.slice(1));
         }
       } catch {
         const emailLocal = user.email?.split("@")[0] || "";
+        setDisplayName("");
+        setAvatarUrl("");
         setFirstName(emailLocal.charAt(0).toUpperCase() + emailLocal.slice(1));
       }
     };
@@ -290,9 +311,19 @@ const DashboardContent = () => {
             <NotificationBell />
             <LanguageToggle size="sm" />
             <ThemeToggle size="sm" />
-            <div className="w-9 h-9 rounded-2xl bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-sm shadow-gold ml-1">
-              {(role || "U")[0].toUpperCase()}
-            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/settings")}
+              className="w-9 h-9 rounded-2xl bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-sm shadow-gold ml-1 hover:brightness-110 transition overflow-hidden"
+              aria-label={t.sidebar.settings}
+              title={displayName ? `${displayName} · ${t.sidebar.settings}` : t.sidebar.settings}
+            >
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={displayName || "Profile"} className="w-full h-full object-cover" />
+              ) : (
+                userInitials
+              )}
+            </button>
           </div>
         </div>
       </div>

@@ -168,6 +168,12 @@ function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
+function isMissingRelationError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const message = String((error as { message?: unknown }).message ?? "");
+  return message.includes("Could not find the table") || message.includes("does not exist");
+}
+
 const Members = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -179,8 +185,17 @@ const Members = () => {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [members, setMembers] = useState<MemberRow[]>([]);
+  const [memberTeamNamesById, setMemberTeamNamesById] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedMember, setSelectedMember] = useState<MemberRow | null>(null);
+  const [showEditMemberModal, setShowEditMemberModal] = useState(false);
+  const [editMemberForm, setEditMemberForm] = useState({
+    role: "member",
+    team: "",
+    ageGroup: "",
+    position: "",
+    status: "active",
+  });
 
   const [inviteRequests, setInviteRequests] = useState<InviteRequestRow[]>([]);
   const [inviteReqFilter, setInviteReqFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
@@ -269,6 +284,7 @@ const Members = () => {
   // Reset page state on club switch to prevent cross-club flashes
   useEffect(() => {
     setMembers([]);
+    setMemberTeamNamesById({});
     setSelectedMember(null);
     setLoading(true);
 
@@ -823,6 +839,7 @@ const Members = () => {
       } else {
         const memberships = (membershipData as unknown as MemberRow[]) || [];
         const userIds = Array.from(new Set(memberships.map((item) => item.user_id))).filter(Boolean);
+        const membershipIds = memberships.map((item) => item.id);
 
         let profileByUserId = new Map<string, MemberRow["profiles"]>();
         if (userIds.length) {
@@ -846,6 +863,40 @@ const Members = () => {
             profiles: profileByUserId.get(membership.user_id),
           }))
         );
+
+        if (membershipIds.length > 0) {
+          const [teamRowsRes, playersRes, coachesRes] = await Promise.all([
+            supabase.from("teams").select("id, name").eq("club_id", clubId),
+            supabase.from("team_players").select("team_id, membership_id").in("membership_id", membershipIds),
+            supabase.from("team_coaches").select("team_id, membership_id").in("membership_id", membershipIds),
+          ]);
+
+          const teamsById = new Map<string, string>();
+          ((teamRowsRes.data as Array<Record<string, unknown>> | null) || []).forEach((row) => {
+            teamsById.set(String(row.id), String(row.name));
+          });
+
+          const map: Record<string, string[]> = {};
+          const applyRows = (rows: Array<Record<string, unknown>>) => {
+            rows.forEach((row) => {
+              const membershipId = String(row.membership_id);
+              const teamId = String(row.team_id);
+              const teamName = teamsById.get(teamId);
+              if (!teamName) return;
+              const existing = map[membershipId] || [];
+              map[membershipId] = existing.includes(teamName) ? existing : [...existing, teamName];
+            });
+          };
+
+          if (!playersRes.error) applyRows(((playersRes.data as Array<Record<string, unknown>> | null) || []));
+          if (!coachesRes.error) applyRows(((coachesRes.data as Array<Record<string, unknown>> | null) || []));
+          if (coachesRes.error && !isMissingRelationError(coachesRes.error)) {
+            toast({ title: t.membersPage.errorLoadingMembers, description: coachesRes.error.message, variant: "destructive" });
+          }
+          setMemberTeamNamesById(map);
+        } else {
+          setMemberTeamNamesById({});
+        }
       }
       setLoading(false);
     };
@@ -949,6 +1000,12 @@ const Members = () => {
     return matchSearch && matchRole;
   });
 
+  const getMemberTeamLabel = useCallback((member: MemberRow) => {
+    const assignedTeams = memberTeamNamesById[member.id] || [];
+    if (assignedTeams.length > 0) return assignedTeams.join(", ");
+    return member.team || t.membersPage.noTeam;
+  }, [memberTeamNamesById, t.membersPage.noTeam]);
+
   const allRoles = ["all", "admin", "trainer", "player", "staff", "member", "parent", "sponsor"];
   const existingInviteEmails = useMemo(
     () =>
@@ -1003,6 +1060,61 @@ const Members = () => {
       setSelectedMember(null);
       toast({ title: t.membersPage.memberRemoved });
     }
+  };
+
+  const openEditMemberModal = (member: MemberRow) => {
+    setSelectedMember(member);
+    setEditMemberForm({
+      role: member.role || "member",
+      team: member.team || "",
+      ageGroup: member.age_group || "",
+      position: member.position || "",
+      status: member.status || "active",
+    });
+    setShowEditMemberModal(true);
+  };
+
+  const handleSaveMemberEdit = async () => {
+    if (!clubId || !selectedMember) return;
+    if (!perms.isAdmin) {
+      toast({ title: t.common.notAuthorized, description: t.membersPage.onlyAdminsMembers, variant: "destructive" });
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("club_memberships")
+      .update({
+        role: editMemberForm.role,
+        team: editMemberForm.team.trim() || null,
+        age_group: editMemberForm.ageGroup.trim() || null,
+        position: editMemberForm.position.trim() || null,
+        status: editMemberForm.status || "active",
+      })
+      .eq("club_id", clubId)
+      .eq("id", selectedMember.id)
+      .select("*")
+      .single();
+
+    if (error) {
+      toast({ title: t.common.error, description: error.message, variant: "destructive" });
+      return;
+    }
+
+    const updatedMembership = data as unknown as MemberRow;
+    setMembers((previous) =>
+      previous.map((member) =>
+        member.id === selectedMember.id
+          ? { ...member, ...updatedMembership, profiles: member.profiles }
+          : member,
+      ),
+    );
+    setSelectedMember((previous) =>
+      previous && previous.id === selectedMember.id
+        ? { ...previous, ...updatedMembership, profiles: previous.profiles }
+        : previous,
+    );
+    setShowEditMemberModal(false);
+    toast({ title: t.common.updated });
   };
 
   const handleUpdateInviteRequestStatus = async (requestId: string, status: InviteRequestRow["status"]) => {
@@ -1423,7 +1535,7 @@ const Members = () => {
                             </div>
                             <div>
                               <div className="text-sm font-medium text-foreground">{member.profiles?.display_name || "Unknown"}</div>
-                              <div className="text-xs text-muted-foreground">{member.team || t.membersPage.noTeam}</div>
+                              <div className="text-xs text-muted-foreground">{getMemberTeamLabel(member)}</div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -1470,7 +1582,7 @@ const Members = () => {
                         </div>
                       )}
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Users className="w-4 h-4" /> {selectedMember.team || t.membersPage.noTeam}
+                        <Users className="w-4 h-4" /> {getMemberTeamLabel(selectedMember)}
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Calendar className="w-4 h-4" /> {t.membersPage.joined} {new Date(selectedMember.created_at).toLocaleDateString()}
@@ -1498,7 +1610,7 @@ const Members = () => {
                     )}
 
                     <div className="mt-4 pt-4 border-t border-border flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1">{t.common.edit}</Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => openEditMemberModal(selectedMember)}>{t.common.edit}</Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -1937,17 +2049,18 @@ const Members = () => {
               </label>
               <div className="sm:ml-auto flex items-center gap-2">
                 <div className="text-xs text-muted-foreground">{t.membersPage.inviteValidity}</div>
-                <select
-                  value={inviteDays}
-                  onChange={(event) => setInviteDays(event.target.value)}
-                  className="h-9 rounded-xl border border-border bg-background/60 px-3 text-sm text-foreground"
-                >
-                  <option value="1">{t.membersPage.day1}</option>
-                  <option value="3">{t.membersPage.days3}</option>
-                  <option value="7">{t.membersPage.days7}</option>
-                  <option value="14">{t.membersPage.days14}</option>
-                  <option value="0">{t.membersPage.noExpiryOption}</option>
-                </select>
+                <Select value={inviteDays} onValueChange={setInviteDays}>
+                  <SelectTrigger className="h-9 w-full sm:w-[180px] rounded-xl border-border bg-background/60 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">{t.membersPage.day1}</SelectItem>
+                    <SelectItem value="3">{t.membersPage.days3}</SelectItem>
+                    <SelectItem value="7">{t.membersPage.days7}</SelectItem>
+                    <SelectItem value="14">{t.membersPage.days14}</SelectItem>
+                    <SelectItem value="0">{t.membersPage.noExpiryOption}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -2003,26 +2116,30 @@ const Members = () => {
                         />
                       </td>
                       <td className="px-2 py-2">
-                        <select
+                        <Select
                           value={row.role}
-                          onChange={(event) => {
-                            const parsedRole = normalizeRole(event.target.value);
+                          onValueChange={(value) => {
+                            const parsedRole = normalizeRole(value);
                             updateDraftRow(row.id, "role", parsedRole.role);
                             updateDraftRow(row.id, "unknownRole", false);
                           }}
-                          className="w-full h-10 rounded-xl border border-border bg-background/60 px-3 text-sm text-foreground"
                         >
-                          <option value="member">{t.onboarding.member}</option>
-                          <option value="player">{t.onboarding.player}</option>
-                          <option value="trainer">{t.onboarding.trainer}</option>
-                          <option value="staff">{t.onboarding.teamStaff}</option>
-                          <option value="parent">{t.onboarding.parentSupporter}</option>
-                          <option value="sponsor">{t.onboarding.sponsor}</option>
-                          <option value="supplier">{t.onboarding.supplier}</option>
-                          <option value="service_provider">{t.onboarding.serviceProvider}</option>
-                          <option value="consultant">{t.onboarding.consultant}</option>
-                          <option value="admin">{t.onboarding.clubAdmin}</option>
-                        </select>
+                          <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background/60 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="member">{t.onboarding.member}</SelectItem>
+                            <SelectItem value="player">{t.onboarding.player}</SelectItem>
+                            <SelectItem value="trainer">{t.onboarding.trainer}</SelectItem>
+                            <SelectItem value="staff">{t.onboarding.teamStaff}</SelectItem>
+                            <SelectItem value="parent">{t.onboarding.parentSupporter}</SelectItem>
+                            <SelectItem value="sponsor">{t.onboarding.sponsor}</SelectItem>
+                            <SelectItem value="supplier">{t.onboarding.supplier}</SelectItem>
+                            <SelectItem value="service_provider">{t.onboarding.serviceProvider}</SelectItem>
+                            <SelectItem value="consultant">{t.onboarding.consultant}</SelectItem>
+                            <SelectItem value="admin">{t.onboarding.clubAdmin}</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </td>
                       <td className="px-2 py-2">
                         <Input value={row.team} onChange={(event) => updateDraftRow(row.id, "team", event.target.value)} placeholder={t.membersPage.teamPlaceholder} />
@@ -2084,6 +2201,96 @@ const Members = () => {
               >
                 {bulkSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <UserPlus className="w-4 h-4 mr-1.5" />}
                 {t.membersPage.saveSelectedToList}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {showEditMemberModal && selectedMember && (
+        <div
+          className="fixed inset-0 z-50 bg-background/45 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setShowEditMemberModal(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98, y: 6 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="w-full max-w-lg rounded-3xl border border-border/60 bg-card/65 backdrop-blur-2xl p-6 shadow-[0_24px_60px_rgba(0,0,0,0.22)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-display font-bold text-foreground tracking-tight text-lg">{t.common.edit}</h3>
+                <p className="text-xs text-muted-foreground">{selectedMember.profiles?.display_name || "Member"}</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowEditMemberModal(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <Select
+                  value={editMemberForm.role}
+                  onValueChange={(value) => setEditMemberForm((previous) => ({ ...previous, role: value }))}
+                >
+                  <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background/60 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="member">{t.onboarding.member}</SelectItem>
+                    <SelectItem value="player">{t.onboarding.player}</SelectItem>
+                    <SelectItem value="trainer">{t.onboarding.trainer}</SelectItem>
+                    <SelectItem value="staff">{t.onboarding.teamStaff}</SelectItem>
+                    <SelectItem value="parent">{t.onboarding.parentSupporter}</SelectItem>
+                    <SelectItem value="sponsor">{t.onboarding.sponsor}</SelectItem>
+                    <SelectItem value="supplier">{t.onboarding.supplier}</SelectItem>
+                    <SelectItem value="service_provider">{t.onboarding.serviceProvider}</SelectItem>
+                    <SelectItem value="consultant">{t.onboarding.consultant}</SelectItem>
+                    <SelectItem value="admin">{t.onboarding.clubAdmin}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={editMemberForm.status}
+                  onValueChange={(value) => setEditMemberForm((previous) => ({ ...previous, status: value }))}
+                >
+                  <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background/60 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">{t.common.active}</SelectItem>
+                    <SelectItem value="inactive">{t.common.inactive}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Input
+                value={editMemberForm.team}
+                onChange={(event) => setEditMemberForm((previous) => ({ ...previous, team: event.target.value }))}
+                placeholder={t.membersPage.teamPlaceholder}
+                className="bg-background/60"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  value={editMemberForm.ageGroup}
+                  onChange={(event) => setEditMemberForm((previous) => ({ ...previous, ageGroup: event.target.value }))}
+                  placeholder={t.membersPage.ageGroupPlaceholder}
+                  className="bg-background/60"
+                />
+                <Input
+                  value={editMemberForm.position}
+                  onChange={(event) => setEditMemberForm((previous) => ({ ...previous, position: event.target.value }))}
+                  placeholder={t.membersPage.positionPlaceholder}
+                  className="bg-background/60"
+                />
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <Button
+                className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110"
+                onClick={handleSaveMemberEdit}
+              >
+                {t.common.save}
               </Button>
             </div>
           </motion.div>

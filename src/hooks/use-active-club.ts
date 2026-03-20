@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 
 const CLUB_KEY_PREFIX = "one4team.activeClubId";
+const ACTIVE_CLUB_CHANGED_EVENT = "one4team:active-club-changed";
 
 export interface ClubOption {
   id: string;
@@ -19,6 +20,11 @@ interface MembershipRow {
     name: string;
     slug: string;
   } | null;
+}
+
+interface ActiveClubChangeDetail {
+  userClubKey: string;
+  clubId: string;
 }
 
 export function useActiveClub() {
@@ -82,6 +88,31 @@ export function useActiveClub() {
     fetchClubs();
   }, [user, userClubKey]);
 
+  useEffect(() => {
+    if (!userClubKey) return;
+
+    function handleStorage(event: StorageEvent) {
+      if (event.key !== userClubKey) return;
+      const nextClubId = event.newValue;
+      setActiveClubId(nextClubId);
+    }
+
+    function handleActiveClubChanged(event: Event) {
+      const customEvent = event as CustomEvent<ActiveClubChangeDetail>;
+      const detail = customEvent.detail;
+      if (!detail || detail.userClubKey !== userClubKey) return;
+      setActiveClubId(detail.clubId);
+    }
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener(ACTIVE_CLUB_CHANGED_EVENT, handleActiveClubChanged as EventListener);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener(ACTIVE_CLUB_CHANGED_EVENT, handleActiveClubChanged as EventListener);
+    };
+  }, [userClubKey]);
+
   const activeClub = useMemo(
     () => clubs.find((c) => c.id === activeClubId) ?? null,
     [clubs, activeClubId],
@@ -89,9 +120,16 @@ export function useActiveClub() {
 
   const setActive = (clubId: string) => {
     if (!userClubKey) return;
+    const isClubAvailable = clubs.some((club) => club.id === clubId);
+    if (!isClubAvailable) return;
     setActiveClubId(clubId);
     localStorage.setItem(userClubKey, clubId);
     localStorage.removeItem(CLUB_KEY_PREFIX);
+    window.dispatchEvent(
+      new CustomEvent<ActiveClubChangeDetail>(ACTIVE_CLUB_CHANGED_EVENT, {
+        detail: { userClubKey, clubId },
+      }),
+    );
   };
 
   return { clubs, activeClubId, activeClub, setActiveClubId: setActive, loading };

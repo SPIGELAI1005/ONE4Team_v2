@@ -155,6 +155,13 @@
     font-family: 'Outfit', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     letter-spacing: -0.02em;
   }
+
+  /* Native select fallback so un-migrated dropdown lists stay theme-consistent */
+  select option,
+  select optgroup {
+    background-color: hsl(var(--popover));
+    color: hsl(var(--popover-foreground));
+  }
 }
 
 @layer utilities {

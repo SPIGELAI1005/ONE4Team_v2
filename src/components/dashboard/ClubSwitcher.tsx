@@ -1,4 +1,5 @@
 import { useActiveClub } from "@/hooks/use-active-club";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function ClubSwitcher() {
   const { clubs, activeClubId, setActiveClubId, loading } = useActiveClub();
@@ -8,17 +9,17 @@ export default function ClubSwitcher() {
   if (clubs.length === 1) return null;
 
   return (
-    <select
-      value={activeClubId ?? ""}
-      onChange={(e) => setActiveClubId(e.target.value)}
-      className="h-9 rounded-xl border border-border bg-background/60 px-3 text-xs text-foreground backdrop-blur"
-      aria-label="Active club"
-    >
-      {clubs.map((c) => (
-        <option key={c.id} value={c.id}>
-          {c.name}
-        </option>
-      ))}
-    </select>
+    <Select value={activeClubId ?? clubs[0]?.id} onValueChange={setActiveClubId}>
+      <SelectTrigger className="h-9 w-full sm:w-[180px] rounded-xl border-border bg-background/60 text-xs backdrop-blur" aria-label="Active club">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {clubs.map((c) => (
+          <SelectItem key={c.id} value={c.id}>
+            {c.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

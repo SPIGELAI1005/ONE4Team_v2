@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import AppHeader from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ShoppingBag, Plus, Search, Package, Tag, Truck, Edit2, Trash2, X, Info, Loader2 } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useLanguage } from "@/hooks/use-language";
@@ -289,10 +290,15 @@ export default function Shop() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <Search className="w-4 h-4 text-muted-foreground shrink-0" />
                     <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.shopPage.search} className="flex-1 min-w-[140px]" />
-                    <select className="h-10 rounded-2xl border border-border/60 bg-background/50 px-3 text-sm" value={filterCat} onChange={(e) => setFilterCat(e.target.value)}>
-                      <option value="">{t.shopPage.allCategories}</option>
-                      {categoryNames.map((name) => <option key={name} value={name}>{name}</option>)}
-                    </select>
+                    <Select value={filterCat || "__all"} onValueChange={(value) => setFilterCat(value === "__all" ? "" : value)}>
+                    <SelectTrigger className="h-10 w-full sm:w-[180px] rounded-xl border-border/60 bg-background/50 px-3 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all">{t.shopPage.allCategories}</SelectItem>
+                        {categoryNames.map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -420,9 +426,15 @@ export default function Shop() {
               </div>
               <div>
                 <div className="text-xs text-muted-foreground mb-1">{t.shopPage.category}</div>
-                <select className="w-full h-10 rounded-2xl border border-border/60 bg-background/50 px-3 text-sm" value={fCat} onChange={(e) => setFCat(e.target.value)}>
-                  {categoryNames.map((name) => <option key={name} value={name}>{name}</option>)}
-                </select>
+                <Select value={fCat || "__none"} onValueChange={(value) => setFCat(value === "__none" ? "" : value)}>
+                  <SelectTrigger className="w-full h-10 rounded-xl border-border/60 bg-background/50 px-3 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">{t.shopPage.category}</SelectItem>
+                    {categoryNames.map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div><div className="text-xs text-muted-foreground mb-1">{t.shopPage.imageUrl}</div><Input value={fImg} onChange={(e) => setFImg(e.target.value)} placeholder="https://..." /></div>
               <Button className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110" onClick={() => void saveProduct()} disabled={!fName.trim()}>{t.shopPage.save}</Button>

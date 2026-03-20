@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { useMembershipId } from "@/hooks/use-membership-id";
@@ -459,18 +460,19 @@ export default function Activities() {
                   </button>
                 ))}
 
-                <select
-                  className="h-9 rounded-2xl border border-border/60 bg-background/40 px-3 text-xs"
-                  value={filterTeamId}
-                  onChange={(e) => setFilterTeamId(e.target.value)}
-                >
-                  <option value="">All teams</option>
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
+                <Select value={filterTeamId || "__all"} onValueChange={(value) => setFilterTeamId(value === "__all" ? "" : value)}>
+                  <SelectTrigger className="h-9 w-full sm:w-[180px] rounded-xl border-border/60 bg-background/40 px-3 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all">All teams</SelectItem>
+                    {teams.map((team) => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
                 <button
                   onClick={() => setFilterMine((v) => !v)}
@@ -616,18 +618,19 @@ export default function Activities() {
 
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Team (optional)</div>
-                <select
-                  className="w-full h-10 rounded-2xl border border-border/60 bg-background/50 px-3 text-sm"
-                  value={teamId}
-                  onChange={(e) => setTeamId(e.target.value)}
-                >
-                  <option value="">No team</option>
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
+                <Select value={teamId || "__none"} onValueChange={(value) => setTeamId(value === "__none" ? "" : value)}>
+                  <SelectTrigger className="w-full h-10 rounded-xl border-border/60 bg-background/50 px-3 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">No team</SelectItem>
+                    {teams.map((team) => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>

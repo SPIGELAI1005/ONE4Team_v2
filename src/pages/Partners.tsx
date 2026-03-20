@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Plus, Building2, Search, Mail, Phone, Link2, FileText, Receipt, ListChecks } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
@@ -305,14 +306,15 @@ export default function Partners() {
               <div className="space-y-3">
                 <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3">
                   <div className="grid gap-2 sm:grid-cols-3">
-                    <select
-                      className="h-10 rounded-2xl border border-border/60 bg-background/50 px-3 text-sm"
-                      value={partnerId}
-                      onChange={(event) => setPartnerId(event.target.value)}
-                    >
-                      <option value="">Select partner</option>
-                      {partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
+                    <Select value={partnerId || "__none"} onValueChange={(value) => setPartnerId(value === "__none" ? "" : value)}>
+                      <SelectTrigger className="h-10 rounded-xl border-border/60 bg-background/50 px-3 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none">Select partner</SelectItem>
+                        {partners.map((partner) => <SelectItem key={partner.id} value={partner.id}>{partner.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                     <Input value={name} onChange={(event) => setName(event.target.value)} placeholder={tab === "invoices" ? "Invoice description (optional)" : "Title"} />
                     <Input value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={tab === "invoices" ? "Amount EUR" : "Notes"} />
                   </div>
@@ -386,17 +388,18 @@ export default function Partners() {
 
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Type</div>
-                <select
-                  className="w-full h-10 rounded-2xl border border-border/60 bg-background/50 px-3 text-sm"
-                  value={partnerType}
-                  onChange={(e) => setPartnerType(e.target.value)}
-                >
-                  <option value="sponsor">Sponsor</option>
-                  <option value="supplier">Supplier</option>
-                  <option value="service_provider">Service provider</option>
-                  <option value="consultant">Consultant</option>
-                  <option value="other">Other</option>
-                </select>
+                <Select value={partnerType} onValueChange={setPartnerType}>
+                  <SelectTrigger className="w-full h-10 rounded-xl border-border/60 bg-background/50 px-3 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sponsor">Sponsor</SelectItem>
+                    <SelectItem value="supplier">Supplier</SelectItem>
+                    <SelectItem value="service_provider">Service provider</SelectItem>
+                    <SelectItem value="consultant">Consultant</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import AppHeader from "@/components/layout/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, ExternalLink, Globe, Palette, MapPin, Share2, Search as SearchIcon, Save, Eye, EyeOff, Image as ImageIcon, UploadCloud, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveClub } from "@/hooks/use-active-club";
@@ -599,42 +600,51 @@ export default function ClubPageAdmin() {
           <div className="grid gap-3">
             <div>
               <div className="text-xs text-muted-foreground mb-1">{t.clubPageAdmin.joinApprovalMode}</div>
-              <select
+              <Select
                 value={form.join_approval_mode}
-                onChange={(event) => updateField("join_approval_mode", event.target.value as "manual" | "auto")}
-                className="w-full h-10 rounded-xl border border-border/60 bg-background/50 px-3 text-sm text-foreground"
+                onValueChange={(value) => updateField("join_approval_mode", value as "manual" | "auto")}
               >
-                <option value="manual">{t.clubPageAdmin.joinApprovalManual}</option>
-                <option value="auto">{t.clubPageAdmin.joinApprovalAuto}</option>
-              </select>
+                <SelectTrigger className="w-full h-10 rounded-xl border-border/60 bg-background/50 px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="manual">{t.clubPageAdmin.joinApprovalManual}</SelectItem>
+                  <SelectItem value="auto">{t.clubPageAdmin.joinApprovalAuto}</SelectItem>
+                </SelectContent>
+              </Select>
               <div className="text-[10px] text-muted-foreground mt-1">{t.clubPageAdmin.joinApprovalModeDesc}</div>
             </div>
             <div>
               <div className="text-xs text-muted-foreground mb-1">{t.clubPageAdmin.joinReviewerPolicy}</div>
-              <select
+              <Select
                 value={form.join_reviewer_policy}
-                onChange={(event) => updateField("join_reviewer_policy", event.target.value as "admin_only" | "admin_trainer")}
-                className="w-full h-10 rounded-xl border border-border/60 bg-background/50 px-3 text-sm text-foreground"
+                onValueChange={(value) => updateField("join_reviewer_policy", value as "admin_only" | "admin_trainer")}
               >
-                <option value="admin_only">{t.clubPageAdmin.joinReviewerAdminOnly}</option>
-                <option value="admin_trainer">{t.clubPageAdmin.joinReviewerAdminTrainer}</option>
-              </select>
+                <SelectTrigger className="w-full h-10 rounded-xl border-border/60 bg-background/50 px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin_only">{t.clubPageAdmin.joinReviewerAdminOnly}</SelectItem>
+                  <SelectItem value="admin_trainer">{t.clubPageAdmin.joinReviewerAdminTrainer}</SelectItem>
+                </SelectContent>
+              </Select>
               <div className="text-[10px] text-muted-foreground mt-1">{t.clubPageAdmin.joinReviewerPolicyDesc}</div>
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
                 <div className="text-xs text-muted-foreground mb-1">{t.clubPageAdmin.defaultRoleForNewMembers}</div>
-                <select
-                  value={form.join_default_role}
-                  onChange={(event) => updateField("join_default_role", event.target.value)}
-                  className="w-full h-10 rounded-xl border border-border/60 bg-background/50 px-3 text-sm text-foreground"
-                >
-                  <option value="member">{t.onboarding.member}</option>
-                  <option value="player">{t.onboarding.player}</option>
-                  <option value="trainer">{t.onboarding.trainer}</option>
-                  <option value="staff">{t.onboarding.teamStaff}</option>
-                  <option value="parent">{t.onboarding.parentSupporter}</option>
-                </select>
+                <Select value={form.join_default_role} onValueChange={(value) => updateField("join_default_role", value)}>
+                  <SelectTrigger className="w-full h-10 rounded-xl border-border/60 bg-background/50 px-3 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="member">{t.onboarding.member}</SelectItem>
+                    <SelectItem value="player">{t.onboarding.player}</SelectItem>
+                    <SelectItem value="trainer">{t.onboarding.trainer}</SelectItem>
+                    <SelectItem value="staff">{t.onboarding.teamStaff}</SelectItem>
+                    <SelectItem value="parent">{t.onboarding.parentSupporter}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <FieldRow
                 label={t.clubPageAdmin.defaultTeamForNewMembers}

@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-03-19 (Session 8 status sync, Europe/Berlin)
+Last updated: 2026-03-19 (Session 9 design/i18n sync, Europe/Berlin)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -214,6 +214,17 @@ Go-live readiness checklist (one-screen):
 - Improved Teams element modal usability for dense layouts:
   - scrollable properties body with fixed save footer,
   - collapsible color section (collapsed-by-default) with preview swatch.
+
+### Session 9 UI consistency + responsiveness snapshot (2026-03-19)
+- Completed app-wide dropdown component migration:
+  - all native `<select>` replaced with Shadcn `Select` in `src/`.
+- Completed visual rhythm normalization for dropdowns:
+  - standardized trigger/content/item rounding and spacing.
+- Added compact-dropdown responsive token standard:
+  - compact controls now follow `w-full sm:w-[180px]` with `h-9`,
+  - maintains phone readability while preserving desktop alignment rhythm.
+- Applied targeted i18n quality pass for sidebar navigation:
+  - German labels refined for `Property-Ebenen` and `Veranstaltungen`.
 
 ### i18n status (2026-03-01)
 - Full EN/DE localization expanded to include all newly added communication and bridge strings (`communicationPage` keys).

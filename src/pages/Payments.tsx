@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
@@ -244,13 +245,17 @@ const Payments = () => {
             <div className="space-y-3">
               <Input placeholder={t.payments.feeNameRequired} value={feeName} onChange={e => setFeeName(e.target.value)} className="bg-background" maxLength={100} />
               <Input type="number" placeholder={t.payments.amountRequired} value={feeAmount} onChange={e => setFeeAmount(e.target.value)} className="bg-background" min="0" step="0.01" />
-              <select value={feeInterval} onChange={e => setFeeInterval(e.target.value)}
-                className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground">
-                <option value="monthly">{t.common.monthly}</option>
-                <option value="quarterly">{t.common.quarterly}</option>
-                <option value="yearly">{t.common.yearly}</option>
-                <option value="one_time">{t.common.oneTime}</option>
-              </select>
+              <Select value={feeInterval} onValueChange={setFeeInterval}>
+                <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">{t.common.monthly}</SelectItem>
+                  <SelectItem value="quarterly">{t.common.quarterly}</SelectItem>
+                  <SelectItem value="yearly">{t.common.yearly}</SelectItem>
+                  <SelectItem value="one_time">{t.common.oneTime}</SelectItem>
+                </SelectContent>
+              </Select>
               <Button onClick={handleAddFeeType} disabled={!feeName.trim() || !feeAmount}
                 className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110">
                 {t.payments.createFeeType}

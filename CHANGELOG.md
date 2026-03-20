@@ -41,6 +41,31 @@ It records notable changes, features, and hardening steps.
   - expandable advanced color controls (picker, hex, swatches).
 - Added new EN/DE i18n keys in `src/i18n/en.ts` and `src/i18n/de.ts` for expand/collapse labels.
 
+## 2026-03-19 (Session 9)
+### Dropdown system unification (app-wide)
+- Replaced all remaining native `<select>` elements in `src/` with Shadcn `Select` components.
+- Updated affected pages/components so dropdown behavior and visuals are consistent in all contexts:
+  - Teams, Matches, Activities, Settings, Partners, Communication, Shop,
+  - Club Page Admin, Dues, Events, Payments, Player Stats,
+  - Members, ClubSwitcher, and analytics Head-to-Head.
+- Standardized select surface styling:
+  - `SelectTrigger` and `SelectContent` rounded geometry aligned to app chrome,
+  - consistent item corner styling for list readability and hover/focus rhythm.
+
+### Responsive dropdown rhythm + compact width token pass
+- Applied a compact dropdown width convention across the app:
+  - compact triggers now use `h-9` and `w-full sm:w-[180px]`.
+- Kept mobile-first behavior for narrow screens:
+  - compact filters stack and fill available width on phones,
+  - desktop/tablet keeps predictable `180px` rhythm for scanability.
+- Normalized standard form dropdown rhythm:
+  - standard form selects use `h-10` with consistent rounding and spacing.
+
+### Translation polish (sidebar focus)
+- Updated German navigation labels for better localization quality:
+  - `sidebar.propertyLayers` -> `Property-Ebenen`,
+  - `sidebar.events` -> `Veranstaltungen`.
+
 ## 2026-03-05 (Session 7)
 ### Pricing promo countdown + copy alignment
 - Updated pricing promo countdown deadline to `2026-04-10T23:59:59` in `src/pages/Pricing.tsx`.

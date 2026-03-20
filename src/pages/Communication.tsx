@@ -4,6 +4,7 @@ import AppHeader from "@/components/layout/AppHeader";
 import { Plus, Megaphone, Send, Loader2, X, Hash, MessageSquare, BotMessageSquare, Paperclip, RotateCcw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
@@ -1052,20 +1053,24 @@ const Communication = () => {
                 value={bridgeForm.teamId}
                 onChange={(event) => setBridgeForm((previous) => (previous ? { ...previous, teamId: event.target.value } : previous))}
               />
-              <select
+              <Select
                 value={bridgeForm.status}
-                onChange={(event) =>
+                onValueChange={(value) =>
                   setBridgeForm((previous) =>
-                    previous ? { ...previous, status: event.target.value as BridgeForm["status"] } : previous
+                    previous ? { ...previous, status: value as BridgeForm["status"] } : previous
                   )
                 }
-                className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground"
               >
-                <option value="pending">{t.communicationPage.pending}</option>
-                <option value="connected">{t.communicationPage.connected}</option>
-                <option value="error">{t.common.error}</option>
-                <option value="disabled">{t.communicationPage.disabled}</option>
-              </select>
+                <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">{t.communicationPage.pending}</SelectItem>
+                  <SelectItem value="connected">{t.communicationPage.connected}</SelectItem>
+                  <SelectItem value="error">{t.common.error}</SelectItem>
+                  <SelectItem value="disabled">{t.communicationPage.disabled}</SelectItem>
+                </SelectContent>
+              </Select>
 
               {bridgeForm.provider === "telegram" ? (
                 <Input
@@ -1139,16 +1144,17 @@ const Communication = () => {
                 rows={4}
                 maxLength={2000}
               />
-              <select
-                value={annPriority}
-                onChange={(event) => setAnnPriority(event.target.value)}
-                className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground"
-              >
-                <option value="low">{t.communicationPage.lowPriority}</option>
-                <option value="normal">{t.communicationPage.normalPriority}</option>
-                <option value="high">{t.communicationPage.highPriority}</option>
-                <option value="urgent">{t.communicationPage.urgentPriority}</option>
-              </select>
+              <Select value={annPriority} onValueChange={setAnnPriority}>
+                <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">{t.communicationPage.lowPriority}</SelectItem>
+                  <SelectItem value="normal">{t.communicationPage.normalPriority}</SelectItem>
+                  <SelectItem value="high">{t.communicationPage.highPriority}</SelectItem>
+                  <SelectItem value="urgent">{t.communicationPage.urgentPriority}</SelectItem>
+                </SelectContent>
+              </Select>
               <Button
                 onClick={handleAddAnnouncement}
                 disabled={!annTitle.trim() || !annContent.trim()}

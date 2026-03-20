@@ -41,6 +41,12 @@ type EventAttendance = {
   status: string;
 };
 
+function isMissingRelationError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const message = String((error as { message?: unknown }).message ?? "");
+  return message.includes("Could not find the table") || message.includes("does not exist");
+}
+
 const PlayerProfile = () => {
   // navigation is handled by AppHeader
   const { membershipId } = useParams();
@@ -79,10 +85,38 @@ const PlayerProfile = () => {
         .maybeSingle();
 
       const member = memberRaw as unknown as ClubMembershipProfileRow | null;
+      let fallbackTeamLabel: string | null = null;
       if (member) {
         setDisplayName(member.profiles?.display_name || "Unknown");
         setPosition(member.position);
+        fallbackTeamLabel = member.team;
         setTeam(member.team);
+      }
+
+      const [playerTeamsRes, coachTeamsRes] = await Promise.all([
+        supabase.from("team_players").select("team_id").eq("membership_id", membershipId),
+        supabase.from("team_coaches").select("team_id").eq("membership_id", membershipId),
+      ]);
+      const teamIds = new Set<string>();
+      ((playerTeamsRes.data as Array<{ team_id: string }> | null) || []).forEach((row) => teamIds.add(String(row.team_id)));
+      if (!coachTeamsRes.error) {
+        ((coachTeamsRes.data as Array<{ team_id: string }> | null) || []).forEach((row) => teamIds.add(String(row.team_id)));
+      } else if (!isMissingRelationError(coachTeamsRes.error)) {
+        // keep legacy fallback when coaches relation fails for other reasons
+        console.warn(coachTeamsRes.error.message);
+      }
+
+      if (teamIds.size > 0) {
+        const { data: teamRows } = await supabase
+          .from("teams")
+          .select("id, name")
+          .eq("club_id", clubId)
+          .in("id", Array.from(teamIds));
+        const names = ((teamRows as Array<{ id: string; name: string }> | null) || []).map((row) => row.name).filter(Boolean);
+        if (names.length > 0) setTeam(Array.from(new Set(names)).join(", "));
+        else setTeam(fallbackTeamLabel);
+      } else {
+        setTeam(fallbackTeamLabel);
       }
 
       const { data: matchesRaw } = await supabase

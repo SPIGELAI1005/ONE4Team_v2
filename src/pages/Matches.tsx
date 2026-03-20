@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -443,16 +444,24 @@ const Matches = () => {
                 <Input type="datetime-local" value={matchDate} onChange={e => setMatchDate(e.target.value)} className="bg-background" />
               </div>
               <Input placeholder="Location" value={matchLocation} onChange={e => setMatchLocation(e.target.value)} className="bg-background" />
-              <select value={matchTeamId} onChange={e => setMatchTeamId(e.target.value)}
-                className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground">
-                <option value="">No team</option>
-                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-              <select value={matchCompId} onChange={e => setMatchCompId(e.target.value)}
-                className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground">
-                <option value="">No competition</option>
-                {competitions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <Select value={matchTeamId || "__none"} onValueChange={(value) => setMatchTeamId(value === "__none" ? "" : value)}>
+                <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">No team</SelectItem>
+                  {teams.map((team) => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={matchCompId || "__none"} onValueChange={(value) => setMatchCompId(value === "__none" ? "" : value)}>
+                <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none">No competition</SelectItem>
+                  {competitions.map((competition) => <SelectItem key={competition.id} value={competition.id}>{competition.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
               <Button onClick={handleCreateMatch} disabled={!opponent.trim() || !matchDate}
                 className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110">Schedule Match</Button>
             </div>
@@ -472,17 +481,25 @@ const Matches = () => {
             <div className="space-y-3">
               <Input placeholder="Competition name *" value={compName} onChange={e => setCompName(e.target.value)} className="bg-background" maxLength={200} />
               <Input placeholder="Season (e.g. 2025/2026)" value={compSeason} onChange={e => setCompSeason(e.target.value)} className="bg-background" />
-              <select value={compType} onChange={e => setCompType(e.target.value)}
-                className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground">
-                <option value="league">League</option>
-                <option value="cup">Cup</option>
-                <option value="friendly">Friendly</option>
-              </select>
-              <select value={compTeamId} onChange={e => setCompTeamId(e.target.value)}
-                className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground">
-                <option value="">All teams</option>
-                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
+              <Select value={compType} onValueChange={setCompType}>
+                <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="league">League</SelectItem>
+                  <SelectItem value="cup">Cup</SelectItem>
+                  <SelectItem value="friendly">Friendly</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={compTeamId || "__all"} onValueChange={(value) => setCompTeamId(value === "__all" ? "" : value)}>
+                <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all">All teams</SelectItem>
+                  {teams.map((team) => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
               <Button onClick={handleCreateComp} disabled={!compName.trim()}
                 className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110">Create Competition</Button>
             </div>
@@ -589,20 +606,28 @@ const Matches = () => {
                     <div className="rounded-xl bg-background border border-border p-3 space-y-2">
                       <h5 className="text-xs font-semibold text-muted-foreground">ADD EVENT</h5>
                       <div className="flex gap-2 flex-wrap">
-                        <select value={evType} onChange={e => setEvType(e.target.value)}
-                          className="flex-1 min-w-[100px] h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground">
-                          <option value="goal">⚽ Goal</option>
-                          <option value="assist">🅰️ Assist</option>
-                          <option value="yellow_card">🟨 Yellow</option>
-                          <option value="red_card">🟥 Red</option>
-                          <option value="substitution_in">🔄 Sub In</option>
-                          <option value="substitution_out">🔄 Sub Out</option>
-                        </select>
-                        <select value={evMemberId} onChange={e => setEvMemberId(e.target.value)}
-                          className="flex-1 min-w-[100px] h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground">
-                          <option value="">Player</option>
-                          {members.map(m => <option key={m.id} value={m.id}>{m.profiles?.display_name || "Member"}</option>)}
-                        </select>
+                        <Select value={evType} onValueChange={setEvType}>
+                          <SelectTrigger className="w-full sm:w-[180px] h-9 rounded-xl border-border bg-card px-2 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="goal">⚽ Goal</SelectItem>
+                            <SelectItem value="assist">🅰️ Assist</SelectItem>
+                            <SelectItem value="yellow_card">🟨 Yellow</SelectItem>
+                            <SelectItem value="red_card">🟥 Red</SelectItem>
+                            <SelectItem value="substitution_in">🔄 Sub In</SelectItem>
+                            <SelectItem value="substitution_out">🔄 Sub Out</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select value={evMemberId || "__none"} onValueChange={(value) => setEvMemberId(value === "__none" ? "" : value)}>
+                          <SelectTrigger className="w-full sm:w-[180px] h-9 rounded-xl border-border bg-card px-2 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none">Player</SelectItem>
+                            {members.map((member) => <SelectItem key={member.id} value={member.id}>{member.profiles?.display_name || "Member"}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
                         <Input type="number" placeholder="Min" value={evMinute} onChange={e => setEvMinute(e.target.value)}
                           className="w-16 h-8 bg-card text-xs text-center" min="0" max="120" />
                         <Button size="sm" className="h-8 bg-gradient-gold-static text-primary-foreground hover:brightness-110" onClick={handleAddMatchEvent}>+</Button>
@@ -665,13 +690,17 @@ const Matches = () => {
                     <div className="rounded-xl bg-background border border-border p-3 space-y-2 mt-4">
                       <h5 className="text-xs font-semibold text-muted-foreground">ADD TO LINEUP</h5>
                       <div className="flex gap-2 flex-wrap">
-                        <select value={addLineupMemberId} onChange={e => setAddLineupMemberId(e.target.value)}
-                          className="flex-1 min-w-[120px] h-8 rounded-md border border-border bg-card px-2 text-xs text-foreground">
-                          <option value="">Select player</option>
-                          {members.filter(m => !lineup.some(l => l.membership_id === m.id)).map(m => (
-                            <option key={m.id} value={m.id}>{m.profiles?.display_name || "Member"}</option>
-                          ))}
-                        </select>
+                        <Select value={addLineupMemberId || "__none"} onValueChange={(value) => setAddLineupMemberId(value === "__none" ? "" : value)}>
+                          <SelectTrigger className="w-full sm:w-[180px] h-9 rounded-xl border-border bg-card px-2 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none">Select player</SelectItem>
+                            {members.filter((member) => !lineup.some((lineupMember) => lineupMember.membership_id === member.id)).map((member) => (
+                              <SelectItem key={member.id} value={member.id}>{member.profiles?.display_name || "Member"}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <Input placeholder="Pos" value={addLineupPosition} onChange={e => setAddLineupPosition(e.target.value)}
                           className="w-16 h-8 bg-card text-xs text-center" />
                         <Input type="number" placeholder="#" value={addLineupJersey} onChange={e => setAddLineupJersey(e.target.value)}

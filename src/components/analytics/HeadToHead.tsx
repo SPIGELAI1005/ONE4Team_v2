@@ -5,6 +5,7 @@ import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Lege
 import { supabase } from "@/integrations/supabase/client";
 import { useClubId } from "@/hooks/use-club-id";
 import type { MembershipOption, MatchEventLite } from "@/types/analytics";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Member = MembershipOption;
 
@@ -75,18 +76,30 @@ const HeadToHead = () => {
       <h3 className="font-display font-semibold text-foreground mb-4 text-sm flex items-center gap-2">
         <Users className="w-4 h-4 text-primary" /> Head-to-Head Comparison
       </h3>
-      <div className="flex gap-2 mb-4">
-        <select value={player1} onChange={e => setPlayer1(e.target.value)}
-          className="flex-1 h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground">
-          <option value="">Select Player 1</option>
-          {members.filter(m => m.id !== player2).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-        </select>
-        <span className="text-xs text-muted-foreground self-center">vs</span>
-        <select value={player2} onChange={e => setPlayer2(e.target.value)}
-          className="flex-1 h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground">
-          <option value="">Select Player 2</option>
-          {members.filter(m => m.id !== player1).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-        </select>
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+        <Select value={player1 || "__none"} onValueChange={(value) => setPlayer1(value === "__none" ? "" : value)}>
+          <SelectTrigger className="w-full sm:w-[180px] h-9 rounded-xl border-border bg-background px-2 text-xs">
+            <SelectValue placeholder="Select Player 1" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none">Select Player 1</SelectItem>
+            {members.filter(m => m.id !== player2).map(m => (
+              <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="text-xs text-muted-foreground self-center text-center sm:text-left">vs</span>
+        <Select value={player2 || "__none"} onValueChange={(value) => setPlayer2(value === "__none" ? "" : value)}>
+          <SelectTrigger className="w-full sm:w-[180px] h-9 rounded-xl border-border bg-background px-2 text-xs">
+            <SelectValue placeholder="Select Player 2" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none">Select Player 2</SelectItem>
+            {members.filter(m => m.id !== player1).map(m => (
+              <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {compData.length > 0 && (

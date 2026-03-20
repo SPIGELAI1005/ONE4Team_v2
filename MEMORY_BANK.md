@@ -1,6 +1,6 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-03-19 (Session 8 property planner + Teams modal UX)
+Last updated: 2026-03-19 (Session 9 dropdown/design consistency + responsive polish)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
@@ -34,6 +34,14 @@ Persistent handoff context for future agents so work can continue without re-dis
 - Teams map create/edit element modal UX has been hardened for density:
   - scrollable modal body with fixed save footer,
   - color section collapses by default and expands on demand.
+- Dropdown UX is now unified app-wide:
+  - all native `<select>` controls in `src/` replaced by Shadcn `Select`,
+  - select trigger/content/item geometry aligned for consistent visual rhythm.
+- Compact filter dropdown rhythm has a mobile-first standard:
+  - `w-full sm:w-[180px]` + `h-9`,
+  - consistent spacing behavior from phone to desktop.
+- German navigation localization polish applied:
+  - sidebar `Property-Ebenen` and `Veranstaltungen` labels updated.
 - Phase 12 closure status:
   - Supabase migrations applied and verified in target environments,
   - validation matrix signed off,

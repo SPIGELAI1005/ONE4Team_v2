@@ -358,6 +358,50 @@ export type Database = {
           },
         ]
       }
+      club_training_change_history: {
+        Row: {
+          action: string
+          club_id: string
+          created_at: string
+          created_by: string | null
+          details: Json
+          entity_id: string | null
+          entity_type: string
+          id: string
+          scope: string
+        }
+        Insert: {
+          action: string
+          club_id: string
+          created_at?: string
+          created_by?: string | null
+          details?: Json
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          scope: string
+        }
+        Update: {
+          action?: string
+          club_id?: string
+          created_at?: string
+          created_by?: string | null
+          details?: Json
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          scope?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_training_change_history_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competitions: {
         Row: {
           club_id: string
@@ -1216,6 +1260,42 @@ export type Database = {
           },
         ]
       }
+      team_coaches: {
+        Row: {
+          created_at: string
+          id: string
+          membership_id: string
+          team_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          membership_id: string
+          team_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          membership_id?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_coaches_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "club_memberships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_coaches_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           age_group: string | null
@@ -1223,6 +1303,7 @@ export type Database = {
           coach_name: string | null
           created_at: string
           id: string
+          league: string | null
           name: string
           sport: string | null
           updated_at: string
@@ -1233,6 +1314,7 @@ export type Database = {
           coach_name?: string | null
           created_at?: string
           id?: string
+          league?: string | null
           name: string
           sport?: string | null
           updated_at?: string
@@ -1243,6 +1325,7 @@ export type Database = {
           coach_name?: string | null
           created_at?: string
           id?: string
+          league?: string | null
           name?: string
           sport?: string | null
           updated_at?: string

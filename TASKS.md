@@ -175,6 +175,13 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **V2-070e** Teams create/edit element modal UX optimized for large forms:
   - scrollable properties window with fixed footer actions,
   - collapsible color section to reduce vertical clutter.
+- [x] **V2-070f** App-wide dropdown system migration completed:
+  - remaining native `<select>` elements replaced with Shadcn `Select` across `src/`.
+- [x] **V2-070g** Responsive dropdown rhythm standardization completed:
+  - compact dropdown token unified to `w-full sm:w-[180px]` + `h-9`,
+  - standard form dropdown spacing and rounding aligned.
+- [x] **V2-070h** Sidebar i18n polish completed (DE):
+  - `Property-Ebenen`, `Veranstaltungen`.
 
 ### P8-010 Internationalization (i18n)
 - [x] **P8-010a** Create `LanguageContext`, `useLanguage` hook, and `LanguageToggle` component.

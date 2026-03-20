@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -235,11 +236,15 @@ const Events = () => {
               <textarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)}
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
                 rows={3} maxLength={2000} />
-              <select value={eventType} onChange={e => setEventType(e.target.value)}
-                className="w-full h-10 rounded-md border border-border bg-background px-3 text-sm text-foreground">
-                <option value="event">Event</option>
-                <option value="tournament">Tournament</option>
-              </select>
+              <Select value={eventType} onValueChange={setEventType}>
+                <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="event">Event</SelectItem>
+                  <SelectItem value="tournament">Tournament</SelectItem>
+                </SelectContent>
+              </Select>
               <Input placeholder="Location" value={location} onChange={e => setLocation(e.target.value)} className="bg-background" />
               <div className="grid grid-cols-2 gap-2">
                 <div>

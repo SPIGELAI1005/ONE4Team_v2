@@ -3,7 +3,7 @@ import { useLanguage } from "@/hooks/use-language";
 import {
   LayoutDashboard, Users, Calendar, Trophy, CreditCard,
   MessageSquare, Briefcase, ShoppingBag, Globe, Bot,
-  Settings, LogOut, ChevronLeft, ChevronRight, CalendarDays, Swords, BarChart3
+  Settings, LogOut, ChevronLeft, ChevronRight, CalendarDays, Swords, BarChart3, Layers3
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -30,6 +30,7 @@ const DashboardSidebar = () => {
   const pathToId: Record<string, string> = {
     "/members": "members",
     "/teams": "training",
+    "/property-layers": "property-layers",
     "/matches": "matches",
     "/events": "events",
     "/player-stats": "stats",
@@ -52,6 +53,7 @@ const DashboardSidebar = () => {
   const roleMenus: Record<string, NavItem[]> = {
     admin: [
       { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
+      { icon: Layers3, label: t.sidebar.propertyLayers, id: "property-layers", route: "/property-layers" },
       { icon: Users, label: t.sidebar.members, id: "members", route: "/members" },
       { icon: Calendar, label: t.sidebar.training, id: "training", route: "/teams" },
       { icon: Trophy, label: t.sidebar.matches, id: "matches", route: "/matches" },
@@ -62,18 +64,19 @@ const DashboardSidebar = () => {
       { icon: Briefcase, label: t.sidebar.partners, id: "partners", route: "/partners" },
       { icon: ShoppingBag, label: t.sidebar.shop, id: "shop", route: "/shop" },
       { icon: Globe, label: t.sidebar.clubPage, id: "clubpage", route: "/club-page-admin" },
-      { icon: Bot, label: t.sidebar.coAImin, id: "ai", route: "/co-trainer" },
+      { icon: Bot, label: t.sidebar.oneAi, id: "ai", route: "/co-trainer" },
       { icon: Settings, label: t.sidebar.settings, id: "settings", route: "/settings" },
     ],
     trainer: [
       { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
+      { icon: Layers3, label: t.sidebar.propertyLayers, id: "property-layers", route: "/property-layers" },
       { icon: Calendar, label: t.sidebar.schedule, id: "schedule", route: "/activities" },
       { icon: Users, label: t.sidebar.myTeams, id: "teams", route: "/teams" },
       { icon: Trophy, label: t.sidebar.matches, id: "matches", route: "/matches" },
       { icon: CalendarDays, label: t.sidebar.events, id: "events", route: "/events" },
       { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/player-stats" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
-      { icon: Bot, label: t.sidebar.coTrainer, id: "ai", route: "/co-trainer" },
+      { icon: Bot, label: t.sidebar.oneAi, id: "ai", route: "/co-trainer" },
     ],
     player: [
       { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
@@ -83,6 +86,7 @@ const DashboardSidebar = () => {
       { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/player-stats" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
       { icon: ShoppingBag, label: t.sidebar.shop, id: "shop", route: "/shop" },
+      { icon: Bot, label: t.sidebar.oneAi, id: "ai", route: "/co-trainer" },
     ],
     sponsor: [
       { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },

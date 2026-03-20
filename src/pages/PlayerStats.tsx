@@ -5,6 +5,7 @@ import {
   Loader2, Trophy, Target, AlertTriangle, Award, Filter
 } from "lucide-react";
 // Button not needed on this page
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
@@ -160,35 +161,44 @@ const PlayerStats = () => {
           <div className="container mx-auto px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <Filter className="w-4 h-4 text-muted-foreground hidden sm:block" />
             {teams.length > 0 && (
-              <select
-                value={selectedTeamId}
-                onChange={e => setSelectedTeamId(e.target.value)}
-                className="w-full sm:w-auto h-8 rounded-md border border-border bg-background px-3 text-xs text-foreground"
-              >
-                <option value="all">All Teams</option>
-                {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
+              <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
+                <SelectTrigger className="w-full sm:w-[180px] h-9 rounded-xl border-border bg-background px-3 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Teams</SelectItem>
+                  {teams.map((team) => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             )}
             {seasons.length > 0 && (
-              <select
-                value={selectedSeason}
-                onChange={e => { setSelectedSeason(e.target.value); setSelectedCompId("all"); }}
-                className="w-full sm:w-auto h-8 rounded-md border border-border bg-background px-3 text-xs text-foreground"
-              >
-                <option value="all">All Seasons</option>
-                {seasons.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
+              <Select value={selectedSeason} onValueChange={(value) => { setSelectedSeason(value); setSelectedCompId("all"); }}>
+                <SelectTrigger className="w-full sm:w-[180px] h-9 rounded-xl border-border bg-background px-3 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Seasons</SelectItem>
+                  {seasons.map((season) => <SelectItem key={season} value={season}>{season}</SelectItem>)}
+                </SelectContent>
+              </Select>
             )}
-            <select
+            <Select
               value={selectedCompId}
-              onChange={e => { setSelectedCompId(e.target.value); if (e.target.value !== "all") setSelectedSeason("all"); }}
-              className="w-full sm:w-auto h-8 rounded-md border border-border bg-background px-3 text-xs text-foreground"
+              onValueChange={(value) => {
+                setSelectedCompId(value);
+                if (value !== "all") setSelectedSeason("all");
+              }}
             >
-              <option value="all">All Competitions</option>
-              {competitions
-                .filter(c => selectedSeason === "all" || c.season === selectedSeason)
-                .map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+              <SelectTrigger className="w-full sm:w-[180px] h-9 rounded-xl border-border bg-background px-3 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Competitions</SelectItem>
+                {competitions
+                  .filter((competition) => selectedSeason === "all" || competition.season === selectedSeason)
+                  .map((competition) => <SelectItem key={competition.id} value={competition.id}>{competition.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       )}

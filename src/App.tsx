@@ -192,6 +192,7 @@ const AnimatedRoutes = () => {
           <Route path="/dashboard/:role" element={<Suspense fallback={<RouteFallback />}><DashboardContent /></Suspense>} />
           <Route path="/members" element={<Suspense fallback={<RouteFallback />}><Members /></Suspense>} />
           <Route path="/teams" element={<Suspense fallback={<RouteFallback />}><Teams /></Suspense>} />
+          <Route path="/property-layers" element={<Suspense fallback={<RouteFallback />}><Teams /></Suspense>} />
           <Route path="/communication" element={<Suspense fallback={<RouteFallback />}><Communication /></Suspense>} />
           <Route path="/payments" element={<Suspense fallback={<RouteFallback />}><Payments /></Suspense>} />
           <Route path="/events" element={<Suspense fallback={<RouteFallback />}><Events /></Suspense>} />
