@@ -3,6 +3,24 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-03-25 (Members registry, RBAC, and UX)
+
+### Database
+- `20260324120000_club_member_master_records.sql` — `club_member_master_records`, guardian links, membership email RPCs.
+- `20260324140000_club_role_assignments.sql` — scoped role assignments, backfill, `is_club_admin` / `is_club_trainer` updates (apply before relying on assignment-based admin in RLS).
+- `20260324201000_club_member_master_records_select_broaden.sql` — SELECT on master records for `is_club_admin()` + legacy trainer membership (no dependency on `club_role_assignments`).
+- `20260324210000_club_member_drafts_master_data.sql` — `master_data jsonb` on `club_member_drafts` for pre-invite registry fields.
+
+### App / Members (`/members`)
+- Member master schema + XLSX import/export (`member-master-schema`, `member-master-xlsx`), full registry dialog, guardian linking.
+- Saved draft list: inline edit, persist `master_data`, show-all drafts, larger typography for badges and actions.
+- “Add members professionally”: expandable row with **More details / Less** control, tabbed master data (`MasterDataTabs`), CSV/XLSX maps extra columns into `masterData`.
+- Detail panel: tabbed read-only registry + **Club Card** tab (preview, generate internal ID, download pass when not read-only); consistent sizing across tabs; section titles aligned (Identity & Participation, Performance & Achievements, Financials & Banking, etc.).
+- Permissions: `club-role-assignments`, extended `permissions.ts`, `use-permissions` / `use-active-club` with assignment-aware flags.
+
+### i18n
+- EN/DE keys for drafts, master sections, club card, more/less expand labels.
+
 ## 2026-03-19 (Phase 12 closure)
 ### Release closure artifacts finalized
 - Completed Phase 12 evidence and decision artifacts:

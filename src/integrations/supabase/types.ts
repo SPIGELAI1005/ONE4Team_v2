@@ -157,6 +157,36 @@ export type Database = {
           },
         ]
       }
+      club_role_assignments: {
+        Row: {
+          id: string
+          club_id: string
+          membership_id: string
+          role_kind: string
+          scope: Database["public"]["Enums"]["club_role_scope"]
+          scope_team_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          club_id: string
+          membership_id: string
+          role_kind: string
+          scope: Database["public"]["Enums"]["club_role_scope"]
+          scope_team_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          club_id?: string
+          membership_id?: string
+          role_kind?: string
+          scope?: Database["public"]["Enums"]["club_role_scope"]
+          scope_team_id?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       clubs: {
         Row: {
           address: string | null
@@ -1435,6 +1465,7 @@ export type Database = {
         | "supplier"
         | "service_provider"
         | "consultant"
+      club_role_scope: "club" | "team" | "self"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1574,6 +1605,7 @@ export const Constants = {
         "service_provider",
         "consultant",
       ],
+      club_role_scope: ["club", "team", "self"],
     },
   },
 } as const

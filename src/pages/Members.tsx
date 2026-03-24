@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/hooks/use-language";
 import { motion } from "framer-motion";
@@ -7,7 +7,8 @@ import {
   Users, Search, Plus, ArrowLeft,
   Shield, Dumbbell, Crown, UserCheck, Heart, MoreHorizontal,
   Mail, Phone, Calendar, Loader2,
-  Link2, Copy, Check, Inbox, UserPlus, Clock, X, Upload, Download, AlertTriangle
+  Link2, Copy, Check, Inbox, UserPlus, Clock, X, Upload, Download, AlertTriangle,
+  Sparkles, FileSpreadsheet, UserCircle2, Pencil, ChevronDown, ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,21 @@ import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
 import { trackEvent } from "@/lib/telemetry";
 import logo from "@/assets/one4team-logo.png";
+import type { ClubMemberMasterRecord } from "@/lib/member-master-schema";
+import {
+  getMissingRequiredMasterFields,
+  masterFieldsFromFlatImport,
+  masterRecordCompletenessPct,
+  parseMembershipKind,
+} from "@/lib/member-master-schema";
+import {
+  buildMemberImportTemplateWorkbook,
+  buildMemberRegistryWorkbook,
+  parseRegistrySpreadsheetFirstSheet,
+} from "@/lib/member-master-xlsx";
+import { MemberMasterDialog } from "@/components/members/member-master-dialog";
+import { MasterDataTabs } from "@/components/members/master-data-tabs";
+import { Badge } from "@/components/ui/badge";
 
 type MemberRow = {
   id: string;
@@ -36,6 +52,14 @@ type MemberRow = {
     phone: string | null;
     user_id: string;
   };
+};
+
+type GuardianLinkRow = {
+  id: string;
+  club_id: string;
+  guardian_membership_id: string;
+  ward_membership_id: string;
+  relationship: string | null;
 };
 
 type InviteRequestRow = {
@@ -74,6 +98,7 @@ type MemberDraftRow = {
   invite_id: string | null;
   invited_at: string | null;
   created_at: string;
+  master_data: Record<string, unknown> | null;
 };
 
 type BulkMemberDraft = {
@@ -86,6 +111,7 @@ type BulkMemberDraft = {
   team: string;
   ageGroup: string;
   position: string;
+  masterData: Partial<ClubMemberMasterRecord>;
 };
 
 type ImportSummary = {
@@ -209,9 +235,32 @@ const Members = () => {
   const [memberDrafts, setMemberDrafts] = useState<MemberDraftRow[]>([]);
   const [draftsLoading, setDraftsLoading] = useState(false);
   const [draftActionId, setDraftActionId] = useState<string | null>(null);
+  const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
+  const [editingDraftForm, setEditingDraftForm] = useState<{ name: string; email: string; role: string; team: string; age_group: string; position: string; masterData: Partial<ClubMemberMasterRecord> }>({ name: "", email: "", role: "member", team: "", age_group: "", position: "", masterData: {} });
+  const [draftSaving, setDraftSaving] = useState(false);
+  const [draftMasterExpanded, setDraftMasterExpanded] = useState(false);
+  const [showAllDrafts, setShowAllDrafts] = useState(false);
   const [joinReviewerPolicy, setJoinReviewerPolicy] = useState<"admin_only" | "admin_trainer">("admin_only");
   const [clubSlug, setClubSlug] = useState<string | null>(null);
   const [clubName, setClubName] = useState<string | null>(null);
+
+  const [masterByMembershipId, setMasterByMembershipId] = useState<Record<string, ClubMemberMasterRecord | null>>({});
+  const [membershipEmails, setMembershipEmails] = useState<Record<string, string>>({});
+  const [guardianLinks, setGuardianLinks] = useState<GuardianLinkRow[]>([]);
+  const [showMasterDialog, setShowMasterDialog] = useState(false);
+  const [showRegistryImport, setShowRegistryImport] = useState(false);
+  const [registryImportBusy, setRegistryImportBusy] = useState(false);
+  const [registryImportPreview, setRegistryImportPreview] = useState<
+    Array<{
+      email: string;
+      membershipId: string | null;
+      missing: string[];
+      payload: Partial<ClubMemberMasterRecord>;
+      guardianEmail: string;
+      wardEmail: string;
+    }>
+  >([]);
+  const [guardianPickId, setGuardianPickId] = useState("");
 
   const [showCreateInvite, setShowCreateInvite] = useState(false);
   const [showAddMembers, setShowAddMembers] = useState(false);
@@ -231,9 +280,11 @@ const Members = () => {
       team: "",
       ageGroup: "",
       position: "",
+      masterData: {},
     },
   ]);
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [expandedBulkRows, setExpandedBulkRows] = useState<Set<string>>(new Set());
   const [existingMemberEmails, setExistingMemberEmails] = useState<Set<string>>(new Set());
   const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
 
@@ -297,6 +348,12 @@ const Members = () => {
     setJoinReviewerPolicy("admin_only");
     setClubSlug(null);
     setClubName(null);
+    setMasterByMembershipId({});
+    setMembershipEmails({});
+    setGuardianLinks([]);
+    setShowMasterDialog(false);
+    setShowRegistryImport(false);
+    setRegistryImportPreview([]);
 
     setSearch("");
     setRoleFilter("all");
@@ -327,6 +384,20 @@ const Members = () => {
     };
   };
 
+  const toggleBulkRowExpand = (id: string) => {
+    setExpandedBulkRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const updateBulkRowMasterField = (rowId: string, key: keyof ClubMemberMasterRecord, value: string | number | null) => {
+    setBulkRows((prev) =>
+      prev.map((r) => (r.id === rowId ? { ...r, masterData: { ...r.masterData, [key]: value } } : r)),
+    );
+  };
+
   const addDraftRow = () => {
     setBulkRows((previous) => [
       ...previous,
@@ -340,6 +411,7 @@ const Members = () => {
         team: "",
         ageGroup: "",
         position: "",
+        masterData: {},
       },
     ]);
   };
@@ -372,6 +444,11 @@ const Members = () => {
           return index >= 0 ? (columns[index] ?? "").trim() : "";
         };
         const parsedRole = normalizeRole(get("role"));
+        const masterFields = masterFieldsFromFlatImport(
+          Object.fromEntries(
+            Object.entries(record).map(([k, v]) => [k.toLowerCase().trim(), String(v ?? "").trim()]),
+          ),
+        );
         return {
           id: crypto.randomUUID(),
           include: true,
@@ -382,6 +459,7 @@ const Members = () => {
           team: get("team"),
           ageGroup: get("age_group"),
           position: get("position"),
+          masterData: masterFields,
         } as BulkMemberDraft;
       });
 
@@ -429,6 +507,11 @@ const Members = () => {
         return "";
       };
       const parsedRole = normalizeRole(get("role"));
+      const masterFields = masterFieldsFromFlatImport(
+        Object.fromEntries(
+          Object.entries(record).map(([k, v]) => [String(k).toLowerCase().trim(), String(v ?? "").trim()]),
+        ),
+      );
       return {
         id: crypto.randomUUID(),
         include: true,
@@ -439,6 +522,7 @@ const Members = () => {
         team: get("team"),
         ageGroup: get("age_group"),
         position: get("position"),
+        masterData: masterFields,
       } as BulkMemberDraft;
     });
 
@@ -479,228 +563,8 @@ const Members = () => {
   };
 
   const handleDownloadTemplate = async () => {
-    const xlsx = await import("xlsx");
-
-    const templateData: (string | number)[][] = [
-      ["ONE4Team - Members Import Template"],
-      ["Fill the rows below and keep the header names exactly as provided."],
-      ["Required for import: email, role. Additional profile fields are optional and can be used as rich member records."],
-      [],
-      [
-        "title",
-        "salutation",
-        "first_name",
-        "last_name",
-        "birth_name",
-        "nickname",
-        "birth_date",
-        "email",
-        "email_secondary",
-        "mobile",
-        "phone",
-        "street",
-        "house_number",
-        "postal_code",
-        "city",
-        "country",
-        "membership_number",
-        "membership_status",
-        "member_since",
-        "member_until",
-        "role",
-        "team",
-        "age_group",
-        "position",
-        "department",
-        "notes",
-      ],
-      [
-        "",
-        "Mr",
-        "Alex",
-        "Example",
-        "",
-        "Lex",
-        "2008-05-20",
-        "alex@example.com",
-        "",
-        "+4915112345678",
-        "",
-        "Musterstr.",
-        "10",
-        "80999",
-        "Munich",
-        "DE",
-        "M-1001",
-        "active",
-        "2023-07-01",
-        "",
-        "player",
-        "U16",
-        "U16",
-        "Midfield",
-        "Youth",
-        "",
-      ],
-      [
-        "",
-        "Ms",
-        "Sam",
-        "Trainer",
-        "",
-        "",
-        "1990-09-11",
-        "sam@example.com",
-        "",
-        "",
-        "+49891234567",
-        "Sportweg",
-        "4",
-        "80331",
-        "Munich",
-        "DE",
-        "M-1002",
-        "active",
-        "2022-01-15",
-        "",
-        "trainer",
-        "Senior",
-        "Adult",
-        "Head Coach",
-        "Football",
-        "UEFA B",
-      ],
-    ];
-
-    const currentMembersData: (string | number)[][] = [
-      ["ONE4Team - Current Members Snapshot"],
-      ["This sheet is generated from your current members overview and includes profile placeholders for richer member management."],
-      ["Only core app fields are currently auto-filled from this page (name, role, team, age_group, position, status, joined_at)."],
-      [],
-      [
-        "title",
-        "salutation",
-        "first_name",
-        "last_name",
-        "birth_name",
-        "nickname",
-        "birth_date",
-        "email",
-        "email_secondary",
-        "mobile",
-        "phone",
-        "street",
-        "house_number",
-        "postal_code",
-        "city",
-        "country",
-        "membership_number",
-        "membership_status",
-        "member_since",
-        "member_until",
-        "role",
-        "team",
-        "age_group",
-        "position",
-        "department",
-        "notes",
-        "joined_at",
-      ],
-      ...members.map((member) => [
-        "",
-        "",
-        (member.profiles?.display_name || "").split(" ").slice(0, -1).join(" "),
-        (member.profiles?.display_name || "").split(" ").slice(-1).join(" "),
-        "",
-        "",
-        "",
-        "",
-        "",
-        member.profiles?.phone || "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        member.status,
-        "",
-        "",
-        member.role,
-        member.team || "",
-        member.age_group || "",
-        member.position || "",
-        "",
-        "",
-        new Date(member.created_at).toLocaleDateString(),
-      ]),
-    ];
-
-    const workbook = xlsx.utils.book_new();
-    const templateSheet = xlsx.utils.aoa_to_sheet(templateData);
-    const membersSheet = xlsx.utils.aoa_to_sheet(currentMembersData);
-
-    templateSheet["!cols"] = [
-      { wch: 10 },
-      { wch: 12 },
-      { wch: 16 },
-      { wch: 16 },
-      { wch: 14 },
-      { wch: 14 },
-      { wch: 12 },
-      { wch: 30 },
-      { wch: 28 },
-      { wch: 16 },
-      { wch: 16 },
-      { wch: 16 },
-      { wch: 12 },
-      { wch: 10 },
-      { wch: 14 },
-      { wch: 14 },
-      { wch: 16 },
-      { wch: 16 },
-      { wch: 14 },
-      { wch: 14 },
-      { wch: 16 },
-      { wch: 14 },
-      { wch: 14 },
-      { wch: 18 },
-      { wch: 14 },
-      { wch: 24 },
-    ];
-    membersSheet["!cols"] = [
-      { wch: 10 },
-      { wch: 12 },
-      { wch: 16 },
-      { wch: 16 },
-      { wch: 14 },
-      { wch: 14 },
-      { wch: 12 },
-      { wch: 30 },
-      { wch: 28 },
-      { wch: 16 },
-      { wch: 16 },
-      { wch: 16 },
-      { wch: 12 },
-      { wch: 10 },
-      { wch: 14 },
-      { wch: 14 },
-      { wch: 16 },
-      { wch: 16 },
-      { wch: 14 },
-      { wch: 14 },
-      { wch: 16 },
-      { wch: 14 },
-      { wch: 14 },
-      { wch: 18 },
-      { wch: 14 },
-      { wch: 24 },
-      { wch: 14 },
-    ];
-
-    xlsx.utils.book_append_sheet(workbook, templateSheet, "Import Template");
-    xlsx.utils.book_append_sheet(workbook, membersSheet, "Current Members");
-    xlsx.writeFile(workbook, "one4team-members-import-template.xlsx");
+    await buildMemberImportTemplateWorkbook();
+    toast({ title: t.membersPage.downloadImportTemplate, description: t.membersPage.registryTemplateDownloaded });
   };
 
   const createInviteRecord = async (
@@ -820,6 +684,20 @@ const Members = () => {
   }, [t, toast]);
 
   const canManageMembers = perms.isAdmin;
+
+  const masterTabLabels = useMemo(() => ({
+    identity: t.membersPage.masterSectionIdentity,
+    contact: t.membersPage.masterSectionContact,
+    sport: t.membersPage.masterSectionSport,
+    performance: t.membersPage.masterSectionPerformance,
+    club: t.membersPage.masterSectionClub,
+    financial: t.membersPage.masterSectionFinancial,
+    safety: t.membersPage.masterSectionSafety,
+    clubCard: t.membersPage.masterSectionClubCard,
+    clubCardHint: t.membersPage.masterClubCardHint,
+    generateId: t.membersPage.masterGenerateId,
+    downloadPass: t.membersPage.masterDownloadPassBtn,
+  }), [t]);
   const canReviewJoinRequests = perms.isAdmin || (perms.isTrainer && joinReviewerPolicy === "admin_trainer");
   const canAccessMembersPage = perms.isAdmin || perms.isTrainer;
 
@@ -865,10 +743,13 @@ const Members = () => {
         );
 
         if (membershipIds.length > 0) {
-          const [teamRowsRes, playersRes, coachesRes] = await Promise.all([
+          const [teamRowsRes, playersRes, coachesRes, masterRes, guardianRes, emailRes] = await Promise.all([
             supabase.from("teams").select("id, name").eq("club_id", clubId),
             supabase.from("team_players").select("team_id, membership_id").in("membership_id", membershipIds),
             supabase.from("team_coaches").select("team_id, membership_id").in("membership_id", membershipIds),
+            supabase.from("club_member_master_records").select("*").in("membership_id", membershipIds),
+            supabase.from("club_member_guardian_links").select("*").eq("club_id", clubId),
+            supabase.rpc("list_club_membership_emails", { _club_id: clubId }),
           ]);
 
           const teamsById = new Map<string, string>();
@@ -894,8 +775,43 @@ const Members = () => {
             toast({ title: t.membersPage.errorLoadingMembers, description: coachesRes.error.message, variant: "destructive" });
           }
           setMemberTeamNamesById(map);
+
+          if (!masterRes.error && masterRes.data) {
+            const nextMaster: Record<string, ClubMemberMasterRecord | null> = {};
+            for (const row of masterRes.data as ClubMemberMasterRecord[]) {
+              nextMaster[row.membership_id] = row;
+            }
+            setMasterByMembershipId(nextMaster);
+          } else if (masterRes.error && !isMissingRelationError(masterRes.error)) {
+            toast({ title: t.membersPage.errorLoadingMembers, description: masterRes.error.message, variant: "destructive" });
+            setMasterByMembershipId({});
+          } else {
+            setMasterByMembershipId({});
+          }
+
+          if (!guardianRes.error && guardianRes.data) {
+            setGuardianLinks(guardianRes.data as unknown as GuardianLinkRow[]);
+          } else if (guardianRes.error && !isMissingRelationError(guardianRes.error)) {
+            toast({ title: t.membersPage.errorLoadingMembers, description: guardianRes.error.message, variant: "destructive" });
+            setGuardianLinks([]);
+          } else {
+            setGuardianLinks([]);
+          }
+
+          if (!emailRes.error && emailRes.data) {
+            const em: Record<string, string> = {};
+            for (const row of emailRes.data as { membership_id: string; email: string }[]) {
+              if (row.membership_id && row.email) em[row.membership_id] = row.email;
+            }
+            setMembershipEmails(em);
+          } else {
+            setMembershipEmails({});
+          }
         } else {
           setMemberTeamNamesById({});
+          setMasterByMembershipId({});
+          setGuardianLinks([]);
+          setMembershipEmails({});
         }
       }
       setLoading(false);
@@ -992,10 +908,17 @@ const Members = () => {
   }, [showAddMembers, clubId, perms.isAdmin, bulkRows]);
 
   const filtered = members.filter((m) => {
+    const master = masterByMembershipId[m.id];
+    const masterName = `${master?.first_name || ""} ${master?.last_name || ""}`.trim().toLowerCase();
     const name = (m.profiles?.display_name || "").toLowerCase();
     const phoneValue = (m.profiles?.phone || "").toLowerCase();
+    const emailValue = (membershipEmails[m.id] || "").toLowerCase();
     const query = search.toLowerCase();
-    const matchSearch = name.includes(query) || phoneValue.includes(query);
+    const matchSearch =
+      name.includes(query) ||
+      masterName.includes(query) ||
+      phoneValue.includes(query) ||
+      emailValue.includes(query);
     const matchRole = roleFilter === "all" || m.role === roleFilter;
     return matchSearch && matchRole;
   });
@@ -1005,6 +928,193 @@ const Members = () => {
     if (assignedTeams.length > 0) return assignedTeams.join(", ");
     return member.team || t.membersPage.noTeam;
   }, [memberTeamNamesById, t.membersPage.noTeam]);
+
+  const getMemberRosterName = useCallback(
+    (member: MemberRow) => {
+      const master = masterByMembershipId[member.id];
+      const fn = master?.first_name?.trim();
+      const ln = master?.last_name?.trim();
+      if (fn || ln) return [fn, ln].filter(Boolean).join(" ");
+      return member.profiles?.display_name || t.membersPage.unknownMember;
+    },
+    [masterByMembershipId, t.membersPage.unknownMember],
+  );
+
+  const handleExportMemberRegistry = useCallback(async () => {
+    if (!clubId) return;
+    await buildMemberRegistryWorkbook({
+      clubName: clubName || "Club",
+      membersSnapshot: members.map((m) => ({
+        email: membershipEmails[m.id] || "",
+        displayName: getMemberRosterName(m),
+        role: m.role,
+        status: m.status,
+        team: getMemberTeamLabel(m),
+        ageGroup: m.age_group || "",
+        position: m.position || "",
+        joinedAt: new Date(m.created_at).toISOString().slice(0, 10),
+        master: masterByMembershipId[m.id] || null,
+      })),
+    });
+    toast({ title: t.membersPage.registryExportTitle, description: t.membersPage.registryExportDesc });
+  }, [clubId, clubName, members, membershipEmails, masterByMembershipId, getMemberRosterName, getMemberTeamLabel, t, toast]);
+
+  const handleSaveMasterRecord = useCallback(
+    async (member: MemberRow, payload: Partial<ClubMemberMasterRecord>) => {
+      if (!clubId || !perms.isAdmin) {
+        toast({ title: t.common.notAuthorized, description: t.membersPage.onlyAdminsMembers, variant: "destructive" });
+        return;
+      }
+      const row = {
+        ...payload,
+        membership_id: member.id,
+        club_id: clubId,
+        membership_kind: payload.membership_kind || "active_participant",
+      };
+      const { data, error } = await supabase.from("club_member_master_records").upsert(row, { onConflict: "membership_id" }).select("*").maybeSingle();
+      if (error) {
+        toast({ title: t.common.error, description: error.message, variant: "destructive" });
+        throw new Error(error.message);
+      }
+      if (data) {
+        setMasterByMembershipId((previous) => ({
+          ...previous,
+          [member.id]: data as unknown as ClubMemberMasterRecord,
+        }));
+      }
+      toast({ title: t.common.updated, description: t.membersPage.registrySaved });
+    },
+    [clubId, perms.isAdmin, t, toast],
+  );
+
+  const emailToMembershipIdFromEmail = useCallback(
+    (emailRaw: string) => {
+      const e = normalizeEmail(emailRaw);
+      if (!e) return null;
+      const found = members.find((m) => normalizeEmail(membershipEmails[m.id] || "") === e);
+      return found?.id ?? null;
+    },
+    [members, membershipEmails],
+  );
+
+  const handlePrepareRegistryImport = useCallback(
+    async (file: File) => {
+      if (!clubId || !perms.isAdmin) return;
+      setRegistryImportBusy(true);
+      try {
+        const rows = await parseRegistrySpreadsheetFirstSheet(file);
+        const emails = Array.from(new Set(rows.map((r) => normalizeEmail(r.email)).filter(Boolean)));
+        const { data: resolved, error } = await supabase.rpc("resolve_club_member_emails_to_memberships", {
+          _club_id: clubId,
+          _emails: emails,
+        });
+        if (error) {
+          toast({ title: t.membersPage.registryImportFailed, description: error.message, variant: "destructive" });
+          setRegistryImportPreview([]);
+          return;
+        }
+        const emailToMembership = new Map<string, string>();
+        for (const entry of (resolved as { email: string; membership_id: string }[] | null) ?? []) {
+          emailToMembership.set(normalizeEmail(entry.email), entry.membership_id);
+        }
+
+        const preview: typeof registryImportPreview = [];
+        for (const r of rows) {
+          const email = normalizeEmail(r.email);
+          const membershipId = email ? emailToMembership.get(email) ?? null : null;
+          const payload = masterFieldsFromFlatImport(r.raw);
+          const mem = membershipId ? members.find((mm) => mm.id === membershipId) : null;
+          const roleParsed = mem?.role || (r.role ? normalizeRole(r.role).role : "member");
+          const missing = membershipId
+            ? getMissingRequiredMasterFields(payload, roleParsed)
+            : ["email_not_in_club"];
+          preview.push({
+            email: r.email,
+            membershipId,
+            missing: missing.map((m) => String(m)),
+            payload,
+            guardianEmail: r.guardianEmail,
+            wardEmail: r.wardEmail,
+          });
+        }
+        setRegistryImportPreview(preview);
+        toast({
+          title: t.membersPage.registryImportParsed,
+          description: t.membersPage.registryImportParsedDesc.replace("{count}", String(preview.length)),
+        });
+      } finally {
+        setRegistryImportBusy(false);
+      }
+    },
+    [clubId, perms.isAdmin, members, t, toast],
+  );
+
+  const handleApplyRegistryImport = useCallback(async () => {
+    if (!clubId || !perms.isAdmin) return;
+    const applicable = registryImportPreview.filter((row) => row.membershipId);
+    if (!applicable.length) {
+      toast({ title: t.membersPage.registryImportNothingToApply, variant: "destructive" });
+      return;
+    }
+    setRegistryImportBusy(true);
+    try {
+      let ok = 0;
+      for (const row of applicable) {
+        const memberId = row.membershipId as string;
+        const rawKind = row.payload.membership_kind;
+        const parsedKind = typeof rawKind === "string" ? parseMembershipKind(rawKind) : null;
+        const kind: ClubMemberMasterRecord["membership_kind"] =
+          parsedKind ??
+          (rawKind === "active_participant" || rawKind === "supporting_member" ? rawKind : "active_participant");
+        const rowPayload = {
+          ...row.payload,
+          membership_id: memberId,
+          club_id: clubId,
+          membership_kind: kind,
+        };
+        const { error } = await supabase.from("club_member_master_records").upsert(rowPayload, { onConflict: "membership_id" });
+        if (!error) ok += 1;
+      }
+
+      let linksOk = 0;
+      for (const r of registryImportPreview) {
+        if (!r.membershipId || !normalizeEmail(r.guardianEmail)) continue;
+        const wardId = r.membershipId;
+        const guardianId = emailToMembershipIdFromEmail(r.guardianEmail);
+        if (!guardianId || guardianId === wardId) continue;
+        const { error } = await supabase.from("club_member_guardian_links").insert({
+          club_id: clubId,
+          guardian_membership_id: guardianId,
+          ward_membership_id: wardId,
+          relationship: "guardian",
+        });
+        if (!error) linksOk += 1;
+      }
+
+      toast({
+        title: t.membersPage.registryImportApplied,
+        description: t.membersPage.registryImportAppliedDesc.replace("{rows}", String(ok)).replace("{links}", String(linksOk)),
+      });
+      setShowRegistryImport(false);
+      setRegistryImportPreview([]);
+
+      const membershipIds = members.map((m) => m.id);
+      if (membershipIds.length > 0) {
+        const { data: masterRows } = await supabase.from("club_member_master_records").select("*").in("membership_id", membershipIds);
+        if (masterRows) {
+          const next: Record<string, ClubMemberMasterRecord | null> = {};
+          for (const row of masterRows as ClubMemberMasterRecord[]) {
+            next[row.membership_id] = row;
+          }
+          setMasterByMembershipId(next);
+        }
+        const { data: gRows } = await supabase.from("club_member_guardian_links").select("*").eq("club_id", clubId);
+        if (gRows) setGuardianLinks(gRows as unknown as GuardianLinkRow[]);
+      }
+    } finally {
+      setRegistryImportBusy(false);
+    }
+  }, [clubId, perms.isAdmin, registryImportPreview, members, emailToMembershipIdFromEmail, t, toast]);
 
   const allRoles = ["all", "admin", "trainer", "player", "staff", "member", "parent", "sponsor"];
   const existingInviteEmails = useMemo(
@@ -1060,6 +1170,28 @@ const Members = () => {
       setSelectedMember(null);
       toast({ title: t.membersPage.memberRemoved });
     }
+  };
+
+  const handleAddGuardianLink = async () => {
+    if (!clubId || !selectedMember || !guardianPickId) return;
+    if (guardianPickId === selectedMember.id) return;
+    const { data, error } = await supabase
+      .from("club_member_guardian_links")
+      .insert({
+        club_id: clubId,
+        guardian_membership_id: guardianPickId,
+        ward_membership_id: selectedMember.id,
+        relationship: "guardian",
+      })
+      .select("*")
+      .maybeSingle();
+    if (error) {
+      toast({ title: t.common.error, description: error.message, variant: "destructive" });
+      return;
+    }
+    if (data) setGuardianLinks((previous) => [...previous, data as unknown as GuardianLinkRow]);
+    setGuardianPickId("");
+    toast({ title: t.common.updated });
   };
 
   const openEditMemberModal = (member: MemberRow) => {
@@ -1236,7 +1368,8 @@ const Members = () => {
         team: row.team.trim() || null,
         age_group: row.ageGroup.trim() || null,
         position: row.position.trim() || null,
-      });
+        master_data: Object.keys(row.masterData).length > 0 ? row.masterData : {},
+      } as Record<string, unknown>);
       if (error) {
         skippedCount += 1;
         continue;
@@ -1306,6 +1439,57 @@ const Members = () => {
     }
     setMemberDrafts((previous) => previous.filter((row) => row.id !== draftId));
     setDraftActionId(null);
+  };
+
+  const handleStartEditDraft = (draft: MemberDraftRow) => {
+    setEditingDraftId(draft.id);
+    setEditingDraftForm({
+      name: draft.name,
+      email: draft.email,
+      role: draft.role,
+      team: draft.team || "",
+      age_group: draft.age_group || "",
+      position: draft.position || "",
+      masterData: (draft.master_data as Partial<ClubMemberMasterRecord>) ?? {},
+    });
+    setDraftMasterExpanded(false);
+  };
+
+  const handleSaveDraftEdit = async () => {
+    if (!clubId || !editingDraftId) return;
+    setDraftSaving(true);
+    const { error } = await supabase
+      .from("club_member_drafts")
+      .update({
+        name: editingDraftForm.name,
+        email: editingDraftForm.email,
+        role: editingDraftForm.role,
+        team: editingDraftForm.team || null,
+        age_group: editingDraftForm.age_group || null,
+        position: editingDraftForm.position || null,
+        master_data: Object.keys(editingDraftForm.masterData).length > 0 ? editingDraftForm.masterData : {},
+      } as Record<string, unknown>)
+      .eq("id", editingDraftId)
+      .eq("club_id", clubId);
+    if (error) {
+      toast({ title: t.common.error, description: error.message, variant: "destructive" });
+      setDraftSaving(false);
+      return;
+    }
+    setMemberDrafts((prev) =>
+      prev.map((d) =>
+        d.id === editingDraftId
+          ? { ...d, name: editingDraftForm.name, email: editingDraftForm.email, role: editingDraftForm.role, team: editingDraftForm.team || null, age_group: editingDraftForm.age_group || null, position: editingDraftForm.position || null, master_data: editingDraftForm.masterData as Record<string, unknown> }
+          : d,
+      ),
+    );
+    toast({ title: t.membersPage.draftUpdated });
+    setEditingDraftId(null);
+    setDraftSaving(false);
+  };
+
+  const handleCancelDraftEdit = () => {
+    setEditingDraftId(null);
   };
 
   const handleCopy = async (text: string) => {
@@ -1441,16 +1625,56 @@ const Members = () => {
               ))}
             </div>
 
+            <div className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/12 via-card/90 to-accent/10 p-5 sm:p-6 mb-6 shadow-[0_12px_40px_rgba(0,0,0,0.12)]">
+              <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
+                <div className="flex items-start gap-3 flex-1">
+                  <div className="rounded-xl bg-primary/15 p-2.5 text-primary shrink-0">
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="font-display text-lg sm:text-xl font-bold text-foreground tracking-tight">{t.membersPage.registryHeroTitle}</h2>
+                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{t.membersPage.registryHeroBody}</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    className="border-border/80 bg-background/60"
+                    onClick={() => void handleExportMemberRegistry()}
+                  >
+                    <FileSpreadsheet className="w-4 h-4 mr-2" /> {t.membersPage.exportRegistry}
+                  </Button>
+                  <Button
+                    className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
+                    onClick={() => setShowRegistryImport(true)}
+                  >
+                    <Upload className="w-4 h-4 mr-2" /> {t.membersPage.importRegistry}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
             <div className="rounded-xl bg-card border border-border p-4 mb-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                 <div>
                   <div className="text-sm font-display font-bold text-foreground tracking-tight">{t.membersPage.savedMemberList}</div>
                   <div className="text-xs text-muted-foreground">{t.membersPage.savedMemberListDesc}</div>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {t.membersPage.savedMemberCount
-                    .replace("{draftCount}", String(memberDrafts.filter((row) => row.status === "draft").length))
-                    .replace("{invitedCount}", String(memberDrafts.filter((row) => row.status === "invited").length))}
+                <div className="flex items-center gap-3">
+                  <div className="text-xs text-muted-foreground">
+                    {t.membersPage.savedMemberCount
+                      .replace("{draftCount}", String(memberDrafts.filter((row) => row.status === "draft").length))
+                      .replace("{invitedCount}", String(memberDrafts.filter((row) => row.status === "invited").length))}
+                  </div>
+                  {memberDrafts.length > 8 && !showAllDrafts ? (
+                    <Button variant="link" size="sm" className="h-auto p-0 text-[11px]" onClick={() => setShowAllDrafts(true)}>
+                      {t.membersPage.showAllDrafts}
+                    </Button>
+                  ) : memberDrafts.length > 8 && showAllDrafts ? (
+                    <Button variant="link" size="sm" className="h-auto p-0 text-[11px]" onClick={() => setShowAllDrafts(false)}>
+                      {t.membersPage.showLessDrafts}
+                    </Button>
+                  ) : null}
                 </div>
               </div>
 
@@ -1462,47 +1686,130 @@ const Members = () => {
                 <div className="text-xs text-muted-foreground py-4">{t.membersPage.savedMemberListEmpty}</div>
               ) : (
                 <div className="space-y-2">
-                  {memberDrafts.slice(0, 8).map((draft) => (
-                    <div key={draft.id} className="rounded-lg border border-border/60 bg-background/40 p-3 flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium text-foreground truncate">{draft.name || draft.email}</div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          {draft.email} · {getRoleLabel(draft.role)}
-                          {draft.team ? ` · ${draft.team}` : ""}
+                  {(showAllDrafts ? memberDrafts : memberDrafts.slice(0, 8)).map((draft) => (
+                    editingDraftId === draft.id ? (
+                      <div key={draft.id} className="rounded-lg border-2 border-primary/30 bg-background/60 p-4 space-y-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                          <Input
+                            className="h-10 text-sm"
+                            value={editingDraftForm.name}
+                            placeholder={t.membersPage.fullNamePlaceholder}
+                            onChange={(e) => setEditingDraftForm((f) => ({ ...f, name: e.target.value }))}
+                          />
+                          <Input
+                            className="h-10 text-sm"
+                            value={editingDraftForm.email}
+                            placeholder={t.membersPage.memberEmailPlaceholder}
+                            onChange={(e) => setEditingDraftForm((f) => ({ ...f, email: e.target.value }))}
+                          />
+                          <Select value={editingDraftForm.role} onValueChange={(v) => setEditingDraftForm((f) => ({ ...f, role: v }))}>
+                            <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {SUPPORTED_ROLES.map((r) => (
+                                <SelectItem key={r} value={r} className="text-sm">{getRoleLabel(r)}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            className="h-10 text-sm"
+                            value={editingDraftForm.team}
+                            placeholder={t.membersPage.teamPlaceholder}
+                            onChange={(e) => setEditingDraftForm((f) => ({ ...f, team: e.target.value }))}
+                          />
+                          <Input
+                            className="h-10 text-sm"
+                            value={editingDraftForm.age_group}
+                            placeholder={t.membersPage.ageGroupPlaceholder}
+                            onChange={(e) => setEditingDraftForm((f) => ({ ...f, age_group: e.target.value }))}
+                          />
+                          <Input
+                            className="h-10 text-sm"
+                            value={editingDraftForm.position}
+                            placeholder={t.membersPage.positionPlaceholder}
+                            onChange={(e) => setEditingDraftForm((f) => ({ ...f, position: e.target.value }))}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                          onClick={() => setDraftMasterExpanded((prev) => !prev)}
+                        >
+                          {draftMasterExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                          {t.membersPage.masterDataFields}
+                        </button>
+                        {draftMasterExpanded && (
+                          <div className="rounded-lg border border-border/40 bg-muted/10 p-3">
+                            <MasterDataTabs
+                              values={editingDraftForm.masterData}
+                              labels={masterTabLabels}
+                              compact
+                              onChange={(key, value) =>
+                                setEditingDraftForm((f) => ({ ...f, masterData: { ...f.masterData, [key]: value } }))
+                              }
+                            />
+                          </div>
+                        )}
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="ghost" onClick={handleCancelDraftEdit} className="h-9 text-sm" disabled={draftSaving}>
+                            {t.common.cancel}
+                          </Button>
+                          <Button size="sm" onClick={() => void handleSaveDraftEdit()} disabled={draftSaving || !editingDraftForm.email.trim()} className="h-9 text-sm">
+                            {draftSaving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                            {t.common.save}
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                          draft.status === "invited" ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"
-                        }`}>
-                          {draft.status === "invited" ? t.membersPage.invited : t.membersPage.draft}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={draft.status !== "draft" || draftActionId === draft.id}
-                          onClick={() => handleSendInviteForDraft(draft)}
-                          className="h-7 text-[10px]"
-                        >
-                          {draftActionId === draft.id ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Link2 className="w-3 h-3 mr-1" />}
-                          {t.membersPage.sendInvite}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          disabled={draftActionId === draft.id}
-                          onClick={() => handleDeleteDraft(draft.id)}
-                          className="h-7 px-2 text-[10px] text-muted-foreground"
-                        >
-                          {t.common.remove}
-                        </Button>
+                    ) : (
+                      <div
+                        key={draft.id}
+                        className="rounded-lg border border-border/60 bg-background/40 p-3 flex items-center justify-between gap-3 cursor-pointer hover:border-primary/30 hover:bg-muted/30 transition-colors"
+                        onClick={() => draft.status === "draft" && handleStartEditDraft(draft)}
+                      >
+                        <div className="min-w-0 flex items-center gap-2">
+                          {draft.status === "draft" ? <Pencil className="w-3 h-3 text-muted-foreground shrink-0" /> : null}
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium text-foreground truncate">{draft.name || draft.email}</div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {draft.email} · {getRoleLabel(draft.role)}
+                              {draft.team ? ` · ${draft.team}` : ""}
+                              {draft.age_group ? ` · ${draft.age_group}` : ""}
+                              {draft.position ? ` · ${draft.position}` : ""}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                            draft.status === "invited" ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"
+                          }`}>
+                            {draft.status === "invited" ? t.membersPage.invited : t.membersPage.draft}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={draft.status !== "draft" || draftActionId === draft.id}
+                            onClick={() => handleSendInviteForDraft(draft)}
+                            className="h-8 text-xs"
+                          >
+                            {draftActionId === draft.id ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Link2 className="w-3.5 h-3.5 mr-1" />}
+                            {t.membersPage.sendInvite}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={draftActionId === draft.id}
+                            onClick={() => handleDeleteDraft(draft.id)}
+                            className="h-8 px-2 text-xs text-muted-foreground"
+                          >
+                            {t.common.remove}
+                          </Button>
+                        </div>
                       </div>
-                    </div>
+                    )
                   ))}
-                  {memberDrafts.length > 8 ? (
-                    <div className="text-[11px] text-muted-foreground pt-1">
+                  {memberDrafts.length > 8 && !showAllDrafts ? (
+                    <button className="text-[11px] text-primary hover:underline pt-1" onClick={() => setShowAllDrafts(true)}>
                       {t.membersPage.savedMemberListMore.replace("{count}", String(memberDrafts.length - 8))}
-                    </div>
+                    </button>
                   ) : null}
                 </div>
               )}
@@ -1530,19 +1837,40 @@ const Members = () => {
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-lg bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0">
-                              {(member.profiles?.display_name || "?").split(" ").map(n => n[0]).join("").slice(0, 2)}
+                            <div className="w-9 h-9 rounded-lg bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0 overflow-hidden">
+                              {masterByMembershipId[member.id]?.photo_url || member.profiles?.avatar_url ? (
+                                <img
+                                  src={masterByMembershipId[member.id]?.photo_url || member.profiles?.avatar_url || ""}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                (getMemberRosterName(member) || "?").split(" ").map((n) => n[0]).join("").slice(0, 2)
+                              )}
                             </div>
                             <div>
-                              <div className="text-sm font-medium text-foreground">{member.profiles?.display_name || "Unknown"}</div>
-                              <div className="text-xs text-muted-foreground">{getMemberTeamLabel(member)}</div>
+                              <div className="text-sm font-medium text-foreground">{getMemberRosterName(member)}</div>
+                              <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1.5">
+                                <span>{getMemberTeamLabel(member)}</span>
+                                {membershipEmails[member.id] ? (
+                                  <span className="text-xs opacity-80">· {membershipEmails[member.id]}</span>
+                                ) : null}
+                              </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${roleColors[member.role] || "bg-muted text-muted-foreground"}`}>
+                            <Badge variant="secondary" className="text-xs font-normal px-2.5 py-0.5 h-6">
+                              {masterRecordCompletenessPct(masterByMembershipId[member.id], member.role)}%
+                            </Badge>
+                            {masterByMembershipId[member.id]?.membership_kind === "supporting_member" ? (
+                              <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-violet-500/10 text-violet-300">
+                                {t.membersPage.supportingMember}
+                              </span>
+                            ) : null}
+                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${roleColors[member.role] || "bg-muted text-muted-foreground"}`}>
                               {getRoleLabel(member.role)}
                             </span>
-                            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
                               member.status === "active" ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"
                             }`}>
                               {member.status === "active" ? t.common.active : member.status}
@@ -1557,8 +1885,8 @@ const Members = () => {
 
               {/* Detail Panel */}
               {selectedMember && (
-                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="w-full lg:w-80 shrink-0">
-                  <div className="rounded-xl bg-card border border-border p-5 sticky top-24">
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="w-full lg:w-[420px] shrink-0">
+                  <div className="rounded-xl bg-card border border-border p-5 sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
                     <div className="flex items-center justify-between mb-4 lg:hidden">
                       <span className="text-sm text-muted-foreground">{t.membersPage.details}</span>
                       <Button variant="ghost" size="sm" onClick={() => setSelectedMember(null)}>
@@ -1566,28 +1894,119 @@ const Members = () => {
                       </Button>
                     </div>
                     <div className="text-center mb-5">
-                      <div className="w-16 h-16 rounded-xl bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-xl mx-auto mb-3">
-                        {(selectedMember.profiles?.display_name || "?").split(" ").map(n => n[0]).join("").slice(0, 2)}
+                      <div className="w-16 h-16 rounded-xl bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-xl mx-auto mb-3 overflow-hidden">
+                        {masterByMembershipId[selectedMember.id]?.photo_url || selectedMember.profiles?.avatar_url ? (
+                          <img
+                            src={masterByMembershipId[selectedMember.id]?.photo_url || selectedMember.profiles?.avatar_url || ""}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          (getMemberRosterName(selectedMember) || "?").split(" ").map((n) => n[0]).join("").slice(0, 2)
+                        )}
                       </div>
-                      <h3 className="font-display font-bold text-foreground">{selectedMember.profiles?.display_name}</h3>
-                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full inline-block mt-2 ${roleColors[selectedMember.role]}`}>
-                        {getRoleLabel(selectedMember.role)}
-                      </span>
+                      <h3 className="font-display font-bold text-foreground leading-snug">{getMemberRosterName(selectedMember)}</h3>
+                      <div className="flex flex-wrap items-center justify-center gap-1.5 mt-2">
+                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${roleColors[selectedMember.role]}`}>
+                          {getRoleLabel(selectedMember.role)}
+                        </span>
+                        <Badge variant="outline" className="text-xs font-normal px-2.5 py-0.5">
+                          {t.membersPage.registryCompleteness}: {masterRecordCompletenessPct(masterByMembershipId[selectedMember.id], selectedMember.role)}%
+                        </Badge>
+                      </div>
                     </div>
 
                     <div className="space-y-3 text-sm">
+                      {membershipEmails[selectedMember.id] ? (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Mail className="w-4 h-4 shrink-0" /> <span className="truncate">{membershipEmails[selectedMember.id]}</span>
+                        </div>
+                      ) : null}
                       {selectedMember.profiles?.phone && (
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Phone className="w-4 h-4" /> {selectedMember.profiles.phone}
                         </div>
                       )}
                       <div className="flex items-center gap-2 text-muted-foreground">
-                        <Users className="w-4 h-4" /> {getMemberTeamLabel(selectedMember)}
+                        <Users className="w-4 h-4 shrink-0" /> <span className="leading-snug">{getMemberTeamLabel(selectedMember)}</span>
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Calendar className="w-4 h-4" /> {t.membersPage.joined} {new Date(selectedMember.created_at).toLocaleDateString()}
                       </div>
                     </div>
+
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <div className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+                        <UserCircle2 className="w-4 h-4 text-primary" /> {t.membersPage.registrySnapshot}
+                      </div>
+                      <MasterDataTabs
+                        values={masterByMembershipId[selectedMember.id] ?? {}}
+                        labels={masterTabLabels}
+                        readOnly
+                        compact
+                        displayName={getMemberRosterName(selectedMember)}
+                        clubName={clubName}
+                        logoSrc={logo}
+                        membershipRole={selectedMember.role}
+                        teamLabel={getMemberTeamLabel(selectedMember)}
+                        email={membershipEmails[selectedMember.id] ?? null}
+                      />
+                    </div>
+
+                    {(guardianLinks.filter((g) => g.ward_membership_id === selectedMember.id).length > 0 || canManageMembers) ? (
+                      <div className="mt-4 pt-4 border-t border-border">
+                        <div className="text-sm font-semibold text-foreground mb-2">{t.membersPage.guardians}</div>
+                        {guardianLinks.filter((g) => g.ward_membership_id === selectedMember.id).length > 0 ? (
+                          <div className="space-y-1.5">
+                            {guardianLinks
+                              .filter((g) => g.ward_membership_id === selectedMember.id)
+                              .map((link) => {
+                                const gMem = members.find((m) => m.id === link.guardian_membership_id);
+                                return (
+                                  <div key={link.id} className="text-sm rounded-lg border border-border/60 bg-background/40 px-3 py-2 flex justify-between gap-2">
+                                    <span className="truncate">{gMem ? getMemberRosterName(gMem) : link.guardian_membership_id}</span>
+                                    {gMem ? (
+                                      <span className="text-xs text-muted-foreground shrink-0">{getRoleLabel(gMem.role)}</span>
+                                    ) : null}
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground mb-2">{t.membersPage.guardiansEmpty}</div>
+                        )}
+                        {canManageMembers ? (
+                          <div className="mt-3 space-y-2">
+                            <div className="text-sm text-muted-foreground">{t.membersPage.linkGuardian}</div>
+                            <div className="flex flex-col gap-2">
+                              <Select value={guardianPickId || undefined} onValueChange={setGuardianPickId}>
+                                <SelectTrigger className="h-10 text-sm">
+                                  <SelectValue placeholder={t.membersPage.pickGuardian} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {members
+                                    .filter((m) => m.id !== selectedMember.id)
+                                    .map((m) => (
+                                      <SelectItem key={m.id} value={m.id} className="text-sm">
+                                        {getMemberRosterName(m)} · {getRoleLabel(m.role)}
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="h-9"
+                                onClick={() => void handleAddGuardianLink()}
+                                disabled={!guardianPickId}
+                              >
+                                {t.membersPage.linkGuardianAction}
+                              </Button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
 
                     {(selectedMember.position || selectedMember.age_group) && (
                       <div className="mt-4 pt-4 border-t border-border">
@@ -1609,16 +2028,25 @@ const Members = () => {
                       </div>
                     )}
 
-                    <div className="mt-4 pt-4 border-t border-border flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1" onClick={() => openEditMemberModal(selectedMember)}>{t.common.edit}</Button>
+                    <div className="mt-4 pt-4 border-t border-border flex flex-col gap-2">
                       <Button
-                        variant="outline"
                         size="sm"
-                        className="flex-1 text-accent border-accent/30 hover:bg-accent/10"
-                        onClick={() => handleDeleteMember(selectedMember.id)}
+                        className="w-full bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
+                        onClick={() => setShowMasterDialog(true)}
                       >
-                        {t.common.remove}
+                        <Sparkles className="w-4 h-4 mr-2" /> {t.membersPage.openFullRegistry}
                       </Button>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="flex-1" onClick={() => openEditMemberModal(selectedMember)}>{t.common.edit}</Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 text-accent border-accent/30 hover:bg-accent/10"
+                          onClick={() => handleDeleteMember(selectedMember.id)}
+                        >
+                          {t.common.remove}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -2082,6 +2510,7 @@ const Members = () => {
               <table className="w-full text-sm">
                 <thead className="bg-background/70 sticky top-0">
                   <tr className="text-left text-xs text-muted-foreground">
+                    <th className="px-2 py-2 w-28"></th>
                     <th className="px-3 py-2 w-10">{t.membersPage.useColumn}</th>
                     <th className="px-3 py-2">{t.membersPage.nameColumn}</th>
                     <th className="px-3 py-2">{t.membersPage.emailRequiredColumn}</th>
@@ -2094,8 +2523,28 @@ const Members = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {bulkRows.map((row) => (
-                    <tr key={row.id} className="border-t border-border/50">
+                  {bulkRows.map((row) => {
+                    const bulkRowExpanded = expandedBulkRows.has(row.id);
+                    return (
+                    <Fragment key={row.id}>
+                    <tr className="border-t border-border/50">
+                      <td className="px-2 py-2">
+                        <button
+                          type="button"
+                          className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-all ${
+                            bulkRowExpanded
+                              ? "bg-primary/15 text-primary"
+                              : "bg-muted/60 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                          }`}
+                          onClick={() => toggleBulkRowExpand(row.id)}
+                          title={t.membersPage.masterDataToggle}
+                        >
+                          {bulkRowExpanded
+                            ? <ChevronDown className="w-4 h-4" />
+                            : <ChevronRight className="w-4 h-4" />}
+                          <span className="hidden sm:inline whitespace-nowrap">{bulkRowExpanded ? t.membersPage.hideDetails : t.membersPage.moreDetails}</span>
+                        </button>
+                      </td>
                       <td className="px-3 py-2">
                         <input
                           type="checkbox"
@@ -2178,7 +2627,20 @@ const Members = () => {
                         </Button>
                       </td>
                     </tr>
-                  ))}
+                    {bulkRowExpanded && (
+                      <tr className="border-t border-primary/15 bg-muted/20">
+                        <td colSpan={10} className="px-4 py-3">
+                          <MasterDataTabs
+                            values={row.masterData}
+                            labels={masterTabLabels}
+                            onChange={(key, value) => updateBulkRowMasterField(row.id, key, value)}
+                          />
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -2206,6 +2668,121 @@ const Members = () => {
           </motion.div>
         </div>
       )}
+
+      {selectedMember ? (
+        <MemberMasterDialog
+          open={showMasterDialog}
+          onOpenChange={setShowMasterDialog}
+          displayName={getMemberRosterName(selectedMember)}
+          email={membershipEmails[selectedMember.id] ?? null}
+          membershipRole={selectedMember.role}
+          teamLabel={getMemberTeamLabel(selectedMember)}
+          clubName={clubName}
+          logoSrc={logo}
+          initial={masterByMembershipId[selectedMember.id] ?? null}
+          labels={{
+            title: t.membersPage.masterDialogTitle,
+            subtitle: t.membersPage.masterDialogSubtitle,
+            save: t.common.save,
+            cancel: t.common.cancel,
+            readyBadge: t.membersPage.ready,
+            requiredBadge: t.membersPage.masterRequiredBadge,
+            optionalBadge: t.membersPage.masterOptionalBadge,
+            recommendedBadge: t.membersPage.masterRecommendedBadge,
+            sectionIdentity: t.membersPage.masterSectionIdentity,
+            sectionContact: t.membersPage.masterSectionContact,
+            sectionSport: t.membersPage.masterSectionSport,
+            sectionPerformance: t.membersPage.masterSectionPerformance,
+            sectionClub: t.membersPage.masterSectionClub,
+            sectionFinancial: t.membersPage.masterSectionFinancial,
+            sectionSafety: t.membersPage.masterSectionSafety,
+            completeness: t.membersPage.masterCompleteness,
+            missingFields: t.membersPage.masterMissingFields,
+            generateInternalId: t.membersPage.masterGenerateInternalId,
+            downloadPass: t.membersPage.masterDownloadPass,
+            passTitle: t.membersPage.masterPassTitle,
+            passHint: t.membersPage.masterPassHint,
+          }}
+          onSave={async (payload) => {
+            await handleSaveMasterRecord(selectedMember, payload);
+          }}
+        />
+      ) : null}
+
+      {showRegistryImport ? (
+        <div
+          className="fixed inset-0 z-50 bg-background/50 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setShowRegistryImport(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98, y: 6 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="w-full max-w-4xl rounded-3xl border border-border/60 bg-card/90 backdrop-blur-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-display font-bold text-lg">{t.membersPage.registryImportTitle}</h3>
+                <p className="text-xs text-muted-foreground mt-1">{t.membersPage.registryImportBody}</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setShowRegistryImport(false)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <label className="inline-flex mb-4">
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                className="hidden"
+                onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  if (file) await handlePrepareRegistryImport(file);
+                  event.currentTarget.value = "";
+                }}
+              />
+              <span className="inline-flex items-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium cursor-pointer hover:bg-accent hover:text-accent-foreground">
+                <Upload className="w-4 h-4 mr-2" /> {t.membersPage.importSpreadsheet}
+              </span>
+            </label>
+            {registryImportBusy ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : registryImportPreview.length > 0 ? (
+              <div className="rounded-xl border border-border overflow-hidden overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/50">
+                    <tr className="text-left">
+                      <th className="px-2 py-2">{t.membersPage.registryImportMatched}</th>
+                      <th className="px-2 py-2">email</th>
+                      <th className="px-2 py-2">{t.membersPage.registryImportMissing}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {registryImportPreview.map((row, idx) => (
+                      <tr key={`${row.email}-${idx}`} className="border-t border-border/60">
+                        <td className="px-2 py-2">{row.membershipId ? "✓" : "—"}</td>
+                        <td className="px-2 py-2 font-mono truncate max-w-[220px]">{row.email}</td>
+                        <td className="px-2 py-2 text-amber-600">{row.missing.join(", ")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowRegistryImport(false)}>{t.common.cancel}</Button>
+              <Button
+                className="bg-gradient-gold-static text-primary-foreground"
+                disabled={registryImportBusy || !registryImportPreview.some((r) => r.membershipId)}
+                onClick={() => void handleApplyRegistryImport()}
+              >
+                {t.membersPage.registryImportApply}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      ) : null}
 
       {showEditMemberModal && selectedMember && (
         <div

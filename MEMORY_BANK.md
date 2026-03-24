@@ -1,12 +1,17 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-03-19 (Session 9 dropdown/design consistency + responsive polish)
+Last updated: 2026-03-25 (Members master registry, club role assignments, Members UX)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
 - App is in post-Phase-12 local implementation with major onboarding/member operations upgrades completed in code.
+- **Members / master data (2026-03-25):**
+  - `club_member_master_records` + guardian links + email listing RPCs; draft rows can store `master_data` JSON before invite.
+  - **Club role assignments** (`club_role_assignments`) backfill and updated `is_club_admin` / `is_club_trainer`; legacy membership `admin` still used for some RLS write paths to avoid recursion.
+  - **Members page:** tabbed registry UI (`src/components/members/master-data-tabs.tsx`) in detail panel, bulk-add expanded rows, and draft edit; eighth tab **Club Card** with ID preview and PNG download (editable contexts).
+  - **RLS:** apply `20260324201000` so trainers/admins can SELECT master rows; `20260324140000` optional but recommended for assignment-based permissions consistency.
 - Core UX now supports SaaS-style return behavior:
   - returning users resume dashboard context,
   - onboarding is skipped when active memberships already exist.
@@ -99,6 +104,10 @@ Persistent handoff context for future agents so work can continue without re-dis
 11. `20260319220000_pitch_split_and_confirmation.sql`
 12. `20260319231500_club_property_layers_and_elements.sql`
 13. `20260319233000_club_pitches_display_color.sql`
+14. `20260324120000_club_member_master_records.sql` (and follow-ups as listed in `CHANGELOG.md`)
+15. `20260324140000_club_role_assignments.sql`
+16. `20260324201000_club_member_master_records_select_broaden.sql`
+17. `20260324210000_club_member_drafts_master_data.sql`
 
 Also ensure previously listed communication migrations remain applied in the same project:
 - `20260301152000_add_chat_bridge_connectors_and_events.sql`
@@ -111,10 +120,13 @@ Also ensure previously listed communication migrations remain applied in the sam
 - If behavior mismatches local code expectations, verify app env vars point to the same Supabase project where all required migrations are applied.
 
 ## Suggested Next Implementation Steps
+- **Members:** On member join from draft, merge `club_member_drafts.master_data` into `club_member_master_records` (server trigger or app flow); optional photo upload to storage instead of URL-only.
+- **Club card:** Persist `club_pass_generated_at` / internal ID server-side validation if clubs require sequential IDs.
+- **RLS audit:** Revisit policies that still key only on `club_memberships.role` where assignment-based admins need parity.
 - Add production workers/dispatch for:
   - abuse notification event delivery,
   - automation run execution lifecycle.
 - Harden Stripe integration:
   - webhook event ingestion and idempotency handling,
   - entitlement transitions tied to billing state.
-- Expand authenticated E2E coverage for new v2 flows (shop/partners/billing/automation).
+- Expand authenticated E2E coverage for new v2 flows (shop/partners/billing/automation) and **Members** registry + drafts.

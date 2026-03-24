@@ -7,14 +7,19 @@ const ACTIVE_CLUB_CHANGED_EVENT = "one4team:active-club-changed";
 
 export interface ClubOption {
   id: string;
+  /** Active club_memberships.id for scoped role assignments (Option 2 RBAC). */
+  membershipId: string;
   name: string;
   slug: string;
+  /** Legacy primary label from club_memberships.role (app_role). */
   role: string;
 }
 
 interface MembershipRow {
+  id: string;
   club_id: string;
   role: string;
+  created_at: string;
   clubs: {
     id: string;
     name: string;
@@ -48,9 +53,10 @@ export function useActiveClub() {
 
       const { data, error } = await supabase
         .from("club_memberships")
-        .select("club_id, role, clubs:clubs(id, name, slug)")
+        .select("id, club_id, role, created_at, clubs:clubs(id, name, slug)")
         .eq("user_id", user.id)
-        .eq("status", "active");
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
 
       if (error) {
         // keep silent for now; calling screens can decide what to show
@@ -61,15 +67,20 @@ export function useActiveClub() {
       }
 
       const rows = (data ?? []) as unknown as MembershipRow[];
-      const options: ClubOption[] = rows
-        .filter((r) => !!r.clubs)
-        .map((r) => ({
+      const seenClub = new Set<string>();
+      const options: ClubOption[] = [];
+      for (const r of rows) {
+        if (!r.clubs || seenClub.has(r.club_id)) continue;
+        seenClub.add(r.club_id);
+        options.push({
           id: r.club_id,
-          name: r.clubs!.name,
-          slug: r.clubs!.slug,
+          membershipId: r.id,
+          name: r.clubs.name,
+          slug: r.clubs.slug,
           role: r.role,
-        }))
-        .sort((a, b) => a.name.localeCompare(b.name));
+        });
+      }
+      options.sort((a, b) => a.name.localeCompare(b.name));
 
       setClubs(options);
 

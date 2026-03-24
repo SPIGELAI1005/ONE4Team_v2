@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-03-19 (Session 9 design/i18n sync, Europe/Berlin)
+Last updated: 2026-03-25 (Members master registry + RBAC migrations)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -10,6 +10,7 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - enhanced club-page branding studio and public club experience,
 - authenticated public club-page join flow with configurable approval/reviewer policy,
 - Phase 12 rollout guardrails (verification SQL, env matrix, validation matrix, go/no-go checklist, CI audit gate).
+- **Members (2026-03-25):** `club_member_master_records` + draft `master_data`, club role assignments, tabbed registry UI, XLSX import/export, Club Card tab, broadened SELECT RLS (see `CHANGELOG.md`).
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 
@@ -36,6 +37,10 @@ Go-live readiness checklist (one-screen):
   - `20260319220000_pitch_split_and_confirmation.sql`
   - `20260319231500_club_property_layers_and_elements.sql`
   - `20260319233000_club_pitches_display_color.sql`
+  - `20260324120000_club_member_master_records.sql`
+  - `20260324140000_club_role_assignments.sql`
+  - `20260324201000_club_member_master_records_select_broaden.sql`
+  - `20260324210000_club_member_drafts_master_data.sql`
 - [x] **Environment variables:** app points to the intended Supabase project (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`) in each environment (local/staging/prod).
 - [x] **Core smoke tests:** auth, onboarding/invite, members, settings save, club page admin save, and club public page preview pass.
 - [x] **Communication checks:** announcements load, chat send/retry works, attachments upload/open works, connector save/list works, no missing-table schema errors.

@@ -46,6 +46,12 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
   - template headers accepted by import parser,
   - current-members snapshot useful for club operators.
 
+### P12-050 Members master registry + RBAC (2026-03-25)
+- [x] **P12-050a** Apply migrations: `20260324120000`, `20260324140000`, `20260324201000`, `20260324210000` (order: master records → role assignments → SELECT broaden → draft `master_data`).
+- [x] **P12-050b** Members UI: tabbed master data, draft inline edit with `master_data`, bulk add expand + XLSX column merge, detail Club Card tab, larger list/draft controls.
+- [x] **P12-050c** App permissions aligned with `club_role_assignments` + legacy membership roles (`permissions.ts`, hooks).
+- [ ] **P12-050d** Follow-up: merge draft `master_data` into `club_member_master_records` on invite acceptance (server trigger or app); optional E2E for registry paths.
+
 ### P12-020 Abuse controls + quality gates
 - [x] **P12-020a** Add first abuse-control slice for invite/join rate limiting (DB ledger + RPC enforcement + user feedback).
 - [x] **P12-020a.1** Add second abuse-control slice:
