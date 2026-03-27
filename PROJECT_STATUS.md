@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-03-25 (Members master registry + RBAC migrations)
+Last updated: 2026-03-27 (i18n Auth/Settings; mobile Members + Shop)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -10,7 +10,8 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - enhanced club-page branding studio and public club experience,
 - authenticated public club-page join flow with configurable approval/reviewer policy,
 - Phase 12 rollout guardrails (verification SQL, env matrix, validation matrix, go/no-go checklist, CI audit gate).
-- **Members (2026-03-25):** `club_member_master_records` + draft `master_data`, club role assignments, tabbed registry UI, XLSX import/export, Club Card tab, broadened SELECT RLS (see `CHANGELOG.md`).
+- **Members (2026-03-25):** `club_member_master_records` + draft `master_data`, club role assignments, tabbed registry UI, XLSX import/export, Club Card tab, broadened SELECT RLS, guardian linking (player-only on roster; Player-role drafts get Safety-tab guardians + invite payload); redeem migration `20260325220000` (see `CHANGELOG.md`).
+- **UX/i18n (2026-03-27):** Auth and Settings strings consolidated in EN/DE; Members bulk table and Shop flows improved for small screens (horizontal scroll, touch targets). See `CHANGELOG.md` § 2026-03-27.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 

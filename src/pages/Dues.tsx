@@ -10,6 +10,7 @@ import { useMembershipId } from "@/hooks/use-membership-id";
 import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/use-language";
 
 type DuesStatus = "due" | "paid" | "waived";
 
@@ -64,6 +65,7 @@ export default function Dues() {
   const { membershipId, loading: membershipLoading } = useMembershipId();
   const perms = usePermissions();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const canManage = perms.isTrainer;
 
@@ -120,12 +122,12 @@ export default function Dues() {
         setDues([]);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to load dues";
-      toast({ title: "Error", description: msg, variant: "destructive" });
+      const msg = err instanceof Error ? err.message : t.duesPage.loadFailed;
+      toast({ title: t.common.error, description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [clubId, membershipId, canManage, toast]);
+  }, [clubId, membershipId, canManage, toast, t.common.error, t.duesPage.loadFailed]);
 
   useEffect(() => {
     void fetchData();
@@ -181,11 +183,11 @@ export default function Dues() {
     });
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t.common.error, description: error.message, variant: "destructive" });
       return;
     }
 
-    toast({ title: "Dues created" });
+    toast({ title: t.duesPage.toastDuesCreated });
     setShowCreate(false);
     setNewMembershipId("");
     setNewDueDate("");
@@ -204,7 +206,7 @@ export default function Dues() {
       .filter((m) => (bulkRole === "all" ? true : m.role === bulkRole));
 
     if (targets.length === 0) {
-      toast({ title: "No members", description: "No active members match this filter." });
+      toast({ title: t.duesPage.toastNoMembers, description: t.duesPage.toastNoMembersDesc });
       return;
     }
 
@@ -220,11 +222,11 @@ export default function Dues() {
 
     const { error } = await supabase.from("membership_dues").insert(rows);
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t.common.error, description: error.message, variant: "destructive" });
       return;
     }
 
-    toast({ title: "Bulk dues created", description: `${targets.length} members` });
+    toast({ title: t.duesPage.toastBulkCreated, description: t.duesPage.toastBulkCreatedDesc.replace("{count}", String(targets.length)) });
     setShowBulk(false);
     setBulkDueDate("");
     setBulkAmountEur("");
@@ -260,10 +262,10 @@ export default function Dues() {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader
-        title="Dues"
-        subtitle={canManage ? `${unpaidCount} unpaid` : "Your dues"}
+        title={t.duesPage.title}
+        subtitle={canManage ? t.duesPage.subtitleUnpaid.replace("{count}", String(unpaidCount)) : t.duesPage.subtitleYourDues}
         rightSlot={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-end">
             {dues.length > 0 && (
               <Button size="sm" variant="outline" className="rounded-2xl" onClick={exportCsv}>
                 <Download className="w-4 h-4 mr-1" /> CSV
@@ -384,12 +386,12 @@ export default function Dues() {
 
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Due date</div>
-                <Input value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} placeholder="YYYY-MM-DD" />
+                <Input value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} placeholder={t.placeholders.dateYyyyMmDd} />
               </div>
 
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Amount (EUR)</div>
-                <Input value={newAmountEur} onChange={(e) => setNewAmountEur(e.target.value)} placeholder="e.g. 15" />
+                <Input value={newAmountEur} onChange={(e) => setNewAmountEur(e.target.value)} placeholder={t.placeholders.amountExample} />
               </div>
 
               <div>
@@ -436,17 +438,17 @@ export default function Dues() {
 
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Due date</div>
-                <Input value={bulkDueDate} onChange={(e) => setBulkDueDate(e.target.value)} placeholder="YYYY-MM-DD" />
+                <Input value={bulkDueDate} onChange={(e) => setBulkDueDate(e.target.value)} placeholder={t.placeholders.dateYyyyMmDd} />
               </div>
 
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Amount (EUR)</div>
-                <Input value={bulkAmountEur} onChange={(e) => setBulkAmountEur(e.target.value)} placeholder="e.g. 15" />
+                <Input value={bulkAmountEur} onChange={(e) => setBulkAmountEur(e.target.value)} placeholder={t.placeholders.amountExample} />
               </div>
 
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Note (optional)</div>
-                <Input value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder="e.g. March dues" />
+                <Input value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder={t.duesPage.phNote} />
               </div>
 
               <Button className="bg-gradient-gold-static text-primary-foreground font-semibold" onClick={bulkCreate}>

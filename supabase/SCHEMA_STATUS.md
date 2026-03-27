@@ -45,6 +45,14 @@ Apply these in order when the environment is missing newer communication/member 
 8) `20260305224500_abuse_slice2_device_escalation_audit.sql`
 9) `20260305231500_abuse_slice3_gateway_alert_hooks.sql`
 
+## Members registry + guardians (2026-03-25)
+When using master registry, drafts with extended fields, or guardian linking, the active project should also include (in order after prior member bundles):
+- `20260324120000_club_member_master_records.sql` — `club_member_master_records`, `club_member_guardian_links`, email RPCs
+- `20260324140000_club_role_assignments.sql` — optional but recommended for assignment-aware admin/trainer
+- `20260324201000_club_member_master_records_select_broaden.sql` — SELECT policies for staff
+- `20260324210000_club_member_drafts_master_data.sql` — `club_member_drafts.master_data`
+- `20260325220000_redeem_invite_guardian_links.sql` — `redeem_club_invite` reads optional `invite_payload.guardian_membership_ids` and inserts guardian link rows after membership upsert
+
 ## Verification artifact
 - Run `supabase/PHASE12_VERIFY.sql` after applying the migrations above.
 - Treat any `ok = false` row as a rollout blocker.

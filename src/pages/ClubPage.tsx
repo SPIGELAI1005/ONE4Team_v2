@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { trackEvent } from "@/lib/telemetry";
 import logo from "@/assets/one4team-logo.png";
 
@@ -69,6 +70,16 @@ type NewsRowLite = {
   priority: string | null;
 };
 
+type ShopProductLite = {
+  id: string;
+  name: string;
+  description: string | null;
+  price_eur: number;
+  image_url: string | null;
+  stock: number;
+  is_active: boolean;
+};
+
 const ClubPage = () => {
   const navigate = useNavigate();
   const { clubSlug } = useParams();
@@ -83,6 +94,8 @@ const ClubPage = () => {
   const [sessions, setSessions] = useState<TrainingSessionRowLite[]>([]);
   const [events, setEvents] = useState<EventRowLite[]>([]);
   const [news, setNews] = useState<NewsRowLite[]>([]);
+  const [shopProducts, setShopProducts] = useState<ShopProductLite[]>([]);
+  const [memberCount, setMemberCount] = useState(0);
   const [loadingData, setLoadingData] = useState(false);
   const [isMember, setIsMember] = useState<boolean>(false);
   const [checkingMembership, setCheckingMembership] = useState(false);
@@ -172,7 +185,7 @@ const ClubPage = () => {
 
       setLoadingData(true);
       const nowIso = new Date().toISOString();
-      const [teamsRes, sessionsRes, eventsRes, newsRes] = await Promise.all([
+      const [teamsRes, sessionsRes, eventsRes, newsRes, membersCountRes, shopRes] = await Promise.all([
         supabase.from("teams").select("id, name, sport, age_group, coach_name").eq("club_id", club.id).order("name"),
         supabase
           .from("training_sessions")
@@ -194,6 +207,18 @@ const ClubPage = () => {
           .eq("club_id", club.id)
           .order("created_at", { ascending: false })
           .limit(4),
+        supabase
+          .from("club_memberships")
+          .select("id", { count: "exact", head: true })
+          .eq("club_id", club.id)
+          .eq("status", "active"),
+        supabaseDynamic
+          .from("shop_products")
+          .select("id, name, description, price_eur, image_url, stock, is_active")
+          .eq("club_id", club.id)
+          .eq("is_active", true)
+          .order("created_at", { ascending: false })
+          .limit(6),
       ]);
 
       if (teamsRes.error) toast({ title: t.common.error, description: teamsRes.error.message, variant: "destructive" });
@@ -205,6 +230,8 @@ const ClubPage = () => {
       setSessions((sessionsRes.data as TrainingSessionRowLite[]) || []);
       setEvents((eventsRes.data as EventRowLite[]) || []);
       setNews((newsRes.data as NewsRowLite[]) || []);
+      setMemberCount((membersCountRes as unknown as { count: number | null }).count ?? 0);
+      setShopProducts((shopRes.data as unknown as ShopProductLite[]) || []);
       setLoadingData(false);
     };
     void run();
@@ -297,11 +324,7 @@ const ClubPage = () => {
     "--club-support": club?.support_color || "#22C55E",
   } as React.CSSProperties;
 
-  const shopCards = [
-    { title: t.clubPage.shopJerseysTitle, description: t.clubPage.shopJerseysDesc },
-    { title: t.clubPage.shopTrainingTitle, description: t.clubPage.shopTrainingDesc },
-    { title: t.clubPage.shopFanTitle, description: t.clubPage.shopFanDesc },
-  ];
+  const hasRealProducts = shopProducts.length > 0;
 
   return (
     <div className="min-h-screen bg-background" style={themeStyle}>
@@ -436,14 +459,15 @@ const ClubPage = () => {
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { icon: Users, label: t.clubPage.membersCount, desc: t.clubPage.membersCountDesc },
-              { icon: Trophy, label: t.clubPage.teamsCount, desc: t.clubPage.teamsCountDesc },
-              { icon: Star, label: t.clubPage.leaguesCount, desc: t.clubPage.leaguesCountDesc },
+              { icon: Users, value: memberCount, label: t.clubPage.membersCount, desc: t.clubPage.membersCountDesc },
+              { icon: Trophy, value: teams.length, label: t.clubPage.teamsCount, desc: t.clubPage.teamsCountDesc },
+              { icon: Calendar, value: events.length, label: t.clubPage.leaguesCount, desc: t.clubPage.leaguesCountDesc },
             ].map((stat) => (
               <div key={stat.label} className="text-center p-6 rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl">
                 <stat.icon className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--club-primary)" }} />
-                <h3 className="font-display text-xl font-bold text-foreground mb-1">{stat.label}</h3>
-                <p className="text-sm text-muted-foreground">{stat.desc}</p>
+                <div className="font-display text-3xl font-bold text-foreground mb-1">{stat.value}</div>
+                <h3 className="font-display text-sm font-semibold text-foreground mb-1">{stat.label}</h3>
+                <p className="text-xs text-muted-foreground">{stat.desc}</p>
               </div>
             ))}
           </div>
@@ -514,17 +538,47 @@ const ClubPage = () => {
             {t.clubPage.featuredShop} <span className="text-gradient-gold">{t.clubPage.shopSection}</span>
           </h2>
           <p className="text-center text-muted-foreground text-sm max-w-2xl mx-auto mb-8">{t.clubPage.shopDesc}</p>
-          <div className="grid md:grid-cols-3 gap-4">
-            {shopCards.map((card) => (
-              <div key={card.title} className="p-5 rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-3">
-                  <ShoppingBag className="w-5 h-5" />
+          {hasRealProducts ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {shopProducts.map((product) => (
+                <div key={product.id} className="rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
+                  <div className="h-36 bg-gradient-to-br from-primary/5 to-primary/10 flex items-center justify-center">
+                    {product.image_url ? (
+                      <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <ShoppingBag className="w-10 h-10 text-primary/30" />
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-display font-semibold text-foreground text-sm">{product.name}</h3>
+                    {product.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.description}</p>}
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="font-display font-bold text-foreground text-lg">EUR {Number(product.price_eur).toFixed(2)}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border ${product.stock > 0 ? "text-green-600 bg-green-500/10 border-green-500/20" : "text-red-500 bg-red-500/10 border-red-500/20"}`}>
+                        {product.stock > 0 ? `${t.shopPage.inStock} (${product.stock})` : t.shopPage.outOfStock}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <h3 className="font-display font-semibold text-foreground">{card.title}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-4">
+              {[
+                { title: t.clubPage.shopJerseysTitle, description: t.clubPage.shopJerseysDesc },
+                { title: t.clubPage.shopTrainingTitle, description: t.clubPage.shopTrainingDesc },
+                { title: t.clubPage.shopFanTitle, description: t.clubPage.shopFanDesc },
+              ].map((card) => (
+                <div key={card.title} className="p-5 rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-3">
+                    <ShoppingBag className="w-5 h-5" />
+                  </div>
+                  <h3 className="font-display font-semibold text-foreground">{card.title}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
+                </div>
+              ))}
+            </div>
+          )}
           {club?.website ? (
             <div className="flex justify-center mt-6">
               <Button variant="outline" onClick={() => window.open(club.website || "", "_blank")}>

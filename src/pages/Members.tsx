@@ -4,10 +4,10 @@ import { useLanguage } from "@/hooks/use-language";
 import { motion } from "framer-motion";
 import AppHeader from "@/components/layout/AppHeader";
 import {
-  Users, Search, Plus, ArrowLeft,
+  Users, Search, Plus,
   Shield, Dumbbell, Crown, UserCheck, Heart, MoreHorizontal,
-  Mail, Phone, Calendar, Loader2,
-  Link2, Copy, Check, Inbox, UserPlus, Clock, X, Upload, Download, AlertTriangle,
+  Phone, Calendar, Loader2,
+  Link2, Copy, Check, Inbox, UserPlus, Clock, X, Upload, UploadCloud, Download, AlertTriangle,
   Sparkles, FileSpreadsheet, UserCircle2, Pencil, ChevronDown, ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,14 +18,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
+import { RoleManager } from "@/components/members/role-manager";
 import { trackEvent } from "@/lib/telemetry";
 import logo from "@/assets/one4team-logo.png";
 import type { ClubMemberMasterRecord } from "@/lib/member-master-schema";
 import {
+  DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY,
   getMissingRequiredMasterFields,
   masterFieldsFromFlatImport,
   masterRecordCompletenessPct,
   parseMembershipKind,
+  readDraftGuardianMembershipIds,
 } from "@/lib/member-master-schema";
 import {
   buildMemberImportTemplateWorkbook,
@@ -190,6 +193,51 @@ const roleColors: Record<string, string> = {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function isPlayerRole(role: string | null | undefined): boolean {
+  return (role || "").trim().toLowerCase() === "player";
+}
+
+/** Same bucket as Settings profile avatars; path must start with `auth.uid()` per RLS. */
+const PROFILE_AVATAR_BUCKET = "images-avatars";
+
+function splitStoredNameToFirstLast(
+  name: string,
+  master: Partial<ClubMemberMasterRecord> | null | undefined,
+): { firstName: string; lastName: string } {
+  const fn = typeof master?.first_name === "string" ? master.first_name.trim() : "";
+  const ln = typeof master?.last_name === "string" ? master.last_name.trim() : "";
+  if (fn || ln) return { firstName: fn, lastName: ln };
+  const t = (name || "").trim();
+  if (!t) return { firstName: "", lastName: "" };
+  const space = t.indexOf(" ");
+  if (space === -1) return { firstName: t, lastName: "" };
+  return { firstName: t.slice(0, space), lastName: t.slice(space + 1).trim() };
+}
+
+function buildDisplayNameFromParts(firstName: string, lastName: string): string {
+  return [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
+}
+
+/** Single view of registry fields for MasterDataTabs: top-of-form first/last always feed Identity tab. */
+function mergeDraftMasterValuesForTabs(
+  masterData: Partial<ClubMemberMasterRecord>,
+  firstName: string,
+  lastName: string,
+): Partial<ClubMemberMasterRecord> {
+  const md = { ...(masterData as Record<string, unknown>) };
+  delete md[DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY];
+  const rest = md as Partial<ClubMemberMasterRecord>;
+  const fnTop = firstName.trim();
+  const lnTop = lastName.trim();
+  const fnM = typeof rest.first_name === "string" ? rest.first_name.trim() : "";
+  const lnM = typeof rest.last_name === "string" ? rest.last_name.trim() : "";
+  return {
+    ...rest,
+    first_name: fnTop || fnM || null,
+    last_name: lnTop || lnM || null,
+  };
+}
+
 function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
@@ -200,6 +248,13 @@ function isMissingRelationError(error: unknown): boolean {
   return message.includes("Could not find the table") || message.includes("does not exist");
 }
 
+/** PostgREST when master_data column was not applied to club_member_drafts yet. */
+function isMissingDraftMasterDataColumnError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const message = String((error as { message?: unknown }).message ?? "");
+  return message.includes("master_data") && message.includes("club_member_drafts");
+}
+
 const Members = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -207,14 +262,17 @@ const Members = () => {
   const { t } = useLanguage();
   const { clubId, loading: clubLoading } = useClubId();
   const perms = usePermissions();
-  const [tab, setTab] = useState<"members" | "invites">("members");
+  const [tab, setTab] = useState<"members" | "invites" | "roles">("members");
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [memberTeamNamesById, setMemberTeamNamesById] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedMember, setSelectedMember] = useState<MemberRow | null>(null);
-  const [showEditMemberModal, setShowEditMemberModal] = useState(false);
+  const [memberPanelEditModeId, setMemberPanelEditModeId] = useState<string | null>(null);
+  const [memberMasterEditDraft, setMemberMasterEditDraft] = useState<Partial<ClubMemberMasterRecord>>({});
+  const [memberPanelSaving, setMemberPanelSaving] = useState(false);
+  const [memberPanelAvatarUploading, setMemberPanelAvatarUploading] = useState(false);
   const [editMemberForm, setEditMemberForm] = useState({
     role: "member",
     team: "",
@@ -236,8 +294,19 @@ const Members = () => {
   const [draftsLoading, setDraftsLoading] = useState(false);
   const [draftActionId, setDraftActionId] = useState<string | null>(null);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
-  const [editingDraftForm, setEditingDraftForm] = useState<{ name: string; email: string; role: string; team: string; age_group: string; position: string; masterData: Partial<ClubMemberMasterRecord> }>({ name: "", email: "", role: "member", team: "", age_group: "", position: "", masterData: {} });
+  const [editingDraftForm, setEditingDraftForm] = useState<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+    team: string;
+    age_group: string;
+    position: string;
+    masterData: Partial<ClubMemberMasterRecord>;
+  }>({ firstName: "", lastName: "", email: "", role: "member", team: "", age_group: "", position: "", masterData: {} });
   const [draftSaving, setDraftSaving] = useState(false);
+  const [draftAvatarUploading, setDraftAvatarUploading] = useState(false);
+  const [bulkAvatarUploadingRowId, setBulkAvatarUploadingRowId] = useState<string | null>(null);
   const [draftMasterExpanded, setDraftMasterExpanded] = useState(false);
   const [showAllDrafts, setShowAllDrafts] = useState(false);
   const [joinReviewerPolicy, setJoinReviewerPolicy] = useState<"admin_only" | "admin_trainer">("admin_only");
@@ -261,6 +330,7 @@ const Members = () => {
     }>
   >([]);
   const [guardianPickId, setGuardianPickId] = useState("");
+  const [draftGuardianPickId, setDraftGuardianPickId] = useState("");
 
   const [showCreateInvite, setShowCreateInvite] = useState(false);
   const [showAddMembers, setShowAddMembers] = useState(false);
@@ -571,7 +641,13 @@ const Members = () => {
     emailValue: string,
     roleValue: string,
     daysValue: string,
-    payload?: { name?: string; team?: string; age_group?: string; position?: string }
+    payload?: {
+      name?: string;
+      team?: string;
+      age_group?: string;
+      position?: string;
+      guardian_membership_ids?: string[];
+    },
   ) => {
     if (!clubId) return { ok: false as const, error: t.membersPage.noClubSelected };
     const token = generateToken();
@@ -697,6 +773,11 @@ const Members = () => {
     clubCardHint: t.membersPage.masterClubCardHint,
     generateId: t.membersPage.masterGenerateId,
     downloadPass: t.membersPage.masterDownloadPassBtn,
+    avatarPreview: t.settingsPage.avatarPreview,
+    uploadAvatar: t.settingsPage.uploadAvatar,
+    uploadingAvatar: t.settingsPage.uploadingAvatar,
+    removeAvatar: t.settingsPage.removeAvatar,
+    avatarUrl: t.settingsPage.avatarUrl,
   }), [t]);
   const canReviewJoinRequests = perms.isAdmin || (perms.isTrainer && joinReviewerPolicy === "admin_trainer");
   const canAccessMembersPage = perms.isAdmin || perms.isTrainer;
@@ -960,7 +1041,11 @@ const Members = () => {
   }, [clubId, clubName, members, membershipEmails, masterByMembershipId, getMemberRosterName, getMemberTeamLabel, t, toast]);
 
   const handleSaveMasterRecord = useCallback(
-    async (member: MemberRow, payload: Partial<ClubMemberMasterRecord>) => {
+    async (
+      member: MemberRow,
+      payload: Partial<ClubMemberMasterRecord>,
+      options?: { suppressToast?: boolean },
+    ) => {
       if (!clubId || !perms.isAdmin) {
         toast({ title: t.common.notAuthorized, description: t.membersPage.onlyAdminsMembers, variant: "destructive" });
         return;
@@ -982,7 +1067,9 @@ const Members = () => {
           [member.id]: data as unknown as ClubMemberMasterRecord,
         }));
       }
-      toast({ title: t.common.updated, description: t.membersPage.registrySaved });
+      if (!options?.suppressToast) {
+        toast({ title: t.common.updated, description: t.membersPage.registrySaved });
+      }
     },
     [clubId, perms.isAdmin, t, toast],
   );
@@ -1168,19 +1255,21 @@ const Members = () => {
     } else {
       setMembers((prev) => prev.filter((m) => m.id !== membershipId));
       setSelectedMember(null);
+      setMemberPanelEditModeId(null);
+      setMemberMasterEditDraft({});
       toast({ title: t.membersPage.memberRemoved });
     }
   };
 
-  const handleAddGuardianLink = async () => {
-    if (!clubId || !selectedMember || !guardianPickId) return;
-    if (guardianPickId === selectedMember.id) return;
+  const handleAddGuardianLink = async (wardMembershipId: string) => {
+    if (!clubId || !wardMembershipId || !guardianPickId) return;
+    if (guardianPickId === wardMembershipId) return;
     const { data, error } = await supabase
       .from("club_member_guardian_links")
       .insert({
         club_id: clubId,
         guardian_membership_id: guardianPickId,
-        ward_membership_id: selectedMember.id,
+        ward_membership_id: wardMembershipId,
         relationship: "guardian",
       })
       .select("*")
@@ -1194,8 +1283,170 @@ const Members = () => {
     toast({ title: t.common.updated });
   };
 
-  const openEditMemberModal = (member: MemberRow) => {
+  const renderGuardiansSafetyTabExtra = (ward: MemberRow, effectiveRole: string) => {
+    if (!isPlayerRole(effectiveRole)) return null;
+    const wardLinks = guardianLinks.filter((g) => g.ward_membership_id === ward.id);
+    if (wardLinks.length === 0 && !canManageMembers) return null;
+    return (
+      <>
+        <div className="text-sm font-semibold text-foreground">{t.membersPage.guardians}</div>
+        {wardLinks.length > 0 ? (
+          <div className="space-y-1.5">
+            {wardLinks.map((link) => {
+              const gMem = members.find((m) => m.id === link.guardian_membership_id);
+              return (
+                <div
+                  key={link.id}
+                  className="text-sm rounded-lg border border-border/60 bg-background/40 px-3 py-2 flex justify-between gap-2"
+                >
+                  <span className="truncate">{gMem ? getMemberRosterName(gMem) : link.guardian_membership_id}</span>
+                  {gMem ? (
+                    <span className="text-xs text-muted-foreground shrink-0">{getRoleLabel(gMem.role)}</span>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-sm text-muted-foreground">{t.membersPage.guardiansEmpty}</div>
+        )}
+        {canManageMembers ? (
+          <div className="mt-1 space-y-2">
+            <div className="text-sm text-muted-foreground">{t.membersPage.linkGuardian}</div>
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+              <Select value={guardianPickId || undefined} onValueChange={setGuardianPickId}>
+                <SelectTrigger className="h-10 text-sm flex-1">
+                  <SelectValue placeholder={t.membersPage.pickGuardian} />
+                </SelectTrigger>
+                <SelectContent>
+                  {members
+                    .filter((m) => m.id !== ward.id)
+                    .map((m) => (
+                      <SelectItem key={m.id} value={m.id} className="text-sm">
+                        {getMemberRosterName(m)} · {getRoleLabel(m.role)}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="h-10 shrink-0"
+                onClick={() => void handleAddGuardianLink(ward.id)}
+                disabled={!guardianPickId}
+              >
+                {t.membersPage.linkGuardianAction}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </>
+    );
+  };
+
+  const addDraftGuardian = useCallback(() => {
+    if (!draftGuardianPickId) return;
+    setEditingDraftForm((f) => {
+      const cur = readDraftGuardianMembershipIds(f.masterData as Record<string, unknown>);
+      if (cur.includes(draftGuardianPickId)) return f;
+      const next = [...cur, draftGuardianPickId];
+      return {
+        ...f,
+        masterData: { ...f.masterData, [DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY]: next } as typeof f.masterData,
+      };
+    });
+    setDraftGuardianPickId("");
+  }, [draftGuardianPickId]);
+
+  const removeDraftGuardian = useCallback((gid: string) => {
+    setEditingDraftForm((f) => {
+      const cur = readDraftGuardianMembershipIds(f.masterData as Record<string, unknown>);
+      const next = cur.filter((id) => id !== gid);
+      const md = { ...(f.masterData as Record<string, unknown>) };
+      if (next.length === 0) delete md[DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY];
+      else md[DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY] = next;
+      return { ...f, masterData: md as typeof f.masterData };
+    });
+  }, []);
+
+  const renderDraftGuardiansSafetyTabExtra = () => {
+    if (!isPlayerRole(editingDraftForm.role)) return null;
+    const md = editingDraftForm.masterData as Record<string, unknown>;
+    const ids = readDraftGuardianMembershipIds(md);
+    if (ids.length === 0 && !canManageMembers) return null;
+    return (
+      <>
+        <div className="text-sm font-semibold text-foreground">{t.membersPage.guardians}</div>
+        {ids.length > 0 ? (
+          <div className="space-y-1.5">
+            {ids.map((gid) => {
+              const gMem = members.find((m) => m.id === gid);
+              return (
+                <div
+                  key={gid}
+                  className="text-sm rounded-lg border border-border/60 bg-background/40 px-3 py-2 flex justify-between gap-2 items-center"
+                >
+                  <div className="min-w-0 flex-1 flex items-center gap-2">
+                    <span className="truncate">{gMem ? getMemberRosterName(gMem) : gid}</span>
+                    {gMem ? (
+                      <span className="text-xs text-muted-foreground shrink-0">{getRoleLabel(gMem.role)}</span>
+                    ) : null}
+                  </div>
+                  {canManageMembers ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 shrink-0 p-0 text-muted-foreground"
+                      onClick={() => removeDraftGuardian(gid)}
+                      aria-label={t.common.remove}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-sm text-muted-foreground">{t.membersPage.guardiansEmpty}</div>
+        )}
+        {canManageMembers ? (
+          <div className="mt-1 space-y-2">
+            <div className="text-sm text-muted-foreground">{t.membersPage.linkGuardian}</div>
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+              <Select value={draftGuardianPickId || undefined} onValueChange={setDraftGuardianPickId}>
+                <SelectTrigger className="h-10 text-sm flex-1">
+                  <SelectValue placeholder={t.membersPage.pickGuardian} />
+                </SelectTrigger>
+                <SelectContent>
+                  {members.map((m) => (
+                    <SelectItem key={m.id} value={m.id} className="text-sm">
+                      {getMemberRosterName(m)} · {getRoleLabel(m.role)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="h-10 shrink-0"
+                onClick={addDraftGuardian}
+                disabled={!draftGuardianPickId}
+              >
+                {t.membersPage.linkGuardianAction}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </>
+    );
+  };
+
+  const startMemberPanelEdit = (member: MemberRow) => {
     setSelectedMember(member);
+    setMemberPanelEditModeId(member.id);
+    setMemberMasterEditDraft({ ...(masterByMembershipId[member.id] ?? {}) });
     setEditMemberForm({
       role: member.role || "member",
       team: member.team || "",
@@ -1203,50 +1454,95 @@ const Members = () => {
       position: member.position || "",
       status: member.status || "active",
     });
-    setShowEditMemberModal(true);
   };
 
-  const handleSaveMemberEdit = async () => {
-    if (!clubId || !selectedMember) return;
+  const cancelMemberPanelEdit = () => {
+    setMemberPanelEditModeId(null);
+    setMemberMasterEditDraft({});
+  };
+
+  const uploadMemberPanelAvatar = async (membershipId: string, file: File) => {
+    if (!user || memberPanelAvatarUploading) return;
+    setMemberPanelAvatarUploading(true);
+    try {
+      const cleanName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "-");
+      const filePath = `${user.id}/club-member-panel-${membershipId}-${Date.now()}-${cleanName}`;
+      const { error } = await supabase.storage
+        .from(PROFILE_AVATAR_BUCKET)
+        .upload(filePath, file, { upsert: true, contentType: file.type || undefined });
+      if (error) throw error;
+      const { data } = supabase.storage.from(PROFILE_AVATAR_BUCKET).getPublicUrl(filePath);
+      setMemberMasterEditDraft((d) => ({ ...d, photo_url: data.publicUrl }));
+      toast({ title: t.settingsPage.avatarUploadSuccess });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Upload failed";
+      toast({
+        title: t.settingsPage.avatarUploadFailed,
+        description: message.includes("Bucket not found") ? t.settingsPage.avatarUploadBucketHint : message,
+        variant: "destructive",
+      });
+    } finally {
+      setMemberPanelAvatarUploading(false);
+    }
+  };
+
+  const saveMemberPanelInline = async (member: MemberRow) => {
+    if (!clubId) return;
     if (!perms.isAdmin) {
       toast({ title: t.common.notAuthorized, description: t.membersPage.onlyAdminsMembers, variant: "destructive" });
       return;
     }
+    setMemberPanelSaving(true);
+    try {
+      const { data, error } = await supabase
+        .from("club_memberships")
+        .update({
+          role: editMemberForm.role,
+          team: editMemberForm.team.trim() || null,
+          age_group: editMemberForm.ageGroup.trim() || null,
+          position: editMemberForm.position.trim() || null,
+          status: editMemberForm.status || "active",
+        })
+        .eq("club_id", clubId)
+        .eq("id", member.id)
+        .select("*")
+        .single();
 
-    const { data, error } = await supabase
-      .from("club_memberships")
-      .update({
-        role: editMemberForm.role,
-        team: editMemberForm.team.trim() || null,
-        age_group: editMemberForm.ageGroup.trim() || null,
-        position: editMemberForm.position.trim() || null,
-        status: editMemberForm.status || "active",
-      })
-      .eq("club_id", clubId)
-      .eq("id", selectedMember.id)
-      .select("*")
-      .single();
+      if (error) {
+        toast({ title: t.common.error, description: error.message, variant: "destructive" });
+        return;
+      }
 
-    if (error) {
-      toast({ title: t.common.error, description: error.message, variant: "destructive" });
-      return;
+      const updatedMembership = data as unknown as MemberRow;
+      const mergedMember = { ...member, ...updatedMembership, profiles: member.profiles };
+      setMembers((previous) =>
+        previous.map((m) => (m.id === member.id ? mergedMember : m)),
+      );
+      setSelectedMember((previous) =>
+        previous && previous.id === member.id ? mergedMember : previous,
+      );
+
+      if (!isPlayerRole(editMemberForm.role)) {
+        const { error: guardianDelErr } = await supabase
+          .from("club_member_guardian_links")
+          .delete()
+          .eq("club_id", clubId)
+          .eq("ward_membership_id", member.id);
+        if (!guardianDelErr) {
+          setGuardianLinks((previous) => previous.filter((g) => g.ward_membership_id !== member.id));
+        }
+      }
+
+      const mergedMaster = { ...(masterByMembershipId[member.id] ?? {}), ...memberMasterEditDraft };
+      await handleSaveMasterRecord(mergedMember, mergedMaster, { suppressToast: true });
+      toast({ title: t.common.updated, description: t.membersPage.registrySaved });
+      setMemberPanelEditModeId(null);
+      setMemberMasterEditDraft({});
+    } catch {
+      /* handleSaveMasterRecord already toasts */
+    } finally {
+      setMemberPanelSaving(false);
     }
-
-    const updatedMembership = data as unknown as MemberRow;
-    setMembers((previous) =>
-      previous.map((member) =>
-        member.id === selectedMember.id
-          ? { ...member, ...updatedMembership, profiles: member.profiles }
-          : member,
-      ),
-    );
-    setSelectedMember((previous) =>
-      previous && previous.id === selectedMember.id
-        ? { ...previous, ...updatedMembership, profiles: previous.profiles }
-        : previous,
-    );
-    setShowEditMemberModal(false);
-    toast({ title: t.common.updated });
   };
 
   const handleUpdateInviteRequestStatus = async (requestId: string, status: InviteRequestRow["status"]) => {
@@ -1371,6 +1667,15 @@ const Members = () => {
         master_data: Object.keys(row.masterData).length > 0 ? row.masterData : {},
       } as Record<string, unknown>);
       if (error) {
+        if (isMissingDraftMasterDataColumnError(error)) {
+          setBulkSubmitting(false);
+          toast({
+            title: t.membersPage.masterDataColumnMissingTitle,
+            description: t.membersPage.masterDataColumnMissingDesc,
+            variant: "destructive",
+          });
+          return;
+        }
         skippedCount += 1;
         continue;
       }
@@ -1396,11 +1701,21 @@ const Members = () => {
   const handleSendInviteForDraft = async (draft: MemberDraftRow) => {
     if (!clubId || draftActionId) return;
     setDraftActionId(draft.id);
-    const result = await createInviteRecord(draft.email, draft.role, inviteDays, {
+    const inviteMasterSource =
+      editingDraftId === draft.id
+        ? (editingDraftForm.masterData as Record<string, unknown>)
+        : ((draft.master_data as Record<string, unknown> | null) ?? {});
+    const draftRole =
+      editingDraftId === draft.id ? editingDraftForm.role : draft.role;
+    const draftGuardianIds = isPlayerRole(draftRole)
+      ? readDraftGuardianMembershipIds(inviteMasterSource)
+      : [];
+    const result = await createInviteRecord(draft.email, draftRole, inviteDays, {
       name: draft.name || undefined,
       team: draft.team || undefined,
       age_group: draft.age_group || undefined,
       position: draft.position || undefined,
+      ...(draftGuardianIds.length > 0 ? { guardian_membership_ids: draftGuardianIds } : {}),
     });
     if (!result.ok) {
       toast({ title: t.common.error, description: result.error, variant: "destructive" });
@@ -1443,43 +1758,137 @@ const Members = () => {
 
   const handleStartEditDraft = (draft: MemberDraftRow) => {
     setEditingDraftId(draft.id);
+    setDraftGuardianPickId("");
+    const md = (draft.master_data as Partial<ClubMemberMasterRecord>) ?? {};
+    const { firstName, lastName } = splitStoredNameToFirstLast(draft.name || "", md);
+    const fn = firstName.trim() || (typeof md.first_name === "string" ? md.first_name.trim() : "");
+    const ln = lastName.trim() || (typeof md.last_name === "string" ? md.last_name.trim() : "");
     setEditingDraftForm({
-      name: draft.name,
+      firstName,
+      lastName,
       email: draft.email,
       role: draft.role,
       team: draft.team || "",
       age_group: draft.age_group || "",
       position: draft.position || "",
-      masterData: (draft.master_data as Partial<ClubMemberMasterRecord>) ?? {},
+      masterData: {
+        ...md,
+        first_name: fn || null,
+        last_name: ln || null,
+      },
     });
     setDraftMasterExpanded(false);
+  };
+
+  const uploadDraftMemberAvatar = async (file: File) => {
+    if (!user || !editingDraftId || draftAvatarUploading) return;
+    setDraftAvatarUploading(true);
+    try {
+      const cleanName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "-");
+      const filePath = `${user.id}/club-member-draft-${editingDraftId}-${Date.now()}-${cleanName}`;
+      const { error } = await supabase.storage
+        .from(PROFILE_AVATAR_BUCKET)
+        .upload(filePath, file, { upsert: true, contentType: file.type || undefined });
+      if (error) throw error;
+      const { data } = supabase.storage.from(PROFILE_AVATAR_BUCKET).getPublicUrl(filePath);
+      setEditingDraftForm((f) => ({
+        ...f,
+        masterData: { ...f.masterData, photo_url: data.publicUrl },
+      }));
+      toast({ title: t.settingsPage.avatarUploadSuccess });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Upload failed";
+      toast({
+        title: t.settingsPage.avatarUploadFailed,
+        description: message.includes("Bucket not found") ? t.settingsPage.avatarUploadBucketHint : message,
+        variant: "destructive",
+      });
+    } finally {
+      setDraftAvatarUploading(false);
+    }
+  };
+
+  const uploadBulkRowAvatar = async (rowId: string, file: File) => {
+    if (!user || bulkAvatarUploadingRowId !== null) return;
+    setBulkAvatarUploadingRowId(rowId);
+    try {
+      const cleanName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "-");
+      const filePath = `${user.id}/club-member-bulk-${rowId}-${Date.now()}-${cleanName}`;
+      const { error } = await supabase.storage
+        .from(PROFILE_AVATAR_BUCKET)
+        .upload(filePath, file, { upsert: true, contentType: file.type || undefined });
+      if (error) throw error;
+      const { data } = supabase.storage.from(PROFILE_AVATAR_BUCKET).getPublicUrl(filePath);
+      updateBulkRowMasterField(rowId, "photo_url", data.publicUrl);
+      toast({ title: t.settingsPage.avatarUploadSuccess });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Upload failed";
+      toast({
+        title: t.settingsPage.avatarUploadFailed,
+        description: message.includes("Bucket not found") ? t.settingsPage.avatarUploadBucketHint : message,
+        variant: "destructive",
+      });
+    } finally {
+      setBulkAvatarUploadingRowId(null);
+    }
   };
 
   const handleSaveDraftEdit = async () => {
     if (!clubId || !editingDraftId) return;
     setDraftSaving(true);
+    const combinedName = buildDisplayNameFromParts(editingDraftForm.firstName, editingDraftForm.lastName);
+    const nextMaster: Partial<ClubMemberMasterRecord> = {
+      ...editingDraftForm.masterData,
+      first_name: editingDraftForm.firstName.trim() || null,
+      last_name: editingDraftForm.lastName.trim() || null,
+    };
+    const masterPayload = Object.fromEntries(
+      Object.entries(nextMaster as Record<string, unknown>).filter(
+        ([, v]) => v !== null && v !== undefined && v !== "",
+      ),
+    ) as Record<string, unknown>;
+    if (!isPlayerRole(editingDraftForm.role)) {
+      delete masterPayload[DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY];
+    }
     const { error } = await supabase
       .from("club_member_drafts")
       .update({
-        name: editingDraftForm.name,
+        name: combinedName || null,
         email: editingDraftForm.email,
         role: editingDraftForm.role,
         team: editingDraftForm.team || null,
         age_group: editingDraftForm.age_group || null,
         position: editingDraftForm.position || null,
-        master_data: Object.keys(editingDraftForm.masterData).length > 0 ? editingDraftForm.masterData : {},
+        master_data: masterPayload,
       } as Record<string, unknown>)
       .eq("id", editingDraftId)
       .eq("club_id", clubId);
     if (error) {
-      toast({ title: t.common.error, description: error.message, variant: "destructive" });
+      if (isMissingDraftMasterDataColumnError(error)) {
+        toast({
+          title: t.membersPage.masterDataColumnMissingTitle,
+          description: t.membersPage.masterDataColumnMissingDesc,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: t.common.error, description: error.message, variant: "destructive" });
+      }
       setDraftSaving(false);
       return;
     }
     setMemberDrafts((prev) =>
       prev.map((d) =>
         d.id === editingDraftId
-          ? { ...d, name: editingDraftForm.name, email: editingDraftForm.email, role: editingDraftForm.role, team: editingDraftForm.team || null, age_group: editingDraftForm.age_group || null, position: editingDraftForm.position || null, master_data: editingDraftForm.masterData as Record<string, unknown> }
+          ? {
+              ...d,
+              name: combinedName,
+              email: editingDraftForm.email,
+              role: editingDraftForm.role,
+              team: editingDraftForm.team || null,
+              age_group: editingDraftForm.age_group || null,
+              position: editingDraftForm.position || null,
+              master_data: masterPayload as Record<string, unknown>,
+            }
           : d,
       ),
     );
@@ -1490,7 +1899,18 @@ const Members = () => {
 
   const handleCancelDraftEdit = () => {
     setEditingDraftId(null);
+    setDraftGuardianPickId("");
   };
+
+  const draftMergedMasterForTabs = useMemo(
+    () =>
+      mergeDraftMasterValuesForTabs(
+        editingDraftForm.masterData,
+        editingDraftForm.firstName,
+        editingDraftForm.lastName,
+      ),
+    [editingDraftForm.masterData, editingDraftForm.firstName, editingDraftForm.lastName],
+  );
 
   const handleCopy = async (text: string) => {
     await navigator.clipboard.writeText(text);
@@ -1502,7 +1922,7 @@ const Members = () => {
     <div className="min-h-screen bg-background">
       <AppHeader
         title={t.membersPage.title}
-        subtitle={tab === "members" ? t.membersPage.roster : (clubName ? `${clubName} · ${t.membersPage.invites}` : t.membersPage.invites)}
+        subtitle={tab === "members" ? t.membersPage.roster : tab === "roles" ? t.membersPage.roles.subtitle : (clubName ? `${clubName} · ${t.membersPage.invites}` : t.membersPage.invites)}
         rightSlot={
           tab === "members" ? (canManageMembers ? (
             <Button
@@ -1549,6 +1969,16 @@ const Members = () => {
           >
             <Inbox className="w-4 h-4" /> {t.membersPage.invites}
           </button>
+          {perms.isAdmin && (
+            <button
+              onClick={() => setTab("roles")}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                tab === "roles" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Shield className="w-4 h-4" /> {t.membersPage.roles.tabLabel}
+            </button>
+          )}
         </div>
       </div>
 
@@ -1573,6 +2003,9 @@ const Members = () => {
           </div>
         ) : (
           <>
+            {tab === "roles" && perms.isAdmin && (
+              <RoleManager />
+            )}
             {tab === "members" ? (
               !canManageMembers ? (
                 <div className="rounded-xl bg-card border border-border p-8 text-center">
@@ -1688,46 +2121,189 @@ const Members = () => {
                 <div className="space-y-2">
                   {(showAllDrafts ? memberDrafts : memberDrafts.slice(0, 8)).map((draft) => (
                     editingDraftId === draft.id ? (
-                      <div key={draft.id} className="rounded-lg border-2 border-primary/30 bg-background/60 p-4 space-y-3">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                      <div key={draft.id} className="w-full min-w-0 space-y-4 rounded-lg border-2 border-primary/30 bg-background/60 p-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">{t.membersPage.draftEditLabelFirstName}</div>
+                            <Input
+                              id={`draft-${draft.id}-first`}
+                              className="h-10 text-sm"
+                              value={editingDraftForm.firstName}
+                              placeholder={t.membersPage.draftEditFirstNamePlaceholder}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                setEditingDraftForm((f) => ({
+                                  ...f,
+                                  firstName: v,
+                                  masterData: { ...f.masterData, first_name: v.trim() || null },
+                                }));
+                              }}
+                              autoComplete="given-name"
+                            />
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">{t.membersPage.draftEditLabelLastName}</div>
+                            <Input
+                              id={`draft-${draft.id}-last`}
+                              className="h-10 text-sm"
+                              value={editingDraftForm.lastName}
+                              placeholder={t.membersPage.draftEditLastNamePlaceholder}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                setEditingDraftForm((f) => ({
+                                  ...f,
+                                  lastName: v,
+                                  masterData: { ...f.masterData, last_name: v.trim() || null },
+                                }));
+                              }}
+                              autoComplete="family-name"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">{t.settingsPage.displayName}</div>
                           <Input
-                            className="h-10 text-sm"
-                            value={editingDraftForm.name}
-                            placeholder={t.membersPage.fullNamePlaceholder}
-                            onChange={(e) => setEditingDraftForm((f) => ({ ...f, name: e.target.value }))}
+                            readOnly
+                            className="h-10 text-sm opacity-80"
+                            value={buildDisplayNameFromParts(editingDraftForm.firstName, editingDraftForm.lastName)}
+                            placeholder={t.membersPage.draftEditDisplayNamePlaceholder}
                           />
-                          <Input
-                            className="h-10 text-sm"
-                            value={editingDraftForm.email}
-                            placeholder={t.membersPage.memberEmailPlaceholder}
-                            onChange={(e) => setEditingDraftForm((f) => ({ ...f, email: e.target.value }))}
-                          />
-                          <Select value={editingDraftForm.role} onValueChange={(v) => setEditingDraftForm((f) => ({ ...f, role: v }))}>
-                            <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {SUPPORTED_ROLES.map((r) => (
-                                <SelectItem key={r} value={r} className="text-sm">{getRoleLabel(r)}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Input
-                            className="h-10 text-sm"
-                            value={editingDraftForm.team}
-                            placeholder={t.membersPage.teamPlaceholder}
-                            onChange={(e) => setEditingDraftForm((f) => ({ ...f, team: e.target.value }))}
-                          />
-                          <Input
-                            className="h-10 text-sm"
-                            value={editingDraftForm.age_group}
-                            placeholder={t.membersPage.ageGroupPlaceholder}
-                            onChange={(e) => setEditingDraftForm((f) => ({ ...f, age_group: e.target.value }))}
-                          />
-                          <Input
-                            className="h-10 text-sm"
-                            value={editingDraftForm.position}
-                            placeholder={t.membersPage.positionPlaceholder}
-                            onChange={(e) => setEditingDraftForm((f) => ({ ...f, position: e.target.value }))}
-                          />
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-2">{t.settingsPage.avatarPreview}</div>
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <div className="w-14 h-14 rounded-2xl border border-border/60 bg-background/60 overflow-hidden flex items-center justify-center shrink-0">
+                              {editingDraftForm.masterData.photo_url ? (
+                                <img
+                                  src={editingDraftForm.masterData.photo_url}
+                                  alt=""
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <UserCircle2 className="w-8 h-8 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <label className="inline-flex">
+                                <input
+                                  type="file"
+                                  accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                                  className="hidden"
+                                  onChange={(event) => {
+                                    const file = event.target.files?.[0];
+                                    if (!file) return;
+                                    void uploadDraftMemberAvatar(file);
+                                    event.currentTarget.value = "";
+                                  }}
+                                />
+                                <span className="inline-flex items-center rounded-md border border-input bg-background px-3 py-2 text-xs font-medium cursor-pointer hover:bg-accent hover:text-accent-foreground">
+                                  {draftAvatarUploading ? (
+                                    <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                                  ) : (
+                                    <UploadCloud className="w-3.5 h-3.5 mr-1" />
+                                  )}
+                                  {draftAvatarUploading ? t.settingsPage.uploadingAvatar : t.settingsPage.uploadAvatar}
+                                </span>
+                              </label>
+                              {editingDraftForm.masterData.photo_url ? (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className="h-9 text-xs"
+                                  onClick={() =>
+                                    setEditingDraftForm((f) => ({
+                                      ...f,
+                                      masterData: { ...f.masterData, photo_url: null },
+                                    }))
+                                  }
+                                  disabled={draftAvatarUploading}
+                                >
+                                  {t.settingsPage.removeAvatar}
+                                </Button>
+                              ) : null}
+                            </div>
+                          </div>
+                          <div className="mt-3">
+                            <div className="text-xs text-muted-foreground mb-1">{t.settingsPage.avatarUrl}</div>
+                            <Input
+                              className="h-10 text-sm"
+                              value={editingDraftForm.masterData.photo_url ?? ""}
+                              onChange={(e) =>
+                                setEditingDraftForm((f) => ({
+                                  ...f,
+                                  masterData: { ...f.masterData, photo_url: e.target.value || null },
+                                }))
+                              }
+                              placeholder="https://..."
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">{t.membersPage.draftEditLabelEmail}</div>
+                            <Input
+                              id={`draft-${draft.id}-email`}
+                              type="email"
+                              className="h-10 text-sm"
+                              value={editingDraftForm.email}
+                              placeholder={t.membersPage.memberEmailPlaceholder}
+                              onChange={(e) => setEditingDraftForm((f) => ({ ...f, email: e.target.value }))}
+                              autoComplete="email"
+                            />
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">{t.membersPage.draftEditLabelRole}</div>
+                            <Select
+                              value={editingDraftForm.role}
+                              onValueChange={(v) =>
+                                setEditingDraftForm((f) => {
+                                  if (isPlayerRole(v)) return { ...f, role: v };
+                                  const md = { ...(f.masterData as Record<string, unknown>) };
+                                  delete md[DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY];
+                                  return { ...f, role: v, masterData: md as typeof f.masterData };
+                                })
+                              }
+                            >
+                              <SelectTrigger id={`draft-${draft.id}-role`} className="h-10 text-sm">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {SUPPORTED_ROLES.map((r) => (
+                                  <SelectItem key={r} value={r} className="text-sm">{getRoleLabel(r)}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">{t.membersPage.draftEditLabelTeam}</div>
+                            <Input
+                              id={`draft-${draft.id}-team`}
+                              className="h-10 text-sm"
+                              value={editingDraftForm.team}
+                              placeholder={t.membersPage.teamPlaceholder}
+                              onChange={(e) => setEditingDraftForm((f) => ({ ...f, team: e.target.value }))}
+                            />
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">{t.membersPage.draftEditLabelAgeGroup}</div>
+                            <Input
+                              id={`draft-${draft.id}-age`}
+                              className="h-10 text-sm"
+                              value={editingDraftForm.age_group}
+                              placeholder={t.membersPage.ageGroupPlaceholder}
+                              onChange={(e) => setEditingDraftForm((f) => ({ ...f, age_group: e.target.value }))}
+                            />
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">{t.membersPage.draftEditLabelPosition}</div>
+                            <Input
+                              id={`draft-${draft.id}-position`}
+                              className="h-10 text-sm"
+                              value={editingDraftForm.position}
+                              placeholder={t.membersPage.positionPlaceholder}
+                              onChange={(e) => setEditingDraftForm((f) => ({ ...f, position: e.target.value }))}
+                            />
+                          </div>
                         </div>
                         <button
                           type="button"
@@ -1738,14 +2314,47 @@ const Members = () => {
                           {t.membersPage.masterDataFields}
                         </button>
                         {draftMasterExpanded && (
-                          <div className="rounded-lg border border-border/40 bg-muted/10 p-3">
+                          <div className="w-full min-w-0 rounded-lg border border-border/40 bg-muted/10 p-3">
                             <MasterDataTabs
-                              values={editingDraftForm.masterData}
+                              values={draftMergedMasterForTabs}
                               labels={masterTabLabels}
                               compact
+                              avatarUpload={{
+                                uploading: draftAvatarUploading,
+                                onUpload: (file) => void uploadDraftMemberAvatar(file),
+                                onRemove: () =>
+                                  setEditingDraftForm((f) => ({
+                                    ...f,
+                                    masterData: { ...f.masterData, photo_url: null },
+                                  })),
+                              }}
                               onChange={(key, value) =>
-                                setEditingDraftForm((f) => ({ ...f, masterData: { ...f.masterData, [key]: value } }))
+                                setEditingDraftForm((f) => {
+                                  if (key === "first_name") {
+                                    const s = String(value ?? "");
+                                    return {
+                                      ...f,
+                                      firstName: s,
+                                      masterData: { ...f.masterData, first_name: s.trim() || null },
+                                    };
+                                  }
+                                  if (key === "last_name") {
+                                    const s = String(value ?? "");
+                                    return {
+                                      ...f,
+                                      lastName: s,
+                                      masterData: { ...f.masterData, last_name: s.trim() || null },
+                                    };
+                                  }
+                                  if (key === "photo_url") {
+                                    const url = value === "" || value === null ? null : String(value);
+                                    return { ...f, masterData: { ...f.masterData, photo_url: url } };
+                                  }
+                                  return { ...f, masterData: { ...f.masterData, [key]: value } };
+                                })
                               }
+                              safetyTabExtraEnabled={isPlayerRole(editingDraftForm.role)}
+                              safetyTabExtra={renderDraftGuardiansSafetyTabExtra()}
                             />
                           </div>
                         )}
@@ -1815,28 +2424,42 @@ const Members = () => {
               )}
             </div>
 
-            <div className="flex gap-6">
-              {/* Members List */}
-              <div className={`flex-1 ${selectedMember ? "hidden lg:block" : ""}`}>
-                <div className="rounded-xl bg-card border border-border overflow-hidden">
-                  {filtered.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground text-sm">
-                      {members.length === 0 ? t.membersPage.noMembersYet : t.membersPage.noMembersFound}
-                    </div>
-                  ) : (
-                    filtered.map((member, i) => (
+            <div className="rounded-xl bg-card border border-border overflow-hidden">
+              {filtered.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground text-sm">
+                  {members.length === 0 ? t.membersPage.noMembersYet : t.membersPage.noMembersFound}
+                </div>
+              ) : (
+                filtered.map((member, i) => {
+                  const isOpen = selectedMember?.id === member.id;
+                  const rosterGuardianRole =
+                    memberPanelEditModeId === member.id ? editMemberForm.role : member.role;
+                  return (
+                    <Fragment key={member.id}>
                       <motion.div
-                        key={member.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: i * 0.03 }}
-                        onClick={() => setSelectedMember(member)}
-                        className={`px-4 py-3 border-b border-border last:border-0 cursor-pointer hover:bg-muted/50 transition-colors ${
-                          selectedMember?.id === member.id ? "bg-muted/50" : ""
+                        onClick={() =>
+                          setSelectedMember((cur) => {
+                            if (cur?.id === member.id) {
+                              setMemberPanelEditModeId(null);
+                              setMemberMasterEditDraft({});
+                              return null;
+                            }
+                            if (cur && cur.id !== member.id) {
+                              setMemberPanelEditModeId(null);
+                              setMemberMasterEditDraft({});
+                            }
+                            return member;
+                          })
+                        }
+                        className={`px-4 py-3 border-b border-border cursor-pointer hover:bg-muted/50 transition-colors ${
+                          isOpen ? "bg-muted/50 border-b-0" : ""
                         }`}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-3 min-w-0">
                             <div className="w-9 h-9 rounded-lg bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0 overflow-hidden">
                               {masterByMembershipId[member.id]?.photo_url || member.profiles?.avatar_url ? (
                                 <img
@@ -1848,8 +2471,8 @@ const Members = () => {
                                 (getMemberRosterName(member) || "?").split(" ").map((n) => n[0]).join("").slice(0, 2)
                               )}
                             </div>
-                            <div>
-                              <div className="text-sm font-medium text-foreground">{getMemberRosterName(member)}</div>
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium text-foreground truncate">{getMemberRosterName(member)}</div>
                               <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1.5">
                                 <span>{getMemberTeamLabel(member)}</span>
                                 {membershipEmails[member.id] ? (
@@ -1858,7 +2481,7 @@ const Members = () => {
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 shrink-0">
                             <Badge variant="secondary" className="text-xs font-normal px-2.5 py-0.5 h-6">
                               {masterRecordCompletenessPct(masterByMembershipId[member.id], member.role)}%
                             </Badge>
@@ -1870,186 +2493,242 @@ const Members = () => {
                             <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${roleColors[member.role] || "bg-muted text-muted-foreground"}`}>
                               {getRoleLabel(member.role)}
                             </span>
-                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                              member.status === "active" ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"
-                            }`}>
+                            <span
+                              className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                                member.status === "active" ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"
+                              }`}
+                            >
                               {member.status === "active" ? t.common.active : member.status}
                             </span>
                           </div>
                         </div>
                       </motion.div>
-                    ))
-                  )}
-                </div>
-              </div>
 
-              {/* Detail Panel */}
-              {selectedMember && (
-                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="w-full lg:w-[420px] shrink-0">
-                  <div className="rounded-xl bg-card border border-border p-5 sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto">
-                    <div className="flex items-center justify-between mb-4 lg:hidden">
-                      <span className="text-sm text-muted-foreground">{t.membersPage.details}</span>
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedMember(null)}>
-                        <ArrowLeft className="w-4 h-4 mr-1" /> {t.common.back}
-                      </Button>
-                    </div>
-                    <div className="text-center mb-5">
-                      <div className="w-16 h-16 rounded-xl bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-xl mx-auto mb-3 overflow-hidden">
-                        {masterByMembershipId[selectedMember.id]?.photo_url || selectedMember.profiles?.avatar_url ? (
-                          <img
-                            src={masterByMembershipId[selectedMember.id]?.photo_url || selectedMember.profiles?.avatar_url || ""}
-                            alt=""
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          (getMemberRosterName(selectedMember) || "?").split(" ").map((n) => n[0]).join("").slice(0, 2)
-                        )}
-                      </div>
-                      <h3 className="font-display font-bold text-foreground leading-snug">{getMemberRosterName(selectedMember)}</h3>
-                      <div className="flex flex-wrap items-center justify-center gap-1.5 mt-2">
-                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${roleColors[selectedMember.role]}`}>
-                          {getRoleLabel(selectedMember.role)}
-                        </span>
-                        <Badge variant="outline" className="text-xs font-normal px-2.5 py-0.5">
-                          {t.membersPage.registryCompleteness}: {masterRecordCompletenessPct(masterByMembershipId[selectedMember.id], selectedMember.role)}%
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3 text-sm">
-                      {membershipEmails[selectedMember.id] ? (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Mail className="w-4 h-4 shrink-0" /> <span className="truncate">{membershipEmails[selectedMember.id]}</span>
-                        </div>
-                      ) : null}
-                      {selectedMember.profiles?.phone && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Phone className="w-4 h-4" /> {selectedMember.profiles.phone}
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Users className="w-4 h-4 shrink-0" /> <span className="leading-snug">{getMemberTeamLabel(selectedMember)}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Calendar className="w-4 h-4" /> {t.membersPage.joined} {new Date(selectedMember.created_at).toLocaleDateString()}
-                      </div>
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t border-border">
-                      <div className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-                        <UserCircle2 className="w-4 h-4 text-primary" /> {t.membersPage.registrySnapshot}
-                      </div>
-                      <MasterDataTabs
-                        values={masterByMembershipId[selectedMember.id] ?? {}}
-                        labels={masterTabLabels}
-                        readOnly
-                        compact
-                        displayName={getMemberRosterName(selectedMember)}
-                        clubName={clubName}
-                        logoSrc={logo}
-                        membershipRole={selectedMember.role}
-                        teamLabel={getMemberTeamLabel(selectedMember)}
-                        email={membershipEmails[selectedMember.id] ?? null}
-                      />
-                    </div>
-
-                    {(guardianLinks.filter((g) => g.ward_membership_id === selectedMember.id).length > 0 || canManageMembers) ? (
-                      <div className="mt-4 pt-4 border-t border-border">
-                        <div className="text-sm font-semibold text-foreground mb-2">{t.membersPage.guardians}</div>
-                        {guardianLinks.filter((g) => g.ward_membership_id === selectedMember.id).length > 0 ? (
-                          <div className="space-y-1.5">
-                            {guardianLinks
-                              .filter((g) => g.ward_membership_id === selectedMember.id)
-                              .map((link) => {
-                                const gMem = members.find((m) => m.id === link.guardian_membership_id);
-                                return (
-                                  <div key={link.id} className="text-sm rounded-lg border border-border/60 bg-background/40 px-3 py-2 flex justify-between gap-2">
-                                    <span className="truncate">{gMem ? getMemberRosterName(gMem) : link.guardian_membership_id}</span>
-                                    {gMem ? (
-                                      <span className="text-xs text-muted-foreground shrink-0">{getRoleLabel(gMem.role)}</span>
-                                    ) : null}
+                      {isOpen && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="border-b border-border bg-card border-t border-primary/20"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="w-full min-w-0 space-y-3 px-4 pb-4 pt-3 sm:px-5">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground min-w-0">
+                                {member.profiles?.phone ? (
+                                  <div className="flex items-center gap-2">
+                                    <Phone className="w-4 h-4 shrink-0" /> {member.profiles.phone}
                                   </div>
-                                );
-                              })}
-                          </div>
-                        ) : (
-                          <div className="text-sm text-muted-foreground mb-2">{t.membersPage.guardiansEmpty}</div>
-                        )}
-                        {canManageMembers ? (
-                          <div className="mt-3 space-y-2">
-                            <div className="text-sm text-muted-foreground">{t.membersPage.linkGuardian}</div>
-                            <div className="flex flex-col gap-2">
-                              <Select value={guardianPickId || undefined} onValueChange={setGuardianPickId}>
-                                <SelectTrigger className="h-10 text-sm">
-                                  <SelectValue placeholder={t.membersPage.pickGuardian} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {members
-                                    .filter((m) => m.id !== selectedMember.id)
-                                    .map((m) => (
-                                      <SelectItem key={m.id} value={m.id} className="text-sm">
-                                        {getMemberRosterName(m)} · {getRoleLabel(m.role)}
-                                      </SelectItem>
-                                    ))}
-                                </SelectContent>
-                              </Select>
+                                ) : null}
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-4 h-4 shrink-0" /> {t.membersPage.joined}{" "}
+                                  {new Date(member.created_at).toLocaleDateString()}
+                                </div>
+                              </div>
                               <Button
-                                size="sm"
-                                variant="secondary"
-                                className="h-9"
-                                onClick={() => void handleAddGuardianLink()}
-                                disabled={!guardianPickId}
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 rounded-lg"
+                                onClick={() => {
+                                  setMemberPanelEditModeId(null);
+                                  setMemberMasterEditDraft({});
+                                  setSelectedMember(null);
+                                }}
+                                aria-label={t.common.close}
                               >
-                                {t.membersPage.linkGuardianAction}
+                                <X className="w-4 h-4" />
                               </Button>
                             </div>
+
+                            {memberPanelEditModeId === member.id ? (
+                              <div className="space-y-3 rounded-lg border border-primary/25 bg-muted/5 p-3">
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                  <Select
+                                    value={editMemberForm.role}
+                                    onValueChange={(value) => setEditMemberForm((previous) => ({ ...previous, role: value }))}
+                                  >
+                                    <SelectTrigger className="h-10 w-full rounded-xl border-border bg-background/60 text-sm">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="member">{t.onboarding.member}</SelectItem>
+                                      <SelectItem value="player">{t.onboarding.player}</SelectItem>
+                                      <SelectItem value="trainer">{t.onboarding.trainer}</SelectItem>
+                                      <SelectItem value="staff">{t.onboarding.teamStaff}</SelectItem>
+                                      <SelectItem value="parent">{t.onboarding.parentSupporter}</SelectItem>
+                                      <SelectItem value="sponsor">{t.onboarding.sponsor}</SelectItem>
+                                      <SelectItem value="supplier">{t.onboarding.supplier}</SelectItem>
+                                      <SelectItem value="service_provider">{t.onboarding.serviceProvider}</SelectItem>
+                                      <SelectItem value="consultant">{t.onboarding.consultant}</SelectItem>
+                                      <SelectItem value="admin">{t.onboarding.clubAdmin}</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <Select
+                                    value={editMemberForm.status}
+                                    onValueChange={(value) => setEditMemberForm((previous) => ({ ...previous, status: value }))}
+                                  >
+                                    <SelectTrigger className="h-10 w-full rounded-xl border-border bg-background/60 text-sm">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="active">{t.common.active}</SelectItem>
+                                      <SelectItem value="inactive">{t.common.inactive}</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <Input
+                                  value={editMemberForm.team}
+                                  onChange={(event) => setEditMemberForm((previous) => ({ ...previous, team: event.target.value }))}
+                                  placeholder={t.membersPage.teamPlaceholder}
+                                  className="h-10 bg-background/60"
+                                />
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                  <Input
+                                    value={editMemberForm.ageGroup}
+                                    onChange={(event) => setEditMemberForm((previous) => ({ ...previous, ageGroup: event.target.value }))}
+                                    placeholder={t.membersPage.ageGroupPlaceholder}
+                                    className="h-10 bg-background/60"
+                                  />
+                                  <Input
+                                    value={editMemberForm.position}
+                                    onChange={(event) => setEditMemberForm((previous) => ({ ...previous, position: event.target.value }))}
+                                    placeholder={t.membersPage.positionPlaceholder}
+                                    className="h-10 bg-background/60"
+                                  />
+                                </div>
+                              </div>
+                            ) : null}
+
+                            <div className="w-full min-w-0 rounded-lg border border-border/40 bg-muted/10 p-3">
+                              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
+                                <UserCircle2 className="w-4 h-4 text-primary" /> {t.membersPage.masterDataFields}
+                              </div>
+                              <MasterDataTabs
+                                values={
+                                  memberPanelEditModeId === member.id
+                                    ? memberMasterEditDraft
+                                    : (masterByMembershipId[member.id] ?? {})
+                                }
+                                labels={masterTabLabels}
+                                readOnly={memberPanelEditModeId !== member.id}
+                                compact
+                                displayName={
+                                  memberPanelEditModeId === member.id
+                                    ? buildDisplayNameFromParts(
+                                        String(memberMasterEditDraft.first_name ?? "").trim(),
+                                        String(memberMasterEditDraft.last_name ?? "").trim(),
+                                      ) ||
+                                      getMemberRosterName(member)
+                                    : getMemberRosterName(member)
+                                }
+                                clubName={clubName}
+                                logoSrc={logo}
+                                membershipRole={
+                                  memberPanelEditModeId === member.id ? editMemberForm.role : member.role
+                                }
+                                teamLabel={
+                                  memberPanelEditModeId === member.id
+                                    ? editMemberForm.team.trim() || getMemberTeamLabel(member)
+                                    : getMemberTeamLabel(member)
+                                }
+                                email={membershipEmails[member.id] ?? null}
+                                avatarUpload={
+                                  memberPanelEditModeId === member.id && perms.isAdmin
+                                    ? {
+                                        uploading: memberPanelAvatarUploading,
+                                        onUpload: (file) => void uploadMemberPanelAvatar(member.id, file),
+                                        onRemove: () =>
+                                          setMemberMasterEditDraft((d) => ({ ...d, photo_url: null })),
+                                      }
+                                    : undefined
+                                }
+                                onChange={
+                                  memberPanelEditModeId === member.id
+                                    ? (key, value) =>
+                                        setMemberMasterEditDraft((d) => ({ ...d, [key]: value }))
+                                    : undefined
+                                }
+                                safetyTabExtraEnabled={isPlayerRole(rosterGuardianRole)}
+                                safetyTabExtra={renderGuardiansSafetyTabExtra(member, rosterGuardianRole)}
+                              />
+                            </div>
+
+                            {memberPanelEditModeId !== member.id && (member.position || member.age_group) ? (
+                              <div className="border-t border-border/60 pt-2">
+                                <h4 className="mb-2 text-xs font-medium text-muted-foreground">{t.membersPage.playerAttributes}</h4>
+                                <div className="grid max-w-md grid-cols-2 gap-2">
+                                  {member.position ? (
+                                    <div className="rounded-lg bg-muted/50 p-2">
+                                      <div className="text-[10px] text-muted-foreground">{t.membersPage.position}</div>
+                                      <div className="text-sm font-medium text-foreground">{member.position}</div>
+                                    </div>
+                                  ) : null}
+                                  {member.age_group ? (
+                                    <div className="rounded-lg bg-muted/50 p-2">
+                                      <div className="text-[10px] text-muted-foreground">{t.membersPage.ageGroup}</div>
+                                      <div className="text-sm font-medium text-foreground">{member.age_group}</div>
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </div>
+                            ) : null}
+
+                            <div className="flex flex-col gap-2 pt-2 sm:flex-row">
+                              {memberPanelEditModeId === member.id ? (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    className="w-full bg-gradient-gold-static font-semibold text-primary-foreground hover:brightness-110 sm:flex-1"
+                                    disabled={memberPanelSaving}
+                                    onClick={() => void saveMemberPanelInline(member)}
+                                  >
+                                    {memberPanelSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                    {t.common.save}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full sm:flex-1"
+                                    disabled={memberPanelSaving}
+                                    onClick={cancelMemberPanelEdit}
+                                  >
+                                    {t.common.cancel}
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    className="w-full bg-gradient-gold-static font-semibold text-primary-foreground hover:brightness-110 sm:flex-1"
+                                    onClick={() => setShowMasterDialog(true)}
+                                  >
+                                    <Sparkles className="mr-2 h-4 w-4" /> {t.membersPage.openFullRegistry}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="sm:flex-1"
+                                    onClick={() => startMemberPanelEdit(member)}
+                                  >
+                                    {t.common.edit}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="sm:flex-1 border-accent/30 text-accent hover:bg-accent/10"
+                                    onClick={() => handleDeleteMember(member.id)}
+                                  >
+                                    {t.common.remove}
+                                  </Button>
+                                </>
+                              )}
+                            </div>
                           </div>
-                        ) : null}
-                      </div>
-                    ) : null}
-
-                    {(selectedMember.position || selectedMember.age_group) && (
-                      <div className="mt-4 pt-4 border-t border-border">
-                        <h4 className="text-xs font-medium text-muted-foreground mb-2">{t.membersPage.playerAttributes}</h4>
-                        <div className="grid grid-cols-2 gap-2">
-                          {selectedMember.position && (
-                            <div className="p-2 rounded-lg bg-muted/50">
-                              <div className="text-[10px] text-muted-foreground">{t.membersPage.position}</div>
-                              <div className="text-sm font-medium text-foreground">{selectedMember.position}</div>
-                            </div>
-                          )}
-                          {selectedMember.age_group && (
-                            <div className="p-2 rounded-lg bg-muted/50">
-                              <div className="text-[10px] text-muted-foreground">{t.membersPage.ageGroup}</div>
-                              <div className="text-sm font-medium text-foreground">{selectedMember.age_group}</div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="mt-4 pt-4 border-t border-border flex flex-col gap-2">
-                      <Button
-                        size="sm"
-                        className="w-full bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
-                        onClick={() => setShowMasterDialog(true)}
-                      >
-                        <Sparkles className="w-4 h-4 mr-2" /> {t.membersPage.openFullRegistry}
-                      </Button>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="flex-1" onClick={() => openEditMemberModal(selectedMember)}>{t.common.edit}</Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 text-accent border-accent/30 hover:bg-accent/10"
-                          onClick={() => handleDeleteMember(selectedMember.id)}
-                        >
-                          {t.common.remove}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
+                        </motion.div>
+                      )}
+                    </Fragment>
+                  );
+                })
               )}
             </div>
           </>
@@ -2506,8 +3185,9 @@ const Members = () => {
               </div>
             )}
 
-            <div className="rounded-2xl border border-border/60 overflow-hidden max-h-[52vh] overflow-y-auto">
-              <table className="w-full text-sm">
+            <div className="w-full min-w-0 overflow-x-auto rounded-2xl border border-border/60">
+              <div className="max-h-[52vh] overflow-y-auto">
+              <table className="w-full min-w-[900px] text-sm">
                 <thead className="bg-background/70 sticky top-0">
                   <tr className="text-left text-xs text-muted-foreground">
                     <th className="px-2 py-2 w-28"></th>
@@ -2531,7 +3211,7 @@ const Members = () => {
                       <td className="px-2 py-2">
                         <button
                           type="button"
-                          className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-all ${
+                          className={`flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium touch-manipulation transition-all sm:min-w-0 sm:justify-start ${
                             bulkRowExpanded
                               ? "bg-primary/15 text-primary"
                               : "bg-muted/60 text-muted-foreground hover:bg-primary/10 hover:text-primary"
@@ -2622,7 +3302,7 @@ const Members = () => {
                         </div>
                       </td>
                       <td className="px-2 py-2">
-                        <Button variant="ghost" size="icon" onClick={() => removeDraftRow(row.id)} disabled={bulkRows.length <= 1}>
+                        <Button variant="ghost" size="icon" className="min-h-11 min-w-11 touch-manipulation" onClick={() => removeDraftRow(row.id)} disabled={bulkRows.length <= 1}>
                           <X className="w-4 h-4" />
                         </Button>
                       </td>
@@ -2633,6 +3313,11 @@ const Members = () => {
                           <MasterDataTabs
                             values={row.masterData}
                             labels={masterTabLabels}
+                            avatarUpload={{
+                              uploading: bulkAvatarUploadingRowId === row.id,
+                              onUpload: (file) => void uploadBulkRowAvatar(row.id, file),
+                              onRemove: () => updateBulkRowMasterField(row.id, "photo_url", null),
+                            }}
                             onChange={(key, value) => updateBulkRowMasterField(row.id, key, value)}
                           />
                         </td>
@@ -2643,9 +3328,10 @@ const Members = () => {
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
 
-            <div className="mt-4 flex items-center justify-between gap-3">
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-xs text-muted-foreground">
                 {t.membersPage.tipExcelCsvColumns}
                 {" "}
@@ -2673,6 +3359,7 @@ const Members = () => {
         <MemberMasterDialog
           open={showMasterDialog}
           onOpenChange={setShowMasterDialog}
+          membershipId={selectedMember.id}
           displayName={getMemberRosterName(selectedMember)}
           email={membershipEmails[selectedMember.id] ?? null}
           membershipRole={selectedMember.role}
@@ -2680,28 +3367,24 @@ const Members = () => {
           clubName={clubName}
           logoSrc={logo}
           initial={masterByMembershipId[selectedMember.id] ?? null}
+          profileAvatarUrl={selectedMember.profiles?.avatar_url ?? null}
+          memberStatus={selectedMember.status}
+          phone={selectedMember.profiles?.phone ?? null}
+          joinedAt={selectedMember.created_at}
+          joinedLabel={t.membersPage.joined}
+          supportingMemberLabel={t.membersPage.supportingMember}
+          activeLabel={t.common.active}
+          roleDisplayLabel={getRoleLabel(selectedMember.role)}
+          roleBadgeClassName={roleColors[selectedMember.role] || "bg-muted text-muted-foreground"}
+          masterTabLabels={masterTabLabels}
           labels={{
             title: t.membersPage.masterDialogTitle,
             subtitle: t.membersPage.masterDialogSubtitle,
             save: t.common.save,
             cancel: t.common.cancel,
             readyBadge: t.membersPage.ready,
-            requiredBadge: t.membersPage.masterRequiredBadge,
-            optionalBadge: t.membersPage.masterOptionalBadge,
-            recommendedBadge: t.membersPage.masterRecommendedBadge,
-            sectionIdentity: t.membersPage.masterSectionIdentity,
-            sectionContact: t.membersPage.masterSectionContact,
-            sectionSport: t.membersPage.masterSectionSport,
-            sectionPerformance: t.membersPage.masterSectionPerformance,
-            sectionClub: t.membersPage.masterSectionClub,
-            sectionFinancial: t.membersPage.masterSectionFinancial,
-            sectionSafety: t.membersPage.masterSectionSafety,
-            completeness: t.membersPage.masterCompleteness,
             missingFields: t.membersPage.masterMissingFields,
-            generateInternalId: t.membersPage.masterGenerateInternalId,
-            downloadPass: t.membersPage.masterDownloadPass,
-            passTitle: t.membersPage.masterPassTitle,
-            passHint: t.membersPage.masterPassHint,
+            masterDataFields: t.membersPage.masterDataFields,
           }}
           onSave={async (payload) => {
             await handleSaveMasterRecord(selectedMember, payload);
@@ -2754,7 +3437,7 @@ const Members = () => {
                   <thead className="bg-muted/50">
                     <tr className="text-left">
                       <th className="px-2 py-2">{t.membersPage.registryImportMatched}</th>
-                      <th className="px-2 py-2">email</th>
+                      <th className="px-2 py-2">{t.membersPage.registryImportEmailColumn}</th>
                       <th className="px-2 py-2">{t.membersPage.registryImportMissing}</th>
                     </tr>
                   </thead>
@@ -2784,95 +3467,6 @@ const Members = () => {
         </div>
       ) : null}
 
-      {showEditMemberModal && selectedMember && (
-        <div
-          className="fixed inset-0 z-50 bg-background/45 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setShowEditMemberModal(false)}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98, y: 6 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="w-full max-w-lg rounded-3xl border border-border/60 bg-card/65 backdrop-blur-2xl p-6 shadow-[0_24px_60px_rgba(0,0,0,0.22)]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="font-display font-bold text-foreground tracking-tight text-lg">{t.common.edit}</h3>
-                <p className="text-xs text-muted-foreground">{selectedMember.profiles?.display_name || "Member"}</p>
-              </div>
-              <Button variant="ghost" size="icon" onClick={() => setShowEditMemberModal(false)}>
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <Select
-                  value={editMemberForm.role}
-                  onValueChange={(value) => setEditMemberForm((previous) => ({ ...previous, role: value }))}
-                >
-                  <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background/60 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="member">{t.onboarding.member}</SelectItem>
-                    <SelectItem value="player">{t.onboarding.player}</SelectItem>
-                    <SelectItem value="trainer">{t.onboarding.trainer}</SelectItem>
-                    <SelectItem value="staff">{t.onboarding.teamStaff}</SelectItem>
-                    <SelectItem value="parent">{t.onboarding.parentSupporter}</SelectItem>
-                    <SelectItem value="sponsor">{t.onboarding.sponsor}</SelectItem>
-                    <SelectItem value="supplier">{t.onboarding.supplier}</SelectItem>
-                    <SelectItem value="service_provider">{t.onboarding.serviceProvider}</SelectItem>
-                    <SelectItem value="consultant">{t.onboarding.consultant}</SelectItem>
-                    <SelectItem value="admin">{t.onboarding.clubAdmin}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={editMemberForm.status}
-                  onValueChange={(value) => setEditMemberForm((previous) => ({ ...previous, status: value }))}
-                >
-                  <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background/60 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">{t.common.active}</SelectItem>
-                    <SelectItem value="inactive">{t.common.inactive}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Input
-                value={editMemberForm.team}
-                onChange={(event) => setEditMemberForm((previous) => ({ ...previous, team: event.target.value }))}
-                placeholder={t.membersPage.teamPlaceholder}
-                className="bg-background/60"
-              />
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  value={editMemberForm.ageGroup}
-                  onChange={(event) => setEditMemberForm((previous) => ({ ...previous, ageGroup: event.target.value }))}
-                  placeholder={t.membersPage.ageGroupPlaceholder}
-                  className="bg-background/60"
-                />
-                <Input
-                  value={editMemberForm.position}
-                  onChange={(event) => setEditMemberForm((previous) => ({ ...previous, position: event.target.value }))}
-                  placeholder={t.membersPage.positionPlaceholder}
-                  className="bg-background/60"
-                />
-              </div>
-            </div>
-
-            <div className="mt-5">
-              <Button
-                className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110"
-                onClick={handleSaveMemberEdit}
-              >
-                {t.common.save}
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      )}
     </div>
   );
 };

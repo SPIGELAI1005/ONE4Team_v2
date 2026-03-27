@@ -8,6 +8,10 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ## NOW (top priority)
 
+### i18n + mobile polish (2026-03-27)
+- [x] **I18N-AUTH-SETTINGS** Third i18n pass on `Auth.tsx` and `Settings.tsx` (placeholders, toasts, role UI, locale-aware club settings).
+- [x] **MOB-MEMBERS-SHOP** Mobile audit: Members bulk table horizontal scroll + touch targets; Shop tabs/actions and related copy.
+
 ### P12-010 Environment integrity + migration parity
 - [x] **P12-010a** Apply latest incremental migrations in the active Supabase project:
   - `20260301152000_add_chat_bridge_connectors_and_events.sql`
@@ -47,10 +51,11 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
   - current-members snapshot useful for club operators.
 
 ### P12-050 Members master registry + RBAC (2026-03-25)
-- [x] **P12-050a** Apply migrations: `20260324120000`, `20260324140000`, `20260324201000`, `20260324210000` (order: master records → role assignments → SELECT broaden → draft `master_data`).
+- [x] **P12-050a** Apply migrations: `20260324120000`, `20260324140000`, `20260324201000`, `20260324210000`, `20260325220000` (order: master records → role assignments → SELECT broaden → draft `master_data` → redeem invite guardians).
 - [x] **P12-050b** Members UI: tabbed master data, draft inline edit with `master_data`, bulk add expand + XLSX column merge, detail Club Card tab, larger list/draft controls.
 - [x] **P12-050c** App permissions aligned with `club_role_assignments` + legacy membership roles (`permissions.ts`, hooks).
 - [ ] **P12-050d** Follow-up: merge draft `master_data` into `club_member_master_records` on invite acceptance (server trigger or app); optional E2E for registry paths.
+- [x] **P12-050e** Guardians UX + data path (2026-03-25): draft Safety tab (Player role only) with `__draft_guardian_membership_ids` in `master_data`; roster Safety tab guardians only for `player` role; `invite_payload.guardian_membership_ids` on draft invite; migration `20260325220000` extends `redeem_club_invite` to create `club_member_guardian_links`; non-player inline save removes ward guardian rows.
 
 ### P12-020 Abuse controls + quality gates
 - [x] **P12-020a** Add first abuse-control slice for invite/join rate limiting (DB ledger + RPC enforcement + user feedback).

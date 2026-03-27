@@ -9,6 +9,7 @@ import {
 // Button not needed on this page
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
+import { useLanguage } from "@/hooks/use-language";
 import { supabase } from "@/integrations/supabase/client";
 import PlayerRadarChart from "@/components/analytics/PlayerRadarChart";
 import AttendanceHeatmap from "@/components/analytics/AttendanceHeatmap";
@@ -52,6 +53,7 @@ const PlayerProfile = () => {
   const { membershipId } = useParams();
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
+  const { t } = useLanguage();
 
   const [displayName, setDisplayName] = useState("");
   const [position, setPosition] = useState<string | null>(null);
@@ -233,7 +235,7 @@ const PlayerProfile = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0">
-      <AppHeader title="Player Profile" subtitle="Overview, history, attendance" back />
+      <AppHeader title={t.playerProfilePage.title} subtitle={t.playerProfilePage.subtitle} back />
 
       <div className="container mx-auto px-4 py-6">
         {(clubLoading || loading) ? (

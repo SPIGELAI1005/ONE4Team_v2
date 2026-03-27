@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/use-language";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
 
 type PartnerRow = {
@@ -55,6 +56,7 @@ export default function Partners() {
   const { clubId, loading: clubLoading } = useClubId();
   const perms = usePermissions();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const canManage = perms.isTrainer;
 
@@ -107,12 +109,12 @@ export default function Partners() {
       setContracts([]);
       setInvoices([]);
       setTasks([]);
-      const msg = err instanceof Error ? err.message : "Failed to load partners";
-      toast({ title: "Error", description: msg, variant: "destructive" });
+      const msg = err instanceof Error ? err.message : t.partnersPage.loadFailed;
+      toast({ title: t.common.error, description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [clubId, toast]);
+  }, [clubId, toast, t.common.error, t.partnersPage.loadFailed]);
 
   useEffect(() => {
     void fetchData();
@@ -145,7 +147,7 @@ export default function Partners() {
     });
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t.common.error, description: error.message, variant: "destructive" });
       return;
     }
 
@@ -171,7 +173,7 @@ export default function Partners() {
         renewal_date: null,
       });
       if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+        toast({ title: t.common.error, description: error.message, variant: "destructive" });
         return;
       }
     }
@@ -185,7 +187,7 @@ export default function Partners() {
         invoice_status: "pending",
       });
       if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+        toast({ title: t.common.error, description: error.message, variant: "destructive" });
         return;
       }
     }
@@ -198,7 +200,7 @@ export default function Partners() {
         task_status: "open",
       });
       if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+        toast({ title: t.common.error, description: error.message, variant: "destructive" });
         return;
       }
     }
@@ -210,17 +212,17 @@ export default function Partners() {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader
-        title="Partners"
-        subtitle={schemaReady ? "Operational partner workflows" : "Contacts (fallback mode)"}
+        title={t.partnersPage.title}
+        subtitle={schemaReady ? t.partnersPage.subtitleOperational : t.partnersPage.subtitleFallback}
         rightSlot={
           canManage ? (
             <Button
               size="sm"
-              className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
+              className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110 shrink-0"
               onClick={() => setShowCreate(true)}
               disabled={!clubId}
             >
-              <Plus className="w-4 h-4 mr-1" /> {tab === "partners" ? "New" : "Create"}
+              <Plus className="w-4 h-4 mr-1" /> {tab === "partners" ? t.eventsPage.newEvent : t.partnersPage.create}
             </Button>
           ) : null
         }
@@ -383,7 +385,7 @@ export default function Partners() {
             <div className="grid gap-3">
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Name</div>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. ACME Sponsor" />
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.partnersPage.phName} />
               </div>
 
               <div>
@@ -405,11 +407,11 @@ export default function Partners() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <div className="text-xs text-muted-foreground mb-1">Website</div>
-                  <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://…" />
+                  <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder={t.partnersPage.phWebsite} />
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground mb-1">Email</div>
-                  <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="hello@…" />
+                  <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.partnersPage.phEmail} />
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground mb-1">Phone</div>
@@ -417,7 +419,7 @@ export default function Partners() {
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground mb-1">Notes</div>
-                  <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional" />
+                  <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t.partnersPage.phNotes} />
                 </div>
               </div>
 

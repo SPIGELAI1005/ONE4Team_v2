@@ -36,7 +36,18 @@ export interface ClubMemberMasterRecord {
   club_pass_generated_at: string | null;
   emergency_contact_name: string | null;
   emergency_contact_phone: string | null;
+  /** Medical / safety notes (store only what’s necessary; keep concise). */
+  allergies: string | null;
+  medical_conditions: string | null;
+  medications: string | null;
+  medical_notes: string | null;
   nationality: string | null;
+
+  /** Player development / performance admin signals (not match stats). */
+  onboarding_progress: string | null;
+  team_integration_status: string | null;
+  squad_status: string | null;
+  last_evaluation_date: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -117,6 +128,35 @@ export const MEMBER_MASTER_FIELDS: MemberMasterFieldMeta[] = [
 
   { key: "strengths", column: "strengths", aliases: ["skills", "qualities"], required: false, group: "performance" },
   { key: "goals_count", column: "goals_count", aliases: ["goals", "tore"], required: false, group: "performance" },
+  {
+    key: "onboarding_progress",
+    column: "onboarding_progress",
+    aliases: ["onboarding", "onboarding_status", "member_onboarding", "onboarding_fortschritt"],
+    required: false,
+    recommended: true,
+    group: "performance",
+  },
+  {
+    key: "team_integration_status",
+    column: "team_integration_status",
+    aliases: ["team_integration", "team_inclusion", "team_inclusion_status", "integration_status"],
+    required: false,
+    group: "performance",
+  },
+  {
+    key: "squad_status",
+    column: "squad_status",
+    aliases: ["squad", "squad_state", "squad_membership", "kaderstatus"],
+    required: false,
+    group: "performance",
+  },
+  {
+    key: "last_evaluation_date",
+    column: "last_evaluation_date",
+    aliases: ["evaluation_date", "last_review", "assessment_date", "bewertungsdatum"],
+    required: false,
+    group: "performance",
+  },
 
   {
     key: "club_registration_date",
@@ -171,6 +211,35 @@ export const MEMBER_MASTER_FIELDS: MemberMasterFieldMeta[] = [
     recommended: true,
     group: "safety",
   },
+  {
+    key: "allergies",
+    column: "allergies",
+    aliases: ["allergy", "allergy_notes", "allergien"],
+    required: false,
+    recommended: true,
+    group: "safety",
+  },
+  {
+    key: "medical_conditions",
+    column: "medical_conditions",
+    aliases: ["conditions", "diseases", "health_conditions", "erkrankungen"],
+    required: false,
+    group: "safety",
+  },
+  {
+    key: "medications",
+    column: "medications",
+    aliases: ["medicine", "meds", "medication", "medikation"],
+    required: false,
+    group: "safety",
+  },
+  {
+    key: "medical_notes",
+    column: "medical_notes",
+    aliases: ["medical", "health_notes", "health", "medizinische_notizen"],
+    required: false,
+    group: "safety",
+  },
 ];
 
 /** Linked members import — not stored on master row */
@@ -178,6 +247,16 @@ export const GUARDIAN_IMPORT_COLUMNS = {
   guardian_email: ["guardian_email", "parent_email", "betreuer_email", "sorgeberechtigter_email"],
   ward_email: ["ward_email", "child_email", "player_email", "kind_email"],
 } as const;
+
+/** Stored on `club_member_drafts.master_data` only; not a DB column on master records. */
+export const DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY = "__draft_guardian_membership_ids";
+
+export function readDraftGuardianMembershipIds(masterData: Record<string, unknown>): string[] {
+  const raw = masterData[DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY];
+  if (!Array.isArray(raw)) return [];
+  const ids = raw.filter((x): x is string => typeof x === "string" && x.trim().length > 0).map((x) => x.trim());
+  return [...new Set(ids)];
+}
 
 export function normalizeHeaderKey(raw: string): string {
   return raw

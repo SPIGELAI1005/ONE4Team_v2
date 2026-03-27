@@ -2,45 +2,12 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, Trophy, MessageSquare,
-  Briefcase, CreditCard, CalendarDays, BarChart3
+  Briefcase, CreditCard, CalendarDays, BarChart3,
+  Calendar, ShoppingBag
 } from "lucide-react";
+import { useLanguage } from "@/hooks/use-language";
 
 type NavItem = { icon: React.ElementType; label: string; id: string; route?: string };
-
-const roleMobileNav: Record<string, NavItem[]> = {
-  admin: [
-    { icon: LayoutDashboard, label: "Home", id: "overview" },
-    { icon: Trophy, label: "Matches", id: "matches", route: "/matches" },
-    { icon: CalendarDays, label: "Events", id: "events", route: "/events" },
-    { icon: BarChart3, label: "Stats", id: "stats", route: "/player-stats" },
-    { icon: MessageSquare, label: "Chat", id: "messages", route: "/communication" },
-  ],
-  trainer: [
-    { icon: LayoutDashboard, label: "Home", id: "overview" },
-    { icon: CalendarDays, label: "Schedule", id: "schedule", route: "/activities" },
-    { icon: Trophy, label: "Matches", id: "matches", route: "/matches" },
-    { icon: BarChart3, label: "Stats", id: "stats", route: "/player-stats" },
-    { icon: MessageSquare, label: "Chat", id: "messages", route: "/communication" },
-  ],
-  player: [
-    { icon: LayoutDashboard, label: "Home", id: "overview" },
-    { icon: Trophy, label: "Matches", id: "matches", route: "/matches" },
-    { icon: CalendarDays, label: "Events", id: "events", route: "/events" },
-    { icon: BarChart3, label: "Stats", id: "stats", route: "/player-stats" },
-    { icon: MessageSquare, label: "Chat", id: "messages", route: "/communication" },
-  ],
-  sponsor: [
-    { icon: LayoutDashboard, label: "Home", id: "overview" },
-    { icon: Briefcase, label: "Contracts", id: "contracts" },
-    { icon: CreditCard, label: "Invoices", id: "invoices" },
-    { icon: MessageSquare, label: "Chat", id: "messages", route: "/communication" },
-  ],
-};
-
-const defaultMobileNav: NavItem[] = [
-  { icon: LayoutDashboard, label: "Home", id: "overview" },
-  { icon: MessageSquare, label: "Chat", id: "messages", route: "/communication" },
-];
 
 interface MobileBottomNavProps {
   active?: string;
@@ -48,6 +15,7 @@ interface MobileBottomNavProps {
 }
 
 const MobileBottomNav = ({ active, onNavigate }: MobileBottomNavProps) => {
+  const { t } = useLanguage();
   const { role } = useParams();
   const activeRole = (typeof window !== "undefined"
     ? localStorage.getItem("one4team.activeRole") || localStorage.getItem("one4team_role")
@@ -55,6 +23,42 @@ const MobileBottomNav = ({ active, onNavigate }: MobileBottomNavProps) => {
   const effectiveRole = role || activeRole || "";
   const navigate = useNavigate();
   const location = useLocation();
+
+  const roleMobileNav: Record<string, NavItem[]> = {
+    admin: [
+      { icon: LayoutDashboard, label: t.common.home, id: "overview" },
+      { icon: Trophy, label: t.sidebar.matches, id: "matches", route: "/matches" },
+      { icon: CalendarDays, label: t.sidebar.events, id: "events", route: "/events" },
+      { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/player-stats" },
+      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+    ],
+    trainer: [
+      { icon: LayoutDashboard, label: t.common.home, id: "overview" },
+      { icon: CalendarDays, label: t.sidebar.schedule, id: "schedule", route: "/activities" },
+      { icon: Trophy, label: t.sidebar.matches, id: "matches", route: "/matches" },
+      { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/player-stats" },
+      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+    ],
+    player: [
+      { icon: LayoutDashboard, label: t.common.home, id: "overview" },
+      { icon: Calendar, label: t.sidebar.schedule, id: "schedule", route: "/activities" },
+      { icon: Trophy, label: t.sidebar.matches, id: "matches", route: "/matches" },
+      { icon: ShoppingBag, label: t.sidebar.shop, id: "shop", route: "/shop" },
+      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+    ],
+    sponsor: [
+      { icon: LayoutDashboard, label: t.common.home, id: "overview" },
+      { icon: Briefcase, label: t.sidebar.contracts, id: "contracts" },
+      { icon: CreditCard, label: t.sidebar.invoices, id: "invoices" },
+      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+    ],
+  };
+
+  const defaultMobileNav: NavItem[] = [
+    { icon: LayoutDashboard, label: t.common.home, id: "overview" },
+    { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+  ];
+
   const items = roleMobileNav[effectiveRole] || defaultMobileNav;
 
   const currentActive = active || (() => {
@@ -64,6 +68,7 @@ const MobileBottomNav = ({ active, onNavigate }: MobileBottomNavProps) => {
     if (path.includes("/events")) return "events";
     if (path.includes("/player-stats")) return "stats";
     if (path.includes("/communication")) return "messages";
+    if (path.includes("/shop")) return "shop";
     return "overview";
   })();
 

@@ -22,6 +22,7 @@ import { useMembershipId } from "@/hooks/use-membership-id";
 import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/use-language";
 
 type ActivityType = "training" | "match" | "event";
 
@@ -90,6 +91,7 @@ export default function Activities() {
   const { membershipId, loading: membershipLoading } = useMembershipId();
   const perms = usePermissions();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const canCreate = perms.isTrainer;
 
@@ -185,12 +187,12 @@ export default function Activities() {
         setMemberships([]);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to load schedule";
-      toast({ title: "Error", description: msg, variant: "destructive" });
+      const msg = err instanceof Error ? err.message : t.activitiesPage.loadFailed;
+      toast({ title: t.common.error, description: msg, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [clubId, membershipId, perms.isTrainer, toast]);
+  }, [clubId, membershipId, perms.isTrainer, toast, t.common.error, t.activitiesPage.loadFailed]);
 
   useEffect(() => {
     void fetchData();
@@ -289,9 +291,9 @@ export default function Activities() {
 
     try {
       await navigator.clipboard.writeText(msg);
-      toast({ title: "Copied", description: "Nudge message copied to clipboard (sending is HOLD)." });
+      toast({ title: t.activitiesPage.toastCopied, description: t.activitiesPage.toastCopiedDesc });
     } catch {
-      toast({ title: "Nudge", description: msg });
+      toast({ title: t.activitiesPage.toastNudge, description: msg });
     }
   };
 
@@ -315,11 +317,11 @@ export default function Activities() {
     });
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t.common.error, description: error.message, variant: "destructive" });
       return;
     }
 
-    toast({ title: "Activity created" });
+    toast({ title: t.activitiesPage.toastActivityCreated });
     setShowCreate(false);
     setTitle("");
     setStartsAt("");
@@ -346,13 +348,13 @@ export default function Activities() {
 
     const { error } = await supabase.from("activities").insert(rows);
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: t.common.error, description: error.message, variant: "destructive" });
       return;
     }
 
     toast({
-      title: "Week created",
-      description: team ? "Added 2 trainings + 1 match for selected team." : "Added 2 trainings + 1 match.",
+      title: t.activitiesPage.weekCreated,
+      description: team ? t.activitiesPage.weekCreatedDescWithTeam : t.activitiesPage.weekCreatedDesc,
     });
 
     await fetchData();
@@ -370,7 +372,7 @@ export default function Activities() {
         .eq("id", existing.id);
 
       if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+        toast({ title: t.common.error, description: error.message, variant: "destructive" });
         return;
       }
     } else {
@@ -379,35 +381,35 @@ export default function Activities() {
         .insert({ club_id: clubId, activity_id: activityId, membership_id: membershipId, status });
 
       if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+        toast({ title: t.common.error, description: error.message, variant: "destructive" });
         return;
       }
     }
 
-    toast({ title: status === "confirmed" ? "RSVP confirmed" : "RSVP declined" });
+    toast({ title: status === "confirmed" ? t.activitiesPage.rsvpConfirmed : t.activitiesPage.rsvpDeclined });
     await fetchData();
   };
 
   return (
     <div className="min-h-screen bg-background">
       <AppHeader
-        title="Schedule"
-        subtitle={perms.isTrainer ? "Plan week + track attendance" : "Your week"}
+        title={t.activitiesPage.title}
+        subtitle={perms.isTrainer ? t.activitiesPage.subtitleTrainer : t.activitiesPage.subtitlePlayer}
         rightSlot={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-end">
             {perms.isTrainer && (
-              <Button size="sm" variant="outline" className="rounded-2xl" onClick={createWeekTemplate} disabled={!clubId}>
-                <Sparkles className="w-4 h-4 mr-1" /> Week template
+              <Button size="sm" variant="outline" className="rounded-2xl text-xs sm:text-sm shrink-0" onClick={createWeekTemplate} disabled={!clubId}>
+                <Sparkles className="w-4 h-4 mr-1" /> {t.activitiesPage.weekTemplate}
               </Button>
             )}
             {canCreate ? (
               <Button
                 size="sm"
-                className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
+                className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110 text-xs sm:text-sm shrink-0"
                 onClick={() => setShowCreate(true)}
                 disabled={!clubId}
               >
-                <Plus className="w-4 h-4 mr-1" /> New
+                <Plus className="w-4 h-4 mr-1" /> {t.activitiesPage.newActivity}
               </Button>
             ) : null}
           </div>
@@ -422,8 +424,8 @@ export default function Activities() {
         ) : !clubId ? (
           <div className="text-center py-20">
             <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h2 className="font-display text-xl font-bold text-foreground mb-2">No club selected</h2>
-            <p className="text-muted-foreground">Select a club to view the weekly schedule.</p>
+            <h2 className="font-display text-xl font-bold text-foreground mb-2">{t.activitiesPage.noClubTitle}</h2>
+            <p className="text-muted-foreground">{t.activitiesPage.noClubDesc}</p>
           </div>
         ) : (
           <div className="space-y-5">
@@ -597,7 +599,7 @@ export default function Activities() {
             <div className="grid gap-3">
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Title</div>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Training" />
+                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t.activitiesPage.phTitle} />
               </div>
 
               <div className="grid grid-cols-3 gap-2">
@@ -635,7 +637,7 @@ export default function Activities() {
 
               <div>
                 <div className="text-xs text-muted-foreground mb-1">Starts at</div>
-                <Input value={startsAt} onChange={(e) => setStartsAt(e.target.value)} placeholder="YYYY-MM-DD HH:MM" />
+                <Input value={startsAt} onChange={(e) => setStartsAt(e.target.value)} placeholder={t.placeholders.dateTimeLocal} />
                 <div className="mt-1 text-[10px] text-muted-foreground">We parse via Date().</div>
               </div>
 

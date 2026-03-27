@@ -14,6 +14,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLanguage } from "@/hooks/use-language";
 // logo is rendered by AppHeader
 import LineupExport from "@/components/matches/LineupExport";
 import MatchVoting from "@/components/matches/MatchVoting";
@@ -52,6 +53,7 @@ const Matches = () => {
   const { clubId, loading: clubLoading } = useClubId();
   const perms = usePermissions();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const [tab, setTab] = useState<"matches" | "competitions" | "standings">("matches");
   const [matches, setMatches] = useState<Match[]>([]);
@@ -156,7 +158,7 @@ const Matches = () => {
 
   const handleCreateMatch = async () => {
     if (!perms.isTrainer) {
-      toast({ title: "Not authorized", description: "Only trainers/admins can schedule matches.", variant: "destructive" });
+      toast({ title: t.common.notAuthorized, description: t.matchesPage.toastTrainerOnlyMatches, variant: "destructive" });
       return;
     }
     if (!opponent.trim() || !matchDate || !clubId) return;
@@ -164,32 +166,32 @@ const Matches = () => {
       club_id: clubId, opponent: opponent.trim(), is_home: isHome, match_date: matchDate,
       location: matchLocation || null, team_id: matchTeamId || null, competition_id: matchCompId || null,
     }).select("*, competitions(name), teams(name)").single();
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    if (error) { toast({ title: t.common.error, description: error.message, variant: "destructive" }); return; }
     setMatches(prev => [data as unknown as Match, ...prev]);
     setShowAddMatch(false);
     setOpponent(""); setMatchDate(""); setMatchLocation(""); setMatchTeamId(""); setMatchCompId("");
-    toast({ title: "Match scheduled" });
+    toast({ title: t.matchesPage.toastMatchScheduled });
   };
 
   const handleCreateComp = async () => {
     if (!perms.isTrainer) {
-      toast({ title: "Not authorized", description: "Only trainers/admins can create competitions.", variant: "destructive" });
+      toast({ title: t.common.notAuthorized, description: t.matchesPage.toastTrainerOnlyCompetitions, variant: "destructive" });
       return;
     }
     if (!compName.trim() || !clubId) return;
     const { data, error } = await supabase.from("competitions").insert({
       club_id: clubId, name: compName.trim(), season: compSeason || null, competition_type: compType, team_id: compTeamId || null,
     }).select().single();
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    if (error) { toast({ title: t.common.error, description: error.message, variant: "destructive" }); return; }
     setCompetitions(prev => [data as Competition, ...prev]);
     setShowAddComp(false);
     setCompName(""); setCompTeamId("");
-    toast({ title: "Competition created" });
+    toast({ title: t.matchesPage.toastCompetitionCreated });
   };
 
   const handleUpdateResult = async () => {
     if (!perms.isTrainer) {
-      toast({ title: "Not authorized", description: "Only trainers/admins can finalize results.", variant: "destructive" });
+      toast({ title: t.common.notAuthorized, description: t.matchesPage.toastTrainerOnlyResults, variant: "destructive" });
       return;
     }
     if (!selectedMatch) return;
@@ -203,15 +205,15 @@ const Matches = () => {
       })
       .eq("club_id", clubId)
       .eq("id", selectedMatch.id);
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    if (error) { toast({ title: t.common.error, description: error.message, variant: "destructive" }); return; }
     setMatches(prev => prev.map(m => m.id === selectedMatch.id ? { ...m, home_score: parseInt(homeScore) || null, away_score: parseInt(awayScore) || null, status: "completed" } : m));
     setSelectedMatch(prev => prev ? { ...prev, home_score: parseInt(homeScore) || null, away_score: parseInt(awayScore) || null, status: "completed" } : null);
-    toast({ title: "Result saved" });
+    toast({ title: t.matchesPage.toastResultSaved });
   };
 
   const handleAddMatchEvent = async () => {
     if (!perms.isTrainer) {
-      toast({ title: "Not authorized", description: "Only trainers/admins can edit match timeline.", variant: "destructive" });
+      toast({ title: t.common.notAuthorized, description: t.matchesPage.toastTrainerOnlyTimeline, variant: "destructive" });
       return;
     }
     if (!selectedMatch || !evType) return;
@@ -219,35 +221,35 @@ const Matches = () => {
       match_id: selectedMatch.id, event_type: evType,
       membership_id: evMemberId || null, minute: evMinute ? parseInt(evMinute) : null,
     }).select().single();
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    if (error) { toast({ title: t.common.error, description: error.message, variant: "destructive" }); return; }
     setMatchEvents(prev => [...prev, data as MatchEvent]);
     setEvMemberId(""); setEvMinute("");
-    toast({ title: "Event recorded" });
+    toast({ title: t.matchesPage.toastEventRecorded });
   };
 
   const handleAddToLineup = async () => {
     if (!perms.isTrainer) {
-      toast({ title: "Not authorized", description: "Only trainers/admins can manage lineups.", variant: "destructive" });
+      toast({ title: t.common.notAuthorized, description: t.matchesPage.toastTrainerOnlyLineups, variant: "destructive" });
       return;
     }
     if (!selectedMatch || !addLineupMemberId) return;
     if (lineup.some(l => l.membership_id === addLineupMemberId)) {
-      toast({ title: "Already in lineup", variant: "destructive" }); return;
+      toast({ title: t.matchesPage.toastAlreadyInLineup, variant: "destructive" }); return;
     }
     const { data, error } = await supabase.from("match_lineups").insert({
       match_id: selectedMatch.id, membership_id: addLineupMemberId,
       is_starter: addLineupStarter, position: addLineupPosition || null,
       jersey_number: addLineupJersey ? parseInt(addLineupJersey) : null,
     }).select().single();
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    if (error) { toast({ title: t.common.error, description: error.message, variant: "destructive" }); return; }
     setLineup(prev => [...prev, data as LineupPlayer]);
     setAddLineupMemberId(""); setAddLineupPosition(""); setAddLineupJersey("");
-    toast({ title: addLineupStarter ? "Starter added" : "Substitute added" });
+    toast({ title: addLineupStarter ? t.matchesPage.toastStarterAdded : t.matchesPage.toastSubstituteAdded });
   };
 
   const handleRemoveFromLineup = async (id: string) => {
     if (!perms.isTrainer) {
-      toast({ title: "Not authorized", description: "Only trainers/admins can manage lineups.", variant: "destructive" });
+      toast({ title: t.common.notAuthorized, description: t.matchesPage.toastTrainerOnlyLineups, variant: "destructive" });
       return;
     }
     if (!selectedMatch) return;
@@ -261,7 +263,7 @@ const Matches = () => {
 
   const handleToggleStarter = async (player: LineupPlayer) => {
     if (!perms.isTrainer) {
-      toast({ title: "Not authorized", description: "Only trainers/admins can manage lineups.", variant: "destructive" });
+      toast({ title: t.common.notAuthorized, description: t.matchesPage.toastTrainerOnlyLineups, variant: "destructive" });
       return;
     }
     if (!selectedMatch) return;
@@ -297,33 +299,35 @@ const Matches = () => {
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0 scroll-glow">
       <AppHeader
-        title="Matches"
-        subtitle="Competitions · lineups · voting"
+        title={t.matchesPage.title}
+        subtitle={t.matchesPage.subtitle}
         rightSlot={
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => setShowAddComp(true)} className="rounded-xl glass-card text-[12px] haptic-press">
-              <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> Competition
-            </Button>
-            <Button size="sm" className="bg-gradient-gold-static text-primary-foreground hover:brightness-110 rounded-xl text-[12px] shadow-gold haptic-press" onClick={() => setShowAddMatch(true)}>
-              <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> Match
-            </Button>
-          </div>
+          perms.isTrainer ? (
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-end max-w-[min(100%,14rem)] sm:max-w-none">
+              <Button size="sm" variant="outline" onClick={() => setShowAddComp(true)} className="rounded-xl glass-card text-[11px] sm:text-[12px] haptic-press shrink-0">
+                <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> {t.matchesPage.btnCompetition}
+              </Button>
+              <Button size="sm" className="bg-gradient-gold-static text-primary-foreground hover:brightness-110 rounded-xl text-[11px] sm:text-[12px] shadow-gold haptic-press shrink-0" onClick={() => setShowAddMatch(true)}>
+                <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> {t.matchesPage.btnMatch}
+              </Button>
+            </div>
+          ) : null
         }
       />
 
       {/* iOS Segmented Tabs */}
       <div className="container mx-auto px-4 py-3">
-        <div className="ios-segment flex">
+        <div className="ios-segment flex overflow-x-auto min-w-0">
           {([
-            { id: "matches" as const, label: "Matches", icon: Trophy },
-            { id: "competitions" as const, label: "Competitions", icon: Award },
-            { id: "standings" as const, label: "Standings", icon: Target },
-          ]).map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] font-medium rounded-md transition-all duration-200 ${
-                tab === t.id ? "ios-segment-active text-foreground" : "text-muted-foreground"
+            { id: "matches" as const, label: t.matchesPage.tabMatches, icon: Trophy },
+            { id: "competitions" as const, label: t.matchesPage.tabCompetitions, icon: Award },
+            { id: "standings" as const, label: t.matchesPage.tabStandings, icon: Target },
+          ]).map((tabItem) => (
+            <button key={tabItem.id} onClick={() => setTab(tabItem.id)}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2 text-[11px] sm:text-[12px] font-medium rounded-md transition-all duration-200 min-w-0 ${
+                tab === tabItem.id ? "ios-segment-active text-foreground" : "text-muted-foreground"
               }`}>
-              <t.icon className="w-3.5 h-3.5" strokeWidth={1.5} /> {t.label}
+              <tabItem.icon className="w-3.5 h-3.5 shrink-0" strokeWidth={1.5} /> <span className="truncate">{tabItem.label}</span>
             </button>
           ))}
         </div>
@@ -333,7 +337,7 @@ const Matches = () => {
         {(clubLoading || loading) ? (
           <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
         ) : !clubId ? (
-          <div className="text-center py-20 text-muted-foreground">No club found.</div>
+          <div className="text-center py-20 text-muted-foreground">{t.communicationPage.noClubFound}</div>
         ) : tab === "matches" ? (
           <div className="max-w-3xl mx-auto space-y-4">
             {/* Form Streak */}
@@ -434,7 +438,7 @@ const Matches = () => {
               <Button variant="ghost" size="icon" onClick={() => setShowAddMatch(false)}><X className="w-4 h-4" /></Button>
             </div>
             <div className="space-y-3">
-              <Input placeholder="Opponent *" value={opponent} onChange={e => setOpponent(e.target.value)} className="bg-background" maxLength={200} />
+              <Input placeholder={t.matchesPage.phOpponent} value={opponent} onChange={e => setOpponent(e.target.value)} className="bg-background" maxLength={200} />
               <div className="flex gap-2">
                 <Button size="sm" variant={isHome ? "default" : "outline"} onClick={() => setIsHome(true)} className={isHome ? "bg-gradient-gold-static text-primary-foreground" : ""}>Home</Button>
                 <Button size="sm" variant={!isHome ? "default" : "outline"} onClick={() => setIsHome(false)} className={!isHome ? "bg-gradient-gold-static text-primary-foreground" : ""}>Away</Button>
@@ -479,8 +483,8 @@ const Matches = () => {
               <Button variant="ghost" size="icon" onClick={() => setShowAddComp(false)}><X className="w-4 h-4" /></Button>
             </div>
             <div className="space-y-3">
-              <Input placeholder="Competition name *" value={compName} onChange={e => setCompName(e.target.value)} className="bg-background" maxLength={200} />
-              <Input placeholder="Season (e.g. 2025/2026)" value={compSeason} onChange={e => setCompSeason(e.target.value)} className="bg-background" />
+              <Input placeholder={t.matchesPage.phCompetitionName} value={compName} onChange={e => setCompName(e.target.value)} className="bg-background" maxLength={200} />
+              <Input placeholder={t.matchesPage.phSeason} value={compSeason} onChange={e => setCompSeason(e.target.value)} className="bg-background" />
               <Select value={compType} onValueChange={setCompType}>
                 <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background px-3 text-sm">
                   <SelectValue />
@@ -701,9 +705,9 @@ const Matches = () => {
                             ))}
                           </SelectContent>
                         </Select>
-                        <Input placeholder="Pos" value={addLineupPosition} onChange={e => setAddLineupPosition(e.target.value)}
+                        <Input placeholder={t.matchesPage.phPosition} value={addLineupPosition} onChange={e => setAddLineupPosition(e.target.value)}
                           className="w-16 h-8 bg-card text-xs text-center" />
-                        <Input type="number" placeholder="#" value={addLineupJersey} onChange={e => setAddLineupJersey(e.target.value)}
+                        <Input type="number" placeholder={t.matchesPage.phJersey} value={addLineupJersey} onChange={e => setAddLineupJersey(e.target.value)}
                           className="w-14 h-8 bg-card text-xs text-center" min="1" max="99" />
                         <div className="flex items-center gap-1">
                           <button onClick={() => setAddLineupStarter(true)}

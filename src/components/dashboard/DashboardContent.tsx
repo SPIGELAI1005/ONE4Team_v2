@@ -299,14 +299,14 @@ const DashboardContent = () => {
     <div className="bg-background pb-20 lg:pb-0 scroll-glow">
       {/* Header */}
       <div className="sticky top-0 z-30 glass-nav">
-        <div className="px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-lg font-bold text-foreground tracking-tight">{config.title}</h1>
-            <p className="text-[13px] text-muted-foreground">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-3 min-w-0">
+          <div className="min-w-0 flex-1">
+            <h1 className="font-display text-base sm:text-lg font-bold text-foreground tracking-tight truncate">{config.title}</h1>
+            <p className="text-[12px] sm:text-[13px] text-muted-foreground line-clamp-2 sm:line-clamp-none">
               {t.dashboard.welcomeBack}{firstName ? `, ${firstName}` : ""}{activeClub?.name ? ` · ${activeClub.name}` : ""}
             </p>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
             <ClubSwitcher />
             <NotificationBell />
             <LanguageToggle size="sm" />
@@ -319,7 +319,7 @@ const DashboardContent = () => {
               title={displayName ? `${displayName} · ${t.sidebar.settings}` : t.sidebar.settings}
             >
               {avatarUrl ? (
-                <img src={avatarUrl} alt={displayName || "Profile"} className="w-full h-full object-cover" />
+                <img src={avatarUrl} alt={displayName || t.appHeader.profile} className="w-full h-full object-cover" />
               ) : (
                 userInitials
               )}

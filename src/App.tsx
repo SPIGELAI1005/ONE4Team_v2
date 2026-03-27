@@ -9,8 +9,11 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { useAuth } from "@/contexts/useAuth";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { useLanguage } from "@/hooks/use-language";
 import PageTransition from "@/components/layout/PageTransition";
 import { CookieConsent } from "@/components/ui/cookie-consent";
+import { RequireAdmin, RequireTrainer } from "@/components/auth/require-role";
+import { PlanGate } from "@/components/plan-gate";
 
 // Route-level code splitting (reduces initial bundle size)
 const Index = lazy(() => import("./pages/Index"));
@@ -46,6 +49,8 @@ const Impressum = lazy(() => import("./pages/Impressum"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Health = lazy(() => import("./pages/Health"));
 const Crash = lazy(() => import("./pages/Crash"));
+const PlatformAdmin = lazy(() => import("./pages/PlatformAdmin"));
+const GuidedSetup = lazy(() => import("./pages/GuidedSetup"));
 
 const queryClient = new QueryClient();
 
@@ -62,9 +67,10 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 }
 
 function RouteFallback() {
+  const { t } = useLanguage();
   return (
-    <div className="min-h-[40vh] w-full px-6 py-10 text-sm text-stone-500 dark:text-stone-400">
-      Loading…
+    <div className="min-h-[40vh] w-full max-w-full px-4 sm:px-6 py-10 text-sm text-muted-foreground">
+      {t.common.loading}
     </div>
   );
 }
@@ -190,26 +196,49 @@ const AnimatedRoutes = () => {
         {/* Dashboard layout: sidebar persists across all these pages */}
         <Route element={<RequireAuth><Suspense fallback={<RouteFallback />}><DashboardLayout /></Suspense></RequireAuth>}>
           <Route path="/dashboard/:role" element={<Suspense fallback={<RouteFallback />}><DashboardContent /></Suspense>} />
-          <Route path="/members" element={<Suspense fallback={<RouteFallback />}><Members /></Suspense>} />
-          <Route path="/teams" element={<Suspense fallback={<RouteFallback />}><Teams /></Suspense>} />
-          <Route path="/property-layers" element={<Suspense fallback={<RouteFallback />}><Teams /></Suspense>} />
+          {/* Admin-only routes */}
+          <Route path="/members" element={<RequireTrainer><Suspense fallback={<RouteFallback />}><Members /></Suspense></RequireTrainer>} />
+          <Route path="/payments" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><PlanGate feature="payments"><Payments /></PlanGate></Suspense></RequireAdmin>} />
+          <Route path="/dues" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><Dues /></Suspense></RequireAdmin>} />
+          <Route path="/partners" element={<RequireTrainer><Suspense fallback={<RouteFallback />}><PlanGate feature="partners"><Partners /></PlanGate></Suspense></RequireTrainer>} />
+          <Route path="/club-page-admin" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><ClubPageAdmin /></Suspense></RequireAdmin>} />
+          <Route path="/property-layers" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><Teams /></Suspense></RequireAdmin>} />
+          {/* Trainer+ routes */}
+          <Route path="/teams" element={<RequireTrainer><Suspense fallback={<RouteFallback />}><Teams /></Suspense></RequireTrainer>} />
+          {/* All authenticated users */}
           <Route path="/communication" element={<Suspense fallback={<RouteFallback />}><Communication /></Suspense>} />
-          <Route path="/payments" element={<Suspense fallback={<RouteFallback />}><Payments /></Suspense>} />
           <Route path="/events" element={<Suspense fallback={<RouteFallback />}><Events /></Suspense>} />
           <Route path="/activities" element={<Suspense fallback={<RouteFallback />}><Activities /></Suspense>} />
           <Route path="/matches" element={<Suspense fallback={<RouteFallback />}><Matches /></Suspense>} />
-          <Route path="/dues" element={<Suspense fallback={<RouteFallback />}><Dues /></Suspense>} />
-          <Route path="/partners" element={<Suspense fallback={<RouteFallback />}><Partners /></Suspense>} />
-          <Route path="/ai" element={<Suspense fallback={<RouteFallback />}><AI /></Suspense>} />
+          <Route path="/ai" element={<Suspense fallback={<RouteFallback />}><PlanGate feature="ai"><AI /></PlanGate></Suspense>} />
           <Route path="/player-stats" element={<Suspense fallback={<RouteFallback />}><PlayerStats /></Suspense>} />
           <Route path="/player/:membershipId" element={<Suspense fallback={<RouteFallback />}><PlayerProfile /></Suspense>} />
-          <Route path="/co-trainer" element={<Suspense fallback={<RouteFallback />}><CoTrainer /></Suspense>} />
+          <Route path="/co-trainer" element={<Suspense fallback={<RouteFallback />}><PlanGate feature="ai"><CoTrainer /></PlanGate></Suspense>} />
           <Route path="/live-scores" element={<Suspense fallback={<RouteFallback />}><LiveScores /></Suspense>} />
-          <Route path="/shop" element={<Suspense fallback={<RouteFallback />}><Shop /></Suspense>} />
-          <Route path="/club-page-admin" element={<Suspense fallback={<RouteFallback />}><ClubPageAdmin /></Suspense>} />
+          <Route path="/shop" element={<Suspense fallback={<RouteFallback />}><PlanGate feature="shop"><Shop /></PlanGate></Suspense>} />
           <Route path="/settings" element={<Suspense fallback={<RouteFallback />}><SettingsPage /></Suspense>} />
         </Route>
 
+        <Route
+          path="/platform-admin"
+          element={
+            <RequireAuth>
+              <Suspense fallback={<RouteFallback />}>
+                <PlatformAdmin />
+              </Suspense>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/guided-setup"
+          element={
+            <RequireAuth>
+              <Suspense fallback={<RouteFallback />}>
+                <GuidedSetup />
+              </Suspense>
+            </RequireAuth>
+          }
+        />
         <Route
           path="/health"
           element={
@@ -247,23 +276,24 @@ const AnimatedRoutes = () => {
 
 function AppShell() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const hasFooter = !user;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className={`flex-1 ${hasFooter ? "pb-12" : ""}`}>
+    <div className="min-h-screen flex flex-col min-w-0 overflow-x-hidden">
+      <div className={`flex-1 min-w-0 ${hasFooter ? "pb-14 sm:pb-12" : ""}`}>
         <AnimatedRoutes />
       </div>
       {hasFooter && (
-        <footer className="fixed bottom-0 left-0 right-0 z-[70] border-t border-border/60 bg-background/90 backdrop-blur-2xl">
-          <div className="container mx-auto px-4 py-2.5 text-[11px] text-muted-foreground flex items-center justify-between gap-4">
-            <span className="font-logo text-[15px] tracking-tight sm:text-sm text-foreground">
+        <footer className="fixed bottom-0 left-0 right-0 z-[70] border-t border-border/60 bg-background/90 backdrop-blur-2xl safe-area-bottom">
+          <div className="container mx-auto px-3 sm:px-4 py-2.5 text-[10px] sm:text-[11px] text-muted-foreground flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+            <span className="font-logo text-[14px] sm:text-[15px] tracking-tight text-foreground shrink-0">
               ONE <span className="text-gradient-gold-animated">4</span> Team
             </span>
-            <div className="flex items-center gap-4">
-              <a href="/terms" className="hover:text-foreground transition-colors">Terms of Service</a>
-              <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
-              <a href="/impressum" className="hover:text-foreground transition-colors">Legal Notice</a>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:gap-4">
+              <a href="/terms" className="hover:text-foreground transition-colors whitespace-nowrap">{t.footer.termsOfService}</a>
+              <a href="/privacy" className="hover:text-foreground transition-colors whitespace-nowrap">{t.footer.privacyPolicy}</a>
+              <a href="/impressum" className="hover:text-foreground transition-colors whitespace-nowrap">{t.footer.legalNotice}</a>
             </div>
           </div>
         </footer>

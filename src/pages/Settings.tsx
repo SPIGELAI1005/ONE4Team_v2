@@ -81,7 +81,7 @@ export default function Settings() {
   const { user, changeEmail, signOut } = useAuth();
   const { activeClubId, activeClub, clubs, loading: activeClubLoading } = useActiveClub();
   const perms = usePermissions();
-  const { t, setLanguage } = useLanguage();
+  const { t, setLanguage, language } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -194,8 +194,8 @@ export default function Settings() {
       if (error) throw error;
       toast({ title: t.settingsPage.profileSaved });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Save failed";
-      toast({ title: "Error", description: msg, variant: "destructive" });
+      const msg = err instanceof Error ? err.message : t.settingsPage.saveFailed;
+      toast({ title: t.common.error, description: msg, variant: "destructive" });
     } finally {
       setProfileSaving(false);
     }
@@ -245,8 +245,8 @@ export default function Settings() {
       if (error) throw error;
       toast({ title: t.settingsPage.resetLinkSent });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to send reset link";
-      toast({ title: "Error", description: msg, variant: "destructive" });
+      const msg = err instanceof Error ? err.message : t.settingsPage.resetLinkFailed;
+      toast({ title: t.common.error, description: msg, variant: "destructive" });
     } finally {
       setResetSending(false);
     }
@@ -266,8 +266,8 @@ export default function Settings() {
       toast({ title: t.settingsPage.changeEmailLinkSent });
       setNewEmail("");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to send change email link";
-      toast({ title: "Error", description: msg, variant: "destructive" });
+      const msg = err instanceof Error ? err.message : t.settingsPage.changeEmailLinkFailed;
+      toast({ title: t.common.error, description: msg, variant: "destructive" });
     } finally {
       setChangeEmailSending(false);
     }
@@ -356,14 +356,14 @@ export default function Settings() {
                 <div className="grid gap-4">
                   <div>
                     <div className="text-xs text-muted-foreground mb-1">{t.settingsPage.displayName}</div>
-                    <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" />
+                    <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder={t.settingsPage.displayNamePlaceholder} />
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground mb-2">{t.settingsPage.avatarPreview}</div>
                     <div className="flex items-center gap-3">
                       <div className="w-14 h-14 rounded-2xl border border-border/60 bg-background/60 overflow-hidden flex items-center justify-center">
                         {avatarUrl ? (
-                          <img src={avatarUrl} alt={displayName || "Avatar"} className="w-full h-full object-cover" />
+                          <img src={avatarUrl} alt={displayName || t.settingsPage.avatarAltFallback} className="w-full h-full object-cover" />
                         ) : (
                           <UserCircle2 className="w-8 h-8 text-muted-foreground" />
                         )}
@@ -402,7 +402,7 @@ export default function Settings() {
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground mb-1">{t.settingsPage.avatarUrl}</div>
-                    <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://..." />
+                    <Input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder={t.placeholders.urlHttps} />
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground mb-1">{t.settingsPage.phone}</div>
@@ -430,6 +430,72 @@ export default function Settings() {
                             {t.settingsPage.roleBaseRole}: {formatRoleLabel(activeClubRoleSummary.baseRole)}
                           </span>
                         </div>
+
+                        {/* Active dashboard role switcher */}
+                        <div className="rounded-xl border border-border/60 bg-background/30 p-3 space-y-2">
+                          <div className="text-[11px] text-muted-foreground">{t.settingsPage.roleSwitchDashboardTitle}</div>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {activeClubRoleSummary.effectiveRoles.map((role) => {
+                              const currentActive = localStorage.getItem("one4team.activeRole") || activeClubRoleSummary.baseRole;
+                              const isSelected = currentActive === role;
+                              return (
+                                <button
+                                  key={role}
+                                  onClick={() => {
+                                    localStorage.setItem("one4team.activeRole", role);
+                                    toast({ title: "Dashboard role switched", description: `Now viewing as ${formatRoleLabel(role)}. Redirecting…` });
+                                    setTimeout(() => navigate(`/dashboard/${role}`), 600);
+                                  }}
+                                  className={`min-h-11 rounded-xl border px-2.5 py-2 text-center transition-all ${
+                                    isSelected
+                                      ? "border-primary bg-gradient-gold-static text-primary-foreground shadow-gold"
+                                      : "border-border/60 bg-card/30 text-foreground hover:border-primary/30 hover:bg-primary/5"
+                                  }`}
+                                >
+                                  <div className="text-[11px] font-semibold">{formatRoleLabel(role)}</div>
+                                  {isSelected && <div className="text-[9px] mt-0.5 opacity-90">{t.common.active}</div>}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Change DB role (admin only) */}
+                        {perms.isAdmin && activeClubId && (
+                          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-2">
+                            <div className="text-[11px] text-muted-foreground">{t.settingsPage.roleDbChangeTitle}</div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Select
+                                value={activeClubRoleSummary.baseRole}
+                                onValueChange={async (newRole) => {
+                                  if (!user || !activeClubId) return;
+                                  const { error } = await supabase
+                                    .from("club_memberships")
+                                    .update({ role: newRole, updated_at: new Date().toISOString() } as Record<string, unknown>)
+                                    .eq("club_id", activeClubId)
+                                    .eq("user_id", user.id);
+                                  if (error) {
+                                    toast({ title: t.common.error, description: error.message, variant: "destructive" });
+                                    return;
+                                  }
+                                  localStorage.setItem("one4team.activeRole", newRole);
+                                  toast({ title: "Role updated", description: `Your membership role is now ${formatRoleLabel(newRole)}. Reloading…` });
+                                  setTimeout(() => window.location.reload(), 800);
+                                }}
+                              >
+                                <SelectTrigger className="h-9 w-[180px] rounded-xl border-border/60 bg-background/50 text-sm">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {["admin", "trainer", "player", "staff", "member", "parent"].map((r) => (
+                                    <SelectItem key={r} value={r}>{formatRoleLabel(r)}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <span className="text-[10px] text-amber-600">{t.settingsPage.roleDbChangeHint}</span>
+                            </div>
+                          </div>
+                        )}
 
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           {CLUB_ROLE_LADDER.map((role) => {
@@ -540,8 +606,8 @@ export default function Settings() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="de">Deutsch</SelectItem>
+                        <SelectItem value="en">{t.settingsPage.langEnglish}</SelectItem>
+                        <SelectItem value="de">{t.settingsPage.langGerman}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -657,7 +723,7 @@ export default function Settings() {
                     type="email"
                     value={newEmail}
                     onChange={(event) => setNewEmail(event.target.value)}
-                    placeholder="you@example.com"
+                    placeholder={t.placeholders.emailExample}
                   />
                 </div>
                 <Button

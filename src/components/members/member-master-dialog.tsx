@@ -1,22 +1,24 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Download, Sparkles, IdCard } from "lucide-react";
+import { Loader2, Phone, Calendar, UserCircle2 } from "lucide-react";
 import type { ClubMemberMasterRecord } from "@/lib/member-master-schema";
-import { MEMBER_MASTER_FIELDS, getMissingRequiredMasterFields, masterRecordCompletenessPct } from "@/lib/member-master-schema";
-import { cn } from "@/lib/utils";
+import { getMissingRequiredMasterFields, masterRecordCompletenessPct } from "@/lib/member-master-schema";
+import { MasterDataTabs } from "@/components/members/master-data-tabs";
+import type { MasterDataTabsLabels } from "@/components/members/master-data-tabs";
+import { useAuth } from "@/contexts/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/use-language";
+
+const PROFILE_AVATAR_BUCKET = "images-avatars";
 
 export interface MemberMasterDialogLabels {
   title: string;
@@ -24,27 +26,14 @@ export interface MemberMasterDialogLabels {
   save: string;
   cancel: string;
   readyBadge: string;
-  requiredBadge: string;
-  optionalBadge: string;
-  recommendedBadge: string;
-  sectionIdentity: string;
-  sectionContact: string;
-  sectionSport: string;
-  sectionPerformance: string;
-  sectionClub: string;
-  sectionFinancial: string;
-  sectionSafety: string;
-  completeness: string;
   missingFields: string;
-  generateInternalId: string;
-  downloadPass: string;
-  passTitle: string;
-  passHint: string;
+  masterDataFields: string;
 }
 
 interface MemberMasterDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  membershipId: string;
   displayName: string;
   email: string | null;
   membershipRole: string;
@@ -52,15 +41,24 @@ interface MemberMasterDialogProps {
   clubName: string | null;
   logoSrc: string;
   initial: Partial<ClubMemberMasterRecord> | null;
+  profileAvatarUrl: string | null;
+  memberStatus: string;
+  phone: string | null;
+  joinedAt: string;
+  joinedLabel: string;
+  supportingMemberLabel: string;
+  activeLabel: string;
+  roleDisplayLabel: string;
+  roleBadgeClassName: string;
   labels: MemberMasterDialogLabels;
+  masterTabLabels: MasterDataTabsLabels;
   onSave: (payload: Partial<ClubMemberMasterRecord>) => Promise<void>;
 }
-
-const groupOrder = ["identity", "contact", "sport", "performance", "club", "financial", "safety"] as const;
 
 export function MemberMasterDialog({
   open,
   onOpenChange,
+  membershipId,
   displayName,
   email,
   membershipRole,
@@ -68,13 +66,25 @@ export function MemberMasterDialog({
   clubName,
   logoSrc,
   initial,
+  profileAvatarUrl,
+  memberStatus,
+  phone,
+  joinedAt,
+  joinedLabel,
+  supportingMemberLabel,
+  activeLabel,
+  roleDisplayLabel,
+  roleBadgeClassName,
   labels,
+  masterTabLabels,
   onSave,
 }: MemberMasterDialogProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { t } = useLanguage();
   const [form, setForm] = useState<Partial<ClubMemberMasterRecord>>({});
   const [saving, setSaving] = useState(false);
-  const [passBusy, setPassBusy] = useState(false);
-  const passRef = useRef<HTMLDivElement | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -109,237 +119,141 @@ export function MemberMasterDialog({
     }
   };
 
-  const handleGenerateId = () => {
-    const id = `O4T-${Date.now().toString(36).toUpperCase().slice(-6)}${Math.random().toString(36).slice(2, 4).toUpperCase()}`;
-    setField("internal_club_number", id);
-  };
-
-  const handleDownloadPass = async () => {
-    if (!passRef.current) return;
-    setPassBusy(true);
+  const uploadRegistryAvatar = async (file: File) => {
+    if (!user || avatarUploading) return;
+    setAvatarUploading(true);
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(passRef.current, { scale: 2, backgroundColor: "#0c0c0f" });
-      const url = canvas.toDataURL("image/png");
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `club-pass-${form.internal_club_number || "member"}.png`;
-      a.click();
-      setField("club_pass_generated_at", new Date().toISOString());
+      const cleanName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "-");
+      const filePath = `${user.id}/club-member-registry-${membershipId}-${Date.now()}-${cleanName}`;
+      const { error } = await supabase.storage
+        .from(PROFILE_AVATAR_BUCKET)
+        .upload(filePath, file, { upsert: true, contentType: file.type || undefined });
+      if (error) throw error;
+      const { data } = supabase.storage.from(PROFILE_AVATAR_BUCKET).getPublicUrl(filePath);
+      setForm((f) => ({ ...f, photo_url: data.publicUrl }));
+      toast({ title: t.settingsPage.avatarUploadSuccess });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Upload failed";
+      toast({
+        title: t.settingsPage.avatarUploadFailed,
+        description: message.includes("Bucket not found") ? t.settingsPage.avatarUploadBucketHint : message,
+        variant: "destructive",
+      });
     } finally {
-      setPassBusy(false);
+      setAvatarUploading(false);
     }
   };
 
-  const fieldByGroup = useMemo(() => {
-    const map = new Map<string, typeof MEMBER_MASTER_FIELDS>();
-    for (const g of groupOrder) map.set(g, []);
-    for (const f of MEMBER_MASTER_FIELDS) {
-      const list = map.get(f.group) ?? [];
-      list.push(f);
-      map.set(f.group, list);
-    }
-    return map;
-  }, []);
+  const headerPhoto =
+    typeof form.photo_url === "string" && form.photo_url.trim()
+      ? form.photo_url.trim()
+      : profileAvatarUrl?.trim() || "";
 
-  const sectionTitle: Record<string, string> = {
-    identity: labels.sectionIdentity,
-    contact: labels.sectionContact,
-    sport: labels.sectionSport,
-    performance: labels.sectionPerformance,
-    club: labels.sectionClub,
-    financial: labels.sectionFinancial,
-    safety: labels.sectionSafety,
-  };
+  const initials = (displayName || "?").split(" ").map((n) => n[0]).join("").slice(0, 2);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden border-border/80 bg-card/95 backdrop-blur-xl">
-        <DialogHeader className="px-6 pt-6 pb-2 space-y-1">
-          <DialogTitle className="font-display text-xl">{labels.title}</DialogTitle>
-          <DialogDescription className="text-xs leading-relaxed">
-            {labels.subtitle}
-          </DialogDescription>
-          <div className="flex flex-wrap items-center gap-2 pt-2">
-            <Badge variant="secondary" className="text-[10px] font-normal">
-              {labels.completeness}: {pct}%
-            </Badge>
-            {missing.length > 0 ? (
-              <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-500/40 font-normal">
-                {labels.missingFields}: {missing.join(", ")}
+      <DialogContent className="flex h-[90vh] max-h-[90vh] w-[calc(100vw-1.5rem)] !max-w-6xl min-w-0 flex-col gap-0 overflow-hidden border-border/80 bg-card/95 p-0 backdrop-blur-xl sm:w-full">
+        <DialogHeader className="px-4 sm:px-5 pt-5 pb-3 space-y-3 text-left border-b border-border/60">
+          <DialogTitle className="sr-only">
+            {labels.title}: {displayName}
+          </DialogTitle>
+
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-lg bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-sm shrink-0 overflow-hidden">
+                {headerPhoto ? (
+                  <img src={headerPhoto} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  initials
+                )}
+              </div>
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-foreground truncate">{displayName}</div>
+                <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-1.5">
+                  <span>{teamLabel}</span>
+                  {email ? <span className="text-xs opacity-80">· {email}</span> : null}
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+              <Badge variant="secondary" className="text-xs font-normal px-2.5 py-0.5 h-6">
+                {pct}%
               </Badge>
-            ) : (
-              <Badge className="text-[10px] bg-emerald-500/15 text-emerald-600 font-normal border-0">{labels.readyBadge}</Badge>
-            )}
+              {form.membership_kind === "supporting_member" ? (
+                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-violet-500/10 text-violet-300">
+                  {supportingMemberLabel}
+                </span>
+              ) : null}
+              <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${roleBadgeClassName}`}>
+                {roleDisplayLabel}
+              </span>
+              <span
+                className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                  memberStatus === "active" ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {memberStatus === "active" ? activeLabel : memberStatus}
+              </span>
+            </div>
           </div>
+
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground">
+            {phone ? (
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 shrink-0" /> {phone}
+              </div>
+            ) : null}
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 shrink-0" /> {joinedLabel}{" "}
+              {new Date(joinedAt).toLocaleDateString()}
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground leading-relaxed">{labels.subtitle}</p>
+
+          {missing.length > 0 ? (
+            <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-500/40 font-normal w-fit">
+              {labels.missingFields}: {missing.join(", ")}
+            </Badge>
+          ) : (
+            <Badge className="text-[10px] bg-emerald-500/15 text-emerald-600 font-normal border-0 w-fit">{labels.readyBadge}</Badge>
+          )}
         </DialogHeader>
 
-        <ScrollArea className="flex-1 max-h-[calc(90vh-200px)] px-6">
-          <div className="space-y-6 pb-4 pr-3">
-            {groupOrder.map((group) => {
-              const fields = fieldByGroup.get(group) ?? [];
-              if (!fields.length) return null;
-              return (
-                <div key={group}>
-                  <div className="text-xs font-semibold text-foreground/90 tracking-wide uppercase mb-3">
-                    {sectionTitle[group]}
-                  </div>
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    {fields.map((field) => {
-                      const value = form[field.key];
-                      const req = field.required ? labels.requiredBadge : field.recommended ? labels.recommendedBadge : labels.optionalBadge;
-                      return (
-                        <div key={field.key} className={cn("space-y-1.5", field.key === "role_development_notes" || field.key === "strengths" ? "sm:col-span-2" : "")}>
-                          <Label className="text-[11px] text-muted-foreground flex items-center gap-2">
-                            {field.column.replace(/_/g, " ")}
-                            <span className="text-[10px] opacity-70">({req})</span>
-                          </Label>
-                          {field.key === "sex" ? (
-                            <Select
-                              value={(value as string) || ""}
-                              onValueChange={(v) => setField("sex", v as ClubMemberMasterRecord["sex"])}
-                            >
-                              <SelectTrigger className="h-9">
-                                <SelectValue placeholder="—" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="male">male</SelectItem>
-                                <SelectItem value="female">female</SelectItem>
-                                <SelectItem value="other">other</SelectItem>
-                                <SelectItem value="prefer_not_to_say">prefer not to say</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          ) : field.key === "membership_kind" ? (
-                            <Select
-                              value={(value as string) || "active_participant"}
-                              onValueChange={(v) => setField("membership_kind", v as ClubMemberMasterRecord["membership_kind"])}
-                            >
-                              <SelectTrigger className="h-9">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="active_participant">active participant</SelectItem>
-                                <SelectItem value="supporting_member">supporting member</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          ) : field.key === "strong_leg" || field.key === "strong_hand" ? (
-                            <Select
-                              value={(value as string) || ""}
-                              onValueChange={(v) => setField(field.key, v as "left" | "right" | "both")}
-                            >
-                              <SelectTrigger className="h-9">
-                                <SelectValue placeholder="—" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="left">left</SelectItem>
-                                <SelectItem value="right">right</SelectItem>
-                                <SelectItem value="both">both</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          ) : field.key === "birth_date" ||
-                            field.key === "club_registration_date" ||
-                            field.key === "team_assignment_date" ||
-                            field.key === "club_exit_date" ? (
-                            <Input
-                              type="date"
-                              className="h-9"
-                              value={typeof value === "string" && value ? value.slice(0, 10) : ""}
-                              onChange={(e) => setField(field.key, e.target.value || null)}
-                            />
-                          ) : field.key === "height_cm" ||
-                            field.key === "weight_kg" ||
-                            field.key === "jersey_number" ||
-                            field.key === "goals_count" ? (
-                            <Input
-                              type="number"
-                              className="h-9"
-                              value={value === null || value === undefined ? "" : String(value)}
-                              onChange={(e) => {
-                                const n = e.target.value === "" ? null : Number(e.target.value);
-                                setField(field.key, n === null || Number.isNaN(n) ? null : n);
-                              }}
-                            />
-                          ) : field.key === "role_development_notes" || field.key === "strengths" ? (
-                            <textarea
-                              className="w-full min-h-[72px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-                              value={typeof value === "string" ? value : ""}
-                              onChange={(e) => setField(field.key, e.target.value || null)}
-                            />
-                          ) : (
-                            <Input
-                              className="h-9"
-                              value={typeof value === "string" ? value : value === null || value === undefined ? "" : String(value)}
-                              onChange={(e) => setField(field.key, e.target.value || null)}
-                            />
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <Separator className="mt-6" />
-                </div>
-              );
-            })}
-
-            <div className="rounded-2xl border border-border/70 bg-gradient-to-br from-primary/10 via-background to-accent/5 p-4 space-y-3">
-              <div className="flex items-center gap-2 text-sm font-display font-semibold text-foreground">
-                <IdCard className="w-4 h-4 text-primary" /> {labels.passTitle}
+        <ScrollArea className="min-h-0 min-w-0 w-full flex-1 max-h-[calc(90vh-280px)] px-4 sm:px-5">
+          <div className="w-full min-w-0 pb-4 pt-3 pr-2">
+            <div className="w-full min-w-0 rounded-lg border border-border/40 bg-muted/10 p-3">
+              <div className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
+                <UserCircle2 className="w-4 h-4 text-primary" /> {labels.masterDataFields}
               </div>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">{labels.passHint}</p>
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" size="sm" variant="outline" onClick={handleGenerateId}>
-                  <Sparkles className="w-3.5 h-3.5 mr-1" /> {labels.generateInternalId}
-                </Button>
-                <Button type="button" size="sm" className="bg-gradient-gold-static text-primary-foreground" disabled={passBusy} onClick={handleDownloadPass}>
-                  {passBusy ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Download className="w-3.5 h-3.5 mr-1" />}
-                  {labels.downloadPass}
-                </Button>
-              </div>
-              <div className="flex justify-center pt-2">
-                <div
-                  ref={passRef}
-                  className="w-[320px] rounded-2xl overflow-hidden border border-white/10 shadow-xl text-left"
-                  style={{ background: "linear-gradient(145deg,#15151c,#0a0a0c)" }}
-                >
-                  <div className="px-5 py-4 flex items-center gap-3 border-b border-white/10">
-                    <img src={logoSrc} alt="" className="h-10 w-10 rounded-lg object-contain bg-white/5 p-1" />
-                    <div>
-                      <div className="text-[10px] uppercase tracking-[0.2em] text-white/50">{clubName || "Club"}</div>
-                      <div className="text-sm font-bold text-white leading-tight">{displayName}</div>
-                    </div>
-                  </div>
-                  <div className="px-5 py-4 space-y-2 text-xs text-white/80">
-                    <div className="flex justify-between gap-2">
-                      <span className="text-white/50">ID</span>
-                      <span className="font-mono text-emerald-300">{form.internal_club_number || "—"}</span>
-                    </div>
-                    <div className="flex justify-between gap-2">
-                      <span className="text-white/50">Team</span>
-                      <span>{teamLabel}</span>
-                    </div>
-                    <div className="flex justify-between gap-2">
-                      <span className="text-white/50">Role</span>
-                      <span className="capitalize">{membershipRole.replace("_", " ")}</span>
-                    </div>
-                    {email ? (
-                      <div className="flex justify-between gap-2">
-                        <span className="text-white/50">Email</span>
-                        <span className="truncate max-w-[180px]">{email}</span>
-                      </div>
-                    ) : null}
-                  </div>
-                  <div className="h-2 bg-gradient-to-r from-primary via-accent to-primary opacity-90" />
-                </div>
-              </div>
+              <MasterDataTabs
+                key={`${membershipId}-${String(open)}`}
+                values={form}
+                labels={masterTabLabels}
+                compact
+                displayName={displayName}
+                clubName={clubName}
+                logoSrc={logoSrc}
+                membershipRole={membershipRole}
+                teamLabel={teamLabel}
+                email={email}
+                avatarUpload={{
+                  uploading: avatarUploading,
+                  onUpload: (file) => void uploadRegistryAvatar(file),
+                  onRemove: () => setField("photo_url", null),
+                }}
+                onChange={(key, value) => setField(key, value)}
+              />
             </div>
           </div>
         </ScrollArea>
 
-        <div className="px-6 py-4 border-t border-border/60 flex justify-end gap-2 bg-background/80">
+        <div className="px-4 sm:px-5 py-4 border-t border-border/60 flex justify-end gap-2 bg-background/80 shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {labels.cancel}
           </Button>
-          <Button className="bg-gradient-gold-static text-primary-foreground" disabled={saving} onClick={handleSave}>
+          <Button className="bg-gradient-gold-static text-primary-foreground" disabled={saving} onClick={() => void handleSave()}>
             {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
             {labels.save}
           </Button>

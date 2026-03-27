@@ -1,0 +1,38 @@
+section,item,DE_12M,EU_12M,US_12M,DE_36M,EU_36M,US_36M,notes
+inputs,paying_clubs,189,126,105,770,660,770,editable regional club counts
+inputs,arpc_month_eur,22,20,30,33,31,49,average revenue per club per month
+inputs,annual_logo_churn_pct,9%,11%,13%,8%,10%,11%,assumption only
+inputs,gross_margin_pct,84%,83%,81%,85%,84%,82%,assumption only
+inputs,cac_per_paid_club_eur,700,850,1400,650,800,1200,assumption only
+calc,arr_12m_region_eur,49896,30240,37800,,,,"=paying_clubs_12m * arpc_12m * 12"
+calc,arr_36m_region_eur,,,,304920,245520,452760,"=paying_clubs_36m * arpc_36m * 12"
+calc,arr_12m_total_eur,120960,,,,,,,sum of arr_12m_region_eur
+calc,arr_36m_total_eur,,,,1003200,,,,sum of arr_36m_region_eur
+valuation,arr_multiple_12m,,,,,,,,scenario input (example base: 6.0x)
+valuation,arr_multiple_36m,,,,,,,,scenario input (example base: 7.0x)
+valuation,implied_value_12m_eur,725760,,,,,,,=arr_12m_total_eur * arr_multiple_12m
+valuation,implied_value_36m_eur,,,,7022400,,,,=arr_36m_total_eur * arr_multiple_36m
+fundraise,pre_seed_pre_money_eur,,,,,,,,3600000
+fundraise,pre_seed_raise_eur,,,,,,,,900000
+fundraise,pre_seed_post_money_eur,,,,,,,,=pre_seed_pre_money_eur + pre_seed_raise_eur
+fundraise,pre_seed_new_investor_pct,,,,,,,,=pre_seed_raise_eur / pre_seed_post_money_eur
+fundraise,seed_pre_money_eur,,,,,,,,8500000
+fundraise,seed_raise_eur,,,,,,,,2800000
+fundraise,seed_post_money_eur,,,,,,,,=seed_pre_money_eur + seed_raise_eur
+fundraise,seed_new_investor_pct,,,,,,,,=seed_raise_eur / seed_post_money_eur
+fundraise,series_a_pre_money_eur,,,,,,,,24000000
+fundraise,series_a_raise_eur,,,,,,,,7500000
+fundraise,series_a_post_money_eur,,,,,,,,=series_a_pre_money_eur + series_a_raise_eur
+fundraise,series_a_new_investor_pct,,,,,,,,=series_a_raise_eur / series_a_post_money_eur
+cap_table,founders_post_pre_seed_pct,,,,,,,,70.0%
+cap_table,esop_post_pre_seed_pct,,,,,,,,10.0%
+cap_table,pre_seed_investor_post_pre_seed_pct,,,,,,,,20.0%
+cap_table,founders_post_seed_pct,,,,,,,,52.7%
+cap_table,esop_post_seed_pct,,,,,,,,7.5%
+cap_table,pre_seed_post_seed_pct,,,,,,,,15.0%
+cap_table,seed_post_seed_pct,,,,,,,,24.8%
+cap_table,founders_post_series_a_pct,,,,,,,,40.1%
+cap_table,esop_post_series_a_pct,,,,,,,,5.7%
+cap_table,pre_seed_post_series_a_pct,,,,,,,,11.5%
+cap_table,seed_post_series_a_pct,,,,,,,,18.9%
+cap_table,series_a_post_series_a_pct,,,,,,,,23.8%

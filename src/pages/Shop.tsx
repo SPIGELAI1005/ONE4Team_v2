@@ -150,7 +150,7 @@ export default function Shop() {
   const saveProduct = async () => {
     if (!clubId || !fName.trim()) return;
     if (!schemaReady) {
-      toast({ title: t.common.error, description: "Shop DB schema not available yet.", variant: "destructive" });
+      toast({ title: t.common.error, description: t.shopPage.schemaNotReady, variant: "destructive" });
       return;
     }
     const category = categories.find((c) => c.name === fCat);
@@ -233,7 +233,7 @@ export default function Shop() {
     <div className="min-h-screen bg-background">
       <AppHeader
         title={t.shopPage.title}
-        subtitle={schemaReady ? t.shopPage.subtitle : `${t.shopPage.subtitle} (demo fallback)`}
+        subtitle={schemaReady ? t.shopPage.subtitle : `${t.shopPage.subtitle} ${t.shopPage.demoFallbackSuffix}`}
         rightSlot={
           canManage && tab === "products" ? (
             <Button size="sm" className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110" onClick={openAdd} disabled={!clubId}>
@@ -252,20 +252,20 @@ export default function Shop() {
           <div className="flex items-center gap-3 rounded-2xl bg-primary/5 border border-primary/10 px-4 py-3">
             <Info className="w-4 h-4 text-primary shrink-0" />
             <div>
-              <div className="text-xs font-semibold text-foreground">{schemaReady ? "Live shop backend connected" : t.shopPage.comingSoon}</div>
-              <div className="text-[11px] text-muted-foreground">{schemaReady ? "Products, categories, and orders are now loaded from Supabase tables." : t.shopPage.comingSoonDesc}</div>
+              <div className="text-xs font-semibold text-foreground">{schemaReady ? t.shopPage.backendConnectedTitle : t.shopPage.comingSoon}</div>
+              <div className="text-[11px] text-muted-foreground">{schemaReady ? t.shopPage.backendConnectedDesc : t.shopPage.comingSoonDesc}</div>
             </div>
           </div>
         </div>
       </div>
 
       <div className="border-b border-border/60">
-        <div className="container mx-auto px-4 flex gap-1">
+        <div className="container mx-auto flex min-w-0 gap-1 overflow-x-auto px-4 touch-manipulation [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {tabs.map((tb) => (
             <button
               key={tb.id}
               onClick={() => setTab(tb.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 touch-manipulation transition-colors ${
                 tab === tb.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -330,10 +330,10 @@ export default function Shop() {
                               </div>
                               {canManage && (
                                 <div className="flex gap-2 mt-3 pt-3 border-t border-border/60">
-                                  <Button variant="ghost" size="sm" className="flex-1 text-xs" onClick={() => openEdit(p)}>
+                                  <Button variant="ghost" size="sm" className="min-h-11 flex-1 text-xs touch-manipulation" onClick={() => openEdit(p)}>
                                     <Edit2 className="w-3.5 h-3.5 mr-1" /> {t.shopPage.editProduct}
                                   </Button>
-                                  <Button variant="ghost" size="sm" className="text-xs text-destructive" onClick={() => void deleteProduct(p.id)}>
+                                  <Button variant="ghost" size="sm" className="min-h-11 min-w-11 shrink-0 text-xs text-destructive touch-manipulation" onClick={() => void deleteProduct(p.id)}>
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </Button>
                                 </div>
@@ -365,7 +365,7 @@ export default function Shop() {
                           <span className="font-display font-bold text-foreground">{Number(o.total_eur).toFixed(2)} &euro;</span>
                           <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${statusColor[o.status] || statusColor.pending}`}>{t.shopPage.orderStatus[o.status] || o.status}</span>
                           {canManage && o.status !== "delivered" && (
-                            <Button variant="ghost" size="sm" className="text-xs" onClick={() => void updateOrderStatus(o.id)}>
+                            <Button variant="ghost" size="sm" className="min-h-11 text-xs touch-manipulation" onClick={() => void updateOrderStatus(o.id)}>
                               {t.shopPage.updateStatus}
                             </Button>
                           )}
@@ -415,7 +415,7 @@ export default function Shop() {
           <div className="relative w-full max-w-lg rounded-3xl border border-border/60 bg-card/60 backdrop-blur-2xl p-5 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <div className="font-display font-bold text-foreground">{editId ? t.shopPage.editProduct : t.shopPage.addProduct}</div>
-              <Button variant="ghost" size="icon" onClick={() => setShowForm(false)}><X className="w-4 h-4" /></Button>
+              <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0 touch-manipulation" onClick={() => setShowForm(false)}><X className="w-4 h-4" /></Button>
             </div>
             <div className="grid gap-3">
               <div><div className="text-xs text-muted-foreground mb-1">{t.shopPage.productName}</div><Input value={fName} onChange={(e) => setFName(e.target.value)} /></div>
@@ -449,11 +449,11 @@ export default function Shop() {
           <div className="relative w-full max-w-sm rounded-3xl border border-border/60 bg-card/60 backdrop-blur-2xl p-5 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <div className="font-display font-bold text-foreground">{t.shopPage.addCategory}</div>
-              <Button variant="ghost" size="icon" onClick={() => setShowCatForm(false)}><X className="w-4 h-4" /></Button>
+              <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0 touch-manipulation" onClick={() => setShowCatForm(false)}><X className="w-4 h-4" /></Button>
             </div>
             <div className="grid gap-3">
               <div><div className="text-xs text-muted-foreground mb-1">{t.shopPage.categoryName}</div><Input value={catName} onChange={(e) => setCatName(e.target.value)} /></div>
-              <Button className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110" onClick={() => void addCategory()} disabled={!catName.trim()}>{t.shopPage.save}</Button>
+              <Button className="min-h-11 w-full bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110 touch-manipulation" onClick={() => void addCategory()} disabled={!catName.trim()}>{t.shopPage.save}</Button>
             </div>
           </div>
         </div>

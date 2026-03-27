@@ -18,20 +18,6 @@ interface NavItem {
   gate?: (p: ReturnType<typeof usePermissions>) => boolean;
 }
 
-const navItems: NavItem[] = [
-  // Dashboard link is injected dynamically from activeRole (route-driven)
-  { label: "Members", to: "/members", icon: Users, gate: (p) => p.isAdmin },
-  { label: "Teams", to: "/teams", icon: Trophy, gate: (p) => p.isTrainer },
-  { label: "Communication", to: "/communication", icon: Megaphone, gate: () => true },
-  { label: "Payments", to: "/payments", icon: CreditCard, gate: (p) => p.isAdmin },
-  { label: "Dues", to: "/dues", icon: CreditCard, gate: (p) => p.isTrainer },
-  { label: "Events", to: "/events", icon: Calendar, gate: () => true },
-  { label: "Schedule", to: "/activities", icon: ClipboardList, gate: () => true },
-  { label: "Matches", to: "/matches", icon: Swords, gate: () => true },
-  { label: "Partners", to: "/partners", icon: Building2, gate: (p) => p.has("partners:read") },
-  { label: "AI", to: "/ai", icon: Sparkles, gate: () => true },
-];
-
 export interface AppHeaderProps {
   title: string;
   subtitle?: string;
@@ -72,9 +58,21 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
   const debugRouteRole = activeRole;
 
   const items = useMemo(() => {
+    const navItems: NavItem[] = [
+      { label: t.sidebar.members, to: "/members", icon: Users, gate: (p) => p.isAdmin },
+      { label: t.teamsPage.tabs.teams, to: "/teams", icon: Trophy, gate: (p) => p.isTrainer },
+      { label: t.sidebar.communication, to: "/communication", icon: Megaphone, gate: () => true },
+      { label: t.sidebar.payments, to: "/payments", icon: CreditCard, gate: (p) => p.isAdmin },
+      { label: t.sidebar.dues, to: "/dues", icon: CreditCard, gate: (p) => p.isTrainer },
+      { label: t.sidebar.events, to: "/events", icon: Calendar, gate: () => true },
+      { label: t.sidebar.schedule, to: "/activities", icon: ClipboardList, gate: () => true },
+      { label: t.sidebar.matches, to: "/matches", icon: Swords, gate: () => true },
+      { label: t.sidebar.partners, to: "/partners", icon: Building2, gate: (p) => p.has("partners:read") },
+      { label: t.sidebar.oneAi, to: "/ai", icon: Sparkles, gate: () => true },
+    ];
     const base = navItems.filter((i) => (i.gate ? i.gate(perms) : true));
-    return [{ label: "Dashboard", to: dashboardTo, icon: Home }, ...base];
-  }, [perms, dashboardTo]);
+    return [{ label: t.sidebar.dashboard, to: dashboardTo, icon: Home }, ...base];
+  }, [perms, dashboardTo, t]);
 
   const handleSignOut = async () => {
     if (isSigningOut) return;
@@ -90,21 +88,21 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/70 backdrop-blur-2xl">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2 min-w-0">
+      <div className="container mx-auto px-3 sm:px-4 h-16 flex items-center justify-between gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <Button
             variant="ghost"
             size="icon"
             className="md:hidden"
             onClick={() => setOpen((v) => !v)}
-            aria-label={open ? "Close menu" : "Open menu"}
+            aria-label={open ? t.appHeader.closeMenu : t.appHeader.openMenu}
           >
             {open ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </Button>
 
           {back && (
-            <Button variant="ghost" size="icon" className="hidden md:inline-flex" onClick={() => navigate(-1)} aria-label="Back">
-              <span className="sr-only">Back</span>
+            <Button variant="ghost" size="icon" className="hidden md:inline-flex shrink-0" onClick={() => navigate(-1)} aria-label={t.common.back}>
+              <span className="sr-only">{t.common.back}</span>
               {/* simple chevron-less back to keep iOS-clean */}
               <span className="text-sm text-muted-foreground">←</span>
             </Button>
@@ -171,7 +169,7 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
             {/* Active club context */}
             {activeClub?.name && (
               <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-3">
-                <div className="text-[11px] text-muted-foreground mb-2">Club</div>
+                <div className="text-[11px] text-muted-foreground mb-2">{t.common.club}</div>
                 <div className="flex items-center gap-2">
                   <div className="w-9 h-9 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center text-primary">
                     <Building2 className="w-4 h-4" />
@@ -187,8 +185,9 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
             {/* Quick profile switch (A: route role-driven) */}
             <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-3">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-[11px] text-muted-foreground">Profile</div>
+                <div className="text-[11px] text-muted-foreground">{t.appHeader.profile}</div>
                 <button
+                  type="button"
                   onClick={() => {
                     const next = localStorage.getItem("one4team.debug") === "1" ? "0" : "1";
                     localStorage.setItem("one4team.debug", next);
@@ -197,7 +196,7 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
                   }}
                   className="text-[10px] px-2 py-1 rounded-full border border-border/60 bg-background/40 text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  Debug {localStorage.getItem("one4team.debug") === "1" ? "On" : "Off"}
+                  {t.appHeader.debug} {localStorage.getItem("one4team.debug") === "1" ? t.appHeader.debugOn : t.appHeader.debugOff}
                 </button>
               </div>
               <div className="flex gap-2">

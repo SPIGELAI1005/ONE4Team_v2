@@ -1,12 +1,14 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-03-25 (Members master registry, club role assignments, Members UX)
+Last updated: 2026-03-27 (i18n Auth/Settings; mobile Members bulk table + Shop tabs)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
 - App is in post-Phase-12 local implementation with major onboarding/member operations upgrades completed in code.
+- **i18n (2026-03-27):** Third pass on high-traffic screens: `Auth` placeholders and country labels; `Settings` toasts, role-switch copy, placeholders, and locale-aware month names; `Shop` + public `ClubPage` shop strings aligned to `shopPage` keys; `Members` registry import column label.
+- **Mobile UX (2026-03-27):** Members bulk-import table uses horizontal scroll + minimum table width; larger tap targets on expand/remove; Shop tab strip scrolls on narrow widths with 44px-class targets on primary actions.
 - **Members / master data (2026-03-25):**
   - `club_member_master_records` + guardian links + email listing RPCs; draft rows can store `master_data` JSON before invite.
   - **Club role assignments** (`club_role_assignments`) backfill and updated `is_club_admin` / `is_club_trainer`; legacy membership `admin` still used for some RLS write paths to avoid recursion.
@@ -108,6 +110,7 @@ Persistent handoff context for future agents so work can continue without re-dis
 15. `20260324140000_club_role_assignments.sql`
 16. `20260324201000_club_member_master_records_select_broaden.sql`
 17. `20260324210000_club_member_drafts_master_data.sql`
+18. `20260325220000_redeem_invite_guardian_links.sql` (`redeem_club_invite` + optional `invite_payload.guardian_membership_ids`)
 
 Also ensure previously listed communication migrations remain applied in the same project:
 - `20260301152000_add_chat_bridge_connectors_and_events.sql`

@@ -353,14 +353,15 @@ const CoTrainer = () => {
   return (
     <div className="min-h-screen bg-background flex flex-col pb-20 lg:pb-0">
       <AppHeader
-        title="ONE AI"
-        subtitle={`${assistantRoleName} for ${clubName}`}
+        title={t.coTrainerPage.headerTitle}
+        subtitle={t.coTrainerPage.subtitleForClub.replace("{role}", assistantRoleName).replace("{club}", clubName)}
         rightSlot={
           messages.length > 0 ? (
             <button
+              type="button"
               onClick={() => setMessages([])}
               className="w-9 h-9 rounded-2xl bg-card/40 border border-border/60 backdrop-blur-xl flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Clear chat"
+              aria-label={t.coTrainerPage.clearChat}
             >
               <Trash2 className="w-4 h-4" />
             </button>

@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { useToast } from "@/hooks/use-toast";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
+import { getStripe } from "@/lib/stripe";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import FootballFieldAnimation from "@/components/landing/FootballFieldAnimation";
@@ -167,20 +168,64 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
     }
 
     if (user && clubId) {
-      const { error } = await supabaseDynamic
-        .from("billing_subscriptions")
-        .upsert({
-          club_id: clubId,
-          plan_id: plan.id,
-          billing_cycle: billing,
-          status: "trialing",
-          metadata: { member_count: memberCount, source: "pricing_page" },
-          updated_at: new Date().toISOString(),
-        }, { onConflict: "club_id" });
-      if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
-      } else {
-        toast({ title: "Plan selected", description: `${plan.name} (${billing}) saved for your club.` });
+      try {
+        const { data, error } = await supabaseDynamic.functions.invoke("stripe-checkout", {
+          body: {
+            action: "create-checkout",
+            clubId,
+            planId: plan.id,
+            billingCycle: billing,
+            memberCount,
+            successUrl: `${window.location.origin}/dashboard/admin?checkout=success`,
+            cancelUrl: `${window.location.origin}/pricing?checkout=canceled`,
+          },
+        });
+
+        if (error) throw new Error(typeof error === "object" && error.message ? error.message : String(error));
+        const result = data as { url?: string; sessionId?: string; error?: string } | null;
+
+        if (result?.error) {
+          await supabaseDynamic
+            .from("billing_subscriptions")
+            .upsert({
+              club_id: clubId,
+              plan_id: plan.id,
+              billing_cycle: billing,
+              status: "trialing",
+              metadata: { member_count: memberCount, source: "pricing_page" },
+              updated_at: new Date().toISOString(),
+            }, { onConflict: "club_id" });
+          toast({ title: "Plan selected", description: `${plan.name} (${billing}) saved. Stripe not configured — using trial mode.` });
+          navigate(`/dashboard/admin`);
+          return;
+        }
+
+        if (result?.url) {
+          window.location.href = result.url;
+          return;
+        }
+
+        if (result?.sessionId) {
+          const stripe = await getStripe();
+          if (stripe) {
+            await stripe.redirectToCheckout({ sessionId: result.sessionId });
+            return;
+          }
+        }
+      } catch {
+        await supabaseDynamic
+          .from("billing_subscriptions")
+          .upsert({
+            club_id: clubId,
+            plan_id: plan.id,
+            billing_cycle: billing,
+            status: "trialing",
+            metadata: { member_count: memberCount, source: "pricing_page" },
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "club_id" });
+        toast({ title: "Plan selected", description: `${plan.name} (${billing}) saved for your club (trial mode).` });
+        navigate(`/dashboard/admin`);
+        return;
       }
     }
 

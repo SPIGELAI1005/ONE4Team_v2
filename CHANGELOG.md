@@ -3,6 +3,18 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-03-27 (i18n: Auth & Settings; mobile: Members bulk table & Shop)
+
+### i18n (EN/DE)
+- **Auth (`Auth.tsx`):** Login/signup placeholders use shared `placeholders` keys (email, password mask, club/company URLs, admin email, phone). Country selects use `onboarding.countryOptionLabels` so labels localize while stored values stay stable.
+- **Settings (`Settings.tsx`):** Toasts use `common.error` plus localized fallbacks; profile role switcher and database-role hints/toasts fully keyed; display name, avatar URL, phone, and new-email placeholders localized; default language options and season-start month names follow UI language (`en` / `de`).
+- **Shop / public club page:** Shop banner, demo subtitle suffix, schema-missing toast, and empty “no club” copy keyed; `ClubPage` product stock badges use `shopPage.inStock` / `outOfStock`.
+- **Members:** Registry import preview table “Email” column header uses `membersPage.registryImportEmailColumn`.
+
+### Mobile / touch / wide tables
+- **Members:** Bulk-add spreadsheet table sits in a horizontal scroll container with `min-w-[900px]` so small screens scroll instead of stretching the page; expand-row and remove-row controls use larger touch targets (`min-h-11` / `min-w-11`); footer tip + save row stacks on narrow viewports.
+- **Shop:** Tab row scrolls horizontally with non-wrapping labels; tabs and modal actions use `min-h-11` and `touch-manipulation` where it matters.
+
 ## 2026-03-25 (Members registry, RBAC, and UX)
 
 ### Database
@@ -10,6 +22,7 @@ It records notable changes, features, and hardening steps.
 - `20260324140000_club_role_assignments.sql` — scoped role assignments, backfill, `is_club_admin` / `is_club_trainer` updates (apply before relying on assignment-based admin in RLS).
 - `20260324201000_club_member_master_records_select_broaden.sql` — SELECT on master records for `is_club_admin()` + legacy trainer membership (no dependency on `club_role_assignments`).
 - `20260324210000_club_member_drafts_master_data.sql` — `master_data jsonb` on `club_member_drafts` for pre-invite registry fields.
+- `20260325220000_redeem_invite_guardian_links.sql` — `redeem_club_invite` creates guardian links from optional `invite_payload.guardian_membership_ids`.
 
 ### App / Members (`/members`)
 - Member master schema + XLSX import/export (`member-master-schema`, `member-master-xlsx`), full registry dialog, guardian linking.
@@ -20,6 +33,13 @@ It records notable changes, features, and hardening steps.
 
 ### i18n
 - EN/DE keys for drafts, master sections, club card, more/less expand labels.
+
+### Guardians (drafts + roster, player-only) — 2026-03-25 follow-up
+- **Database:** `20260325220000_redeem_invite_guardian_links.sql` — extends `redeem_club_invite` to insert `club_member_guardian_links` when `invite_payload.guardian_membership_ids` (JSON array of membership UUIDs) is present.
+- **Saved member list (drafts):** Under **Safety & Emergencies**, linked guardians UI when draft **Role** is **Player**. Guardian membership IDs persist in `club_member_drafts.master_data` under `__draft_guardian_membership_ids` (stripped from tab field values via `mergeDraftMasterValuesForTabs`). Changing role away from Player clears draft guardian picks; save drops the key for non-players.
+- **Invite from draft:** `invite_payload` includes `guardian_membership_ids` only for player drafts; invite **role** uses the in-editor role when that draft is open.
+- **Roster (expanded member):** Same guardian block only when effective role is **Player** (saved membership or `editMemberForm.role` while inline editing). `MasterDataTabs` uses `safetyTabExtraEnabled` so the extra Safety slot is off for admin, trainer, etc.
+- **Role change cleanup:** Saving inline membership edit with a non-player role deletes all `club_member_guardian_links` rows for that ward and refreshes local guardian state.
 
 ## 2026-03-19 (Phase 12 closure)
 ### Release closure artifacts finalized

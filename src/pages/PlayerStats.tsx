@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLanguage } from "@/hooks/use-language";
 // logo is rendered by AppHeader
 import type { MembershipWithProfile } from "@/types/supabase";
 
@@ -30,6 +31,7 @@ const PlayerStats = () => {
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
   const isMobile = useIsMobile();
+  const { t } = useLanguage();
 
   const [stats, setStats] = useState<PlayerStat[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,7 +168,7 @@ const PlayerStats = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Teams</SelectItem>
+                  <SelectItem value="all">{t.playerStatsPage.allTeams}</SelectItem>
                   {teams.map((team) => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -177,7 +179,7 @@ const PlayerStats = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Seasons</SelectItem>
+                  <SelectItem value="all">{t.playerStatsPage.allSeasons}</SelectItem>
                   {seasons.map((season) => <SelectItem key={season} value={season}>{season}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -193,7 +195,7 @@ const PlayerStats = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Competitions</SelectItem>
+                <SelectItem value="all">{t.playerStatsPage.allCompetitions}</SelectItem>
                 {competitions
                   .filter((competition) => selectedSeason === "all" || competition.season === selectedSeason)
                   .map((competition) => <SelectItem key={competition.id} value={competition.id}>{competition.name}</SelectItem>)}

@@ -654,7 +654,7 @@ const Auth = () => {
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
                       <Input
                         type="email"
-                        placeholder="you@example.com"
+                        placeholder={t.placeholders.emailExample}
                         value={email}
                         onChange={(event) => setEmail(event.target.value)}
                         className="pl-9 glass-input rounded-xl text-[13px] h-11"
@@ -671,7 +671,7 @@ const Auth = () => {
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" strokeWidth={1.5} />
                       <Input
                         type={showLoginPassword ? "text" : "password"}
-                        placeholder="••••••••"
+                        placeholder={t.placeholders.passwordMask}
                         value={password}
                         onChange={(event) => setPassword(event.target.value)}
                         className="pl-9 pr-10 glass-input rounded-xl text-[13px] h-11"
@@ -681,7 +681,7 @@ const Auth = () => {
                       <button
                         type="button"
                         onClick={() => setShowLoginPassword((value) => !value)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                        className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground touch-manipulation"
                       >
                         {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -874,7 +874,7 @@ const Auth = () => {
                         type="email"
                         value={fastTrackForm.email}
                         onChange={(event) => updateFastTrackField("email", event.target.value)}
-                        placeholder="you@example.com"
+                        placeholder={t.placeholders.emailExample}
                       />
 
                       <label className="text-[11px] font-medium text-muted-foreground block">{t.auth.password} *</label>
@@ -1107,7 +1107,7 @@ const Auth = () => {
                                     <SelectContent className="rounded-xl border-border/70 bg-card/95 backdrop-blur-2xl">
                                       {COUNTRIES.map((country) => (
                                         <SelectItem key={country} value={country} className="rounded-lg">
-                                          {country}
+                                          {t.onboarding.countryOptionLabels[country]}
                                         </SelectItem>
                                       ))}
                                     </SelectContent>
@@ -1120,7 +1120,7 @@ const Auth = () => {
                               <Input
                                 value={clubForm.website}
                                 onChange={(event) => updateClubField("website", event.target.value)}
-                                placeholder="https://yourclub.com"
+                                placeholder={t.placeholders.clubWebsiteExample}
                               />
                               <label className="text-[11px] font-medium text-muted-foreground block">
                                 {t.clubPageAdmin.description} ({t.onboarding.optional})
@@ -1202,7 +1202,7 @@ const Auth = () => {
                                     <SelectContent className="rounded-xl border-border/70 bg-card/95 backdrop-blur-2xl">
                                       {COUNTRIES.map((country) => (
                                         <SelectItem key={country} value={country} className="rounded-lg">
-                                          {country}
+                                          {t.onboarding.countryOptionLabels[country]}
                                         </SelectItem>
                                       ))}
                                     </SelectContent>
@@ -1215,7 +1215,7 @@ const Auth = () => {
                               <Input
                                 value={partnerForm.website}
                                 onChange={(event) => updatePartnerField("website", event.target.value)}
-                                placeholder="https://yourcompany.com"
+                                placeholder={t.placeholders.companyWebsiteExample}
                               />
                               <textarea
                                 value={partnerForm.services}
@@ -1266,7 +1266,7 @@ const Auth = () => {
                                 type="email"
                                 value={accountForm.email}
                                 onChange={(event) => updateAccountField("email", event.target.value)}
-                                placeholder="admin@yourclub.com"
+                                placeholder={t.placeholders.adminEmailExample}
                               />
                             </div>
                             <div className="space-y-1.5">
@@ -1276,7 +1276,7 @@ const Auth = () => {
                               <Input
                                 value={accountForm.phone}
                                 onChange={(event) => updateAccountField("phone", event.target.value)}
-                                placeholder="+49 ..."
+                                placeholder={t.placeholders.phoneExample}
                               />
                             </div>
                           </div>

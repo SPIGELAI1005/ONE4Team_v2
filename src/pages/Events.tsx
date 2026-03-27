@@ -13,7 +13,7 @@ import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useLanguage } from "@/hooks/use-language";
 // logo is rendered by AppHeader
 import type { EventRow, MembershipWithProfile, ParticipantWithMembershipProfile } from "@/types/supabase";
 
@@ -42,6 +42,7 @@ const Events = () => {
   const { clubId, loading: clubLoading } = useClubId();
   const perms = usePermissions();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,7 +125,7 @@ const Events = () => {
 
   const handleCreate = async () => {
     if (!perms.isTrainer) {
-      toast({ title: "Not authorized", description: "Only trainers/admins can create events.", variant: "destructive" });
+      toast({ title: t.common.notAuthorized, description: t.eventsPage.toastNotAuthorizedCreate, variant: "destructive" });
       return;
     }
     if (!title.trim() || !startsAt || !clubId || !user) return;
@@ -143,16 +144,16 @@ const Events = () => {
       })
       .select()
       .single();
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    if (error) { toast({ title: t.common.error, description: error.message, variant: "destructive" }); return; }
     setEvents(prev => [data as Event, ...prev]);
     setShowAdd(false);
     setTitle(""); setDescription(""); setLocation(""); setStartsAt(""); setEndsAt(""); setMaxPart("");
-    toast({ title: "Event created" });
+    toast({ title: t.eventsPage.toastEventCreated });
   };
 
   const handleInvite = async (membershipId: string) => {
     if (!perms.isTrainer) {
-      toast({ title: "Not authorized", description: "Only trainers/admins can invite participants.", variant: "destructive" });
+      toast({ title: t.common.notAuthorized, description: t.eventsPage.toastNotAuthorizedInvite, variant: "destructive" });
       return;
     }
     if (!selectedEvent) return;
@@ -161,9 +162,9 @@ const Events = () => {
       membership_id: membershipId,
       status: "invited",
     });
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    if (error) { toast({ title: t.common.error, description: error.message, variant: "destructive" }); return; }
     openEventDetail(selectedEvent);
-    toast({ title: "Invitation sent" });
+    toast({ title: t.eventsPage.toastInvitationSent });
   };
 
   const handleRSVP = async (participantId: string, status: string) => {
@@ -173,19 +174,21 @@ const Events = () => {
       .update({ status })
       .eq("event_id", selectedEvent.id)
       .eq("id", participantId);
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    if (error) { toast({ title: t.common.error, description: error.message, variant: "destructive" }); return; }
     if (selectedEvent) openEventDetail(selectedEvent);
   };
 
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0">
       <AppHeader
-        title="Events"
-        subtitle="Events & tournaments"
+        title={t.eventsPage.title}
+        subtitle={t.eventsPage.subtitle}
         rightSlot={
-          <Button size="sm" className="bg-gradient-gold-static text-primary-foreground hover:brightness-110" onClick={() => setShowAdd(true)}>
-            <Plus className="w-4 h-4 mr-1" /> New
-          </Button>
+          perms.isTrainer ? (
+            <Button size="sm" className="bg-gradient-gold-static text-primary-foreground hover:brightness-110 shrink-0" onClick={() => setShowAdd(true)}>
+              <Plus className="w-4 h-4 mr-1" /> {t.eventsPage.newEvent}
+            </Button>
+          ) : null
         }
       />
 
@@ -193,11 +196,11 @@ const Events = () => {
         {(clubLoading || loading) ? (
           <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
         ) : !clubId ? (
-          <div className="text-center py-20 text-muted-foreground">No club found.</div>
+          <div className="text-center py-20 text-muted-foreground">{t.communicationPage.noClubFound}</div>
         ) : (
           <div className="max-w-3xl mx-auto space-y-4">
             {events.length === 0 ? (
-              <div className="rounded-xl bg-card border border-border p-8 text-center text-muted-foreground text-sm">No events yet. Create your first one!</div>
+              <div className="rounded-xl bg-card border border-border p-8 text-center text-muted-foreground text-sm">{t.eventsPage.emptyState}</div>
             ) : events.map((ev, i) => (
               <motion.div key={ev.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                 className="rounded-xl bg-card border border-border p-5 cursor-pointer hover:border-primary/30 transition-colors"
@@ -207,14 +210,14 @@ const Events = () => {
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
                     ev.event_type === "tournament" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                   }`}>
-                    {ev.event_type === "tournament" ? "🏆 Tournament" : "📅 Event"}
+                    {ev.event_type === "tournament" ? t.eventsPage.badgeTournament : t.eventsPage.badgeEvent}
                   </span>
                 </div>
                 {ev.description && <p className="text-sm text-muted-foreground mb-2">{ev.description}</p>}
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(ev.starts_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                   {ev.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {ev.location}</span>}
-                  {ev.max_participants && <span className="flex items-center gap-1"><Users className="w-3 h-3" /> Max {ev.max_participants}</span>}
+                  {ev.max_participants && <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {t.eventsPage.maxParticipantsShort.replace("{n}", String(ev.max_participants))}</span>}
                 </div>
               </motion.div>
             ))}
@@ -227,13 +230,13 @@ const Events = () => {
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowAdd(false)}>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
             className="w-full max-w-[95vw] sm:max-w-md rounded-2xl bg-card border border-border p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display font-bold text-foreground">New Event</h3>
+            <div className="flex items-center justify-between mb-4 gap-2">
+              <h3 className="font-display font-bold text-foreground min-w-0 truncate">{t.eventsPage.modalNewTitle}</h3>
               <Button variant="ghost" size="icon" onClick={() => setShowAdd(false)}><X className="w-4 h-4" /></Button>
             </div>
             <div className="space-y-3">
-              <Input placeholder="Title *" value={title} onChange={e => setTitle(e.target.value)} className="bg-background" maxLength={200} />
-              <textarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)}
+              <Input placeholder={t.eventsPage.phTitle} value={title} onChange={e => setTitle(e.target.value)} className="bg-background" maxLength={200} />
+              <textarea placeholder={t.eventsPage.phDescription} value={description} onChange={e => setDescription(e.target.value)}
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
                 rows={3} maxLength={2000} />
               <Select value={eventType} onValueChange={setEventType}>
@@ -241,8 +244,8 @@ const Events = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="event">Event</SelectItem>
-                  <SelectItem value="tournament">Tournament</SelectItem>
+                  <SelectItem value="event">{t.eventsPage.typeEvent}</SelectItem>
+                  <SelectItem value="tournament">{t.eventsPage.typeTournament}</SelectItem>
                 </SelectContent>
               </Select>
               <Input placeholder="Location" value={location} onChange={e => setLocation(e.target.value)} className="bg-background" />
@@ -252,14 +255,14 @@ const Events = () => {
                   <Input type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} className="bg-background" />
                 </div>
                 <div>
-                  <label className="text-[10px] text-muted-foreground mb-1 block">End</label>
+                  <label className="text-[10px] text-muted-foreground mb-1 block">{t.eventsPage.labelEnd}</label>
                   <Input type="datetime-local" value={endsAt} onChange={e => setEndsAt(e.target.value)} className="bg-background" />
                 </div>
               </div>
-              <Input placeholder="Max participants (optional)" type="number" value={maxPart} onChange={e => setMaxPart(e.target.value)} className="bg-background" />
+              <Input placeholder={t.eventsPage.phMaxParticipants} type="number" value={maxPart} onChange={e => setMaxPart(e.target.value)} className="bg-background" />
               <Button onClick={handleCreate} disabled={!title.trim() || !startsAt}
                 className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110">
-                Create Event
+                {t.eventsPage.createEvent}
               </Button>
             </div>
           </motion.div>
@@ -297,8 +300,8 @@ const Events = () => {
                     onClick={() => setOpenPanels((p) => ({ ...p, participants: !p.participants }))}
                     className="w-full flex items-center justify-between"
                   >
-                    <h4 className="text-sm font-display font-semibold text-foreground flex items-center gap-2">
-                      <Users className="w-4 h-4 text-primary" /> Participants ({participants.length})
+                    <h4 className="text-sm font-display font-semibold text-foreground flex items-center gap-2 min-w-0">
+                      <Users className="w-4 h-4 text-primary shrink-0" /> {t.eventsPage.participantsCount.replace("{count}", String(participants.length))}
                     </h4>
                     <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openPanels.participants ? "rotate-180" : ""}`} />
                   </button>
@@ -306,21 +309,21 @@ const Events = () => {
                   {openPanels.participants && (
                     <>
                       {participants.length === 0 ? (
-                        <p className="text-xs text-muted-foreground mt-3">No participants invited yet.</p>
+                        <p className="text-xs text-muted-foreground mt-3">{t.eventsPage.noParticipantsYet}</p>
                       ) : (
                         <div className="space-y-2 mt-3">
                           {participants.map(p => (
                             <div key={p.id} className="flex items-center justify-between px-3 py-2 rounded-xl bg-background/60 border border-border/60">
                               <div className="flex items-center gap-2 min-w-0">
                                 {statusIcons[p.status]}
-                                <span className="text-sm text-foreground truncate">{p.profiles?.display_name || "Member"}</span>
+                                <span className="text-sm text-foreground truncate">{p.profiles?.display_name || t.eventsPage.memberFallback}</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <span className="text-[10px] text-muted-foreground capitalize">{p.status}</span>
                                 {p.status === "invited" && members.find(m => m.user_id === user?.id && m.id === p.membership_id) && (
                                   <div className="flex gap-1 ml-2">
-                                    <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px] text-primary" onClick={() => handleRSVP(p.id, "confirmed")}>Accept</Button>
-                                    <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px] text-accent" onClick={() => handleRSVP(p.id, "declined")}>Decline</Button>
+                                    <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px] text-primary" onClick={() => handleRSVP(p.id, "confirmed")}>{t.eventsPage.accept}</Button>
+                                    <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px] text-accent" onClick={() => handleRSVP(p.id, "declined")}>{t.eventsPage.decline}</Button>
                                   </div>
                                 )}
                               </div>
@@ -349,10 +352,12 @@ const Events = () => {
                         .filter(m => !participants.some(p => p.membership_id === m.id))
                         .map(m => (
                           <div key={m.id} className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-muted/30">
-                            <span className="text-sm text-foreground truncate">{m.profiles?.display_name || "Member"}</span>
-                            <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px] text-primary" onClick={() => handleInvite(m.id)}>
-                              <Mail className="w-3 h-3 mr-1" /> Invite
-                            </Button>
+                            <span className="text-sm text-foreground truncate">{m.profiles?.display_name || t.eventsPage.memberFallback}</span>
+                            {perms.isTrainer && (
+                              <Button size="sm" variant="ghost" className="h-7 px-2 text-[10px] text-primary shrink-0" onClick={() => handleInvite(m.id)}>
+                                <Mail className="w-3 h-3 mr-1" /> {t.eventsPage.invite}
+                              </Button>
+                            )}
                           </div>
                         ))}
                     </div>

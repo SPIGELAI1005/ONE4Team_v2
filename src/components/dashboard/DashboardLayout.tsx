@@ -7,9 +7,9 @@ const DashboardLayout = () => {
   const isMobile = useIsMobile();
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen bg-background overflow-hidden min-w-0">
       {!isMobile && <DashboardSidebar />}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
         <Outlet />
       </main>
       {isMobile && <MobileBottomNav />}
