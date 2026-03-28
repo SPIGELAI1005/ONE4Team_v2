@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
-import AppHeader from "@/components/layout/AppHeader";
+import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { Plus, Megaphone, Send, Loader2, X, Hash, MessageSquare, BotMessageSquare, Paperclip, RotateCcw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -715,9 +715,10 @@ const Communication = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <AppHeader
+      <DashboardHeaderSlot
         title={t.communicationPage.title}
         subtitle={t.communicationPage.subtitle}
+        toolbarRevision={`${selectedChannel.kind}-${perms.isAdmin}-${missingAnnouncementsTable}`}
         rightSlot={
           selectedChannel.kind === "announcements" ? (
             <Button

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import AppHeader from "@/components/layout/AppHeader";
+import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -211,9 +211,10 @@ export default function Partners() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader
+      <DashboardHeaderSlot
         title={t.partnersPage.title}
         subtitle={schemaReady ? t.partnersPage.subtitleOperational : t.partnersPage.subtitleFallback}
+        toolbarRevision={`${tab}-${canManage}-${schemaReady}`}
         rightSlot={
           canManage ? (
             <Button

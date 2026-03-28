@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import AppHeader from "@/components/layout/AppHeader";
+import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Settings2, User, Building2, Bell, Shield,
-  Save, Loader2, LogOut, KeyRound, Trash2, AlertTriangle, Mail, UploadCloud, UserCircle2,
+  Save, Loader2, LogOut, KeyRound, Trash2, AlertTriangle, Mail, UploadCloud, UserCircle2, Sparkles,
+  CheckCircle2, XCircle, AlertCircle, RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
@@ -18,6 +19,8 @@ import { useToast } from "@/hooks/use-toast";
 const LS_NOTIF_KEY = "one4team.notifications";
 const PROFILE_AVATAR_BUCKET = "images-avatars";
 const CLUB_ROLE_LADDER = ["admin", "trainer", "player", "member"];
+
+type ClubLlmProvider = "openai" | "anthropic" | "google_gemini" | "azure_openai" | "github_models";
 
 interface NotifPrefs {
   email: boolean;
@@ -102,6 +105,20 @@ export default function Settings() {
   const [clubLoading, setClubLoading] = useState(true);
   const [clubSaving, setClubSaving] = useState(false);
 
+  const [llmLoading, setLlmLoading] = useState(false);
+  const [llmSaving, setLlmSaving] = useState(false);
+  const [llmProvider, setLlmProvider] = useState<ClubLlmProvider>("openai");
+  const [llmModel, setLlmModel] = useState("");
+  const [llmApiKey, setLlmApiKey] = useState("");
+  const [llmAzureEndpoint, setLlmAzureEndpoint] = useState("");
+  const [llmAzureApiVersion, setLlmAzureApiVersion] = useState("2024-02-15-preview");
+  const [llmHasSavedKey, setLlmHasSavedKey] = useState(false);
+
+  type LlmHealthUi = "idle" | "checking" | "connected" | "not_configured" | "error";
+  const [llmHealth, setLlmHealth] = useState<LlmHealthUi>("idle");
+  const [llmHealthDetail, setLlmHealthDetail] = useState<string | null>(null);
+  const [llmHealthSource, setLlmHealthSource] = useState<"club" | "platform" | null>(null);
+
   // Notifications
   const [notifs, setNotifs] = useState<NotifPrefs>(loadNotifPrefs);
 
@@ -178,6 +195,199 @@ export default function Settings() {
 
     void fetchClubSettings();
   }, [activeClubId]);
+
+  useEffect(() => {
+    if (!activeClubId || !perms.isAdmin) return;
+    let cancelled = false;
+    const loadLlm = async () => {
+      setLlmLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("club_llm_settings")
+          .select("provider, model, azure_endpoint, azure_api_version, api_key")
+          .eq("club_id", activeClubId)
+          .maybeSingle();
+        if (cancelled) return;
+        if (error) throw error;
+        if (data) {
+          setLlmProvider((data.provider as ClubLlmProvider) || "openai");
+          setLlmModel(data.model ?? "");
+          setLlmAzureEndpoint(data.azure_endpoint ?? "");
+          setLlmAzureApiVersion(data.azure_api_version ?? "2024-02-15-preview");
+          setLlmHasSavedKey(Boolean((data.api_key as string)?.trim()));
+        } else {
+          setLlmHasSavedKey(false);
+          setLlmModel("");
+          setLlmAzureEndpoint("");
+          setLlmAzureApiVersion("2024-02-15-preview");
+        }
+        setLlmApiKey("");
+      } catch {
+        if (!cancelled) toast({ title: t.common.error, description: t.settingsPage.llmLoadFailed, variant: "destructive" });
+      } finally {
+        if (!cancelled) setLlmLoading(false);
+      }
+    };
+    void loadLlm();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeClubId, perms.isAdmin, toast, t.common.error, t.settingsPage.llmLoadFailed]);
+
+  const runLlmHealthCheck = useCallback(async () => {
+    if (!activeClubId || !perms.isAdmin) return;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim() ?? "";
+    const publishable = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim() ?? "";
+    if (
+      !supabaseUrl ||
+      !publishable ||
+      supabaseUrl.includes("placeholder.supabase.co") ||
+      publishable === "placeholder-key" ||
+      /YOUR_PROJECT/i.test(supabaseUrl)
+    ) {
+      setLlmHealth("error");
+      setLlmHealthDetail(t.settingsPage.llmHealthMissingUrl);
+      setLlmHealthSource(null);
+      return;
+    }
+    setLlmHealth("checking");
+    setLlmHealthDetail(null);
+    setLlmHealthSource(null);
+
+    const withNetworkHint = (msg: string) =>
+      /failed to fetch|networkerror|load failed|network request failed/i.test(msg)
+        ? `${msg}\n\n${t.settingsPage.llmHealthNetworkHint}`
+        : msg;
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setLlmHealth("error");
+        setLlmHealthDetail(t.settingsPage.llmHealthSignIn);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("co-trainer", {
+        body: { mode: "health", club_id: activeClubId },
+      });
+
+      if (error) {
+        let detail = error.message || "Request failed";
+        const ctx = error as { context?: Response };
+        if (ctx.context && typeof ctx.context.json === "function") {
+          try {
+            const j = (await ctx.context.json()) as { error?: string };
+            if (typeof j?.error === "string" && j.error.trim()) detail = j.error.trim();
+          } catch {
+            /* ignore */
+          }
+        }
+        setLlmHealth("error");
+        setLlmHealthDetail(withNetworkHint(detail));
+        return;
+      }
+
+      const payload = (data ?? {}) as {
+        ok?: boolean;
+        configured?: boolean;
+        source?: string;
+        error?: string;
+      };
+
+      if (payload.configured === false) {
+        setLlmHealth("not_configured");
+        setLlmHealthDetail(payload.error ?? null);
+        return;
+      }
+      if (payload.ok === true) {
+        setLlmHealth("connected");
+        setLlmHealthSource(payload.source === "platform" ? "platform" : "club");
+        return;
+      }
+      setLlmHealth("error");
+      setLlmHealthDetail(withNetworkHint(payload.error ?? t.settingsPage.llmHealthUnknownError));
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : String(e);
+      setLlmHealth("error");
+      setLlmHealthDetail(withNetworkHint(raw));
+    }
+  }, [
+    activeClubId,
+    perms.isAdmin,
+    t.settingsPage.llmHealthMissingUrl,
+    t.settingsPage.llmHealthNetworkHint,
+    t.settingsPage.llmHealthSignIn,
+    t.settingsPage.llmHealthUnknownError,
+  ]);
+
+  useEffect(() => {
+    if (!activeClubId || !perms.isAdmin || llmLoading) return;
+    void runLlmHealthCheck();
+  }, [activeClubId, perms.isAdmin, llmLoading, runLlmHealthCheck]);
+
+  const saveLlmSettings = async () => {
+    if (!activeClubId || llmSaving) return;
+    if (!llmApiKey.trim() && !llmHasSavedKey) {
+      toast({ title: t.common.error, description: t.settingsPage.llmKeyRequired, variant: "destructive" });
+      return;
+    }
+    setLlmSaving(true);
+    try {
+      if (llmApiKey.trim()) {
+        const { error } = await supabase.from("club_llm_settings").upsert(
+          {
+            club_id: activeClubId,
+            provider: llmProvider,
+            api_key: llmApiKey.trim(),
+            model: llmModel.trim() || null,
+            azure_endpoint: llmProvider === "azure_openai" ? (llmAzureEndpoint.trim() || null) : null,
+            azure_api_version: llmProvider === "azure_openai" ? (llmAzureApiVersion.trim() || "2024-02-15-preview") : null,
+          },
+          { onConflict: "club_id" },
+        );
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("club_llm_settings")
+          .update({
+            provider: llmProvider,
+            model: llmModel.trim() || null,
+            azure_endpoint: llmProvider === "azure_openai" ? (llmAzureEndpoint.trim() || null) : null,
+            azure_api_version: llmProvider === "azure_openai" ? (llmAzureApiVersion.trim() || "2024-02-15-preview") : null,
+          })
+          .eq("club_id", activeClubId);
+        if (error) throw error;
+      }
+      setLlmApiKey("");
+      setLlmHasSavedKey(true);
+      toast({ title: t.settingsPage.llmSaved });
+      void runLlmHealthCheck();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t.settingsPage.llmLoadFailed;
+      toast({ title: t.common.error, description: msg, variant: "destructive" });
+    } finally {
+      setLlmSaving(false);
+    }
+  };
+
+  const clearLlmSettings = async () => {
+    if (!activeClubId) return;
+    try {
+      const { error } = await supabase.from("club_llm_settings").delete().eq("club_id", activeClubId);
+      if (error) throw error;
+      setLlmHasSavedKey(false);
+      setLlmApiKey("");
+      setLlmModel("");
+      setLlmAzureEndpoint("");
+      toast({ title: t.settingsPage.llmCleared });
+      void runLlmHealthCheck();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t.settingsPage.llmLoadFailed;
+      toast({ title: t.common.error, description: msg, variant: "destructive" });
+    }
+  };
 
   const saveProfile = async () => {
     if (!user || profileSaving) return;
@@ -326,7 +536,7 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader title={t.settingsPage.title} subtitle={t.settingsPage.subtitle} />
+      <DashboardHeaderSlot title={t.settingsPage.title} subtitle={t.settingsPage.subtitle} />
 
       {/* Tabs */}
       <div className="border-b border-border/60">
@@ -654,6 +864,194 @@ export default function Settings() {
                 </div>
               )}
             </div>
+
+            {perms.isAdmin && activeClubId ? (
+              <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Sparkles className="w-4.5 h-4.5 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <h2 className="font-display font-bold text-foreground">{t.settingsPage.llmTitle}</h2>
+                      <p className="text-[11px] text-muted-foreground">{t.settingsPage.llmDesc}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-stretch sm:items-end gap-2 shrink-0">
+                    {!llmLoading ? (
+                      <div
+                        className={`flex flex-col gap-1.5 rounded-xl border px-3 py-2 text-left text-xs ${
+                          llmHealth === "connected"
+                            ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200"
+                            : llmHealth === "not_configured"
+                              ? "border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-100"
+                              : llmHealth === "error"
+                                ? "border-destructive/40 bg-destructive/10 text-destructive"
+                                : llmHealth === "checking"
+                                  ? "border-border bg-muted/40 text-muted-foreground"
+                                  : "border-border/60 bg-background/50 text-muted-foreground"
+                        }`}
+                        role="status"
+                        aria-live="polite"
+                      >
+                        {llmHealth === "checking" ? (
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                            <span>{t.settingsPage.llmHealthChecking}</span>
+                          </div>
+                        ) : null}
+                        {llmHealth === "connected" ? (
+                          <div className="flex flex-col gap-1 items-start sm:items-end">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                              <span className="font-medium">{t.settingsPage.llmHealthConnected}</span>
+                            </div>
+                            <span className="text-[10px] opacity-90 pl-6 sm:pl-0 max-w-[260px] sm:text-right">
+                              {llmHealthSource === "platform"
+                                ? t.settingsPage.llmHealthSubtitlePlatform
+                                : t.settingsPage.llmHealthSubtitleClub}
+                            </span>
+                          </div>
+                        ) : null}
+                        {llmHealth === "not_configured" ? (
+                          <div className="flex items-start gap-2">
+                            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                            <div>
+                              <div className="font-medium">{t.settingsPage.llmHealthNotConfigured}</div>
+                              {llmHealthDetail ? (
+                                <div className="text-[10px] opacity-90 mt-0.5 max-w-[240px] sm:max-w-[280px]">
+                                  {llmHealthDetail}
+                                </div>
+                              ) : (
+                                <div className="text-[10px] opacity-90 mt-0.5 max-w-[240px] sm:max-w-[280px]">
+                                  {t.settingsPage.llmHealthNotConfiguredHint}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : null}
+                        {llmHealth === "error" ? (
+                          <div className="flex items-start gap-2">
+                            <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                            <div>
+                              <div className="font-medium">{t.settingsPage.llmHealthFailed}</div>
+                              {llmHealthDetail ? (
+                                <div className="text-[10px] opacity-90 mt-0.5 max-w-[260px] sm:max-w-[300px] break-words">
+                                  {llmHealthDetail}
+                                </div>
+                              ) : null}
+                            </div>
+                          </div>
+                        ) : null}
+                        {llmHealth === "idle" ? (
+                          <div className="flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 shrink-0 opacity-60" />
+                            <span>{t.settingsPage.llmHealthIdle}</span>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {!llmLoading ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 rounded-xl"
+                        onClick={() => void runLlmHealthCheck()}
+                        disabled={llmHealth === "checking"}
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${llmHealth === "checking" ? "animate-spin" : ""}`} />
+                        {t.settingsPage.llmTestConnection}
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+                {llmLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">{t.settingsPage.llmProvider}</div>
+                      <Select value={llmProvider} onValueChange={(v) => setLlmProvider(v as ClubLlmProvider)}>
+                        <SelectTrigger className="w-full h-10 rounded-xl border-border/60 bg-background/50 px-3 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="openai">{t.settingsPage.llmProviderOpenai}</SelectItem>
+                          <SelectItem value="anthropic">{t.settingsPage.llmProviderAnthropic}</SelectItem>
+                          <SelectItem value="google_gemini">{t.settingsPage.llmProviderGemini}</SelectItem>
+                          <SelectItem value="azure_openai">{t.settingsPage.llmProviderAzure}</SelectItem>
+                          <SelectItem value="github_models">{t.settingsPage.llmProviderGithub}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">{t.settingsPage.llmModel}</div>
+                      <Input
+                        value={llmModel}
+                        onChange={(e) => setLlmModel(e.target.value)}
+                        placeholder="gpt-4o-mini"
+                        className="h-10 rounded-xl border-border/60 bg-background/50"
+                      />
+                      <p className="text-[10px] text-muted-foreground mt-1">{t.settingsPage.llmModelHint}</p>
+                    </div>
+                    {llmProvider === "azure_openai" ? (
+                      <>
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">{t.settingsPage.llmAzureEndpoint}</div>
+                          <Input
+                            value={llmAzureEndpoint}
+                            onChange={(e) => setLlmAzureEndpoint(e.target.value)}
+                            placeholder="https://..."
+                            className="h-10 rounded-xl border-border/60 bg-background/50"
+                          />
+                          <p className="text-[10px] text-muted-foreground mt-1">{t.settingsPage.llmAzureEndpointHint}</p>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">{t.settingsPage.llmAzureApiVersion}</div>
+                          <Input
+                            value={llmAzureApiVersion}
+                            onChange={(e) => setLlmAzureApiVersion(e.target.value)}
+                            className="h-10 rounded-xl border-border/60 bg-background/50"
+                          />
+                        </div>
+                      </>
+                    ) : null}
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">{t.settingsPage.llmApiKey}</div>
+                      <Input
+                        type="password"
+                        autoComplete="off"
+                        value={llmApiKey}
+                        onChange={(e) => setLlmApiKey(e.target.value)}
+                        placeholder={t.settingsPage.llmApiKeyPlaceholder}
+                        className="h-10 rounded-xl border-border/60 bg-background/50"
+                      />
+                      {llmHasSavedKey ? (
+                        <p className="text-[10px] text-muted-foreground mt-1">{t.settingsPage.llmApiKeyKeep}</p>
+                      ) : null}
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-2 pt-2">
+                      <Button type="button" variant="outline" onClick={() => void clearLlmSettings()} disabled={!llmHasSavedKey || llmSaving}>
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        {t.settingsPage.llmClear}
+                      </Button>
+                      <Button
+                        type="button"
+                        className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
+                        onClick={() => void saveLlmSettings()}
+                        disabled={llmSaving}
+                      >
+                        {llmSaving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />}
+                        {t.settingsPage.llmSave}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
           </div>
         )}
 

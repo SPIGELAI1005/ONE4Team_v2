@@ -1,12 +1,13 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-03-27 (i18n Auth/Settings; mobile Members bulk table + Shop tabs)
+Last updated: 2026-03-28 (ONE4AI reliability, Settings AI health, `co-trainer` health mode, docs sync)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
 - App is in post-Phase-12 local implementation with major onboarding/member operations upgrades completed in code.
+- **ONE4AI / LLM (2026-03-28):** `club_llm_settings` (`20260328200000`) stores per-club provider/model/API key; edge `resolveLlmCredentials` prefers club row, else `OPENAI_API_KEY` / `OPENAI_MODEL` secrets. `co-trainer` supports `mode: "health"` for admins (`pingLlm`, `assertClubAdmin`). `CoTrainer.tsx` surfaces real errors (no silent demo when Supabase URL exists); SSE flush + stream error lines; `getEdgeFunctionAuthHeaders` uses `refreshSession` if needed. Settings AI card shows live connection status and uses `supabase.functions.invoke("co-trainer")` for checks. Apply migrations `20260328100000`, `20260328133000`, `20260328150000`, `20260328180000`, `20260328200000` in target env; deploy `co-trainer` after `llm.ts` changes.
 - **i18n (2026-03-27):** Third pass on high-traffic screens: `Auth` placeholders and country labels; `Settings` toasts, role-switch copy, placeholders, and locale-aware month names; `Shop` + public `ClubPage` shop strings aligned to `shopPage` keys; `Members` registry import column label.
 - **Mobile UX (2026-03-27):** Members bulk-import table uses horizontal scroll + minimum table width; larger tap targets on expand/remove; Shop tab strip scrolls on narrow widths with 44px-class targets on primary actions.
 - **Members / master data (2026-03-25):**
@@ -111,6 +112,11 @@ Persistent handoff context for future agents so work can continue without re-dis
 16. `20260324201000_club_member_master_records_select_broaden.sql`
 17. `20260324210000_club_member_drafts_master_data.sql`
 18. `20260325220000_redeem_invite_guardian_links.sql` (`redeem_club_invite` + optional `invite_payload.guardian_membership_ids`)
+19. `20260328100000_club_invites_ensure_invite_payload.sql`
+20. `20260328133000_club_member_audit_events.sql`
+21. `20260328150000_club_member_audit_draft_timeline.sql`
+22. `20260328180000_ai_conversations.sql`
+23. `20260328200000_club_llm_settings.sql`
 
 Also ensure previously listed communication migrations remain applied in the same project:
 - `20260301152000_add_chat_bridge_connectors_and_events.sql`

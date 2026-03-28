@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useClubId } from "@/hooks/use-club-id";
+import { getEdgeFunctionAuthHeaders } from "@/lib/edge-function-auth";
 import ReactMarkdown from "react-markdown";
 import type { AIStatsSummary } from "@/types/ai";
 import type { MembershipWithProfile } from "@/types/supabase";
@@ -77,16 +78,20 @@ const NaturalLanguageStats = () => {
 
     let assistantSoFar = "";
     try {
+      const headers = await getEdgeFunctionAuthHeaders();
+      if (!headers.Authorization) {
+        toast({ title: "AI Error", description: "Sign in to use stats AI.", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-match-analysis`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
+        headers,
         body: JSON.stringify({
           type: "stats_query",
           matchData: statsSummary,
           context: `User question: ${q}`,
+          club_id: clubId,
         }),
       });
 

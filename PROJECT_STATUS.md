@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-03-27 (i18n Auth/Settings; mobile Members + Shop)
+Last updated: 2026-03-28 (ONE4AI / LLM settings + edge health)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -12,6 +12,7 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - Phase 12 rollout guardrails (verification SQL, env matrix, validation matrix, go/no-go checklist, CI audit gate).
 - **Members (2026-03-25):** `club_member_master_records` + draft `master_data`, club role assignments, tabbed registry UI, XLSX import/export, Club Card tab, broadened SELECT RLS, guardian linking (player-only on roster; Player-role drafts get Safety-tab guardians + invite payload); redeem migration `20260325220000` (see `CHANGELOG.md`).
 - **UX/i18n (2026-03-27):** Auth and Settings strings consolidated in EN/DE; Members bulk table and Shop flows improved for small screens (horizontal scroll, touch targets). See `CHANGELOG.md` § 2026-03-27.
+- **ONE4AI / LLM (2026-03-28):** Per-club AI configuration (`club_llm_settings`), reliable chat error handling in `CoTrainer.tsx`, session refresh for edge calls, Settings **AI provider** card with connection status + `invoke("co-trainer")` health check. Edge: `co-trainer` `mode: "health"`, `pingLlm`, `assertClubAdmin`. Apply migrations `20260328100000`–`20260328200000` (see `CHANGELOG.md` § 2026-03-28) and deploy `co-trainer` in each environment.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 
@@ -42,7 +43,12 @@ Go-live readiness checklist (one-screen):
   - `20260324140000_club_role_assignments.sql`
   - `20260324201000_club_member_master_records_select_broaden.sql`
   - `20260324210000_club_member_drafts_master_data.sql`
-- [x] **Environment variables:** app points to the intended Supabase project (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`) in each environment (local/staging/prod).
+  - `20260328100000_club_invites_ensure_invite_payload.sql`
+  - `20260328133000_club_member_audit_events.sql`
+  - `20260328150000_club_member_audit_draft_timeline.sql`
+  - `20260328180000_ai_conversations.sql`
+  - `20260328200000_club_llm_settings.sql`
+- [x] **Environment variables:** app points to the intended Supabase project (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`) in each environment (local/staging/prod). For ONE4AI platform fallback, set Supabase secrets `OPENAI_API_KEY` (and optional `OPENAI_MODEL`) and deploy `co-trainer`.
 - [x] **Core smoke tests:** auth, onboarding/invite, members, settings save, club page admin save, and club public page preview pass.
 - [x] **Communication checks:** announcements load, chat send/retry works, attachments upload/open works, connector save/list works, no missing-table schema errors.
 - [x] **Build/quality gates:** `npm run lint`, `npm test`, `npm run build`, `npm run audit:phase12`, and continuity e2e pass in CI for target release branch.

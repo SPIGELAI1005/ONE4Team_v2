@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import AppHeader from "@/components/layout/AppHeader";
+import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
   Plus, Trophy, Dumbbell, Loader2,
   Calendar, MapPin, Clock, Trash2, X, LayoutGrid, AlertTriangle, CheckCircle2, ShieldCheck, Pencil, Layers3, Building2, ChevronDown, UploadCloud
@@ -16,7 +16,6 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useLanguage } from "@/hooks/use-language";
 import { resolveSportId, resolveSportLabel, SPORTS_CATALOG } from "@/lib/sports";
 import { useLocation } from "react-router-dom";
-// logo is rendered by AppHeader
 
 type Team = {
   id: string;
@@ -2194,13 +2193,16 @@ const Teams = () => {
     ));
   };
 
+  const teamsToolbarRevision = `${currentTab}-${canManage}-${canManageLayers}-${bookingActionLabel}-${activeLayerId}-${pitches.length}`;
+
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader
+      <DashboardHeaderSlot
         title={isPropertyLayersPage ? t.sidebar.propertyLayers : t.teamsPage.title}
         subtitle={canManage ? t.teamsPage.subtitleManage : t.teamsPage.subtitleView}
+        toolbarRevision={teamsToolbarRevision}
         rightSlot={
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {currentTab === "pitches" && (
               <>
                 {canManageLayers && (

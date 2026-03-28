@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useLanguage } from "@/hooks/use-language";
 import { motion } from "framer-motion";
 import {
@@ -15,12 +15,9 @@ import {
   Building2,
   Briefcase,
 } from "lucide-react";
+import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import AnalyticsWidgets from "@/components/dashboard/AnalyticsWidgets";
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
-import NotificationBell from "@/components/dashboard/NotificationBell";
-import ClubSwitcher from "@/components/dashboard/ClubSwitcher";
-import { LanguageToggle } from "@/components/ui/language-toggle";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import LiveMatchTicker from "@/components/dashboard/LiveMatchTicker";
 import AdminNotificationSender from "@/components/dashboard/AdminNotificationSender";
 import SeasonProgressionChart from "@/components/analytics/SeasonProgressionChart";
@@ -69,52 +66,30 @@ function parseRegistrationSummary(raw: unknown): RegistrationSummary | null {
 
 const DashboardContent = () => {
   const { role } = useParams();
-  const navigate = useNavigate();
   const { t } = useLanguage();
   const { user } = useAuth();
   const { activeClubId, activeClub } = useActiveClub();
   const [firstName, setFirstName] = useState<string>("");
-  const [displayName, setDisplayName] = useState<string>("");
-  const [avatarUrl, setAvatarUrl] = useState<string>("");
 
-  const userInitials = useMemo(() => {
-    const cleanName = displayName.trim();
-    if (cleanName) {
-      const parts = cleanName.split(/\s+/).filter(Boolean);
-      if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    }
-
-    const emailLocal = user?.email?.split("@")[0]?.replace(/[^a-zA-Z]/g, "") ?? "";
-    return (emailLocal.slice(0, 2) || "U").toUpperCase();
-  }, [displayName, user?.email]);
-
-  // Fetch user's display name for the greeting
+  // Fetch user's first name for the dashboard greeting
   useEffect(() => {
     if (!user) return;
     const fetchName = async () => {
       try {
         const { data } = await supabase
           .from("profiles")
-          .select("display_name, avatar_url")
+          .select("display_name")
           .eq("user_id", user.id)
           .single();
         const displayName = (data as Record<string, unknown> | null)?.display_name as string | null;
-        const avatar = (data as Record<string, unknown> | null)?.avatar_url as string | null;
-        setAvatarUrl(avatar || "");
         if (displayName) {
-          setDisplayName(displayName);
           setFirstName(displayName.split(" ")[0]);
         } else {
-          // Fallback: derive from email
           const emailLocal = user.email?.split("@")[0] || "";
-          setDisplayName("");
           setFirstName(emailLocal.charAt(0).toUpperCase() + emailLocal.slice(1));
         }
       } catch {
         const emailLocal = user.email?.split("@")[0] || "";
-        setDisplayName("");
-        setAvatarUrl("");
         setFirstName(emailLocal.charAt(0).toUpperCase() + emailLocal.slice(1));
       }
     };
@@ -192,7 +167,7 @@ const DashboardContent = () => {
   const [kpis, setKpis] = useState<Kpi[]>(config.kpis);
   const [upcoming, setUpcoming] = useState<UpcomingItem[]>(defaultUpcoming);
 
-  // Route-driven profile (A): persist selected role so AppHeader can reflect it on every page.
+  // Route-driven profile (A): persist selected role so the unified top bar reflects it on every page.
   useEffect(() => {
     if (!role) return;
     localStorage.setItem("one4team.activeRole", role);
@@ -295,38 +270,11 @@ const DashboardContent = () => {
     }
   }, [user?.user_metadata]);
 
+  const dashboardGreeting = `${t.dashboard.welcomeBack}${firstName ? `, ${firstName}` : ""}${activeClub?.name ? ` · ${activeClub.name}` : ""}`;
+
   return (
     <div className="bg-background pb-20 lg:pb-0 scroll-glow">
-      {/* Header */}
-      <div className="sticky top-0 z-30 glass-nav">
-        <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-3 min-w-0">
-          <div className="min-w-0 flex-1">
-            <h1 className="font-display text-base sm:text-lg font-bold text-foreground tracking-tight truncate">{config.title}</h1>
-            <p className="text-[12px] sm:text-[13px] text-muted-foreground line-clamp-2 sm:line-clamp-none">
-              {t.dashboard.welcomeBack}{firstName ? `, ${firstName}` : ""}{activeClub?.name ? ` · ${activeClub.name}` : ""}
-            </p>
-          </div>
-          <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-            <ClubSwitcher />
-            <NotificationBell />
-            <LanguageToggle size="sm" />
-            <ThemeToggle size="sm" />
-            <button
-              type="button"
-              onClick={() => navigate("/settings")}
-              className="w-9 h-9 rounded-2xl bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-sm shadow-gold ml-1 hover:brightness-110 transition overflow-hidden"
-              aria-label={t.sidebar.settings}
-              title={displayName ? `${displayName} · ${t.sidebar.settings}` : t.sidebar.settings}
-            >
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={displayName || t.appHeader.profile} className="w-full h-full object-cover" />
-              ) : (
-                userInitials
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
+      <DashboardHeaderSlot title={config.title} greeting={dashboardGreeting} showBack={false} />
 
       <div className="p-5 lg:p-8 space-y-5">
         {showGettingStarted && (role === "trainer" || role === "admin") && (
@@ -438,6 +386,23 @@ const DashboardContent = () => {
 
         {/* Natural Language Stats Query */}
         <NaturalLanguageStats />
+
+        {role === "admin" ? (
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <div className="text-sm font-semibold text-foreground">{t.dashboard.one4aiWeeklySummary}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">{t.dashboard.one4aiWeeklySummaryDesc}</div>
+            </div>
+            <Link
+              to={`/co-trainer?tab=chat&prompt=${encodeURIComponent(
+                "Create a weekly leadership digest for our club with top priorities, risks, and owner actions for the next 7 days.",
+              )}`}
+              className="inline-flex items-center justify-center rounded-xl bg-gradient-gold-static px-4 py-2 text-xs font-semibold text-primary-foreground hover:brightness-110 shrink-0"
+            >
+              {t.dashboard.one4aiWeeklySummary}
+            </Link>
+          </div>
+        ) : null}
 
         {/* Season Awards */}
         <SeasonAwards />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import AppHeader from "@/components/layout/AppHeader";
+import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
   Plus, Trophy, Loader2, X, MapPin, Clock,
   Users, Target, Award, AlertTriangle, ChevronDown
@@ -298,9 +298,10 @@ const Matches = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0 scroll-glow">
-      <AppHeader
+      <DashboardHeaderSlot
         title={t.matchesPage.title}
         subtitle={t.matchesPage.subtitle}
+        toolbarRevision={String(perms.isTrainer)}
         rightSlot={
           perms.isTrainer ? (
             <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-end max-w-[min(100%,14rem)] sm:max-w-none">
@@ -775,6 +776,8 @@ const Matches = () => {
                   {openPanels.ai && (
                     <div className="mt-3">
                       <AIMatchAnalysis
+                        clubId={clubId!}
+                        matchId={selectedMatch.id}
                         matchData={{
                           opponent: selectedMatch.opponent, is_home: selectedMatch.is_home,
                           date: selectedMatch.match_date, home_score: selectedMatch.home_score,

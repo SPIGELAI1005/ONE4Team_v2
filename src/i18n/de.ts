@@ -1,7 +1,7 @@
 // ─── German translations ───
 import type { Translations } from "./en";
 
-const de: Translations = {
+export const de: Translations = {
   // ─── Allgemein ───
   common: {
     getStarted: "Jetzt starten",
@@ -494,11 +494,11 @@ const de: Translations = {
     consultantDesc: "Finanz-, Steuer- oder Rechtsberatung",
   },
 
-  // ─── AI Page ───
+  // ─── ONE4AI (Admin / protokollierte Anfragen) ───
   ai: {
-    title: "KI",
+    title: "ONE4AI",
     subtitle: "Copilots v1 (protokolliert + vereinsbezogen)",
-    selectClub: "Wähle einen Verein, um Copilots zu nutzen.",
+    selectClub: "Wähle einen Verein, um ONE4AI-Copilots zu nutzen.",
     coTrainer: "Co‑Trainer",
     coTrainerDesc: "Wöchentlicher Trainingsplan (deterministischer Platzhalter).",
     generatePlan: "Plan generieren",
@@ -507,11 +507,11 @@ const de: Translations = {
     generateDigest: "Zusammenfassung generieren",
     output: "Ausgabe",
     outputPlaceholder: "Generiere einen Plan oder eine Zusammenfassung, um die Ausgabe hier zu sehen.",
-    recentRequests: "Letzte KI-Anfragen (Verein)",
+    recentRequests: "Letzte ONE4AI-Anfragen (Verein)",
     noRequests: "Noch keine Anfragen.",
-    failedToLoadInputs: "KI-Eingaben konnten nicht geladen werden",
+    failedToLoadInputs: "ONE4AI-Eingaben konnten nicht geladen werden",
     generated: "Generiert",
-    savedToRequests: "In KI-Anfragen gespeichert",
+    savedToRequests: "In ONE4AI-Anfragen gespeichert",
     failedToGenerate: "Generierung fehlgeschlagen",
   },
 
@@ -642,6 +642,9 @@ const de: Translations = {
     noTeam: "Kein Team",
     details: "Details",
     joined: "Beigetreten",
+    askOne4Ai: "ONE4AI fragen",
+    askOne4AiPrompt:
+      "Hilf mir bei der Einschätzung von {name} im Verein: Stärken, Unterstützung und konkrete nächste Schritte für Trainer.",
     playerAttributes: "Spieler-Attribute",
     position: "Position",
     ageGroup: "Altersgruppe",
@@ -755,6 +758,10 @@ const de: Translations = {
     showAllDrafts: "Alle anzeigen",
     showLessDrafts: "Weniger anzeigen",
     draftUpdated: "Entwurf aktualisiert",
+    invitedDraftEditHint:
+      "Diese Person wurde bereits eingeladen. Änderungen aktualisieren die gespeicherte Liste und – solange die Einladung noch offen ist – die Daten bei der Anmeldung (gleicher Link; bei neuer E-Mail muss sie sich mit der neuen Adresse anmelden).",
+    inviteSyncSkippedAlreadyJoined:
+      "Einladung wurde bereits genutzt — Stammdaten änderst du beim aktiven Mitglied.",
     masterDataColumnMissingTitle: "Datenbank-Migration erforderlich",
     masterDataColumnMissingDesc:
       "Der Tabelle club_member_drafts fehlt die Spalte master_data. In Supabase → SQL Editor die Migration supabase/migrations/20260324210000_club_member_drafts_master_data.sql ausführen (oder supabase db push), danach erneut speichern.",
@@ -765,6 +772,25 @@ const de: Translations = {
     draft: "Entwurf",
     invited: "Eingeladen",
     sendInvite: "Einladung senden",
+    history: "Verlauf",
+    activityLog: "Aktivität",
+    historyPreviewTitle: "Aktivität & Verlauf",
+    historyPreviewDesc:
+      "Kurzüberblick für dieses ONE-Team-Mitglied. Öffne die vollständige Seite für den kompletten Aktivitätsverlauf oder kopiere den Link zum Merken oder Teilen.",
+    historyLinkLabel: "URL zur vollständigen Historie",
+    copyHistoryLink: "Link kopieren",
+    openFullHistory: "Vollständigen Verlauf öffnen",
+    resendInvite: "Erneut einladen",
+    resendInviteModalTitle: "Neuer Einladungslink",
+    resendInviteModalDesc:
+      "Token oder Link kopieren und erneut senden. Der vorherige unbenutzte Link funktioniert nicht mehr.",
+    resendInviteSuccessTitle: "Einladung erneut erstellt",
+    resendInviteSuccessDesc: "Neue Einladung erstellt. Token oder Link im Dialog kopieren.",
+    resendInviteBlockedUsed:
+      "Diese Einladung wurde bereits genutzt. Verwalte die Person stattdessen im aktiven Kader.",
+    resendInviteInvalidEmail: "Bitte eine gültige E-Mail eintragen, bevor du erneut einlädst.",
+    resendInviteSaveHint:
+      "Wenn du E-Mail oder Daten im Formular geändert hast, speichere die Zeile, damit Liste und Einladung übereinstimmen.",
     inviteSentForDraft: "Einladung für das ausgewählte Entwurfsmitglied gesendet.",
     requestApprovedAndJoined: "Anfrage freigegeben und Mitglied direkt hinzugefügt.",
     membersTabRestrictedTitle: "Mitgliederverwaltung ist nur für Admins",
@@ -778,9 +804,9 @@ const de: Translations = {
     importIssueInviteExists: "Einladung existiert bereits",
     importIssueUnknownRoleMapped: "Unbekannte Rolle (auf Mitglied gesetzt)",
     unknownMember: "Mitglied",
-    registryHeroTitle: "Ein Kader. Viele Geschichten.",
+    registryHeroTitle: "ONE Team. Jede Geschichte.",
     registryHeroBody:
-      "Erfasse Identität, Entwicklung und Vereinskontext professionell in einem Register — inklusive Familien, wenn Eltern Konten für junge Spieler:innen führen. Exportiere jederzeit strukturiertes Excel oder importiere Tabellen mit intelligenter Spaltenzuordnung.",
+      "Erfasse Identität, Entwicklung und Vereinskontext professionell in einem Register.\nExportiere jederzeit strukturiertes Excel oder importiere Tabellen mit intelligenter Spaltenzuordnung und KI-Analyse.",
     exportRegistry: "Excel-Register exportieren",
     importRegistry: "Register importieren",
     registryExportTitle: "Export gestartet",
@@ -1521,6 +1547,8 @@ const de: Translations = {
     aiTip1: "Nutze den Zeitplan, um Bestätigungen für diese Woche zu verfolgen.",
     aiTip2: "Nach jedem Spiel Ereignisse eintragen. Statistiken werden automatisch aktualisiert.",
     aiTip3: "Probiere KI → Wochenplan für einen strukturierten Trainingsüberblick.",
+    one4aiWeeklySummary: "Wochenübersicht in ONE4AI",
+    one4aiWeeklySummaryDesc: "Chat mit vorausgefüllter Admin-Digest-Anfrage öffnen.",
     bestEffort: "Best-Effort-Daten: Wenn Supabase noch nicht eingerichtet ist, zeigt dieses Dashboard Platzhalter.",
     registrationSummaryTitle: "Deine Registrierungsdaten",
     registrationSummaryDesc: "Wir haben deine Onboarding-Angaben als initiale Konfiguration in das Dashboard übernommen.",
@@ -1819,7 +1847,7 @@ const de: Translations = {
     partners: "Partner",
     shop: "Shop",
     clubPage: "Vereinsseite",
-    oneAi: "ONE AI",
+    oneAi: "ONE4AI",
     coAImin: "Co-AImin",
     settings: "Einstellungen",
     schedule: "Zeitplan",
@@ -2035,6 +2063,45 @@ const de: Translations = {
     seasonStart: "Saisonstart-Monat",
     clubSettingsSaved: "Vereinseinstellungen gespeichert",
     adminOnly: "Nur Vereinsadmins konnen diese Einstellungen andern.",
+    llmTitle: "KI-Anbieter (ONE4AI)",
+    llmDesc:
+      "Jeder Verein nutzt eigenen API-Schlussel und Modell. Ohne Eintrag gilt optional das Projekt-Geheimnis OPENAI_API_KEY.",
+    llmProvider: "Anbieter",
+    llmModel: "Modell oder Deployment",
+    llmModelHint: "z. B. gpt-4o-mini, claude-3-5-haiku-20241022, gemini-1.5-flash oder Azure-Deployment-Name",
+    llmApiKey: "API-Schlussel",
+    llmApiKeyPlaceholder: "Neuen Schlussel einfugen zum Ersetzen",
+    llmApiKeyKeep: "Es ist bereits ein Schlussel gespeichert. Leer lassen zum Beibehalten.",
+    llmAzureEndpoint: "Azure-Ressourcen-Endpunkt",
+    llmAzureEndpointHint: "Beispiel: https://IHRE_RESSOURCE.openai.azure.com",
+    llmAzureApiVersion: "Azure API-Version",
+    llmSave: "KI-Einstellungen speichern",
+    llmSaved: "KI-Einstellungen gespeichert",
+    llmClear: "Plattform-Standard nutzen",
+    llmCleared: "Vereins-KI entfernt. Optional gilt OPENAI_API_KEY des Projekts.",
+    llmKeyRequired: "Beim ersten Einrichten ist ein API-Schlussel erforderlich.",
+    llmLoadFailed: "KI-Einstellungen konnten nicht geladen werden.",
+    llmHealthChecking: "Verbindung wird geprüft…",
+    llmHealthConnected: "Verbunden",
+    llmHealthSubtitleClub: "Vereins-API-Schlüssel — ONE4AI erreicht das Modell.",
+    llmHealthSubtitlePlatform: "Plattform-Standard (OPENAI_API_KEY) — Verbindung OK.",
+    llmHealthNotConfigured: "Nicht konfiguriert",
+    llmHealthNotConfiguredHint:
+      "Tragt unten einen Vereins-API-Schlüssel ein oder setzt OPENAI_API_KEY in den Supabase-Secrets.",
+    llmHealthFailed: "Verbindung fehlgeschlagen",
+    llmHealthIdle: "Status erscheint nach dem Laden.",
+    llmTestConnection: "Verbindung testen",
+    llmHealthSignIn: "Zum Prüfen der Verbindung anmelden.",
+    llmHealthMissingUrl:
+      "Supabase-URL oder Publishable-Key fehlen oder sind noch Platzhalter. VITE_SUPABASE_URL und VITE_SUPABASE_PUBLISHABLE_KEY in .env setzen, dann den Dev-Server neu starten.",
+    llmHealthNetworkHint:
+      "Die App konnte euer Supabase-Projekt nicht erreichen. Prüft: (1) .env mit echter Projekt-URL und Anon-Key, (2) nach .env-Änderung `npm run dev` neu starten, (3) Edge Function co-trainer deployen (`supabase functions deploy co-trainer`), (4) Werbeblocker für diese Seite testweise deaktivieren.",
+    llmHealthUnknownError: "Unbekannter Serverfehler.",
+    llmProviderOpenai: "OpenAI",
+    llmProviderAnthropic: "Anthropic (Claude)",
+    llmProviderGemini: "Google Gemini",
+    llmProviderAzure: "Azure OpenAI",
+    llmProviderGithub: "GitHub Models (inkl. Copilot-API)",
     // Notifications tab
     notificationPrefs: "Benachrichtigungseinstellungen",
     notificationPrefsDesc: "Wahlen Sie, welche Benachrichtigungen Sie erhalten mochten.",
@@ -2317,6 +2384,47 @@ const de: Translations = {
     subtitle: "Überblick, Historie, Anwesenheit",
   },
 
+  memberHistoryPage: {
+    title: "Mitgliedsaktivität",
+    subtitleFallback: "Vereinsmitglied",
+    backToMembers: "Zurück zu Mitgliedern",
+    memberNotFound: "Dieses Mitglied wurde im aktuellen Verein nicht gefunden.",
+    draftNotFound: "Dieser gespeicherte Listeneintrag wurde im aktuellen Verein nicht gefunden.",
+    summaryCard: "Übersicht",
+    draftSummaryCard: "Gespeicherte Liste",
+    unnamed: "Unbenanntes Mitglied",
+    rosterSince: "Im Kader seit",
+    listSince: "Auf der Liste seit",
+    invitedAtLabel: "Einladung zuletzt gesendet",
+    draftIntro:
+      "Aktivität für Personen auf der gespeicherten Liste (noch nicht im Kader): Einträge, Bearbeitungen und Einladungen. Nach dem Beitritt zeigt die Kader-Aktivitätsansicht für dieselbe E-Mail die vollständigen Ereignisse.",
+    intro:
+      "Zeitlicher Verlauf von Kaderänderungen, Einladungen und Register-Updates für diese Person. Neue Einträge erscheinen nach der Datenbank-Migration und bei künftigen Aktionen.",
+    migrationHint:
+      "Aktivitätsprotokoll ist erst verfügbar, nachdem die Migrationen supabase/migrations/20260328133000_club_member_audit_events.sql und 20260328150000_club_member_audit_draft_timeline.sql angewendet wurden (z. B. supabase db push) und die Seite neu geladen wurde.",
+    timelineTitle: "Aktivitätsverlauf",
+    emptyTimeline:
+      "Noch keine Einträge. Einladungen, gespeicherte Entwürfe, Register-Speicherungen und Kaderänderungen erscheinen hier künftig.",
+    by: "Von",
+    unknownActor: "System / unbekannt",
+    showDetails: "Technische Details anzeigen",
+    hideDetails: "Details ausblenden",
+    footerNote:
+      "Ereignisse vor Aktivierung des Protokolls können fehlen. Kaderänderungen serverseitig werden automatisch protokolliert; Einladungen und Entwürfe über die Mitgliederseite.",
+    eventTypes: {
+      membership_joined: "Verein beigetreten",
+      membership_profile_updated: "Kader aktualisiert",
+      membership_removed: "Aus Verein entfernt",
+      draft_saved: "Listen-Eintrag gespeichert",
+      draft_added_to_list: "Zur gespeicherten Liste hinzugefügt",
+      draft_removed: "Aus gespeicherter Liste entfernt",
+      invite_sent: "Einladung gesendet",
+      invite_resent: "Einladung erneut (neuer Link)",
+      registry_updated: "Register aktualisiert",
+      registry_import_row: "Register-Import",
+    },
+  },
+
   partnersPage: {
     title: "Partner",
     subtitleOperational: "Operative Partner-Workflows",
@@ -2333,10 +2441,44 @@ const de: Translations = {
   },
 
   coTrainerPage: {
-    headerTitle: "ONE AI",
+    headerTitle: "ONE4AI",
     subtitleForClub: "{role} für {club}",
     clearChat: "Chat leeren",
+    newChat: "Neuer Chat",
+    tabChat: "Chat",
+    tabActions: "Aktionen",
+    tabHistory: "Verlauf",
+    suggestedDuringChat: "Schnellstarts (auch während des Chats nutzbar)",
+    suggestedStartsTitle: "Vorgeschlagene Starts",
+    inputPlaceholder: "Frag {role} …",
+    savedChatsTitle: "Gespeicherte Chats",
+    savedChatsHint: "Chat fortsetzen oder im Chat-Tab neu starten.",
+    noSavedChats: "Noch keine gespeicherten Chats. Schreibe im Chat eine Nachricht.",
+    untitledChat: "Chat ohne Titel",
+    linkMatchAnalysis: "Spielanalyse",
+    linkMatchAnalysisDesc: "Zur Seite Spiele für KI vor/nach dem Spiel.",
+    linkStats: "Statistik-Fragen",
+    linkStatsDesc: "Assistent für Statistiken im Dashboard nutzen.",
+    workspaceTitle: "ONE4AI-Arbeitsbereich",
+    workspaceSubtitle: "Rollenbewusster Copilot mit kontextbezogenen Vorschlägen und strukturierten Antworten.",
+    welcomeTitle: "Willkommen bei deinem ONE AI Assistenten",
+    demoIntro: "Gute Frage! Als dein {role} in ONE4AI kann ich dir helfen bei:",
+    demoNote:
+      "*Hinweis: Dies ist eine Demo. Sobald das ONE4AI-Backend angebunden ist, erhältst du personalisierte Einblicke auf Basis eurer Vereinsdaten.*",
+    chatErrorTitle: "ONE4AI",
+    chatErrorHeading: "Antwort konnte nicht erstellt werden",
+    chatErrorHint:
+      "Admins: prüft Einstellungen → KI-Anbieter und Supabase-Secrets (z. B. OPENAI_API_KEY oder Vereins-Keys). Meldungen zu „LLM“ oder „API key“ bedeuten meist, dass der Server das Modell nicht erreichen konnte.",
+    chatErrorNoClub: "Wähle einen Verein, um ONE4AI zu nutzen.",
+    chatErrorSignIn: "Melde dich an, um ONE4AI zu nutzen.",
+    chatErrorNoStream: "Der Server hat keinen Antwort-Stream geliefert.",
+    chatErrorEmptyResponse:
+      "Das Modell hat eine leere Antwort geliefert. Prüft Modellname und API-Key.",
+    chatErrorNetwork: "Netzwerk- oder unerwarteter Fehler. Bitte kurz warten und erneut versuchen.",
+    chatErrorDetailPrefix: "Details:",
+    chatErrorSerialize:
+      "Anfrage konnte nicht erstellt werden (ungültige Chat-Daten). Chat leeren oder Seite neu laden.",
+    chatErrorInvalidSupabaseUrl:
+      "VITE_SUPABASE_URL ist keine gültige URL. Leerzeichen entfernen und .env prüfen.",
   },
 };
-
-export default de;

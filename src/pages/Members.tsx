@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/hooks/use-language";
 import { motion } from "framer-motion";
-import AppHeader from "@/components/layout/AppHeader";
+import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
   Users, Search, Plus,
   Shield, Dumbbell, Crown, UserCheck, Heart, MoreHorizontal,
   Phone, Calendar, Loader2,
   Link2, Copy, Check, Inbox, UserPlus, Clock, X, Upload, UploadCloud, Download, AlertTriangle,
-  Sparkles, FileSpreadsheet, UserCircle2, Pencil, ChevronDown, ChevronRight
+  Sparkles, FileSpreadsheet, UserCircle2, Pencil, ChevronDown, ChevronRight, RefreshCw, History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +38,15 @@ import {
 import { MemberMasterDialog } from "@/components/members/member-master-dialog";
 import { MasterDataTabs } from "@/components/members/master-data-tabs";
 import { Badge } from "@/components/ui/badge";
+import { appendMemberAuditEvent } from "@/lib/member-audit";
+import { cn } from "@/lib/utils";
+
+type HistoryPreviewState = {
+  path: string;
+  displayName: string;
+  email: string | null;
+  detailLine: string;
+};
 
 type MemberRow = {
   id: string;
@@ -242,6 +251,29 @@ function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
+/** Shape for club_invites.invite_payload (redeem_club_invite reads these keys). */
+function buildInvitePayloadFromDraftFields(
+  combinedName: string | null,
+  role: string,
+  masterData: Record<string, unknown>,
+  team: string | null | undefined,
+  age_group: string | null | undefined,
+  position: string | null | undefined,
+) {
+  const guardianIds = isPlayerRole(role) ? readDraftGuardianMembershipIds(masterData) : [];
+  const tn = (team ?? "").trim();
+  const ag = (age_group ?? "").trim();
+  const pos = (position ?? "").trim();
+  const nm = (combinedName ?? "").trim();
+  return {
+    ...(nm ? { name: nm } : {}),
+    ...(tn ? { team: tn } : {}),
+    ...(ag ? { age_group: ag } : {}),
+    ...(pos ? { position: pos } : {}),
+    ...(guardianIds.length > 0 ? { guardian_membership_ids: guardianIds } : {}),
+  };
+}
+
 function isMissingRelationError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const message = String((error as { message?: unknown }).message ?? "");
@@ -338,6 +370,9 @@ const Members = () => {
   const [inviteRole, setInviteRole] = useState("member");
   const [inviteDays, setInviteDays] = useState("7");
   const [createdInviteToken, setCreatedInviteToken] = useState<string | null>(null);
+  const [draftResendTokenModalOpen, setDraftResendTokenModalOpen] = useState(false);
+  const [draftResendInviteToken, setDraftResendInviteToken] = useState<string | null>(null);
+  const [historyPreview, setHistoryPreview] = useState<HistoryPreviewState | null>(null);
   const [copied, setCopied] = useState(false);
   const [bulkRows, setBulkRows] = useState<BulkMemberDraft[]>([
     {
@@ -402,6 +437,10 @@ const Members = () => {
     }
   }, [t]);
 
+  useEffect(() => {
+    if (historyPreview) setCopied(false);
+  }, [historyPreview]);
+
   // Reset page state on club switch to prevent cross-club flashes
   useEffect(() => {
     setMembers([]);
@@ -424,6 +463,9 @@ const Members = () => {
     setShowMasterDialog(false);
     setShowRegistryImport(false);
     setRegistryImportPreview([]);
+    setHistoryPreview(null);
+    setDraftResendTokenModalOpen(false);
+    setDraftResendInviteToken(null);
 
     setSearch("");
     setRoleFilter("all");
@@ -657,7 +699,7 @@ const Members = () => {
       ? new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
       : null;
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("club_invites")
       .insert({
         club_id: clubId,
@@ -666,9 +708,12 @@ const Members = () => {
         token_hash: tokenHash,
         expires_at: expiresAt,
         invite_payload: payload ?? {},
-      });
+      })
+      .select("id")
+      .single();
     if (error) return { ok: false as const, error: error.message };
-    return { ok: true as const, token };
+    if (!data?.id) return { ok: false as const, error: t.membersPage.noClubSelected };
+    return { ok: true as const, token, inviteId: data.id };
   };
 
   const fetchMemberDrafts = useCallback(async () => {
@@ -689,6 +734,36 @@ const Members = () => {
     setMemberDrafts((data as unknown as MemberDraftRow[]) ?? []);
     setDraftsLoading(false);
   }, [clubId, perms.isAdmin, t.common.error, toast]);
+
+  const resolveUnusedInviteIdForInvitedDraft = useCallback(
+    async (draft: MemberDraftRow): Promise<string | null> => {
+      if (!clubId) return null;
+      if (draft.invite_id) return draft.invite_id;
+      if (draft.status !== "invited") return null;
+      const email = normalizeEmail(draft.email);
+      if (!email) return null;
+      const { data, error } = await supabase
+        .from("club_invites")
+        .select("id, created_at")
+        .eq("club_id", clubId)
+        .is("used_at", null)
+        .eq("email", email);
+      if (error || !data?.length) return null;
+      if (data.length === 1) return data[0].id;
+      const targetMs = draft.invited_at ? new Date(draft.invited_at).getTime() : Date.now();
+      let best = data[0];
+      let bestDelta = Infinity;
+      for (const row of data) {
+        const delta = Math.abs(new Date(row.created_at).getTime() - targetMs);
+        if (delta < bestDelta) {
+          bestDelta = delta;
+          best = row;
+        }
+      }
+      return best.id;
+    },
+    [clubId],
+  );
 
   const fetchInvitesData = useCallback(async () => {
     if (!clubId) return;
@@ -935,6 +1010,52 @@ const Members = () => {
   }, [tab, clubId, perms.isAdmin, fetchMemberDrafts]);
 
   useEffect(() => {
+    if (!clubId) return;
+    const debounceMs = 400;
+    let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+    const channels: ReturnType<typeof supabase.channel>[] = [];
+
+    const schedule = (fn: () => void) => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        debounceTimer = undefined;
+        fn();
+      }, debounceMs);
+    };
+
+    if (tab === "members" && perms.isAdmin) {
+      const ch = supabase
+        .channel(`club-member-drafts-rt-${clubId}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "club_member_drafts", filter: `club_id=eq.${clubId}` },
+          () => schedule(() => void fetchMemberDrafts()),
+        )
+        .subscribe();
+      channels.push(ch);
+    }
+
+    if (tab === "invites" && canAccessMembersPage) {
+      const ch = supabase
+        .channel(`club-invites-rt-${clubId}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "club_invites", filter: `club_id=eq.${clubId}` },
+          () => schedule(() => void fetchInvitesData()),
+        )
+        .subscribe();
+      channels.push(ch);
+    }
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      for (const ch of channels) {
+        void supabase.removeChannel(ch);
+      }
+    };
+  }, [clubId, tab, perms.isAdmin, canAccessMembersPage, fetchMemberDrafts, fetchInvitesData]);
+
+  useEffect(() => {
     const run = async () => {
       if (!showAddMembers || !clubId || !perms.isAdmin) return;
       const { data } = await supabase
@@ -1070,8 +1191,17 @@ const Members = () => {
       if (!options?.suppressToast) {
         toast({ title: t.common.updated, description: t.membersPage.registrySaved });
       }
+      const fieldKeys = Object.keys(payload).filter((k) => k !== "membership_id" && k !== "club_id");
+      void appendMemberAuditEvent({
+        clubId,
+        membershipId: member.id,
+        correlationEmail: membershipEmails[member.id] ?? null,
+        eventType: "registry_updated",
+        summary: "Registry updated",
+        detail: { fields: fieldKeys },
+      });
     },
-    [clubId, perms.isAdmin, t, toast],
+    [clubId, perms.isAdmin, membershipEmails, t, toast],
   );
 
   const emailToMembershipIdFromEmail = useCallback(
@@ -1160,7 +1290,17 @@ const Members = () => {
           membership_kind: kind,
         };
         const { error } = await supabase.from("club_member_master_records").upsert(rowPayload, { onConflict: "membership_id" });
-        if (!error) ok += 1;
+        if (!error) {
+          ok += 1;
+          void appendMemberAuditEvent({
+            clubId,
+            membershipId: memberId,
+            correlationEmail: normalizeEmail(row.email),
+            eventType: "registry_import_row",
+            summary: "Registry updated from import",
+            detail: { source: "spreadsheet" },
+          });
+        }
       }
 
       let linksOk = 0;
@@ -1656,16 +1796,20 @@ const Members = () => {
         continue;
       }
 
-      const { error } = await supabase.from("club_member_drafts").insert({
-        club_id: clubId,
-        name: row.name.trim() || null,
-        email,
-        role: row.role,
-        team: row.team.trim() || null,
-        age_group: row.ageGroup.trim() || null,
-        position: row.position.trim() || null,
-        master_data: Object.keys(row.masterData).length > 0 ? row.masterData : {},
-      } as Record<string, unknown>);
+      const { data: insertedDraft, error } = await supabase
+        .from("club_member_drafts")
+        .insert({
+          club_id: clubId,
+          name: row.name.trim() || null,
+          email,
+          role: row.role,
+          team: row.team.trim() || null,
+          age_group: row.ageGroup.trim() || null,
+          position: row.position.trim() || null,
+          master_data: Object.keys(row.masterData).length > 0 ? row.masterData : {},
+        } as Record<string, unknown>)
+        .select("id")
+        .maybeSingle();
       if (error) {
         if (isMissingDraftMasterDataColumnError(error)) {
           setBulkSubmitting(false);
@@ -1678,6 +1822,22 @@ const Members = () => {
         }
         skippedCount += 1;
         continue;
+      }
+      if (insertedDraft?.id) {
+        void appendMemberAuditEvent({
+          clubId,
+          draftId: insertedDraft.id,
+          correlationEmail: email,
+          eventType: "draft_added_to_list",
+          summary: "Added to saved member list",
+          detail: {
+            name: row.name.trim() || null,
+            role: row.role,
+            team: row.team.trim() || null,
+            age_group: row.ageGroup.trim() || null,
+            position: row.position.trim() || null,
+          },
+        });
       }
       existingDraftEmailSet.add(email);
       savedCount += 1;
@@ -1707,16 +1867,32 @@ const Members = () => {
         : ((draft.master_data as Record<string, unknown> | null) ?? {});
     const draftRole =
       editingDraftId === draft.id ? editingDraftForm.role : draft.role;
-    const draftGuardianIds = isPlayerRole(draftRole)
-      ? readDraftGuardianMembershipIds(inviteMasterSource)
-      : [];
-    const result = await createInviteRecord(draft.email, draftRole, inviteDays, {
-      name: draft.name || undefined,
-      team: draft.team || undefined,
-      age_group: draft.age_group || undefined,
-      position: draft.position || undefined,
-      ...(draftGuardianIds.length > 0 ? { guardian_membership_ids: draftGuardianIds } : {}),
-    });
+    const displayNameForInvite =
+      editingDraftId === draft.id
+        ? buildDisplayNameFromParts(editingDraftForm.firstName, editingDraftForm.lastName)
+        : (draft.name || "");
+    const teamForInvite = editingDraftId === draft.id ? editingDraftForm.team : draft.team || "";
+    const ageForInvite = editingDraftId === draft.id ? editingDraftForm.age_group : draft.age_group || "";
+    const posForInvite = editingDraftId === draft.id ? editingDraftForm.position : draft.position || "";
+    const invitePayload = buildInvitePayloadFromDraftFields(
+      displayNameForInvite || null,
+      draftRole,
+      inviteMasterSource,
+      teamForInvite,
+      ageForInvite,
+      posForInvite,
+    );
+    const emailForInvite = editingDraftId === draft.id ? editingDraftForm.email.trim() : draft.email;
+    if (!normalizeEmail(emailForInvite)) {
+      toast({
+        title: t.common.error,
+        description: t.membersPage.resendInviteInvalidEmail,
+        variant: "destructive",
+      });
+      setDraftActionId(null);
+      return;
+    }
+    const result = await createInviteRecord(emailForInvite, draftRole, inviteDays, invitePayload);
     if (!result.ok) {
       toast({ title: t.common.error, description: result.error, variant: "destructive" });
       setDraftActionId(null);
@@ -1725,7 +1901,11 @@ const Members = () => {
 
     const { error } = await supabase
       .from("club_member_drafts")
-      .update({ status: "invited", invited_at: new Date().toISOString() })
+      .update({
+        status: "invited",
+        invited_at: new Date().toISOString(),
+        invite_id: result.inviteId,
+      })
       .eq("id", draft.id)
       .eq("club_id", clubId);
     if (error) {
@@ -1734,13 +1914,142 @@ const Members = () => {
       return;
     }
 
+    void appendMemberAuditEvent({
+      clubId,
+      draftId: draft.id,
+      correlationEmail: normalizeEmail(emailForInvite),
+      eventType: "invite_sent",
+      summary: "Invite sent",
+      detail: { invite_id: result.inviteId },
+    });
+
     toast({ title: t.membersPage.inviteCreated, description: t.membersPage.inviteSentForDraft });
     await fetchMemberDrafts();
     setDraftActionId(null);
   };
 
+  const handleResendInviteForDraft = async (draft: MemberDraftRow) => {
+    if (!clubId || draftActionId) return;
+    if (draft.status !== "invited") return;
+
+    setDraftActionId(draft.id);
+
+    if (draft.invite_id) {
+      const { data: priorInv, error: priorErr } = await supabase
+        .from("club_invites")
+        .select("used_at")
+        .eq("id", draft.invite_id)
+        .eq("club_id", clubId)
+        .maybeSingle();
+      if (priorErr) {
+        toast({ title: t.common.error, description: priorErr.message, variant: "destructive" });
+        setDraftActionId(null);
+        return;
+      }
+      if (priorInv?.used_at) {
+        toast({
+          title: t.common.error,
+          description: t.membersPage.resendInviteBlockedUsed,
+          variant: "destructive",
+        });
+        setDraftActionId(null);
+        return;
+      }
+    }
+
+    const inviteMasterSource =
+      editingDraftId === draft.id
+        ? (editingDraftForm.masterData as Record<string, unknown>)
+        : ((draft.master_data as Record<string, unknown> | null) ?? {});
+    const draftRole = editingDraftId === draft.id ? editingDraftForm.role : draft.role;
+    const displayNameForInvite =
+      editingDraftId === draft.id
+        ? buildDisplayNameFromParts(editingDraftForm.firstName, editingDraftForm.lastName)
+        : (draft.name || "");
+    const teamForInvite = editingDraftId === draft.id ? editingDraftForm.team : draft.team || "";
+    const ageForInvite = editingDraftId === draft.id ? editingDraftForm.age_group : draft.age_group || "";
+    const posForInvite = editingDraftId === draft.id ? editingDraftForm.position : draft.position || "";
+    const emailForInvite = editingDraftId === draft.id ? editingDraftForm.email.trim() : draft.email;
+    if (!normalizeEmail(emailForInvite)) {
+      toast({
+        title: t.common.error,
+        description: t.membersPage.resendInviteInvalidEmail,
+        variant: "destructive",
+      });
+      setDraftActionId(null);
+      return;
+    }
+
+    const invitePayload = buildInvitePayloadFromDraftFields(
+      displayNameForInvite || null,
+      draftRole,
+      inviteMasterSource,
+      teamForInvite,
+      ageForInvite,
+      posForInvite,
+    );
+    const result = await createInviteRecord(emailForInvite, draftRole, inviteDays, invitePayload);
+    if (!result.ok) {
+      toast({ title: t.common.error, description: result.error, variant: "destructive" });
+      setDraftActionId(null);
+      return;
+    }
+
+    const previousInviteId = draft.invite_id;
+
+    const { error: draftErr } = await supabase
+      .from("club_member_drafts")
+      .update({
+        invite_id: result.inviteId,
+        invited_at: new Date().toISOString(),
+      })
+      .eq("id", draft.id)
+      .eq("club_id", clubId);
+    if (draftErr) {
+      toast({ title: t.common.error, description: draftErr.message, variant: "destructive" });
+      setDraftActionId(null);
+      return;
+    }
+
+    void appendMemberAuditEvent({
+      clubId,
+      draftId: draft.id,
+      correlationEmail: normalizeEmail(emailForInvite),
+      eventType: "invite_resent",
+      summary: "Invite resent (new link)",
+      detail: { invite_id: result.inviteId, previous_invite_id: previousInviteId ?? null },
+    });
+
+    if (previousInviteId) {
+      const { error: delErr } = await supabase
+        .from("club_invites")
+        .delete()
+        .eq("club_id", clubId)
+        .eq("id", previousInviteId)
+        .is("used_at", null);
+      if (delErr) {
+        toast({
+          title: t.common.error,
+          description: delErr.message,
+          variant: "destructive",
+        });
+      }
+    }
+
+    trackEvent("invite_resent_from_draft", { draftId: draft.id });
+    await fetchMemberDrafts();
+    const slugRes = await supabase.from("clubs").select("slug").eq("id", clubId).maybeSingle();
+    if (!slugRes.error && slugRes.data?.slug) setClubSlug(slugRes.data.slug);
+    void fetchInvitesData();
+    setDraftResendInviteToken(result.token);
+    setDraftResendTokenModalOpen(true);
+    toast({ title: t.membersPage.resendInviteSuccessTitle, description: t.membersPage.resendInviteSuccessDesc });
+    setDraftActionId(null);
+  };
+
   const handleDeleteDraft = async (draftId: string) => {
     if (!clubId || draftActionId) return;
+    const snapshot = memberDrafts.find((d) => d.id === draftId);
     setDraftActionId(draftId);
     const { error } = await supabase
       .from("club_member_drafts")
@@ -1751,6 +2060,16 @@ const Members = () => {
       toast({ title: t.common.error, description: error.message, variant: "destructive" });
       setDraftActionId(null);
       return;
+    }
+    if (snapshot) {
+      void appendMemberAuditEvent({
+        clubId,
+        draftId,
+        correlationEmail: normalizeEmail(snapshot.email),
+        eventType: "draft_removed",
+        summary: "Removed from saved list",
+        detail: { status: snapshot.status, had_invite_id: Boolean(snapshot.invite_id) },
+      });
     }
     setMemberDrafts((previous) => previous.filter((row) => row.id !== draftId));
     setDraftActionId(null);
@@ -1836,6 +2155,11 @@ const Members = () => {
   const handleSaveDraftEdit = async () => {
     if (!clubId || !editingDraftId) return;
     setDraftSaving(true);
+    const currentDraft = memberDrafts.find((d) => d.id === editingDraftId);
+    if (!currentDraft) {
+      setDraftSaving(false);
+      return;
+    }
     const combinedName = buildDisplayNameFromParts(editingDraftForm.firstName, editingDraftForm.lastName);
     const nextMaster: Partial<ClubMemberMasterRecord> = {
       ...editingDraftForm.masterData,
@@ -1850,17 +2174,28 @@ const Members = () => {
     if (!isPlayerRole(editingDraftForm.role)) {
       delete masterPayload[DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY];
     }
+
+    let resolvedInviteId: string | null = currentDraft.invite_id;
+    if (currentDraft.status === "invited" && !resolvedInviteId) {
+      resolvedInviteId = await resolveUnusedInviteIdForInvitedDraft(currentDraft);
+    }
+
+    const draftRowUpdate: Record<string, unknown> = {
+      name: combinedName || null,
+      email: editingDraftForm.email.trim(),
+      role: editingDraftForm.role,
+      team: editingDraftForm.team || null,
+      age_group: editingDraftForm.age_group || null,
+      position: editingDraftForm.position || null,
+      master_data: masterPayload,
+    };
+    if (resolvedInviteId && !currentDraft.invite_id) {
+      draftRowUpdate.invite_id = resolvedInviteId;
+    }
+
     const { error } = await supabase
       .from("club_member_drafts")
-      .update({
-        name: combinedName || null,
-        email: editingDraftForm.email,
-        role: editingDraftForm.role,
-        team: editingDraftForm.team || null,
-        age_group: editingDraftForm.age_group || null,
-        position: editingDraftForm.position || null,
-        master_data: masterPayload,
-      } as Record<string, unknown>)
+      .update(draftRowUpdate as Record<string, unknown>)
       .eq("id", editingDraftId)
       .eq("club_id", clubId);
     if (error) {
@@ -1876,23 +2211,77 @@ const Members = () => {
       setDraftSaving(false);
       return;
     }
+
+    void appendMemberAuditEvent({
+      clubId,
+      draftId: editingDraftId,
+      correlationEmail: normalizeEmail(editingDraftForm.email),
+      eventType: "draft_saved",
+      summary: "Saved member list entry",
+      detail: {
+        status: currentDraft.status,
+        role: editingDraftForm.role,
+        email_changed: currentDraft.email.trim() !== editingDraftForm.email.trim(),
+      },
+    });
+
+    let inviteSyncSkippedUsed = false;
+    if (currentDraft.status === "invited" && resolvedInviteId) {
+      const { data: invRow, error: invSelectError } = await supabase
+        .from("club_invites")
+        .select("used_at")
+        .eq("id", resolvedInviteId)
+        .eq("club_id", clubId)
+        .maybeSingle();
+      if (!invSelectError && invRow && !invRow.used_at) {
+        const invitePayload = buildInvitePayloadFromDraftFields(
+          combinedName || null,
+          editingDraftForm.role,
+          editingDraftForm.masterData as Record<string, unknown>,
+          editingDraftForm.team,
+          editingDraftForm.age_group,
+          editingDraftForm.position,
+        );
+        const emailLower = normalizeEmail(editingDraftForm.email);
+        const { error: invUpdateError } = await supabase
+          .from("club_invites")
+          .update({
+            invite_payload: invitePayload,
+            email: emailLower || null,
+          })
+          .eq("id", resolvedInviteId)
+          .eq("club_id", clubId);
+        if (invUpdateError) {
+          toast({ title: t.common.error, description: invUpdateError.message, variant: "destructive" });
+        } else {
+          void fetchInvitesData();
+        }
+      } else if (invRow?.used_at) {
+        inviteSyncSkippedUsed = true;
+      }
+    }
+
     setMemberDrafts((prev) =>
       prev.map((d) =>
         d.id === editingDraftId
           ? {
               ...d,
               name: combinedName,
-              email: editingDraftForm.email,
+              email: editingDraftForm.email.trim(),
               role: editingDraftForm.role,
               team: editingDraftForm.team || null,
               age_group: editingDraftForm.age_group || null,
               position: editingDraftForm.position || null,
               master_data: masterPayload as Record<string, unknown>,
+              invite_id: resolvedInviteId ?? d.invite_id,
             }
           : d,
       ),
     );
-    toast({ title: t.membersPage.draftUpdated });
+    toast({
+      title: t.membersPage.draftUpdated,
+      description: inviteSyncSkippedUsed ? t.membersPage.inviteSyncSkippedAlreadyJoined : undefined,
+    });
     setEditingDraftId(null);
     setDraftSaving(false);
   };
@@ -1918,11 +2307,16 @@ const Members = () => {
     window.setTimeout(() => setCopied(false), 1200);
   };
 
+  /** Same height, padding, radius, and icon scale for status + actions in saved member list rows */
+  const savedMemberListRowChipClass =
+    "inline-flex h-8 min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-medium leading-none shadow-none [&_svg]:h-3.5 [&_svg]:w-3.5 [&_svg]:shrink-0";
+
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader
+      <DashboardHeaderSlot
         title={t.membersPage.title}
         subtitle={tab === "members" ? t.membersPage.roster : tab === "roles" ? t.membersPage.roles.subtitle : (clubName ? `${clubName} · ${t.membersPage.invites}` : t.membersPage.invites)}
+        toolbarRevision={`${tab}-${canManageMembers}-${canReviewJoinRequests}`}
         rightSlot={
           tab === "members" ? (canManageMembers ? (
             <Button
@@ -2066,7 +2460,7 @@ const Members = () => {
                   </div>
                   <div>
                     <h2 className="font-display text-lg sm:text-xl font-bold text-foreground tracking-tight">{t.membersPage.registryHeroTitle}</h2>
-                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{t.membersPage.registryHeroBody}</p>
+                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed whitespace-pre-line">{t.membersPage.registryHeroBody}</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 shrink-0">
@@ -2169,6 +2563,9 @@ const Members = () => {
                             placeholder={t.membersPage.draftEditDisplayNamePlaceholder}
                           />
                         </div>
+                        {draft.status === "invited" ? (
+                          <p className="text-xs text-muted-foreground leading-relaxed">{t.membersPage.invitedDraftEditHint}</p>
+                        ) : null}
                         <div>
                           <div className="text-xs text-muted-foreground mb-2">{t.settingsPage.avatarPreview}</div>
                           <div className="flex items-center gap-3 flex-wrap">
@@ -2358,7 +2755,26 @@ const Members = () => {
                             />
                           </div>
                         )}
-                        <div className="flex justify-end gap-2">
+                        <div className="flex flex-wrap justify-end gap-2">
+                          {draft.status === "invited" ? (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-9 text-sm"
+                              disabled={draftSaving || draftActionId === draft.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void handleResendInviteForDraft(draft);
+                              }}
+                            >
+                              {draftActionId === draft.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                              ) : (
+                                <RefreshCw className="w-4 h-4 mr-1" />
+                              )}
+                              {t.membersPage.resendInvite}
+                            </Button>
+                          ) : null}
                           <Button size="sm" variant="ghost" onClick={handleCancelDraftEdit} className="h-9 text-sm" disabled={draftSaving}>
                             {t.common.cancel}
                           </Button>
@@ -2372,10 +2788,10 @@ const Members = () => {
                       <div
                         key={draft.id}
                         className="rounded-lg border border-border/60 bg-background/40 p-3 flex items-center justify-between gap-3 cursor-pointer hover:border-primary/30 hover:bg-muted/30 transition-colors"
-                        onClick={() => draft.status === "draft" && handleStartEditDraft(draft)}
+                        onClick={() => handleStartEditDraft(draft)}
                       >
                         <div className="min-w-0 flex items-center gap-2">
-                          {draft.status === "draft" ? <Pencil className="w-3 h-3 text-muted-foreground shrink-0" /> : null}
+                          <Pencil className="w-3 h-3 text-muted-foreground shrink-0" />
                           <div className="min-w-0">
                             <div className="text-sm font-medium text-foreground truncate">{draft.name || draft.email}</div>
                             <div className="text-xs text-muted-foreground truncate">
@@ -2386,28 +2802,85 @@ const Members = () => {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                            draft.status === "invited" ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"
-                          }`}>
+                        <div
+                          className="flex flex-wrap items-center justify-end gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span
+                            className={cn(
+                              savedMemberListRowChipClass,
+                              draft.status === "invited"
+                                ? "bg-emerald-500/10 text-emerald-400"
+                                : "bg-muted text-muted-foreground",
+                            )}
+                          >
                             {draft.status === "invited" ? t.membersPage.invited : t.membersPage.draft}
                           </span>
+                          {draft.status === "draft" ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={draftActionId === draft.id}
+                              onClick={() => void handleSendInviteForDraft(draft)}
+                              className={savedMemberListRowChipClass}
+                            >
+                              {draftActionId === draft.id ? (
+                                <Loader2 className="animate-spin" />
+                              ) : (
+                                <Link2 />
+                              )}
+                              {t.membersPage.sendInvite}
+                            </Button>
+                          ) : null}
+                          {draft.status === "invited" ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              disabled={draftActionId === draft.id}
+                              onClick={() => void handleResendInviteForDraft(draft)}
+                              className={savedMemberListRowChipClass}
+                            >
+                              {draftActionId === draft.id ? (
+                                <Loader2 className="animate-spin" />
+                              ) : (
+                                <RefreshCw />
+                              )}
+                              {t.membersPage.resendInvite}
+                            </Button>
+                          ) : null}
                           <Button
-                            size="sm"
+                            type="button"
                             variant="outline"
-                            disabled={draft.status !== "draft" || draftActionId === draft.id}
-                            onClick={() => handleSendInviteForDraft(draft)}
-                            className="h-8 text-xs"
+                            size="sm"
+                            className={savedMemberListRowChipClass}
+                            onClick={() =>
+                              setHistoryPreview({
+                                path: `/members/history/draft/${draft.id}`,
+                                displayName: (draft.name?.trim() || draft.email).trim(),
+                                email: draft.email,
+                                detailLine: [
+                                  getRoleLabel(draft.role),
+                                  draft.team?.trim() || null,
+                                  draft.age_group?.trim() || null,
+                                  draft.status === "invited" ? t.membersPage.invited : t.membersPage.draft,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · "),
+                              })
+                            }
                           >
-                            {draftActionId === draft.id ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Link2 className="w-3.5 h-3.5 mr-1" />}
-                            {t.membersPage.sendInvite}
+                            <History />
+                            {t.membersPage.history}
                           </Button>
                           <Button
+                            type="button"
                             size="sm"
                             variant="ghost"
                             disabled={draftActionId === draft.id}
                             onClick={() => handleDeleteDraft(draft.id)}
-                            className="h-8 px-2 text-xs text-muted-foreground"
+                            className={cn(savedMemberListRowChipClass, "text-muted-foreground hover:text-foreground")}
                           >
                             {t.common.remove}
                           </Button>
@@ -2524,20 +2997,41 @@ const Members = () => {
                                   {new Date(member.created_at).toLocaleDateString()}
                                 </div>
                               </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-9 w-9 shrink-0 rounded-lg"
-                                onClick={() => {
-                                  setMemberPanelEditModeId(null);
-                                  setMemberMasterEditDraft({});
-                                  setSelectedMember(null);
-                                }}
-                                aria-label={t.common.close}
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <Button variant="outline" size="sm" className="h-9 rounded-lg text-xs" asChild>
+                                  <Link
+                                    to={`/co-trainer?tab=chat&prompt=${encodeURIComponent(
+                                      t.membersPage.askOne4AiPrompt.replace("{name}", getMemberRosterName(member)),
+                                    )}&context=${encodeURIComponent(
+                                      JSON.stringify({
+                                        source: "members",
+                                        membershipId: member.id,
+                                        displayName: getMemberRosterName(member),
+                                        role: member.role,
+                                        team: member.team,
+                                        position: member.position,
+                                        status: member.status,
+                                      }),
+                                    )}`}
+                                  >
+                                    {t.membersPage.askOne4Ai}
+                                  </Link>
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-9 w-9 rounded-lg"
+                                  onClick={() => {
+                                    setMemberPanelEditModeId(null);
+                                    setMemberMasterEditDraft({});
+                                    setSelectedMember(null);
+                                  }}
+                                  aria-label={t.common.close}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </div>
 
                             {memberPanelEditModeId === member.id ? (
@@ -2704,6 +3198,25 @@ const Members = () => {
                                   >
                                     <Sparkles className="mr-2 h-4 w-4" /> {t.membersPage.openFullRegistry}
                                   </Button>
+                                  {canAccessMembersPage ? (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="w-full sm:flex-1"
+                                      onClick={() =>
+                                        setHistoryPreview({
+                                          path: `/members/history/${member.id}`,
+                                          displayName: getMemberRosterName(member),
+                                          email: membershipEmails[member.id] ?? null,
+                                          detailLine: [getRoleLabel(member.role), getMemberTeamLabel(member)]
+                                            .filter((s) => s && String(s).trim())
+                                            .join(" · "),
+                                        })
+                                      }
+                                    >
+                                      <History className="mr-2 h-4 w-4" /> {t.membersPage.activityLog}
+                                    </Button>
+                                  ) : null}
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -3107,6 +3620,128 @@ const Members = () => {
           </>
         )}
       </div>
+
+      {draftResendTokenModalOpen && draftResendInviteToken ? (
+        <div
+          className="fixed inset-0 z-50 bg-background/40 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => {
+            setDraftResendTokenModalOpen(false);
+            setDraftResendInviteToken(null);
+          }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98, y: 6 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="w-full max-w-md rounded-3xl border border-border/60 bg-card/60 backdrop-blur-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,0.22)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-display font-bold text-foreground tracking-tight">{t.membersPage.resendInviteModalTitle}</h3>
+                <p className="text-xs text-muted-foreground mt-1">{t.membersPage.resendInviteModalDesc}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setDraftResendTokenModalOpen(false);
+                  setDraftResendInviteToken(null);
+                }}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="p-4 rounded-2xl border border-border/60 bg-background/40">
+              <div className="text-[10px] text-muted-foreground mb-1">{t.membersPage.inviteTokenLabel}</div>
+              <div className="font-mono text-xs text-foreground break-all">{draftResendInviteToken}</div>
+              <div className="mt-3 grid gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => handleCopy(draftResendInviteToken)}
+                  className="w-full"
+                >
+                  {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                  {copied ? t.membersPage.copied : t.membersPage.copyToken}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const qs = new URLSearchParams({ invite: draftResendInviteToken });
+                    if (clubSlug) qs.set("club", clubSlug);
+                    const link = `${window.location.origin}/onboarding?${qs.toString()}`;
+                    void handleCopy(link);
+                  }}
+                  className="w-full"
+                >
+                  {copied ? <Check className="w-4 h-4 mr-2" /> : <Link2 className="w-4 h-4 mr-2" />}
+                  {t.membersPage.copyInviteLink}
+                </Button>
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-3">{t.membersPage.resendInviteSaveHint}</p>
+          </motion.div>
+        </div>
+      ) : null}
+
+      {historyPreview ? (
+        <div
+          className="fixed inset-0 z-50 bg-background/40 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setHistoryPreview(null)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98, y: 6 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="w-full max-w-md rounded-3xl border border-border/60 bg-card/60 backdrop-blur-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,0.22)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="font-display font-bold text-foreground tracking-tight">{t.membersPage.historyPreviewTitle}</h3>
+                <p className="text-xs text-muted-foreground mt-1">{t.membersPage.historyPreviewDesc}</p>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setHistoryPreview(null)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="rounded-2xl border border-border/60 bg-background/40 p-4 space-y-2 mb-4">
+              <div className="text-sm font-semibold text-foreground">{historyPreview.displayName}</div>
+              {historyPreview.email ? (
+                <div className="text-xs text-muted-foreground">{historyPreview.email}</div>
+              ) : null}
+              {historyPreview.detailLine ? (
+                <div className="text-xs text-muted-foreground/90">{historyPreview.detailLine}</div>
+              ) : null}
+            </div>
+            <div className="p-4 rounded-2xl border border-border/60 bg-background/40">
+              <div className="text-[10px] text-muted-foreground mb-1">{t.membersPage.historyLinkLabel}</div>
+              <div className="font-mono text-xs text-foreground break-all">
+                {`${window.location.origin}${historyPreview.path}`}
+              </div>
+              <div className="mt-3 grid gap-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => void handleCopy(`${window.location.origin}${historyPreview.path}`)}
+                >
+                  {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                  {copied ? t.membersPage.copied : t.membersPage.copyHistoryLink}
+                </Button>
+                <Button
+                  className="w-full bg-gradient-gold-static font-semibold text-primary-foreground hover:brightness-110"
+                  onClick={() => {
+                    const target = historyPreview.path;
+                    setHistoryPreview(null);
+                    navigate(target);
+                  }}
+                >
+                  <History className="w-4 h-4 mr-2" />
+                  {t.membersPage.openFullHistory}
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      ) : null}
 
       {showAddMembers && (
         <div

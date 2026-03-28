@@ -1,4 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import {
+  assertClubMember,
+  createSupabaseAdmin,
+  fetchClubLlmSettings,
+  getUserIdFromRequest,
+  resolveLlmCredentials,
+  streamChat,
+} from "../_shared/llm.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,9 +17,42 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { type, matchData, teamData, context } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const userId = await getUserIdFromRequest(req, supabaseUrl, serviceKey);
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "Sign in required." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { type, matchData, teamData, context, club_id: clubId } = await req.json();
+    if (!clubId || typeof clubId !== "string") {
+      return new Response(JSON.stringify({ error: "club_id is required." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const admin = createSupabaseAdmin();
+    if (!(await assertClubMember(admin, userId, clubId))) {
+      return new Response(JSON.stringify({ error: "Not a member of this club." }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const creds = resolveLlmCredentials(await fetchClubLlmSettings(admin, clubId));
+    if (!creds) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "No LLM configured. Add API keys under Settings → Club (admin), or set OPENAI_API_KEY for the project.",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     let systemPrompt = "";
 
@@ -62,39 +103,31 @@ ${context || ""}`;
     } else if (type === "stats_query") {
       systemPrompt = `You are a sports statistics assistant. Answer the user's question about team/player statistics based on the provided data. Be precise and use numbers. Format with markdown. Keep answers under 200 words.
 ${context || ""}`;
+    } else {
+      return new Response(JSON.stringify({ error: "Invalid analysis type." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: JSON.stringify({ matchData, teamData }) },
-        ],
-        stream: true,
-      }),
-    });
+    const userPayload = type === "stats_query"
+      ? JSON.stringify({ stats: matchData })
+      : JSON.stringify({ matchData, teamData });
+
+    const response = await streamChat(creds, systemPrompt, [{ role: "user", content: userPayload }]);
 
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits depleted." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const t = await response.text();
-      console.error("AI error:", response.status, t);
+      console.error("LLM error:", response.status, t);
       return new Response(JSON.stringify({ error: "AI service unavailable." }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -104,7 +137,8 @@ ${context || ""}`;
   } catch (e) {
     console.error("ai-match-analysis error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

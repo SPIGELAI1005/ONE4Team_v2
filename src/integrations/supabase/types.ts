@@ -59,6 +59,89 @@ export type Database = {
           },
         ]
       }
+      activities: {
+        Row: {
+          club_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          ends_at: string | null
+          id: string
+          location: string | null
+          starts_at: string
+          team_id: string | null
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          location?: string | null
+          starts_at: string
+          team_id?: string | null
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          location?: string | null
+          starts_at?: string
+          team_id?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_conversations: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          messages: Json
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          messages?: Json
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          messages?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_conversations_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcements: {
         Row: {
           author_id: string
@@ -152,6 +235,109 @@ export type Database = {
             foreignKeyName: "club_memberships_club_id_fkey"
             columns: ["club_id"]
             isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_member_drafts: {
+        Row: {
+          id: string
+          club_id: string
+          name: string | null
+          email: string
+          role: Database["public"]["Enums"]["app_role"]
+          team: string | null
+          age_group: string | null
+          position: string | null
+          status: string
+          invite_id: string | null
+          invited_at: string | null
+          created_by: string
+          created_at: string
+          updated_at: string
+          master_data: Json
+        }
+        Insert: {
+          id?: string
+          club_id: string
+          name?: string | null
+          email: string
+          role?: Database["public"]["Enums"]["app_role"]
+          team?: string | null
+          age_group?: string | null
+          position?: string | null
+          status?: string
+          invite_id?: string | null
+          invited_at?: string | null
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+          master_data?: Json
+        }
+        Update: {
+          id?: string
+          club_id?: string
+          name?: string | null
+          email?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          team?: string | null
+          age_group?: string | null
+          position?: string | null
+          status?: string
+          invite_id?: string | null
+          invited_at?: string | null
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+          master_data?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_member_drafts_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_llm_settings: {
+        Row: {
+          api_key: string
+          azure_api_version: string | null
+          azure_endpoint: string | null
+          club_id: string
+          created_at: string
+          model: string | null
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          api_key: string
+          azure_api_version?: string | null
+          azure_endpoint?: string | null
+          club_id: string
+          created_at?: string
+          model?: string | null
+          provider: string
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string
+          azure_api_version?: string | null
+          azure_endpoint?: string | null
+          club_id?: string
+          created_at?: string
+          model?: string | null
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_llm_settings_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: true
             referencedRelation: "clubs"
             referencedColumns: ["id"]
           },
@@ -832,6 +1018,60 @@ export type Database = {
           },
         ]
       }
+      membership_dues: {
+        Row: {
+          amount_cents: number | null
+          club_id: string
+          created_at: string
+          currency: string | null
+          due_date: string
+          id: string
+          membership_id: string
+          note: string | null
+          paid_at: string | null
+          status: string
+        }
+        Insert: {
+          amount_cents?: number | null
+          club_id: string
+          created_at?: string
+          currency?: string | null
+          due_date: string
+          id?: string
+          membership_id: string
+          note?: string | null
+          paid_at?: string | null
+          status?: string
+        }
+        Update: {
+          amount_cents?: number | null
+          club_id?: string
+          created_at?: string
+          currency?: string | null
+          due_date?: string
+          id?: string
+          membership_id?: string
+          note?: string | null
+          paid_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_dues_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "membership_dues_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "club_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       membership_fee_types: {
         Row: {
           amount: number
@@ -1435,6 +1675,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      append_club_member_audit_event: {
+        Args: {
+          _club_id: string
+          _correlation_email?: string | null
+          _detail?: Json
+          _draft_id?: string | null
+          _event_type: string
+          _membership_id?: string | null
+          _summary?: string | null
+        }
+        Returns: string
+      }
       create_club_with_admin: {
         Args: {
           _description?: string
@@ -1444,9 +1696,39 @@ export type Database = {
         }
         Returns: string
       }
+      get_club_member_audit_timeline: {
+        Args: { _club_id: string; _membership_id: string }
+        Returns: {
+          actor_user_id: string | null
+          correlation_email: string | null
+          created_at: string
+          detail: Json
+          event_type: string
+          id: string
+          membership_id: string | null
+          summary: string | null
+        }[]
+      }
+      get_club_member_audit_timeline_for_draft: {
+        Args: { _club_id: string; _draft_id: string }
+        Returns: {
+          actor_user_id: string | null
+          correlation_email: string | null
+          created_at: string
+          detail: Json
+          event_type: string
+          id: string
+          membership_id: string | null
+          summary: string | null
+        }[]
+      }
       is_club_admin: {
         Args: { _club_id: string; _user_id: string }
         Returns: boolean
+      }
+      list_club_membership_emails: {
+        Args: { _club_id: string }
+        Returns: { membership_id: string; email: string }[]
       }
       is_member_of_club: {
         Args: { _club_id: string; _user_id: string }

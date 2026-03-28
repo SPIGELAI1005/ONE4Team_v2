@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/hooks/use-language";
-import AppHeader from "@/components/layout/AppHeader";
+import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
   Plus, CreditCard, Loader2, X,
   CheckCircle2, Clock, AlertTriangle, Ban,
@@ -128,9 +128,10 @@ const Payments = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader
+      <DashboardHeaderSlot
         title={t.payments.title}
         subtitle={t.payments.adminOnly}
+        toolbarRevision={String(perms.isAdmin)}
         rightSlot={
           <Button
             size="sm"

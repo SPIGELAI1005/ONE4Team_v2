@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import AppHeader from "@/components/layout/AppHeader";
+import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -339,7 +339,7 @@ export default function ClubPageAdmin() {
   if (clubLoading || loading) {
     return (
       <div className="min-h-screen bg-background">
-        <AppHeader title={t.clubPageAdmin.title} subtitle={t.clubPageAdmin.subtitle} />
+        <DashboardHeaderSlot title={t.clubPageAdmin.title} subtitle={t.clubPageAdmin.subtitle} />
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
@@ -350,7 +350,7 @@ export default function ClubPageAdmin() {
   if (!activeClubId) {
     return (
       <div className="min-h-screen bg-background">
-        <AppHeader title={t.clubPageAdmin.title} subtitle={t.clubPageAdmin.subtitle} />
+        <DashboardHeaderSlot title={t.clubPageAdmin.title} subtitle={t.clubPageAdmin.subtitle} />
         <div className="text-center py-20">
           <Globe className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h2 className="font-display text-xl font-bold text-foreground mb-2">{t.clubPageAdmin.noClub}</h2>
@@ -362,9 +362,10 @@ export default function ClubPageAdmin() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader
+      <DashboardHeaderSlot
         title={t.clubPageAdmin.title}
         subtitle={t.clubPageAdmin.subtitle}
+        toolbarRevision={`${form.slug}-${saving}`}
         rightSlot={
           <div className="flex items-center gap-2">
             {form.slug ? (

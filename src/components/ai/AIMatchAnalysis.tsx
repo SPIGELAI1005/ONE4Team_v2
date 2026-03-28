@@ -1,8 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Bot, Loader2, FileText, Eye, Dumbbell, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { getEdgeFunctionAuthHeaders } from "@/lib/edge-function-auth";
 import ReactMarkdown from "react-markdown";
 import type { AIMatchAnalysisData } from "@/types/ai";
 
@@ -13,6 +15,8 @@ interface AIMatchAnalysisProps {
   teamData?: Record<string, unknown>;
   context?: string;
   matchStatus: string;
+  matchId?: string;
+  clubId: string;
 }
 
 const analysisTypes: { type: AnalysisType; label: string; icon: React.ElementType; forStatus: string[] }[] = [
@@ -22,11 +26,26 @@ const analysisTypes: { type: AnalysisType; label: string; icon: React.ElementTyp
   { type: "injury_risk", label: "Injury Risk", icon: AlertTriangle, forStatus: ["completed", "scheduled"] },
 ];
 
-const AIMatchAnalysis = ({ matchData, teamData, context, matchStatus }: AIMatchAnalysisProps) => {
+const AIMatchAnalysis = ({ matchData, teamData, context, matchStatus, matchId, clubId }: AIMatchAnalysisProps) => {
   const { toast } = useToast();
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeType, setActiveType] = useState<AnalysisType | null>(null);
+
+  const continueHref = useMemo(() => {
+    const prompt = `Continue discussing this match: vs ${matchData.opponent} on ${matchData.date} (${matchStatus}).`;
+    const ctx = JSON.stringify({
+      source: "matches",
+      matchId: matchId ?? null,
+      opponent: matchData.opponent,
+      date: matchData.date,
+      is_home: matchData.is_home,
+      home_score: matchData.home_score,
+      away_score: matchData.away_score,
+      status: matchStatus,
+    });
+    return `/co-trainer?tab=chat&prompt=${encodeURIComponent(prompt)}&context=${encodeURIComponent(ctx)}`;
+  }, [matchData, matchStatus, matchId]);
 
   const streamAnalysis = useCallback(async (type: AnalysisType) => {
     setLoading(true);
@@ -90,7 +109,7 @@ const AIMatchAnalysis = ({ matchData, teamData, context, matchStatus }: AIMatchA
     } finally {
       setLoading(false);
     }
-  }, [matchData, teamData, context, toast]);
+  }, [matchData, teamData, context, toast, clubId]);
 
   const available = analysisTypes.filter(a => a.forStatus.includes(matchStatus));
 
@@ -123,6 +142,15 @@ const AIMatchAnalysis = ({ matchData, teamData, context, matchStatus }: AIMatchA
           <ReactMarkdown>{content}</ReactMarkdown>
         </motion.div>
       )}
+
+      <div className="mt-3 pt-3 border-t border-border/60">
+        <Link
+          to={continueHref}
+          className="text-[11px] font-medium text-primary hover:underline inline-flex items-center gap-1"
+        >
+          Continue in ONE4AI
+        </Link>
+      </div>
     </div>
   );
 };

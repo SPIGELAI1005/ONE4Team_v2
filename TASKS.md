@@ -8,6 +8,12 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ## NOW (top priority)
 
+### ONE4AI / LLM operations (2026-03-28)
+- [x] **AI-HEALTH-001** Settings: AI provider connection status + Test connection via `supabase.functions.invoke("co-trainer", { body: { mode: "health", club_id } })`.
+- [x] **AI-HEALTH-002** Edge: `co-trainer` health branch, `pingLlm`, `assertClubAdmin` in `_shared/llm.ts`.
+- [x] **AI-CHAT-001** `CoTrainer.tsx`: stop masking failures with demo responses when backend exists; improve SSE + error surfacing; `edge-function-auth` refreshSession fallback.
+- [ ] **AI-OPS-001** In each Supabase env: apply `20260328200000_club_llm_settings` (+ related `20260328*` migrations as needed), set secrets, **`supabase functions deploy co-trainer`**.
+
 ### i18n + mobile polish (2026-03-27)
 - [x] **I18N-AUTH-SETTINGS** Third i18n pass on `Auth.tsx` and `Settings.tsx` (placeholders, toasts, role UI, locale-aware club settings).
 - [x] **MOB-MEMBERS-SHOP** Mobile audit: Members bulk table horizontal scroll + touch targets; Shop tabs/actions and related copy.

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import AppHeader from "@/components/layout/AppHeader";
+import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
   Loader2, Trophy, Target, AlertTriangle, Award, Filter
 } from "lucide-react";
@@ -155,7 +155,7 @@ const PlayerStats = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0">
-      <AppHeader title="Player Statistics" subtitle="Goals, assists, cards" back />
+      <DashboardHeaderSlot title="Player Statistics" subtitle="Goals, assists, cards" />
 
       {/* Filters */}
       {(seasons.length > 0 || competitions.length > 0 || teams.length > 0) && (

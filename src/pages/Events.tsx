@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import AppHeader from "@/components/layout/AppHeader";
+import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
   Plus, CalendarDays, MapPin, Clock, Users,
   Loader2, X, Trophy, CheckCircle2, XCircle, Mail, ChevronDown
@@ -180,9 +180,10 @@ const Events = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0">
-      <AppHeader
+      <DashboardHeaderSlot
         title={t.eventsPage.title}
         subtitle={t.eventsPage.subtitle}
+        toolbarRevision={String(perms.isTrainer)}
         rightSlot={
           perms.isTrainer ? (
             <Button size="sm" className="bg-gradient-gold-static text-primary-foreground hover:brightness-110 shrink-0" onClick={() => setShowAdd(true)}>

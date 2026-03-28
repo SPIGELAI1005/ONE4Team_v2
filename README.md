@@ -13,7 +13,8 @@ Club/team management SaaS with an iOS-style glass UI, full internationalization 
 - **Shop**: Product catalog, orders management, categories (demo data)
 - **Club Page Admin**: Manage public club page (branding, contact, social, SEO)
 - **Settings**: Profile, club config, notification preferences, account security
-- **AI copilots**: Co-Trainer + Co-AImin with club-scoped logging
+- **ONE4AI (`/co-trainer`)**: Club-scoped chat with structured context; per-club LLM keys in **Settings → Club → AI provider** (`club_llm_settings`) or platform fallback via Supabase secrets `OPENAI_API_KEY` / `OPENAI_MODEL`. Settings shows a live **connection status** and **Test connection** (calls deployed `co-trainer` with `mode: "health"`).
+- **AI copilots**: Co-Trainer (ONE4AI) + Co-AImin with club-scoped logging and optional server generation
 - **Partner showcase**: TSV Allach 09 + Sportecke München with images and testimonials
 - **Test Mode Banner**: Dismissible beta disclaimer across all pages
 
@@ -38,6 +39,12 @@ Required:
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
 - `VITE_SUPABASE_PROJECT_ID`
+
+Optional (Edge Functions — set in **Supabase Dashboard → Edge Functions → Secrets**, not in Vite `.env`):
+- `OPENAI_API_KEY` — platform-wide OpenAI fallback when a club has not saved its own key
+- `OPENAI_MODEL` — e.g. `gpt-4o-mini`
+
+After changing Edge code, deploy: `supabase functions deploy co-trainer` (and other functions as needed).
 
 ### 3) Run
 ```bash

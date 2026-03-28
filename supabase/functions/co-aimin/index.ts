@@ -1,4 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import {
+  assertClubMember,
+  createSupabaseAdmin,
+  fetchClubLlmSettings,
+  getUserIdFromRequest,
+  completeChat,
+  resolveLlmCredentials,
+} from "../_shared/llm.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,9 +17,42 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { payload } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const userId = await getUserIdFromRequest(req, supabaseUrl, serviceKey);
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "Sign in required." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { payload, club_id: clubId } = await req.json();
+    if (!clubId || typeof clubId !== "string") {
+      return new Response(JSON.stringify({ error: "club_id is required." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const admin = createSupabaseAdmin();
+    if (!(await assertClubMember(admin, userId, clubId))) {
+      return new Response(JSON.stringify({ error: "Not a member of this club." }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const creds = resolveLlmCredentials(await fetchClubLlmSettings(admin, clubId));
+    if (!creds) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "No LLM configured. Add API keys under Settings → Club (admin), or set OPENAI_API_KEY for the project.",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     const systemPrompt = `You are "Co-AImin", an operations assistant for ONE4Team admins.
 
@@ -26,33 +67,15 @@ Be practical, short, and suitable for administrative decision-making.
 Use markdown headings and bullets.
 Do not invent numbers that are not present in the provided payload.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: JSON.stringify(payload ?? {}) },
-        ],
-        stream: false,
-      }),
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      return new Response(JSON.stringify({ error: text || "AI service unavailable." }), {
-        status: response.status,
+    const { text, error, status } = await completeChat(creds, systemPrompt, JSON.stringify(payload ?? {}));
+    if (error) {
+      return new Response(JSON.stringify({ error: error || "AI service unavailable." }), {
+        status: status ?? 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const json = await response.json();
-    const output = json?.choices?.[0]?.message?.content ?? "";
-    return new Response(JSON.stringify({ output }), {
+    return new Response(JSON.stringify({ output: text }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

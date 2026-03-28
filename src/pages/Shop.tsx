@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import AppHeader from "@/components/layout/AppHeader";
+import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -231,9 +231,10 @@ export default function Shop() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader
+      <DashboardHeaderSlot
         title={t.shopPage.title}
         subtitle={schemaReady ? t.shopPage.subtitle : `${t.shopPage.subtitle} ${t.shopPage.demoFallbackSuffix}`}
+        toolbarRevision={`${tab}-${canManage}-${schemaReady}`}
         rightSlot={
           canManage && tab === "products" ? (
             <Button size="sm" className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110" onClick={openAdd} disabled={!clubId}>

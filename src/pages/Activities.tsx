@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import AppHeader from "@/components/layout/AppHeader";
+import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
   Calendar,
   Loader2,
@@ -392,9 +392,10 @@ export default function Activities() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader
+      <DashboardHeaderSlot
         title={t.activitiesPage.title}
         subtitle={perms.isTrainer ? t.activitiesPage.subtitleTrainer : t.activitiesPage.subtitlePlayer}
+        toolbarRevision={`${perms.isTrainer}-${canCreate}`}
         rightSlot={
           <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-end">
             {perms.isTrainer && (

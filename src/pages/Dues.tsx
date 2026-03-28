@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import AppHeader from "@/components/layout/AppHeader";
+import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -261,9 +261,10 @@ export default function Dues() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader
+      <DashboardHeaderSlot
         title={t.duesPage.title}
         subtitle={canManage ? t.duesPage.subtitleUnpaid.replace("{count}", String(unpaidCount)) : t.duesPage.subtitleYourDues}
+        toolbarRevision={`${dues.length}-${canManage}-${unpaidCount}`}
         rightSlot={
           <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-end">
             {dues.length > 0 && (

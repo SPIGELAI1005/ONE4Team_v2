@@ -39,6 +39,8 @@ const CLUB_SCOPED = new Set([
   "membership_dues",
   "partners",
   "ai_requests",
+  "ai_conversations",
+  "club_llm_settings",
 ]);
 
 /** Tables scoped by parent id (still tenant-safe if parent is tenant-scoped). */

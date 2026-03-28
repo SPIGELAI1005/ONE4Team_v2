@@ -1,5 +1,5 @@
 // ─── English translations ───
-const en = {
+export const en = {
   // ─── Common / Shared ───
   common: {
     getStarted: "Get Started",
@@ -490,11 +490,11 @@ const en = {
     consultantDesc: "Finance, tax, or legal advisory",
   },
 
-  // ─── AI Page ───
+  // ─── ONE4AI (admin / logged requests) ───
   ai: {
-    title: "AI",
+    title: "ONE4AI",
     subtitle: "Copilots v1 (logged + club-scoped)",
-    selectClub: "Select a club to use copilots.",
+    selectClub: "Select a club to use ONE4AI copilots.",
     coTrainer: "Co‑Trainer",
     coTrainerDesc: "Weekly training plan (deterministic stub for now).",
     generatePlan: "Generate plan",
@@ -503,11 +503,11 @@ const en = {
     generateDigest: "Generate digest",
     output: "Output",
     outputPlaceholder: "Generate a plan or digest to see output here.",
-    recentRequests: "Recent ai_requests (club)",
+    recentRequests: "Recent ONE4AI requests (club)",
     noRequests: "No requests yet.",
-    failedToLoadInputs: "Failed to load AI inputs",
+    failedToLoadInputs: "Failed to load ONE4AI inputs",
     generated: "Generated",
-    savedToRequests: "Saved to ai_requests",
+    savedToRequests: "Saved to ONE4AI requests",
     failedToGenerate: "Failed to generate",
   },
 
@@ -638,6 +638,9 @@ const en = {
     noTeam: "No team",
     details: "Details",
     joined: "Joined",
+    askOne4Ai: "Ask ONE4AI",
+    askOne4AiPrompt:
+      "Help me think about {name}'s development in the club: strengths, areas to support, and concrete next steps for coaches.",
     playerAttributes: "Player Attributes",
     position: "Position",
     ageGroup: "Age Group",
@@ -751,6 +754,9 @@ const en = {
     showAllDrafts: "Show all",
     showLessDrafts: "Show less",
     draftUpdated: "Draft updated",
+    invitedDraftEditHint:
+      "This person was already invited. Your changes update the saved list and, until they accept, the signup data on the pending invite (same link; if you change email, they must sign in with the new address).",
+    inviteSyncSkippedAlreadyJoined: "Invite was already used — roster data is managed on the active member.",
     masterDataColumnMissingTitle: "Database migration required",
     masterDataColumnMissingDesc:
       "The club_member_drafts table is missing the master_data column. Open Supabase → SQL Editor and run the migration supabase/migrations/20260324210000_club_member_drafts_master_data.sql (or run supabase db push), then save again.",
@@ -761,6 +767,24 @@ const en = {
     draft: "Draft",
     invited: "Invited",
     sendInvite: "Send invite",
+    history: "History",
+    activityLog: "Activity",
+    historyPreviewTitle: "Activity & history",
+    historyPreviewDesc:
+      "Quick summary for this ONE Team Member. Open the full page for the complete audit timeline, or copy the link to bookmark or share.",
+    historyLinkLabel: "Full history URL",
+    copyHistoryLink: "Copy link",
+    openFullHistory: "Open full history",
+    resendInvite: "Resend invite",
+    resendInviteModalTitle: "New invite link",
+    resendInviteModalDesc:
+      "Copy the token or link and send it again. The previous unused link no longer works.",
+    resendInviteSuccessTitle: "Invite resent",
+    resendInviteSuccessDesc: "A new invite was created. Copy the token or link from the dialog.",
+    resendInviteBlockedUsed: "That invite was already used. Manage this person on the active roster instead.",
+    resendInviteInvalidEmail: "Add a valid email before resending.",
+    resendInviteSaveHint:
+      "If you edited the email or details in the form, save the row so your list stays in sync with the invite.",
     inviteSentForDraft: "Invite sent for selected draft member.",
     requestApprovedAndJoined: "Request approved and member joined directly.",
     membersTabRestrictedTitle: "Member list management is admin-only",
@@ -774,9 +798,9 @@ const en = {
     importIssueInviteExists: "Invite already exists",
     importIssueUnknownRoleMapped: "Unknown role (mapped to member)",
     unknownMember: "Member",
-    registryHeroTitle: "One roster. Every story.",
+    registryHeroTitle: "ONE Team. Every Story.",
     registryHeroBody:
-      "Capture identity, development, and club context in one professional registry — including families when parents manage accounts for young athletes. Export structured Excel anytime, or import spreadsheets with smart column matching.",
+      "Capture identity, development, and club context in one professional registry.\nExport structured Excel anytime, or import spreadsheets with smart column matching and AI analysis.",
     exportRegistry: "Export Excel registry",
     importRegistry: "Import registry",
     registryExportTitle: "Export started",
@@ -1521,6 +1545,8 @@ const en = {
     aiTip1: "Use Schedule to track confirmations for this week.",
     aiTip2: "After each match, log events. Stats update automatically.",
     aiTip3: "Try AI → Weekly plan for a structured session outline.",
+    one4aiWeeklySummary: "Get weekly summary in ONE4AI",
+    one4aiWeeklySummaryDesc: "Open chat with a pre-filled admin digest request.",
     bestEffort: "Best-effort data: if Supabase isn't applied yet, this dashboard shows placeholders.",
     registrationSummaryTitle: "Your registration setup",
     registrationSummaryDesc: "We carried your onboarding details into your dashboard as your initial setup snapshot.",
@@ -1817,7 +1843,7 @@ const en = {
     partners: "Partners",
     shop: "Shop",
     clubPage: "Club Page",
-    oneAi: "ONE AI",
+    oneAi: "ONE4AI",
     coAImin: "Co-AImin",
     settings: "Settings",
     schedule: "Schedule",
@@ -2033,6 +2059,45 @@ const en = {
     seasonStart: "Season Start Month",
     clubSettingsSaved: "Club settings saved",
     adminOnly: "Only club admins can change these settings.",
+    llmTitle: "AI provider (ONE4AI)",
+    llmDesc:
+      "Each club uses its own API key and model. If unset, the platform OPENAI_API_KEY secret is used when configured.",
+    llmProvider: "Provider",
+    llmModel: "Model or deployment",
+    llmModelHint: "e.g. gpt-4o-mini, claude-3-5-haiku-20241022, gemini-1.5-flash, or your Azure deployment name",
+    llmApiKey: "API key",
+    llmApiKeyPlaceholder: "Paste a new key to replace the stored one",
+    llmApiKeyKeep: "A key is already saved. Leave blank to keep it; paste to replace.",
+    llmAzureEndpoint: "Azure resource endpoint",
+    llmAzureEndpointHint: "Example: https://YOUR_RESOURCE.openai.azure.com",
+    llmAzureApiVersion: "Azure API version",
+    llmSave: "Save AI settings",
+    llmSaved: "AI settings saved",
+    llmClear: "Use platform default",
+    llmCleared: "Club AI settings removed. Platform fallback applies if configured.",
+    llmKeyRequired: "API key is required the first time you configure the club AI.",
+    llmLoadFailed: "Could not load AI settings.",
+    llmHealthChecking: "Checking connection…",
+    llmHealthConnected: "Connected",
+    llmHealthSubtitleClub: "Club API key — ONE4AI can reach the model.",
+    llmHealthSubtitlePlatform: "Platform default (OPENAI_API_KEY) — link OK.",
+    llmHealthNotConfigured: "Not configured",
+    llmHealthNotConfiguredHint:
+      "Add a club API key below or set OPENAI_API_KEY in your Supabase project secrets.",
+    llmHealthFailed: "Connection failed",
+    llmHealthIdle: "Connection status will appear after load.",
+    llmTestConnection: "Test connection",
+    llmHealthSignIn: "Sign in to verify the connection.",
+    llmHealthMissingUrl:
+      "Supabase URL or publishable key is missing or still set to placeholders. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in .env, then restart the dev server.",
+    llmHealthNetworkHint:
+      "The app could not reach your Supabase project. Check: (1) .env has the real project URL and anon key, (2) you restarted `npm run dev` after editing .env, (3) the co-trainer function is deployed (`supabase functions deploy co-trainer`), (4) try disabling ad blockers for this site.",
+    llmHealthUnknownError: "Unknown error from the server.",
+    llmProviderOpenai: "OpenAI",
+    llmProviderAnthropic: "Anthropic (Claude)",
+    llmProviderGemini: "Google Gemini",
+    llmProviderAzure: "Azure OpenAI",
+    llmProviderGithub: "GitHub Models (incl. Copilot API access)",
     // Notifications tab
     notificationPrefs: "Notification Preferences",
     notificationPrefsDesc: "Choose which notifications you want to receive.",
@@ -2321,7 +2386,48 @@ const en = {
     subtitle: "Overview, history, attendance",
   },
 
-  // ─── Co-Trainer / ONE AI lab ───
+  memberHistoryPage: {
+    title: "Member activity",
+    subtitleFallback: "Club member",
+    backToMembers: "Back to members",
+    memberNotFound: "This member could not be found in your current club.",
+    draftNotFound: "This saved list entry could not be found in your current club.",
+    summaryCard: "Member summary",
+    draftSummaryCard: "Saved list entry",
+    unnamed: "Unnamed member",
+    rosterSince: "On roster since",
+    listSince: "On saved list since",
+    invitedAtLabel: "Invite last sent",
+    draftIntro:
+      "Activity for someone on the saved member list (not yet on the roster): additions, edits, and invites. After they join, use the roster activity view for the same email to see full membership events in one place.",
+    intro:
+      "Chronological log of roster changes, invitations, and registry updates for this person. New entries appear after the database migration is applied and as actions occur.",
+    migrationHint:
+      "Activity logging is not available until you apply the migrations supabase/migrations/20260328133000_club_member_audit_events.sql and 20260328150000_club_member_audit_draft_timeline.sql (e.g. supabase db push) and reload.",
+    timelineTitle: "Activity timeline",
+    emptyTimeline:
+      "No recorded events yet. Invites, saved drafts, registry saves, and roster edits will appear here going forward.",
+    by: "By",
+    unknownActor: "System / unknown user",
+    showDetails: "Show technical details",
+    hideDetails: "Hide details",
+    footerNote:
+      "Events before the audit feature was enabled may be missing. Server-side roster edits are logged automatically; invite and draft actions are logged from the Members page.",
+    eventTypes: {
+      membership_joined: "Joined club",
+      membership_profile_updated: "Roster updated",
+      membership_removed: "Removed from club",
+      draft_saved: "Saved member list entry",
+      draft_added_to_list: "Added to saved list",
+      draft_removed: "Removed from saved list",
+      invite_sent: "Invite sent",
+      invite_resent: "Invite resent (new link)",
+      registry_updated: "Registry updated",
+      registry_import_row: "Registry import",
+    },
+  },
+
+  // ─── Co-Trainer / ONE4AI lab ───
   partnersPage: {
     title: "Partners",
     subtitleOperational: "Operational partner workflows",
@@ -2338,11 +2444,44 @@ const en = {
   },
 
   coTrainerPage: {
-    headerTitle: "ONE AI",
+    headerTitle: "ONE4AI",
     subtitleForClub: "{role} for {club}",
     clearChat: "Clear chat",
+    newChat: "New chat",
+    tabChat: "Chat",
+    tabActions: "Quick actions",
+    tabHistory: "History",
+    suggestedDuringChat: "Suggested starts (available during chat)",
+    suggestedStartsTitle: "Suggested starts",
+    inputPlaceholder: "Ask {role} anything…",
+    savedChatsTitle: "Saved conversations",
+    savedChatsHint: "Resume a chat or start fresh from the Chat tab.",
+    noSavedChats: "No saved chats yet. Send a message in Chat to create one.",
+    untitledChat: "Untitled chat",
+    linkMatchAnalysis: "Match analysis",
+    linkMatchAnalysisDesc: "Open Matches for pre/post-match AI tools.",
+    linkStats: "Ask about stats",
+    linkStatsDesc: "Use the dashboard stats assistant widget.",
+    workspaceTitle: "ONE4AI workspace",
+    workspaceSubtitle: "Role-aware copilot with contextual suggestions and structured responses.",
+    welcomeTitle: "Welcome to Your ONE AI Assistant",
+    demoIntro: "Great question! As your {role} in ONE4AI, I can help you with:",
+    demoNote:
+      "*Note: This is a demo response. Once the ONE4AI backend is connected, you'll receive personalized insights based on your actual club data.*",
+    chatErrorTitle: "ONE4AI",
+    chatErrorHeading: "Could not complete this reply",
+    chatErrorHint:
+      "Admins: check Settings → AI provider and Supabase secrets (e.g. OPENAI_API_KEY or club keys). Errors mentioning “LLM” or “API key” usually mean the server could not call the model.",
+    chatErrorNoClub: "Select a club to use ONE4AI.",
+    chatErrorSignIn: "Sign in to use ONE4AI.",
+    chatErrorNoStream: "The server did not return a response stream.",
+    chatErrorEmptyResponse:
+      "The model returned an empty reply. Check the configured model name and API key.",
+    chatErrorNetwork: "Network or unexpected error. Try again in a moment.",
+    chatErrorDetailPrefix: "Details:",
+    chatErrorSerialize: "Could not build the request (invalid chat data). Try clearing the chat or reloading the page.",
+    chatErrorInvalidSupabaseUrl: "VITE_SUPABASE_URL is not a valid URL. Remove spaces and check your .env file.",
   },
 } as const;
 
 export type Translations = typeof en;
-export default en;

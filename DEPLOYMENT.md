@@ -22,6 +22,18 @@ Recommended additional env:
 - `VITE_APP_ENV=staging|prod`
 - `VITE_LOG_LEVEL=debug|info|warn|error`
 
+### ONE4AI (Edge Functions — Supabase project secrets)
+Do **not** put OpenAI keys in Vite env (they would ship to the browser). In the Supabase Dashboard (**Project → Edge Functions → Secrets**) or CLI:
+- `OPENAI_API_KEY` — optional platform-wide fallback when clubs have not saved a key in **Settings → Club → AI provider**
+- `OPENAI_MODEL` — e.g. `gpt-4o-mini`
+
+Deploy or redeploy after changing shared edge code:
+```bash
+supabase functions deploy co-trainer
+```
+
+The Settings **Test connection** and ONE4AI chat require the app’s `VITE_*` URLs to reach this project and a successful deploy of `co-trainer` (including `mode: "health"` support).
+
 ## Environments (HOLD — needs Supabase)
 Recommended:
 - Supabase project (staging)

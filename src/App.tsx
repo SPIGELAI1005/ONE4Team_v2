@@ -23,6 +23,7 @@ const DashboardLayout = lazy(() => import("./components/dashboard/DashboardLayou
 const DashboardContent = lazy(() => import("./components/dashboard/DashboardContent"));
 const ClubPage = lazy(() => import("./pages/ClubPage"));
 const Members = lazy(() => import("./pages/Members"));
+const MemberHistory = lazy(() => import("./pages/MemberHistory"));
 const Teams = lazy(() => import("./pages/Teams"));
 const Communication = lazy(() => import("./pages/Communication"));
 const Payments = lazy(() => import("./pages/Payments"));
@@ -31,7 +32,6 @@ const Matches = lazy(() => import("./pages/Matches"));
 const Activities = lazy(() => import("./pages/Activities"));
 const Dues = lazy(() => import("./pages/Dues"));
 const Partners = lazy(() => import("./pages/Partners"));
-const AI = lazy(() => import("./pages/AI"));
 const PlayerStats = lazy(() => import("./pages/PlayerStats"));
 const PlayerProfile = lazy(() => import("./pages/PlayerProfile"));
 const CoTrainer = lazy(() => import("./pages/CoTrainer"));
@@ -197,6 +197,26 @@ const AnimatedRoutes = () => {
         <Route element={<RequireAuth><Suspense fallback={<RouteFallback />}><DashboardLayout /></Suspense></RequireAuth>}>
           <Route path="/dashboard/:role" element={<Suspense fallback={<RouteFallback />}><DashboardContent /></Suspense>} />
           {/* Admin-only routes */}
+          <Route
+            path="/members/history/draft/:draftId"
+            element={
+              <RequireTrainer>
+                <Suspense fallback={<RouteFallback />}>
+                  <MemberHistory />
+                </Suspense>
+              </RequireTrainer>
+            }
+          />
+          <Route
+            path="/members/history/:membershipId"
+            element={
+              <RequireTrainer>
+                <Suspense fallback={<RouteFallback />}>
+                  <MemberHistory />
+                </Suspense>
+              </RequireTrainer>
+            }
+          />
           <Route path="/members" element={<RequireTrainer><Suspense fallback={<RouteFallback />}><Members /></Suspense></RequireTrainer>} />
           <Route path="/payments" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><PlanGate feature="payments"><Payments /></PlanGate></Suspense></RequireAdmin>} />
           <Route path="/dues" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><Dues /></Suspense></RequireAdmin>} />
@@ -210,7 +230,14 @@ const AnimatedRoutes = () => {
           <Route path="/events" element={<Suspense fallback={<RouteFallback />}><Events /></Suspense>} />
           <Route path="/activities" element={<Suspense fallback={<RouteFallback />}><Activities /></Suspense>} />
           <Route path="/matches" element={<Suspense fallback={<RouteFallback />}><Matches /></Suspense>} />
-          <Route path="/ai" element={<Suspense fallback={<RouteFallback />}><PlanGate feature="ai"><AI /></PlanGate></Suspense>} />
+          <Route
+            path="/ai"
+            element={
+              <PlanGate feature="ai">
+                <Navigate to="/co-trainer" replace />
+              </PlanGate>
+            }
+          />
           <Route path="/player-stats" element={<Suspense fallback={<RouteFallback />}><PlayerStats /></Suspense>} />
           <Route path="/player/:membershipId" element={<Suspense fallback={<RouteFallback />}><PlayerProfile /></Suspense>} />
           <Route path="/co-trainer" element={<Suspense fallback={<RouteFallback />}><PlanGate feature="ai"><CoTrainer /></PlanGate></Suspense>} />

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/hooks/use-language";
 import { Activity, Trophy, Clock, MapPin, RefreshCw } from "lucide-react";
-import AppHeader from "@/components/layout/AppHeader";
+import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 // logo is rendered by AppHeader
@@ -121,7 +121,7 @@ const LiveScores = () => {
   if (!user) {
     return (
       <div className="min-h-screen bg-background">
-        <AppHeader title={t.liveScores.title} subtitle={t.liveScores.signInToSeeClubs} back={false} />
+        <DashboardHeaderSlot title={t.liveScores.title} subtitle={t.liveScores.signInToSeeClubs} showBack={false} />
         <main className="container mx-auto px-4 py-16">
           <div className="max-w-md mx-auto text-center rounded-3xl glass-card p-8">
             <div className="text-sm font-medium text-foreground">{t.liveScores.signInRequired}</div>
@@ -134,10 +134,11 @@ const LiveScores = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader
+      <DashboardHeaderSlot
         title={t.liveScores.title}
         subtitle={t.liveScores.realTimeUpdates}
-        back={false}
+        showBack={false}
+        toolbarRevision={`${lastUpdated.getTime()}-${loading}`}
         rightSlot={
           <div className="flex items-center gap-3">
             <span className="text-[10px] text-muted-foreground hidden sm:block">

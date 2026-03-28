@@ -3,6 +3,36 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-03-28 (ONE4AI: reliability, Settings health, edge health check)
+
+### Database
+- `20260328200000_club_llm_settings.sql` — `club_llm_settings` (per-club LLM provider, model, API key, Azure fields), admin RLS.
+- `20260328180000_ai_conversations.sql` — persisted ONE4AI chat threads (`ai_conversations`).
+- `20260328100000_club_invites_ensure_invite_payload.sql`, `20260328133000_club_member_audit_events.sql`, `20260328150000_club_member_audit_draft_timeline.sql` — invites payload + member audit timeline (apply per environment).
+
+### Supabase Edge (`co-trainer` + `_shared/llm.ts`)
+- **`assertClubAdmin`** — RPC `is_club_admin` for admin-only operations.
+- **`pingLlm`** — minimal non-streaming completion to verify provider credentials.
+- **Health endpoint:** POST body `{ "mode": "health", "club_id": "<uuid>" }` returns JSON (200) with `ok`, `configured`, `source` (`club` | `platform`), optional `error`; does not stream.
+- Normal chat flow unchanged for members; credentials still from `club_llm_settings` or platform `OPENAI_*` secrets.
+
+### Client — ONE4AI (`CoTrainer.tsx`, `edge-function-auth.ts`)
+- Errors from the edge function are shown (toast + assistant message) instead of silently using hardcoded demo replies when `VITE_SUPABASE_URL` is set.
+- SSE handling: decoder flush, tail line, OpenAI stream `data: {"error":...}` detection; trimmed Supabase URL + validity check; `JSON.stringify` guarded.
+- **`getEdgeFunctionAuthHeaders`:** `refreshSession` when session has no access token.
+
+### Client — Settings (`Settings.tsx`)
+- AI provider card: **connection status** (checking / connected / not configured / error), subtitles for club key vs platform default.
+- **Test connection** + auto-check after LLM settings load/save/clear via **`supabase.functions.invoke("co-trainer")`**.
+- User-facing hints for missing/placeholder `VITE_*` Supabase vars and browser “Failed to fetch” scenarios.
+- Fix: invalid JSX in the “not configured” status branch (fragment closed with wrong tag) that broke dynamic import of `Settings.tsx`.
+
+### i18n
+- New `settingsPage` strings for LLM health status and network hints; `coTrainerPage` chat error strings (from earlier pass in same release window).
+
+### Documentation
+- `MEMORY_BANK.md`, `README.md`, `PROJECT_STATUS.md`, `TASKS.md`, `DEPLOYMENT.md` updated for LLM env, deploy steps, and operational notes.
+
 ## 2026-03-27 (i18n: Auth & Settings; mobile: Members bulk table & Shop)
 
 ### i18n (EN/DE)

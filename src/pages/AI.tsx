@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import AppHeader from "@/components/layout/AppHeader";
+import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { useLanguage } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, ClipboardList, Shield, ScrollText } from "lucide-react";
@@ -9,6 +9,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+/** ONE4AI admin tools: logged copilots (training plan + admin digest). Route: `/ai`. */
 // Server-first generation path with deterministic fallback if edge function is unavailable.
 
 type ActivityRow = {
@@ -164,7 +165,9 @@ export default function AI() {
         dues_unpaid_count: duesUnpaid,
       };
 
-      const serverAttempt = await supabase.functions.invoke("co-aimin", { body: { payload: serverPayload } });
+      const serverAttempt = await supabase.functions.invoke("co-aimin", {
+        body: { payload: serverPayload, club_id: clubId },
+      });
       if (!serverAttempt.error && serverAttempt.data && typeof (serverAttempt.data as { output?: unknown }).output === "string") {
         text = (serverAttempt.data as { output: string }).output;
         generatedByServer = true;
@@ -247,7 +250,7 @@ export default function AI() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader title={t.ai.title} subtitle={t.ai.subtitle} />
+      <DashboardHeaderSlot title={t.ai.title} subtitle={t.ai.subtitle} />
 
       <div className="container mx-auto px-4 py-6">
         {(clubLoading || loading) ? (

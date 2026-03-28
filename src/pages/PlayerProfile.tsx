@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import AppHeader from "@/components/layout/AppHeader";
+import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
   Loader2, Trophy, Target, AlertTriangle, Award,
   Calendar, MapPin, CheckCircle2, XCircle, Clock, User
@@ -235,7 +235,7 @@ const PlayerProfile = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0">
-      <AppHeader title={t.playerProfilePage.title} subtitle={t.playerProfilePage.subtitle} back />
+      <DashboardHeaderSlot title={t.playerProfilePage.title} subtitle={t.playerProfilePage.subtitle} />
 
       <div className="container mx-auto px-4 py-6">
         {(clubLoading || loading) ? (
