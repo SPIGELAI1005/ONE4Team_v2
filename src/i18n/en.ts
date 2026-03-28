@@ -515,6 +515,7 @@ export const en = {
   clubPage: {
     inviteOnlyOnboarding: "Invite-only onboarding",
     sections: "Sections",
+    menu: "Menu",
     openDashboard: "Open Dashboard",
     requestInvite: "Request Invite",
     aboutSection: "About",
@@ -529,18 +530,18 @@ export const en = {
     joinCommunity: "Join our community of athletes, supporters, and friends.",
     createAClub: "Create a Club",
     privateClub: "This club is private and does not accept public invite requests.",
-    membersCount: "247 Members",
-    membersCountDesc: "Active community across all age groups",
-    teamsCount: "8 Teams",
-    teamsCountDesc: "From youth to senior competitive squads",
-    leaguesCount: "3 Leagues",
-    leaguesCountDesc: "Competing at regional and district level",
+    membersCount: "Members",
+    membersCountDesc: "Active members in this club",
+    teamsCount: "Teams",
+    teamsCountDesc: "Squads and age groups",
+    leaguesCount: "Upcoming events",
+    leaguesCountDesc: "Club calendar entries ahead",
     ourTeams: "Our",
     teamsHighlight: "Teams",
     noTeamsYet: "No teams yet",
     teamsWillAppear: "Teams created in the app will appear here automatically.",
     createJoinClub: "Create / join a club",
-    trainingSchedule: "Training",
+    trainingSchedule: "Trainings",
     scheduleHighlight: "Schedule",
     noUpcomingSessions: "No upcoming sessions",
     sessionsWillShow: "Scheduled sessions will show here once trainers add them.",
@@ -577,6 +578,7 @@ export const en = {
     inviteRequestsDisabled: "Invite requests disabled",
     previewMode: "Preview mode",
     previewModeDesc: "You are viewing the public club page preview from Club Page Admin.",
+    previewSignInHint: "This club may be private. Sign in with an account that belongs to the club to load the preview.",
     poweredBy: "Powered by ONE4Team · © 2026 All rights reserved",
     coach: "Coach",
     newsSection: "News",
@@ -600,6 +602,25 @@ export const en = {
     noContactDetails: "No public contact details configured yet.",
     website: "Website",
     visitWebsite: "Visit website",
+    followFacebook: "Facebook",
+    followInstagram: "Instagram",
+    followX: "X",
+    socialLinksHeading: "Social",
+    signInRequired: "Sign in required",
+    signInBeforeJoin: "You'll be asked to sign in before we add you to the club.",
+    sectionSearchNews: "Search news…",
+    sectionSearchTeams: "Search teams…",
+    sectionSearchShop: "Search products…",
+    sectionSearchSchedule: "Search schedule…",
+    sectionSearchEvents: "Search events…",
+    sectionSearchMedia: "Search gallery…",
+    sectionSearchContact: "Search contact…",
+    noSearchResults: "No results match your search.",
+    addToHomeTitle: "Add to your phone",
+    addToHomeBody:
+      "For quick access, add this page to your home screen. On iPhone or iPad: tap Share, then Add to Home Screen. On Android: open the browser menu and choose Install app or Add to Home screen.",
+    swipeForMore: "Swipe sideways for more",
+    heroPoweredBy: "Powered by ONE4Team",
   },
 
   // ─── Live Scores Page ───
@@ -1553,11 +1574,11 @@ export const en = {
   },
 
   teamsPage: {
-    title: "Teams & Training",
-    subtitleManage: "Manage teams, property maps and bookings",
-    subtitleView: "View teams, property maps and bookings",
+    title: "Teams & Trainings",
+    subtitleManage: "Manage teams, asset maps and bookings",
+    subtitleView: "View teams, asset maps and bookings",
     tabs: {
-      pitches: "Property Maps",
+      pitches: "Asset Maps",
       teams: "Teams",
       sessions: "Training Sessions",
       history: "Change History",
@@ -1604,7 +1625,7 @@ export const en = {
       selectAll: "Select all",
       clear: "Clear",
       selectedOf: "{selected} / {total} selected",
-      deleteTitle: "Delete property element",
+      deleteTitle: "Delete asset element",
       deleteConfirmPrefix: "Are you sure you want to delete",
       deleteConfirmSuffix: "?",
       deleteBlockedBookingsTitle: "Cannot delete element",
@@ -1625,11 +1646,11 @@ export const en = {
     noClub: "No club found. Create one first.",
     noTeams: "No teams yet.",
     noSessions: "No sessions scheduled.",
-    noPitchesHint: "No property element created yet. Build one from the",
-    pitchesCanManage: "You can manage property layers, teams and bookings.",
+    noPitchesHint: "No asset element created yet. Build one from the",
+    pitchesCanManage: "You can manage asset layers, teams and bookings.",
     pitchesReadOnly: "Read-only mode: you can view layers, bookings and usage analytics.",
     permissionHint: "Permission model: trainer/admin = edit, members = view",
-    pitchesPlanner: "Property map planner",
+    pitchesPlanner: "Asset Map",
     viewSeparate: "Separate",
     viewCombined: "Combined",
     daySchedule: "Day schedule",
@@ -1655,7 +1676,7 @@ export const en = {
     splitFrom: "Split from",
     parent: "parent",
     clubWide: "Club-wide",
-    layersTitle: "Club property layers",
+    layersTitle: "Club Asset Layers",
     layersShowingAll: "Showing all layers",
     layersShowingNamed: "Showing {name}",
     layersAll: "All layers",
@@ -1668,7 +1689,7 @@ export const en = {
       other: "Other",
     },
     layerModal: {
-      title: "Add property layer",
+      title: "Add asset layer",
       namePlaceholder: "Layer name * (e.g. Training Grounds)",
       descriptionPlaceholder: "Description (optional)",
       save: "Save layer",
@@ -1832,29 +1853,222 @@ export const en = {
   sidebar: {
     dashboard: "Dashboard",
     members: "Members",
-    training: "Training",
+    training: "Trainings",
     matches: "Matches",
     events: "Events",
     communication: "Communication",
-    playerStats: "Player Stats",
+    playerStats: "Reports",
     payments: "Payments",
     dues: "Dues",
     messages: "Messages",
     partners: "Partners",
-    shop: "Shop",
+    shop: "Club Shop",
     clubPage: "Club Page",
     oneAi: "ONE4AI",
     coAImin: "Co-AImin",
     settings: "Settings",
     schedule: "Schedule",
     myTeams: "My Teams",
-    propertyLayers: "Property Layers",
+    assetLayers: "Assets",
     coTrainer: "Co-Trainer",
     contracts: "Contracts",
     invoices: "Invoices",
     orders: "Orders",
     engagements: "Engagements",
     exit: "Exit",
+    supportFaq: "Support & FAQ",
+  },
+
+  // ─── Support & FAQ (dashboard) ───
+  supportPage: {
+    title: "Support & FAQ",
+    subtitle: "Answers to common questions and a direct line to our team.",
+    intro:
+      "Browse the topics below or jump to the report form if something is not covered. Sending a report opens your default email app with a pre-filled message.",
+    reportLinkLabel: "Report an issue",
+    faqHeading: "Frequently asked questions",
+    categories: [
+      {
+        title: "Account & club",
+        faqs: [
+          {
+            q: "How do I sign in?",
+            a: "Use the email and password you registered with, or request a magic link on the sign-in page if your club enabled it. If you forgot your password, use the recovery flow from the auth screen.",
+          },
+          {
+            q: "How do I switch between clubs?",
+            a: "Open the club switcher in the dashboard header and select another club you belong to. Your role and available menus update automatically for that club.",
+          },
+          {
+            q: "Why do I see different menu items than another user?",
+            a: "Menus depend on your role (for example admin, trainer, or player) and sometimes on your club’s subscription plan. Features such as payments or the club shop only appear when your role and plan allow them.",
+          },
+        ],
+      },
+      {
+        title: "Members & roster",
+        faqs: [
+          {
+            q: "Who can invite or edit members?",
+            a: "Club admins and trainers (depending on your setup) can manage the roster, assign roles, and send invitations. Members typically see a read-only view of directory information they are allowed to see.",
+          },
+          {
+            q: "How do imports work?",
+            a: "Spreadsheet import is available where your club enabled it. Use the provided template columns so names, emails, and roles map correctly. After import, review the roster for duplicates or missing fields.",
+          },
+          {
+            q: "What is member history?",
+            a: "Trainers and admins can open activity-style views for members to see invitations, roster changes, and related events when audit logging is enabled for your database.",
+          },
+        ],
+      },
+      {
+        title: "Teams, trainings & assets",
+        faqs: [
+          {
+            q: "What is the difference between Teams and Assets?",
+            a: "Teams holds squads, training sessions, and map-based facility planning. Assets (asset layers) describe map contexts such as training grounds or facilities that bookings and elements can reference.",
+          },
+          {
+            q: "How do bookings and conflicts work?",
+            a: "When you book a pitch or area, overlapping times may be highlighted as conflicts depending on your club rules. Resolve overlaps by adjusting times or canceling obsolete bookings.",
+          },
+          {
+            q: "Can players edit the training plan?",
+            a: "Usually only trainers and admins create or change sessions. Players see schedules they are allowed to access and may respond where RSVP or messaging features are used.",
+          },
+        ],
+      },
+      {
+        title: "Matches & reports",
+        faqs: [
+          {
+            q: "How are match events recorded?",
+            a: "Authorized users log goals, assists, and cards on the match detail flow. Those events feed aggregates shown under Reports (player statistics) for the selected filters.",
+          },
+          {
+            q: "Why are my statistics empty?",
+            a: "Check that matches are linked to the right team or competition and that events were saved. Filters for season, competition, or team limit which matches contribute to the totals.",
+          },
+          {
+            q: "What do Reports show?",
+            a: "Reports summarizes scoring and discipline metrics from recorded match events. It is not a full analytics warehouse but a club-level snapshot for coaches and admins.",
+          },
+        ],
+      },
+      {
+        title: "Schedule & events",
+        faqs: [
+          {
+            q: "What is the difference between Activities and Events?",
+            a: "Activities focuses on your personal or team schedule view, while Events lists club-wide calendar entries such as meetings or social dates. Both respect your club membership.",
+          },
+          {
+            q: "Can I sync to an external calendar?",
+            a: "If your deployment exposes export or subscription links, use them from the relevant screen. Otherwise copy key dates manually until a calendar integration is configured.",
+          },
+        ],
+      },
+      {
+        title: "Communication",
+        faqs: [
+          {
+            q: "Who receives announcements?",
+            a: "Reach depends on how your club configured channels and audiences. Admins and trainers usually target teams or the whole club; check the compose screen for recipient options.",
+          },
+          {
+            q: "Are messages stored securely?",
+            a: "Content lives in your Supabase project under the policies your club applied. Do not share passwords or payment card numbers in chat; use official payment flows instead.",
+          },
+        ],
+      },
+      {
+        title: "Billing & plans",
+        faqs: [
+          {
+            q: "Who pays for the subscription?",
+            a: "Typically a club admin completes Stripe checkout for the club. Seat or feature limits then follow the active plan shown in billing settings where your role has access.",
+          },
+          {
+            q: "Why is a feature locked?",
+            a: "Plan gates hide premium areas such as AI, club shop, or advanced modules when your subscription does not include them. Upgrade paths are linked from the locked screen where applicable.",
+          },
+        ],
+      },
+      {
+        title: "Partners, club page & club shop",
+        faqs: [
+          {
+            q: "What are Partners for?",
+            a: "Partners helps clubs track sponsors and suppliers with workflows aligned to your plan. Permissions restrict sensitive commercial data to appropriate roles.",
+          },
+          {
+            q: "How does the public club page work?",
+            a: "Admins edit branding and content under Club Page. Public visitors see only what you mark public; private roster data stays behind authentication and RLS.",
+          },
+          {
+            q: "Who can order from the club shop?",
+            a: "Members browse and place orders when the shop is enabled for the club plan. Admins manage products, images, and fulfillment settings from the shop admin experience.",
+          },
+        ],
+      },
+      {
+        title: "ONE4AI & Co-Trainer",
+        faqs: [
+          {
+            q: "Why does Co-Trainer say it is not configured?",
+            a: "Either your club has not stored an API key under club AI settings, or the platform fallback key is missing in the backend. Admins can run a connection check from settings when available.",
+          },
+          {
+            q: "Are requests rate limited?",
+            a: "Yes. Edge functions enforce per-user and per-club limits to protect cost and fairness. If you hit a limit, wait briefly and try again or contact support for higher tiers.",
+          },
+        ],
+      },
+      {
+        title: "Settings & troubleshooting",
+        faqs: [
+          {
+            q: "How do I change language or theme?",
+            a: "Use the language toggle and theme control in the header or settings, depending on your screen. Preference is stored in the browser for convenience.",
+          },
+          {
+            q: "The app shows an error after an update—what should I do?",
+            a: "Hard-refresh the page or clear site data for localhost if you develop locally. In production, wait a minute and retry; if migrations were required, ensure your Supabase project applied them.",
+          },
+        ],
+      },
+    ],
+    report: {
+      title: "Report a problem or idea",
+      privacyNote:
+        "Submitting opens your email application with a drafted message. We do not send email from the browser on your behalf.",
+      topicLabel: "Topic area",
+      detailsLabel: "Details",
+      detailsPlaceholder: "Describe what happened, what you expected, and steps to reproduce if possible.",
+      openEmailApp: "Open email app",
+      simpleEmail: "Email without details",
+      copyAddress: "Copy support address",
+      copied: "Address copied",
+      topicPrompt: "Select a topic",
+      validationDetails: "Please add a short description before sending.",
+      bodyTruncatedNote: "\n\n[Message truncated — please add remaining detail manually.]",
+      topics: {
+        account: "Account & club",
+        members: "Members & roster",
+        teams: "Teams, trainings & assets",
+        matches: "Matches & reports",
+        schedule: "Schedule & events",
+        communication: "Communication",
+        billing: "Billing & plans",
+        partners: "Partners & sponsors",
+        one4ai: "ONE4AI / Co-Trainer",
+        clubPage: "Club page (public)",
+        shop: "Club shop",
+        settings: "Settings & profile",
+        other: "Other",
+      },
+    },
   },
 
   // ─── Notifications ───
@@ -1919,6 +2133,17 @@ export const en = {
     category: "Category",
     stock: "Stock",
     imageUrl: "Image URL (optional)",
+    productImages: "Product images",
+    productImagesHint: "Up to 3 images. Max 2 MB each. JPEG, PNG, WebP, or GIF.",
+    uploadImages: "Upload images",
+    addImageUrl: "Add image URL",
+    addUrl: "Add",
+    removeImage: "Remove",
+    imageTooLarge: "Each image must be 2 MB or smaller.",
+    imageInvalidType: "Only JPEG, PNG, WebP, and GIF images are allowed.",
+    imageUploadFailed: "Image upload failed. Check permissions and try again.",
+    maxImagesReached: "You can add at most 3 images per product.",
+    invalidImageUrl: "Enter a valid http(s) image URL.",
     active: "Active",
     inactive: "Inactive",
     inStock: "In Stock",
@@ -1955,6 +2180,27 @@ export const en = {
     preview: "View Live Page",
     previewDesc: "See how your club page looks to the public.",
     generalInfo: "General Information",
+    requiredFieldsLegend: "Fields marked with * are required for your public club page.",
+    requiredFieldsLegendCore: "Fields marked with * are required (club name and URL slug).",
+    fillRequiredNameSlug: "Please enter a club name and URL slug before saving.",
+    fillRequiredAddress: "Please enter a street address before saving. It appears on your public club page and is required.",
+    contactRequiredHint: "Street address is required so visitors can find your club.",
+    fetchClubFailedGeneric: "Could not load club data from the server.",
+    reloadFailedAfterSave: "Changes may have saved, but reloading the form failed. Refresh the page to verify.",
+    publicPageLayout: "Public page layout",
+    publicPageLayoutDesc: "Choose which sections appear on /club/your-slug. The hero (name, description, branding) is always shown.",
+    sectionAbout: "About (stats)",
+    sectionNews: "News",
+    sectionTeams: "Teams",
+    sectionShop: "Shop",
+    sectionMedia: "Media gallery",
+    sectionSchedule: "Training schedule",
+    sectionEvents: "Events",
+    sectionContact: "Contact & social",
+    schemaProfileColumnsMissingTitle: "Database schema needs an update",
+    schemaProfileColumnsMissingDesc:
+      "Your Supabase project does not have club profile columns yet (e.g. address). Saving will update name, slug, and branding only. Apply migrations: run `npx supabase db push` in this repo, or run the SQL under supabase/migrations (e.g. 20260301101500_expand_clubs_profile_and_settings_columns.sql and 20260328232000_ensure_clubs_contact_and_seo_columns.sql) in the Supabase SQL Editor. Then reload the API schema or wait a minute.",
+    publicSectionsNeedMigration: "Section toggles take effect after the public_page_sections column exists (migration 20260329000000_club_public_page_sections.sql).",
     clubName: "Club Name",
     slug: "URL Slug",
     slugHelper: "Your page will be at /club/{slug}",
@@ -2375,7 +2621,7 @@ export const en = {
 
   // ─── Player stats / profile ───
   playerStatsPage: {
-    title: "Player Statistics",
+    title: "Reports",
     subtitle: "Goals, assists, cards",
     allTeams: "All Teams",
     allCompetitions: "All Competitions",

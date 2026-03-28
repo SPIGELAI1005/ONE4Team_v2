@@ -19,7 +19,10 @@
     "audit:phase12": "node scripts/audit-phase12.cjs",
     "audit:realtime": "node scripts/audit-realtime.cjs",
     "audit:writes": "node scripts/audit-supabase-writes.cjs",
-    "audit:selects": "node scripts/audit-supabase-selects.cjs"
+    "audit:selects": "node scripts/audit-supabase-selects.cjs",
+    "k6:smoke": "k6 run k6/smoke.js",
+    "k6:edge-co-trainer": "k6 run k6/edge-co-trainer-smoke.js",
+    "k6:journeys": "k6 run k6/journeys-critical.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -50,6 +53,7 @@
     "@radix-ui/react-toggle": "^1.1.9",
     "@radix-ui/react-toggle-group": "^1.1.10",
     "@radix-ui/react-tooltip": "^1.2.7",
+    "@sentry/react": "^9.47.1",
     "@stripe/stripe-js": "^9.0.0",
     "@supabase/supabase-js": "^2.95.3",
     "@tanstack/react-query": "^5.83.0",

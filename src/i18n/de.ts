@@ -519,6 +519,7 @@ export const de: Translations = {
   clubPage: {
     inviteOnlyOnboarding: "Einladungsbasiertes Onboarding",
     sections: "Abschnitte",
+    menu: "Menü",
     openDashboard: "Dashboard öffnen",
     requestInvite: "Einladung anfragen",
     aboutSection: "Über uns",
@@ -533,12 +534,12 @@ export const de: Translations = {
     joinCommunity: "Tritt unserer Gemeinschaft von Sportlern, Unterstützern und Freunden bei.",
     createAClub: "Verein erstellen",
     privateClub: "Dieser Verein ist privat und nimmt keine öffentlichen Einladungsanfragen an.",
-    membersCount: "247 Mitglieder",
-    membersCountDesc: "Aktive Gemeinschaft über alle Altersgruppen",
-    teamsCount: "8 Teams",
-    teamsCountDesc: "Von Jugend bis Seniorenwettbewerb",
-    leaguesCount: "3 Ligen",
-    leaguesCountDesc: "Teilnahme auf regionaler und Bezirksebene",
+    membersCount: "Mitglieder",
+    membersCountDesc: "Aktive Mitglieder in diesem Verein",
+    teamsCount: "Teams",
+    teamsCountDesc: "Mannschaften und Altersgruppen",
+    leaguesCount: "Anstehende Termine",
+    leaguesCountDesc: "Kommende Vereinskalender-Einträge",
     ourTeams: "Unsere",
     teamsHighlight: "Teams",
     noTeamsYet: "Noch keine Teams",
@@ -581,6 +582,7 @@ export const de: Translations = {
     inviteRequestsDisabled: "Einladungsanfragen deaktiviert",
     previewMode: "Vorschau-Modus",
     previewModeDesc: "Du siehst die öffentliche Vereinsseite als Vorschau aus dem Club-Page-Admin.",
+    previewSignInHint: "Dieser Verein ist möglicherweise privat. Melde dich mit einem Konto an, das zum Verein gehört, um die Vorschau zu laden.",
     poweredBy: "Betrieben von ONE4Team · © 2026 Alle Rechte vorbehalten",
     coach: "Trainer",
     newsSection: "News",
@@ -604,6 +606,25 @@ export const de: Translations = {
     noContactDetails: "Noch keine öffentlichen Kontaktdaten konfiguriert.",
     website: "Webseite",
     visitWebsite: "Webseite besuchen",
+    followFacebook: "Facebook",
+    followInstagram: "Instagram",
+    followX: "X",
+    socialLinksHeading: "Social Media",
+    signInRequired: "Anmeldung erforderlich",
+    signInBeforeJoin: "Du wirst aufgefordert, dich anzumelden, bevor wir dich dem Verein hinzufügen.",
+    sectionSearchNews: "News durchsuchen…",
+    sectionSearchTeams: "Teams durchsuchen…",
+    sectionSearchShop: "Produkte durchsuchen…",
+    sectionSearchSchedule: "Zeitplan durchsuchen…",
+    sectionSearchEvents: "Events durchsuchen…",
+    sectionSearchMedia: "Galerie durchsuchen…",
+    sectionSearchContact: "Kontakt durchsuchen…",
+    noSearchResults: "Keine Treffer für deine Suche.",
+    addToHomeTitle: "Auf dem Smartphone hinzufügen",
+    addToHomeBody:
+      "Für schnellen Zugriff: Seite zum Startbildschirm hinzufügen. Auf iPhone/iPad: Teilen, dann Zum Home-Bildschirm. Auf Android: Browser-Menü und App installieren oder Zum Startbildschirm hinzufügen.",
+    swipeForMore: "Zum Seiten wischen",
+    heroPoweredBy: "Powered by ONE4Team",
   },
 
   // ─── Live Scores Page ───
@@ -1555,11 +1576,11 @@ export const de: Translations = {
   },
 
   teamsPage: {
-    title: "Teams & Training",
+    title: "Teams & Trainings",
     subtitleManage: "Teams, Ebenen und Belegungen verwalten",
     subtitleView: "Teams, Ebenen und Belegungen anzeigen",
     tabs: {
-      pitches: "Vereinsflächen",
+      pitches: "Asset-Karten",
       teams: "Teams",
       sessions: "Trainingseinheiten",
       history: "Änderungsverlauf",
@@ -1607,7 +1628,7 @@ export const de: Translations = {
       selectAll: "Alle wählen",
       clear: "Leeren",
       selectedOf: "{selected} / {total} gewählt",
-      deleteTitle: "Flächenelement löschen",
+      deleteTitle: "Asset-Element löschen",
       deleteConfirmPrefix: "Möchtest du wirklich löschen:",
       deleteConfirmSuffix: "?",
       deleteBlockedBookingsTitle: "Element kann nicht gelöscht werden",
@@ -1629,11 +1650,11 @@ export const de: Translations = {
     noClub: "Kein Verein gefunden. Bitte zuerst einen Verein erstellen.",
     noTeams: "Noch keine Teams.",
     noSessions: "Noch keine Einheiten geplant.",
-    noPitchesHint: "Noch kein Flächenelement erstellt. Erstelle einen Plan mit dem Raster",
-    pitchesCanManage: "Du kannst Ebenen, Teams und Belegungen verwalten.",
-    pitchesReadOnly: "Nur-Lesen-Modus: Du kannst Ebenen, Belegungen und Auslastung sehen.",
+    noPitchesHint: "Noch kein Asset-Element erstellt. Erstelle einen Plan mit dem Raster",
+    pitchesCanManage: "Du kannst Asset-Ebenen, Teams und Belegungen verwalten.",
+    pitchesReadOnly: "Nur-Lesen-Modus: Du kannst Asset-Ebenen, Belegungen und Auslastung sehen.",
     permissionHint: "Rechte-Modell: Trainer/Admin = bearbeiten, Mitglieder = ansehen",
-    pitchesPlanner: "Flächenplaner",
+    pitchesPlanner: "Asset-Kartenplaner",
     viewSeparate: "Einzeln",
     viewCombined: "Kombiniert",
     daySchedule: "Tagesplan",
@@ -1659,7 +1680,7 @@ export const de: Translations = {
     splitFrom: "Aufgeteilt von",
     parent: "Parent",
     clubWide: "Vereinsweit",
-    layersTitle: "Vereinsebenen (Flächen)",
+    layersTitle: "Vereins-Asset-Ebenen",
     layersShowingAll: "Alle Ebenen angezeigt",
     layersShowingNamed: "Angezeigt: {name}",
     layersAll: "Alle Ebenen",
@@ -1672,8 +1693,8 @@ export const de: Translations = {
       other: "Sonstiges",
     },
     layerModal: {
-      title: "Neue Ebene anlegen",
-      namePlaceholder: "Ebenenname * (z. B. Trainingsgelände)",
+      title: "Neue Asset-Ebene anlegen",
+      namePlaceholder: "Asset-Ebenenname * (z. B. Trainingsgelände)",
       descriptionPlaceholder: "Beschreibung (optional)",
       save: "Ebene speichern",
     },
@@ -1836,29 +1857,222 @@ export const de: Translations = {
   sidebar: {
     dashboard: "Dashboard",
     members: "Mitglieder",
-    training: "Training",
+    training: "Trainings",
     matches: "Spiele",
     events: "Veranstaltungen",
     communication: "Kommunikation",
-    playerStats: "Spielerstatistiken",
+    playerStats: "Berichte",
     payments: "Zahlungen",
     dues: "Beiträge",
     messages: "Nachrichten",
     partners: "Partner",
-    shop: "Shop",
+    shop: "Vereins-Shop",
     clubPage: "Vereinsseite",
     oneAi: "ONE4AI",
     coAImin: "Co-AImin",
     settings: "Einstellungen",
     schedule: "Zeitplan",
     myTeams: "Meine Teams",
-    propertyLayers: "Property-Ebenen",
+    assetLayers: "Assets",
     coTrainer: "Co-Trainer",
     contracts: "Verträge",
     invoices: "Rechnungen",
     orders: "Bestellungen",
     engagements: "Aufträge",
     exit: "Beenden",
+    supportFaq: "Hilfe & FAQ",
+  },
+
+  // ─── Support & FAQ (dashboard) ───
+  supportPage: {
+    title: "Hilfe & FAQ",
+    subtitle: "Antworten auf häufige Fragen und ein direkter Draht zu unserem Team.",
+    intro:
+      "Stöbere in den Themen unten oder springe zum Formular, falls etwas fehlt. Beim Melden öffnet sich dein Standard-E-Mail-Programm mit einer vorausgefüllten Nachricht.",
+    reportLinkLabel: "Problem melden",
+    faqHeading: "Häufig gestellte Fragen",
+    categories: [
+      {
+        title: "Konto & Verein",
+        faqs: [
+          {
+            q: "Wie melde ich mich an?",
+            a: "Nutze die E-Mail-Adresse und das Passwort aus der Registrierung oder einen Magic-Link auf der Anmeldeseite, falls aktiviert. Bei vergessenem Passwort nutze die Wiederherstellung auf der Auth-Seite.",
+          },
+          {
+            q: "Wie wechsle ich zwischen Vereinen?",
+            a: "Öffne den Vereinswechsler in der Dashboard-Kopfzeile und wähle einen anderen Verein, dem du angehörst. Rolle und Menüs passen sich automatisch an.",
+          },
+          {
+            q: "Warum sehe ich andere Menüpunkte als ein anderer Nutzer?",
+            a: "Menüs hängen von deiner Rolle (z. B. Admin, Trainer, Spieler) und ggf. vom Vereins-Tarif ab. Funktionen wie Zahlungen oder Vereins-Shop erscheinen nur bei passender Rolle und Plan.",
+          },
+        ],
+      },
+      {
+        title: "Mitglieder & Kader",
+        faqs: [
+          {
+            q: "Wer darf Mitglieder einladen oder bearbeiten?",
+            a: "Vereins-Admins und Trainer (je nach Setup) verwalten den Kader, Rollen und Einladungen. Mitglieder sehen meist nur die erlaubten Verzeichnisinformationen.",
+          },
+          {
+            q: "Wie funktionieren Importe?",
+            a: "Tabellenimport ist verfügbar, wenn der Verein es nutzt. Verwende die vorgegebenen Spalten für Namen, E-Mails und Rollen. Prüfe den Kader danach auf Duplikate oder Lücken.",
+          },
+          {
+            q: "Was ist die Mitglieder-Historie?",
+            a: "Trainer und Admins können aktivitätsnahe Ansichten öffnen, um Einladungen, Kaderänderungen und Ereignisse zu sehen, sofern Audit-Logging in der Datenbank aktiv ist.",
+          },
+        ],
+      },
+      {
+        title: "Teams, Training & Assets",
+        faqs: [
+          {
+            q: "Was ist der Unterschied zwischen Teams und Assets?",
+            a: "Teams umfasst Mannschaften, Trainingseinheiten und kartenbasierte Flächenplanung. Assets (Asset-Ebenen) beschreiben Kartenkontexte wie Trainingsgelände oder Anlagen für Buchungen und Elemente.",
+          },
+          {
+            q: "Wie funktionieren Buchungen und Konflikte?",
+            a: "Bei überlappenden Zeiten können Konflikte je nach Vereinsregeln hervorgehoben werden. Passe Zeiten an oder entferne veraltete Buchungen.",
+          },
+          {
+            q: "Dürfen Spieler den Trainingsplan ändern?",
+            a: "In der Regel legen Trainer und Admins Termine an. Spieler sehen freigegebene Pläne und können reagieren, wo Zusagen oder Nachrichten vorgesehen sind.",
+          },
+        ],
+      },
+      {
+        title: "Spiele & Berichte",
+        faqs: [
+          {
+            q: "Wie werden Spieldaten erfasst?",
+            a: "Berechtigte Nutzer tragen Tore, Vorlagen und Karten im Spiel ein. Daraus entstehen Auswertungen unter Berichte für die gewählten Filter.",
+          },
+          {
+            q: "Warum sind Statistiken leer?",
+            a: "Prüfe, ob Spiele der richtigen Mannschaft oder dem Wettbewerb zugeordnet sind und Ereignisse gespeichert wurden. Filter für Saison, Wettbewerb oder Team grenzen die Daten ein.",
+          },
+          {
+            q: "Was zeigen Berichte?",
+            a: "Berichte fasst Treffer- und Kartenmetriken aus erfassten Ereignissen zusammen – eine Vereinsübersicht für Trainer und Admins, kein externes Analytics-System.",
+          },
+        ],
+      },
+      {
+        title: "Zeitplan & Veranstaltungen",
+        faqs: [
+          {
+            q: "Was ist der Unterschied zwischen Aktivitäten und Veranstaltungen?",
+            a: "Aktivitäten fokussiert deinen persönlichen oder Team-Zeitplan, Veranstaltungen listet vereinsweite Termine wie Sitzungen oder Events. Beides respektiert deine Mitgliedschaft.",
+          },
+          {
+            q: "Kann ich mit externem Kalender synchronisieren?",
+            a: "Falls eure Installation Export- oder Abo-Links anbietet, nutze diese. Andernfalls Termine manuell übernehmen, bis eine Integration konfiguriert ist.",
+          },
+        ],
+      },
+      {
+        title: "Kommunikation",
+        faqs: [
+          {
+            q: "Wer erhält Ankündigungen?",
+            a: "Die Reichweite hängt von Kanälen und Zielgruppen ab. Admins und Trainer adressieren oft Teams oder den ganzen Verein; die Schreibmaske zeigt die Optionen.",
+          },
+          {
+            q: "Werden Nachrichten sicher gespeichert?",
+            a: "Inhalte liegen in eurem Supabase-Projekt gemäß den gesetzten Richtlinien. Keine Passwörter oder Kartendaten im Chat – dafür die offiziellen Zahlungswege nutzen.",
+          },
+        ],
+      },
+      {
+        title: "Abrechnung & Pläne",
+        faqs: [
+          {
+            q: "Wer zahlt das Abo?",
+            a: "Meist schließt ein Vereins-Admin per Stripe-Checkout für den Verein ab. Limits folgen dem aktiven Plan, soweit deine Rolle Einsicht hat.",
+          },
+          {
+            q: "Warum ist eine Funktion gesperrt?",
+            a: "Plan-Gates blenden Premium-Bereiche wie KI, Shop oder Module aus, wenn der Tarif sie nicht enthält. Wo möglich, verweisen gesperrte Screens auf Upgrades.",
+          },
+        ],
+      },
+      {
+        title: "Partner, Vereinsseite & Vereins-Shop",
+        faqs: [
+          {
+            q: "Wofür sind Partner da?",
+            a: "Partner unterstützt Sponsoren- und Lieferanten-Workflows je nach Plan. Rechte schützen sensible kommerzielle Daten.",
+          },
+          {
+            q: "Wie funktioniert die öffentliche Vereinsseite?",
+            a: "Admins pflegen Branding und Inhalte unter Vereinsseite. Besucher sehen nur Öffentliches; private Kaderdaten bleiben hinter Login und RLS.",
+          },
+          {
+            q: "Wer kann im Vereins-Shop bestellen?",
+            a: "Mitglieder bestellen, wenn der Shop im Plan aktiv ist. Admins verwalten Produkte, Bilder und Abläufe in der Shop-Administration.",
+          },
+        ],
+      },
+      {
+        title: "ONE4AI & Co-Trainer",
+        faqs: [
+          {
+            q: "Warum meldet Co-Trainer „nicht konfiguriert“?",
+            a: "Entweder fehlt ein API-Schlüssel in den Vereins-KI-Einstellungen oder der Plattform-Fallback im Backend. Admins können ggf. einen Verbindungstest aus den Einstellungen starten.",
+          },
+          {
+            q: "Gibt es Ratenlimits?",
+            a: "Ja. Edge-Funktionen begrenzen Anfragen pro Nutzer und Verein zum Kosten- und Fairness-Schutz. Kurz warten oder den Support zu höheren Kontingenten kontaktieren.",
+          },
+        ],
+      },
+      {
+        title: "Einstellungen & Fehlerbehebung",
+        faqs: [
+          {
+            q: "Wie ändere ich Sprache oder Design?",
+            a: "Nutze Umschalter in der Kopfzeile oder in den Einstellungen. Die Auswahl wird im Browser gespeichert.",
+          },
+          {
+            q: "Nach einem Update erscheint ein Fehler – was tun?",
+            a: "Seite hart neu laden oder bei lokaler Entwicklung Site-Daten leeren. In Produktion kurz warten und erneut versuchen; nach Migrationen Supabase-Projekt prüfen.",
+          },
+        ],
+      },
+    ],
+    report: {
+      title: "Problem oder Idee melden",
+      privacyNote:
+        "Beim Absenden öffnet sich dein E-Mail-Programm mit einem Entwurf. Es wird keine E-Mail direkt aus dem Browser ohne deine App gesendet.",
+      topicLabel: "Themenbereich",
+      detailsLabel: "Details",
+      detailsPlaceholder: "Beschreibe was passiert ist, was du erwartet hast und ggf. Schritte zur Reproduktion.",
+      openEmailApp: "E-Mail-App öffnen",
+      simpleEmail: "Nur E-Mail-Adresse",
+      copyAddress: "Support-Adresse kopieren",
+      copied: "Adresse kopiert",
+      topicPrompt: "Thema wählen",
+      validationDetails: "Bitte kurz beschreiben, bevor du sendest.",
+      bodyTruncatedNote: "\n\n[Nachricht gekürzt — bitte Rest manuell ergänzen.]",
+      topics: {
+        account: "Konto & Verein",
+        members: "Mitglieder & Kader",
+        teams: "Teams, Training & Assets",
+        matches: "Spiele & Berichte",
+        schedule: "Zeitplan & Veranstaltungen",
+        communication: "Kommunikation",
+        billing: "Abrechnung & Pläne",
+        partners: "Partner & Sponsoren",
+        one4ai: "ONE4AI / Co-Trainer",
+        clubPage: "Vereinsseite (öffentlich)",
+        shop: "Vereins-Shop",
+        settings: "Einstellungen & Profil",
+        other: "Sonstiges",
+      },
+    },
   },
 
   // ─── Notifications ───
@@ -1923,6 +2137,17 @@ export const de: Translations = {
     category: "Kategorie",
     stock: "Bestand",
     imageUrl: "Bild-URL (optional)",
+    productImages: "Produktbilder",
+    productImagesHint: "Bis zu 3 Bilder. Max. 2 MB pro Datei. JPEG, PNG, WebP oder GIF.",
+    uploadImages: "Bilder hochladen",
+    addImageUrl: "Bild-URL hinzufügen",
+    addUrl: "Hinzufügen",
+    removeImage: "Entfernen",
+    imageTooLarge: "Jedes Bild darf höchstens 2 MB groß sein.",
+    imageInvalidType: "Nur JPEG-, PNG-, WebP- und GIF-Bilder sind erlaubt.",
+    imageUploadFailed: "Upload fehlgeschlagen. Berechtigungen prüfen und erneut versuchen.",
+    maxImagesReached: "Pro Produkt sind höchstens 3 Bilder möglich.",
+    invalidImageUrl: "Bitte eine gültige http(s)-Bild-URL eingeben.",
     active: "Aktiv",
     inactive: "Inaktiv",
     inStock: "Auf Lager",
@@ -1959,6 +2184,27 @@ export const de: Translations = {
     preview: "Live-Seite ansehen",
     previewDesc: "Sehen Sie, wie Ihre Vereinsseite fur die Offentlichkeit aussieht.",
     generalInfo: "Allgemeine Informationen",
+    requiredFieldsLegend: "Mit * gekennzeichnete Felder sind für die öffentliche Vereinsseite Pflicht.",
+    requiredFieldsLegendCore: "Mit * gekennzeichnete Felder sind Pflicht (Vereinsname und URL-Kurzel).",
+    fillRequiredNameSlug: "Bitte Vereinsname und URL-Kurzel ausfüllen, bevor Sie speichern.",
+    fillRequiredAddress: "Bitte eine Straßenanschrift eintragen, bevor Sie speichern. Sie erscheint auf der öffentlichen Vereinsseite und ist Pflicht.",
+    contactRequiredHint: "Die Straßenanschrift ist erforderlich, damit Besucher den Verein finden.",
+    fetchClubFailedGeneric: "Vereinsdaten konnten nicht vom Server geladen werden.",
+    reloadFailedAfterSave: "Änderungen wurden möglicherweise gespeichert, aber das Neuladen des Formulars ist fehlgeschlagen. Bitte Seite aktualisieren.",
+    publicPageLayout: "Öffentliche Seite – Abschnitte",
+    publicPageLayoutDesc: "Legen Sie fest, welche Bereiche auf /club/ihr-kurzel erscheinen. Der Kopfbereich (Name, Beschreibung, Branding) wird immer angezeigt.",
+    sectionAbout: "Über uns (Kennzahlen)",
+    sectionNews: "News",
+    sectionTeams: "Teams",
+    sectionShop: "Shop",
+    sectionMedia: "Mediengalerie",
+    sectionSchedule: "Trainingsplan",
+    sectionEvents: "Events",
+    sectionContact: "Kontakt & Social",
+    schemaProfileColumnsMissingTitle: "Datenbank-Schema muss aktualisiert werden",
+    schemaProfileColumnsMissingDesc:
+      "Ihr Supabase-Projekt hat noch keine Profil-Spalten für Vereine (z. B. Adresse). Beim Speichern werden nur Name, Kurzel und Branding aktualisiert. Migrationen anwenden: `npx supabase db push` im Repo ausführen oder die SQL-Dateien unter supabase/migrations (z. B. 20260301101500_expand_clubs_profile_and_settings_columns.sql und 20260328232000_ensure_clubs_contact_and_seo_columns.sql) im Supabase SQL Editor ausführen. Anschließend API-Schema neu laden oder kurz warten.",
+    publicSectionsNeedMigration: "Die Abschnitts-Schalter wirken, sobald die Spalte public_page_sections existiert (Migration 20260329000000_club_public_page_sections.sql).",
     clubName: "Vereinsname",
     slug: "URL-Kurzel",
     slugHelper: "Ihre Seite wird unter /club/{slug} erreichbar sein",
@@ -2373,7 +2619,7 @@ export const de: Translations = {
   },
 
   playerStatsPage: {
-    title: "Spielerstatistiken",
+    title: "Berichte",
     subtitle: "Tore, Vorlagen, Karten",
     allTeams: "Alle Teams",
     allCompetitions: "Alle Wettbewerbe",

@@ -25,7 +25,14 @@ export interface SubscriptionRecord {
   club_id: string;
   plan_id: string;
   billing_cycle: "yearly" | "monthly";
-  status: "trialing" | "active" | "past_due" | "canceled" | "incomplete";
+  status:
+    | "trialing"
+    | "active"
+    | "past_due"
+    | "canceled"
+    | "cancelled"
+    | "incomplete"
+    | "paused";
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   current_period_start: string | null;

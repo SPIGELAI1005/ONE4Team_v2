@@ -57,7 +57,7 @@ type ClubPitch = {
   created_at: string;
 };
 
-type ClubPropertyLayer = {
+type ClubAssetLayer = {
   id: string;
   club_id: string;
   name: string;
@@ -199,13 +199,13 @@ function isMissingRelationError(error: unknown): boolean {
   return message.includes("Could not find the table") || message.includes("does not exist");
 }
 
-function resolveLayerFilterPurpose(filterId: string): ClubPropertyLayer["purpose"] | null {
+function resolveLayerFilterPurpose(filterId: string): ClubAssetLayer["purpose"] | null {
   if (filterId === TRAINING_LAYER_FILTER_ID) return "training";
   if (filterId === ADMIN_LAYER_FILTER_ID) return "administration";
   return null;
 }
 
-function pickDefaultLayerIdForPurpose(layers: ClubPropertyLayer[], purpose: ClubPropertyLayer["purpose"]): string {
+function pickDefaultLayerIdForPurpose(layers: ClubAssetLayer[], purpose: ClubAssetLayer["purpose"]): string {
   const preferred = layers.find((layer) => layer.purpose === purpose && layer.is_default);
   if (preferred) return preferred.id;
   const fallback = layers.find((layer) => layer.purpose === purpose);
@@ -298,7 +298,7 @@ const Teams = () => {
   const [teamPlayerIdsByTeamId, setTeamPlayerIdsByTeamId] = useState<Record<string, string[]>>({});
   const [teamCoachIdsByTeamId, setTeamCoachIdsByTeamId] = useState<Record<string, string[]>>({});
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
-  const [layers, setLayers] = useState<ClubPropertyLayer[]>([]);
+  const [layers, setLayers] = useState<ClubAssetLayer[]>([]);
   const [pitches, setPitches] = useState<ClubPitch[]>([]);
   const [bookings, setBookings] = useState<PitchBooking[]>([]);
   const [changeHistory, setChangeHistory] = useState<ChangeHistoryItem[]>([]);
@@ -352,7 +352,7 @@ const Teams = () => {
   const [pitchViewMode, setPitchViewMode] = useState<"separate" | "combined">("separate");
 
   const [layerName, setLayerName] = useState("");
-  const [layerPurpose, setLayerPurpose] = useState<ClubPropertyLayer["purpose"]>("training");
+  const [layerPurpose, setLayerPurpose] = useState<ClubAssetLayer["purpose"]>("training");
   const [layerDescription, setLayerDescription] = useState("");
 
   const [bookingPitchId, setBookingPitchId] = useState("");
@@ -363,8 +363,9 @@ const Teams = () => {
   const [bookingEnd, setBookingEnd] = useState("");
 
   const [usageDate, setUsageDate] = useState(new Date().toISOString().slice(0, 10));
-  const isPropertyLayersPage = location.pathname === "/property-layers";
-  const currentTab: "pitches" | "teams" | "sessions" | "history" = isPropertyLayersPage ? "pitches" : activeTab;
+  const isAssetLayersPage =
+    location.pathname === "/asset-layers" || location.pathname === "/property-layers";
+  const currentTab: "pitches" | "teams" | "sessions" | "history" = isAssetLayersPage ? "pitches" : activeTab;
   const teamsUploadInputRef = useRef<HTMLInputElement | null>(null);
   const sessionsUploadInputRef = useRef<HTMLInputElement | null>(null);
   const pitchCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -417,9 +418,9 @@ const Teams = () => {
   }, [clubId]);
 
   useEffect(() => {
-    if (!isPropertyLayersPage) return;
+    if (!isAssetLayersPage) return;
     if (activeTab !== "pitches") setActiveTab("pitches");
-  }, [activeTab, isPropertyLayersPage]);
+  }, [activeTab, isAssetLayersPage]);
 
   useEffect(() => {
     if (!clubId) return;
@@ -456,9 +457,9 @@ const Teams = () => {
         supabase.from("club_training_change_history").select("*").eq("club_id", clubId).order("created_at", { ascending: false }).limit(200),
         supabase.from("teams").select("id, league").eq("club_id", clubId).limit(1),
         supabase.from("team_coaches").select("id, team_id, membership_id").limit(1),
-        supabase.from("team_players").select("team_id, membership_id").limit(4000),
-        supabase.from("team_coaches").select("team_id, membership_id").limit(4000),
-        supabase.from("club_memberships").select("id, user_id, role, status").eq("club_id", clubId).eq("status", "active").limit(4000),
+        supabase.from("team_players").select("team_id, membership_id").limit(2500),
+        supabase.from("team_coaches").select("team_id, membership_id").limit(2500),
+        supabase.from("club_memberships").select("id, user_id, role, status").eq("club_id", clubId).eq("status", "active").limit(2500),
       ]);
       const rawTeams = (teamsRes.data as unknown as Array<Record<string, unknown>>) || [];
       setTeams(rawTeams.map((team) => ({
@@ -479,7 +480,7 @@ const Teams = () => {
         id: String(layer.id),
         club_id: String(layer.club_id),
         name: String(layer.name),
-        purpose: ((layer.purpose as ClubPropertyLayer["purpose"]) || "training"),
+        purpose: ((layer.purpose as ClubAssetLayer["purpose"]) || "training"),
         description: (layer.description as string | null) ?? null,
         is_default: Boolean(layer.is_default),
         created_at: String(layer.created_at),
@@ -667,7 +668,7 @@ const Teams = () => {
   }, [layers]);
 
   const layerById = useMemo(() => {
-    const map = new Map<string, ClubPropertyLayer>();
+    const map = new Map<string, ClubAssetLayer>();
     for (const layer of layers) map.set(layer.id, layer);
     return map;
   }, [layers]);
@@ -1324,7 +1325,7 @@ const Teams = () => {
       toast({ title: t.teamsPage.common.error, description: error.message, variant: "destructive" });
       return;
     }
-    const created = data as unknown as ClubPropertyLayer;
+    const created = data as unknown as ClubAssetLayer;
     setLayers((previous) => [...previous, created].sort((a, b) => a.name.localeCompare(b.name)));
     setActiveLayerId(created.id);
     setPitchLayerId(created.id);
@@ -2198,7 +2199,7 @@ const Teams = () => {
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeaderSlot
-        title={isPropertyLayersPage ? t.sidebar.propertyLayers : t.teamsPage.title}
+        title={isAssetLayersPage ? t.sidebar.assetLayers : t.teamsPage.title}
         subtitle={canManage ? t.teamsPage.subtitleManage : t.teamsPage.subtitleView}
         toolbarRevision={teamsToolbarRevision}
         rightSlot={
@@ -2265,7 +2266,7 @@ const Teams = () => {
       />
 
       <div className="container mx-auto px-4 py-6">
-        {!isPropertyLayersPage && <div className="mb-4 inline-flex rounded-xl border border-border/60 bg-card/40 p-1">
+        {!isAssetLayersPage && <div className="mb-4 inline-flex rounded-xl border border-border/60 bg-card/40 p-1">
           {(
             [
               { id: "pitches", label: t.teamsPage.tabs.pitches },
@@ -3407,7 +3408,7 @@ const Teams = () => {
             </div>
             <div className="space-y-3">
               <Input placeholder={t.teamsPage.layerModal.namePlaceholder} value={layerName} onChange={(event) => setLayerName(event.target.value)} className="bg-background" />
-              <Select value={layerPurpose} onValueChange={(value) => setLayerPurpose(value as ClubPropertyLayer["purpose"])}>
+              <Select value={layerPurpose} onValueChange={(value) => setLayerPurpose(value as ClubAssetLayer["purpose"])}>
                 <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background px-3 text-sm">
                   <SelectValue />
                 </SelectTrigger>

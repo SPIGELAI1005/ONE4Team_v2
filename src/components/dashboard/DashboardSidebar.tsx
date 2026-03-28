@@ -3,7 +3,7 @@ import { useLanguage } from "@/hooks/use-language";
 import {
   LayoutDashboard, Users, Calendar, Trophy, CreditCard,
   MessageSquare, Briefcase, ShoppingBag, Globe, Bot,
-  Settings, LogOut, ChevronLeft, ChevronRight, CalendarDays, Swords, BarChart3, Layers3
+  Settings, LogOut, ChevronLeft, ChevronRight, CalendarDays, BarChart3, Layers3, HelpCircle,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -11,7 +11,7 @@ import logo from "@/assets/one4team-logo.png";
 
 type NavItem = { icon: React.ElementType; label: string; id: string; route?: string };
 
-const DashboardSidebar = () => {
+export default function DashboardSidebar() {
   const { role: urlRole } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -30,7 +30,8 @@ const DashboardSidebar = () => {
   const pathToId: Record<string, string> = {
     "/members": "members",
     "/teams": "training",
-    "/property-layers": "property-layers",
+    "/asset-layers": "asset-layers",
+    "/property-layers": "asset-layers",
     "/matches": "matches",
     "/events": "events",
     "/player-stats": "stats",
@@ -45,6 +46,7 @@ const DashboardSidebar = () => {
     "/shop": "shop",
     "/club-page-admin": "clubpage",
     "/settings": "settings",
+    "/support": "support",
   };
   const active = pathToId[location.pathname] || (location.pathname.startsWith("/dashboard") ? "overview" : "overview");
 
@@ -53,7 +55,7 @@ const DashboardSidebar = () => {
   const roleMenus: Record<string, NavItem[]> = {
     admin: [
       { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
-      { icon: Layers3, label: t.sidebar.propertyLayers, id: "property-layers", route: "/property-layers" },
+      { icon: Layers3, label: t.sidebar.assetLayers, id: "asset-layers", route: "/asset-layers" },
       { icon: Users, label: t.sidebar.members, id: "members", route: "/members" },
       { icon: Calendar, label: t.sidebar.training, id: "training", route: "/teams" },
       { icon: Trophy, label: t.sidebar.matches, id: "matches", route: "/matches" },
@@ -62,14 +64,15 @@ const DashboardSidebar = () => {
       { icon: CreditCard, label: t.sidebar.payments, id: "payments", route: "/payments" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
       { icon: Briefcase, label: t.sidebar.partners, id: "partners", route: "/partners" },
-      { icon: ShoppingBag, label: t.sidebar.shop, id: "shop", route: "/shop" },
-      { icon: Globe, label: t.sidebar.clubPage, id: "clubpage", route: "/club-page-admin" },
       { icon: Bot, label: t.sidebar.oneAi, id: "ai", route: "/co-trainer" },
+      { icon: Globe, label: t.sidebar.clubPage, id: "clubpage", route: "/club-page-admin" },
+      { icon: ShoppingBag, label: t.sidebar.shop, id: "shop", route: "/shop" },
       { icon: Settings, label: t.sidebar.settings, id: "settings", route: "/settings" },
+      { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
     ],
     trainer: [
       { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
-      { icon: Layers3, label: t.sidebar.propertyLayers, id: "property-layers", route: "/property-layers" },
+      { icon: Layers3, label: t.sidebar.assetLayers, id: "asset-layers", route: "/asset-layers" },
       { icon: Calendar, label: t.sidebar.schedule, id: "schedule", route: "/activities" },
       { icon: Users, label: t.sidebar.myTeams, id: "teams", route: "/teams" },
       { icon: Trophy, label: t.sidebar.matches, id: "matches", route: "/matches" },
@@ -77,6 +80,7 @@ const DashboardSidebar = () => {
       { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/player-stats" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
       { icon: Bot, label: t.sidebar.oneAi, id: "ai", route: "/co-trainer" },
+      { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
     ],
     player: [
       { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
@@ -87,27 +91,32 @@ const DashboardSidebar = () => {
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
       { icon: ShoppingBag, label: t.sidebar.shop, id: "shop", route: "/shop" },
       { icon: Bot, label: t.sidebar.oneAi, id: "ai", route: "/co-trainer" },
+      { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
     ],
     sponsor: [
       { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
       { icon: Briefcase, label: t.sidebar.contracts, id: "contracts" },
       { icon: CreditCard, label: t.sidebar.invoices, id: "invoices" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+      { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
     ],
     supplier: [
       { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
       { icon: Briefcase, label: t.sidebar.orders, id: "orders" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+      { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
     ],
     service: [
       { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
       { icon: Briefcase, label: t.sidebar.contracts, id: "contracts" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+      { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
     ],
     consultant: [
       { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
       { icon: Briefcase, label: t.sidebar.engagements, id: "engagements" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+      { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
     ],
   };
 
@@ -181,6 +190,4 @@ const DashboardSidebar = () => {
       </div>
     </aside>
   );
-};
-
-export default DashboardSidebar;
+}

@@ -1,7 +1,8 @@
 import { useSubscription } from "@/hooks/use-subscription";
 import { getPlanLimits, isFeatureAvailable, type FeatureKey } from "@/lib/plan-limits";
 
-const DEV_UNLOCK_ALL = import.meta.env.VITE_DEV_UNLOCK_ALL_FEATURES === "true";
+const DEV_UNLOCK_ALL =
+  import.meta.env.DEV && import.meta.env.VITE_DEV_UNLOCK_ALL_FEATURES === "true";
 
 interface UsePlanGuardReturn {
   planId: string | null;

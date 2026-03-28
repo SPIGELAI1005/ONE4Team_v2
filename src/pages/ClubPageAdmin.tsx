@@ -3,8 +3,17 @@ import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, ExternalLink, Globe, Palette, MapPin, Share2, Search as SearchIcon, Save, Eye, EyeOff, Image as ImageIcon, UploadCloud, Users } from "lucide-react";
+import { Loader2, ExternalLink, Globe, Palette, MapPin, Share2, Search as SearchIcon, Save, Eye, EyeOff, Image as ImageIcon, UploadCloud, Users, List } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DEFAULT_PUBLIC_PAGE_SECTIONS,
+  parsePublicPageSections,
+  PUBLIC_PAGE_SECTION_KEYS,
+  toPublicPageSectionsJson,
+  type PublicPageSectionId,
+  type PublicPageSectionsState,
+} from "@/lib/club-public-page-sections";
+import { Switch } from "@/components/ui/switch";
 import { useActiveClub } from "@/hooks/use-active-club";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +46,7 @@ interface ClubFormData {
   join_reviewer_policy: "admin_only" | "admin_trainer";
   join_default_role: string;
   join_default_team: string;
+  publicPageSections: PublicPageSectionsState;
 }
 
 interface SectionCardProps {
@@ -52,6 +62,7 @@ interface FieldRowProps {
   placeholder?: string;
   type?: string;
   helper?: string;
+  required?: boolean;
 }
 
 interface ColorFieldProps {
@@ -86,6 +97,7 @@ const EMPTY_FORM: ClubFormData = {
   join_reviewer_policy: "admin_only",
   join_default_role: "member",
   join_default_team: "",
+  publicPageSections: { ...DEFAULT_PUBLIC_PAGE_SECTIONS },
 };
 
 function SectionCard({ icon: Icon, title, children }: SectionCardProps) {
@@ -102,14 +114,37 @@ function SectionCard({ icon: Icon, title, children }: SectionCardProps) {
   );
 }
 
-function FieldRow({ label, value, onChange, placeholder, type = "text", helper }: FieldRowProps) {
+function FieldRow({ label, value, onChange, placeholder, type = "text", helper, required }: FieldRowProps) {
   return (
     <div>
-      <div className="text-xs text-muted-foreground mb-1">{label}</div>
-      <Input type={type} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
+      <div className="text-xs text-muted-foreground mb-1">
+        <span>{label}</span>
+        {required ? (
+          <span className="text-destructive font-semibold ml-0.5" aria-hidden>
+            *
+          </span>
+        ) : null}
+      </div>
+      <Input
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        required={required}
+        aria-required={required}
+      />
       {helper ? <div className="text-[10px] text-muted-foreground mt-1">{helper}</div> : null}
     </div>
   );
+}
+
+function assignIfColumnExists(
+  payload: Record<string, unknown>,
+  keys: Set<string>,
+  column: string,
+  value: unknown
+) {
+  if (keys.has(column)) payload[column] = value;
 }
 
 function ColorField({ label, value, onChange }: ColorFieldProps) {
@@ -139,61 +174,81 @@ export default function ClubPageAdmin() {
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [form, setForm] = useState<ClubFormData>(EMPTY_FORM);
   const [referenceDraft, setReferenceDraft] = useState("");
-  const [clubColumns, setClubColumns] = useState<Set<string>>(new Set());
   const [storageDiag, setStorageDiag] = useState<{ status: "idle" | "checking" | "ok" | "error"; message: string }>({
     status: "idle",
     message: "",
   });
   const [storageDiagLastCheckedAt, setStorageDiagLastCheckedAt] = useState<Date | null>(null);
+  /** Keys returned on the club row from PostgREST (only existing columns). Used to avoid PATCHing missing columns. */
+  const [clubRowKeys, setClubRowKeys] = useState<Set<string>>(new Set());
 
-  const fetchClubData = useCallback(async () => {
-    if (!activeClubId) return;
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.from("clubs").select("*").eq("id", activeClubId).single();
-      if (error) throw error;
-      if (data) {
-        const record = data as Record<string, unknown>;
-        setClubColumns(new Set(Object.keys(record)));
-        const referenceImages = Array.isArray(record.reference_images)
-          ? record.reference_images.map((item) => String(item)).filter(Boolean)
-          : [];
-        setForm({
-          name: data.name || "",
-          slug: data.slug || "",
-          description: (record.description as string) || "",
-          is_public: record.is_public !== false,
-          logo_url: (record.logo_url as string) || "",
-          favicon_url: (record.favicon_url as string) || "",
-          cover_image_url: (record.cover_image_url as string) || "",
-          primary_color: (record.primary_color as string) || "#C4A052",
-          secondary_color: (record.secondary_color as string) || "#1E293B",
-          tertiary_color: (record.tertiary_color as string) || "#0F172A",
-          support_color: (record.support_color as string) || "#22C55E",
-          reference_images: referenceImages,
-          address: (record.address as string) || "",
-          phone: (record.phone as string) || "",
-          email: (record.email as string) || "",
-          website: (record.website as string) || "",
-          facebook_url: (record.facebook_url as string) || "",
-          instagram_url: (record.instagram_url as string) || "",
-          twitter_url: (record.twitter_url as string) || "",
-          meta_title: (record.meta_title as string) || "",
-          meta_description: (record.meta_description as string) || "",
-          join_approval_mode: (record.join_approval_mode as "manual" | "auto") || "manual",
-          join_reviewer_policy: (record.join_reviewer_policy as "admin_only" | "admin_trainer") || "admin_only",
-          join_default_role: (record.join_default_role as string) || "member",
-          join_default_team: (record.join_default_team as string) || "",
+  const fetchClubData = useCallback(
+    async (options?: { silent?: boolean }): Promise<boolean> => {
+      if (!activeClubId) return false;
+      const silent = options?.silent === true;
+      if (!silent) setLoading(true);
+      try {
+        const { data, error } = await supabase.from("clubs").select("*").eq("id", activeClubId).single();
+        if (error) throw error;
+        if (data) {
+          const record = data as Record<string, unknown>;
+          setClubRowKeys(new Set(Object.keys(record)));
+          const referenceImages = Array.isArray(record.reference_images)
+            ? record.reference_images.map((item) => String(item)).filter(Boolean)
+            : [];
+          setForm({
+            name: data.name || "",
+            slug: data.slug || "",
+            description: (record.description as string) || "",
+            is_public: record.is_public !== false,
+            logo_url: (record.logo_url as string) || "",
+            favicon_url: (record.favicon_url as string) || "",
+            cover_image_url: (record.cover_image_url as string) || "",
+            primary_color: (record.primary_color as string) || "#C4A052",
+            secondary_color: (record.secondary_color as string) || "#1E293B",
+            tertiary_color: (record.tertiary_color as string) || "#0F172A",
+            support_color: (record.support_color as string) || "#22C55E",
+            reference_images: referenceImages,
+            address: (record.address as string) || "",
+            phone: (record.phone as string) || "",
+            email: (record.email as string) || "",
+            website: (record.website as string) || "",
+            facebook_url: (record.facebook_url as string) || "",
+            instagram_url: (record.instagram_url as string) || "",
+            twitter_url: (record.twitter_url as string) || "",
+            meta_title: (record.meta_title as string) || "",
+            meta_description: (record.meta_description as string) || "",
+            join_approval_mode: (record.join_approval_mode as "manual" | "auto") || "manual",
+            join_reviewer_policy: (record.join_reviewer_policy as "admin_only" | "admin_trainer") || "admin_only",
+            join_default_role: (record.join_default_role as string) || "member",
+            join_default_team: (record.join_default_team as string) || "",
+            publicPageSections: parsePublicPageSections(record.public_page_sections),
+          });
+        }
+        return true;
+      } catch (err: unknown) {
+        setClubRowKeys(new Set());
+        const message =
+          err instanceof Error
+            ? err.message
+            : typeof err === "object" && err !== null && "message" in err
+              ? String((err as { message: unknown }).message)
+              : t.clubPageAdmin.fetchClubFailedGeneric;
+        toast({
+          title: t.common.error,
+          description: silent ? t.clubPageAdmin.reloadFailedAfterSave : message,
+          variant: "destructive",
         });
+        if (activeClub) {
+          setForm((previous) => ({ ...previous, name: activeClub.name, slug: activeClub.slug }));
+        }
+        return false;
+      } finally {
+        if (!silent) setLoading(false);
       }
-    } catch {
-      if (activeClub) {
-        setForm((previous) => ({ ...previous, name: activeClub.name, slug: activeClub.slug }));
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [activeClub, activeClubId]);
+    },
+    [activeClub, activeClubId, t.clubPageAdmin.fetchClubFailedGeneric, t.clubPageAdmin.reloadFailedAfterSave, t.common.error, toast]
+  );
 
   useEffect(() => {
     void fetchClubData();
@@ -237,6 +292,21 @@ export default function ClubPageAdmin() {
   const referenceList = useMemo(
     () => form.reference_images.filter((image) => image.trim().length > 0),
     [form.reference_images]
+  );
+
+  const publicSectionLabels = useMemo(
+    () =>
+      ({
+        about: t.clubPageAdmin.sectionAbout,
+        news: t.clubPageAdmin.sectionNews,
+        teams: t.clubPageAdmin.sectionTeams,
+        shop: t.clubPageAdmin.sectionShop,
+        media: t.clubPageAdmin.sectionMedia,
+        schedule: t.clubPageAdmin.sectionSchedule,
+        events: t.clubPageAdmin.sectionEvents,
+        contact: t.clubPageAdmin.sectionContact,
+      }) satisfies Record<PublicPageSectionId, string>,
+    [t.clubPageAdmin]
   );
 
   const uploadAsset = async (file: File, folder: string) => {
@@ -289,41 +359,58 @@ export default function ClubPageAdmin() {
 
   const saveChanges = async () => {
     if (!activeClubId || saving) return;
+    if (!form.name.trim() || !form.slug.trim()) {
+      toast({
+        title: t.common.error,
+        description: t.clubPageAdmin.fillRequiredNameSlug,
+        variant: "destructive",
+      });
+      return;
+    }
+    if (clubRowKeys.has("address") && !form.address.trim()) {
+      toast({
+        title: t.common.error,
+        description: t.clubPageAdmin.fillRequiredAddress,
+        variant: "destructive",
+      });
+      return;
+    }
     setSaving(true);
     try {
+      const keys = clubRowKeys;
       const payload: Record<string, unknown> = {
         name: form.name.trim(),
         slug: form.slug.trim(),
         description: form.description.trim() || null,
         is_public: form.is_public,
         logo_url: form.logo_url.trim() || null,
-        cover_image_url: form.cover_image_url.trim() || null,
         primary_color: form.primary_color.trim() || null,
-        address: form.address.trim() || null,
-        phone: form.phone.trim() || null,
-        email: form.email.trim() || null,
-        website: form.website.trim() || null,
-        facebook_url: form.facebook_url.trim() || null,
-        instagram_url: form.instagram_url.trim() || null,
-        twitter_url: form.twitter_url.trim() || null,
-        meta_title: form.meta_title.trim() || null,
-        meta_description: form.meta_description.trim() || null,
       };
-
-      // Only send newer columns if the current DB actually exposes them.
-      if (clubColumns.has("favicon_url")) payload.favicon_url = form.favicon_url.trim() || null;
-      if (clubColumns.has("secondary_color")) payload.secondary_color = form.secondary_color.trim() || null;
-      if (clubColumns.has("tertiary_color")) payload.tertiary_color = form.tertiary_color.trim() || null;
-      if (clubColumns.has("support_color")) payload.support_color = form.support_color.trim() || null;
-      if (clubColumns.has("reference_images")) payload.reference_images = referenceList;
-      if (clubColumns.has("join_approval_mode")) payload.join_approval_mode = form.join_approval_mode;
-      if (clubColumns.has("join_reviewer_policy")) payload.join_reviewer_policy = form.join_reviewer_policy;
-      if (clubColumns.has("join_default_role")) payload.join_default_role = form.join_default_role || "member";
-      if (clubColumns.has("join_default_team")) payload.join_default_team = form.join_default_team.trim() || null;
+      assignIfColumnExists(payload, keys, "cover_image_url", form.cover_image_url.trim() || null);
+      assignIfColumnExists(payload, keys, "favicon_url", form.favicon_url.trim() || null);
+      assignIfColumnExists(payload, keys, "secondary_color", form.secondary_color.trim() || null);
+      assignIfColumnExists(payload, keys, "tertiary_color", form.tertiary_color.trim() || null);
+      assignIfColumnExists(payload, keys, "support_color", form.support_color.trim() || null);
+      assignIfColumnExists(payload, keys, "reference_images", referenceList);
+      assignIfColumnExists(payload, keys, "address", form.address.trim() || null);
+      assignIfColumnExists(payload, keys, "phone", form.phone.trim() || null);
+      assignIfColumnExists(payload, keys, "email", form.email.trim() || null);
+      assignIfColumnExists(payload, keys, "website", form.website.trim() || null);
+      assignIfColumnExists(payload, keys, "facebook_url", form.facebook_url.trim() || null);
+      assignIfColumnExists(payload, keys, "instagram_url", form.instagram_url.trim() || null);
+      assignIfColumnExists(payload, keys, "twitter_url", form.twitter_url.trim() || null);
+      assignIfColumnExists(payload, keys, "meta_title", form.meta_title.trim() || null);
+      assignIfColumnExists(payload, keys, "meta_description", form.meta_description.trim() || null);
+      assignIfColumnExists(payload, keys, "join_approval_mode", form.join_approval_mode);
+      assignIfColumnExists(payload, keys, "join_reviewer_policy", form.join_reviewer_policy);
+      assignIfColumnExists(payload, keys, "join_default_role", form.join_default_role || "member");
+      assignIfColumnExists(payload, keys, "join_default_team", form.join_default_team.trim() || null);
+      assignIfColumnExists(payload, keys, "public_page_sections", toPublicPageSectionsJson(form.publicPageSections));
 
       const { error } = await supabase.from("clubs").update(payload).eq("id", activeClubId);
       if (error) throw error;
-      toast({ title: t.clubPageAdmin.saved });
+      const reloaded = await fetchClubData({ silent: true });
+      if (reloaded) toast({ title: t.clubPageAdmin.saved });
     } catch (error) {
       const message = error instanceof Error
         ? error.message
@@ -430,6 +517,17 @@ export default function ClubPageAdmin() {
       </div>
 
       <div className="container mx-auto px-4 py-6 space-y-6 max-w-5xl">
+        {clubRowKeys.size > 0 && !clubRowKeys.has("address") ? (
+          <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+            <div className="font-semibold text-amber-950 dark:text-amber-100 mb-1">
+              {t.clubPageAdmin.schemaProfileColumnsMissingTitle}
+            </div>
+            <p className="text-[13px] text-amber-950/90 dark:text-amber-50/90 leading-snug">
+              {t.clubPageAdmin.schemaProfileColumnsMissingDesc}
+            </p>
+          </div>
+        ) : null}
+
         <SectionCard icon={ImageIcon} title={t.clubPageAdmin.liveBrandPreview}>
           <div
             className="rounded-2xl border border-border/60 overflow-hidden"
@@ -453,9 +551,27 @@ export default function ClubPageAdmin() {
         </SectionCard>
 
         <SectionCard icon={Globe} title={t.clubPageAdmin.generalInfo}>
+          <p className="text-[11px] text-muted-foreground mb-3">
+            {clubRowKeys.size > 0 && clubRowKeys.has("address")
+              ? t.clubPageAdmin.requiredFieldsLegend
+              : t.clubPageAdmin.requiredFieldsLegendCore}
+          </p>
           <div className="grid gap-3">
-            <FieldRow label={t.clubPageAdmin.clubName} value={form.name} onChange={(value) => updateField("name", value)} placeholder={t.clubPageAdmin.clubNamePlaceholder} />
-            <FieldRow label={t.clubPageAdmin.slug} value={form.slug} onChange={(value) => updateField("slug", value)} placeholder="tsv-allach-09" helper={t.clubPageAdmin.slugHelper} />
+            <FieldRow
+              required
+              label={t.clubPageAdmin.clubName}
+              value={form.name}
+              onChange={(value) => updateField("name", value)}
+              placeholder={t.clubPageAdmin.clubNamePlaceholder}
+            />
+            <FieldRow
+              required
+              label={t.clubPageAdmin.slug}
+              value={form.slug}
+              onChange={(value) => updateField("slug", value)}
+              placeholder="tsv-allach-09"
+              helper={t.clubPageAdmin.slugHelper}
+            />
             <div>
               <div className="text-xs text-muted-foreground mb-1">{t.clubPageAdmin.description}</div>
               <textarea
@@ -585,9 +701,18 @@ export default function ClubPageAdmin() {
         </SectionCard>
 
         <SectionCard icon={MapPin} title={t.clubPageAdmin.contactDetails}>
+          {clubRowKeys.has("address") ? (
+            <p className="text-[11px] text-muted-foreground mb-3">{t.clubPageAdmin.contactRequiredHint}</p>
+          ) : null}
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <FieldRow label={t.clubPageAdmin.address} value={form.address} onChange={(value) => updateField("address", value)} placeholder="Street, City, ZIP" />
+              <FieldRow
+                required={clubRowKeys.has("address")}
+                label={t.clubPageAdmin.address}
+                value={form.address}
+                onChange={(value) => updateField("address", value)}
+                placeholder="Street, City, ZIP"
+              />
             </div>
             <FieldRow label={t.clubPageAdmin.phone} value={form.phone} onChange={(value) => updateField("phone", value)} placeholder="+49 ..." />
             <FieldRow label={t.clubPageAdmin.email} value={form.email} onChange={(value) => updateField("email", value)} placeholder="info@club.de" />
@@ -677,6 +802,33 @@ export default function ClubPageAdmin() {
                 placeholder={t.clubPageAdmin.metaDescriptionPlaceholder}
               />
             </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard icon={List} title={t.clubPageAdmin.publicPageLayout}>
+          <p className="text-[11px] text-muted-foreground mb-4">{t.clubPageAdmin.publicPageLayoutDesc}</p>
+          {!clubRowKeys.has("public_page_sections") ? (
+            <p className="text-[11px] text-amber-700 dark:text-amber-200/90 mb-3">{t.clubPageAdmin.publicSectionsNeedMigration}</p>
+          ) : null}
+          <div className="grid gap-3 sm:grid-cols-2">
+            {PUBLIC_PAGE_SECTION_KEYS.map((key) => (
+              <div
+                key={key}
+                className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/30 px-3 py-2.5"
+              >
+                <span className="text-sm text-foreground pr-2">{publicSectionLabels[key]}</span>
+                <Switch
+                  disabled={!clubRowKeys.has("public_page_sections")}
+                  checked={form.publicPageSections[key]}
+                  onCheckedChange={(checked) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      publicPageSections: { ...prev.publicPageSections, [key]: Boolean(checked) },
+                    }))
+                  }
+                />
+              </div>
+            ))}
           </div>
         </SectionCard>
 

@@ -1,4 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { edgeCorsHeaders } from "../_shared/cors.ts";
+import { enforceLlmRateLimitOrResponse, PayloadTooLargeError, readJsonBodyLimited } from "../_shared/edge_guard.ts";
 import {
   assertClubMember,
   createSupabaseAdmin,
@@ -7,13 +9,12 @@ import {
   resolveLlmCredentials,
   streamChat,
 } from "../_shared/llm.ts";
+import { clubHasPlanFeature } from "../_shared/plan_entitlements.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const MAX_BODY_BYTES = 400_000;
 
 serve(async (req) => {
+  const corsHeaders = edgeCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -27,7 +28,23 @@ serve(async (req) => {
       });
     }
 
-    const { type, matchData, teamData, context, club_id: clubId } = await req.json();
+    let body: Record<string, unknown>;
+    try {
+      body = await readJsonBodyLimited(req, MAX_BODY_BYTES);
+    } catch (e) {
+      if (e instanceof PayloadTooLargeError) {
+        return new Response(JSON.stringify({ error: "Request body too large." }), {
+          status: 413,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ error: "Invalid JSON body." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const clubId = body.club_id;
     if (!clubId || typeof clubId !== "string") {
       return new Response(JSON.stringify({ error: "club_id is required." }), {
         status: 400,
@@ -42,6 +59,22 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const planCheck = await clubHasPlanFeature(admin, clubId, "ai");
+    if (!planCheck.allowed) {
+      return new Response(JSON.stringify({ error: planCheck.detail ?? "Plan does not include AI." }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const rateLimited = await enforceLlmRateLimitOrResponse(admin, userId, clubId, corsHeaders);
+    if (rateLimited) return rateLimited;
+
+    const type = body.type;
+    const matchData = body.matchData;
+    const teamData = body.teamData;
+    const context = body.context;
 
     const creds = resolveLlmCredentials(await fetchClubLlmSettings(admin, clubId));
     if (!creds) {

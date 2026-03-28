@@ -1,5 +1,6 @@
 import React from "react";
 import { logger } from "@/lib/logger";
+import { captureExceptionToSentry } from "@/lib/observability";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -22,6 +23,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     logger.error("UI crash", { error: error.message, stack: error.stack, info });
+    captureExceptionToSentry(error, { componentStack: info.componentStack });
   }
 
   render() {

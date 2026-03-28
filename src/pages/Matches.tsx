@@ -147,7 +147,9 @@ const Matches = () => {
       supabase
         .from("club_memberships")
         .select("id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_profile_fk(display_name)")
-        .eq("club_id", clubId!),
+        .eq("club_id", clubId!)
+        .eq("status", "active")
+        .limit(800),
       supabase.from("match_lineups").select("*").eq("match_id", match.id),
     ]);
     setMatchEvents((evRes.data as MatchEvent[]) || []);

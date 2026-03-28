@@ -11,7 +11,8 @@ Club/team management SaaS with an iOS-style glass UI, full internationalization 
 - **Cookie Consent**: GDPR-compliant banner with Accept All / Essential Only
 - **Dashboard**: Role-based views (Admin, Trainer, Player, Sponsor, Supplier, etc.) with personalized greeting
 - **Shop**: Product catalog, orders management, categories (demo data)
-- **Club Page Admin**: Manage public club page (branding, contact, social, SEO)
+- **Club Page Admin**: Manage public club page (branding, contact, social, SEO, **which sections** appear on `/club/:slug` via `public_page_sections`)
+- **Public club page (`/club/:slug`)**: PWA-friendly mobile header (single menu), hero shortcuts aligned with CTAs, **Powered by ONE4Team** → marketing home (`/`); **Support FAQ** at `/support`
 - **Settings**: Profile, club config, notification preferences, account security
 - **ONE4AI (`/co-trainer`)**: Club-scoped chat with structured context; per-club LLM keys in **Settings → Club → AI provider** (`club_llm_settings`) or platform fallback via Supabase secrets `OPENAI_API_KEY` / `OPENAI_MODEL`. Settings shows a live **connection status** and **Test connection** (calls deployed `co-trainer` with `mode: "health"`).
 - **AI copilots**: Co-Trainer (ONE4AI) + Co-AImin with club-scoped logging and optional server generation
@@ -57,6 +58,9 @@ npm run build        # Production build
 npm run lint         # Lint check
 npm test             # Run tests
 npm run build:report # Bundle size report
+npm run k6:smoke     # k6 smoke (requires k6 CLI; point at staging URLs)
+npm run k6:journeys  # k6 critical journeys
+npm run k6:edge-co-trainer  # low-rate edge LLM smoke (use sparingly)
 ```
 
 ## Deployment (Vercel)
@@ -71,6 +75,7 @@ npm run build:report # Bundle size report
 - `TASKS.md` — execution queue with task status
 - `DEPLOYMENT.md` — Vercel deployment guide
 - `HOLD.md` — items blocked on Supabase/infra
+- `ops/PRODUCTION_READINESS_ARTIFACTS.md` — go-live checklist, rollback, monitoring, k6 phases
 
 ## Current Release Snapshot
 Go-live readiness checklist:

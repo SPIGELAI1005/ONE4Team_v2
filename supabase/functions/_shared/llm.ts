@@ -26,6 +26,16 @@ const DEFAULTS: Record<LlmProvider, string> = {
 
 const GITHUB_MODELS_URL = "https://models.inference.ai.azure.com/chat/completions";
 
+function llmFetchTimeoutMs(): number {
+  const n = Number(Deno.env.get("LLM_UPSTREAM_TIMEOUT_MS") ?? "120000");
+  if (!Number.isFinite(n)) return 120_000;
+  return Math.min(300_000, Math.max(5_000, Math.floor(n)));
+}
+
+function llmAbortSignal(): AbortSignal {
+  return AbortSignal.timeout(llmFetchTimeoutMs());
+}
+
 export function createSupabaseAdmin(): SupabaseClient {
   const url = Deno.env.get("SUPABASE_URL");
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -133,7 +143,12 @@ export async function streamOpenAiCompatible(args: {
   if (args.authMode === "bearer") headers.Authorization = `Bearer ${args.apiKey}`;
   else headers["api-key"] = args.apiKey;
 
-  return fetch(args.url, { method: "POST", headers, body: JSON.stringify(args.body) });
+  return fetch(args.url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(args.body),
+    signal: llmAbortSignal(),
+  });
 }
 
 export async function streamChat(
@@ -208,6 +223,7 @@ async function streamAnthropic(
       "anthropic-version": "2023-06-01",
       "Content-Type": "application/json",
     },
+    signal: llmAbortSignal(),
     body: JSON.stringify({
       model,
       max_tokens: 8192,
@@ -282,6 +298,7 @@ async function streamGemini(
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    signal: llmAbortSignal(),
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: systemPrompt }] },
       contents,
@@ -370,6 +387,7 @@ export async function completeChat(
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal: llmAbortSignal(),
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
         contents: [{ role: "user", parts: [{ text: userContent }] }],

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Lock, ArrowRight } from "lucide-react";
+import { Lock, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePlanGuard } from "@/hooks/use-plan-guard";
 import { getPlanDisplayName, type FeatureKey } from "@/lib/plan-limits";
@@ -16,7 +16,14 @@ export function PlanGate({ feature, children, fallbackMessage }: PlanGateProps) 
   const navigate = useNavigate();
   const { t } = useLanguage();
 
-  if (loading) return <>{children}</>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 px-4 text-center text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-3" aria-hidden />
+        <p className="text-sm">{t.common.loading}</p>
+      </div>
+    );
+  }
 
   if (!canUseFeature(feature)) {
     const defaultMsg = t.planGate.featureNotAvailable.replace("{planName}", getPlanDisplayName(planId));
@@ -56,7 +63,14 @@ export function PlanLimitCheck({ currentCount, limitType, children }: PlanLimitC
   const navigate = useNavigate();
   const { t } = useLanguage();
 
-  if (loading) return <>{children}</>;
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" aria-hidden />
+        <span>{t.common.loading}</span>
+      </div>
+    );
+  }
 
   const limit = limitType === "members" ? maxMembers : maxTeams;
   const isOverLimit = currentCount >= limit;

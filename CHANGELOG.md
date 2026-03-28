@@ -3,6 +3,54 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-03-29 (Public club PWA-style UX, sections, Stripe/shop hardening, load-test harness)
+
+### Public club page (`/club/:slug`) — product UX
+- **`AppHeader` `variant="clubPublic"`** (`src/components/layout/AppHeader.tsx`): On viewports below `md`, the sticky header shows only the **menu control + club title (+ crest via `titleLeading`)**. Language, theme, sign-out, desktop-only CTAs, and the mobile role pill move into **one** slide-down menu. Logged-in users still get active club, profile/role switcher, dashboard links, then language/theme and sign-out. Guests get section shortcuts + language/theme only.
+- **Subtitle on mobile:** For `clubPublic`, the header subtitle (club description or invite-only fallback) is **`max-md:hidden`** so small screens show the club name only (full subtitle from `md` up).
+- **`ClubPage.tsx` → `AppHeader` props:** `variant="clubPublic"`, `titleLeading` (logo), `clubPublicMenuTop(close)` renders **visible section links** (scroll to `#id`) plus **Open dashboard / Request invite**; **`rightSlot`** is **`hidden md:flex`** for the primary CTA on desktop. Removed the separate mobile “sections” modal/hamburger duplicate.
+- **Hero shortcuts + CTAs:** Shared **`max-w-md mx-auto px-1`** wrapper so shortcut pills align with the two main buttons; **`max-md` CSS grid** (`grid-cols-1|2|3`) with **`gap-1`**; **`md+`** reverts to centered flex pills. Primary and outline hero **`Button`s** use **`rounded-full`** to match pill shortcuts.
+- **Hero layout:** Flexible column with **`min-h-[min(56dvh,26rem)]` on mobile** so **“Powered by ONE4Team”** sits lower; attribution is a **`Link` to `/`** (marketing home) with **small ONE4Team logo** below, **`gap-[0.5625rem]`** between text and logo; small type via arbitrary `rem` sizes.
+- **i18n:** EN `clubPage.trainingSchedule` label set to **“Trainings”** (hero + schedule wording); DE already used **Trainings**.
+
+### Public page sections (admin + rendering)
+- **Migration `20260329000000_club_public_page_sections.sql`:** `clubs.public_page_sections` **jsonb** for toggling which blocks appear on the public page.
+- **`src/lib/club-public-page-sections.ts`:** Parse/defaults for section visibility.
+- **`ClubPageAdmin`:** Load/save section toggles with EN/DE copy.
+- **`ClubPage`:** Nav and body sections respect **`sectionVisibility`** (hero always shown).
+
+### Database (apply in order per environment)
+- `20260328203000_stripe_webhook_idempotency.sql` — Stripe webhook idempotency / processed events.
+- `20260328203100_billing_subscription_status_expand.sql` — broader subscription status storage if present.
+- `20260328204000_fix_rls_helper_argument_order.sql` — RLS helper signature/order fixes (large bundle; review before prod).
+- `20260328205000_edge_llm_rate_limit.sql` — rate limiting for Edge LLM usage.
+- `20260328220000_shop_product_images.sql` — shop product image columns / storage alignment.
+- `20260328231000_shop_orders_plan_entitlement.sql` — shop orders tied to plan entitlement / RLS.
+- `20260328232000_ensure_clubs_contact_and_seo_columns.sql` — contact + SEO columns on `clubs` if missing.
+- `20260329000000_club_public_page_sections.sql` — public page section flags.
+
+### Supabase Edge / shared
+- New **`_shared`:** `cors.ts`, `edge_guard.ts`, `plan_entitlements.ts`, `stripe_checkout_prices.ts`, `stripe_webhook_claim.ts` — CORS allowlists, auth/plan guards, Stripe price resolution, webhook claim-first handling.
+- **Updated functions:** `stripe-checkout`, `stripe-webhook`, `co-trainer`, `co-aimin`, `ai-match-analysis`; `_shared/llm.ts` adjustments for limits/guards where applicable.
+
+### Client app
+- **Plan gate / billing UX:** `plan-gate.tsx`, `use-plan-guard.ts` — avoid flashing paid surfaces before subscription state resolves.
+- **Shop (`Shop.tsx`):** Product images via **`shop-product-images`** helper; types/i18n updates.
+- **Stripe client (`lib/stripe.ts`), `vite-env.d.ts`, `.env.example`:** Documented vars for publishable key and related flags.
+- **`Health.tsx`:** Expanded health/diagnostic surface as needed for ops.
+- **`SupportFaq.tsx`:** New support FAQ route (wired in `App.tsx` if present).
+- **`main.tsx` / `ErrorBoundary` / `observability.ts`:** Client error/telemetry hooks.
+- **`DashboardSidebar`, `PlatformAdmin`, `Matches`, `PlayerStats`, `Teams`:** Minor nav/copy/plan alignment.
+- **`integrations/supabase/types.ts`:** Regenerated or patched for new columns.
+
+### Tooling & ops
+- **`k6/`:** `smoke.js`, `journeys-critical.js`, `edge-co-trainer-smoke.js` — staging load/smoke scripts; **`npm run k6:smoke`**, **`k6:edge-co-trainer`**, **`k6:journeys`** in `package.json`.
+- **`ops/PRODUCTION_READINESS_ARTIFACTS.md`:** Go-live / rollback / monitoring / k6 phase table.
+- **`playwright.config.ts`**, **`vercel.json`:** CI/deploy tweaks.
+
+### Documentation sync
+- `MEMORY_BANK.md`, `PROJECT_STATUS.md`, `TASKS.md`, `README.md`, `DEPLOYMENT.md` updated in the same release for handoff.
+
 ## 2026-03-28 (ONE4AI: reliability, Settings health, edge health check)
 
 ### Database

@@ -8,6 +8,14 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ## NOW (top priority)
 
+### Public club + production bundle (2026-03-29)
+- [x] **CLUB-PWA-001** `AppHeader` `clubPublic` variant: one mobile menu; subtitle hidden `max-md`; `clubPublicMenuTop` + desktop `rightSlot` only.
+- [x] **CLUB-PWA-002** `ClubPage` hero: aligned shortcut grid + `rounded-full` CTAs; Powered-by `Link` `/` + logo; EN **Trainings** label.
+- [x] **CLUB-SECTIONS-001** `public_page_sections` migration + `club-public-page-sections.ts` + ClubPageAdmin toggles + ClubPage filtered sections.
+- [x] **PROD-EDGE-001** Stripe webhook/checkout shared modules; migrations `20260328203000`–`20260329000000`; plan-gate + Shop + Health + observability wiring (see `CHANGELOG.md`).
+- [x] **PROD-OPS-001** `k6/` scripts + `npm run k6:*`; `ops/PRODUCTION_READINESS_ARTIFACTS.md`.
+- [ ] **PROD-DEPLOY-001** Apply migrations 24–31 in each Supabase env; deploy Edge functions; complete checklist rows in `PRODUCTION_READINESS_ARTIFACTS.md`; run `k6:smoke` on staging.
+
 ### ONE4AI / LLM operations (2026-03-28)
 - [x] **AI-HEALTH-001** Settings: AI provider connection status + Test connection via `supabase.functions.invoke("co-trainer", { body: { mode: "health", club_id } })`.
 - [x] **AI-HEALTH-002** Edge: `co-trainer` health branch, `pingLlm`, `assertClubAdmin` in `_shared/llm.ts`.

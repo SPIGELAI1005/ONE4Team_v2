@@ -155,7 +155,7 @@ const PlayerStats = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 lg:pb-0">
-      <DashboardHeaderSlot title="Player Statistics" subtitle="Goals, assists, cards" />
+      <DashboardHeaderSlot title={t.playerStatsPage.title} subtitle={t.playerStatsPage.subtitle} />
 
       {/* Filters */}
       {(seasons.length > 0 || competitions.length > 0 || teams.length > 0) && (

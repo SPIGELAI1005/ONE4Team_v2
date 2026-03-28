@@ -23,9 +23,23 @@ export interface AppHeaderProps {
   subtitle?: string;
   back?: boolean;
   rightSlot?: React.ReactNode;
+  /** Mobile-only unified menu for public club pages (PWA-style); desktop unchanged */
+  variant?: "default" | "clubPublic";
+  /** Replaces ONE4Team logo beside title (e.g. club crest) */
+  titleLeading?: React.ReactNode;
+  /** Rendered at top of mobile menu when variant is clubPublic; call close() after navigation */
+  clubPublicMenuTop?: (close: () => void) => React.ReactNode;
 }
 
-export default function AppHeader({ title, subtitle, back = true, rightSlot }: AppHeaderProps) {
+export default function AppHeader({
+  title,
+  subtitle,
+  back = true,
+  rightSlot,
+  variant = "default",
+  titleLeading,
+  clubPublicMenuTop,
+}: AppHeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const perms = usePermissions();
@@ -40,12 +54,15 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
   const effectiveRole = activeRole || (perms.isAdmin ? "admin" : perms.isTrainer ? "trainer" : "player");
   const roleLabel = effectiveRole.charAt(0).toUpperCase() + effectiveRole.slice(1);
 
+  const isClubPublic = variant === "clubPublic";
+
   const subtitleResolved = useMemo(() => {
+    if (isClubPublic) return subtitle ?? null;
     const club = activeClub?.name || null;
     if (club && subtitle) return `${club} · ${subtitle}`;
     if (club && !subtitle) return club;
     return subtitle;
-  }, [activeClub?.name, subtitle]);
+  }, [activeClub?.name, isClubPublic, subtitle]);
 
   const dashboardTo = useMemo(() => `/dashboard/${effectiveRole}`, [effectiveRole]);
 
@@ -86,6 +103,33 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
     }
   };
 
+  const closeMenu = () => setOpen(false);
+
+  const mobileToolbarExtras = (
+    <>
+      {rightSlot}
+      <LanguageToggle />
+      <ThemeToggle />
+      {user && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleSignOut}
+          disabled={isSigningOut}
+          className="h-9 rounded-2xl border-border/60 bg-card/50 backdrop-blur-xl text-muted-foreground hover:text-foreground"
+          aria-label={t.appHeader.signOut}
+          title={t.appHeader.signOut}
+        >
+          <LogOut className="w-4 h-4" />
+          <span className="hidden sm:inline ml-1.5 text-xs">
+            {isSigningOut ? t.appHeader.signingOut : t.appHeader.signOut}
+          </span>
+        </Button>
+      )}
+      <span className="md:hidden text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/15">{roleLabel}</span>
+    </>
+  );
+
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/70 backdrop-blur-2xl">
       <div className="container mx-auto px-3 sm:px-4 h-16 flex items-center justify-between gap-2 min-w-0">
@@ -109,43 +153,32 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
           )}
 
           <div className="flex items-center gap-2 min-w-0">
-            <img src={logo} alt="" className="w-7 h-7 shrink-0" />
+            {titleLeading ?? <img src={logo} alt="" className="w-7 h-7 shrink-0 rounded-md object-cover" />}
             <div className="min-w-0">
               <div className="flex items-center gap-2 min-w-0">
                 <h1 className="font-display font-bold text-[15px] sm:text-base text-foreground tracking-tight truncate">{title}</h1>
-                <span className="hidden sm:inline-flex text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/15">
+                <span
+                  className={
+                    isClubPublic
+                      ? "hidden md:inline-flex text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/15"
+                      : "hidden sm:inline-flex text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/15"
+                  }
+                >
                   {roleLabel}
                 </span>
               </div>
-              {subtitleResolved && <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{subtitleResolved}</p>}
+              {subtitleResolved ? (
+                <p
+                  className={`text-[11px] sm:text-xs text-muted-foreground truncate ${isClubPublic ? "max-md:hidden" : ""}`}
+                >
+                  {subtitleResolved}
+                </p>
+              ) : null}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {rightSlot}
-          <LanguageToggle />
-          <ThemeToggle />
-          {user && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSignOut}
-              disabled={isSigningOut}
-              className="h-9 rounded-2xl border-border/60 bg-card/50 backdrop-blur-xl text-muted-foreground hover:text-foreground"
-              aria-label={t.appHeader.signOut}
-              title={t.appHeader.signOut}
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline ml-1.5 text-xs">
-                {isSigningOut ? t.appHeader.signingOut : t.appHeader.signOut}
-              </span>
-            </Button>
-          )}
-          <span className="md:hidden text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/15">
-            {roleLabel}
-          </span>
-        </div>
+        <div className={`flex items-center gap-2 ${isClubPublic ? "max-md:hidden" : ""}`}>{mobileToolbarExtras}</div>
 
         {debugEnabled && (
           <div className="hidden lg:flex items-center gap-2 text-[10px] text-muted-foreground">
@@ -165,108 +198,217 @@ export default function AppHeader({ title, subtitle, back = true, rightSlot }: A
       {/* Mobile menu */}
       {open && (
         <div className="md:hidden border-t border-border bg-background/70 backdrop-blur-2xl">
-          <div className="container mx-auto px-4 py-3 grid gap-3">
-            {/* Active club context */}
-            {activeClub?.name && (
-              <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-3">
-                <div className="text-[11px] text-muted-foreground mb-2">{t.common.club}</div>
-                <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center text-primary">
-                    <Building2 className="w-4 h-4" />
+          <div className="container mx-auto px-4 py-3 grid gap-3 max-h-[min(85vh,32rem)] overflow-y-auto overscroll-contain">
+            {isClubPublic && clubPublicMenuTop ? (
+              <>
+                {clubPublicMenuTop(closeMenu)}
+                {user && activeClub?.name ? (
+                  <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-3">
+                    <div className="text-[11px] text-muted-foreground mb-2">{t.common.club}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-9 h-9 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center text-primary">
+                        <Building2 className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-foreground truncate">{activeClub.name}</div>
+                        <div className="text-[11px] text-muted-foreground truncate">{t.appHeader.activeClub}</div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-foreground truncate">{activeClub.name}</div>
-                    <div className="text-[11px] text-muted-foreground truncate">active club</div>
+                ) : null}
+
+                {user ? (
+                  <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-[11px] text-muted-foreground">{t.appHeader.profile}</div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = localStorage.getItem("one4team.debug") === "1" ? "0" : "1";
+                          localStorage.setItem("one4team.debug", next);
+                          window.location.reload();
+                        }}
+                        className="text-[10px] px-2 py-1 rounded-full border border-border/60 bg-background/40 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {t.appHeader.debug} {localStorage.getItem("one4team.debug") === "1" ? t.appHeader.debugOn : t.appHeader.debugOff}
+                      </button>
+                    </div>
+                    <div className="flex gap-2">
+                      {(perms.isAdmin ? ["admin", "trainer", "player"] : perms.isTrainer ? ["trainer", "player"] : ["player"]).map((r) => {
+                        const isActive =
+                          (activeRole || (perms.isAdmin ? "admin" : perms.isTrainer ? "trainer" : "player")) === r;
+                        return (
+                          <button
+                            key={r}
+                            type="button"
+                            onClick={() => {
+                              localStorage.setItem("one4team.activeRole", r);
+                              setOpen(false);
+                              navigate(`/dashboard/${r}`);
+                            }}
+                            className={`flex-1 px-3 py-2 rounded-2xl text-xs font-medium border transition-colors ${
+                              isActive
+                                ? "bg-primary/10 text-primary border-primary/20"
+                                : "bg-background/40 text-foreground border-border/60 hover:bg-muted/30"
+                            }`}
+                          >
+                            {r.charAt(0).toUpperCase() + r.slice(1)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : null}
+
+                {user ? (
+                  <div className="grid gap-1">
+                    {items.map((item) => {
+                      const active = location.pathname === item.to;
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={`${item.label}-${item.to}`}
+                          type="button"
+                          onClick={() => {
+                            setOpen(false);
+                            navigate(item.to);
+                          }}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-2xl text-sm border transition-colors ${
+                            active
+                              ? "bg-primary/10 text-primary border-primary/20"
+                              : "bg-card/40 text-foreground border-border/60 hover:bg-muted/30"
+                          }`}
+                        >
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? "bg-primary/10" : "bg-muted/30"}`}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div className="text-left min-w-0">
+                            <div className="font-medium leading-tight truncate">{item.label}</div>
+                            <div className="text-[11px] text-muted-foreground leading-tight truncate">{item.to}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+
+                <div className="flex items-center justify-center gap-4 pt-2 border-t border-border/60">
+                  <LanguageToggle />
+                  <ThemeToggle />
+                </div>
+
+                {user ? (
+                  <button
+                    type="button"
+                    onClick={handleSignOut}
+                    disabled={isSigningOut}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-2xl text-sm border border-border/60 bg-card/40 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors disabled:opacity-60"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    {isSigningOut ? t.appHeader.signingOut : t.appHeader.signOut}
+                  </button>
+                ) : null}
+              </>
+            ) : (
+              <>
+                {activeClub?.name && (
+                  <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-3">
+                    <div className="text-[11px] text-muted-foreground mb-2">{t.common.club}</div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-9 h-9 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center text-primary">
+                        <Building2 className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-foreground truncate">{activeClub.name}</div>
+                        <div className="text-[11px] text-muted-foreground truncate">active club</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-[11px] text-muted-foreground">{t.appHeader.profile}</div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = localStorage.getItem("one4team.debug") === "1" ? "0" : "1";
+                        localStorage.setItem("one4team.debug", next);
+                        window.location.reload();
+                      }}
+                      className="text-[10px] px-2 py-1 rounded-full border border-border/60 bg-background/40 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {t.appHeader.debug} {localStorage.getItem("one4team.debug") === "1" ? t.appHeader.debugOn : t.appHeader.debugOff}
+                    </button>
+                  </div>
+                  <div className="flex gap-2">
+                    {(perms.isAdmin ? ["admin", "trainer", "player"] : perms.isTrainer ? ["trainer", "player"] : ["player"]).map((r) => {
+                      const isActive =
+                        (activeRole || (perms.isAdmin ? "admin" : perms.isTrainer ? "trainer" : "player")) === r;
+                      return (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => {
+                            localStorage.setItem("one4team.activeRole", r);
+                            setOpen(false);
+                            navigate(`/dashboard/${r}`);
+                          }}
+                          className={`flex-1 px-3 py-2 rounded-2xl text-xs font-medium border transition-colors ${
+                            isActive
+                              ? "bg-primary/10 text-primary border-primary/20"
+                              : "bg-background/40 text-foreground border-border/60 hover:bg-muted/30"
+                          }`}
+                        >
+                          {r.charAt(0).toUpperCase() + r.slice(1)}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              </div>
-            )}
 
-            {/* Quick profile switch (A: route role-driven) */}
-            <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-[11px] text-muted-foreground">{t.appHeader.profile}</div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = localStorage.getItem("one4team.debug") === "1" ? "0" : "1";
-                    localStorage.setItem("one4team.debug", next);
-                    // simple refresh so AppHeader re-evaluates debugEnabled
-                    window.location.reload();
-                  }}
-                  className="text-[10px] px-2 py-1 rounded-full border border-border/60 bg-background/40 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {t.appHeader.debug} {localStorage.getItem("one4team.debug") === "1" ? t.appHeader.debugOn : t.appHeader.debugOff}
-                </button>
-              </div>
-              <div className="flex gap-2">
-                {(
-                  perms.isAdmin
-                    ? ["admin", "trainer", "player"]
-                    : perms.isTrainer
-                      ? ["trainer", "player"]
-                      : ["player"]
-                ).map((r) => {
-                  const isActive = (activeRole || (perms.isAdmin ? "admin" : perms.isTrainer ? "trainer" : "player")) === r;
-                  return (
-                    <button
-                      key={r}
-                      onClick={() => {
-                        localStorage.setItem("one4team.activeRole", r);
-                        setOpen(false);
-                        navigate(`/dashboard/${r}`);
-                      }}
-                      className={`flex-1 px-3 py-2 rounded-2xl text-xs font-medium border transition-colors ${
-                        isActive
-                          ? "bg-primary/10 text-primary border-primary/20"
-                          : "bg-background/40 text-foreground border-border/60 hover:bg-muted/30"
-                      }`}
-                    >
-                      {r.charAt(0).toUpperCase() + r.slice(1)}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                <div className="grid gap-1">
+                  {items.map((item) => {
+                    const active = location.pathname === item.to;
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={`${item.label}-${item.to}`}
+                        type="button"
+                        onClick={() => {
+                          setOpen(false);
+                          navigate(item.to);
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-2xl text-sm border transition-colors ${
+                          active
+                            ? "bg-primary/10 text-primary border-primary/20"
+                            : "bg-card/40 text-foreground border-border/60 hover:bg-muted/30"
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? "bg-primary/10" : "bg-muted/30"}`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <div className="text-left min-w-0">
+                          <div className="font-medium leading-tight truncate">{item.label}</div>
+                          <div className="text-[11px] text-muted-foreground leading-tight truncate">{item.to}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
 
-            <div className="grid gap-1">
-              {items.map((item) => {
-                const active = location.pathname === item.to;
-                const Icon = item.icon;
-                return (
+                {user && (
                   <button
-                    key={`${item.label}-${item.to}`}
-                    onClick={() => {
-                      setOpen(false);
-                      navigate(item.to);
-                    }}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-2xl text-sm border transition-colors ${
-                      active
-                        ? "bg-primary/10 text-primary border-primary/20"
-                        : "bg-card/40 text-foreground border-border/60 hover:bg-muted/30"
-                    }`}
+                    type="button"
+                    onClick={handleSignOut}
+                    disabled={isSigningOut}
+                    className="w-full mt-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-2xl text-sm border border-border/60 bg-card/40 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors disabled:opacity-60"
                   >
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${active ? "bg-primary/10" : "bg-muted/30"}`}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div className="text-left min-w-0">
-                      <div className="font-medium leading-tight truncate">{item.label}</div>
-                      <div className="text-[11px] text-muted-foreground leading-tight truncate">{item.to}</div>
-                    </div>
+                    <LogOut className="w-4 h-4" />
+                    {isSigningOut ? t.appHeader.signingOut : t.appHeader.signOut}
                   </button>
-                );
-              })}
-            </div>
-
-            {user && (
-              <button
-                onClick={handleSignOut}
-                disabled={isSigningOut}
-                className="w-full mt-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-2xl text-sm border border-border/60 bg-card/40 text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors disabled:opacity-60"
-              >
-                <LogOut className="w-4 h-4" />
-                {isSigningOut ? t.appHeader.signingOut : t.appHeader.signOut}
-              </button>
+                )}
+              </>
             )}
           </div>
         </div>

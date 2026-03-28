@@ -392,6 +392,7 @@ export type Database = {
           name: string
           phone: string | null
           primary_color: string | null
+          public_page_sections: Json
           reference_images: Json
           season_start_month: number
           secondary_color: string | null
@@ -421,6 +422,7 @@ export type Database = {
           name: string
           phone?: string | null
           primary_color?: string | null
+          public_page_sections?: Json
           reference_images?: Json
           season_start_month?: number
           secondary_color?: string | null
@@ -450,6 +452,7 @@ export type Database = {
           name?: string
           phone?: string | null
           primary_color?: string | null
+          public_page_sections?: Json
           reference_images?: Json
           season_start_month?: number
           secondary_color?: string | null

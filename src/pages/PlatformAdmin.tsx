@@ -62,7 +62,9 @@ export default function PlatformAdmin() {
       setLoading(false);
       return;
     }
-    const isAdmin = PLATFORM_ADMIN_EMAILS.length === 0 || PLATFORM_ADMIN_EMAILS.includes(user.email.toLowerCase());
+    const isAdmin =
+      PLATFORM_ADMIN_EMAILS.length > 0 &&
+      PLATFORM_ADMIN_EMAILS.includes(user.email.toLowerCase());
     setAuthorized(isAdmin);
     setLoading(false);
   }, [user?.email]);
@@ -135,6 +137,7 @@ export default function PlatformAdmin() {
     trialing: "text-blue-600 bg-blue-500/10 border-blue-500/20",
     past_due: "text-amber-600 bg-amber-500/10 border-amber-500/20",
     canceled: "text-red-600 bg-red-500/10 border-red-500/20",
+    cancelled: "text-red-600 bg-red-500/10 border-red-500/20",
     incomplete: "text-gray-600 bg-gray-500/10 border-gray-500/20",
   };
 

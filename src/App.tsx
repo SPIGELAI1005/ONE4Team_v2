@@ -39,6 +39,7 @@ const LiveScores = lazy(() => import("./pages/LiveScores"));
 const Shop = lazy(() => import("./pages/Shop"));
 const ClubPageAdmin = lazy(() => import("./pages/ClubPageAdmin"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
+const SupportFaq = lazy(() => import("./pages/SupportFaq"));
 const About = lazy(() => import("./pages/About"));
 const Pricing = lazy(() => import("./pages/Pricing"));
 const ClubsAndPartners = lazy(() => import("./pages/ClubsAndPartners"));
@@ -52,7 +53,15 @@ const Crash = lazy(() => import("./pages/Crash"));
 const PlatformAdmin = lazy(() => import("./pages/PlatformAdmin"));
 const GuidedSetup = lazy(() => import("./pages/GuidedSetup"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -222,7 +231,8 @@ const AnimatedRoutes = () => {
           <Route path="/dues" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><Dues /></Suspense></RequireAdmin>} />
           <Route path="/partners" element={<RequireTrainer><Suspense fallback={<RouteFallback />}><PlanGate feature="partners"><Partners /></PlanGate></Suspense></RequireTrainer>} />
           <Route path="/club-page-admin" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><ClubPageAdmin /></Suspense></RequireAdmin>} />
-          <Route path="/property-layers" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><Teams /></Suspense></RequireAdmin>} />
+          <Route path="/property-layers" element={<Navigate to="/asset-layers" replace />} />
+          <Route path="/asset-layers" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><Teams /></Suspense></RequireAdmin>} />
           {/* Trainer+ routes */}
           <Route path="/teams" element={<RequireTrainer><Suspense fallback={<RouteFallback />}><Teams /></Suspense></RequireTrainer>} />
           {/* All authenticated users */}
@@ -244,6 +254,7 @@ const AnimatedRoutes = () => {
           <Route path="/live-scores" element={<Suspense fallback={<RouteFallback />}><LiveScores /></Suspense>} />
           <Route path="/shop" element={<Suspense fallback={<RouteFallback />}><PlanGate feature="shop"><Shop /></PlanGate></Suspense>} />
           <Route path="/settings" element={<Suspense fallback={<RouteFallback />}><SettingsPage /></Suspense>} />
+          <Route path="/support" element={<Suspense fallback={<RouteFallback />}><SupportFaq /></Suspense>} />
         </Route>
 
         <Route

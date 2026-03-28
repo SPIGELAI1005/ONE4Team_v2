@@ -48,6 +48,9 @@ Then configure Vercel:
 - **Supabase:** apply rollback SQL bundles (when we start doing Supabase changes in phases).
 - **Client safety:** if a release introduces a crash, ErrorBoundary should show a fallback instead of a blank screen.
 
+## Supabase migrations (Stripe / shop / public club — 2026-03-29)
+After pulling latest `main`, apply new SQL in **`supabase/migrations/`** in timestamp order from `20260328203000_stripe_webhook_idempotency.sql` through `20260329000000_club_public_page_sections.sql` (see `CHANGELOG.md` § 2026-03-29). Then deploy **`stripe-checkout`**, **`stripe-webhook`**, and any LLM functions affected by `20260328205000_edge_llm_rate_limit.sql`. Edge secrets: **`STRIPE_SECRET_KEY`**, **`STRIPE_WEBHOOK_SECRET`**, price IDs as documented in `.env.example` and **`ops/PRODUCTION_READINESS_ARTIFACTS.md`**.
+
 ## Release checklist
 - CI green: lint / test / build / audit:phase0 / e2e
 - Manual smoke in deployed URL
