@@ -7,6 +7,8 @@ This roadmap is derived from the MVP epics and is designed to:
 
 Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as needed.
 
+**Recently shipped (2026-03-28):** ONE4AI (`/co-trainer`) with club LLM settings, edge health check, chat persistence (`ai_conversations`), and member audit timeline migrations — see `CHANGELOG.md` § 2026-03-28 and `MEMORY_BANK.md`.
+
 ---
 
 ## Phase 0 — Foundation (Week 0–1)
