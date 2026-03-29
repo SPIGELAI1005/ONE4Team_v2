@@ -26,7 +26,8 @@
     "audit:selects": "node scripts/audit-supabase-selects.cjs",
     "k6:smoke": "k6 run k6/smoke.js",
     "k6:edge-co-trainer": "k6 run k6/edge-co-trainer-smoke.js",
-    "k6:journeys": "k6 run k6/journeys-critical.js"
+    "k6:journeys": "k6 run k6/journeys-critical.js",
+    "k6:staged-reads": "k6 run k6/staged-dashboard-reads.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

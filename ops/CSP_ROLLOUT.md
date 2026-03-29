@@ -6,7 +6,7 @@ Reduce XSS impact with a strict CSP on the SPA host. Ship in phases so third-par
 
 ## Phases
 
-1. **Report-only:** deploy `Content-Security-Policy-Report-Only` with `report-uri` or `report-to` to your collector.
+1. **Report-only:** `Content-Security-Policy-Report-Only` is set in [`vercel.json`](../vercel.json) (tune `connect-src` for your exact Supabase host if reports show blocks). Optionally add `report-uri` / `report-to` to your collector.
 2. **Tighten `script-src`:** allow `'self'`; enumerate Stripe, Sentry, and any other required origins; avoid `'unsafe-inline'` where possible (use nonces if you inject scripts).
 3. **Enforce:** flip to `Content-Security-Policy` after noise in reports is acceptable.
 

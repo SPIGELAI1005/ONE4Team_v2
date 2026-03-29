@@ -21,7 +21,7 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **CLUB-SECTIONS-001** `public_page_sections` migration + `club-public-page-sections.ts` + ClubPageAdmin toggles + ClubPage filtered sections.
 - [x] **PROD-EDGE-001** Stripe webhook/checkout shared modules; migrations `20260328203000`–`20260329000000`; plan-gate + Shop + Health + observability wiring (see `CHANGELOG.md`).
 - [x] **PROD-OPS-001** `k6/` scripts + `npm run k6:*`; `ops/PRODUCTION_READINESS_ARTIFACTS.md`.
-- [ ] **PROD-DEPLOY-001** Apply migrations 24–42 in each Supabase env (`MEMORY_BANK.md` list); deploy affected Edge functions; complete checklist rows in `PRODUCTION_READINESS_ARTIFACTS.md`; run `k6:smoke` and `k6 run k6/staged-dashboard-reads.js` on staging when k6 is available; optional `npm run policies:drift` against staging DB.
+- [ ] **PROD-DEPLOY-001** Execute phased operator runbooks: [`ops/PHASE_A_STAGING_RUNBOOK.md`](ops/PHASE_A_STAGING_RUNBOOK.md) → [`ops/PHASE_B_SECRETS_CHECKLIST.md`](ops/PHASE_B_SECRETS_CHECKLIST.md) → [`ops/PHASE_C_SECTION_L_EVIDENCE.md`](ops/PHASE_C_SECTION_L_EVIDENCE.md) → [`ops/SECTION_M_GO_LIVE_CHECKLIST.md`](ops/SECTION_M_GO_LIVE_CHECKLIST.md). Apply migrations 24–42 (`MEMORY_BANK.md`); deploy Edge functions including optional **`health`**; `npm run k6:smoke`, `npm run k6:journeys`, `npm run k6:staged-reads`; optional `npm run policies:drift` with `PG_POLICIES_SNAPSHOT_FILE`.
 
 ### ONE4AI / LLM operations (2026-03-28)
 - [x] **AI-HEALTH-001** Settings: AI provider connection status + Test connection via `supabase.functions.invoke("co-trainer", { body: { mode: "health", club_id } })`.

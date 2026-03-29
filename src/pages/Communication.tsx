@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useLanguage } from "@/hooks/use-language";
 import { correlationHeaders } from "@/lib/observability";
+import { supabaseErrorMessage } from "@/lib/supabase-error-message";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type Announcement = {
   id: string;
@@ -171,6 +173,7 @@ const Communication = () => {
   const [bridgeBusy, setBridgeBusy] = useState(false);
   const [missingMessagesTable, setMissingMessagesTable] = useState(false);
   const [missingAnnouncementsTable, setMissingAnnouncementsTable] = useState(false);
+  const [baseDataLoadError, setBaseDataLoadError] = useState<string | null>(null);
   const [supportsAttachments, setSupportsAttachments] = useState(true);
   const [connectors, setConnectors] = useState<BridgeConnector[]>([]);
   const [connectorEvents, setConnectorEvents] = useState<BridgeEvent[]>([]);
@@ -337,6 +340,53 @@ const Communication = () => {
     [t.common.error, t.communicationPage.connected, t.communicationPage.disabled, t.communicationPage.pending]
   );
 
+  const loadBaseData = useCallback(async () => {
+    if (!clubId) return;
+    setLoading(true);
+    setBaseDataLoadError(null);
+    const [annRes, teamsRes] = await Promise.all([
+      supabase
+        .from("announcements")
+        .select("*")
+        .eq("club_id", clubId)
+        .order("created_at", { ascending: false }),
+      supabase.from("teams").select("id, name").eq("club_id", clubId).order("name"),
+    ]);
+
+    let combinedErr: string | null = null;
+
+    if (annRes.error) {
+      if (annRes.error.message.includes("Could not find the table 'public.announcements'")) {
+        setMissingAnnouncementsTable(true);
+        toast({
+          title: t.communicationPage.announcementsTableMissingTitle,
+          description: t.communicationPage.announcementsTableMissingDesc,
+          variant: "destructive",
+        });
+      } else {
+        combinedErr = supabaseErrorMessage(annRes.error);
+      }
+    }
+    if (teamsRes.error) {
+      combinedErr = combinedErr || supabaseErrorMessage(teamsRes.error);
+    }
+
+    if (combinedErr) {
+      setBaseDataLoadError(combinedErr);
+      toast({ title: t.common.error, description: combinedErr, variant: "destructive" });
+    }
+
+    setAnnouncements((annRes.data as Announcement[]) || []);
+    setTeams((teamsRes.data as TeamChannel[]) || []);
+    setLoading(false);
+  }, [
+    clubId,
+    toast,
+    t.common.error,
+    t.communicationPage.announcementsTableMissingDesc,
+    t.communicationPage.announcementsTableMissingTitle,
+  ]);
+
   useEffect(() => {
     messageKeysetRef.current = {};
     setAnnouncements([]);
@@ -350,6 +400,7 @@ const Communication = () => {
     setSupportsAttachments(true);
     setMessagePage(1);
     setMessageTotalCount(0);
+    setBaseDataLoadError(null);
   }, [clubId]);
 
   useEffect(() => {
@@ -359,47 +410,9 @@ const Communication = () => {
 
   useEffect(() => {
     if (!clubId) return;
-    const fetchBaseData = async () => {
-      setLoading(true);
-      const [annRes, teamsRes] = await Promise.all([
-        supabase
-          .from("announcements")
-          .select("*")
-          .eq("club_id", clubId)
-          .order("created_at", { ascending: false }),
-        supabase.from("teams").select("id, name").eq("club_id", clubId).order("name"),
-      ]);
-
-      if (annRes.error) {
-        if (annRes.error.message.includes("Could not find the table 'public.announcements'")) {
-          setMissingAnnouncementsTable(true);
-          toast({
-            title: t.communicationPage.announcementsTableMissingTitle,
-            description: t.communicationPage.announcementsTableMissingDesc,
-            variant: "destructive",
-          });
-        } else {
-          toast({ title: t.common.error, description: annRes.error.message, variant: "destructive" });
-        }
-      }
-      if (teamsRes.error) {
-        toast({ title: t.common.error, description: teamsRes.error.message, variant: "destructive" });
-      }
-
-      setAnnouncements((annRes.data as Announcement[]) || []);
-      setTeams((teamsRes.data as TeamChannel[]) || []);
-      setLoading(false);
-    };
-    void fetchBaseData();
+    void loadBaseData();
     void loadBridgeData();
-  }, [
-    clubId,
-    loadBridgeData,
-    t.common.error,
-    t.communicationPage.announcementsTableMissingDesc,
-    t.communicationPage.announcementsTableMissingTitle,
-    toast,
-  ]);
+  }, [clubId, loadBaseData, loadBridgeData]);
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -854,7 +867,26 @@ const Communication = () => {
         ) : !clubId ? (
           <div className="text-center py-20 text-muted-foreground">{t.communicationPage.noClubFound}</div>
         ) : (
-          <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-4 h-[calc(100vh-180px)]">
+          <>
+            {baseDataLoadError ? (
+              <Alert variant="destructive" className="mb-4">
+                <AlertTitle>{t.common.error}</AlertTitle>
+                <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-sm">{baseDataLoadError}</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => void loadBaseData()}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-1" />
+                    {t.common.refresh}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            ) : null}
+            <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-4 h-[calc(100vh-180px)]">
             <aside className="rounded-2xl border border-border/70 bg-card/50 backdrop-blur-xl p-3 overflow-y-auto">
               <div className="text-xs font-semibold text-muted-foreground px-2 mb-2">{t.communicationPage.channels}</div>
               <div className="space-y-1">
@@ -1163,6 +1195,7 @@ const Communication = () => {
               )}
             </section>
           </div>
+          </>
         )}
       </div>
 

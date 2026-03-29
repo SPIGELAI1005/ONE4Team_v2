@@ -25,4 +25,4 @@ Run at least one scenario with a **timed** response (inject load, disable non-pr
 | 4 | Stop timer; capture MTTR, gaps, ticket IDs |
 | 5 | Update Section M row 9 if rollback was exercised |
 
-**Realtime soak evidence:** [`REALTIME_SOAK_LOG.md`](REALTIME_SOAK_LOG.md).
+**Realtime soak evidence:** [`REALTIME_SOAK_LOG.md`](REALTIME_SOAK_LOG.md). Staging verification steps: [`PHASE_A_STAGING_RUNBOOK.md`](PHASE_A_STAGING_RUNBOOK.md) (A6 soak + A5 k6).

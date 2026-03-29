@@ -72,6 +72,9 @@ function fmtTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+/** Safety cap for active membership list in trainer attendance UI. See ops/FAN_OUT_AUDIT.md. */
+const ACTIVITY_ROSTER_FETCH_CAP = 800;
+
 function nextDowAt(hour: number, minute: number, dow0Sun: number): Date {
   const now = new Date();
   const d = new Date(now);
@@ -161,7 +164,7 @@ export default function Activities() {
             .eq("club_id", clubId)
             .eq("status", "active")
             .order("created_at", { ascending: true })
-            .limit(800),
+            .limit(ACTIVITY_ROSTER_FETCH_CAP),
         ]);
 
         if (attErr) throw attErr;

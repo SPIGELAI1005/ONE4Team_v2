@@ -65,9 +65,8 @@ npm run replay:stripe-checklist  # Stripe webhook replay checklist helper
 npm run build:report # Bundle size report
 npm run k6:smoke     # k6 smoke (requires k6 CLI; point at staging URLs)
 npm run k6:journeys  # k6 critical journeys
+npm run k6:staged-reads  # staged dashboard read profile (requires k6 CLI + staging URLs in scripts)
 npm run k6:edge-co-trainer  # low-rate edge LLM smoke (use sparingly)
-# Staged dashboard read profile (not an npm script):
-#   k6 run k6/staged-dashboard-reads.js
 ```
 
 ## Deployment (Vercel)

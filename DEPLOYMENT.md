@@ -54,6 +54,9 @@ After pulling latest `main`, apply new SQL in **`supabase/migrations/`** in time
 ## Supabase migrations (production readiness — 2026-03-30)
 After the 2026-03-29 wave, apply in filename order from **`20260329103000_platform_admin_rbac.sql`** through **`20260330120000_search_club_members_page.sql`** (see `CHANGELOG.md` § 2026-03-30 and `MEMORY_BANK.md` items 32–42). For **`20260329132000_hotspot_composite_indexes.sql`**, run the **entire migration file** (indexes are created only when `to_regclass` finds `public.events` / `public.event_participants` — do not paste unguarded `CREATE INDEX` fragments). Redeploy Edge functions that import **`supabase/functions/_shared/request_context.ts`** (**`co-trainer`**, **`stripe-checkout`**, **`chat-bridge`**, **`stripe-webhook`**) so correlation logging is active. Validate Members search and analytics pages against the new RPCs after apply.
 
+## Edge function `health` (optional DB depth probe)
+Deploy **`supabase/functions/health`** alongside other functions (`supabase functions deploy health`). It performs a minimal `clubs` select with the service role. The in-app **Health** page (`/health`) calls **`/functions/v1/health`** when a publishable key is set; if the function is not deployed, the check shows `edgeDatabase: skipped`.
+
 ## Release checklist
 - CI green: lint / test / build / audit:phase0 / e2e
 - Manual smoke in deployed URL

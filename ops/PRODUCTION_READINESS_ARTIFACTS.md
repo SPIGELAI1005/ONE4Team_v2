@@ -74,6 +74,13 @@ Store snapshots in ticket; compare planning time and buffer hits before vs after
 | **Open — verification** | RLS JWT tests green on **your** staging when env secrets set; EXPLAIN snapshots filed in tickets; 500-session realtime lab soak | `npm test` + env; `ops/STAGING_INDEX_VERIFICATION.md`; `ops/runbooks/realtime-incident.md` |
 | **Open — product/engineering** | CSP **enforcement** on the SPA host; broader degraded-mode UX (retry actions, timeouts) beyond members search | `ops/CSP_ROLLOUT.md`; `src/lib/supabase-error-message.ts`; `ops/WAVE3_ROADMAP.md` |
 
+### Execution runbooks (operator — phased plan)
+
+- **Phase A (staging verification):** [`ops/PHASE_A_STAGING_RUNBOOK.md`](PHASE_A_STAGING_RUNBOOK.md)
+- **Phase B (secrets / client env):** [`ops/PHASE_B_SECRETS_CHECKLIST.md`](PHASE_B_SECRETS_CHECKLIST.md)
+- **Phase C (Section L evidence table):** [`ops/PHASE_C_SECTION_L_EVIDENCE.md`](PHASE_C_SECTION_L_EVIDENCE.md)
+- **Section M (go-live):** [`ops/SECTION_M_GO_LIVE_CHECKLIST.md`](SECTION_M_GO_LIVE_CHECKLIST.md)
+
 ---
 
 ## SECTION A. Executive summary

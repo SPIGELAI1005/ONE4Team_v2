@@ -32,6 +32,9 @@ jobs:
         run: npm run guardrails
         env:
           NODE_ENV: production
+          VITE_DEV_UNLOCK_ALL_FEATURES: "false"
+          VITE_DEV_AUTO_LOGIN_EMAIL: ""
+          VITE_DEV_AUTO_LOGIN_PASSWORD: ""
 
       - name: Build
         run: npm run build

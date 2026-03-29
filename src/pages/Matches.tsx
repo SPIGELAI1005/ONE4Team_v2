@@ -35,6 +35,8 @@ type MatchEvent = { id: string; match_id: string; membership_id: string | null; 
 type Membership = MembershipWithProfile;
 type LineupPlayer = { id: string; match_id: string; membership_id: string; is_starter: boolean; jersey_number: number | null; position: string | null };
 const MATCHES_PAGE_SIZE = 20;
+/** Safety cap for roster fetch when opening match detail (lineup/scoring). See ops/FAN_OUT_AUDIT.md. */
+const MATCH_DETAIL_ROSTER_FETCH_CAP = 800;
 
 /** PostgREST `or` filter: rows strictly before (match_date, id) in desc sort order. */
 function matchesKeysetOrFilter(match_date: string, id: string) {
@@ -195,7 +197,7 @@ const Matches = () => {
         .select("id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_profile_fk(display_name)")
         .eq("club_id", clubId!)
         .eq("status", "active")
-        .limit(800),
+        .limit(MATCH_DETAIL_ROSTER_FETCH_CAP),
       supabase.from("match_lineups").select("*").eq("match_id", match.id),
     ]);
     setMatchEvents((evRes.data as MatchEvent[]) || []);

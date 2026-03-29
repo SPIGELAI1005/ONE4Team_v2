@@ -7,6 +7,7 @@ interface HealthPayload {
     spa: "ok";
     supabaseAuth?: "ok" | "fail" | "skipped";
     postgrest?: "ok" | "fail" | "skipped";
+    edgeDatabase?: "ok" | "fail" | "skipped";
   };
 }
 
@@ -18,7 +19,7 @@ export default function Health() {
     const base: HealthPayload = {
       status: "live",
       timestamp: new Date().toISOString(),
-      checks: { spa: "ok", supabaseAuth: "skipped", postgrest: "skipped" },
+      checks: { spa: "ok", supabaseAuth: "skipped", postgrest: "skipped", edgeDatabase: "skipped" },
     };
 
     const url = import.meta.env.VITE_SUPABASE_URL;
@@ -56,8 +57,40 @@ export default function Health() {
           postgrest = restRes.ok ? "ok" : "fail";
         }
 
+        let edgeDatabase: "ok" | "fail" | "skipped" = "skipped";
+        if (typeof publishableKey === "string" && publishableKey.trim()) {
+          const edgeUrl = `${root}/functions/v1/health`;
+          try {
+            const edgeRes = await fetch(edgeUrl, {
+              method: "GET",
+              headers: {
+                apikey: publishableKey,
+                Authorization: `Bearer ${publishableKey}`,
+              },
+              signal: controller.signal,
+            });
+            if (edgeRes.status === 404) {
+              edgeDatabase = "skipped";
+            } else if (edgeRes.ok) {
+              try {
+                const body = (await edgeRes.json()) as { database?: string };
+                edgeDatabase = body.database === "ok" ? "ok" : "fail";
+              } catch {
+                edgeDatabase = "fail";
+              }
+            } else {
+              edgeDatabase = "fail";
+            }
+          } catch {
+            edgeDatabase = "skipped";
+          }
+        }
+
         window.clearTimeout(t);
-        const ready = authOk && (postgrest === "skipped" || postgrest === "ok");
+        const ready =
+          authOk &&
+          (postgrest === "skipped" || postgrest === "ok") &&
+          (edgeDatabase === "skipped" || edgeDatabase === "ok");
         setPayload({
           status: ready ? "ready" : "degraded",
           timestamp: new Date().toISOString(),
@@ -65,6 +98,7 @@ export default function Health() {
             spa: "ok",
             supabaseAuth: authOk ? "ok" : "fail",
             postgrest,
+            edgeDatabase,
           },
         });
       } catch {
@@ -73,7 +107,7 @@ export default function Health() {
         setPayload({
           status: "degraded",
           timestamp: new Date().toISOString(),
-          checks: { spa: "ok", supabaseAuth: "fail", postgrest: "fail" },
+          checks: { spa: "ok", supabaseAuth: "fail", postgrest: "fail", edgeDatabase: "skipped" },
         });
       }
     })();
@@ -90,9 +124,12 @@ export default function Health() {
         <div className="font-display font-bold text-foreground">Health</div>
         <div className="mt-2 text-xs text-muted-foreground">
           Liveness is always served by this SPA route. Readiness probes Supabase Auth (
-          <code className="text-[10px]">/auth/v1/health</code>) and, when{" "}
-          <code className="text-[10px]">VITE_SUPABASE_PUBLISHABLE_KEY</code> is set, PostgREST root (
-          <code className="text-[10px]">/rest/v1/</code>) using the same anon key the app already ships — no extra secrets.
+          <code className="text-[10px]">/auth/v1/health</code>), PostgREST root (
+          <code className="text-[10px]">/rest/v1/</code>) when{" "}
+          <code className="text-[10px]">VITE_SUPABASE_PUBLISHABLE_KEY</code> is set, and optionally the{" "}
+          <code className="text-[10px]">/functions/v1/health</code> Edge function (DB ping via service role — deploy with
+          other functions). <code className="text-[10px]">edgeDatabase: skipped</code> means the function is not deployed
+          or unreachable.
         </div>
         {error ? (
           <p className="mt-3 text-xs text-amber-600 dark:text-amber-500">{error}</p>

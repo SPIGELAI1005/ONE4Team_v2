@@ -1,6 +1,7 @@
 # Monthly cost & performance review (ST-012)
 
 **Cadence:** monthly (or after major feature wave)  
+**Next scheduled review:** YYYY-MM-DD (set after each sign-off)  
 **Owner:** Engineering lead + whoever owns Supabase billing
 
 ## Inputs

@@ -4,7 +4,7 @@ Items not fully covered by story codes; track here and in product backlog.
 
 ## Health and reliability
 
-- **Health page:** `src/pages/Health.tsx` now probes Auth + PostgREST root with the publishable key. Optional: dedicated `health` Edge function for secrets-free DB ping if PostgREST root is too coarse.
+- **Health page:** `src/pages/Health.tsx` probes Auth + PostgREST root + optional **`/functions/v1/health`** (deploy `supabase/functions/health` for a service-role DB ping; omitted shows `edgeDatabase: skipped`).
 - **Degraded-mode UX:** extend `src/lib/supabase-error-message.ts` + retry actions on critical flows (not only members list errors).
 
 ## Security

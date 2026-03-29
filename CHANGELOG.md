@@ -3,7 +3,7 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
-## 2026-03-30 (Production readiness track: analytics RPCs, pagination, RLS harness, ops templates)
+## 2026-03-30 (Production readiness track: analytics RPCs, pagination, RLS harness, ops templates, phased runbooks)
 
 ### Database (apply per environment in filename order)
 - **`20260329103000_platform_admin_rbac.sql`** — server-side `is_platform_admin()` / `platform_admins`.
@@ -16,7 +16,7 @@ It records notable changes, features, and hardening steps.
 - **`Members.tsx`:** server-paged roster + debounced search (≥2 chars) via RPC; shared sidecar hydration; club-switch reset uses `setMembersServerPage` / `setDebouncedSearch` / `membersPivotRef` (fixes removed `setMemberListPage` crash).
 - **`Matches.tsx` / `Communication.tsx`:** keyset-style pagination (`match_date`/`created_at` + `id` tuples).
 - **`PlatformAdmin.tsx`:** calls `log_platform_admin_action` after successful data load.
-- **`Health.tsx`:** probes `/auth/v1/health` and `/rest/v1/` when publishable key is set.
+- **`Health.tsx`:** probes `/auth/v1/health`, `/rest/v1/`, and optional **`/functions/v1/health`** Edge DB probe when publishable key is set.
 - **`src/lib/supabase-error-message.ts`** — consistent Supabase error copy for degraded UX.
 - **`src/test/rls.integration.test.ts`** — env-gated JWT isolation tests + mutation probe on `clubs` (staging-safe data only).
 
@@ -35,6 +35,10 @@ It records notable changes, features, and hardening steps.
 
 ### Documentation sync
 - **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`README.md`**, **`DEPLOYMENT.md`**, **`CHANGELOG.md`** (this entry).
+
+### Phased operator execution + Wave 3 follow-up (same date)
+- **`ops/PHASE_A_STAGING_RUNBOOK.md`**, **`PHASE_B_SECRETS_CHECKLIST.md`**, **`PHASE_C_SECTION_L_EVIDENCE.md`**; **`ops/SECTION_M_GO_LIVE_CHECKLIST.md`** execution order + evidence column; **`ops/PRODUCTION_READINESS_ARTIFACTS.md`** links to runbooks.
+- **`vercel.json`:** `Content-Security-Policy-Report-Only`; **`supabase/functions/health`** Edge DB probe; **`Communication.tsx`** load-error banner + refresh; **`supabase-error-message.ts`:** `isTransientSupabaseMessage`; **`Matches.tsx` / `Activities.tsx`** named roster caps; CI guardrails env hardening; **`npm run k6:staged-reads`**.
 
 ## 2026-03-29 (Public club PWA-style UX, sections, Stripe/shop hardening, load-test harness)
 
