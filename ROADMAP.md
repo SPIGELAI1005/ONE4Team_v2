@@ -9,6 +9,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Recently shipped (2026-03-28):** ONE4AI (`/co-trainer`) with club LLM settings, edge health check, chat persistence (`ai_conversations`), and member audit timeline migrations — see `CHANGELOG.md` § 2026-03-28 and `MEMORY_BANK.md`.
 
+**Production readiness / scale (2026-03-30):** Analytics RPCs, guarded hotspot indexes, Members server search + server-paged roster, keyset pagination (matches/messages), platform-admin RBAC/audit, RLS integration tests, CI guardrails/bundle budget, Edge correlation logging, ops templates and runbooks — doc sync: `CHANGELOG.md` § 2026-03-30, `MEMORY_BANK.md`, `ops/PRODUCTION_READINESS_ARTIFACTS.md`, `PROJECT_STATUS.md`, `TASKS.md`, `DEPLOYMENT.md`.
+
 ---
 
 ## Phase 0 — Foundation (Week 0–1)

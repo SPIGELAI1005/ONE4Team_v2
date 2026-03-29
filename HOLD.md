@@ -1,5 +1,7 @@
 # HOLD — items requiring Supabase / external setup
 
+Last updated: 2026-03-30 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` § 2026-03-30, `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
+
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 
 ## ONE4Team — Apply SQL bundles in Supabase (Dashboard)
