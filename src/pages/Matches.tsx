@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
@@ -34,6 +34,13 @@ type Match = {
 type MatchEvent = { id: string; match_id: string; membership_id: string | null; event_type: string; minute: number | null; notes: string | null };
 type Membership = MembershipWithProfile;
 type LineupPlayer = { id: string; match_id: string; membership_id: string; is_starter: boolean; jersey_number: number | null; position: string | null };
+const MATCHES_PAGE_SIZE = 20;
+
+/** PostgREST `or` filter: rows strictly before (match_date, id) in desc sort order. */
+function matchesKeysetOrFilter(match_date: string, id: string) {
+  const q = (v: string) => `"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+  return `match_date.lt.${q(match_date)},and(match_date.eq.${q(match_date)},id.lt.${id})`;
+}
 
 const statusColors: Record<string, string> = {
   scheduled: "bg-muted text-muted-foreground",
@@ -57,6 +64,9 @@ const Matches = () => {
 
   const [tab, setTab] = useState<"matches" | "competitions" | "standings">("matches");
   const [matches, setMatches] = useState<Match[]>([]);
+  const [matchesPage, setMatchesPage] = useState(1);
+  const [matchesTotalCount, setMatchesTotalCount] = useState(0);
+  const matchPageKeysetRef = useRef<Record<number, { match_date: string; id: string }>>({});
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,6 +84,8 @@ const Matches = () => {
   // Reset page state on club switch to prevent cross-club flashes
   useEffect(() => {
     setMatches([]);
+    setMatchesPage(1);
+    setMatchesTotalCount(0);
     setCompetitions([]);
     setTeams([]);
     setSelectedMatch(null);
@@ -122,18 +134,52 @@ const Matches = () => {
     if (!clubId) return;
     const fetchAll = async () => {
       setLoading(true);
+      if (matchesPage === 1) {
+        matchPageKeysetRef.current = {};
+      } else {
+        const before = matchPageKeysetRef.current[matchesPage - 1];
+        if (!before) {
+          setMatchesPage(1);
+          setLoading(false);
+          return;
+        }
+      }
+
+      let matchQuery = supabase
+        .from("matches")
+        .select(
+          "id, opponent, is_home, match_date, location, status, home_score, away_score, competition_id, team_id, notes, competitions(name), teams(name)",
+          { count: "exact" },
+        )
+        .eq("club_id", clubId)
+        .order("match_date", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(MATCHES_PAGE_SIZE);
+      if (matchesPage > 1) {
+        const before = matchPageKeysetRef.current[matchesPage - 1];
+        if (before) matchQuery = matchQuery.or(matchesKeysetOrFilter(before.match_date, before.id));
+      }
+
       const [matchRes, compRes, teamRes] = await Promise.all([
-        supabase.from("matches").select("*, competitions(name), teams(name)").eq("club_id", clubId).order("match_date", { ascending: false }),
+        matchQuery,
         supabase.from("competitions").select("*").eq("club_id", clubId).order("created_at", { ascending: false }),
         supabase.from("teams").select("id, name").eq("club_id", clubId),
       ]);
-      setMatches((matchRes.data as unknown as Match[]) || []);
+      const matchRows = (matchRes.data as unknown as Match[]) || [];
+      if (matchRows.length > 0) {
+        const oldest = matchRows[matchRows.length - 1];
+        if (oldest?.match_date && oldest?.id) {
+          matchPageKeysetRef.current[matchesPage] = { match_date: oldest.match_date, id: oldest.id };
+        }
+      }
+      setMatches(matchRows);
+      setMatchesTotalCount(matchRes.count ?? 0);
       setCompetitions((compRes.data as Competition[]) || []);
       setTeams((teamRes.data as Team[]) || []);
       setLoading(false);
     };
     fetchAll();
-  }, [clubId]);
+  }, [clubId, matchesPage]);
 
   const openMatchDetail = async (match: Match) => {
     setSelectedMatch(match);
@@ -169,11 +215,16 @@ const Matches = () => {
       location: matchLocation || null, team_id: matchTeamId || null, competition_id: matchCompId || null,
     }).select("*, competitions(name), teams(name)").single();
     if (error) { toast({ title: t.common.error, description: error.message, variant: "destructive" }); return; }
-    setMatches(prev => [data as unknown as Match, ...prev]);
+    setMatchesTotalCount((previous) => previous + 1);
+    if (matchesPage === 1) {
+      setMatches(prev => [data as unknown as Match, ...prev].slice(0, MATCHES_PAGE_SIZE));
+    }
     setShowAddMatch(false);
     setOpponent(""); setMatchDate(""); setMatchLocation(""); setMatchTeamId(""); setMatchCompId("");
     toast({ title: t.matchesPage.toastMatchScheduled });
   };
+
+  const matchesTotalPages = Math.max(1, Math.ceil(matchesTotalCount / MATCHES_PAGE_SIZE));
 
   const handleCreateComp = async () => {
     if (!perms.isTrainer) {
@@ -343,6 +394,36 @@ const Matches = () => {
           <div className="text-center py-20 text-muted-foreground">{t.communicationPage.noClubFound}</div>
         ) : tab === "matches" ? (
           <div className="max-w-3xl mx-auto space-y-4">
+            <div className="rounded-xl bg-card border border-border px-3 py-2 flex items-center justify-between">
+              <div className="text-xs text-muted-foreground">
+                {matchesTotalCount === 0
+                  ? "Showing 0 matches"
+                  : `Showing ${(matchesPage - 1) * MATCHES_PAGE_SIZE + 1}-${Math.min(matchesPage * MATCHES_PAGE_SIZE, matchesTotalCount)} of ${matchesTotalCount}`}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2 text-xs"
+                  disabled={matchesPage <= 1}
+                  onClick={() => setMatchesPage((current) => Math.max(1, current - 1))}
+                >
+                  Previous
+                </Button>
+                <span className="text-xs text-muted-foreground">{matchesPage}/{matchesTotalPages}</span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2 text-xs"
+                  disabled={matchesPage >= matchesTotalPages}
+                  onClick={() => setMatchesPage((current) => Math.min(matchesTotalPages, current + 1))}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
             {/* Form Streak */}
             {matches.length > 0 && (
              <div className="rounded-2xl glass-card p-4">

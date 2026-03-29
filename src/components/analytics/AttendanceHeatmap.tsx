@@ -1,64 +1,41 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Calendar } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { useClubId } from "@/hooks/use-club-id";
-import { useAuth } from "@/contexts/useAuth";
-import type { AttendanceParticipationRow, LineupAppearanceRow } from "@/types/analytics";
+interface HeatmapDayRow {
+  day: string;
+  activity_count: number;
+}
 
 const AttendanceHeatmap = ({ membershipId }: { membershipId?: string }) => {
   const { clubId } = useClubId();
-  const { user } = useAuth();
   const [heatData, setHeatData] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!clubId) return;
     const fetch = async () => {
-      let mid = membershipId;
-      if (!mid && user) {
-        const { data } = await supabase
-          .from("club_memberships").select("id").eq("club_id", clubId).eq("user_id", user.id).maybeSingle();
-        mid = data?.id;
-      }
-      if (!mid) return;
-
-      // Get training attendance from event_participants
-      const { data: participationsRaw } = await supabase
-        .from("event_participants")
-        .select("status, events!event_participants_event_id_fkey(starts_at)")
-        .eq("membership_id", mid);
-
-      // Get match appearances
-      const { data: lineupsRaw } = await supabase
-        .from("match_lineups")
-        .select("match_id, matches!match_lineups_match_id_fkey(match_date)")
-        .eq("membership_id", mid);
-
-      const participations = (participationsRaw ?? []) as unknown as AttendanceParticipationRow[];
-      const lineups = (lineupsRaw ?? []) as unknown as LineupAppearanceRow[];
-
       const dateMap: Record<string, number> = {};
-
-      participations.forEach((p) => {
-        if (p.status === "confirmed" || p.status === "attended") {
-          const d = p.events?.starts_at
-            ? new Date(p.events.starts_at).toISOString().slice(0, 10)
-            : null;
-          if (d) dateMap[d] = (dateMap[d] || 0) + 1;
-        }
+      const { data, error } = await supabaseDynamic.rpc("get_membership_activity_heatmap", {
+        _club_id: clubId,
+        _membership_id: membershipId ?? null,
+        _days: 140,
       });
-
-      lineups.forEach((l) => {
-        const d = l.matches?.match_date
-          ? new Date(l.matches.match_date).toISOString().slice(0, 10)
-          : null;
-        if (d) dateMap[d] = (dateMap[d] || 0) + 1;
+      if (error) {
+        setHeatData({});
+        return;
+      }
+      const rows = ((data as unknown as HeatmapDayRow[]) ?? []);
+      rows.forEach((row) => {
+        if (!row.day) return;
+        const d = String(row.day).slice(0, 10);
+        dateMap[d] = Number(row.activity_count || 0);
       });
 
       setHeatData(dateMap);
     };
     fetch();
-  }, [clubId, membershipId, user]);
+  }, [clubId, membershipId]);
 
   // Generate last 20 weeks grid
   const weeks = 20;

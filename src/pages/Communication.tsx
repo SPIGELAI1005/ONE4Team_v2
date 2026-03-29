@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useLanguage } from "@/hooks/use-language";
+import { correlationHeaders } from "@/lib/observability";
 
 type Announcement = {
   id: string;
@@ -99,6 +101,7 @@ type BridgeForm = {
 };
 
 const CHAT_ATTACHMENTS_BUCKET = "chat-attachments";
+const MESSAGE_PAGE_SIZE = 50;
 
 const priorityColors: Record<string, string> = {
   low: "bg-muted text-muted-foreground",
@@ -138,6 +141,12 @@ function isSameDay(left: string, right: string) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
+/** PostgREST `or` filter: rows strictly before (created_at, id) in desc sort order. */
+function messagesKeysetOrFilter(created_at: string, id: string) {
+  const q = (v: string) => `"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+  return `created_at.lt.${q(created_at)},and(created_at.eq.${q(created_at)},id.lt.${id})`;
+}
+
 const Communication = () => {
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
@@ -152,6 +161,8 @@ const Communication = () => {
   const [teams, setTeams] = useState<TeamChannel[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(true);
+  const [messagePage, setMessagePage] = useState(1);
+  const [messageTotalCount, setMessageTotalCount] = useState(0);
   const [showAddAnnouncement, setShowAddAnnouncement] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -170,6 +181,14 @@ const Communication = () => {
   const [annTitle, setAnnTitle] = useState("");
   const [annContent, setAnnContent] = useState("");
   const [annPriority, setAnnPriority] = useState("normal");
+
+  /** Keeps realtime handler off `messagePage` dependency (avoids channel churn on pagination). */
+  const messagePageRef = useRef(messagePage);
+  /** Page N+1 loads rows older than the tuple stored for page N (stable under inserts). */
+  const messageKeysetRef = useRef<Record<number, { created_at: string; id: string }>>({});
+  useEffect(() => {
+    messagePageRef.current = messagePage;
+  }, [messagePage]);
 
   const hydrateMessages = useCallback(async (rows: MessageBase[]) => {
     if (!rows.length) return [] as Message[];
@@ -245,12 +264,17 @@ const Communication = () => {
   const selectedChannel =
     channels.find((channel) => channel.id === selectedChannelId) ?? channels[0];
 
+  const selectedChannelRef = useRef(selectedChannel);
+  useEffect(() => {
+    selectedChannelRef.current = selectedChannel;
+  }, [selectedChannel]);
+
   const loadBridgeData = useCallback(async () => {
     if (!clubId || !perms.isAdmin) return;
 
     const { data: connectorPayload, error: connectorError } = await supabase.functions.invoke(
       "chat-bridge",
-      { body: { action: "connector.list", clubId } }
+      { headers: correlationHeaders(), body: { action: "connector.list", clubId } },
     );
     if (!connectorError) {
       const connectorList =
@@ -258,14 +282,14 @@ const Communication = () => {
       setConnectors(connectorList);
     }
 
-    const { data: eventsData, error: eventsError } = await supabase
+    const { data: eventsData, error: eventsError } = await supabaseDynamic
       .from("chat_bridge_events")
       .select("connector_id, status, created_at")
       .eq("club_id", clubId)
       .order("created_at", { ascending: false })
       .limit(300);
     if (!eventsError) {
-      setConnectorEvents((eventsData as BridgeEvent[]) || []);
+      setConnectorEvents((eventsData as unknown as BridgeEvent[]) || []);
     }
   }, [clubId, perms.isAdmin]);
 
@@ -284,6 +308,7 @@ const Communication = () => {
       return byContent || bySender;
     });
   }, [mergedMessages, messageSearch]);
+  const messageTotalPages = Math.max(1, Math.ceil(messageTotalCount / MESSAGE_PAGE_SIZE));
 
   const providerHealth = useMemo(
     () =>
@@ -313,6 +338,7 @@ const Communication = () => {
   );
 
   useEffect(() => {
+    messageKeysetRef.current = {};
     setAnnouncements([]);
     setMessages([]);
     setPendingMessages([]);
@@ -322,7 +348,14 @@ const Communication = () => {
     setMissingMessagesTable(false);
     setMissingAnnouncementsTable(false);
     setSupportsAttachments(true);
+    setMessagePage(1);
+    setMessageTotalCount(0);
   }, [clubId]);
+
+  useEffect(() => {
+    messageKeysetRef.current = {};
+    setMessagePage(1);
+  }, [selectedChannelId]);
 
   useEffect(() => {
     if (!clubId) return;
@@ -373,18 +406,40 @@ const Communication = () => {
       if (!clubId || selectedChannel.kind !== "chat") {
         setMessages([]);
         setPendingMessages([]);
+        setMessageTotalCount(0);
         setLoadingMessages(false);
         return;
       }
       setLoadingMessages(true);
+      if (messagePage === 1) {
+        messageKeysetRef.current = {};
+      } else {
+        const before = messageKeysetRef.current[messagePage - 1];
+        if (!before) {
+          setMessagePage(1);
+          setLoadingMessages(false);
+          return;
+        }
+      }
+
       const runQuery = async (withAttachments: boolean) => {
-        const query = supabase
+        let query = supabase
           .from("messages")
-          .select(withAttachments ? "id, content, sender_id, team_id, created_at, attachments" : "id, content, sender_id, team_id, created_at")
+          .select(
+            withAttachments ? "id, content, sender_id, team_id, created_at, attachments" : "id, content, sender_id, team_id, created_at",
+            { count: "exact" },
+          )
           .eq("club_id", clubId)
-          .order("created_at", { ascending: true })
-          .limit(200);
-        return selectedChannel.teamId === null ? query.is("team_id", null) : query.eq("team_id", selectedChannel.teamId);
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .limit(MESSAGE_PAGE_SIZE);
+        query =
+          selectedChannel.teamId === null ? query.is("team_id", null) : query.eq("team_id", selectedChannel.teamId);
+        if (messagePage > 1) {
+          const before = messageKeysetRef.current[messagePage - 1];
+          if (before) query = query.or(messagesKeysetOrFilter(before.created_at, before.id));
+        }
+        return query;
       };
 
       let response = await runQuery(true);
@@ -405,8 +460,16 @@ const Communication = () => {
           toast({ title: t.common.error, description: error.message, variant: "destructive" });
         }
       }
-      const hydrated = await hydrateMessages((data as MessageBase[]) || []);
-      setMessages(hydrated);
+      const rawRows = (data as unknown as MessageBase[]) || [];
+      if (rawRows.length > 0) {
+        const oldest = rawRows[rawRows.length - 1];
+        if (oldest?.created_at && oldest?.id) {
+          messageKeysetRef.current[messagePage] = { created_at: oldest.created_at, id: oldest.id };
+        }
+      }
+      const hydrated = await hydrateMessages(rawRows);
+      setMessages([...hydrated].reverse());
+      setMessageTotalCount(response.count ?? 0);
       setPendingMessages([]);
       setLoadingMessages(false);
     };
@@ -414,6 +477,7 @@ const Communication = () => {
   }, [
     clubId,
     hydrateMessages,
+    messagePage,
     selectedChannel,
     t.common.error,
     t.communicationPage.messagesTableMissingDesc,
@@ -423,49 +487,95 @@ const Communication = () => {
 
   useEffect(() => {
     if (!clubId) return;
+
+    /**
+     * Realtime policy: one postgres_changes subscription per club (not per UI channel switch).
+     * Filter is club-scoped only; team routing happens in the handler to limit channel churn.
+     * Channel name is unique per club to avoid cross-tenant collisions in the client multiplex.
+     */
+    const channelName = `club-messages:${clubId}`;
+    let insertBurstTimer: ReturnType<typeof setTimeout> | null = null;
+    const pendingInserts: MessageBase[] = [];
+
+    const flushPendingInserts = async () => {
+      if (!pendingInserts.length) return;
+      const batch = pendingInserts.splice(0, pendingInserts.length);
+      const ch = selectedChannelRef.current;
+      for (const incoming of batch) {
+        if (ch.kind !== "chat") continue;
+        if (ch.teamId === null && incoming.team_id !== null) continue;
+        if (ch.teamId !== null && incoming.team_id !== ch.teamId) continue;
+
+        setPendingMessages((previous) =>
+          previous.filter(
+            (item) =>
+              !(
+                item.sender_id === incoming.sender_id &&
+                item.content === incoming.content &&
+                Math.abs(
+                  new Date(item.created_at).getTime() - new Date(incoming.created_at).getTime()
+                ) < 20_000
+              ),
+          ),
+        );
+
+        const hydratedList = await hydrateMessages([incoming]);
+        const hydrated = hydratedList[0];
+        if (!hydrated) continue;
+
+        const page = messagePageRef.current;
+        let shouldIncrementCount = false;
+        if (page === 1) {
+          setMessages((previous) => {
+            if (previous.some((message) => message.id === hydrated.id)) return previous;
+            shouldIncrementCount = true;
+            return [...previous, hydrated].slice(-MESSAGE_PAGE_SIZE);
+          });
+        } else {
+          setMessages((previous) => {
+            if (previous.some((message) => message.id === hydrated.id)) return previous;
+            shouldIncrementCount = true;
+            return previous;
+          });
+        }
+        if (shouldIncrementCount) {
+          setMessageTotalCount((previous) => previous + 1);
+        }
+      }
+    };
+
     const channel = supabase
-      .channel("club-messages")
+      .channel(channelName)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages", filter: `club_id=eq.${clubId}` },
-        async (payload) => {
+        (payload) => {
           const incoming = payload.new as MessageBase;
-          if (selectedChannel.kind !== "chat") return;
-          if (selectedChannel.teamId === null && incoming.team_id !== null) return;
-          if (selectedChannel.teamId !== null && incoming.team_id !== selectedChannel.teamId) return;
-
-          setPendingMessages((previous) =>
-            previous.filter(
-              (item) =>
-                !(
-                  item.sender_id === incoming.sender_id &&
-                  item.content === incoming.content &&
-                  Math.abs(
-                    new Date(item.created_at).getTime() - new Date(incoming.created_at).getTime()
-                  ) < 20_000
-                )
-            )
-          );
-
-          const hydratedList = await hydrateMessages([incoming]);
-          const hydrated = hydratedList[0];
-          if (!hydrated) return;
-
-          setMessages((previous) => {
-            if (previous.some((message) => message.id === hydrated.id)) return previous;
-            return [...previous, hydrated];
-          });
-        }
+          pendingInserts.push(incoming);
+          if (insertBurstTimer) clearTimeout(insertBurstTimer);
+          insertBurstTimer = setTimeout(() => {
+            insertBurstTimer = null;
+            void flushPendingInserts();
+          }, 80);
+        },
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          console.warn(`[realtime] messages channel ${status} (club ${clubId}) — client will retry on next navigation/remount`);
+        }
+      });
+
     return () => {
+      if (insertBurstTimer) clearTimeout(insertBurstTimer);
       supabase.removeChannel(channel);
     };
-  }, [clubId, hydrateMessages, selectedChannel]);
+    /** Intentionally omit `selectedChannel`: routing uses `selectedChannelRef` to avoid subscribe churn. */
+  }, [clubId, hydrateMessages]);
 
   useEffect(() => {
+    if (messagePage !== 1) return;
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [filteredMessages]);
+  }, [filteredMessages, messagePage]);
 
   const uploadComposerFiles = async () => {
     if (!clubId || !selectedFiles.length) return [] as AttachmentMeta[];
@@ -510,12 +620,12 @@ const Communication = () => {
       },
     ]);
 
-    const payload: Record<string, unknown> = {
+    const payload = {
       club_id: clubId,
       sender_id: user.id,
       team_id: selectedChannel.teamId,
       content: finalContent,
-    };
+    } as Record<string, unknown>;
     if (supportsAttachments) {
       payload.attachments = attachments.map((attachment) => ({
         path: attachment.path,
@@ -531,7 +641,7 @@ const Communication = () => {
 
     const { data, error } = await supabase
       .from("messages")
-      .insert(payload)
+      .insert(payload as never)
       .select(selectColumns)
       .single();
 
@@ -549,13 +659,15 @@ const Communication = () => {
       return;
     }
 
-    const hydrated = await hydrateMessages([data as MessageBase]);
+    const hydrated = await hydrateMessages([data as unknown as MessageBase]);
     const next = hydrated[0];
     if (next) {
-      setMessages((previous) => {
-        if (previous.some((item) => item.id === next.id)) return previous;
-        return [...previous, next];
-      });
+      if (messagePage === 1) {
+        setMessages((previous) => {
+          if (previous.some((item) => item.id === next.id)) return previous;
+          return [...previous, next].slice(-MESSAGE_PAGE_SIZE);
+        });
+      }
     }
     setPendingMessages((previous) => previous.filter((item) => item.id !== `local-${clientId}`));
   };
@@ -673,6 +785,7 @@ const Communication = () => {
 
     setBridgeBusy(true);
     const { data, error } = await supabase.functions.invoke("chat-bridge", {
+      headers: correlationHeaders(),
       body: {
         action: "connector.upsert",
         clubId,
@@ -871,6 +984,38 @@ const Communication = () => {
                         placeholder={t.communicationPage.searchMessagesPlaceholder}
                         className="border-0 bg-transparent focus-visible:ring-0"
                       />
+                    </div>
+                    <div className="mt-2 flex items-center justify-between">
+                      <div className="text-[11px] text-muted-foreground">
+                        {messageTotalCount === 0
+                          ? "Showing 0 messages"
+                          : `Showing ${(messagePage - 1) * MESSAGE_PAGE_SIZE + 1}-${Math.min(messagePage * MESSAGE_PAGE_SIZE, messageTotalCount)} of ${messageTotalCount}`}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs"
+                          disabled={messagePage <= 1}
+                          onClick={() => setMessagePage((current) => Math.max(1, current - 1))}
+                        >
+                          Previous
+                        </Button>
+                        <span className="text-[11px] text-muted-foreground">
+                          {messagePage}/{messageTotalPages}
+                        </span>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs"
+                          disabled={messagePage >= messageTotalPages}
+                          onClick={() => setMessagePage((current) => Math.min(messageTotalPages, current + 1))}
+                        >
+                          Next
+                        </Button>
+                      </div>
                     </div>
                   </div>
                   <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[radial-gradient(circle_at_10%_20%,hsl(var(--primary)/0.08),transparent_35%),radial-gradient(circle_at_90%_80%,hsl(var(--accent)/0.08),transparent_35%)]">

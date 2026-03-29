@@ -32,8 +32,6 @@ interface PlatformStats {
   trialingSubscriptions: number;
 }
 
-const PLATFORM_ADMIN_EMAILS = (import.meta.env.VITE_PLATFORM_ADMIN_EMAILS ?? "").split(",").map((e: string) => e.trim().toLowerCase()).filter(Boolean);
-
 function subscriptionStatusLabel(
   status: string | null | undefined,
   labels: Record<string, string>,
@@ -57,17 +55,33 @@ export default function PlatformAdmin() {
   const [tab, setTab] = useState<"overview" | "clubs" | "subscriptions">("overview");
 
   useEffect(() => {
-    if (!user?.email) {
+    if (!user?.id) {
       setAuthorized(false);
       setLoading(false);
       return;
     }
-    const isAdmin =
-      PLATFORM_ADMIN_EMAILS.length > 0 &&
-      PLATFORM_ADMIN_EMAILS.includes(user.email.toLowerCase());
-    setAuthorized(isAdmin);
-    setLoading(false);
-  }, [user?.email]);
+    let cancelled = false;
+    setLoading(true);
+    void (async () => {
+      const { data, error } = await supabaseDynamic.rpc("is_platform_admin");
+      if (cancelled) return;
+      if (error) {
+        setAuthorized(false);
+        setLoading(false);
+        toast({
+          title: t.common.error,
+          description: error.message || t.platformAdminPage.loadFailed,
+          variant: "destructive",
+        });
+        return;
+      }
+      setAuthorized(Boolean(data));
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, toast, t.common.error, t.platformAdminPage.loadFailed]);
 
   const loadData = useCallback(async () => {
     if (!authorized) return;
@@ -114,6 +128,15 @@ export default function PlatformAdmin() {
         totalMembers: 0,
         activeSubscriptions: activeCount,
         trialingSubscriptions: trialingCount,
+      });
+
+      void supabaseDynamic.rpc("log_platform_admin_action", {
+        _action: "platform_admin.data_load",
+        _payload: {
+          total_clubs: clubRows.length,
+          active_subscriptions: activeCount,
+          trialing_subscriptions: trialingCount,
+        },
       });
     } catch (err) {
       toast({ title: t.common.error, description: err instanceof Error ? err.message : t.platformAdminPage.loadFailed, variant: "destructive" });

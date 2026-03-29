@@ -51,6 +51,9 @@ Then configure Vercel:
 ## Supabase migrations (Stripe / shop / public club — 2026-03-29)
 After pulling latest `main`, apply new SQL in **`supabase/migrations/`** in timestamp order from `20260328203000_stripe_webhook_idempotency.sql` through `20260329000000_club_public_page_sections.sql` (see `CHANGELOG.md` § 2026-03-29). Then deploy **`stripe-checkout`**, **`stripe-webhook`**, and any LLM functions affected by `20260328205000_edge_llm_rate_limit.sql`. Edge secrets: **`STRIPE_SECRET_KEY`**, **`STRIPE_WEBHOOK_SECRET`**, price IDs as documented in `.env.example` and **`ops/PRODUCTION_READINESS_ARTIFACTS.md`**.
 
+## Supabase migrations (production readiness — 2026-03-30)
+After the 2026-03-29 wave, apply in filename order from **`20260329103000_platform_admin_rbac.sql`** through **`20260330120000_search_club_members_page.sql`** (see `CHANGELOG.md` § 2026-03-30 and `MEMORY_BANK.md` items 32–42). For **`20260329132000_hotspot_composite_indexes.sql`**, run the **entire migration file** (indexes are created only when `to_regclass` finds `public.events` / `public.event_participants` — do not paste unguarded `CREATE INDEX` fragments). Redeploy Edge functions that import **`supabase/functions/_shared/request_context.ts`** (**`co-trainer`**, **`stripe-checkout`**, **`chat-bridge`**, **`stripe-webhook`**) so correlation logging is active. Validate Members search and analytics pages against the new RPCs after apply.
+
 ## Release checklist
 - CI green: lint / test / build / audit:phase0 / e2e
 - Manual smoke in deployed URL

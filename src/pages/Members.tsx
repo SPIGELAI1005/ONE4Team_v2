@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, Fragment } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/hooks/use-language";
 import { motion } from "framer-motion";
@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { useToast } from "@/hooks/use-toast";
 import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -40,6 +41,7 @@ import { MasterDataTabs } from "@/components/members/master-data-tabs";
 import { Badge } from "@/components/ui/badge";
 import { appendMemberAuditEvent } from "@/lib/member-audit";
 import { cn } from "@/lib/utils";
+import { supabaseErrorMessage } from "@/lib/supabase-error-message";
 
 type HistoryPreviewState = {
   path: string;
@@ -200,6 +202,30 @@ const roleColors: Record<string, string> = {
   consultant: "bg-cyan-500/10 text-cyan-400",
 };
 
+const MEMBERS_VISIBLE_PAGE_SIZE = 40;
+const MEMBERS_SERVER_PAGE_SIZE = 100;
+
+function mapSearchRpcRowToMember(row: Record<string, unknown>): MemberRow {
+  const userId = String(row.user_id ?? "");
+  return {
+    id: String(row.id),
+    club_id: String(row.club_id),
+    user_id: userId,
+    role: String(row.role ?? ""),
+    position: row.position != null ? String(row.position) : null,
+    age_group: row.age_group != null ? String(row.age_group) : null,
+    team: row.team != null ? String(row.team) : null,
+    status: String(row.status ?? ""),
+    created_at: String(row.created_at ?? ""),
+    profiles: {
+      display_name: row.profile_display_name != null ? String(row.profile_display_name) : null,
+      avatar_url: row.profile_avatar_url != null ? String(row.profile_avatar_url) : null,
+      phone: row.profile_phone != null ? String(row.profile_phone) : null,
+      user_id: userId,
+    },
+  };
+}
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function isPlayerRole(role: string | null | undefined): boolean {
@@ -296,8 +322,23 @@ const Members = () => {
   const perms = usePermissions();
   const [tab, setTab] = useState<"members" | "invites" | "roles">("members");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [membersServerPage, setMembersServerPage] = useState(1);
+  const [membersDbTotalCount, setMembersDbTotalCount] = useState<number | null>(null);
+  const [clubMemberStats, setClubMemberStats] = useState<{
+    total: number;
+    active: number;
+    players: number;
+    trainers: number;
+  } | null>(null);
+  const membersPivotRef = useRef<string>("");
   const [members, setMembers] = useState<MemberRow[]>([]);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setDebouncedSearch(search), 400);
+    return () => window.clearTimeout(id);
+  }, [search]);
   const [memberTeamNamesById, setMemberTeamNamesById] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedMember, setSelectedMember] = useState<MemberRow | null>(null);
@@ -468,7 +509,10 @@ const Members = () => {
     setDraftResendInviteToken(null);
 
     setSearch("");
+    setDebouncedSearch("");
     setRoleFilter("all");
+    setMembersServerPage(1);
+    membersPivotRef.current = "";
     setInviteReqFilter("pending");
   }, [clubId]);
 
@@ -857,123 +901,205 @@ const Members = () => {
   const canReviewJoinRequests = perms.isAdmin || (perms.isTrainer && joinReviewerPolicy === "admin_trainer");
   const canAccessMembersPage = perms.isAdmin || perms.isTrainer;
 
-  // Fetch members
-  useEffect(() => {
+  const fetchMembers = useCallback(async () => {
     if (!clubId) return;
-    const fetchMembers = async () => {
-      setLoading(true);
-      const { data: membershipData, error: membershipError } = await supabase
-        .from("club_memberships")
-        .select("*")
-        .eq("club_id", clubId)
-        .order("created_at", { ascending: false });
+    const searchKey = debouncedSearch.trim().length >= 2 ? debouncedSearch.trim() : "";
+    const pivot = `${clubId}\0${roleFilter}\0${searchKey}`;
+    if (membersPivotRef.current !== pivot) {
+      membersPivotRef.current = pivot;
+      if (membersServerPage !== 1) {
+        setMembersServerPage(1);
+        return;
+      }
+    }
+    setLoading(true);
+    const from = (membersServerPage - 1) * MEMBERS_SERVER_PAGE_SIZE;
+    const to = from + MEMBERS_SERVER_PAGE_SIZE - 1; // upper bound for PostgREST range()
 
-      if (membershipError) {
-        toast({ title: t.membersPage.errorLoadingMembers, description: membershipError.message, variant: "destructive" });
+    const applyStats = (statsRes: { data: unknown; error: { message: string } | null }) => {
+      if (statsRes.error) {
+        setClubMemberStats(null);
       } else {
-        const memberships = (membershipData as unknown as MemberRow[]) || [];
-        const userIds = Array.from(new Set(memberships.map((item) => item.user_id))).filter(Boolean);
-        const membershipIds = memberships.map((item) => item.id);
-
-        let profileByUserId = new Map<string, MemberRow["profiles"]>();
-        if (userIds.length) {
-          const { data: profileData, error: profileError } = await supabase
-            .from("profiles")
-            .select("display_name, avatar_url, phone, user_id")
-            .in("user_id", userIds);
-
-          if (profileError) {
-            toast({ title: t.membersPage.errorLoadingMembers, description: profileError.message, variant: "destructive" });
-          } else {
-            profileByUserId = new Map(
-              ((profileData as MemberRow["profiles"][]) || []).map((profile) => [profile.user_id, profile])
-            );
-          }
-        }
-
-        setMembers(
-          memberships.map((membership) => ({
-            ...membership,
-            profiles: profileByUserId.get(membership.user_id),
-          }))
-        );
-
-        if (membershipIds.length > 0) {
-          const [teamRowsRes, playersRes, coachesRes, masterRes, guardianRes, emailRes] = await Promise.all([
-            supabase.from("teams").select("id, name").eq("club_id", clubId),
-            supabase.from("team_players").select("team_id, membership_id").in("membership_id", membershipIds),
-            supabase.from("team_coaches").select("team_id, membership_id").in("membership_id", membershipIds),
-            supabase.from("club_member_master_records").select("*").in("membership_id", membershipIds),
-            supabase.from("club_member_guardian_links").select("*").eq("club_id", clubId),
-            supabase.rpc("list_club_membership_emails", { _club_id: clubId }),
-          ]);
-
-          const teamsById = new Map<string, string>();
-          ((teamRowsRes.data as Array<Record<string, unknown>> | null) || []).forEach((row) => {
-            teamsById.set(String(row.id), String(row.name));
+        const raw = statsRes.data;
+        const row = (Array.isArray(raw) ? raw[0] : raw) as Record<string, unknown> | undefined;
+        if (row && typeof row === "object") {
+          setClubMemberStats({
+            total: Number(row.total_count ?? 0),
+            active: Number(row.active_count ?? 0),
+            players: Number(row.player_count ?? 0),
+            trainers: Number(row.trainer_count ?? 0),
           });
-
-          const map: Record<string, string[]> = {};
-          const applyRows = (rows: Array<Record<string, unknown>>) => {
-            rows.forEach((row) => {
-              const membershipId = String(row.membership_id);
-              const teamId = String(row.team_id);
-              const teamName = teamsById.get(teamId);
-              if (!teamName) return;
-              const existing = map[membershipId] || [];
-              map[membershipId] = existing.includes(teamName) ? existing : [...existing, teamName];
-            });
-          };
-
-          if (!playersRes.error) applyRows(((playersRes.data as Array<Record<string, unknown>> | null) || []));
-          if (!coachesRes.error) applyRows(((coachesRes.data as Array<Record<string, unknown>> | null) || []));
-          if (coachesRes.error && !isMissingRelationError(coachesRes.error)) {
-            toast({ title: t.membersPage.errorLoadingMembers, description: coachesRes.error.message, variant: "destructive" });
-          }
-          setMemberTeamNamesById(map);
-
-          if (!masterRes.error && masterRes.data) {
-            const nextMaster: Record<string, ClubMemberMasterRecord | null> = {};
-            for (const row of masterRes.data as ClubMemberMasterRecord[]) {
-              nextMaster[row.membership_id] = row;
-            }
-            setMasterByMembershipId(nextMaster);
-          } else if (masterRes.error && !isMissingRelationError(masterRes.error)) {
-            toast({ title: t.membersPage.errorLoadingMembers, description: masterRes.error.message, variant: "destructive" });
-            setMasterByMembershipId({});
-          } else {
-            setMasterByMembershipId({});
-          }
-
-          if (!guardianRes.error && guardianRes.data) {
-            setGuardianLinks(guardianRes.data as unknown as GuardianLinkRow[]);
-          } else if (guardianRes.error && !isMissingRelationError(guardianRes.error)) {
-            toast({ title: t.membersPage.errorLoadingMembers, description: guardianRes.error.message, variant: "destructive" });
-            setGuardianLinks([]);
-          } else {
-            setGuardianLinks([]);
-          }
-
-          if (!emailRes.error && emailRes.data) {
-            const em: Record<string, string> = {};
-            for (const row of emailRes.data as { membership_id: string; email: string }[]) {
-              if (row.membership_id && row.email) em[row.membership_id] = row.email;
-            }
-            setMembershipEmails(em);
-          } else {
-            setMembershipEmails({});
-          }
         } else {
-          setMemberTeamNamesById({});
-          setMasterByMembershipId({});
-          setGuardianLinks([]);
-          setMembershipEmails({});
+          setClubMemberStats(null);
         }
       }
-      setLoading(false);
     };
+
+    const loadSidecarsForMemberships = async (membershipIds: string[]) => {
+      if (membershipIds.length === 0) {
+        setMemberTeamNamesById({});
+        setMasterByMembershipId({});
+        setGuardianLinks([]);
+        setMembershipEmails({});
+        return;
+      }
+      const [teamRowsRes, playersRes, coachesRes, masterRes, guardianRes, emailRes] = await Promise.all([
+        supabase.from("teams").select("id, name").eq("club_id", clubId),
+        supabase.from("team_players").select("team_id, membership_id").in("membership_id", membershipIds),
+        supabase.from("team_coaches").select("team_id, membership_id").in("membership_id", membershipIds),
+        supabase.from("club_member_master_records").select("*").in("membership_id", membershipIds),
+        supabase.from("club_member_guardian_links").select("*").eq("club_id", clubId),
+        supabase.rpc("list_club_membership_emails", { _club_id: clubId }),
+      ]);
+
+      const teamsById = new Map<string, string>();
+      ((teamRowsRes.data as Array<Record<string, unknown>> | null) || []).forEach((row) => {
+        teamsById.set(String(row.id), String(row.name));
+      });
+
+      const map: Record<string, string[]> = {};
+      const applyRows = (rows: Array<Record<string, unknown>>) => {
+        rows.forEach((row) => {
+          const membershipId = String(row.membership_id);
+          const teamId = String(row.team_id);
+          const teamName = teamsById.get(teamId);
+          if (!teamName) return;
+          const existing = map[membershipId] || [];
+          map[membershipId] = existing.includes(teamName) ? existing : [...existing, teamName];
+        });
+      };
+
+      if (!playersRes.error) applyRows(((playersRes.data as Array<Record<string, unknown>> | null) || []));
+      if (!coachesRes.error) applyRows(((coachesRes.data as Array<Record<string, unknown>> | null) || []));
+      if (coachesRes.error && !isMissingRelationError(coachesRes.error)) {
+        toast({ title: t.membersPage.errorLoadingMembers, description: coachesRes.error.message, variant: "destructive" });
+      }
+      setMemberTeamNamesById(map);
+
+      if (!masterRes.error && masterRes.data) {
+        const nextMaster: Record<string, ClubMemberMasterRecord | null> = {};
+        for (const row of masterRes.data as ClubMemberMasterRecord[]) {
+          nextMaster[row.membership_id] = row;
+        }
+        setMasterByMembershipId(nextMaster);
+      } else if (masterRes.error && !isMissingRelationError(masterRes.error)) {
+        toast({ title: t.membersPage.errorLoadingMembers, description: masterRes.error.message, variant: "destructive" });
+        setMasterByMembershipId({});
+      } else {
+        setMasterByMembershipId({});
+      }
+
+      if (!guardianRes.error && guardianRes.data) {
+        setGuardianLinks(guardianRes.data as unknown as GuardianLinkRow[]);
+      } else if (guardianRes.error && !isMissingRelationError(guardianRes.error)) {
+        toast({ title: t.membersPage.errorLoadingMembers, description: guardianRes.error.message, variant: "destructive" });
+        setGuardianLinks([]);
+      } else {
+        setGuardianLinks([]);
+      }
+
+      if (!emailRes.error && emailRes.data) {
+        const em: Record<string, string> = {};
+        for (const row of emailRes.data as { membership_id: string; email: string }[]) {
+          if (row.membership_id && row.email) em[row.membership_id] = row.email;
+        }
+        setMembershipEmails(em);
+      } else {
+        setMembershipEmails({});
+      }
+    };
+
+    const trimmedSearch = debouncedSearch.trim();
+    if (trimmedSearch.length >= 2) {
+      const [rpcRes, statsRes] = await Promise.all([
+        supabaseDynamic.rpc("search_club_members_page", {
+          _club_id: clubId,
+          _search: trimmedSearch,
+          _role_filter: roleFilter === "all" ? null : roleFilter,
+          _limit: MEMBERS_SERVER_PAGE_SIZE,
+          _offset: from,
+        }),
+        supabaseDynamic.rpc("get_club_member_stats", { _club_id: clubId }),
+      ]);
+      applyStats(statsRes);
+      const { data: rawSearch, error: rpcErr } = rpcRes;
+      if (rpcErr) {
+        toast({
+          title: t.membersPage.errorLoadingMembers,
+          description: supabaseErrorMessage(rpcErr),
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+      const payload = rawSearch as { total?: unknown; items?: unknown } | null;
+      const total = typeof payload?.total === "number" ? payload.total : 0;
+      const rawItems = Array.isArray(payload?.items) ? payload.items : [];
+      setMembersDbTotalCount(total);
+      const memberships = rawItems.map((row) => mapSearchRpcRowToMember(row as Record<string, unknown>));
+      setMembers(memberships);
+      await loadSidecarsForMemberships(memberships.map((item) => item.id));
+      setLoading(false);
+      return;
+    }
+
+    let membershipQuery = supabase
+      .from("club_memberships")
+      .select("id, club_id, user_id, role, position, age_group, team, status, created_at", { count: "exact" })
+      .eq("club_id", clubId)
+      .order("created_at", { ascending: false });
+    if (roleFilter !== "all") {
+      membershipQuery = membershipQuery.eq("role", roleFilter);
+    }
+
+    const [memRes, statsRes] = await Promise.all([
+      membershipQuery.range(from, to),
+      supabaseDynamic.rpc("get_club_member_stats", { _club_id: clubId }),
+    ]);
+
+    const { data: membershipData, error: membershipError, count } = memRes;
+    setMembersDbTotalCount(typeof count === "number" ? count : null);
+    applyStats(statsRes);
+
+    if (membershipError) {
+      toast({ title: t.membersPage.errorLoadingMembers, description: membershipError.message, variant: "destructive" });
+      setLoading(false);
+      return;
+    }
+
+    const memberships = (membershipData as unknown as MemberRow[]) || [];
+    const userIds = Array.from(new Set(memberships.map((item) => item.user_id))).filter(Boolean);
+    const membershipIds = memberships.map((item) => item.id);
+
+    let profileByUserId = new Map<string, MemberRow["profiles"]>();
+    if (userIds.length) {
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("display_name, avatar_url, phone, user_id")
+        .in("user_id", userIds);
+
+      if (profileError) {
+        toast({ title: t.membersPage.errorLoadingMembers, description: profileError.message, variant: "destructive" });
+      } else {
+        profileByUserId = new Map(
+          ((profileData as MemberRow["profiles"][]) || []).map((profile) => [profile.user_id, profile]),
+        );
+      }
+    }
+
+    const withProfiles = memberships.map((membership) => ({
+      ...membership,
+      profiles: profileByUserId.get(membership.user_id),
+    }));
+    setMembers(withProfiles);
+
+    await loadSidecarsForMemberships(membershipIds);
+    setLoading(false);
+  }, [clubId, debouncedSearch, membersServerPage, roleFilter, toast, t]);
+
+  useEffect(() => {
     void fetchMembers();
-  }, [clubId, toast, t]);
+  }, [fetchMembers]);
 
   useEffect(() => {
     if (tab !== "invites") return;
@@ -1109,21 +1235,31 @@ const Members = () => {
     void run();
   }, [showAddMembers, clubId, perms.isAdmin, bulkRows]);
 
-  const filtered = members.filter((m) => {
-    const master = masterByMembershipId[m.id];
-    const masterName = `${master?.first_name || ""} ${master?.last_name || ""}`.trim().toLowerCase();
-    const name = (m.profiles?.display_name || "").toLowerCase();
-    const phoneValue = (m.profiles?.phone || "").toLowerCase();
-    const emailValue = (membershipEmails[m.id] || "").toLowerCase();
-    const query = search.toLowerCase();
-    const matchSearch =
-      name.includes(query) ||
-      masterName.includes(query) ||
-      phoneValue.includes(query) ||
-      emailValue.includes(query);
-    const matchRole = roleFilter === "all" || m.role === roleFilter;
-    return matchSearch && matchRole;
-  });
+  const filtered = useMemo(() => {
+    if (debouncedSearch.trim().length >= 2) {
+      return members;
+    }
+    return members.filter((m) => {
+      const master = masterByMembershipId[m.id];
+      const masterName = `${master?.first_name || ""} ${master?.last_name || ""}`.trim().toLowerCase();
+      const name = (m.profiles?.display_name || "").toLowerCase();
+      const phoneValue = (m.profiles?.phone || "").toLowerCase();
+      const emailValue = (membershipEmails[m.id] || "").toLowerCase();
+      const query = search.toLowerCase();
+      const matchSearch =
+        name.includes(query) ||
+        masterName.includes(query) ||
+        phoneValue.includes(query) ||
+        emailValue.includes(query);
+      const matchRole = roleFilter === "all" || m.role === roleFilter;
+      return matchSearch && matchRole;
+    });
+  }, [members, masterByMembershipId, membershipEmails, roleFilter, search, debouncedSearch]);
+
+  const membersServerTotalPages = Math.max(
+    1,
+    Math.ceil((membersDbTotalCount ?? 0) / MEMBERS_SERVER_PAGE_SIZE) || 1,
+  );
 
   const getMemberTeamLabel = useCallback((member: MemberRow) => {
     const assignedTeams = memberTeamNamesById[member.id] || [];
@@ -1144,22 +1280,110 @@ const Members = () => {
 
   const handleExportMemberRegistry = useCallback(async () => {
     if (!clubId) return;
+    const EXPORT_CAP = 5000;
+    const { data: allRows, error: memErr } = await supabase
+      .from("club_memberships")
+      .select("id, club_id, user_id, role, position, age_group, team, status, created_at")
+      .eq("club_id", clubId)
+      .order("created_at", { ascending: false })
+      .limit(EXPORT_CAP);
+    if (memErr) {
+      toast({ title: t.common.error, description: memErr.message, variant: "destructive" });
+      return;
+    }
+    const exportMembers = (allRows as unknown as MemberRow[]) || [];
+    const userIds = Array.from(new Set(exportMembers.map((item) => item.user_id))).filter(Boolean);
+    const membershipIds = exportMembers.map((item) => item.id);
+    let profileByUserId = new Map<string, MemberRow["profiles"]>();
+    if (userIds.length) {
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("display_name, avatar_url, phone, user_id")
+        .in("user_id", userIds);
+      if (profileError) {
+        toast({ title: t.common.error, description: profileError.message, variant: "destructive" });
+        return;
+      }
+      profileByUserId = new Map(
+        ((profileData as MemberRow["profiles"][]) || []).map((profile) => [profile.user_id, profile]),
+      );
+    }
+    const withProfiles = exportMembers.map((m) => ({
+      ...m,
+      profiles: profileByUserId.get(m.user_id),
+    }));
+    const masterMap: Record<string, ClubMemberMasterRecord | null> = {};
+    const teamLabelMap: Record<string, string[]> = {};
+    const emailMap: Record<string, string> = { ...membershipEmails };
+    if (membershipIds.length) {
+      const [teamRowsRes, playersRes, coachesRes, masterRes, emailRes] = await Promise.all([
+        supabase.from("teams").select("id, name").eq("club_id", clubId),
+        supabase.from("team_players").select("team_id, membership_id").in("membership_id", membershipIds),
+        supabase.from("team_coaches").select("team_id, membership_id").in("membership_id", membershipIds),
+        supabase.from("club_member_master_records").select("*").in("membership_id", membershipIds),
+        supabase.rpc("list_club_membership_emails", { _club_id: clubId }),
+      ]);
+      const teamsById = new Map<string, string>();
+      ((teamRowsRes.data as Array<Record<string, unknown>> | null) || []).forEach((row) => {
+        teamsById.set(String(row.id), String(row.name));
+      });
+      const applyRows = (rows: Array<Record<string, unknown>>, map: Record<string, string[]>) => {
+        rows.forEach((row) => {
+          const membershipId = String(row.membership_id);
+          const teamId = String(row.team_id);
+          const teamName = teamsById.get(teamId);
+          if (!teamName) return;
+          const existing = map[membershipId] || [];
+          map[membershipId] = existing.includes(teamName) ? existing : [...existing, teamName];
+        });
+      };
+      if (!playersRes.error) applyRows(((playersRes.data as Array<Record<string, unknown>> | null) || []), teamLabelMap);
+      if (!coachesRes.error) applyRows(((coachesRes.data as Array<Record<string, unknown>> | null) || []), teamLabelMap);
+      if (!masterRes.error && masterRes.data) {
+        for (const row of masterRes.data as ClubMemberMasterRecord[]) {
+          masterMap[row.membership_id] = row;
+        }
+      }
+      if (!emailRes.error && emailRes.data) {
+        for (const row of emailRes.data as { membership_id: string; email: string }[]) {
+          if (row.membership_id && row.email) emailMap[row.membership_id] = row.email;
+        }
+      }
+    }
+    const getTeam = (m: MemberRow) => {
+      const assigned = teamLabelMap[m.id] || [];
+      if (assigned.length > 0) return assigned.join(", ");
+      return m.team || t.membersPage.noTeam;
+    };
+    const getName = (m: MemberRow) => {
+      const master = masterMap[m.id];
+      const fn = master?.first_name?.trim();
+      const ln = master?.last_name?.trim();
+      if (fn || ln) return [fn, ln].filter(Boolean).join(" ");
+      return m.profiles?.display_name || t.membersPage.unknownMember;
+    };
     await buildMemberRegistryWorkbook({
       clubName: clubName || "Club",
-      membersSnapshot: members.map((m) => ({
-        email: membershipEmails[m.id] || "",
-        displayName: getMemberRosterName(m),
+      membersSnapshot: withProfiles.map((m) => ({
+        email: emailMap[m.id] || "",
+        displayName: getName(m),
         role: m.role,
         status: m.status,
-        team: getMemberTeamLabel(m),
+        team: getTeam(m),
         ageGroup: m.age_group || "",
         position: m.position || "",
         joinedAt: new Date(m.created_at).toISOString().slice(0, 10),
-        master: masterByMembershipId[m.id] || null,
+        master: masterMap[m.id] || null,
       })),
     });
-    toast({ title: t.membersPage.registryExportTitle, description: t.membersPage.registryExportDesc });
-  }, [clubId, clubName, members, membershipEmails, masterByMembershipId, getMemberRosterName, getMemberTeamLabel, t, toast]);
+    toast({
+      title: t.membersPage.registryExportTitle,
+      description:
+        exportMembers.length >= EXPORT_CAP
+          ? `${t.membersPage.registryExportDesc} (capped at ${EXPORT_CAP} rows)`
+          : t.membersPage.registryExportDesc,
+    });
+  }, [clubId, clubName, membershipEmails, t, toast]);
 
   const handleSaveMasterRecord = useCallback(
     async (
@@ -1324,24 +1548,11 @@ const Members = () => {
       });
       setShowRegistryImport(false);
       setRegistryImportPreview([]);
-
-      const membershipIds = members.map((m) => m.id);
-      if (membershipIds.length > 0) {
-        const { data: masterRows } = await supabase.from("club_member_master_records").select("*").in("membership_id", membershipIds);
-        if (masterRows) {
-          const next: Record<string, ClubMemberMasterRecord | null> = {};
-          for (const row of masterRows as ClubMemberMasterRecord[]) {
-            next[row.membership_id] = row;
-          }
-          setMasterByMembershipId(next);
-        }
-        const { data: gRows } = await supabase.from("club_member_guardian_links").select("*").eq("club_id", clubId);
-        if (gRows) setGuardianLinks(gRows as unknown as GuardianLinkRow[]);
-      }
+      void fetchMembers();
     } finally {
       setRegistryImportBusy(false);
     }
-  }, [clubId, perms.isAdmin, registryImportPreview, members, emailToMembershipIdFromEmail, t, toast]);
+  }, [clubId, perms.isAdmin, registryImportPreview, emailToMembershipIdFromEmail, t, toast, fetchMembers]);
 
   const allRoles = ["all", "admin", "trainer", "player", "staff", "member", "parent", "sponsor"];
   const existingInviteEmails = useMemo(
@@ -1398,6 +1609,7 @@ const Members = () => {
       setMemberPanelEditModeId(null);
       setMemberMasterEditDraft({});
       toast({ title: t.membersPage.memberRemoved });
+      void fetchMembers();
     }
   };
 
@@ -2419,6 +2631,13 @@ const Members = () => {
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-9 bg-card border-border"
                 />
+                {search.trim() ? (
+                  <p className="text-[11px] text-muted-foreground mt-1.5">
+                    {debouncedSearch.trim().length >= 2
+                      ? "Search runs across the full roster (name, phone, master fields, internal club number). Use paging for more results."
+                      : "Type at least 2 characters to search the full roster; shorter text only filters the current page."}
+                  </p>
+                ) : null}
               </div>
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {allRoles.map((r) => (
@@ -2437,13 +2656,29 @@ const Members = () => {
               </div>
             </div>
 
-            {/* Stats */}
+            {/* Stats (club-wide via RPC; accurate with server-paged roster) */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
               {[
-                { label: t.membersPage.total, value: members.length, color: "text-foreground" },
-                { label: t.membersPage.active, value: members.filter(m => m.status === "active").length, color: "text-primary" },
-                { label: t.common.players, value: members.filter(m => m.role === "player").length, color: "text-blue-400" },
-                { label: t.common.trainers, value: members.filter(m => m.role === "trainer").length, color: "text-accent" },
+                {
+                  label: t.membersPage.total,
+                  value: clubMemberStats?.total ?? members.length,
+                  color: "text-foreground",
+                },
+                {
+                  label: t.membersPage.active,
+                  value: clubMemberStats?.active ?? members.filter((m) => m.status === "active").length,
+                  color: "text-primary",
+                },
+                {
+                  label: t.common.players,
+                  value: clubMemberStats?.players ?? members.filter((m) => m.role === "player").length,
+                  color: "text-blue-400",
+                },
+                {
+                  label: t.common.trainers,
+                  value: clubMemberStats?.trainers ?? members.filter((m) => m.role === "trainer").length,
+                  color: "text-accent",
+                },
               ].map((s, i) => (
                 <div key={i} className="p-4 rounded-xl bg-card border border-border text-center">
                   <div className={`text-2xl font-display font-bold ${s.color}`}>{s.value}</div>
@@ -2903,7 +3138,41 @@ const Members = () => {
                   {members.length === 0 ? t.membersPage.noMembersYet : t.membersPage.noMembersFound}
                 </div>
               ) : (
-                filtered.map((member, i) => {
+                <>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/20">
+                  <div className="text-xs text-muted-foreground">
+                    {filtered.length} match{filtered.length === 1 ? "" : "es"} on this page ·{" "}
+                    {membersDbTotalCount != null
+                      ? `database page ${membersServerPage}/${membersServerTotalPages} (${membersDbTotalCount} in filter)`
+                      : `page ${membersServerPage}`}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-xs"
+                      disabled={membersServerPage <= 1}
+                      onClick={() => setMembersServerPage((p) => Math.max(1, p - 1))}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-xs text-muted-foreground">
+                      {membersServerPage}/{membersServerTotalPages}
+                    </span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-xs"
+                      disabled={membersServerPage >= membersServerTotalPages}
+                      onClick={() => setMembersServerPage((p) => Math.min(membersServerTotalPages, p + 1))}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+                {filtered.map((member, i) => {
                   const isOpen = selectedMember?.id === member.id;
                   const rosterGuardianRole =
                     memberPanelEditModeId === member.id ? editMemberForm.role : member.role;
@@ -3241,7 +3510,8 @@ const Members = () => {
                       )}
                     </Fragment>
                   );
-                })
+                })}
+                </>
               )}
             </div>
           </>

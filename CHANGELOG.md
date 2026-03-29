@@ -3,6 +3,39 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-03-30 (Production readiness track: analytics RPCs, pagination, RLS harness, ops templates)
+
+### Database (apply per environment in filename order)
+- **`20260329103000_platform_admin_rbac.sql`** — server-side `is_platform_admin()` / `platform_admins`.
+- **`20260329112000`** … **`20260329133000`** — analytics RPCs (head-to-head, batch chemistry/heatmap, player stats aggregate, season awards + player radar), `is_member_of_club` arg-order fix, **hotspot composite indexes** (wrapped in `DO $$` + `to_regclass` so missing `events` / `event_participants` do not error — do not paste unguarded `CREATE INDEX` excerpts), billing reconciliation RPC.
+- **`20260329140000_club_member_stats_rpc.sql`** — `get_club_member_stats` for roster stats when list is server-paged.
+- **`20260329141000_platform_admin_audit.sql`** — `platform_admin_audit_events` + `log_platform_admin_action`.
+- **`20260330120000_search_club_members_page.sql`** — full-club member search (profiles + master fields + internal number), `is_member_of_club` guard.
+
+### Client app
+- **`Members.tsx`:** server-paged roster + debounced search (≥2 chars) via RPC; shared sidecar hydration; club-switch reset uses `setMembersServerPage` / `setDebouncedSearch` / `membersPivotRef` (fixes removed `setMemberListPage` crash).
+- **`Matches.tsx` / `Communication.tsx`:** keyset-style pagination (`match_date`/`created_at` + `id` tuples).
+- **`PlatformAdmin.tsx`:** calls `log_platform_admin_action` after successful data load.
+- **`Health.tsx`:** probes `/auth/v1/health` and `/rest/v1/` when publishable key is set.
+- **`src/lib/supabase-error-message.ts`** — consistent Supabase error copy for degraded UX.
+- **`src/test/rls.integration.test.ts`** — env-gated JWT isolation tests + mutation probe on `clubs` (staging-safe data only).
+
+### Supabase Edge
+- **`request_context.ts`:** correlation id + structured logs on **`co-trainer`**, **`stripe-checkout`**, **`chat-bridge`** (in addition to **`stripe-webhook`**).
+
+### Tooling / CI
+- **`scripts/assert-production-guardrails.cjs`**, **`scripts/assert-bundle-budget.cjs`**, **`scripts/assert-pg-policies-drift.cjs`**, **`scripts/stripe-replay-checklist.cjs`** — `npm run guardrails`, `budget:bundle`, `policies:drift` (no-op unless `PG_POLICIES_SNAPSHOT_FILE` is set), `replay:stripe-checklist`.
+- **`.github/workflows/ci.yml`** — lint, test, optional policy drift step, guardrails, build, bundle budget, audits, Playwright.
+- **`vitest.config` / `telemetry.test.ts`** — removed flaky compile-time `DEV` console assertion.
+
+### Ops / documentation (repo)
+- **`ops/PRODUCTION_READINESS_ARTIFACTS.md`** — execution progress, Open vs closed, Section E/B/C/L/M links, index + EXPLAIN guidance.
+- **`ops/TENANT_ACCESS_MATRIX.md`**, **`PRIVILEGED_FLOWS.md`**, **`FAN_OUT_AUDIT.md`**, **`STAGING_INDEX_VERIFICATION.md`**, **`HOTSPOT_INDEX_MIGRATION.md`**, **`EXPLAIN_EVIDENCE_TEMPLATE.md`**, **`REALTIME_SOAK_LOG.md`**, **`SECTION_L_MONITORING_SETUP.md`**, **`SECTION_M_GO_LIVE_CHECKLIST.md`**, **`CSP_ROLLOUT.md`**, **`WAVE3_ROADMAP.md`**, **`GAME_DAY_DRILL_LOG.md`**, **`MONTHLY_COST_PERF_REVIEW.md`** — templates and checklists for staging/prod verification (Section L/M remain operator-owned in vendor UIs).
+- **`ops/runbooks/stripe-webhook-backlog.md`** — T-034 alerting detail.
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`README.md`**, **`DEPLOYMENT.md`**, **`CHANGELOG.md`** (this entry).
+
 ## 2026-03-29 (Public club PWA-style UX, sections, Stripe/shop hardening, load-test harness)
 
 ### Public club page (`/club/:slug`) — product UX

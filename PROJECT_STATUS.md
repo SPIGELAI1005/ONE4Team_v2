@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-03-29 (public club UX + Stripe/shop/Edge production bundle)
+Last updated: 2026-03-30 (production readiness: analytics RPCs, Members search, RLS tests, CI guardrails)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -15,6 +15,7 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - **ONE4AI / LLM (2026-03-28):** Per-club AI configuration (`club_llm_settings`), reliable chat error handling in `CoTrainer.tsx`, session refresh for edge calls, Settings **AI provider** card with connection status + `invoke("co-trainer")` health check. Edge: `co-trainer` `mode: "health"`, `pingLlm`, `assertClubAdmin`. Apply migrations `20260328100000`–`20260328200000` (see `CHANGELOG.md` § 2026-03-28) and deploy `co-trainer` in each environment.
 - **Public club + PWA-style chrome (2026-03-29):** `/club/:slug` uses **`AppHeader` `variant="clubPublic"`** — single mobile menu, description hidden in header on small screens, hero shortcut grid aligned with CTAs, **Powered by** link + logo to `/`. Configurable sections via **`public_page_sections`** + admin UI. See `CHANGELOG.md` § 2026-03-29.
 - **Billing / shop / Edge hardening (2026-03-29):** Migrations **`20260328203000`–`20260329000000`** (Stripe webhook idempotency, subscription fields, RLS helper fixes, Edge LLM rate limit, shop images & order entitlements, club contact/SEO columns). Shared Edge modules for CORS, guards, Stripe prices, webhook claims. Client plan-gate loading fixes, Shop image parsing, `.env.example` updates. Load-test scripts **`k6/`** and **`ops/PRODUCTION_READINESS_ARTIFACTS.md`**. Apply and deploy per `MEMORY_BANK.md` migration list 24–31.
+- **Production readiness implementation (2026-03-30):** Migrations **`20260329103000`** through **`20260330120000`** — platform admin RBAC and audit, analytics RPC batch, player stats/season awards/radar, hotspot indexes (guarded migration file), billing reconciliation, club member stats, **`search_club_members_page`**. Client: Members server paging + search, keyset pagination on Matches and Communication, Platform Admin audit RPC, Health PostgREST probe, `supabase-error-message`. **`src/test/rls.integration.test.ts`** for env-gated RLS checks. CI: **`guardrails`**, **`policies:drift`**, **`budget:bundle`**, workflow updates. Edge correlation logging via **`request_context.ts`**. Ops templates and runbooks under **`ops/`** (see **`CHANGELOG.md` § 2026-03-30**). Apply migrations 32–42 in order per `MEMORY_BANK.md`.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 
@@ -51,10 +52,11 @@ Go-live readiness checklist (one-screen):
   - `20260328180000_ai_conversations.sql`
   - `20260328200000_club_llm_settings.sql`
   - `20260328203000_stripe_webhook_idempotency.sql` through `20260329000000_club_public_page_sections.sql` (see `CHANGELOG.md` § 2026-03-29; apply in filename order)
+  - `20260329103000_platform_admin_rbac.sql` through `20260330120000_search_club_members_page.sql` (see `CHANGELOG.md` § 2026-03-30; apply in filename order; use full `20260329132000` file for hotspot indexes)
 - [x] **Environment variables:** app points to the intended Supabase project (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`) in each environment (local/staging/prod). For ONE4AI platform fallback, set Supabase secrets `OPENAI_API_KEY` (and optional `OPENAI_MODEL`) and deploy `co-trainer`. Stripe: follow `.env.example` + `ops/PRODUCTION_READINESS_ARTIFACTS.md` for publishable key and Edge `STRIPE_*` secrets.
 - [x] **Core smoke tests:** auth, onboarding/invite, members, settings save, club page admin save, and club public page preview pass.
 - [x] **Communication checks:** announcements load, chat send/retry works, attachments upload/open works, connector save/list works, no missing-table schema errors.
-- [x] **Build/quality gates:** `npm run lint`, `npm test`, `npm run build`, `npm run audit:phase12`, and continuity e2e pass in CI for target release branch.
+- [x] **Build/quality gates:** `npm run lint`, `npm test`, `npm run build`, `npm run audit:phase12`, `npm run guardrails`, `npm run budget:bundle`, and continuity e2e pass in CI for target release branch (`policies:drift` is a no-op in CI unless `PG_POLICIES_SNAPSHOT_FILE` is set).
 
 ## What is DONE (local readiness)
 

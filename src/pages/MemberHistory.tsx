@@ -293,7 +293,7 @@ function MemberHistory() {
       const map = t.memberHistoryPage.eventTypes;
       return (map[key] as string | undefined) ?? type.replace(/_/g, " ");
     },
-    [t.memberHistoryPage.eventTypes],
+    [t],
   );
 
   return (

@@ -15,6 +15,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useActiveClub } from "@/hooks/use-active-club";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
+import { correlationHeaders } from "@/lib/observability";
 
 const LS_NOTIF_KEY = "one4team.notifications";
 const PROFILE_AVATAR_BUCKET = "images-avatars";
@@ -270,6 +271,7 @@ export default function Settings() {
       }
 
       const { data, error } = await supabase.functions.invoke("co-trainer", {
+        headers: correlationHeaders(),
         body: { mode: "health", club_id: activeClubId },
       });
 

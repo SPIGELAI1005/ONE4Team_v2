@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
@@ -6,13 +7,12 @@ import {
 } from "lucide-react";
 // Button not needed on this page
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/hooks/use-language";
 // logo is rendered by AppHeader
-import type { MembershipWithProfile } from "@/types/supabase";
 
 type PlayerStat = {
   membership_id: string;
@@ -28,7 +28,7 @@ type Team = { id: string; name: string };
 
 const PlayerStats = () => {
   // navigation is handled by AppHeader
-  const { user } = useAuth();
+  const navigate = useNavigate();
   const { clubId, loading: clubLoading } = useClubId();
   const isMobile = useIsMobile();
   const { t } = useLanguage();
@@ -64,80 +64,38 @@ const PlayerStats = () => {
     if (!clubId) return;
     const fetchStats = async () => {
       setLoading(true);
-
-      // Build match query with filters
-      let matchQuery = supabase.from("matches").select("id, competition_id").eq("club_id", clubId);
-
-      // Team filter
-      if (selectedTeamId !== "all") {
-        matchQuery = matchQuery.eq("team_id", selectedTeamId);
-      }
-
-      if (selectedCompId !== "all") {
-        matchQuery = matchQuery.eq("competition_id", selectedCompId);
-      } else if (selectedSeason !== "all") {
-        // Filter by season: get competition IDs for this season
-        const seasonCompIds = competitions
-          .filter(c => c.season === selectedSeason)
-          .map(c => c.id);
-        if (seasonCompIds.length > 0) {
-          matchQuery = matchQuery.in("competition_id", seasonCompIds);
-        } else {
+      let seasonCompIds: string[] | null = null;
+      if (selectedCompId === "all" && selectedSeason !== "all") {
+        seasonCompIds = competitions
+          .filter((competition) => competition.season === selectedSeason)
+          .map((competition) => competition.id);
+        if (seasonCompIds.length === 0) {
           setStats([]);
           setLoading(false);
           return;
         }
       }
 
-      const { data: matches } = await matchQuery;
-
-      if (!matches || matches.length === 0) {
+      const { data, error } = await supabaseDynamic.rpc("get_player_stats_aggregate", {
+        _club_id: clubId,
+        _team_id: selectedTeamId === "all" ? null : selectedTeamId,
+        _competition_id: selectedCompId === "all" ? null : selectedCompId,
+        _competition_ids: selectedCompId === "all" ? seasonCompIds : null,
+      });
+      if (error) {
         setStats([]);
         setLoading(false);
         return;
       }
 
-      const matchIds = matches.map(m => m.id);
-      const { data: events } = await supabase
-        .from("match_events")
-        .select("membership_id, event_type")
-        .in("match_id", matchIds);
-
-      const { data: membersRaw } = await supabase
-        .from("club_memberships")
-        .select(
-          "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_profile_fk(display_name)",
-        )
-        .eq("club_id", clubId);
-
-      const members = (membersRaw ?? []) as unknown as MembershipWithProfile[];
-      const memberMap: Record<string, string> = {};
-      members.forEach((m) => {
-        memberMap[m.id] = m.profiles?.display_name || "Unknown";
-      });
-
-      const agg: Record<string, PlayerStat> = {};
-      const eventsTyped = (events ?? []) as Array<{ membership_id: string | null; event_type: string }>;
-      eventsTyped.forEach((ev) => {
-        if (!ev.membership_id) return;
-        if (!agg[ev.membership_id]) {
-          agg[ev.membership_id] = {
-            membership_id: ev.membership_id,
-            display_name: memberMap[ev.membership_id] || "Unknown",
-            goals: 0,
-            assists: 0,
-            yellow_cards: 0,
-            red_cards: 0,
-          };
-        }
-        const s = agg[ev.membership_id];
-        if (ev.event_type === "goal") s.goals++;
-        else if (ev.event_type === "assist") s.assists++;
-        else if (ev.event_type === "yellow_card") s.yellow_cards++;
-        else if (ev.event_type === "red_card") s.red_cards++;
-      });
-
-      setStats(Object.values(agg));
+      setStats(((data as PlayerStat[]) ?? []).map((row) => ({
+        membership_id: row.membership_id,
+        display_name: row.display_name || "Unknown",
+        goals: Number(row.goals || 0),
+        assists: Number(row.assists || 0),
+        yellow_cards: Number(row.yellow_cards || 0),
+        red_cards: Number(row.red_cards || 0),
+      })));
       setLoading(false);
     };
     fetchStats();

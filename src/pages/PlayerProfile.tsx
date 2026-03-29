@@ -83,6 +83,7 @@ const PlayerProfile = () => {
         .select(
           "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_profile_fk(display_name)",
         )
+        .eq("club_id", clubId)
         .eq("id", membershipId)
         .maybeSingle();
 

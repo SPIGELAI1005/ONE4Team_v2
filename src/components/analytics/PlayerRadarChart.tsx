@@ -2,12 +2,24 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { User } from "lucide-react";
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { useClubId } from "@/hooks/use-club-id";
 
 interface PlayerRadarProps {
   membershipId: string;
   playerName?: string;
+}
+
+interface PlayerRadarStatsRow {
+  completed_matches_count: number | null;
+  goals: number | null;
+  assists: number | null;
+  appearances: number | null;
+  starts: number | null;
+  attendance_total: number | null;
+  attendance_confirmed: number | null;
+  yellow_cards: number | null;
+  red_cards: number | null;
 }
 
 const PlayerRadarChart = ({ membershipId, playerName }: PlayerRadarProps) => {
@@ -16,30 +28,33 @@ const PlayerRadarChart = ({ membershipId, playerName }: PlayerRadarProps) => {
 
   useEffect(() => {
     if (!clubId || !membershipId) return;
-    const fetch = async () => {
-      const { data: matches } = await supabase
-        .from("matches").select("id").eq("club_id", clubId).eq("status", "completed");
-      const matchIds = (matches || []).map(m => m.id);
-      if (matchIds.length === 0) return;
+    const fetchRadar = async () => {
+      const { data: raw, error } = await supabaseDynamic.rpc("get_player_radar_stats", {
+        _club_id: clubId,
+        _membership_id: membershipId,
+      });
 
-      const [evRes, lineupRes, attendanceRes] = await Promise.all([
-        supabase.from("match_events").select("event_type").eq("membership_id", membershipId).in("match_id", matchIds),
-        supabase.from("match_lineups").select("id, is_starter").eq("membership_id", membershipId).in("match_id", matchIds),
-        supabase.from("event_participants").select("status").eq("membership_id", membershipId),
-      ]);
+      if (error) {
+        setData([]);
+        return;
+      }
 
-      const events = evRes.data || [];
-      const lineups = lineupRes.data || [];
-      const attendance = attendanceRes.data || [];
+      const row = (Array.isArray(raw) ? raw[0] : raw) as PlayerRadarStatsRow | undefined;
+      const completed = row?.completed_matches_count ?? 0;
+      if (completed === 0 || !row) {
+        setData([]);
+        return;
+      }
 
-      const goals = events.filter(e => e.event_type === "goal").length;
-      const assists = events.filter(e => e.event_type === "assist").length;
-      const matchesPlayed = lineups.length;
-      const starts = lineups.filter(l => l.is_starter).length;
-      const attendanceRate = attendance.length > 0
-        ? Math.round((attendance.filter(a => a.status === "confirmed" || a.status === "attended").length / attendance.length) * 100)
+      const goals = row.goals ?? 0;
+      const assists = row.assists ?? 0;
+      const matchesPlayed = row.appearances ?? 0;
+      const starts = row.starts ?? 0;
+      const attendance = row.attendance_total ?? 0;
+      const attendanceRate = attendance > 0
+        ? Math.round(((row.attendance_confirmed ?? 0) / attendance) * 100)
         : 0;
-      const discipline = 100 - (events.filter(e => e.event_type === "yellow_card").length * 10 + events.filter(e => e.event_type === "red_card").length * 25);
+      const discipline = 100 - ((row.yellow_cards ?? 0) * 10 + (row.red_cards ?? 0) * 25);
 
       setData([
         { stat: "Goals", value: Math.min(goals * 10, 100), max: 100 },
@@ -50,7 +65,7 @@ const PlayerRadarChart = ({ membershipId, playerName }: PlayerRadarProps) => {
         { stat: "Discipline", value: Math.max(0, discipline), max: 100 },
       ]);
     };
-    fetch();
+    void fetchRadar();
   }, [clubId, membershipId]);
 
   if (data.length === 0) return null;

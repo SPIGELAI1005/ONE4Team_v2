@@ -12,12 +12,20 @@ import {
   streamChat,
 } from "../_shared/llm.ts";
 import { clubHasPlanFeature } from "../_shared/plan_entitlements.ts";
+import { logStructured, resolveCorrelationId } from "../_shared/request_context.ts";
 
 const MAX_BODY_BYTES = 600_000;
 
 serve(async (req) => {
   const corsHeaders = edgeCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const correlationId = resolveCorrelationId(req);
+  logStructured("info", "co-trainer request", {
+    correlationId,
+    facet: "co_trainer",
+    method: req.method,
+  });
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

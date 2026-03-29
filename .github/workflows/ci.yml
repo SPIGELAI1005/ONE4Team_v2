@@ -25,8 +25,19 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Policy name drift (optional snapshot)
+        run: npm run policies:drift
+
+      - name: Production guardrails
+        run: npm run guardrails
+        env:
+          NODE_ENV: production
+
       - name: Build
         run: npm run build
+
+      - name: Bundle budget (ST-012)
+        run: npm run budget:bundle
 
       - name: Phase 0 audits
         run: npm run audit:phase0

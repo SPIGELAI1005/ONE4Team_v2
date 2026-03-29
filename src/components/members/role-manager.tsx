@@ -99,7 +99,7 @@ export function RoleManager() {
     } finally {
       setLoading(false);
     }
-  }, [clubId, toast, t.common.error]);
+  }, [clubId, toast, t.common.error, t.membersPage.roles.failedToLoad, t.membersPage.unknownMember]);
 
   useEffect(() => {
     void loadData();

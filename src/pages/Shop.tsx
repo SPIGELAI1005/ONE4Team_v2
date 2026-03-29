@@ -385,17 +385,19 @@ export default function Shop() {
                         const thumb = p.image_url || parseProductImageUrls(p)[0];
                         return (
                           <motion.div key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl overflow-hidden">
-                            <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-primary/5 to-muted/25 flex items-center justify-center">
+                            <div className="relative w-full aspect-[4/3] overflow-hidden bg-gradient-to-br from-primary/5 to-muted/25">
                               {thumb ? (
                                 <img
                                   src={thumb}
                                   alt={p.name}
-                                  className="h-full w-full object-contain object-center p-2 sm:p-3"
+                                  className="h-full w-full object-cover object-center"
                                   loading="lazy"
                                   decoding="async"
                                 />
                               ) : (
-                                <ShoppingBag className="w-10 h-10 text-primary/30" />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <ShoppingBag className="w-10 h-10 text-primary/30" />
+                                </div>
                               )}
                             </div>
                             <div className="p-4">

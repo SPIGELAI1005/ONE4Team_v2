@@ -13,6 +13,7 @@ Club/team management SaaS with an iOS-style glass UI, full internationalization 
 - **Shop**: Product catalog, orders management, categories (demo data)
 - **Club Page Admin**: Manage public club page (branding, contact, social, SEO, **which sections** appear on `/club/:slug` via `public_page_sections`)
 - **Public club page (`/club/:slug`)**: PWA-friendly mobile header (single menu), hero shortcuts aligned with CTAs, **Powered by ONE4Team** → marketing home (`/`); **Support FAQ** at `/support`
+- **Members**: Server-paged roster with debounced **full-club search** (RPC `search_club_members_page`, ≥2 characters) where migrations are applied
 - **Settings**: Profile, club config, notification preferences, account security
 - **ONE4AI (`/co-trainer`)**: Club-scoped chat with structured context; per-club LLM keys in **Settings → Club → AI provider** (`club_llm_settings`) or platform fallback via Supabase secrets `OPENAI_API_KEY` / `OPENAI_MODEL`. Settings shows a live **connection status** and **Test connection** (calls deployed `co-trainer` with `mode: "health"`).
 - **AI copilots**: Co-Trainer (ONE4AI) + Co-AImin with club-scoped logging and optional server generation
@@ -57,10 +58,16 @@ npm run dev
 npm run build        # Production build
 npm run lint         # Lint check
 npm test             # Run tests
+npm run guardrails   # Production guardrail assertions (env/build checks)
+npm run policies:drift  # Optional: set PG_POLICIES_SNAPSHOT_FILE (see scripts/assert-pg-policies-drift.cjs)
+npm run budget:bundle   # Assert bundle size budget after build
+npm run replay:stripe-checklist  # Stripe webhook replay checklist helper
 npm run build:report # Bundle size report
 npm run k6:smoke     # k6 smoke (requires k6 CLI; point at staging URLs)
 npm run k6:journeys  # k6 critical journeys
 npm run k6:edge-co-trainer  # low-rate edge LLM smoke (use sparingly)
+# Staged dashboard read profile (not an npm script):
+#   k6 run k6/staged-dashboard-reads.js
 ```
 
 ## Deployment (Vercel)
@@ -80,11 +87,11 @@ npm run k6:edge-co-trainer  # low-rate edge LLM smoke (use sparingly)
 ## Current Release Snapshot
 Go-live readiness checklist:
 
-- [ ] **DB ready:** baseline bundles + incremental communication migrations applied (`20260301152000`, `20260301164000`, `20260301173500`, `20260301181500`).
+- [ ] **DB ready:** baseline bundles + communication migrations + Stripe/public-club wave (`20260328203000`–`20260329000000`) + production-readiness wave (`20260329103000`–`20260330120000`) applied in filename order. Use the full `20260329132000_hotspot_composite_indexes.sql` file only (guarded indexes).
 - [ ] **Env vars correct:** `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` match the intended Supabase project per environment.
-- [ ] **Smoke tests pass:** auth, onboarding/invites, members flow, settings save, club-page admin save, public club preview.
+- [ ] **Smoke tests pass:** auth, onboarding/invites, members flow (including server search if RPC deployed), settings save, club-page admin save, public club preview.
 - [ ] **Communication verified:** announcements, chat send/retry, attachments, connector save/list, and no schema-cache missing-table errors.
-- [ ] **Quality gates green:** `npm run lint`, `npm test`, `npm run build` pass for the release branch.
+- [ ] **Quality gates green:** `npm run lint`, `npm test`, `npm run build`, `npm run guardrails`, and `npm run budget:bundle` pass for the release branch (`npm run ci` when Playwright and optional DB steps are configured).
 
 ## Notes
 - Do **not** commit `.env` (use `.env.example`).

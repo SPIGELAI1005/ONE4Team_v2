@@ -8,13 +8,20 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ## NOW (top priority)
 
+### Production readiness — code landed (2026-03-30)
+- [x] **PROD-PR-001** Migrations `20260329103000`–`20260330120000` in repo: platform admin RBAC/audit, analytics RPCs, guarded hotspot indexes, billing reconciliation, club member stats, `search_club_members_page`.
+- [x] **PROD-PR-002** Members: server-paged roster + debounced RPC search (≥2 chars); club-switch state reset fix (`setMembersServerPage` / search pivot).
+- [x] **PROD-PR-003** Matches + Communication keyset-style pagination; Platform Admin `log_platform_admin_action`; Health PostgREST probe; `supabase-error-message`.
+- [x] **PROD-PR-004** `src/test/rls.integration.test.ts` (env-gated); Edge `request_context` correlation on co-trainer, stripe-checkout, chat-bridge, stripe-webhook.
+- [x] **PROD-PR-005** CI/tooling: `npm run guardrails`, `policies:drift`, `budget:bundle`, `replay:stripe-checklist`; `.github/workflows/ci.yml`; ops templates under `ops/` (see `CHANGELOG.md` § 2026-03-30).
+
 ### Public club + production bundle (2026-03-29)
 - [x] **CLUB-PWA-001** `AppHeader` `clubPublic` variant: one mobile menu; subtitle hidden `max-md`; `clubPublicMenuTop` + desktop `rightSlot` only.
 - [x] **CLUB-PWA-002** `ClubPage` hero: aligned shortcut grid + `rounded-full` CTAs; Powered-by `Link` `/` + logo; EN **Trainings** label.
 - [x] **CLUB-SECTIONS-001** `public_page_sections` migration + `club-public-page-sections.ts` + ClubPageAdmin toggles + ClubPage filtered sections.
 - [x] **PROD-EDGE-001** Stripe webhook/checkout shared modules; migrations `20260328203000`–`20260329000000`; plan-gate + Shop + Health + observability wiring (see `CHANGELOG.md`).
 - [x] **PROD-OPS-001** `k6/` scripts + `npm run k6:*`; `ops/PRODUCTION_READINESS_ARTIFACTS.md`.
-- [ ] **PROD-DEPLOY-001** Apply migrations 24–31 in each Supabase env; deploy Edge functions; complete checklist rows in `PRODUCTION_READINESS_ARTIFACTS.md`; run `k6:smoke` on staging.
+- [ ] **PROD-DEPLOY-001** Apply migrations 24–42 in each Supabase env (`MEMORY_BANK.md` list); deploy affected Edge functions; complete checklist rows in `PRODUCTION_READINESS_ARTIFACTS.md`; run `k6:smoke` and `k6 run k6/staged-dashboard-reads.js` on staging when k6 is available; optional `npm run policies:drift` against staging DB.
 
 ### ONE4AI / LLM operations (2026-03-28)
 - [x] **AI-HEALTH-001** Settings: AI provider connection status + Test connection via `supabase.functions.invoke("co-trainer", { body: { mode: "health", club_id } })`.

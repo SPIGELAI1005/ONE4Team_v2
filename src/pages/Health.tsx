@@ -6,6 +6,7 @@ interface HealthPayload {
   checks: {
     spa: "ok";
     supabaseAuth?: "ok" | "fail" | "skipped";
+    postgrest?: "ok" | "fail" | "skipped";
   };
 }
 
@@ -17,12 +18,17 @@ export default function Health() {
     const base: HealthPayload = {
       status: "live",
       timestamp: new Date().toISOString(),
-      checks: { spa: "ok", supabaseAuth: "skipped" },
+      checks: { spa: "ok", supabaseAuth: "skipped", postgrest: "skipped" },
     };
 
     const url = import.meta.env.VITE_SUPABASE_URL;
+    const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
     if (typeof url !== "string" || !url.trim()) {
-      setPayload({ ...base, status: "degraded", checks: { spa: "ok", supabaseAuth: "skipped" } });
+      setPayload({
+        ...base,
+        status: "degraded",
+        checks: { spa: "ok", supabaseAuth: "skipped", postgrest: "skipped" },
+      });
       return;
     }
 
@@ -31,14 +37,35 @@ export default function Health() {
 
     void (async () => {
       try {
-        const healthUrl = `${url.replace(/\/+$/, "")}/auth/v1/health`;
-        const res = await fetch(healthUrl, { method: "GET", signal: controller.signal });
+        const root = url.replace(/\/+$/, "");
+        const healthUrl = `${root}/auth/v1/health`;
+        const authRes = await fetch(healthUrl, { method: "GET", signal: controller.signal });
+        const authOk = authRes.ok;
+
+        let postgrest: "ok" | "fail" | "skipped" = "skipped";
+        if (typeof publishableKey === "string" && publishableKey.trim()) {
+          const restUrl = `${root}/rest/v1/`;
+          const restRes = await fetch(restUrl, {
+            method: "GET",
+            headers: {
+              apikey: publishableKey,
+              Authorization: `Bearer ${publishableKey}`,
+            },
+            signal: controller.signal,
+          });
+          postgrest = restRes.ok ? "ok" : "fail";
+        }
+
         window.clearTimeout(t);
-        const authOk = res.ok;
+        const ready = authOk && (postgrest === "skipped" || postgrest === "ok");
         setPayload({
-          status: authOk ? "ready" : "degraded",
+          status: ready ? "ready" : "degraded",
           timestamp: new Date().toISOString(),
-          checks: { spa: "ok", supabaseAuth: authOk ? "ok" : "fail" },
+          checks: {
+            spa: "ok",
+            supabaseAuth: authOk ? "ok" : "fail",
+            postgrest,
+          },
         });
       } catch {
         window.clearTimeout(t);
@@ -46,7 +73,7 @@ export default function Health() {
         setPayload({
           status: "degraded",
           timestamp: new Date().toISOString(),
-          checks: { spa: "ok", supabaseAuth: "fail" },
+          checks: { spa: "ok", supabaseAuth: "fail", postgrest: "fail" },
         });
       }
     })();
@@ -62,9 +89,10 @@ export default function Health() {
       <div className="max-w-lg w-full rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-5">
         <div className="font-display font-bold text-foreground">Health</div>
         <div className="mt-2 text-xs text-muted-foreground">
-          Liveness is always served by this SPA route. Readiness probes Supabase Auth (public{" "}
-          <code className="text-[10px]">/auth/v1/health</code>) when <code className="text-[10px]">VITE_SUPABASE_URL</code>{" "}
-          is set — no secrets returned.
+          Liveness is always served by this SPA route. Readiness probes Supabase Auth (
+          <code className="text-[10px]">/auth/v1/health</code>) and, when{" "}
+          <code className="text-[10px]">VITE_SUPABASE_PUBLISHABLE_KEY</code> is set, PostgREST root (
+          <code className="text-[10px]">/rest/v1/</code>) using the same anon key the app already ships — no extra secrets.
         </div>
         {error ? (
           <p className="mt-3 text-xs text-amber-600 dark:text-amber-500">{error}</p>

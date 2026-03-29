@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.3";
 import { edgeCorsHeaders } from "../_shared/cors.ts";
 import { resolveStripeCheckoutPriceId } from "../_shared/stripe_checkout_prices.ts";
+import { logStructured, resolveCorrelationId } from "../_shared/request_context.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -25,6 +26,13 @@ async function stripeRequest(endpoint: string, body: Record<string, string>) {
 serve(async (req) => {
   const corsHeaders = edgeCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const correlationId = resolveCorrelationId(req);
+  logStructured("info", "stripe-checkout request", {
+    correlationId,
+    facet: "stripe_checkout",
+    method: req.method,
+  });
 
   try {
     const authHeader = req.headers.get("authorization") ?? "";

@@ -167,6 +167,10 @@ function SectionSearchBar({ id, value, onChange, placeholder }: SectionSearchBar
 const clubScrollRowClass =
   "flex gap-3 overflow-x-auto pb-3 -mx-4 px-4 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:hidden";
 
+/** Image carousels (media, shop): scroll-padding + center snap so cards are not clipped at viewport edges */
+const clubImageCarouselRowClass =
+  "flex gap-3 overflow-x-auto pb-3 -mx-4 px-4 snap-x snap-mandatory scroll-px-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:hidden";
+
 /** Centered readable column on phones; left-aligned from md up */
 const clubSectionContainer =
   "w-full max-w-lg sm:max-w-xl md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto px-4 text-center md:text-left";
@@ -808,8 +812,8 @@ const ClubPage = () => {
 
       <section className="relative py-12 sm:py-16 md:py-24 lg:py-28 overflow-hidden">
         {club?.cover_image_url ? <img src={club.cover_image_url} alt="" className="absolute inset-0 w-full h-full object-cover" /> : null}
-        <div className="absolute inset-0 bg-[linear-gradient(120deg,var(--club-tertiary)_0%,var(--club-secondary)_45%,transparent_100%)] opacity-90" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-background" />
+        <div className="absolute inset-0 bg-[linear-gradient(120deg,var(--club-tertiary)_0%,var(--club-secondary)_45%,transparent_100%)] opacity-60 dark:opacity-90" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-background/45 to-background dark:from-black/30 dark:via-black/10 dark:to-background" />
         <div className={`${clubSectionContainer} relative`}>
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -838,16 +842,16 @@ const ClubPage = () => {
               </div>
             ) : (
               <>
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl sm:rounded-3xl mx-auto mb-5 sm:mb-6 border border-white/20 bg-white/10 backdrop-blur overflow-hidden flex items-center justify-center">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl sm:rounded-3xl mx-auto mb-5 sm:mb-6 border border-border/70 bg-card/60 backdrop-blur overflow-hidden flex items-center justify-center dark:border-white/20 dark:bg-white/10">
                   <img src={club.logo_url || logo} alt={club.name} className="w-full h-full object-cover" />
                 </div>
-                <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-3 sm:mb-4 text-white px-1">{club.name}</h1>
+                <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-3 sm:mb-4 text-foreground dark:text-white px-1">{club.name}</h1>
                 {club.description?.trim() ? (
-                  <p className="text-base sm:text-lg md:text-xl text-white/90 max-w-2xl mx-auto mb-5 sm:mb-6 leading-relaxed whitespace-pre-line px-1">{club.description}</p>
+                  <p className="text-base sm:text-lg md:text-xl text-foreground/90 dark:text-white/90 max-w-2xl mx-auto mb-5 sm:mb-6 leading-relaxed whitespace-pre-line px-1">{club.description}</p>
                 ) : (
                   <>
-                    <p className="text-base sm:text-lg text-white/85 mb-2 px-2">{t.clubPage.clubOnboardingSubtitle}</p>
-                    <p className="text-sm sm:text-base text-white/80 max-w-2xl mx-auto mb-5 sm:mb-6 px-2">{t.clubPage.joinCommunity}</p>
+                    <p className="text-base sm:text-lg text-foreground/85 dark:text-white/85 mb-2 px-2">{t.clubPage.clubOnboardingSubtitle}</p>
+                    <p className="text-sm sm:text-base text-foreground/80 dark:text-white/80 max-w-2xl mx-auto mb-5 sm:mb-6 px-2">{t.clubPage.joinCommunity}</p>
                   </>
                 )}
                 <div className="mb-5 sm:mb-6 w-full max-w-md mx-auto px-1 flex flex-col gap-2 sm:gap-3 md:max-w-none md:px-0 md:items-center">
@@ -870,9 +874,9 @@ const ClubPage = () => {
                           <a
                             key={link.id}
                             href={`#${link.id}`}
-                            className="inline-flex w-full min-w-0 justify-center items-center gap-1.5 rounded-full border border-white/35 bg-white/10 px-2 sm:px-3 py-2.5 text-sm font-medium text-white hover:bg-white/20 transition-colors md:w-auto md:flex-none md:px-4"
+                            className="inline-flex w-full min-w-0 justify-center items-center gap-1.5 rounded-full border border-border/70 bg-background/55 px-2 sm:px-3 py-2.5 text-sm font-medium text-foreground shadow-sm hover:bg-muted/70 transition-colors md:w-auto md:flex-none md:px-4 dark:border-white/35 dark:bg-white/10 dark:text-white dark:shadow-none dark:hover:bg-white/20"
                           >
-                            <Icon className="w-4 h-4 opacity-90 shrink-0" aria-hidden />
+                            <Icon className="w-4 h-4 opacity-90 shrink-0 text-current" aria-hidden />
                             <span className="truncate">{link.label}</span>
                           </a>
                         );
@@ -883,7 +887,7 @@ const ClubPage = () => {
                   {isMember ? (
                     <Button
                       size="lg"
-                      className="rounded-full font-semibold text-white hover:brightness-110 w-full sm:w-auto"
+                      className="rounded-full font-semibold text-white shadow-md ring-1 ring-black/10 hover:brightness-110 w-full sm:w-auto dark:shadow-none dark:ring-0"
                       style={{ backgroundColor: "var(--club-primary)" }}
                       onClick={handleOpenDashboard}
                     >
@@ -892,7 +896,7 @@ const ClubPage = () => {
                   ) : (
                     <Button
                       size="lg"
-                      className="rounded-full font-semibold text-white hover:brightness-110 w-full sm:w-auto"
+                      className="rounded-full font-semibold text-white shadow-md ring-1 ring-black/10 hover:brightness-110 w-full sm:w-auto dark:shadow-none dark:ring-0"
                       style={{ backgroundColor: "var(--club-primary)" }}
                       onClick={() => setShowRequestInvite(true)}
                     >
@@ -902,23 +906,25 @@ const ClubPage = () => {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="rounded-full border-white/40 text-white bg-white/5 hover:bg-white/10 w-full sm:w-auto"
+                    className="rounded-full border-border/80 bg-background/60 text-foreground shadow-sm hover:bg-muted/80 dark:border-white/40 dark:bg-white/5 dark:text-white dark:shadow-none dark:hover:bg-white/10 w-full sm:w-auto"
                     onClick={handleAddToPhoneClick}
                   >
-                    <Smartphone className="w-4 h-4 sm:mr-2" />
+                    <Smartphone className="w-4 h-4 sm:mr-2 shrink-0" />
                     {t.clubPage.addToHomeTitle}
                   </Button>
                   </div>
                 </div>
-                {!canRequestInvite ? <div className="mt-6 text-xs text-white/70 text-center md:text-center">{t.clubPage.privateClub}</div> : null}
+                {!canRequestInvite ? (
+                  <div className="mt-6 text-xs text-muted-foreground text-center md:text-center dark:text-white/70">{t.clubPage.privateClub}</div>
+                ) : null}
                 {club?.join_approval_mode === "auto" ? (
-                  <div className="mt-2 text-xs text-white/70 text-center">{t.clubPage.autoJoinEnabled}</div>
+                  <div className="mt-2 text-xs text-muted-foreground text-center dark:text-white/70">{t.clubPage.autoJoinEnabled}</div>
                 ) : null}
                 <Link
                   to="/"
-                  className="group mt-8 sm:mt-10 max-md:mt-auto max-md:pt-6 flex flex-col items-center gap-[0.5625rem] text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent rounded-sm"
+                  className="group mt-8 sm:mt-10 max-md:mt-auto max-md:pt-6 flex flex-col items-center gap-[0.5625rem] text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm dark:focus-visible:ring-white/40 dark:focus-visible:ring-offset-transparent"
                 >
-                  <span className="text-[0.625rem] sm:text-[0.6875rem] text-white/60 tracking-wide leading-snug underline-offset-2 group-hover:text-white/80 group-hover:underline">
+                  <span className="text-[0.625rem] sm:text-[0.6875rem] text-muted-foreground tracking-wide leading-snug underline-offset-2 group-hover:text-foreground group-hover:underline dark:text-white/60 dark:group-hover:text-white/80">
                     {t.clubPage.heroPoweredBy}
                   </span>
                   <img
@@ -926,7 +932,7 @@ const ClubPage = () => {
                     alt=""
                     width={28}
                     height={28}
-                    className="h-7 w-7 object-contain opacity-70 group-hover:opacity-90 transition-opacity"
+                    className="h-7 w-7 object-contain opacity-80 group-hover:opacity-100 transition-opacity dark:opacity-70 dark:group-hover:opacity-90"
                   />
                 </Link>
               </>
@@ -1096,25 +1102,27 @@ const ClubPage = () => {
                 <div className="max-w-2xl mx-auto rounded-2xl glass-card p-6 text-center text-sm text-muted-foreground">{t.clubPage.noSearchResults}</div>
               ) : (
                 <>
-                  <div className={clubScrollRowClass}>
+                  <div className={clubImageCarouselRowClass}>
                     {filteredShopProducts.map((product) => {
                       const shopImg = product.image_url || parseProductImageUrls(product)[0];
                       return (
                         <div
                           key={product.id}
-                          className="min-w-[min(100%,300px)] max-w-[88vw] shrink-0 snap-start rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.10)]"
+                          className="shrink-0 snap-center w-[min(22rem,calc(100vw-2.5rem))] rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.10)]"
                         >
-                          <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-primary/5 to-muted/25 flex items-center justify-center">
+                          <div className="relative w-full aspect-[4/3] overflow-hidden bg-gradient-to-br from-primary/5 to-muted/25">
                             {shopImg ? (
                               <img
                                 src={shopImg}
                                 alt={product.name}
-                                className="h-full w-full object-contain object-center p-2 sm:p-3"
+                                className="h-full w-full object-cover object-center"
                                 loading="lazy"
                                 decoding="async"
                               />
                             ) : (
-                              <ShoppingBag className="w-10 h-10 text-primary/30" />
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <ShoppingBag className="w-10 h-10 text-primary/30" />
+                              </div>
                             )}
                           </div>
                           <div className="p-4">
@@ -1139,17 +1147,19 @@ const ClubPage = () => {
                       const shopImg = product.image_url || parseProductImageUrls(product)[0];
                       return (
                         <div key={product.id} className="rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
-                          <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-primary/5 to-muted/25 flex items-center justify-center">
+                          <div className="relative w-full aspect-[4/3] overflow-hidden bg-gradient-to-br from-primary/5 to-muted/25">
                             {shopImg ? (
                               <img
                                 src={shopImg}
                                 alt={product.name}
-                                className="h-full w-full object-contain object-center p-2 sm:p-3"
+                                className="h-full w-full object-cover object-center"
                                 loading="lazy"
                                 decoding="async"
                               />
                             ) : (
-                              <ShoppingBag className="w-10 h-10 text-primary/30" />
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <ShoppingBag className="w-10 h-10 text-primary/30" />
+                              </div>
                             )}
                           </div>
                           <div className="p-4">
@@ -1217,18 +1227,36 @@ const ClubPage = () => {
                 <div className="max-w-2xl mx-auto rounded-2xl glass-card p-6 text-center text-sm text-muted-foreground">{t.clubPage.noSearchResults}</div>
               ) : (
                 <>
-                  <div className={clubScrollRowClass}>
-                    {filteredReferenceImages.map((image) => (
-                      <div key={image} className="min-w-[min(100%,260px)] max-w-[80vw] shrink-0 snap-start aspect-[4/3] rounded-2xl border border-border/70 overflow-hidden bg-card/40">
-                        <img src={image} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                  <div className={clubImageCarouselRowClass}>
+                    {filteredReferenceImages.map((image, index) => (
+                      <div
+                        key={image}
+                        className="shrink-0 snap-center w-[min(22rem,calc(100vw-2.5rem))] aspect-[4/3] rounded-2xl border border-border/70 overflow-hidden bg-muted/30"
+                      >
+                        <img
+                          src={image}
+                          alt=""
+                          className={`h-full w-full object-cover ${index % 2 === 0 ? "object-left" : "object-right"}`}
+                          loading="lazy"
+                          decoding="async"
+                        />
                       </div>
                     ))}
                   </div>
                   <p className="md:hidden text-[10px] text-center text-muted-foreground mt-1 mb-4">{t.clubPage.swipeForMore}</p>
                   <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {filteredReferenceImages.map((image) => (
-                      <div key={`grid-${image}`} className="aspect-[4/3] rounded-2xl border border-border/70 overflow-hidden bg-card/40">
-                        <img src={image} alt="" className="w-full h-full object-cover" loading="lazy" decoding="async" />
+                    {filteredReferenceImages.map((image, index) => (
+                      <div
+                        key={`grid-${image}`}
+                        className="aspect-[4/3] rounded-2xl border border-border/70 overflow-hidden bg-muted/30"
+                      >
+                        <img
+                          src={image}
+                          alt=""
+                          className={`h-full w-full object-cover ${index % 2 === 0 ? "object-left" : "object-right"}`}
+                          loading="lazy"
+                          decoding="async"
+                        />
                       </div>
                     ))}
                   </div>

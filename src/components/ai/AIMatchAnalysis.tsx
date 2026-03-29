@@ -109,7 +109,7 @@ const AIMatchAnalysis = ({ matchData, teamData, context, matchStatus, matchId, c
     } finally {
       setLoading(false);
     }
-  }, [matchData, teamData, context, toast, clubId]);
+  }, [matchData, teamData, context, toast]);
 
   const available = analysisTypes.filter(a => a.forStatus.includes(matchStatus));
 

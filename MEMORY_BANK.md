@@ -1,6 +1,6 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-03-29 (public club PWA header/hero, `public_page_sections`, Stripe/shop migrations, Edge shared guards, k6 + ops docs)
+Last updated: 2026-03-30 (production readiness: analytics RPCs, Members server search, RLS integration tests, CI guardrails, ops templates)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
@@ -9,6 +9,7 @@ Persistent handoff context for future agents so work can continue without re-dis
 - App is in post-Phase-12 local implementation with major onboarding/member operations upgrades completed in code.
 - **Public club page (`/club/:slug`) (2026-03-29):** `AppHeader` supports **`variant="clubPublic"`** — on **mobile (`max-md`)** one hamburger opens a **unified menu** (section jumps + Open dashboard/Request invite from `clubPublicMenuTop`, then auth user blocks, language, theme, sign-out). **Header subtitle** (long club description) is **hidden on mobile** for this variant. **Hero:** shortcut row and main CTAs share a **`max-w-md`** column; shortcuts use **`max-md` grid** + tight **`gap-1`**; CTAs and shortcuts use **`rounded-full`**. **“Powered by ONE4Team”** links to **`/`** with a **small logo** beneath. **EN** hero label **`trainingSchedule`** = **“Trainings”**. Section visibility from **`clubs.public_page_sections`** (`20260329000000`) + `src/lib/club-public-page-sections.ts`; **ClubPageAdmin** edits toggles; **ClubPage** filters nav/sections. See **`CHANGELOG.md` § 2026-03-29** for file-level detail.
 - **Stripe / shop / RLS / Edge (2026-03-29):** New migrations **`20260328203000`**–**`20260329000000`** (webhook idempotency, billing fields, RLS helper fix, Edge LLM rate limit, shop images + orders entitlement, clubs contact/SEO columns, public page sections). Edge **`_shared`:** `cors`, `edge_guard`, `plan_entitlements`, `stripe_checkout_prices`, `stripe_webhook_claim`; **`stripe-checkout`** / **`stripe-webhook`** and LLM functions updated. Client: **`plan-gate`** / **`use-plan-guard`** loading behavior, **`Shop`** + **`shop-product-images`**, **`.env.example`** Stripe vars, **`Health`**, optional **`SupportFaq`** route, **`observability`** wiring in **`main`**. Ops: **`ops/PRODUCTION_READINESS_ARTIFACTS.md`**, **`k6/`** + **`npm run k6:*`**. Apply migrations in order; deploy affected Edge functions; set **`EDGE_ALLOWED_ORIGINS`**, **`STRIPE_*`** secrets per **`PRODUCTION_READINESS_ARTIFACTS`**.
+- **Production readiness wave (2026-03-30):** Migrations **`20260329103000`** through **`20260330120000`** — platform admin RBAC (`is_platform_admin` / `platform_admins`), analytics RPCs (head-to-head, batch chemistry/heatmap, player stats aggregate, season awards + player radar), `is_member_of_club` arg-order fix in analytics, **guarded** hotspot composite indexes (**apply full** `20260329132000_hotspot_composite_indexes.sql` only), billing reconciliation, `get_club_member_stats`, platform admin audit (`log_platform_admin_action`), **`search_club_members_page`** for full-club roster search. App: **`Members.tsx`** server paging + debounced search (≥2 chars), club-switch reset fix; **`Matches.tsx`** / **`Communication.tsx`** keyset pagination; **`PlatformAdmin.tsx`** audit on load; **`Health.tsx`** PostgREST root probe; **`supabase-error-message`**. Tests: **`src/test/rls.integration.test.ts`** (JWT env-gated). Edge: **`request_context.ts`** correlation logging on **`co-trainer`**, **`stripe-checkout`**, **`chat-bridge`**, **`stripe-webhook`**. Tooling: **`npm run guardrails`**, **`policies:drift`**, **`budget:bundle`**, **`replay:stripe-checklist`**; **`.github/workflows/ci.yml`**. Ops docs: tenant/privileged/fan-out templates, index/EXPLAIN/hotspot migration notes, realtime soak, Section L/M checklists, CSP + Wave3, game-day drill log, monthly cost/perf review, Stripe webhook backlog runbook (T-034). Staged load: **`k6 run k6/staged-dashboard-reads.js`**. See **`CHANGELOG.md` § 2026-03-30**.
 - **ONE4AI / LLM (2026-03-28):** `club_llm_settings` (`20260328200000`) stores per-club provider/model/API key; edge `resolveLlmCredentials` prefers club row, else `OPENAI_API_KEY` / `OPENAI_MODEL` secrets. `co-trainer` supports `mode: "health"` for admins (`pingLlm`, `assertClubAdmin`). `CoTrainer.tsx` surfaces real errors (no silent demo when Supabase URL exists); SSE flush + stream error lines; `getEdgeFunctionAuthHeaders` uses `refreshSession` if needed. Settings AI card shows live connection status and uses `supabase.functions.invoke("co-trainer")` for checks. Apply migrations `20260328100000`, `20260328133000`, `20260328150000`, `20260328180000`, `20260328200000` in target env; deploy `co-trainer` after `llm.ts` changes.
 - **i18n (2026-03-27):** Third pass on high-traffic screens: `Auth` placeholders and country labels; `Settings` toasts, role-switch copy, placeholders, and locale-aware month names; `Shop` + public `ClubPage` shop strings aligned to `shopPage` keys; `Members` registry import column label.
 - **Mobile UX (2026-03-27):** Members bulk-import table uses horizontal scroll + minimum table width; larger tap targets on expand/remove; Shop tab strip scrolls on narrow widths with 44px-class targets on primary actions.
@@ -127,6 +128,17 @@ Persistent handoff context for future agents so work can continue without re-dis
 29. `20260328231000_shop_orders_plan_entitlement.sql`
 30. `20260328232000_ensure_clubs_contact_and_seo_columns.sql`
 31. `20260329000000_club_public_page_sections.sql`
+32. `20260329103000_platform_admin_rbac.sql`
+33. `20260329112000_head_to_head_stats_rpc.sql`
+34. `20260329115000_analytics_rpc_batch.sql`
+35. `20260329122000_player_stats_aggregate_rpc.sql`
+36. `20260329130000_season_awards_player_radar_rpc.sql`
+37. `20260329131000_fix_analytics_rpc_is_member_arg_order.sql`
+38. `20260329132000_hotspot_composite_indexes.sql` (guarded `to_regclass`; apply full file)
+39. `20260329133000_billing_reconciliation_rpc.sql`
+40. `20260329140000_club_member_stats_rpc.sql`
+41. `20260329141000_platform_admin_audit.sql`
+42. `20260330120000_search_club_members_page.sql`
 
 Also ensure previously listed communication migrations remain applied in the same project:
 - `20260301152000_add_chat_bridge_connectors_and_events.sql`
@@ -139,7 +151,7 @@ Also ensure previously listed communication migrations remain applied in the sam
 - If behavior mismatches local code expectations, verify app env vars point to the same Supabase project where all required migrations are applied.
 
 ## Suggested Next Implementation Steps
-- **Deploy bundle (2026-03-29):** Apply migrations 24–31 above in order; deploy **`stripe-checkout`**, **`stripe-webhook`**, and any LLM functions touched by `20260328205000` / shared rewrites; run **`ops/PRODUCTION_READINESS_ARTIFACTS`** checklist; smoke **`npm run k6:smoke`** on staging if k6 installed.
+- **Deploy bundle (2026-03-30):** Apply migrations 24–42 above in filename order in each Supabase env; deploy Edge functions touched by Stripe/LLM/chat changes (**`stripe-checkout`**, **`stripe-webhook`**, **`co-trainer`**, **`chat-bridge`** as applicable); complete **`ops/PRODUCTION_READINESS_ARTIFACTS.md`** rows; optional policy name drift check: generate **`ops/pg_policies.snapshot.txt`** from staging then **`PG_POLICIES_SNAPSHOT_FILE=ops/pg_policies.snapshot.txt npm run policies:drift`** (see script header); **`npm run k6:smoke`** and **`k6 run k6/staged-dashboard-reads.js`** on staging if k6 installed.
 - **Public club:** Optional E2E for `/club/:slug` hash navigation + mobile menu; confirm **`preview=1`** admin path still matches RLS expectations.
 - **Members:** On member join from draft, merge `club_member_drafts.master_data` into `club_member_master_records` (server trigger or app flow); optional photo upload to storage instead of URL-only.
 - **Club card:** Persist `club_pass_generated_at` / internal ID server-side validation if clubs require sequential IDs.

@@ -2,10 +2,18 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { useClubId } from "@/hooks/use-club-id";
 import type { MembershipWithProfile } from "@/types/supabase";
 
 type Combo = { players: string[]; wins: number; total: number; rate: number };
+interface TeamChemistryPairRow {
+  membership_id_1: string;
+  membership_id_2: string;
+  wins: number;
+  total: number;
+  win_rate: number;
+}
 
 const TeamChemistry = () => {
   const { clubId } = useClubId();
@@ -14,30 +22,14 @@ const TeamChemistry = () => {
   useEffect(() => {
     if (!clubId) return;
     const fetch = async () => {
-      const { data: matches } = await supabase
-        .from("matches")
-        .select("id, home_score, away_score, is_home, status")
-        .eq("club_id", clubId)
-        .eq("status", "completed");
-
-      if (!matches || matches.length < 3) return;
-
-      const matchIds = matches.map(m => m.id);
-      const { data: lineups } = await supabase
-        .from("match_lineups")
-        .select("match_id, membership_id")
-        .in("match_id", matchIds)
-        .eq("is_starter", true);
-
-      if (!lineups) return;
-
-      // Get member names
       const { data: membersRaw } = await supabase
         .from("club_memberships")
         .select(
           "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_profile_fk(display_name)",
         )
-        .eq("club_id", clubId);
+        .eq("club_id", clubId)
+        .eq("status", "active")
+        .limit(500);
 
       const members = (membersRaw ?? []) as unknown as MembershipWithProfile[];
 
@@ -46,44 +38,25 @@ const TeamChemistry = () => {
         nameMap[m.id] = m.profiles?.display_name || "Player";
       });
 
-      // Match results
-      const matchResult: Record<string, boolean> = {};
-      matches.forEach(m => {
-        const gf = m.is_home ? (m.home_score || 0) : (m.away_score || 0);
-        const ga = m.is_home ? (m.away_score || 0) : (m.home_score || 0);
-        matchResult[m.id] = gf > ga;
+      const { data: pairRows, error } = await supabaseDynamic.rpc("get_team_chemistry_pairs", {
+        _club_id: clubId,
+        _max_matches: 300,
+        _min_together: 2,
+        _limit: 5,
       });
-
-      // Group lineups by match
-      const matchPlayers: Record<string, string[]> = {};
-      lineups.forEach(l => {
-        if (!matchPlayers[l.match_id]) matchPlayers[l.match_id] = [];
-        matchPlayers[l.match_id].push(l.membership_id);
-      });
-
-      // Find pairs that played together
-      const pairStats: Record<string, { wins: number; total: number }> = {};
-      Object.entries(matchPlayers).forEach(([matchId, players]) => {
-        for (let i = 0; i < players.length; i++) {
-          for (let j = i + 1; j < players.length; j++) {
-            const key = [players[i], players[j]].sort().join("|");
-            if (!pairStats[key]) pairStats[key] = { wins: 0, total: 0 };
-            pairStats[key].total++;
-            if (matchResult[matchId]) pairStats[key].wins++;
-          }
-        }
-      });
-
-      const topCombos = Object.entries(pairStats)
-        .filter(([_, s]) => s.total >= 2)
-        .map(([key, s]) => ({
-          players: key.split("|").map(id => nameMap[id] || "Player"),
-          wins: s.wins,
-          total: s.total,
-          rate: Math.round((s.wins / s.total) * 100),
-        }))
-        .sort((a, b) => b.rate - a.rate || b.total - a.total)
-        .slice(0, 5);
+      if (error) {
+        setCombos([]);
+        return;
+      }
+      const topCombos = ((pairRows as unknown as TeamChemistryPairRow[]) ?? []).map((row) => ({
+        players: [
+          nameMap[row.membership_id_1] || "Player",
+          nameMap[row.membership_id_2] || "Player",
+        ],
+        wins: row.wins ?? 0,
+        total: row.total ?? 0,
+        rate: row.win_rate ?? 0,
+      }));
 
       setCombos(topCombos);
     };

@@ -1,22 +1,32 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Award, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { useClubId } from "@/hooks/use-club-id";
 import { useToast } from "@/hooks/use-toast";
-import type { MembershipWithProfile } from "@/types/supabase";
 
-type AwardDef = { type: string; name: string; icon: string; description: string };
-type AwardResult = { type: string; name: string; icon: string; winner: string; membershipId: string; value: string };
+interface AwardResult {
+  type: string;
+  name: string;
+  icon: string;
+  winner: string;
+  membershipId: string;
+  value: string;
+}
 
-const AWARD_DEFS: AwardDef[] = [
-  { type: "golden_boot", name: "Golden Boot", icon: "⚽", description: "Most goals scored" },
-  { type: "playmaker", name: "Master Playmaker", icon: "🅰️", description: "Most assists" },
-  { type: "mr_reliable", name: "Mr. Reliable", icon: "💪", description: "Most appearances" },
-  { type: "most_improved", name: "Most Improved", icon: "📈", description: "Biggest stat improvement" },
-  { type: "iron_man", name: "Iron Man", icon: "🦾", description: "Best attendance rate" },
-];
+interface SeasonAwardWinnersRow {
+  completed_matches_count: number | null;
+  golden_boot_membership_id: string | null;
+  golden_boot_display_name: string | null;
+  golden_boot_goals: number | null;
+  playmaker_membership_id: string | null;
+  playmaker_display_name: string | null;
+  playmaker_assists: number | null;
+  reliable_membership_id: string | null;
+  reliable_display_name: string | null;
+  reliable_appearances: number | null;
+}
 
 const SeasonAwards = () => {
   const { clubId } = useClubId();
@@ -27,61 +37,55 @@ const SeasonAwards = () => {
   const generateAwards = async () => {
     if (!clubId) return;
 
-    const { data: matches } = await supabase
-      .from("matches").select("id").eq("club_id", clubId).eq("status", "completed");
-    const matchIds = (matches || []).map(m => m.id);
-    if (matchIds.length === 0) { toast({ title: "No completed matches to generate awards from" }); return; }
-
-    const { data: events } = await supabase
-      .from("match_events").select("membership_id, event_type").in("match_id", matchIds);
-    const { data: lineups } = await supabase
-      .from("match_lineups").select("membership_id").in("match_id", matchIds);
-    const { data: membersRaw } = await supabase
-      .from("club_memberships")
-      .select(
-        "id, user_id, club_id, role, status, team, age_group, position, created_at, updated_at, profiles!club_memberships_profile_fk(display_name)",
-      )
-      .eq("club_id", clubId);
-
-    const members = (membersRaw ?? []) as unknown as MembershipWithProfile[];
-
-    const nameMap: Record<string, string> = {};
-    members.forEach((m) => {
-      nameMap[m.id] = m.profiles?.display_name || "Player";
+    const { data, error } = await supabaseDynamic.rpc("get_season_award_winners", {
+      _club_id: clubId,
     });
 
-    // Aggregate stats per player
-    const stats: Record<string, { goals: number; assists: number; appearances: number }> = {};
-    (events || []).forEach(e => {
-      if (!e.membership_id) return;
-      if (!stats[e.membership_id]) stats[e.membership_id] = { goals: 0, assists: 0, appearances: 0 };
-      if (e.event_type === "goal") stats[e.membership_id].goals++;
-      if (e.event_type === "assist") stats[e.membership_id].assists++;
-    });
-    (lineups || []).forEach(l => {
-      if (!stats[l.membership_id]) stats[l.membership_id] = { goals: 0, assists: 0, appearances: 0 };
-      stats[l.membership_id].appearances++;
-    });
+    if (error) {
+      toast({ title: "Could not load awards", description: error.message, variant: "destructive" });
+      return;
+    }
 
-    const entries = Object.entries(stats);
+    const row = (Array.isArray(data) ? data[0] : data) as SeasonAwardWinnersRow | undefined;
+    const completed = row?.completed_matches_count ?? 0;
+    if (completed === 0) {
+      toast({ title: "No completed matches to generate awards from" });
+      return;
+    }
+
     const results: AwardResult[] = [];
 
-    // Golden Boot
-    const topScorer = entries.sort((a, b) => b[1].goals - a[1].goals)[0];
-    if (topScorer && topScorer[1].goals > 0) {
-      results.push({ type: "golden_boot", name: "Golden Boot", icon: "⚽", winner: nameMap[topScorer[0]] || "Player", membershipId: topScorer[0], value: `${topScorer[1].goals} goals` });
+    if (row?.golden_boot_membership_id && (row.golden_boot_goals ?? 0) > 0) {
+      results.push({
+        type: "golden_boot",
+        name: "Golden Boot",
+        icon: "⚽",
+        winner: row.golden_boot_display_name || "Player",
+        membershipId: row.golden_boot_membership_id,
+        value: `${row.golden_boot_goals} goals`,
+      });
     }
 
-    // Playmaker
-    const topAssist = entries.sort((a, b) => b[1].assists - a[1].assists)[0];
-    if (topAssist && topAssist[1].assists > 0) {
-      results.push({ type: "playmaker", name: "Master Playmaker", icon: "🅰️", winner: nameMap[topAssist[0]] || "Player", membershipId: topAssist[0], value: `${topAssist[1].assists} assists` });
+    if (row?.playmaker_membership_id && (row.playmaker_assists ?? 0) > 0) {
+      results.push({
+        type: "playmaker",
+        name: "Master Playmaker",
+        icon: "🅰️",
+        winner: row.playmaker_display_name || "Player",
+        membershipId: row.playmaker_membership_id,
+        value: `${row.playmaker_assists} assists`,
+      });
     }
 
-    // Mr. Reliable
-    const topApps = entries.sort((a, b) => b[1].appearances - a[1].appearances)[0];
-    if (topApps) {
-      results.push({ type: "mr_reliable", name: "Mr. Reliable", icon: "💪", winner: nameMap[topApps[0]] || "Player", membershipId: topApps[0], value: `${topApps[1].appearances} appearances` });
+    if (row?.reliable_membership_id) {
+      results.push({
+        type: "mr_reliable",
+        name: "Mr. Reliable",
+        icon: "💪",
+        winner: row.reliable_display_name || "Player",
+        membershipId: row.reliable_membership_id,
+        value: `${row.reliable_appearances ?? 0} appearances`,
+      });
     }
 
     setAwards(results);

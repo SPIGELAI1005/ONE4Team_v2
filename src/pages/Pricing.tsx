@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { useToast } from "@/hooks/use-toast";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
+import { correlationHeaders } from "@/lib/observability";
 import { getStripe } from "@/lib/stripe";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
@@ -170,6 +171,7 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
     if (user && clubId) {
       try {
         const { data, error } = await supabaseDynamic.functions.invoke("stripe-checkout", {
+          headers: correlationHeaders(),
           body: {
             action: "create-checkout",
             clubId,
