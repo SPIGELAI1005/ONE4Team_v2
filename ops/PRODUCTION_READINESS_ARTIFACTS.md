@@ -76,6 +76,8 @@ Store snapshots in ticket; compare planning time and buffer hits before vs after
 
 ### Execution runbooks (operator — phased plan)
 
+- **Completion plan (all open topics, ordered):** [`ops/PRODUCTION_READINESS_COMPLETION_PLAN.md`](PRODUCTION_READINESS_COMPLETION_PLAN.md)
+- **Evidence index (staging/prod links + repo checks):** [`ops/PRODUCTION_READINESS_EVIDENCE_LOG.md`](PRODUCTION_READINESS_EVIDENCE_LOG.md)
 - **Phase A (staging verification):** [`ops/PHASE_A_STAGING_RUNBOOK.md`](PHASE_A_STAGING_RUNBOOK.md)
 - **Phase B (secrets / client env):** [`ops/PHASE_B_SECRETS_CHECKLIST.md`](PHASE_B_SECRETS_CHECKLIST.md)
 - **Phase C (Section L evidence table):** [`ops/PHASE_C_SECTION_L_EVIDENCE.md`](PHASE_C_SECTION_L_EVIDENCE.md)

@@ -11,7 +11,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { useLanguage } from "@/hooks/use-language";
 import PageTransition from "@/components/layout/PageTransition";
-import { CookieConsent } from "@/components/ui/cookie-consent";
+import { CookieConsent, requestOpenCookieSettings } from "@/components/ui/cookie-consent";
 import { RequireAdmin, RequireTrainer } from "@/components/auth/require-role";
 import { PlanGate } from "@/components/plan-gate";
 
@@ -22,6 +22,7 @@ const Onboarding = lazy(() => import("./pages/Onboarding"));
 const DashboardLayout = lazy(() => import("./components/dashboard/DashboardLayout"));
 const DashboardContent = lazy(() => import("./components/dashboard/DashboardContent"));
 const ClubPage = lazy(() => import("./pages/ClubPage"));
+const ClubTeamPage = lazy(() => import("./pages/ClubTeamPage"));
 const Members = lazy(() => import("./pages/Members"));
 const MemberHistory = lazy(() => import("./pages/MemberHistory"));
 const Teams = lazy(() => import("./pages/Teams"));
@@ -52,6 +53,8 @@ const Health = lazy(() => import("./pages/Health"));
 const Crash = lazy(() => import("./pages/Crash"));
 const PlatformAdmin = lazy(() => import("./pages/PlatformAdmin"));
 const GuidedSetup = lazy(() => import("./pages/GuidedSetup"));
+const TrainingPlanImport = lazy(() => import("./pages/TrainingPlanImport"));
+const CoachPlaceholderResolution = lazy(() => import("./pages/CoachPlaceholderResolution"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -192,6 +195,16 @@ const AnimatedRoutes = () => {
           }
         />
         <Route
+          path="/club/:clubSlug/team/:teamId"
+          element={
+            <PageTransition>
+              <Suspense fallback={<RouteFallback />}>
+                <ClubTeamPage />
+              </Suspense>
+            </PageTransition>
+          }
+        />
+        <Route
           path="/club/:clubSlug"
           element={
             <PageTransition>
@@ -231,6 +244,8 @@ const AnimatedRoutes = () => {
           <Route path="/dues" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><Dues /></Suspense></RequireAdmin>} />
           <Route path="/partners" element={<RequireTrainer><Suspense fallback={<RouteFallback />}><PlanGate feature="partners"><Partners /></PlanGate></Suspense></RequireTrainer>} />
           <Route path="/club-page-admin" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><ClubPageAdmin /></Suspense></RequireAdmin>} />
+          <Route path="/training-plan-import" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><TrainingPlanImport /></Suspense></RequireAdmin>} />
+          <Route path="/coach-placeholders" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><CoachPlaceholderResolution /></Suspense></RequireAdmin>} />
           <Route path="/property-layers" element={<Navigate to="/asset-layers" replace />} />
           <Route path="/asset-layers" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><Teams /></Suspense></RequireAdmin>} />
           {/* Trainer+ routes */}
@@ -248,7 +263,8 @@ const AnimatedRoutes = () => {
               </PlanGate>
             }
           />
-          <Route path="/player-stats" element={<Suspense fallback={<RouteFallback />}><PlayerStats /></Suspense>} />
+          <Route path="/reports" element={<Suspense fallback={<RouteFallback />}><PlayerStats /></Suspense>} />
+          <Route path="/player-stats" element={<Navigate to="/reports" replace />} />
           <Route path="/player/:membershipId" element={<Suspense fallback={<RouteFallback />}><PlayerProfile /></Suspense>} />
           <Route path="/co-trainer" element={<Suspense fallback={<RouteFallback />}><PlanGate feature="ai"><CoTrainer /></PlanGate></Suspense>} />
           <Route path="/live-scores" element={<Suspense fallback={<RouteFallback />}><LiveScores /></Suspense>} />
@@ -332,6 +348,13 @@ function AppShell() {
               <a href="/terms" className="hover:text-foreground transition-colors whitespace-nowrap">{t.footer.termsOfService}</a>
               <a href="/privacy" className="hover:text-foreground transition-colors whitespace-nowrap">{t.footer.privacyPolicy}</a>
               <a href="/impressum" className="hover:text-foreground transition-colors whitespace-nowrap">{t.footer.legalNotice}</a>
+              <button
+                type="button"
+                onClick={() => requestOpenCookieSettings()}
+                className="hover:text-foreground transition-colors whitespace-nowrap text-left"
+              >
+                {t.cookieConsent.openPreferences}
+              </button>
             </div>
           </div>
         </footer>

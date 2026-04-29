@@ -3,6 +3,41 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-04-29 (Cookie preference centre, public club team page, training/coach admin surfaces, documentation sync)
+
+### Cookie consent and privacy preference centre
+- **`src/components/ui/cookie-consent.tsx`:** Bottom banner (delay when no stored consent) with ONE4Team-specific EN/DE copy; **Accept all**, **Reject non-essential**, **Cookie settings** opens modal. **Dialog** with left nav: overview (“Your privacy” / “Ihre Privatsphäre”), strictly necessary, functional, analytics, marketing; toggles on optional categories; **Save my choices** / **Reject non-essential** / **Allow all** in footer. **`readCookiePreferences()`**, **`requestOpenCookieSettings()`** + custom event for global open.
+- **Persistence:** `localStorage` key **`one4team.cookieConsent`**, version **2** (`preferences.functional|analytics|marketing`, `necessary` always true); migration from legacy **`level: "all" | "essential"`**.
+- **`src/i18n/en.ts`**, **`src/i18n/de.ts`:** Expanded **`cookieConsent`** keys for banner, preference centre, category descriptions, toggles, actions.
+- **`src/App.tsx`:** Signed-out fixed footer link calls **`requestOpenCookieSettings()`** using **`t.cookieConsent.openPreferences`**.
+- **`src/components/landing/Footer.tsx`:** Same cookie-settings entry next to legal links.
+- **`src/components/ui/dialog.tsx`:** Overlay **`z-[120]`**, content **`z-[130]`** so dialogs render above the signed-out footer and cookie banner.
+
+### Public club team page and database
+- **`supabase/migrations/20260429130000_public_club_schedule_and_team_page.sql`:** Public **`activities`** SELECT for **`anon`** when parent club **`is_public`**; optional guarded **`training_sessions`** policy; **`get_public_club_team_page(_club_slug, _team_id)`** security-definer RPC returning schedule/roster-shaped JSON for the public team page without over-exposing profile columns.
+- **`src/pages/ClubTeamPage.tsx`:** Public team route UI (lazy-loaded from **`App.tsx`** at **`/club/:clubSlug/team/:teamId`**).
+- **`src/pages/ClubPage.tsx`**, **`src/lib/club-public-page-sections.ts`:** Integration for schedule/team navigation as implemented in branch.
+
+### Coach placeholders, pitch linkage, training import
+- **`supabase/migrations/20260426121000_coach_placeholders_and_team_coaches_polymorphic.sql`**, **`20260426122000_activity_pitch_booking_link_and_import_keys.sql`:** Schema for polymorphic coaches, activity–pitch booking, import-related keys (apply in order per environment).
+- **`src/pages/CoachPlaceholderResolution.tsx`**, route **`/coach-placeholders`** (admin): UI to resolve coach placeholders.
+- **`src/pages/TrainingPlanImport.tsx`**, route **`/training-plan-import`** (admin): Training plan import flow; **`src/lib/training-plan-import/`** model/helpers.
+
+### Other client / ops / tooling (same release window)
+- **`src/integrations/supabase/types.ts`:** Regenerated or patched for new RPCs/tables.
+- **`src/pages/*`**, **`src/components/dashboard/*`:** Ongoing fixes and features (e.g. **Matches**, **Teams**, **Shop**, **Settings**, **PlayerStats**, **ClubPageAdmin**, sidebar/mobile nav) as committed in this batch.
+- **`ops/`:** Production readiness completion plan, consolidated **evidence log**, checklist and rollout doc touch-ups (**`PRODUCTION_READINESS_*`**, **`CSP_ROLLOUT.md`**, **`SECTION_M_GO_LIVE_CHECKLIST.md`**, etc.).
+- **`scripts/audit-realtime.cjs`**, **`scripts/audit-supabase-selects.cjs`**, **`package.json`**: tooling adjustments as in diff.
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`README.md`**, **`ops/PRODUCTION_READINESS_EVIDENCE_LOG.md`**, **`CHANGELOG.md`** (this entry).
+
+### Database (apply per environment in filename order)
+- `20260330160000_public_page_sections_matches_messages_one4ai.sql` — coordinate order with existing `20260330*` migrations in the same project.
+- `20260426121000_coach_placeholders_and_team_coaches_polymorphic.sql`
+- `20260426122000_activity_pitch_booking_link_and_import_keys.sql`
+- `20260429130000_public_club_schedule_and_team_page.sql`
+
 ## 2026-03-30 (Production readiness track: analytics RPCs, pagination, RLS harness, ops templates, phased runbooks)
 
 ### Database (apply per environment in filename order)

@@ -1,5 +1,7 @@
 # Phase C — Section L monitoring evidence
 
+**Evidence index:** [PRODUCTION_READINESS_EVIDENCE_LOG.md](PRODUCTION_READINESS_EVIDENCE_LOG.md) (Phase 3).
+
 Configure alerts in vendor UIs per [SECTION_L_MONITORING_SETUP.md](SECTION_L_MONITORING_SETUP.md). This file is for **links and sign-off** only.
 
 | # | Item | Configured (Y/N) | Evidence link / notes |

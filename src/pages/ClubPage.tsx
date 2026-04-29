@@ -3,7 +3,34 @@ import { motion } from "framer-motion";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import AppHeader from "@/components/layout/AppHeader";
 import type { LucideIcon } from "lucide-react";
-import { Users, Calendar, Trophy, MapPin, Phone, Mail, Clock, ArrowRight, Search, Send, Loader2, X, ShieldQuestion, Newspaper, ShoppingBag, ExternalLink, Share2, Smartphone } from "lucide-react";
+import {
+  Users,
+  Calendar,
+  Trophy,
+  MapPin,
+  Phone,
+  Mail,
+  Clock,
+  ArrowRight,
+  Search,
+  Send,
+  Loader2,
+  X,
+  ShieldQuestion,
+  Newspaper,
+  ShoppingBag,
+  ExternalLink,
+  Share2,
+  Smartphone,
+  MessageSquare,
+  Bot,
+  Medal,
+  FileText,
+  HelpCircle,
+  ListOrdered,
+  BarChart3,
+  Radio,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/useAuth";
@@ -97,8 +124,10 @@ type TrainingSessionRowLite = {
   title: string;
   location: string | null;
   starts_at: string;
+  ends_at?: string | null;
   team_id: string | null;
   teams?: { name: string } | null;
+  source?: "training_session" | "activity";
 };
 
 type EventRowLite = {
@@ -116,6 +145,18 @@ type NewsRowLite = {
   content: string;
   created_at: string;
   priority: string | null;
+};
+
+type PublicMatchLite = {
+  id: string;
+  opponent: string;
+  is_home: boolean;
+  match_date: string;
+  location: string | null;
+  status: string;
+  home_score: number | null;
+  away_score: number | null;
+  competitions?: { name: string } | null;
 };
 
 type ShopProductLite = {
@@ -137,6 +178,28 @@ function matchesSectionFilter(query: string, ...parts: (string | null | undefine
   const n = normalizeSectionSearch(query);
   if (!n) return true;
   return parts.some((p) => p && String(p).toLowerCase().includes(n));
+}
+
+function isMissingRelationError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const message = String((error as { message?: unknown }).message ?? "");
+  if (message.includes("Could not find the table")) return true;
+  if (/\brelation\b.*\bdoes not exist\b/i.test(message)) return true;
+  return false;
+}
+
+function clubScheduleLocalDayKey(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function clubScheduleParseDayKey(key: string): Date {
+  const [y, mo, da] = key.split("-").map((p) => Number(p));
+  return new Date(y, mo - 1, da);
+}
+
+function clubScheduleStartOfLocalDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
 interface SectionSearchBarProps {
@@ -185,7 +248,8 @@ const ClubPage = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { activeClubId, activeClub } = useActiveClub();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const scheduleLocale = language === "de" ? "de-DE" : "en-GB";
 
   const [club, setClub] = useState<Club | null>(null);
   const [loading, setLoading] = useState(true);
@@ -194,6 +258,7 @@ const ClubPage = () => {
   const [events, setEvents] = useState<EventRowLite[]>([]);
   const [news, setNews] = useState<NewsRowLite[]>([]);
   const [shopProducts, setShopProducts] = useState<ShopProductLite[]>([]);
+  const [publicMatches, setPublicMatches] = useState<PublicMatchLite[]>([]);
   const [memberCount, setMemberCount] = useState(0);
   const [loadingData, setLoadingData] = useState(false);
   const [isMember, setIsMember] = useState<boolean>(false);
@@ -230,6 +295,14 @@ const ClubPage = () => {
       { id: "media", label: t.clubPage.mediaSection },
       { id: "schedule", label: t.clubPage.scheduleSection },
       { id: "events", label: t.clubPage.eventsSection },
+      { id: "matches", label: t.clubPage.matchesSection },
+      { id: "messages", label: t.clubPage.messagesSection },
+      { id: "one4ai", label: t.clubPage.one4aiSection },
+      { id: "documents", label: t.clubPage.documentsSection },
+      { id: "faq", label: t.clubPage.faqSection },
+      { id: "nextsteps", label: t.clubPage.nextStepsSection },
+      { id: "reports", label: t.clubPage.reportsSection },
+      { id: "livescores", label: t.clubPage.liveScoresSection },
       { id: "contact", label: t.clubPage.contactSection },
     ];
     return items.filter((s) => vis[s.id]);
@@ -242,6 +315,7 @@ const ClubPage = () => {
     if (vis.teams) links.push({ id: "teams", label: t.clubPage.teamsSection, icon: Trophy });
     if (vis.schedule) links.push({ id: "schedule", label: t.clubPage.trainingSchedule, icon: Clock });
     if (vis.events) links.push({ id: "events", label: t.clubPage.eventsSection, icon: Calendar });
+    if (vis.matches) links.push({ id: "matches", label: t.clubPage.matchesSection, icon: Medal });
     return links;
   }, [club, t.clubPage]);
 
@@ -269,6 +343,22 @@ const ClubPage = () => {
     [teams, teamsFilter]
   );
 
+  const teamUpcomingSessions = useMemo(() => {
+    const m = new Map<string, TrainingSessionRowLite[]>();
+    const nowMs = Date.now();
+    const horizonMs = nowMs - 12 * 3600000;
+    const sorted = [...sessions].sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
+    for (const s of sorted) {
+      if (!s.team_id) continue;
+      if (new Date(s.starts_at).getTime() < horizonMs) continue;
+      const arr = m.get(s.team_id) ?? [];
+      if (arr.length >= 4) continue;
+      arr.push(s);
+      m.set(s.team_id, arr);
+    }
+    return m;
+  }, [sessions]);
+
   const filteredShopProducts = useMemo(
     () =>
       shopProducts.filter((p) => matchesSectionFilter(shopFilter, p.name, p.description ?? undefined)),
@@ -286,6 +376,48 @@ const ClubPage = () => {
         )
       ),
     [sessions, sessionsFilter]
+  );
+
+  const sessionsByDay = useMemo(() => {
+    const map = new Map<string, TrainingSessionRowLite[]>();
+    for (const s of filteredSessions) {
+      const key = clubScheduleLocalDayKey(s.starts_at);
+      const list = map.get(key) ?? [];
+      list.push(s);
+      map.set(key, list);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
+    }
+    return [...map.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([dateKey, daySessions]) => ({ dateKey, daySessions }));
+  }, [filteredSessions]);
+
+  const scheduleDayHeading = useCallback(
+    (dateKey: string) => {
+      const d = clubScheduleStartOfLocalDay(clubScheduleParseDayKey(dateKey));
+      const today = clubScheduleStartOfLocalDay(new Date());
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      if (d.getTime() === today.getTime()) {
+        return {
+          title: t.common.today,
+          subtitle: d.toLocaleDateString(scheduleLocale, { weekday: "long", month: "long", day: "numeric", year: "numeric" }),
+        };
+      }
+      if (d.getTime() === tomorrow.getTime()) {
+        return {
+          title: t.clubPage.scheduleTomorrow,
+          subtitle: d.toLocaleDateString(scheduleLocale, { weekday: "long", month: "long", day: "numeric", year: "numeric" }),
+        };
+      }
+      return {
+        title: d.toLocaleDateString(scheduleLocale, { weekday: "long" }),
+        subtitle: d.toLocaleDateString(scheduleLocale, { month: "long", day: "numeric", year: "numeric" }),
+      };
+    },
+    [scheduleLocale, t.clubPage.scheduleTomorrow, t.common.today]
   );
 
   const filteredEvents = useMemo(
@@ -364,13 +496,13 @@ const ClubPage = () => {
       setLoading(true);
       const first = await supabase.from("clubs").select(CLUB_PUBLIC_SELECT).eq("slug", clubSlug).maybeSingle();
 
-      let record = (first.data as Record<string, unknown> | null) ?? null;
+      let record = (first.data as unknown as Record<string, unknown> | null) ?? null;
       let loadError = first.error;
 
       if (!loadError && !record && isPreviewMode && user && activeClubId && activeClub?.slug === clubSlug) {
         const second = await supabase.from("clubs").select(CLUB_PUBLIC_SELECT).eq("id", activeClubId).maybeSingle();
         loadError = second.error;
-        record = (second.data as Record<string, unknown> | null) ?? null;
+        record = (second.data as unknown as Record<string, unknown> | null) ?? null;
       }
 
       if (loadError) {
@@ -557,15 +689,24 @@ const ClubPage = () => {
 
       setLoadingData(true);
       const nowIso = new Date().toISOString();
-      const [teamsRes, sessionsRes, eventsRes, newsRes, membersCountRes, shopRes] = await Promise.all([
+      const pastIso = new Date(Date.now() - 86400000).toISOString();
+      const [teamsRes, sessionsRes, activityTrainingsRes, eventsRes, newsRes, membersCountRes, shopRes, matchesRes] = await Promise.all([
         supabase.from("teams").select("id, name, sport, age_group, coach_name").eq("club_id", club.id).order("name"),
         supabase
           .from("training_sessions")
-          .select("id, title, location, starts_at, team_id, teams(name)")
+          .select("id, title, location, starts_at, ends_at, team_id, teams(name)")
           .eq("club_id", club.id)
           .gte("starts_at", nowIso)
           .order("starts_at", { ascending: true })
-          .limit(10),
+          .limit(24),
+        supabase
+          .from("activities")
+          .select("id, title, location, starts_at, ends_at, team_id, teams(name)")
+          .eq("club_id", club.id)
+          .eq("type", "training")
+          .gte("starts_at", pastIso)
+          .order("starts_at", { ascending: true })
+          .limit(80),
         supabase
           .from("events")
           .select("id, title, description, event_type, starts_at, location")
@@ -591,19 +732,44 @@ const ClubPage = () => {
           .eq("is_active", true)
           .order("created_at", { ascending: false })
           .limit(6),
+        supabase
+          .from("matches")
+          .select("id, opponent, is_home, match_date, location, status, home_score, away_score, competitions(name)")
+          .eq("club_id", club.id)
+          .order("match_date", { ascending: false })
+          .limit(12),
       ]);
 
       if (teamsRes.error) toast({ title: t.common.error, description: teamsRes.error.message, variant: "destructive" });
-      if (sessionsRes.error) toast({ title: t.common.error, description: sessionsRes.error.message, variant: "destructive" });
+      if (sessionsRes.error && !isMissingRelationError(sessionsRes.error)) {
+        toast({ title: t.common.error, description: sessionsRes.error.message, variant: "destructive" });
+      }
+      if (activityTrainingsRes.error)
+        toast({ title: t.common.error, description: activityTrainingsRes.error.message, variant: "destructive" });
       if (eventsRes.error) toast({ title: t.common.error, description: eventsRes.error.message, variant: "destructive" });
       if (newsRes.error) toast({ title: t.common.error, description: newsRes.error.message, variant: "destructive" });
+      if (matchesRes.error) toast({ title: t.common.error, description: matchesRes.error.message, variant: "destructive" });
 
       setTeams((teamsRes.data as TeamRowLite[]) || []);
-      setSessions((sessionsRes.data as TrainingSessionRowLite[]) || []);
+      const fromSessions = (sessionsRes.error && isMissingRelationError(sessionsRes.error)
+        ? []
+        : ((sessionsRes.data as TrainingSessionRowLite[]) || [])
+      ).map((s) => ({
+        ...s,
+        source: "training_session" as const,
+      }));
+      const fromActivities = ((activityTrainingsRes.data as TrainingSessionRowLite[]) || []).map((s) => ({
+        ...s,
+        source: "activity" as const,
+      }));
+      setSessions(
+        [...fromSessions, ...fromActivities].sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
+      );
       setEvents((eventsRes.data as EventRowLite[]) || []);
       setNews((newsRes.data as NewsRowLite[]) || []);
       setMemberCount((membersCountRes as unknown as { count: number | null }).count ?? 0);
-      setShopProducts((shopRes.data as unknown as ShopProductLite[]) || []);
+      setShopProducts(((shopRes as unknown as { data: ShopProductLite[] | null }).data) || []);
+      setPublicMatches((matchesRes.data as PublicMatchLite[]) || []);
       setLoadingData(false);
     };
     void run();
@@ -622,6 +788,63 @@ const ClubPage = () => {
     const role = localStorage.getItem("one4team.activeRole") || "player";
     navigate(`/dashboard/${role}`);
   }, [club?.id, navigate, user]);
+
+  const goToAuthWithReturn = useCallback(
+    (returnPath: string) => {
+      navigate(`/auth?returnTo=${encodeURIComponent(returnPath)}`);
+    },
+    [navigate]
+  );
+
+  const handleMessagesCta = useCallback(() => {
+    if (!club?.id) return;
+    if (user) {
+      localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
+      navigate("/communication");
+    } else {
+      goToAuthWithReturn("/communication");
+    }
+  }, [club?.id, goToAuthWithReturn, navigate, user]);
+
+  const handleOne4aiCta = useCallback(() => {
+    if (!club?.id) return;
+    if (user) {
+      localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
+      navigate("/co-trainer");
+    } else {
+      goToAuthWithReturn("/co-trainer");
+    }
+  }, [club?.id, goToAuthWithReturn, navigate, user]);
+
+  const handleDocumentsCta = useCallback(() => {
+    if (!club?.id) return;
+    if (user) {
+      localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
+      handleOpenDashboard();
+    } else {
+      goToAuthWithReturn("/dashboard/player");
+    }
+  }, [club?.id, goToAuthWithReturn, handleOpenDashboard, user]);
+
+  const handleReportsCta = useCallback(() => {
+    if (!club?.id) return;
+    if (user) {
+      localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
+      navigate("/reports");
+    } else {
+      goToAuthWithReturn("/reports");
+    }
+  }, [club?.id, goToAuthWithReturn, navigate, user]);
+
+  const handleLiveScoresCta = useCallback(() => {
+    if (!club?.id) return;
+    if (user) {
+      localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
+      navigate("/live-scores");
+    } else {
+      goToAuthWithReturn("/live-scores");
+    }
+  }, [club?.id, goToAuthWithReturn, navigate, user]);
 
   const clubPublicMenuTop = useCallback(
     (close: () => void) => (
@@ -692,13 +915,13 @@ const ClubPage = () => {
     if (!reqName.trim() || !reqEmail.trim()) return;
     setSubmitting(true);
     try {
-      const { data, error } = await supabase.rpc("register_club_join_request", {
+      const { data, error } = await supabaseDynamic.rpc("register_club_join_request", {
         _club_id: club.id,
         _name: reqName.trim(),
         _message: reqMessage.trim() || null,
       });
       if (error) throw error;
-      const row = Array.isArray(data) ? data[0] : null;
+      const row = (Array.isArray(data) ? data[0] : null) as unknown as { outcome?: string; role?: string } | null;
       const outcome = (row?.outcome as string | undefined) || "pending";
       const role = (row?.role as string | undefined) || "member";
 
@@ -1044,9 +1267,10 @@ const ClubPage = () => {
                 <>
                   <div className={clubScrollRowClass}>
                     {filteredTeams.map((team) => (
-                      <div
+                      <Link
                         key={team.id}
-                        className="min-w-[min(100%,280px)] max-w-[85vw] shrink-0 snap-start p-5 rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.10)]"
+                        to={`/club/${club.slug}/team/${team.id}${isPreviewMode ? "?preview=1" : ""}`}
+                        className="min-w-[min(100%,280px)] max-w-[85vw] shrink-0 snap-start p-5 rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.10)] text-left no-underline text-inherit hover:border-primary/40 transition-colors"
                       >
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 text-white" style={{ backgroundColor: "var(--club-primary)" }}>
                           <Trophy className="w-5 h-5" />
@@ -1061,13 +1285,41 @@ const ClubPage = () => {
                             {t.clubPage.coach}: {team.coach_name}
                           </div>
                         ) : null}
-                      </div>
+                        {teamUpcomingSessions.get(team.id)?.length ? (
+                          <div className="mt-3 pt-3 border-t border-border/50 space-y-1">
+                            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{t.clubPage.teamUpcomingLabel}</div>
+                            {teamUpcomingSessions.get(team.id)!.slice(0, 3).map((s) => (
+                              <div key={`${s.source ?? "s"}-${s.id}`} className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                <Clock className="w-3 h-3 shrink-0" style={{ color: "var(--club-primary)" }} />
+                                <span className="line-clamp-2">
+                                  {new Date(s.starts_at).toLocaleString([], {
+                                    weekday: "short",
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                  {s.title ? ` · ${s.title}` : ""}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                        <div className="mt-3 flex items-center gap-1 text-xs font-semibold" style={{ color: "var(--club-primary)" }}>
+                          {t.clubPage.teamDetailLink}
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </div>
+                      </Link>
                     ))}
                   </div>
                   <p className="md:hidden text-[10px] text-center text-muted-foreground mt-1 mb-4">{t.clubPage.swipeForMore}</p>
                   <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {filteredTeams.map((team) => (
-                      <div key={team.id} className="p-5 rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.10)] hover:border-primary/30 transition-colors">
+                      <Link
+                        key={team.id}
+                        to={`/club/${club.slug}/team/${team.id}${isPreviewMode ? "?preview=1" : ""}`}
+                        className="p-5 rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.10)] hover:border-primary/30 transition-colors text-left no-underline text-inherit"
+                      >
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 text-white" style={{ backgroundColor: "var(--club-primary)" }}>
                           <Trophy className="w-5 h-5" />
                         </div>
@@ -1077,7 +1329,30 @@ const ClubPage = () => {
                           {team.age_group ? ` · ${team.age_group}` : ""}
                         </p>
                         {team.coach_name ? <div className="text-xs text-muted-foreground truncate">{t.clubPage.coach}: {team.coach_name}</div> : null}
-                      </div>
+                        {teamUpcomingSessions.get(team.id)?.length ? (
+                          <div className="mt-3 pt-3 border-t border-border/50 space-y-1">
+                            <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{t.clubPage.teamUpcomingLabel}</div>
+                            {teamUpcomingSessions.get(team.id)!.slice(0, 3).map((s) => (
+                              <div key={`${s.source ?? "s"}-${s.id}`} className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                <Clock className="w-3 h-3 shrink-0" style={{ color: "var(--club-primary)" }} />
+                                <span className="truncate">
+                                  {new Date(s.starts_at).toLocaleString([], {
+                                    weekday: "short",
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                        <div className="mt-3 flex items-center gap-1 text-xs font-semibold truncate" style={{ color: "var(--club-primary)" }}>
+                          {t.clubPage.teamDetailLink}
+                          <ArrowRight className="w-3.5 h-3.5 shrink-0" />
+                        </div>
+                      </Link>
                     ))}
                   </div>
                 </>
@@ -1287,36 +1562,55 @@ const ClubPage = () => {
               {!filteredSessions.length ? (
                 <div className="max-w-2xl mx-auto rounded-2xl glass-card p-6 text-center text-sm text-muted-foreground">{t.clubPage.noSearchResults}</div>
               ) : (
-                <div className="max-w-2xl mx-auto rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
-                  {filteredSessions.map((session, index) => (
-                    <div key={session.id} className={`px-4 sm:px-5 py-3.5 sm:py-4 ${index < filteredSessions.length - 1 ? "border-b border-border" : ""}`}>
-                      <div className="min-w-0">
-                        <div className="text-sm sm:text-base font-medium text-foreground break-words">{session.title}</div>
-                        <div className="text-xs text-muted-foreground mt-1 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-1 sm:gap-x-3 sm:gap-y-1">
-                          <span className="inline-flex items-center gap-1 shrink-0">
-                            <Clock className="w-3 h-3 shrink-0" />{" "}
-                            {new Date(session.starts_at).toLocaleString([], {
-                              weekday: "short",
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                          {session.location ? (
-                            <span className="inline-flex items-start gap-1 break-words">
-                              <MapPin className="w-3 h-3 shrink-0 mt-0.5" /> {session.location}
-                            </span>
-                          ) : null}
-                          {session.teams?.name ? (
-                            <span className="inline-flex items-center gap-1">
-                              <Trophy className="w-3 h-3 shrink-0" /> {session.teams.name}
-                            </span>
-                          ) : null}
+                <div className="max-w-3xl mx-auto space-y-8 md:space-y-10">
+                  {sessionsByDay.map(({ dateKey, daySessions }) => {
+                    const { title: dayTitle, subtitle: daySubtitle } = scheduleDayHeading(dateKey);
+                    return (
+                      <div key={dateKey} className="text-left">
+                        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-1 sm:gap-3 mb-3 md:mb-4 border-l-4 rounded-l-md pl-3 sm:pl-4" style={{ borderColor: "var(--club-primary)" }}>
+                          <div>
+                            <div className="font-display text-lg sm:text-xl font-bold text-foreground tracking-tight">{dayTitle}</div>
+                            <div className="text-xs sm:text-sm text-muted-foreground">{daySubtitle}</div>
+                          </div>
+                          <div className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-muted-foreground/90 tabular-nums">
+                            {daySessions.length} {daySessions.length === 1 ? t.clubPage.scheduleSessionSingular : t.clubPage.scheduleSessionPlural}
+                          </div>
+                        </div>
+                        <div className="space-y-2 sm:space-y-2.5">
+                          {daySessions.map((session) => (
+                            <div
+                              key={`${session.source ?? "s"}-${session.id}`}
+                              className="flex gap-3 sm:gap-4 rounded-xl border border-border/60 bg-card/50 backdrop-blur-sm px-3 py-2.5 sm:px-4 sm:py-3 shadow-sm hover:border-border transition-colors"
+                            >
+                              <div
+                                className="shrink-0 w-[3.25rem] sm:w-14 text-right text-sm sm:text-base font-semibold tabular-nums leading-tight pt-0.5"
+                                style={{ color: "var(--club-primary)" }}
+                              >
+                                {new Date(session.starts_at).toLocaleTimeString(scheduleLocale, { hour: "2-digit", minute: "2-digit" })}
+                              </div>
+                              <div className="min-w-0 flex-1 border-l border-border/50 pl-3 sm:pl-4">
+                                <div className="text-sm sm:text-base font-semibold text-foreground leading-snug break-words">{session.title}</div>
+                                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                                  {session.teams?.name ? (
+                                    <span className="inline-flex items-center gap-1">
+                                      <Trophy className="w-3 h-3 shrink-0 opacity-80" style={{ color: "var(--club-primary)" }} />
+                                      {session.teams.name}
+                                    </span>
+                                  ) : null}
+                                  {session.location ? (
+                                    <span className="inline-flex items-start gap-1 min-w-0">
+                                      <MapPin className="w-3 h-3 shrink-0 mt-0.5 opacity-80" />
+                                      <span className="break-words">{session.location}</span>
+                                    </span>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </>
@@ -1388,6 +1682,308 @@ const ClubPage = () => {
               )}
             </>
           )}
+        </div>
+      </section>
+      ) : null}
+
+      {club?.sectionVisibility.matches ? (
+      <section id="matches" className="py-10 sm:py-14 border-t border-border">
+        <div className={clubSectionContainer}>
+          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-2 sm:mb-3">
+            {t.clubPage.matchesSection}{" "}
+            <span className="text-gradient-gold">{t.clubPage.matchesHighlight}</span>
+          </h2>
+          <p className="text-center text-muted-foreground text-sm max-w-2xl mx-auto mb-6 sm:mb-8">{t.clubPage.matchesPublicDesc}</p>
+          {loadingData ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="w-5 h-5 animate-spin" style={{ color: "var(--club-primary)" }} />
+            </div>
+          ) : publicMatches.length === 0 ? (
+            <div className="max-w-2xl mx-auto rounded-2xl glass-card p-8 text-center">
+              <div className="text-sm font-medium text-foreground">{t.clubPage.noMatchesPublic}</div>
+              <div className="text-xs text-muted-foreground mt-1">{t.clubPage.matchesWillAppear}</div>
+            </div>
+          ) : (
+            <div className="max-w-3xl mx-auto space-y-3">
+              {publicMatches.map((m) => {
+                const title = m.is_home ? `${club.name} vs ${m.opponent}` : `${m.opponent} vs ${club.name}`;
+                const showScore = m.status === "completed" && m.home_score != null && m.away_score != null;
+                return (
+                  <div
+                    key={m.id}
+                    className="rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl px-4 py-3 sm:px-5 sm:py-4 text-left shadow-[0_10px_30px_rgba(0,0,0,0.08)]"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-0.5">{m.competitions?.name || m.status}</div>
+                        <div className="font-display font-semibold text-foreground text-sm sm:text-base leading-snug">{title}</div>
+                        <div className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span className="inline-flex items-center gap-1">
+                            <Clock className="w-3 h-3 shrink-0" />
+                            {new Date(m.match_date).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                          {m.location ? (
+                            <span className="inline-flex items-start gap-1">
+                              <MapPin className="w-3 h-3 shrink-0 mt-0.5" />
+                              <span className="break-words">{m.location}</span>
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                      {showScore ? (
+                        <div className="text-2xl font-bold font-display text-foreground tabular-nums shrink-0">
+                          {m.home_score} : {m.away_score}
+                        </div>
+                      ) : (
+                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-primary/10 text-primary shrink-0 self-start sm:self-center capitalize">
+                          {m.status.replace(/_/g, " ")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+      ) : null}
+
+      {club?.sectionVisibility.messages ? (
+      <section id="messages" className="py-10 sm:py-14 border-t border-border">
+        <div className={`${clubSectionContainer} max-w-3xl`}>
+          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4 sm:mb-6">
+            <span className="text-gradient-gold">{t.clubPage.messagesSection}</span>
+          </h2>
+          <div className="rounded-3xl border border-border/70 bg-card/55 backdrop-blur-xl p-6 sm:p-8 shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: "var(--club-primary)" }}>
+                <MessageSquare className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-display font-semibold text-foreground text-lg">{t.clubPage.messagesPublicTitle}</h3>
+                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{t.clubPage.messagesPublicDesc}</p>
+              </div>
+            </div>
+            <ul className="text-sm text-muted-foreground space-y-2 mb-6 list-disc list-inside">
+              <li>{t.clubPage.messagesBulletChannels}</li>
+              <li>{t.clubPage.messagesBulletChat}</li>
+            </ul>
+            <Button
+              className="w-full sm:w-auto font-semibold text-white hover:brightness-110"
+              style={{ backgroundColor: "var(--club-primary)" }}
+              onClick={handleMessagesCta}
+            >
+              {user ? t.clubPage.messagesCtaSignedIn : t.clubPage.messagesCtaSignedOut} <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        </div>
+      </section>
+      ) : null}
+
+      {club?.sectionVisibility.one4ai ? (
+      <section id="one4ai" className="py-10 sm:py-14 border-t border-border">
+        <div className={`${clubSectionContainer} max-w-3xl`}>
+          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4 sm:mb-6">
+            <span className="text-gradient-gold">{t.clubPage.one4aiSection}</span>
+          </h2>
+          <div className="rounded-3xl border border-border/70 bg-card/55 backdrop-blur-xl p-6 sm:p-8 shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: "var(--club-primary)" }}>
+                <Bot className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-display font-semibold text-foreground text-lg">{t.clubPage.one4aiPublicTitle}</h3>
+                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{t.clubPage.one4aiPublicDesc}</p>
+              </div>
+            </div>
+            <ul className="text-sm text-muted-foreground space-y-2 mb-6 list-disc list-inside">
+              <li>{t.clubPage.one4aiBulletTactics}</li>
+              <li>{t.clubPage.one4aiBulletChat}</li>
+              <li>{t.clubPage.one4aiBulletPlans}</li>
+            </ul>
+            <Button
+              className="w-full sm:w-auto font-semibold text-white hover:brightness-110"
+              style={{ backgroundColor: "var(--club-primary)" }}
+              onClick={handleOne4aiCta}
+            >
+              {user ? t.clubPage.one4aiCtaSignedIn : t.clubPage.one4aiCtaSignedOut} <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        </div>
+      </section>
+      ) : null}
+
+      {club?.sectionVisibility.documents ? (
+      <section id="documents" className="py-10 sm:py-14 border-t border-border">
+        <div className={`${clubSectionContainer} max-w-3xl`}>
+          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4 sm:mb-6">
+            <span className="text-gradient-gold">{t.clubPage.documentsSection}</span>
+          </h2>
+          <div className="rounded-3xl border border-border/70 bg-card/55 backdrop-blur-xl p-6 sm:p-8 shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: "var(--club-primary)" }}>
+                <FileText className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-display font-semibold text-foreground text-lg">{t.clubPage.documentsPublicTitle}</h3>
+                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{t.clubPage.documentsPublicDesc}</p>
+              </div>
+            </div>
+            <div className="text-sm text-muted-foreground mb-6">{t.clubPage.documentsEmpty}</div>
+            <Button
+              className="w-full sm:w-auto font-semibold text-white hover:brightness-110"
+              style={{ backgroundColor: "var(--club-primary)" }}
+              onClick={handleDocumentsCta}
+            >
+              {user ? t.clubPage.documentsSignedInCta : t.clubPage.documentsSignedOutCta} <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        </div>
+      </section>
+      ) : null}
+
+      {club?.sectionVisibility.faq ? (
+      <section id="faq" className="py-10 sm:py-14 border-t border-border">
+        <div className={`${clubSectionContainer} max-w-3xl`}>
+          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4 sm:mb-6">
+            <span className="text-gradient-gold">{t.clubPage.faqSection}</span>
+          </h2>
+          <div className="rounded-3xl border border-border/70 bg-card/55 backdrop-blur-xl p-6 sm:p-8 shadow-[0_10px_30px_rgba(0,0,0,0.10)] text-left">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: "var(--club-primary)" }}>
+                <HelpCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-display font-semibold text-foreground text-lg">{t.clubPage.faqTitle}</h3>
+                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{t.clubPage.nextStepsDesc}</p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              {[
+                { q: t.clubPage.nextStepsStep1, a: t.clubPage.nextStepsStep3 },
+                { q: t.clubPage.reportsTitle, a: t.clubPage.reportsDesc },
+                { q: t.clubPage.liveScoresPublicTitle, a: t.clubPage.liveScoresPublicDesc },
+              ].map((item) => (
+                <div key={item.q} className="rounded-2xl border border-border/60 bg-background/40 p-4">
+                  <div className="text-sm font-semibold text-foreground">{item.q}</div>
+                  <div className="text-sm text-muted-foreground mt-1">{item.a}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+      ) : null}
+
+      {club?.sectionVisibility.nextsteps ? (
+      <section id="nextsteps" className="py-10 sm:py-14 border-t border-border">
+        <div className={`${clubSectionContainer} max-w-3xl`}>
+          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4 sm:mb-6">
+            <span className="text-gradient-gold">{t.clubPage.nextStepsSection}</span>
+          </h2>
+          <div className="rounded-3xl border border-border/70 bg-card/55 backdrop-blur-xl p-6 sm:p-8 shadow-[0_10px_30px_rgba(0,0,0,0.10)] text-left">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: "var(--club-primary)" }}>
+                <ListOrdered className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-display font-semibold text-foreground text-lg">{t.clubPage.nextStepsDesc}</h3>
+                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{club.join_approval_mode === "auto" ? t.clubPage.nextStepsStep2Auto : t.clubPage.nextStepsStep2Manual}</p>
+              </div>
+            </div>
+            <ol className="list-decimal list-inside text-sm text-muted-foreground space-y-2 mb-6">
+              <li>{t.clubPage.nextStepsStep1}</li>
+              <li>{club.join_approval_mode === "auto" ? t.clubPage.nextStepsStep2Auto : t.clubPage.nextStepsStep2Manual}</li>
+              <li>{t.clubPage.nextStepsStep3}</li>
+            </ol>
+            <Button
+              className="w-full sm:w-auto font-semibold text-white hover:brightness-110"
+              style={{ backgroundColor: "var(--club-primary)" }}
+              onClick={() => {
+                if (user) setShowRequestInvite(true);
+                else goToAuthWithReturn(window.location.pathname + window.location.search + window.location.hash);
+              }}
+            >
+              {t.clubPage.requestInvite} <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        </div>
+      </section>
+      ) : null}
+
+      {club?.sectionVisibility.reports ? (
+      <section id="reports" className="py-10 sm:py-14 border-t border-border">
+        <div className={`${clubSectionContainer} max-w-3xl`}>
+          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4 sm:mb-6">
+            <span className="text-gradient-gold">{t.clubPage.reportsSection}</span>
+          </h2>
+          <div className="rounded-3xl border border-border/70 bg-card/55 backdrop-blur-xl p-6 sm:p-8 shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: "var(--club-primary)" }}>
+                <BarChart3 className="w-5 h-5" />
+              </div>
+              <div className="text-left">
+                <h3 className="font-display font-semibold text-foreground text-lg">{t.clubPage.reportsTitle}</h3>
+                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{t.clubPage.reportsDesc}</p>
+              </div>
+            </div>
+            <Button
+              className="w-full sm:w-auto font-semibold text-white hover:brightness-110"
+              style={{ backgroundColor: "var(--club-primary)" }}
+              onClick={handleReportsCta}
+            >
+              {user ? t.clubPage.reportsCtaSignedIn : t.clubPage.reportsCtaSignedOut} <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
+        </div>
+      </section>
+      ) : null}
+
+      {club?.sectionVisibility.livescores ? (
+      <section id="livescores" className="py-10 sm:py-14 border-t border-border">
+        <div className={`${clubSectionContainer} max-w-3xl`}>
+          <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-4 sm:mb-6">
+            <span className="text-gradient-gold">{t.clubPage.liveScoresSection}</span>
+          </h2>
+          <div className="rounded-3xl border border-border/70 bg-card/55 backdrop-blur-xl p-6 sm:p-8 shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white" style={{ backgroundColor: "var(--club-primary)" }}>
+                <Radio className="w-5 h-5" />
+              </div>
+              <div className="text-left">
+                <h3 className="font-display font-semibold text-foreground text-lg">{t.clubPage.liveScoresPublicTitle}</h3>
+                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{t.clubPage.liveScoresPublicDesc}</p>
+              </div>
+            </div>
+            {publicMatches.some((m) => m.status === "in_progress") ? (
+              <div className="space-y-2 mb-6 text-left">
+                {publicMatches.filter((m) => m.status === "in_progress").slice(0, 3).map((m) => (
+                  <div key={`live-${m.id}`} className="rounded-2xl border border-border/60 bg-background/40 px-4 py-3">
+                    <div className="text-sm font-semibold text-foreground">
+                      {m.is_home ? `${club.name} vs ${m.opponent}` : `${m.opponent} vs ${club.name}`}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span className="inline-flex items-center gap-1">
+                        <Clock className="w-3 h-3 shrink-0" />
+                        {new Date(m.match_date).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary uppercase tracking-wide">live</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground mb-6">{t.clubPage.liveScoresNoLive}</div>
+            )}
+            <Button
+              className="w-full sm:w-auto font-semibold text-white hover:brightness-110"
+              style={{ backgroundColor: "var(--club-primary)" }}
+              onClick={handleLiveScoresCta}
+            >
+              {user ? t.clubPage.liveScoresCtaSignedIn : t.clubPage.liveScoresCtaSignedOut} <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </div>
         </div>
       </section>
       ) : null}

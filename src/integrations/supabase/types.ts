@@ -67,7 +67,9 @@ export type Database = {
           description: string | null
           ends_at: string | null
           id: string
+          import_key: string | null
           location: string | null
+          pitch_booking_id: string | null
           starts_at: string
           team_id: string | null
           title: string
@@ -81,7 +83,9 @@ export type Database = {
           description?: string | null
           ends_at?: string | null
           id?: string
+          import_key?: string | null
           location?: string | null
+          pitch_booking_id?: string | null
           starts_at: string
           team_id?: string | null
           title: string
@@ -95,14 +99,45 @@ export type Database = {
           description?: string | null
           ends_at?: string | null
           id?: string
+          import_key?: string | null
           location?: string | null
+          pitch_booking_id?: string | null
           starts_at?: string
           team_id?: string | null
           title?: string
           type?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "activities_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_pitch_booking_id_fkey"
+            columns: ["pitch_booking_id"]
+            isOneToOne: false
+            referencedRelation: "pitch_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ai_conversations: {
         Row: {
@@ -1280,12 +1315,14 @@ export type Database = {
       }
       pitch_bookings: {
         Row: {
+          activity_id: string | null
           booking_type: string
           club_id: string
           created_at: string
           created_by: string | null
           ends_at: string
           id: string
+          import_key: string | null
           needs_reconfirmation: boolean
           overridden_by_booking_id: string | null
           pitch_id: string
@@ -1298,12 +1335,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          activity_id?: string | null
           booking_type?: string
           club_id: string
           created_at?: string
           created_by?: string | null
           ends_at: string
           id?: string
+          import_key?: string | null
           needs_reconfirmation?: boolean
           overridden_by_booking_id?: string | null
           pitch_id: string
@@ -1316,12 +1355,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          activity_id?: string | null
           booking_type?: string
           club_id?: string
           created_at?: string
           created_by?: string | null
           ends_at?: string
           id?: string
+          import_key?: string | null
           needs_reconfirmation?: boolean
           overridden_by_booking_id?: string | null
           pitch_id?: string
@@ -1334,6 +1375,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "pitch_bookings_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "pitch_bookings_club_id_fkey"
             columns: ["club_id"]
@@ -1537,19 +1585,22 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          membership_id: string
+          membership_id: string | null
+          placeholder_id: string | null
           team_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          membership_id: string
+          membership_id?: string | null
+          placeholder_id?: string | null
           team_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          membership_id?: string
+          membership_id?: string | null
+          placeholder_id?: string | null
           team_id?: string
         }
         Relationships: [
@@ -1561,10 +1612,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "team_coaches_placeholder_id_fkey"
+            columns: ["placeholder_id"]
+            isOneToOne: false
+            referencedRelation: "club_person_placeholders"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "team_coaches_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_person_placeholders: {
+        Row: {
+          club_id: string
+          created_at: string
+          created_by: string | null
+          display_name: string
+          id: string
+          kind: string
+          notes: string | null
+          resolved_membership_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          created_by?: string | null
+          display_name: string
+          id?: string
+          kind: string
+          notes?: string | null
+          resolved_membership_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          created_by?: string | null
+          display_name?: string
+          id?: string
+          kind?: string
+          notes?: string | null
+          resolved_membership_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_person_placeholders_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_person_placeholders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_person_placeholders_resolved_membership_id_fkey"
+            columns: ["resolved_membership_id"]
+            isOneToOne: false
+            referencedRelation: "club_memberships"
             referencedColumns: ["id"]
           },
         ]
@@ -1724,6 +1840,10 @@ export type Database = {
           membership_id: string | null
           summary: string | null
         }[]
+      }
+      get_public_club_team_page: {
+        Args: { _club_slug: string; _team_id: string }
+        Returns: Json
       }
       is_club_admin: {
         Args: { _club_id: string; _user_id: string }

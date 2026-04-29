@@ -1,5 +1,7 @@
 # Phase B — Secrets and client configuration
 
+**Evidence index:** [PRODUCTION_READINESS_EVIDENCE_LOG.md](PRODUCTION_READINESS_EVIDENCE_LOG.md) (Phase 2 table).
+
 Complete per environment (staging, then production). Map to Section M rows 1–3 in [PRODUCTION_READINESS_ARTIFACTS.md](PRODUCTION_READINESS_ARTIFACTS.md).
 
 ## B1 — Client bundle (M1)

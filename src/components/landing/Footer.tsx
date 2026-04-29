@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Mail } from "lucide-react";
 import logo from "@/assets/one4team-logo.png";
 import { useLanguage } from "@/hooks/use-language";
+import { requestOpenCookieSettings } from "@/components/ui/cookie-consent";
 
 /** X.com (Twitter) icon — inline SVG since lucide doesn't include it */
 function XIcon({ className = "w-4 h-4" }: { className?: string }) {
@@ -65,6 +66,13 @@ const Footer = () => {
                   {link.label}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => requestOpenCookieSettings()}
+                className="text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {t.cookieConsent.openPreferences}
+              </button>
             </nav>
           </div>
 

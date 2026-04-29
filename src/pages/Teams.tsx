@@ -16,6 +16,20 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useLanguage } from "@/hooks/use-language";
 import { resolveSportId, resolveSportLabel, SPORTS_CATALOG } from "@/lib/sports";
 import { useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { addDays, endOfDay, endOfMonth, endOfWeek, format, isSameDay, startOfDay, startOfMonth, startOfWeek } from "date-fns";
+import { Calendar as UiCalendar } from "@/components/ui/calendar";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type Team = {
   id: string;
@@ -43,6 +57,22 @@ type TrainingSession = {
   team_id: string | null;
   teams?: { name: string } | null;
 };
+
+type TrainingCalendarView = "list" | "calendar";
+type TrainingCalendarGranularity = "month" | "week" | "day";
+type TrainingCalendarLayout = "agenda" | "grid";
+
+interface TrainingCalendarEvent {
+  id: string;
+  kind: "training" | "booking";
+  title: string;
+  startsAt: Date;
+  endsAt: Date | null;
+  pitchId: string | null;
+  pitchName: string | null;
+  teamName: string | null;
+  bookingType: PitchBooking["booking_type"] | null;
+}
 
 type ClubPitch = {
   id: string;
@@ -196,7 +226,10 @@ function mixedCellBackground(colors: string[]): string {
 function isMissingRelationError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const message = String((error as { message?: unknown }).message ?? "");
-  return message.includes("Could not find the table") || message.includes("does not exist");
+  if (message.includes("Could not find the table")) return true;
+  // Postgres "relation does not exist" (table/view missing). Avoid matching "column does not exist".
+  if (/\brelation\b.*\bdoes not exist\b/i.test(message)) return true;
+  return false;
 }
 
 function resolveLayerFilterPurpose(filterId: string): ClubAssetLayer["purpose"] | null {
@@ -321,6 +354,14 @@ const Teams = () => {
   const [supportsTeamLeagueField, setSupportsTeamLeagueField] = useState(false);
   const [supportsTeamCoachesTable, setSupportsTeamCoachesTable] = useState(false);
 
+  const [trainingCalendarView, setTrainingCalendarView] = useState<TrainingCalendarView>("list");
+  const [trainingCalendarGranularity, setTrainingCalendarGranularity] = useState<TrainingCalendarGranularity>("month");
+  const [trainingCalendarDate, setTrainingCalendarDate] = useState<Date>(new Date());
+  const [trainingCalendarPitchId, setTrainingCalendarPitchId] = useState<string>("all");
+  const [trainingCalendarLayout, setTrainingCalendarLayout] = useState<TrainingCalendarLayout>("agenda");
+  const [calendarSessions, setCalendarSessions] = useState<TrainingSession[]>([]);
+  const [calendarSessionsLoading, setCalendarSessionsLoading] = useState(false);
+
   // Form state
   const [teamName, setTeamName] = useState("");
   const [teamSport, setTeamSport] = useState("football");
@@ -349,7 +390,7 @@ const Teams = () => {
   const [pitchDisplayColor, setPitchDisplayColor] = useState("#22c55e");
   const [elementColorSectionOpen, setElementColorSectionOpen] = useState(false);
   const [selectedPitchCells, setSelectedPitchCells] = useState<number[]>([]);
-  const [pitchViewMode, setPitchViewMode] = useState<"separate" | "combined">("separate");
+  const [pitchViewMode, setPitchViewMode] = useState<"separate" | "combined" | "booked">("separate");
 
   const [layerName, setLayerName] = useState("");
   const [layerPurpose, setLayerPurpose] = useState<ClubAssetLayer["purpose"]>("training");
@@ -361,6 +402,14 @@ const Teams = () => {
   const [bookingTitle, setBookingTitle] = useState("");
   const [bookingStart, setBookingStart] = useState("");
   const [bookingEnd, setBookingEnd] = useState("");
+  const [editingBookingId, setEditingBookingId] = useState<string | null>(null);
+
+  const [pendingScheduleDelete, setPendingScheduleDelete] = useState<{
+    kind: TrainingCalendarEvent["kind"];
+    entityId: string;
+    title: string;
+    startsAt: Date;
+  } | null>(null);
 
   const [usageDate, setUsageDate] = useState(new Date().toISOString().slice(0, 10));
   const isAssetLayersPage =
@@ -400,6 +449,16 @@ const Teams = () => {
     setSessionPitchId("");
     setSessionRepeatWeekly(false);
     setSessionRepeatUntil("");
+  };
+
+  const resetBookingForm = () => {
+    setEditingBookingId(null);
+    setBookingPitchId("");
+    setBookingTeamId("");
+    setBookingType("training");
+    setBookingTitle("");
+    setBookingStart("");
+    setBookingEnd("");
   };
 
   // Reset page state on club switch to prevent cross-club flashes
@@ -582,6 +641,65 @@ const Teams = () => {
     fetchData();
   }, [clubId]);
 
+  useEffect(() => {
+    if (!clubId) return;
+    if (currentTab !== "sessions") return;
+    if (trainingCalendarView !== "calendar") return;
+
+    const range = (() => {
+      if (trainingCalendarGranularity === "day") {
+        return { start: startOfDay(trainingCalendarDate), end: endOfDay(trainingCalendarDate) };
+      }
+      if (trainingCalendarGranularity === "week") {
+        return { start: startOfWeek(trainingCalendarDate, { weekStartsOn: 1 }), end: endOfWeek(trainingCalendarDate, { weekStartsOn: 1 }) };
+      }
+      return { start: startOfMonth(trainingCalendarDate), end: endOfMonth(trainingCalendarDate) };
+    })();
+
+    let isCancelled = false;
+    setCalendarSessionsLoading(true);
+
+    const fetchCalendarSessions = async () => {
+      const activitiesRes = await supabase
+        .from("activities")
+        .select("id, title, location, starts_at, ends_at, team_id, teams(name)")
+        .eq("club_id", clubId)
+        .eq("type", "training")
+        .gte("starts_at", range.start.toISOString())
+        .lte("starts_at", range.end.toISOString())
+        .order("starts_at", { ascending: true })
+        .limit(400);
+      if (!activitiesRes.error) return activitiesRes;
+      if (!isMissingRelationError(activitiesRes.error)) return activitiesRes;
+      return supabase
+        .from("training_sessions")
+        .select("id, title, location, starts_at, ends_at, team_id, teams(name)")
+        .eq("club_id", clubId)
+        .gte("starts_at", range.start.toISOString())
+        .lte("starts_at", range.end.toISOString())
+        .order("starts_at", { ascending: true })
+        .limit(400);
+    };
+
+    void fetchCalendarSessions()
+      .then(({ data, error }) => {
+        if (isCancelled) return;
+        if (error) {
+          toast({ title: t.teamsPage.common.error, description: error.message, variant: "destructive" });
+          setCalendarSessions([]);
+          return;
+        }
+        setCalendarSessions((data as unknown as TrainingSession[]) ?? []);
+      })
+      .finally(() => {
+        if (!isCancelled) setCalendarSessionsLoading(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [clubId, currentTab, t.teamsPage.common.error, toast, trainingCalendarDate, trainingCalendarGranularity, trainingCalendarView]);
+
   const teamNameById = useMemo(() => {
     const map = new Map<string, string>();
     for (const team of teams) map.set(team.id, team.name);
@@ -645,6 +763,226 @@ const Teams = () => {
     for (const pitch of pitches) map.set(pitch.id, pitch.name);
     return map;
   }, [pitches]);
+
+  const sessionById = useMemo(() => {
+    const map = new Map<string, TrainingSession>();
+    for (const s of sessions) map.set(s.id, s);
+    for (const s of calendarSessions) map.set(s.id, s);
+    return map;
+  }, [calendarSessions, sessions]);
+
+  const bookingById = useMemo(() => {
+    const map = new Map<string, PitchBooking>();
+    for (const b of bookings) map.set(b.id, b);
+    return map;
+  }, [bookings]);
+
+  const trainingCalendarRange = useMemo(() => {
+    if (trainingCalendarGranularity === "day") {
+      return { start: startOfDay(trainingCalendarDate), end: endOfDay(trainingCalendarDate) };
+    }
+    if (trainingCalendarGranularity === "week") {
+      return { start: startOfWeek(trainingCalendarDate, { weekStartsOn: 1 }), end: endOfWeek(trainingCalendarDate, { weekStartsOn: 1 }) };
+    }
+    return { start: startOfMonth(trainingCalendarDate), end: endOfMonth(trainingCalendarDate) };
+  }, [trainingCalendarDate, trainingCalendarGranularity]);
+
+  const trainingCalendarEvents = useMemo<TrainingCalendarEvent[]>(() => {
+    const relevantBookings = bookings.filter((b) => {
+      const startsAt = new Date(b.starts_at);
+      if (startsAt < trainingCalendarRange.start || startsAt > trainingCalendarRange.end) return false;
+      if (trainingCalendarPitchId !== "all" && b.pitch_id !== trainingCalendarPitchId) return false;
+      return true;
+    });
+
+    const relevantSessions = (trainingCalendarView === "calendar" ? calendarSessions : sessions).filter((s) => {
+      const startsAt = new Date(s.starts_at);
+      if (startsAt < trainingCalendarRange.start || startsAt > trainingCalendarRange.end) return false;
+      return true;
+    });
+
+    const bookingEvents: TrainingCalendarEvent[] = relevantBookings.map((b) => ({
+      id: `booking:${b.id}`,
+      kind: "booking",
+      title: b.title,
+      startsAt: new Date(b.starts_at),
+      endsAt: b.ends_at ? new Date(b.ends_at) : null,
+      pitchId: b.pitch_id,
+      pitchName: pitchNameById.get(b.pitch_id) || null,
+      teamName: b.team_id ? (teamNameById.get(b.team_id) || null) : null,
+      bookingType: b.booking_type,
+    }));
+
+    const sessionEvents: TrainingCalendarEvent[] = relevantSessions.map((s) => ({
+      id: `training:${s.id}`,
+      kind: "training",
+      title: s.title,
+      startsAt: new Date(s.starts_at),
+      endsAt: s.ends_at ? new Date(s.ends_at) : null,
+      pitchId: null,
+      pitchName: null,
+      teamName: s.teams?.name ?? null,
+      bookingType: null,
+    }));
+
+    return [...sessionEvents, ...bookingEvents].sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+  }, [bookings, calendarSessions, pitchNameById, sessions, teamNameById, trainingCalendarPitchId, trainingCalendarRange.end, trainingCalendarRange.start, trainingCalendarView]);
+
+  const trainingEventsByDay = useMemo(() => {
+    const map = new Map<string, TrainingCalendarEvent[]>();
+    for (const ev of trainingCalendarEvents) {
+      const key = format(ev.startsAt, "yyyy-MM-dd");
+      map.set(key, [...(map.get(key) || []), ev]);
+    }
+    return map;
+  }, [trainingCalendarEvents]);
+
+  const selectedDayKey = useMemo(() => format(trainingCalendarDate, "yyyy-MM-dd"), [trainingCalendarDate]);
+
+  const selectedDayEvents = useMemo(() => {
+    const dayEvents = trainingEventsByDay.get(selectedDayKey) || [];
+    const byPitch = new Map<string, TrainingCalendarEvent[]>();
+    for (const ev of dayEvents) {
+      const pitchKey = ev.pitchId ? `pitch:${ev.pitchId}` : "pitch:none";
+      byPitch.set(pitchKey, [...(byPitch.get(pitchKey) || []), ev]);
+    }
+    return Array.from(byPitch.entries()).map(([key, events]) => {
+      const pitchId = key === "pitch:none" ? null : key.replace("pitch:", "");
+      const pitchName = pitchId ? (pitchNameById.get(pitchId) || "—") : "No pitch";
+      return { pitchId, pitchName, events };
+    });
+  }, [pitchNameById, selectedDayKey, trainingEventsByDay]);
+
+  const trainingCalendarGridPitches = useMemo(() => {
+    const base = trainingCalendarPitchId === "all" ? pitches : pitches.filter((p) => p.id === trainingCalendarPitchId);
+    const sorted = [...base].sort((a, b) => a.name.localeCompare(b.name));
+    return [
+      ...sorted.map((p) => ({ id: p.id, name: p.name })),
+      { id: "__none", name: "No pitch" },
+    ];
+  }, [pitches, trainingCalendarPitchId]);
+
+  function stableColorFromString(input: string): string {
+    let hash = 0;
+    for (let i = 0; i < input.length; i += 1) hash = (hash * 31 + input.charCodeAt(i)) | 0;
+    const idx = Math.abs(hash) % PITCH_COLORS.length;
+    return PITCH_COLORS[idx];
+  }
+
+  const weekGridModel = useMemo(() => {
+    if (trainingCalendarGranularity !== "week") return null;
+
+    const weekStart = startOfWeek(trainingCalendarDate, { weekStartsOn: 1 });
+    const days = Array.from({ length: 5 }, (_, i) => addDays(weekStart, i));
+    const dayKeys = days.map((d) => format(d, "yyyy-MM-dd"));
+    const dayIndexByKey = new Map(dayKeys.map((k, idx) => [k, idx]));
+
+    const startMinutes = 15 * 60;
+    const endMinutes = 21 * 60;
+    const slotMinutes = 30;
+    const slotHeightPx = 22;
+    const totalSlots = Math.ceil((endMinutes - startMinutes) / slotMinutes);
+    const gridHeightPx = totalSlots * slotHeightPx;
+
+    const pitchIndexById = new Map(trainingCalendarGridPitches.map((p, idx) => [p.id, idx]));
+
+    const blocks = trainingCalendarEvents
+      .map((ev) => {
+        const dayKey = format(ev.startsAt, "yyyy-MM-dd");
+        const dayIndex = dayIndexByKey.get(dayKey);
+        if (dayIndex === undefined) return null;
+
+        const pitchId = ev.pitchId ?? "__none";
+        const pitchIndex = pitchIndexById.get(pitchId);
+        if (pitchIndex === undefined) return null;
+
+        const start = ev.startsAt;
+        const end = ev.endsAt ?? addDays(ev.startsAt, 0); // should exist, but keep safe
+        const startMin = start.getHours() * 60 + start.getMinutes();
+        const endMin = (ev.endsAt ? (end.getHours() * 60 + end.getMinutes()) : (startMin + 60));
+        const clampedStart = Math.max(startMinutes, Math.min(endMinutes, startMin));
+        const clampedEnd = Math.max(startMinutes, Math.min(endMinutes, endMin));
+        if (clampedEnd <= clampedStart) return null;
+
+        const top = ((clampedStart - startMinutes) / slotMinutes) * slotHeightPx;
+        const height = Math.max(slotHeightPx, ((clampedEnd - clampedStart) / slotMinutes) * slotHeightPx);
+
+        const colorKey = ev.teamName || ev.title;
+        const color = stableColorFromString(colorKey);
+        return { ev, dayIndex, pitchIndex, top, height, color };
+      })
+      .filter((v): v is NonNullable<typeof v> => Boolean(v));
+
+    const columnCount = days.length * trainingCalendarGridPitches.length;
+    return {
+      days,
+      dayKeys,
+      startMinutes,
+      endMinutes,
+      slotMinutes,
+      slotHeightPx,
+      totalSlots,
+      gridHeightPx,
+      columnCount,
+      blocks,
+    };
+  }, [trainingCalendarDate, trainingCalendarEvents, trainingCalendarGranularity, trainingCalendarGridPitches]);
+
+  const dayGridModel = useMemo(() => {
+    if (trainingCalendarGranularity !== "day" && trainingCalendarGranularity !== "month") return null;
+
+    const startMinutes = 15 * 60;
+    const endMinutes = 21 * 60;
+    const slotMinutes = 30;
+    const slotHeightPx = 22;
+    const totalSlots = Math.ceil((endMinutes - startMinutes) / slotMinutes);
+    const gridHeightPx = totalSlots * slotHeightPx;
+
+    const dayKey = format(trainingCalendarDate, "yyyy-MM-dd");
+    const pitchIndexById = new Map(trainingCalendarGridPitches.map((p, idx) => [p.id, idx]));
+
+    const blocks = (trainingEventsByDay.get(dayKey) || [])
+      .filter((ev) => {
+        const pitchId = ev.pitchId ?? "__none";
+        if (trainingCalendarPitchId !== "all" && pitchId !== trainingCalendarPitchId) return false;
+        return true;
+      })
+      .map((ev) => {
+        const pitchId = ev.pitchId ?? "__none";
+        const pitchIndex = pitchIndexById.get(pitchId);
+        if (pitchIndex === undefined) return null;
+
+        const start = ev.startsAt;
+        const end = ev.endsAt ?? null;
+        const startMin = start.getHours() * 60 + start.getMinutes();
+        const endMin = end ? (end.getHours() * 60 + end.getMinutes()) : (startMin + 60);
+
+        const clampedStart = Math.max(startMinutes, Math.min(endMinutes, startMin));
+        const clampedEnd = Math.max(startMinutes, Math.min(endMinutes, endMin));
+        if (clampedEnd <= clampedStart) return null;
+
+        const top = ((clampedStart - startMinutes) / slotMinutes) * slotHeightPx;
+        const height = Math.max(slotHeightPx, ((clampedEnd - clampedStart) / slotMinutes) * slotHeightPx);
+
+        const colorKey = ev.teamName || ev.title;
+        const color = stableColorFromString(colorKey);
+        return { ev, pitchIndex, top, height, color };
+      })
+      .filter((v): v is NonNullable<typeof v> => Boolean(v));
+
+    const columnCount = trainingCalendarGridPitches.length;
+    return {
+      dayKey,
+      startMinutes,
+      endMinutes,
+      slotMinutes,
+      slotHeightPx,
+      totalSlots,
+      gridHeightPx,
+      columnCount,
+      blocks,
+    };
+  }, [trainingCalendarDate, trainingCalendarGranularity, trainingCalendarGridPitches, trainingCalendarPitchId, trainingEventsByDay]);
 
   const pitchById = useMemo(() => {
     const map = new Map<string, ClubPitch>();
@@ -738,16 +1076,6 @@ const Teams = () => {
     return childrenCountByPitchId;
   }, [filteredPitches]);
 
-  const combinedPitchCells = useMemo(() => {
-    const map = new Map<number, string[]>();
-    for (const pitch of filteredPitches) {
-      for (const cell of pitch.grid_cells) {
-        map.set(cell, [...(map.get(cell) || []), pitch.id]);
-      }
-    }
-    return map;
-  }, [filteredPitches]);
-
   const enrichedBookings = useMemo<EnrichedPitchBooking[]>(() => {
     return bookings.map((booking) => {
       const bookingPitch = pitchById.get(booking.pitch_id);
@@ -815,6 +1143,48 @@ const Teams = () => {
     });
   }, [enrichedBookings, matchesActiveLayerFilter, pitchById, usageDate]);
 
+  const combinedPitchCells = useMemo(() => {
+    const map = new Map<number, string[]>();
+    for (const pitch of filteredPitches) {
+      for (const cell of pitch.grid_cells) {
+        map.set(cell, [...(map.get(cell) || []), pitch.id]);
+      }
+    }
+    return map;
+  }, [filteredPitches]);
+
+  const pitchesBookedOnSelectedDay = useMemo(() => {
+    const bookedIds = new Set(
+      dayBookings.filter((booking) => booking.status !== "cancelled").map((booking) => booking.pitch_id),
+    );
+    return filteredPitches.filter((pitch) => bookedIds.has(pitch.id));
+  }, [dayBookings, filteredPitches]);
+
+  const combinedPitchCellsBooked = useMemo(() => {
+    const map = new Map<number, string[]>();
+    for (const pitch of pitchesBookedOnSelectedDay) {
+      for (const cell of pitch.grid_cells) {
+        map.set(cell, [...(map.get(cell) || []), pitch.id]);
+      }
+    }
+    return map;
+  }, [pitchesBookedOnSelectedDay]);
+
+  const bookedLegendByPitchId = useMemo(() => {
+    const byPitch = new Map<string, EnrichedPitchBooking[]>();
+    for (const booking of dayBookings) {
+      if (booking.status === "cancelled") continue;
+      byPitch.set(booking.pitch_id, [...(byPitch.get(booking.pitch_id) || []), booking]);
+    }
+    for (const [pitchId, entries] of byPitch.entries()) {
+      byPitch.set(
+        pitchId,
+        [...entries].sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()),
+      );
+    }
+    return byPitch;
+  }, [dayBookings]);
+
   const selectedBooking = useMemo(() => {
     if (!selectedBookingId) return null;
     return enrichedBookings.find((booking) => booking.id === selectedBookingId) || null;
@@ -826,6 +1196,47 @@ const Teams = () => {
   }, [bookingDetailsId, enrichedBookings]);
 
   const selectedBookingPitchId = selectedBooking?.pitch_id || null;
+
+  const bookedPitchLabelModels = useMemo(() => {
+    if (selectedBookingPitchId) return [];
+    if (pitchViewMode !== "booked") return [];
+
+    const rows = pitchesBookedOnSelectedDay
+      .map((pitch) => {
+        const bookingsForPitch = bookedLegendByPitchId.get(pitch.id) || [];
+        return { pitchId: pitch.id, pitchName: pitch.name, pitchCells: pitch.grid_cells, bookings: bookingsForPitch };
+      })
+      .filter((row) => row.bookings.length > 0 && row.pitchCells.length > 0);
+
+    const toRowCol = (cellIndex: number) => ({
+      row: Math.floor(cellIndex / GRID_SIZE),
+      col: cellIndex % GRID_SIZE,
+    });
+
+    return rows
+      .map((row) => {
+        const coords = row.pitchCells.map(toRowCol);
+        const minRow = Math.min(...coords.map((c) => c.row));
+        const maxRow = Math.max(...coords.map((c) => c.row));
+        const minCol = Math.min(...coords.map((c) => c.col));
+        const maxCol = Math.max(...coords.map((c) => c.col));
+        const lines = row.bookings.map((booking) => {
+          const range = `${format(new Date(booking.starts_at), "HH:mm")}–${format(new Date(booking.ends_at), "HH:mm")}`;
+          const team = booking.teamName ? ` · ${booking.teamName}` : "";
+          return `${range}${team}`;
+        });
+        return {
+          pitchId: row.pitchId,
+          pitchName: row.pitchName,
+          gridRowStart: minRow + 1,
+          gridRowEnd: maxRow + 2,
+          gridColStart: minCol + 1,
+          gridColEnd: maxCol + 2,
+          lines,
+        };
+      })
+      .sort((a, b) => a.pitchName.localeCompare(b.pitchName));
+  }, [bookedLegendByPitchId, pitchViewMode, pitchesBookedOnSelectedDay, selectedBookingPitchId]);
 
   const formattedHistoryEntries = useMemo(() => {
     const formatAction = (action: ChangeHistoryItem["action"]): string => {
@@ -1649,7 +2060,7 @@ const Teams = () => {
 
     let wasDeleted = Boolean(activitiesRes.data && activitiesRes.data.length > 0);
 
-    if (isMissingRelationError(activitiesRes.error) || !wasDeleted) {
+    if (isMissingRelationError(activitiesRes.error)) {
       const sessionsRes = await deleteFromTrainingSessions();
       if (sessionsRes.error) {
         toast({ title: t.teamsPage.common.error, description: sessionsRes.error.message, variant: "destructive" });
@@ -1658,8 +2069,14 @@ const Teams = () => {
       wasDeleted = wasDeleted || Boolean(sessionsRes.data && sessionsRes.data.length > 0);
     }
 
-    const deleted = sessions.find((entry) => entry.id === id);
+    if (!wasDeleted) {
+      toast({ title: t.teamsPage.common.error, description: "Training could not be removed (already deleted or not found).", variant: "destructive" });
+      return;
+    }
+
+    const deleted = (calendarSessions.find((entry) => entry.id === id) || sessions.find((entry) => entry.id === id)) ?? null;
     setSessions((previous) => previous.filter((entry) => entry.id !== id));
+    setCalendarSessions((previous) => previous.filter((entry) => entry.id !== id));
     await recordChangeHistory({
       scope: "sessions",
       action: "delete",
@@ -2083,13 +2500,8 @@ const Teams = () => {
       reconfirmation_requested_at: (booking.reconfirmation_requested_at as string | null) ?? null,
       created_at: String(booking.created_at),
     })));
-    setBookingPitchId("");
-    setBookingTeamId("");
-    setBookingType("training");
-    setBookingTitle("");
-    setBookingStart("");
-    setBookingEnd("");
     setShowAddBooking(false);
+    resetBookingForm();
     toast({
       title: overlapping.length > 0 ? t.teamsPage.toast.bookingSavedOverlap : t.teamsPage.toast.bookingSaved,
       description: overlapping.length > 0 ? t.teamsPage.toast.bookingOverlapDesc : undefined,
@@ -2119,6 +2531,54 @@ const Teams = () => {
       ),
     );
     toast({ title: decision === "confirmed" ? t.teamsPage.toast.bookingConfirmed : t.teamsPage.toast.bookingDeclined });
+  };
+
+  const handleEditBooking = (booking: PitchBooking) => {
+    if (!canManage) return;
+    setEditingBookingId(booking.id);
+    setBookingPitchId(booking.pitch_id);
+    setBookingTeamId(booking.team_id || "");
+    setBookingType(booking.booking_type);
+    setBookingTitle(booking.title);
+    setBookingStart(booking.starts_at.slice(0, 16));
+    setBookingEnd(booking.ends_at.slice(0, 16));
+    setShowAddBooking(true);
+  };
+
+  const handleUpsertBooking = async () => {
+    if (!clubId || !canManage) return;
+    if (!bookingPitchId || !bookingTitle.trim() || !bookingStart || !bookingEnd) return;
+
+    if (!editingBookingId) {
+      await handleAddBooking();
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("pitch_bookings")
+      .update({
+        pitch_id: bookingPitchId,
+        team_id: bookingTeamId || null,
+        booking_type: bookingType,
+        title: bookingTitle.trim(),
+        starts_at: bookingStart,
+        ends_at: bookingEnd,
+      })
+      .eq("club_id", clubId)
+      .eq("id", editingBookingId)
+      .select()
+      .single();
+
+    if (error) {
+      toast({ title: t.teamsPage.common.error, description: error.message, variant: "destructive" });
+      return;
+    }
+
+    const updated = data as unknown as PitchBooking;
+    setBookings((previous) => previous.map((b) => (b.id === updated.id ? updated : b)));
+    setShowAddBooking(false);
+    resetBookingForm();
+    toast({ title: t.teamsPage.toast.bookingSaved });
   };
 
   const handleDeleteBooking = async (id: string) => {
@@ -2204,6 +2664,11 @@ const Teams = () => {
         toolbarRevision={teamsToolbarRevision}
         rightSlot={
           <div className="flex gap-2 flex-wrap">
+            {canManage && (
+              <Button asChild size="sm" variant="outline">
+                <Link to="/training-plan-import">Training plan import</Link>
+              </Button>
+            )}
             {currentTab === "pitches" && (
               <>
                 {canManageLayers && (
@@ -2400,6 +2865,60 @@ const Teams = () => {
             <h2 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2">
               <Dumbbell className="w-4 h-4 text-primary" /> {t.teamsPage.tabs.sessions} ({sessions.length})
             </h2>
+            <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
+              <div className="inline-flex rounded-xl border border-border/60 bg-card/40 p-1">
+                <button
+                  type="button"
+                  onClick={() => setTrainingCalendarView("list")}
+                  className={`px-2.5 py-1 text-[11px] rounded-lg transition-colors ${
+                    trainingCalendarView === "list" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  List
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTrainingCalendarView("calendar")}
+                  className={`px-2.5 py-1 text-[11px] rounded-lg transition-colors ${
+                    trainingCalendarView === "calendar" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Calendar
+                </button>
+              </div>
+
+              {trainingCalendarView === "calendar" ? (
+                <div className="flex items-center gap-2 flex-wrap w-full justify-start sm:justify-end">
+                  <div className="inline-flex rounded-xl border border-border/60 bg-card/40 p-1">
+                    {(["month", "week", "day"] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setTrainingCalendarGranularity(mode)}
+                        className={`px-2.5 py-1 text-[11px] rounded-lg transition-colors ${
+                          trainingCalendarGranularity === mode ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {mode}
+                      </button>
+                    ))}
+                  </div>
+                  <Select value={trainingCalendarPitchId} onValueChange={setTrainingCalendarPitchId}>
+                    <SelectTrigger className="h-9 w-full sm:w-[220px] bg-card/40 border-border/60">
+                      <SelectValue placeholder="All pitches" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All pitches</SelectItem>
+                      {pitches.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null}
+            </div>
             {canManage && (
               <div className="mb-4 rounded-xl border border-border/60 bg-card/40 p-3">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -2442,7 +2961,461 @@ const Teams = () => {
                 )}
               </div>
             )}
-            {sessions.length === 0 ? (
+            {trainingCalendarView === "calendar" ? (
+              <div className="grid grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)] gap-4">
+                <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                        <Calendar className="w-4 h-4 text-primary" />
+                        Pick a date
+                      </div>
+                      <div className="mt-1 text-[11px] text-muted-foreground">
+                        Days with schedule items are underlined.
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setTrainingCalendarDate(new Date())}
+                        className="h-8"
+                      >
+                        Today
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 rounded-xl border border-border/60 bg-background/30 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-xs text-muted-foreground">Selected</div>
+                      <div className="text-xs font-medium text-foreground tabular-nums">
+                        {format(trainingCalendarDate, "dd.MM.yyyy")}
+                      </div>
+                    </div>
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      {(() => {
+                        const dayEvents = trainingEventsByDay.get(selectedDayKey) || [];
+                        const trainingCount = dayEvents.filter((e) => e.kind === "training").length;
+                        const bookingCount = dayEvents.filter((e) => e.kind === "booking").length;
+                        const total = dayEvents.length;
+                        return (
+                          <>
+                            <div className="rounded-lg border border-border/50 bg-card/30 px-2.5 py-2">
+                              <div className="text-[10px] text-muted-foreground">Total</div>
+                              <div className="mt-0.5 text-sm font-semibold text-foreground tabular-nums">{total}</div>
+                            </div>
+                            <div className="rounded-lg border border-border/50 bg-card/30 px-2.5 py-2">
+                              <div className="text-[10px] text-muted-foreground">Trainings</div>
+                              <div className="mt-0.5 text-sm font-semibold text-foreground tabular-nums">{trainingCount}</div>
+                            </div>
+                            <div className="rounded-lg border border-border/50 bg-card/30 px-2.5 py-2">
+                              <div className="text-[10px] text-muted-foreground">Bookings</div>
+                              <div className="mt-0.5 text-sm font-semibold text-foreground tabular-nums">{bookingCount}</div>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                    <div className="mt-2 text-[10px] text-muted-foreground">
+                      Pitch filter: <span className="text-foreground/80">{trainingCalendarPitchId === "all" ? "All pitches" : (pitchNameById.get(trainingCalendarPitchId) || "Selected pitch")}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex justify-center">
+                    <UiCalendar
+                      mode="single"
+                      selected={trainingCalendarDate}
+                      onSelect={(date) => {
+                        if (!date) return;
+                        setTrainingCalendarDate(date);
+                      }}
+                      month={trainingCalendarDate}
+                      onMonthChange={setTrainingCalendarDate}
+                      modifiers={{
+                        hasEvents: (date) => trainingEventsByDay.has(format(date, "yyyy-MM-dd")),
+                      }}
+                      modifiersStyles={{
+                        hasEvents: {
+                          boxShadow: "inset 0 -2px 0 0 hsl(var(--primary))",
+                        },
+                      }}
+                      className="w-full max-w-[320px] rounded-xl bg-background/20 p-2"
+                      classNames={{
+                        caption_label: "text-xs font-semibold text-foreground",
+                        head_cell: "text-muted-foreground rounded-md w-9 font-medium text-[0.72rem]",
+                        day: "h-9 w-9 p-0 text-[0.82rem] font-medium aria-selected:opacity-100",
+                        nav_button: "h-7 w-7 bg-card/40 border-border/60 p-0 opacity-80 hover:opacity-100",
+                      }}
+                    />
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <Button size="sm" variant="outline" onClick={() => setTrainingCalendarDate(addDays(trainingCalendarDate, -1))} className="h-8">
+                      Prev
+                    </Button>
+                    <div className="text-[11px] text-muted-foreground">
+                      {format(trainingCalendarDate, "MMMM yyyy")}
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => setTrainingCalendarDate(addDays(trainingCalendarDate, 1))} className="h-8">
+                      Next
+                    </Button>
+                  </div>
+                  {calendarSessionsLoading ? (
+                    <div className="mt-3 text-xs text-muted-foreground inline-flex items-center gap-2">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading trainings…
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="rounded-xl border border-border/60 bg-card/40 p-3 min-w-0">
+                  <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="text-sm font-medium text-foreground">Schedule</div>
+                      {trainingCalendarGranularity === "week" || trainingCalendarGranularity === "day" || trainingCalendarGranularity === "month" ? (
+                        <div className="inline-flex rounded-xl border border-border/60 bg-card/40 p-1">
+                          <button
+                            type="button"
+                            onClick={() => setTrainingCalendarLayout("agenda")}
+                            className={`px-2.5 py-1 text-[11px] rounded-lg transition-colors ${
+                              trainingCalendarLayout === "agenda" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            Agenda
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setTrainingCalendarLayout("grid")}
+                            className={`px-2.5 py-1 text-[11px] rounded-lg transition-colors ${
+                              trainingCalendarLayout === "grid" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            Grid
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {trainingCalendarGranularity === "month"
+                        ? `${format(trainingCalendarRange.start, "dd.MM")}–${format(trainingCalendarRange.end, "dd.MM")}`
+                        : trainingCalendarGranularity === "week"
+                          ? `${format(trainingCalendarRange.start, "dd.MM")}–${format(trainingCalendarRange.end, "dd.MM")}`
+                          : format(trainingCalendarDate, "dd.MM.yyyy")}
+                    </div>
+                  </div>
+
+                  {trainingCalendarLayout === "grid" && (trainingCalendarGranularity === "day" || trainingCalendarGranularity === "month") && dayGridModel ? (
+                    <div className="w-full overflow-x-auto overflow-y-hidden rounded-lg border border-border/60 bg-background/20">
+                      <div
+                        className="min-w-max w-max"
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: `72px repeat(${dayGridModel.columnCount}, minmax(110px, 1fr))`,
+                        }}
+                      >
+                        <div className="sticky top-0 z-20 bg-card/90 backdrop-blur border-b border-border/60 p-2 text-[11px] text-muted-foreground">
+                          Time
+                        </div>
+                        {trainingCalendarGridPitches.map((pitch) => (
+                          <div
+                            key={`daypitch-${pitch.id}`}
+                            className="sticky top-0 z-20 bg-card/90 backdrop-blur border-b border-border/60 p-2 text-[10px] text-muted-foreground truncate"
+                            title={pitch.name}
+                          >
+                            {pitch.name}
+                          </div>
+                        ))}
+
+                        <div className="relative border-r border-border/60 bg-card/30" style={{ height: dayGridModel.gridHeightPx }}>
+                          {Array.from({ length: dayGridModel.totalSlots + 1 }, (_, idx) => {
+                            const minutes = dayGridModel.startMinutes + idx * dayGridModel.slotMinutes;
+                            const hh = String(Math.floor(minutes / 60)).padStart(2, "0");
+                            const mm = String(minutes % 60).padStart(2, "0");
+                            return (
+                              <div
+                                key={`dt-${minutes}`}
+                                className="absolute left-0 right-0 px-2 text-[10px] text-muted-foreground"
+                                style={{ top: idx * dayGridModel.slotHeightPx - 6 }}
+                              >
+                                {hh}:{mm}
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {Array.from({ length: dayGridModel.columnCount }, (_, colIdx) => (
+                          <div
+                            key={`dcol-${colIdx}`}
+                            className="relative border-r border-border/40"
+                            style={{ height: dayGridModel.gridHeightPx }}
+                          >
+                            {Array.from({ length: dayGridModel.totalSlots }, (_, rowIdx) => (
+                              <div
+                                key={`dcell-${colIdx}-${rowIdx}`}
+                                className="absolute left-0 right-0 border-b border-border/20"
+                                style={{ top: rowIdx * dayGridModel.slotHeightPx, height: dayGridModel.slotHeightPx }}
+                              />
+                            ))}
+                          </div>
+                        ))}
+
+                        <div
+                          className="pointer-events-none"
+                          style={{
+                            gridColumn: `2 / span ${dayGridModel.columnCount}`,
+                            gridRow: "2",
+                            position: "relative",
+                            height: dayGridModel.gridHeightPx,
+                          }}
+                        >
+                          {dayGridModel.blocks.map((b) => {
+                            const leftPercent = (b.pitchIndex / dayGridModel.columnCount) * 100;
+                            const widthPercent = (1 / dayGridModel.columnCount) * 100;
+                            return (
+                              <div
+                                key={b.ev.id}
+                                className="absolute rounded-md border border-border/50 px-1.5 py-1 text-[10px] text-foreground/90 overflow-hidden"
+                                style={{
+                                  left: `calc(${leftPercent}% + 4px)`,
+                                  width: `calc(${widthPercent}% - 8px)`,
+                                  top: b.top,
+                                  height: b.height,
+                                  background: hexToRgba(b.color, 0.72),
+                                }}
+                              >
+                                <div className="font-semibold truncate">{b.ev.title}</div>
+                                <div className="truncate text-foreground/80">
+                                  {format(b.ev.startsAt, "HH:mm")}
+                                  {b.ev.endsAt ? `–${format(b.ev.endsAt, "HH:mm")}` : ""}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ) : trainingCalendarGranularity === "week" && trainingCalendarLayout === "grid" && weekGridModel ? (
+                    <div className="w-full overflow-x-auto overflow-y-hidden rounded-lg border border-border/60 bg-background/20">
+                      <div
+                        className="min-w-max w-max"
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: `72px repeat(${weekGridModel.columnCount}, minmax(86px, 1fr))`,
+                        }}
+                      >
+                        {/* Header row 1: weekdays */}
+                        <div className="sticky top-0 z-20 bg-card/90 backdrop-blur border-b border-border/60 p-2 text-[11px] text-muted-foreground">
+                          Time
+                        </div>
+                        {weekGridModel.days.map((day) => (
+                          <div
+                            key={`day-${format(day, "yyyy-MM-dd")}`}
+                            className="sticky top-0 z-20 bg-card/90 backdrop-blur border-b border-border/60 p-2 text-[11px] font-semibold text-foreground"
+                            style={{ gridColumn: `span ${trainingCalendarGridPitches.length}` }}
+                          >
+                            {format(day, "EEEE")}
+                          </div>
+                        ))}
+
+                        {/* Header row 2: pitches */}
+                        <div className="sticky top-[34px] z-20 bg-card/90 backdrop-blur border-b border-border/60 p-2 text-[10px] text-muted-foreground">
+                          —
+                        </div>
+                        {weekGridModel.days.flatMap((day) =>
+                          trainingCalendarGridPitches.map((pitch) => (
+                            <div
+                              key={`pitch-${format(day, "yyyy-MM-dd")}-${pitch.id}`}
+                              className="sticky top-[34px] z-20 bg-card/90 backdrop-blur border-b border-border/60 p-2 text-[10px] text-muted-foreground truncate"
+                              title={pitch.name}
+                            >
+                              {pitch.name}
+                            </div>
+                          )),
+                        )}
+
+                        {/* Body: time column */}
+                        <div className="relative border-r border-border/60 bg-card/30" style={{ height: weekGridModel.gridHeightPx }}>
+                          {Array.from({ length: weekGridModel.totalSlots + 1 }, (_, idx) => {
+                            const minutes = weekGridModel.startMinutes + idx * weekGridModel.slotMinutes;
+                            const hh = String(Math.floor(minutes / 60)).padStart(2, "0");
+                            const mm = String(minutes % 60).padStart(2, "0");
+                            return (
+                              <div
+                                key={`t-${minutes}`}
+                                className="absolute left-0 right-0 px-2 text-[10px] text-muted-foreground"
+                                style={{ top: idx * weekGridModel.slotHeightPx - 6 }}
+                              >
+                                {hh}:{mm}
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Body: grid columns */}
+                        {Array.from({ length: weekGridModel.columnCount }, (_, colIdx) => (
+                          <div
+                            key={`col-${colIdx}`}
+                            className="relative border-r border-border/40"
+                            style={{ height: weekGridModel.gridHeightPx }}
+                          >
+                            {Array.from({ length: weekGridModel.totalSlots }, (_, rowIdx) => (
+                              <div
+                                key={`cell-${colIdx}-${rowIdx}`}
+                                className="absolute left-0 right-0 border-b border-border/20"
+                                style={{ top: rowIdx * weekGridModel.slotHeightPx, height: weekGridModel.slotHeightPx }}
+                              />
+                            ))}
+                          </div>
+                        ))}
+
+                        {/* Blocks overlay */}
+                        <div
+                          className="pointer-events-none"
+                          style={{
+                            gridColumn: `2 / span ${weekGridModel.columnCount}`,
+                            gridRow: "3",
+                            position: "relative",
+                            height: weekGridModel.gridHeightPx,
+                          }}
+                        >
+                          {weekGridModel.blocks.map((b) => {
+                            const col = b.dayIndex * trainingCalendarGridPitches.length + b.pitchIndex;
+                            const leftPercent = (col / weekGridModel.columnCount) * 100;
+                            const widthPercent = (1 / weekGridModel.columnCount) * 100;
+                            return (
+                              <div
+                                key={b.ev.id}
+                                className="absolute rounded-md border border-border/50 px-1.5 py-1 text-[10px] text-foreground/90 overflow-hidden"
+                                style={{
+                                  left: `calc(${leftPercent}% + 4px)`,
+                                  width: `calc(${widthPercent}% - 8px)`,
+                                  top: b.top,
+                                  height: b.height,
+                                  background: hexToRgba(b.color, 0.72),
+                                }}
+                              >
+                                <div className="font-semibold truncate">{b.ev.title}</div>
+                                <div className="truncate text-foreground/80">
+                                  {format(b.ev.startsAt, "HH:mm")}
+                                  {b.ev.endsAt ? `–${format(b.ev.endsAt, "HH:mm")}` : ""}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ) : selectedDayEvents.length === 0 ? (
+                    <div className="rounded-lg border border-border/60 bg-background/40 p-4 text-sm text-muted-foreground">
+                      No trainings or bookings on this day.
+                    </div>
+                  ) : (
+                    <Accordion
+                      type="multiple"
+                      defaultValue={selectedDayEvents.map((group) => group.pitchId ?? "none")}
+                      className="rounded-xl border border-border/60 bg-background/20"
+                    >
+                      {selectedDayEvents.map((group) => {
+                        const value = group.pitchId ?? "none";
+                        const trainingCount = group.events.filter((e) => e.kind === "training").length;
+                        const bookingCount = group.events.filter((e) => e.kind === "booking").length;
+                        return (
+                          <AccordionItem key={value} value={value} className="border-border/40 px-3">
+                            <AccordionTrigger className="py-3 hover:no-underline">
+                              <div className="flex items-center justify-between gap-3 w-full pr-2">
+                                <div className="flex items-center gap-2">
+                                  <div className="text-sm font-semibold text-foreground">{group.pitchName}</div>
+                                  <div className="text-[10px] text-muted-foreground tabular-nums">
+                                    {group.events.length} total
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {trainingCount > 0 ? (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 tabular-nums">
+                                      {trainingCount} trainings
+                                    </span>
+                                  ) : null}
+                                  {bookingCount > 0 ? (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/20 tabular-nums">
+                                      {bookingCount} bookings
+                                    </span>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pt-0 pb-3">
+                              <div className="space-y-2">
+                                {group.events.map((ev) => (
+                                  <div key={ev.id} className="flex items-start justify-between gap-2 rounded-lg border border-border/50 bg-card/20 px-3 py-2">
+                                    <div>
+                                      <div className="text-sm text-foreground">{ev.title}</div>
+                                      <div className="text-[11px] text-muted-foreground">
+                                        {format(ev.startsAt, "HH:mm")}
+                                        {ev.endsAt ? `–${format(ev.endsAt, "HH:mm")}` : ""}
+                                        {ev.teamName ? ` · ${ev.teamName}` : ""}
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <div className="text-[10px] px-2 py-0.5 rounded-full border border-border/60 text-muted-foreground">
+                                        {ev.kind === "booking" ? (ev.bookingType || "booking") : "training"}
+                                      </div>
+                                      {canManage ? (
+                                        <>
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7 text-muted-foreground hover:bg-primary/10 hover:text-foreground"
+                                            onClick={() => {
+                                              const [, rawId = ""] = ev.id.split(":");
+                                              if (!rawId) return;
+                                              if (ev.kind === "training") {
+                                                const session = sessionById.get(rawId);
+                                                if (!session) return;
+                                                handleEditSession(session);
+                                                return;
+                                              }
+                                              const booking = bookingById.get(rawId);
+                                              if (!booking) return;
+                                              handleEditBooking(booking);
+                                            }}
+                                            title="Edit"
+                                          >
+                                            <Pencil className="w-3.5 h-3.5" />
+                                          </Button>
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7 text-muted-foreground hover:bg-accent/15 hover:text-accent"
+                                            onClick={() => {
+                                              const [, rawId = ""] = ev.id.split(":");
+                                              if (!rawId) return;
+                                              setPendingScheduleDelete({
+                                                kind: ev.kind,
+                                                entityId: rawId,
+                                                title: ev.title,
+                                                startsAt: ev.startsAt,
+                                              });
+                                            }}
+                                            title="Remove"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </Button>
+                                        </>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        );
+                      })}
+                    </Accordion>
+                  )}
+                </div>
+              </div>
+            ) : sessions.length === 0 ? (
               <div className="rounded-xl bg-card border border-border p-8 text-center text-muted-foreground text-sm">{t.teamsPage.noSessions}</div>
             ) : (
               <div className="space-y-3">
@@ -2631,51 +3604,127 @@ const Teams = () => {
               </div>
             </div>
 
-            <div className="grid xl:grid-cols-3 gap-6">
-              <div className="xl:col-span-2">
+            <div className="grid xl:grid-cols-3 gap-6 xl:items-stretch">
+              <div className="xl:col-span-2 flex min-h-0 flex-col">
                 <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
                   <h2 className="font-display font-semibold text-foreground flex items-center gap-2">
-                    <LayoutGrid className="w-4 h-4 text-primary" /> {t.teamsPage.pitchesPlanner} ({filteredPitches.length})
+                    <LayoutGrid className="w-4 h-4 text-primary" /> {t.teamsPage.pitchesPlanner} (
+                    {pitchViewMode === "booked" ? pitchesBookedOnSelectedDay.length : filteredPitches.length})
                   </h2>
-                  <div className="inline-flex rounded-xl border border-border/60 bg-card/40 p-1">
+                  <div className="inline-flex flex-wrap justify-end gap-0.5 rounded-xl border border-border/60 bg-card/40 p-1">
                     <button type="button" onClick={() => setPitchViewMode("separate")} className={`px-2.5 py-1 text-[11px] rounded-lg transition-colors ${pitchViewMode === "separate" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
                       {t.teamsPage.viewSeparate}
                     </button>
                     <button type="button" onClick={() => setPitchViewMode("combined")} className={`px-2.5 py-1 text-[11px] rounded-lg transition-colors ${pitchViewMode === "combined" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
                       {t.teamsPage.viewCombined}
                     </button>
+                    <button type="button" onClick={() => setPitchViewMode("booked")} className={`px-2.5 py-1 text-[11px] rounded-lg transition-colors ${pitchViewMode === "booked" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+                      {t.teamsPage.viewBooked}
+                    </button>
                   </div>
                 </div>
                 {filteredPitches.length === 0 ? (
                   <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-8 text-center text-muted-foreground text-sm">{t.teamsPage.noPitchesHint} {GRID_LABEL}</div>
-                ) : pitchViewMode === "combined" ? (
-                  <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
-                    <div className="grid gap-[4px]" style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))` }}>
-                      {Array.from({ length: GRID_CELLS }, (_, index) => {
-                        const owners = combinedPitchCells.get(index) || [];
-                        const ownerColors = owners.map((ownerId) => pitchColorById.get(ownerId) || "#71717a");
-                        const background = mixedCellBackground(ownerColors);
-                        const isSelectedCell = selectedBookingPitchId ? owners.includes(selectedBookingPitchId) : false;
-                        const hasOwners = owners.length > 0;
-                        const borderColor = isSelectedCell
-                          ? "hsl(var(--primary))"
-                          : owners.length > 1
-                            ? "rgba(251, 191, 36, 0.8)"
-                            : hasOwners
-                              ? hexToRgba(ownerColors[0], 0.92)
-                              : undefined;
-                        const selectedGlow = isSelectedCell
-                          ? "inset 0 0 0 2px rgba(255,255,255,0.95), 0 0 0 2px hsl(var(--primary)), 0 0 10px rgba(251,191,36,0.65)"
-                          : undefined;
-                        return (
-                          <div key={`combined-${index}`} className={`aspect-square rounded-[3px] border ${owners.length > 1 ? "ring-1 ring-offset-0 ring-amber-400/80" : ""} ${isSelectedCell ? "ring-2 ring-primary/80" : ""} ${owners.length === 0 ? "bg-background/40 border-border/40" : ""}`}
-                            style={hasOwners ? { background, borderColor, boxShadow: selectedGlow } : undefined}
-                            title={owners.map((ownerId) => pitchNameById.get(ownerId) || ownerId).join(" + ") || t.teamsPage.unassigned} />
-                        );
-                      })}
+                ) : pitchViewMode === "combined" || pitchViewMode === "booked" ? (
+                  pitchViewMode === "booked" && pitchesBookedOnSelectedDay.length === 0 ? (
+                    <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-8 text-center text-muted-foreground text-sm">
+                      {t.teamsPage.assetMapBookedEmpty}
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-2">{t.teamsPage.combinedHint}</p>
-                  </div>
+                  ) : (
+                    <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
+                      <div className="relative">
+                        <div
+                          className="grid gap-[4px]"
+                          style={{
+                            gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
+                            gridTemplateRows: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
+                          }}
+                        >
+                          {Array.from({ length: GRID_CELLS }, (_, index) => {
+                            const baseOwnersByIndex = pitchViewMode === "booked" ? combinedPitchCellsBooked : combinedPitchCells;
+                            const baseOwners = baseOwnersByIndex.get(index) || [];
+                            const owners = baseOwners;
+                          const ownerColors = owners.map((ownerId) => pitchColorById.get(ownerId) || "#71717a");
+                          const background = mixedCellBackground(ownerColors);
+                          const isSelectedCell = selectedBookingPitchId ? owners.includes(selectedBookingPitchId) : false;
+                          const hasOwners = owners.length > 0;
+                          const borderColor = isSelectedCell
+                            ? "hsl(var(--primary))"
+                            : owners.length > 1
+                              ? "rgba(251, 191, 36, 0.8)"
+                              : hasOwners
+                                ? hexToRgba(ownerColors[0], 0.92)
+                                : undefined;
+                          const selectedGlow = isSelectedCell
+                            ? "inset 0 0 0 2px rgba(255,255,255,0.95), 0 0 0 2px hsl(var(--primary)), 0 0 10px rgba(251,191,36,0.65)"
+                            : undefined;
+                          const title = (() => {
+                            if (owners.length === 0) return t.teamsPage.unassigned;
+                            const ownerLabels = owners.map((ownerId) => pitchNameById.get(ownerId) || ownerId);
+                            if (pitchViewMode !== "booked") return ownerLabels.join(" + ");
+                            const details = owners.flatMap((ownerId) => {
+                              const pitchLabel = pitchNameById.get(ownerId) || ownerId;
+                              const bookingsForPitch = bookedLegendByPitchId.get(ownerId) || [];
+                              const lines = bookingsForPitch.map((booking) => {
+                                const range = `${format(new Date(booking.starts_at), "HH:mm")}–${format(new Date(booking.ends_at), "HH:mm")}`;
+                                const team = booking.teamName ? ` · ${booking.teamName}` : "";
+                                return `${range}${team}`;
+                              });
+                              return [`${pitchLabel}`, ...lines.map((line) => `  ${line}`)];
+                            });
+                            return details.join("\n");
+                          })();
+                          return (
+                            <div
+                              key={`combined-${pitchViewMode}-${index}`}
+                              className={`aspect-square rounded-[3px] border ${owners.length > 1 ? "ring-1 ring-offset-0 ring-amber-400/80" : ""} ${isSelectedCell ? "ring-2 ring-primary/80" : ""} ${owners.length === 0 ? "bg-background/40 border-border/40" : ""}`}
+                              style={hasOwners ? { background, borderColor, boxShadow: selectedGlow } : undefined}
+                              title={title}
+                            />
+                          );
+                        })}
+                        </div>
+
+                        {pitchViewMode === "booked" && !selectedBookingPitchId ? (
+                          <div
+                            className="pointer-events-none absolute inset-0 grid gap-[4px]"
+                            style={{
+                              gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
+                              gridTemplateRows: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
+                            }}
+                          >
+                            {bookedPitchLabelModels.map((m) => (
+                              <div
+                                key={`label-${m.pitchId}`}
+                                className="flex items-start justify-start p-1.5"
+                                style={{
+                                  gridRow: `${m.gridRowStart} / ${m.gridRowEnd}`,
+                                  gridColumn: `${m.gridColStart} / ${m.gridColEnd}`,
+                                }}
+                              >
+                                <div
+                                  className="max-w-full rounded-md border border-border/60 bg-background/80 px-2 py-1 text-[10px] text-foreground shadow-sm backdrop-blur"
+                                  style={{ borderColor: hexToRgba(pitchColorById.get(m.pitchId) || "#71717a", 0.92) }}
+                                >
+                                  <div className="font-semibold truncate">{m.pitchName}</div>
+                                  <div className="mt-0.5 max-h-full overflow-y-auto pr-0.5">
+                                    {m.lines.map((line) => (
+                                      <div key={`${m.pitchId}-${line}`} className="text-muted-foreground tabular-nums leading-snug">
+                                        {line}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-2">
+                        {pitchViewMode === "booked" ? t.teamsPage.combinedBookedHint : t.teamsPage.combinedHint}
+                      </p>
+                    </div>
+                  )
                 ) : (
                   <div className="grid md:grid-cols-2 gap-4">
                     {filteredPitches.map((pitch) => (
@@ -2722,12 +3771,16 @@ const Teams = () => {
                 )}
               </div>
 
-              <div>
-                <h2 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" /> {t.teamsPage.daySchedule}</h2>
-                <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
-                  <label className="text-[11px] text-muted-foreground block mb-1">{t.teamsPage.selectDay}</label>
-                  <Input type="date" value={usageDate} onChange={(event) => setUsageDate(event.target.value)} className="bg-background/50" />
-                  <div className="mt-3 space-y-2 max-h-[420px] overflow-y-auto">
+              <div className="flex min-h-0 flex-col xl:h-full">
+                <h2 className="font-display font-semibold text-foreground mb-4 flex shrink-0 items-center gap-2">
+                  <Calendar className="w-4 h-4 text-primary" /> {t.teamsPage.daySchedule}
+                </h2>
+                <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-border/60 bg-card/40 p-4 backdrop-blur-2xl">
+                  <div className="shrink-0">
+                    <label className="text-[11px] text-muted-foreground mb-1 block">{t.teamsPage.selectDay}</label>
+                    <Input type="date" value={usageDate} onChange={(event) => setUsageDate(event.target.value)} className="bg-background/50" />
+                  </div>
+                  <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto">
                     {dayBookings.length === 0 ? <div className="text-xs text-muted-foreground">{t.teamsPage.noBookingsDay}</div> : dayBookings.map((booking) => (
                       <button
                         key={booking.id}
@@ -3294,11 +4347,26 @@ const Teams = () => {
 
       {/* Add Pitch Booking Modal */}
       {showAddBooking && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowAddBooking(false)}>
+        <div
+          className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => {
+            setShowAddBooking(false);
+            resetBookingForm();
+          }}
+        >
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-[95vw] sm:max-w-md rounded-2xl bg-card border border-border p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display font-bold text-foreground">{bookingActionLabel}</h3>
-              <Button variant="ghost" size="icon" onClick={() => setShowAddBooking(false)}><X className="w-4 h-4" /></Button>
+              <h3 className="font-display font-bold text-foreground">{editingBookingId ? "Edit booking" : bookingActionLabel}</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setShowAddBooking(false);
+                  resetBookingForm();
+                }}
+              >
+                <X className="w-4 h-4" />
+              </Button>
             </div>
             <div className="space-y-3">
               <Select value={bookingPitchId || "__none"} onValueChange={(value) => setBookingPitchId(value === "__none" ? "" : value)}>
@@ -3345,7 +4413,7 @@ const Teams = () => {
                 {t.teamsPage.bookingModal.overlapHint}
               </div>
               <Button
-                onClick={handleAddBooking}
+                onClick={editingBookingId ? handleUpsertBooking : handleAddBooking}
                 disabled={!bookingPitchId || !bookingTitle.trim() || !bookingStart || !bookingEnd}
                 className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110"
               >
@@ -3355,6 +4423,40 @@ const Teams = () => {
           </motion.div>
         </div>
       )}
+
+      <AlertDialog open={Boolean(pendingScheduleDelete)} onOpenChange={(open) => { if (!open) setPendingScheduleDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove from schedule?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete{" "}
+              <span className="text-foreground font-medium">
+                {pendingScheduleDelete?.title || "this item"}
+              </span>{" "}
+              ({pendingScheduleDelete ? format(pendingScheduleDelete.startsAt, "yyyy-MM-dd HH:mm") : "—"}) from the database.
+              This can’t be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingScheduleDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-accent text-accent-foreground hover:brightness-110"
+              onClick={() => {
+                const payload = pendingScheduleDelete;
+                if (!payload) return;
+                setPendingScheduleDelete(null);
+                if (payload.kind === "training") {
+                  void handleDeleteSession(payload.entityId);
+                  return;
+                }
+                void handleDeleteBooking(payload.entityId);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Pitch Confirmation Modal */}
       {pendingPitchDeleteId && (

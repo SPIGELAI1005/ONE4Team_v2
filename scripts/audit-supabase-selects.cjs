@@ -52,7 +52,9 @@ const CLUB_SCOPED = new Set([
 const PARENT_SCOPED = new Map([
   ["match_events", { keys: ["match_id"] }],
   ["match_lineups", { keys: ["match_id"] }],
-  ["team_players", { keys: ["team_id"] }],
+  // team membership rows can be scoped through either the team or the globally unique club membership id.
+  ["team_players", { keys: ["team_id", "membership_id"] }],
+  ["team_coaches", { keys: ["team_id", "membership_id"] }],
   // event_participants: membership_id is globally unique; event_id is also acceptable
   ["event_participants", { keys: ["event_id", "membership_id"] }],
 ]);

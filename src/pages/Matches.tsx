@@ -13,6 +13,8 @@ import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { supabaseErrorMessage, isTransientSupabaseMessage } from "@/lib/supabase-error-message";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/hooks/use-language";
 // logo is rendered by AppHeader
@@ -72,6 +74,8 @@ const Matches = () => {
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
+  const [matchesListError, setMatchesListError] = useState<string | null>(null);
+  const [matchesRetryTick, setMatchesRetryTick] = useState(0);
 
   // Modals
   const [showAddMatch, setShowAddMatch] = useState(false);
@@ -136,6 +140,7 @@ const Matches = () => {
     if (!clubId) return;
     const fetchAll = async () => {
       setLoading(true);
+      setMatchesListError(null);
       if (matchesPage === 1) {
         matchPageKeysetRef.current = {};
       } else {
@@ -167,6 +172,16 @@ const Matches = () => {
         supabase.from("competitions").select("*").eq("club_id", clubId).order("created_at", { ascending: false }),
         supabase.from("teams").select("id, name").eq("club_id", clubId),
       ]);
+      const firstErr = matchRes.error || compRes.error || teamRes.error;
+      if (firstErr) {
+        setMatchesListError(supabaseErrorMessage(firstErr));
+        setMatches([]);
+        setMatchesTotalCount(0);
+        setCompetitions([]);
+        setTeams([]);
+        setLoading(false);
+        return;
+      }
       const matchRows = (matchRes.data as unknown as Match[]) || [];
       if (matchRows.length > 0) {
         const oldest = matchRows[matchRows.length - 1];
@@ -180,8 +195,8 @@ const Matches = () => {
       setTeams((teamRes.data as Team[]) || []);
       setLoading(false);
     };
-    fetchAll();
-  }, [clubId, matchesPage]);
+    void fetchAll();
+  }, [clubId, matchesPage, matchesRetryTick]);
 
   const openMatchDetail = async (match: Match) => {
     setSelectedMatch(match);
@@ -396,6 +411,30 @@ const Matches = () => {
           <div className="text-center py-20 text-muted-foreground">{t.communicationPage.noClubFound}</div>
         ) : tab === "matches" ? (
           <div className="max-w-3xl mx-auto space-y-4">
+            {matchesListError && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>{t.common.error}</AlertTitle>
+                <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="text-sm">
+                    {matchesListError}
+                    {isTransientSupabaseMessage(matchesListError) ? " You can try again in a moment." : ""}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 w-fit border-destructive/40"
+                    onClick={() => {
+                      setMatchesListError(null);
+                      setMatchesRetryTick((n) => n + 1);
+                    }}
+                  >
+                    Retry
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="rounded-xl bg-card border border-border px-3 py-2 flex items-center justify-between">
               <div className="text-xs text-muted-foreground">
                 {matchesTotalCount === 0

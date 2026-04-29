@@ -1,11 +1,16 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-03-30 (production readiness: analytics RPCs, Members server search, RLS integration tests, CI guardrails, ops templates)
+Last updated: 2026-04-29 (cookie preference centre + public club team page wave; documentation sync)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **Cookie consent + privacy preference centre (2026-04-29):** `CookieConsent` (`src/components/ui/cookie-consent.tsx`) — bottom **banner** (Accept all / Reject non-essential / Cookie settings) plus **dialog** “privacy preference centre” with tabs: overview (**Your privacy**), strictly necessary (always on), functional / analytics / marketing with **Switch** toggles. Persistence: **`localStorage` key `one4team.cookieConsent`**, schema **`{ v: 2, preferences, savedAt }`**; migrates legacy **`{ level: "all" | "essential" }`**. **`requestOpenCookieSettings()`** dispatches **`one4team:open-cookie-settings`** — wired from signed-out **`AppShell`** footer and **`src/components/landing/Footer.tsx`**. Full **EN/DE** copy under **`t.cookieConsent`** in **`src/i18n/en.ts`** / **`de.ts`**. **`Dialog` overlay/content z-index** raised in **`src/components/ui/dialog.tsx`** so modals stack above the fixed footer (`z-[70]`) and cookie banner (`z-[100]`). Banner is hidden while the preference dialog is open.
+- **Public club team page + schedule reads (2026-04):** Route **`/club/:clubSlug/team/:teamId`** → **`ClubTeamPage.tsx`** (lazy in **`App.tsx`**). Migration **`20260429130000_public_club_schedule_and_team_page.sql`**: broadened **`activities`** SELECT for **`anon`** when club **`is_public`**, optional guarded policy on **`training_sessions`** if table exists, **`get_public_club_team_page(slug, team_id)`** security-definer JSON for roster/schedule without exposing full profile rows to anonymous clients. **`ClubPage.tsx`** links into team cards as applicable; regenerate **`src/integrations/supabase/types.ts`** after apply.
+- **Coach placeholders + pitch/import keys (2026-04):** Migrations **`20260426121000_coach_placeholders_and_team_coaches_polymorphic.sql`**, **`20260426122000_activity_pitch_booking_link_and_import_keys.sql`** — polymorphic team coaches, activity–pitch booking linkage, import keys as designed in filenames. Admin UI: **`/coach-placeholders`** → **`CoachPlaceholderResolution.tsx`** ( **`RequireAdmin`** ).
+- **Training plan import (2026-04):** Route **`/training-plan-import`** → **`TrainingPlanImport.tsx`** (admin); supporting model/helpers under **`src/lib/training-plan-import/`**. Apply migrations and ship Edge/backend only if/when import persistence is tied to Supabase.
+- **Public page sections / ONE4AI messaging (2026-04):** Migration **`20260330160000_public_page_sections_matches_messages_one4ai.sql`** (small follow-up to public sections / matches / messages flags — confirm filename order relative to other `20260330*` files before apply).
 - App is in post-Phase-12 local implementation with major onboarding/member operations upgrades completed in code.
 - **Public club page (`/club/:slug`) (2026-03-29):** `AppHeader` supports **`variant="clubPublic"`** — on **mobile (`max-md`)** one hamburger opens a **unified menu** (section jumps + Open dashboard/Request invite from `clubPublicMenuTop`, then auth user blocks, language, theme, sign-out). **Header subtitle** (long club description) is **hidden on mobile** for this variant. **Hero:** shortcut row and main CTAs share a **`max-w-md`** column; shortcuts use **`max-md` grid** + tight **`gap-1`**; CTAs and shortcuts use **`rounded-full`**. **“Powered by ONE4Team”** links to **`/`** with a **small logo** beneath. **EN** hero label **`trainingSchedule`** = **“Trainings”**. Section visibility from **`clubs.public_page_sections`** (`20260329000000`) + `src/lib/club-public-page-sections.ts`; **ClubPageAdmin** edits toggles; **ClubPage** filters nav/sections. See **`CHANGELOG.md` § 2026-03-29** for file-level detail.
 - **Stripe / shop / RLS / Edge (2026-03-29):** New migrations **`20260328203000`**–**`20260329000000`** (webhook idempotency, billing fields, RLS helper fix, Edge LLM rate limit, shop images + orders entitlement, clubs contact/SEO columns, public page sections). Edge **`_shared`:** `cors`, `edge_guard`, `plan_entitlements`, `stripe_checkout_prices`, `stripe_webhook_claim`; **`stripe-checkout`** / **`stripe-webhook`** and LLM functions updated. Client: **`plan-gate`** / **`use-plan-guard`** loading behavior, **`Shop`** + **`shop-product-images`**, **`.env.example`** Stripe vars, **`Health`**, optional **`SupportFaq`** route, **`observability`** wiring in **`main`**. Ops: **`ops/PRODUCTION_READINESS_ARTIFACTS.md`**, **`k6/`** + **`npm run k6:*`**. Apply migrations in order; deploy affected Edge functions; set **`EDGE_ALLOWED_ORIGINS`**, **`STRIPE_*`** secrets per **`PRODUCTION_READINESS_ARTIFACTS`**.
@@ -139,6 +144,10 @@ Persistent handoff context for future agents so work can continue without re-dis
 40. `20260329140000_club_member_stats_rpc.sql`
 41. `20260329141000_platform_admin_audit.sql`
 42. `20260330120000_search_club_members_page.sql`
+43. `20260330160000_public_page_sections_matches_messages_one4ai.sql` (if present in repo; order with other `20260330*` migrations)
+44. `20260426121000_coach_placeholders_and_team_coaches_polymorphic.sql`
+45. `20260426122000_activity_pitch_booking_link_and_import_keys.sql`
+46. `20260429130000_public_club_schedule_and_team_page.sql`
 
 Also ensure previously listed communication migrations remain applied in the same project:
 - `20260301152000_add_chat_bridge_connectors_and_events.sql`

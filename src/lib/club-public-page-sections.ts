@@ -6,6 +6,14 @@ export const PUBLIC_PAGE_SECTION_KEYS = [
   "media",
   "schedule",
   "events",
+  "matches",
+  "messages",
+  "one4ai",
+  "documents",
+  "faq",
+  "nextsteps",
+  "reports",
+  "livescores",
   "contact",
 ] as const;
 
@@ -21,6 +29,14 @@ export const DEFAULT_PUBLIC_PAGE_SECTIONS: PublicPageSectionsState = {
   media: true,
   schedule: true,
   events: true,
+  matches: true,
+  messages: true,
+  one4ai: true,
+  documents: true,
+  faq: true,
+  nextsteps: true,
+  reports: true,
+  livescores: true,
   contact: true,
 };
 

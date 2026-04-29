@@ -42,11 +42,12 @@ function auditFile(file) {
   const issues = [];
 
   for (let i = 0; i < lines.length; i++) {
-    if (!lines[i].includes("postgres_changes")) continue;
-
     const start = Math.max(0, i - 3);
     const end = Math.min(lines.length - 1, i + 25);
     const window = lines.slice(start, end + 1).join("\n");
+
+    if (!lines[i].includes("postgres_changes")) continue;
+    if (!/\.on\s*\(\s*[\r\n\s]*["']postgres_changes["']/.test(window)) continue;
 
     // Ignore if there's a filter key anywhere in the subscription options.
     if (/filter\s*:/.test(window)) continue;

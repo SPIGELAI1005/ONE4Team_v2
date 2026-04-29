@@ -15,7 +15,7 @@ Use for ST-010 validation. Record one row per drill.
 
 ## Live / injected drills (next)
 
-Run at least one scenario with a **timed** response (inject load, disable non-prod Edge, or replay Stripe failure in test mode). Record **MTTR** and link dashboards in a new table row above.
+Run at least one scenario with a **timed** response (inject load, disable non-prod Edge, or replay Stripe failure in test mode). Record **MTTR** and link dashboards in a new table row above and in [PRODUCTION_READINESS_EVIDENCE_LOG.md](PRODUCTION_READINESS_EVIDENCE_LOG.md) (Phase 6).
 
 | Step | Action |
 |------|--------|

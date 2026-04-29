@@ -4,7 +4,7 @@ import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShoppingBag, Plus, Search, Package, Tag, Truck, Edit2, Trash2, X, Info, Loader2, ImagePlus } from "lucide-react";
+import { ShoppingBag, Plus, Search, Package, Tag, Truck, Edit2, Trash2, X, Info, Loader2, ImagePlus, AlertTriangle } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,7 @@ import {
   parseProductImageUrls,
   uploadShopProductImage,
 } from "@/lib/shop-product-images";
+import { supabaseErrorMessage, isTransientSupabaseMessage } from "@/lib/supabase-error-message";
 
 interface Product {
   id: string;
@@ -61,6 +62,8 @@ export default function Shop() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [schemaReady, setSchemaReady] = useState(true);
+  const [shopLoadError, setShopLoadError] = useState<string | null>(null);
+  const [shopRetryTick, setShopRetryTick] = useState(0);
 
   const [q, setQ] = useState("");
   const [filterCat, setFilterCat] = useState("");
@@ -138,26 +141,33 @@ export default function Shop() {
       setProducts([]);
       setOrders([]);
       setCategories([]);
+      setShopLoadError(null);
       setLoading(false);
       return;
     }
     setLoading(true);
+    setShopLoadError(null);
     try {
+      type DynRow = { data: unknown; error: { message?: string } | null };
       const [catRes, prodRes, ordRes] = await Promise.all([
-        supabaseDynamic.from("shop_categories").select("id, club_id, name, is_active").eq("club_id", clubId).eq("is_active", true).order("name"),
-        supabaseDynamic.from("shop_products").select("id, club_id, category_id, name, description, price_eur, stock, image_url, image_urls, is_active").eq("club_id", clubId).order("created_at", { ascending: false }),
-        supabaseDynamic.from("shop_orders").select("id, club_id, product_id, quantity, total_eur, status, ordered_at").eq("club_id", clubId).order("ordered_at", { ascending: false }),
+        supabaseDynamic.from("shop_categories").select("id, club_id, name, is_active").eq("club_id", clubId).eq("is_active", true).order("name") as unknown as Promise<DynRow>,
+        supabaseDynamic.from("shop_products").select("id, club_id, category_id, name, description, price_eur, stock, image_url, image_urls, is_active").eq("club_id", clubId).order("created_at", { ascending: false }) as unknown as Promise<DynRow>,
+        supabaseDynamic.from("shop_orders").select("id, club_id, product_id, quantity, total_eur, status, ordered_at").eq("club_id", clubId).order("ordered_at", { ascending: false }) as unknown as Promise<DynRow>,
       ]);
-      if (catRes.error || prodRes.error || ordRes.error) throw new Error(catRes.error?.message || prodRes.error?.message || ordRes.error?.message);
+      if (catRes.error || prodRes.error || ordRes.error) {
+        throw new Error(catRes.error?.message || prodRes.error?.message || ordRes.error?.message);
+      }
       setCategories((catRes.data || []) as Category[]);
       setProducts((prodRes.data || []) as Product[]);
       setOrders((ordRes.data || []) as Order[]);
       setSchemaReady(true);
-    } catch {
+    } catch (e) {
       setSchemaReady(false);
       setCategories([]);
       setProducts([]);
       setOrders([]);
+      const msg = e instanceof Error ? e.message : String(e);
+      setShopLoadError(supabaseErrorMessage({ message: msg }));
     } finally {
       setLoading(false);
     }
@@ -165,7 +175,7 @@ export default function Shop() {
 
   useEffect(() => {
     void loadData();
-  }, [loadData]);
+  }, [loadData, shopRetryTick]);
 
   const categoryNames = useMemo(() => {
     const fromDb = categories.map((c) => c.name);
@@ -318,13 +328,37 @@ export default function Shop() {
 
       <div className="border-b border-border/60">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center gap-3 rounded-2xl bg-primary/5 border border-primary/10 px-4 py-3">
-            <Info className="w-4 h-4 text-primary shrink-0" />
-            <div>
-              <div className="text-xs font-semibold text-foreground">{schemaReady ? t.shopPage.backendConnectedTitle : t.shopPage.comingSoon}</div>
-              <div className="text-[11px] text-muted-foreground">{schemaReady ? t.shopPage.backendConnectedDesc : t.shopPage.comingSoonDesc}</div>
+          {shopLoadError ? (
+            <div className="flex flex-col gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3 min-w-0">
+                <AlertTriangle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-foreground">{t.common.error}</div>
+                  <div className="text-[11px] text-muted-foreground break-words">
+                    {shopLoadError}
+                    {isTransientSupabaseMessage(shopLoadError) ? " You can try again in a moment." : ""}
+                  </div>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0 border-destructive/40"
+                onClick={() => setShopRetryTick((n) => n + 1)}
+              >
+                Retry
+              </Button>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-3 rounded-2xl bg-primary/5 border border-primary/10 px-4 py-3">
+              <Info className="w-4 h-4 text-primary shrink-0" />
+              <div>
+                <div className="text-xs font-semibold text-foreground">{schemaReady ? t.shopPage.backendConnectedTitle : t.shopPage.comingSoon}</div>
+                <div className="text-[11px] text-muted-foreground">{schemaReady ? t.shopPage.backendConnectedDesc : t.shopPage.comingSoonDesc}</div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -15,6 +15,18 @@ Reduce XSS impact with a strict CSP on the SPA host. Ship in phases so third-par
 - **Static host (Netlify / Cloudflare / nginx):** configure headers at the edge.
 - **Vite dev:** CSP is optional locally; do not block team velocity.
 
+## Enforcement decision (production readiness)
+
+**Status:** Deferred — `Content-Security-Policy-Report-Only` remains active in [`vercel.json`](../vercel.json).
+
+| Field | Value |
+|-------|--------|
+| Owner | (assign) |
+| Review by | (YYYY-MM-DD after Report-Only noise is acceptable) |
+| Risk accepted | Full CSP enforcement delayed; XSS reliance on existing app hygiene + Stripe/Sentry allowlists until flip |
+
+**Next step:** When violation reports are near zero, rename the header key from `Content-Security-Policy-Report-Only` to `Content-Security-Policy` with the same value (or tightened), then re-verify checkout, auth, Sentry, and Realtime.
+
 ## References
 
 - [MDN: CSP](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP)

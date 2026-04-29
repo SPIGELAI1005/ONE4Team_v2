@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import { useActiveClub } from "@/hooks/use-active-club";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { correlationHeaders } from "@/lib/observability";
+import { supabaseErrorMessage, isTransientSupabaseMessage } from "@/lib/supabase-error-message";
 
 const LS_NOTIF_KEY = "one4team.notifications";
 const PROFILE_AVATAR_BUCKET = "images-avatars";
@@ -105,6 +107,7 @@ export default function Settings() {
   const [seasonStart, setSeasonStart] = useState("8");
   const [clubLoading, setClubLoading] = useState(true);
   const [clubSaving, setClubSaving] = useState(false);
+  const [clubSettingsError, setClubSettingsError] = useState<string | null>(null);
 
   const [llmLoading, setLlmLoading] = useState(false);
   const [llmSaving, setLlmSaving] = useState(false);
@@ -166,36 +169,40 @@ export default function Settings() {
     fetchProfile();
   }, [user]);
 
-  useEffect(() => {
+  const fetchClubSettings = useCallback(async () => {
     if (!activeClubId) {
+      setClubLoading(false);
+      setClubSettingsError(null);
+      return;
+    }
+    setClubLoading(true);
+    setClubSettingsError(null);
+    const { data, error } = await supabase
+      .from("clubs")
+      .select("default_language, timezone, season_start_month")
+      .eq("id", activeClubId)
+      .single();
+    if (error) {
+      setClubSettingsError(supabaseErrorMessage(error));
       setClubLoading(false);
       return;
     }
-
-    const fetchClubSettings = async () => {
-      setClubLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("clubs")
-          .select("default_language, timezone, season_start_month")
-          .eq("id", activeClubId)
-          .single();
-        if (error) throw error;
-
-        if (data) {
-          setDefaultLang((data.default_language || "en") as string);
-          setTimezone((data.timezone || "Europe/Berlin") as string);
-          setSeasonStart(String(data.season_start_month ?? 8));
-        }
-      } catch {
-        // Fallback values keep screen usable if columns are not migrated yet.
-      } finally {
-        setClubLoading(false);
-      }
-    };
-
-    void fetchClubSettings();
+    if (data) {
+      setDefaultLang((data.default_language || "en") as string);
+      setTimezone((data.timezone || "Europe/Berlin") as string);
+      setSeasonStart(String(data.season_start_month ?? 8));
+    }
+    setClubLoading(false);
   }, [activeClubId]);
+
+  useEffect(() => {
+    if (!activeClubId) {
+      setClubLoading(false);
+      setClubSettingsError(null);
+      return;
+    }
+    void fetchClubSettings();
+  }, [activeClubId, fetchClubSettings]);
 
   useEffect(() => {
     if (!activeClubId || !perms.isAdmin) return;
@@ -796,6 +803,29 @@ export default function Settings() {
                   <p className="text-[11px] text-muted-foreground">{t.settingsPage.clubSettingsDesc}</p>
                 </div>
               </div>
+
+              {clubSettingsError && !clubLoading && perms.isAdmin && activeClubId && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>{t.common.error}</AlertTitle>
+                  <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="text-sm">
+                      {clubSettingsError}
+                      {isTransientSupabaseMessage(clubSettingsError) ? " You can try again in a moment." : ""}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 w-fit border-destructive/40"
+                      onClick={() => void fetchClubSettings()}
+                    >
+                      <RefreshCw className="w-4 h-4 mr-1" />
+                      Retry
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
 
               {!perms.isAdmin ? (
                 <div className="text-center py-8">

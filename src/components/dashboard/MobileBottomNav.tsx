@@ -29,14 +29,14 @@ const MobileBottomNav = ({ active, onNavigate }: MobileBottomNavProps) => {
       { icon: LayoutDashboard, label: t.common.home, id: "overview" },
       { icon: Trophy, label: t.sidebar.matches, id: "matches", route: "/matches" },
       { icon: CalendarDays, label: t.sidebar.events, id: "events", route: "/events" },
-      { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/player-stats" },
+      { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/reports" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
     ],
     trainer: [
       { icon: LayoutDashboard, label: t.common.home, id: "overview" },
       { icon: CalendarDays, label: t.sidebar.schedule, id: "schedule", route: "/activities" },
       { icon: Trophy, label: t.sidebar.matches, id: "matches", route: "/matches" },
-      { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/player-stats" },
+      { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/reports" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
     ],
     player: [
@@ -66,7 +66,7 @@ const MobileBottomNav = ({ active, onNavigate }: MobileBottomNavProps) => {
     if (path.includes("/activities")) return "schedule";
     if (path.includes("/matches")) return "matches";
     if (path.includes("/events")) return "events";
-    if (path.includes("/player-stats")) return "stats";
+    if (path.includes("/reports") || path.includes("/player-stats")) return "stats";
     if (path.includes("/communication")) return "messages";
     if (path.includes("/shop")) return "shop";
     return "overview";

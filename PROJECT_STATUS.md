@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-03-30 (production readiness: analytics RPCs, Members search, RLS tests, CI guardrails)
+Last updated: 2026-04-29 (cookie preference centre, public club team page, training import / coach admin routes, docs sync)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -16,6 +16,8 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - **Public club + PWA-style chrome (2026-03-29):** `/club/:slug` uses **`AppHeader` `variant="clubPublic"`** — single mobile menu, description hidden in header on small screens, hero shortcut grid aligned with CTAs, **Powered by** link + logo to `/`. Configurable sections via **`public_page_sections`** + admin UI. See `CHANGELOG.md` § 2026-03-29.
 - **Billing / shop / Edge hardening (2026-03-29):** Migrations **`20260328203000`–`20260329000000`** (Stripe webhook idempotency, subscription fields, RLS helper fixes, Edge LLM rate limit, shop images & order entitlements, club contact/SEO columns). Shared Edge modules for CORS, guards, Stripe prices, webhook claims. Client plan-gate loading fixes, Shop image parsing, `.env.example` updates. Load-test scripts **`k6/`** and **`ops/PRODUCTION_READINESS_ARTIFACTS.md`**. Apply and deploy per `MEMORY_BANK.md` migration list 24–31.
 - **Production readiness implementation (2026-03-30):** Migrations **`20260329103000`** through **`20260330120000`** — platform admin RBAC and audit, analytics RPC batch, player stats/season awards/radar, hotspot indexes (guarded migration file), billing reconciliation, club member stats, **`search_club_members_page`**. Client: Members server paging + search, keyset pagination on Matches and Communication, Platform Admin audit RPC, Health PostgREST probe, `supabase-error-message`. **`src/test/rls.integration.test.ts`** for env-gated RLS checks. CI: **`guardrails`**, **`policies:drift`**, **`budget:bundle`**, workflow updates. Edge correlation logging via **`request_context.ts`**. Ops templates and runbooks under **`ops/`** (see **`CHANGELOG.md` § 2026-03-30**). Apply migrations 32–42 in order per `MEMORY_BANK.md`.
+- **Cookie UX + compliance copy (2026-04-29):** Granular cookie **banner** and **privacy preference centre** (category tabs, toggles, EN/DE `cookieConsent` strings), **`localStorage` v2** consent object, footer shortcuts to reopen settings. **`CHANGELOG.md` § 2026-04-29** and **`MEMORY_BANK.md`**.
+- **Public club team surface (2026-04):** **`/club/:clubSlug/team/:teamId`** with **`get_public_club_team_page`** + RLS for public **`activities`** reads; migrations **`20260426*`**, **`20260429130000`** — apply in filename order with types regeneration. Admin: **`/training-plan-import`**, **`/coach-placeholders`**.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 
@@ -124,7 +126,7 @@ Go-live readiness checklist (one-screen):
 - **Terms of Service** (`/terms`): 14-section AGB, German law compliant (TMG, BGB, GDPR)
 - **Privacy Policy** (`/privacy`): 11-section DSGVO/GDPR-compliant policy
 - **Impressum** (`/impressum`): 8-section German legal notice per Section 5 TMG
-- **Cookie Consent Banner**: GDPR-compliant with Accept All / Essential Only, localStorage persistence
+- **Cookie consent (updated 2026-04-29):** Banner + **privacy preference centre** dialog (necessary / functional / analytics / marketing), Accept all / Reject non-essential, **`one4team.cookieConsent` v2** in localStorage, EN/DE copy; footer **Cookie settings** opens the dialog
 - **Footer**: Legal links, X.com social icon, email contact icon
 - **Deployment fix**: Supabase client handles missing env vars gracefully (no more blank page on Vercel)
 

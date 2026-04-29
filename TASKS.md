@@ -8,6 +8,14 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ## NOW (top priority)
 
+### Cookie consent + public team / import surfaces (2026-04-29) — code in repo
+- [x] **COOKIE-001** Banner + privacy preference centre (`cookie-consent.tsx`), granular categories + toggles, **`one4team.cookieConsent` v2** + legacy migration.
+- [x] **COOKIE-002** EN/DE **`cookieConsent`** strings; **`requestOpenCookieSettings()`** in **`App.tsx`** signed-out footer + **`landing/Footer.tsx`**.
+- [x] **COOKIE-003** **`dialog.tsx`** z-index so preference modal stacks above footer and banner.
+- [x] **PUBLIC-TEAM-001** Route **`/club/:clubSlug/team/:teamId`**, **`ClubTeamPage.tsx`**, migration **`20260429130000_public_club_schedule_and_team_page.sql`** (`get_public_club_team_page`, public **`activities`** read policy).
+- [x] **ADMIN-IMPORT-001** Routes **`/training-plan-import`**, **`/coach-placeholders`** (admin) + **`src/lib/training-plan-import/`**; migrations **`20260426121000`**, **`20260426122000`**, optional **`20260330160000`**.
+- [ ] **PUBLIC-TEAM-002** Operator: apply **`20260330160000`** (if used), **`20260426*`**, **`20260429130000`** in filename order on each Supabase env; **`supabase gen types`** → commit **`types.ts`** if drift.
+
 ### Production readiness — code landed (2026-03-30)
 - [x] **PROD-PR-001** Migrations `20260329103000`–`20260330120000` in repo: platform admin RBAC/audit, analytics RPCs, guarded hotspot indexes, billing reconciliation, club member stats, `search_club_members_page`.
 - [x] **PROD-PR-002** Members: server-paged roster + debounced RPC search (≥2 chars); club-switch state reset fix (`setMembersServerPage` / search pivot).
@@ -21,7 +29,7 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **CLUB-SECTIONS-001** `public_page_sections` migration + `club-public-page-sections.ts` + ClubPageAdmin toggles + ClubPage filtered sections.
 - [x] **PROD-EDGE-001** Stripe webhook/checkout shared modules; migrations `20260328203000`–`20260329000000`; plan-gate + Shop + Health + observability wiring (see `CHANGELOG.md`).
 - [x] **PROD-OPS-001** `k6/` scripts + `npm run k6:*`; `ops/PRODUCTION_READINESS_ARTIFACTS.md`.
-- [ ] **PROD-DEPLOY-001** Execute phased operator runbooks: [`ops/PHASE_A_STAGING_RUNBOOK.md`](ops/PHASE_A_STAGING_RUNBOOK.md) → [`ops/PHASE_B_SECRETS_CHECKLIST.md`](ops/PHASE_B_SECRETS_CHECKLIST.md) → [`ops/PHASE_C_SECTION_L_EVIDENCE.md`](ops/PHASE_C_SECTION_L_EVIDENCE.md) → [`ops/SECTION_M_GO_LIVE_CHECKLIST.md`](ops/SECTION_M_GO_LIVE_CHECKLIST.md). Apply migrations 24–42 (`MEMORY_BANK.md`); deploy Edge functions including optional **`health`**; `npm run k6:smoke`, `npm run k6:journeys`, `npm run k6:staged-reads`; optional `npm run policies:drift` with `PG_POLICIES_SNAPSHOT_FILE`.
+- [x] **PROD-DEPLOY-001** Repo-side production-readiness deliverables: consolidated index [`ops/PRODUCTION_READINESS_EVIDENCE_LOG.md`](ops/PRODUCTION_READINESS_EVIDENCE_LOG.md); CSP deferral record [`ops/CSP_ROLLOUT.md`](ops/CSP_ROLLOUT.md); degraded-mode UX (retry + errors) on Settings, Shop, Matches. **Operator still required:** staging/prod migrations, secrets (Phase B), Section L dashboards, Section M evidence rows, `supabase functions deploy health`, k6/realtime soak — fill the evidence log and checklists.
 
 ### ONE4AI / LLM operations (2026-03-28)
 - [x] **AI-HEALTH-001** Settings: AI provider connection status + Test connection via `supabase.functions.invoke("co-trainer", { body: { mode: "health", club_id } })`.
