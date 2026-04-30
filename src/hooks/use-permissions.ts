@@ -25,10 +25,12 @@ export function usePermissions() {
 
   const [assignments, setAssignments] = useState<ClubRoleAssignmentRow[]>([]);
   const [assignmentsLoading, setAssignmentsLoading] = useState(false);
+  const [adminRpcAllowed, setAdminRpcAllowed] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!user || !activeClub?.membershipId) {
       setAssignments([]);
+      setAdminRpcAllowed(null);
       return;
     }
 
@@ -49,8 +51,28 @@ export function usePermissions() {
           console.warn("[usePermissions] club_role_assignments:", error.message);
         }
         setAssignments([]);
+        // Fallback: even if role assignments cannot be read (RLS or schema drift),
+        // we can still determine admin capability via the security-definer RPC.
+        // This prevents admin routes from bouncing to /dashboard/player when the
+        // assignments SELECT policy is misconfigured.
+        try {
+          const { data: isAdmin, error: rpcError } = await supabase.rpc("is_club_admin", {
+            _club_id: activeClub.id,
+            _user_id: user.id,
+          });
+          if (cancelled) return;
+          if (rpcError) {
+            console.warn("[usePermissions] is_club_admin rpc:", rpcError.message);
+            setAdminRpcAllowed(null);
+          } else {
+            setAdminRpcAllowed(Boolean(isAdmin));
+          }
+        } catch {
+          if (!cancelled) setAdminRpcAllowed(null);
+        }
       } else {
         setAssignments((data as ClubRoleAssignmentRow[]) ?? []);
+        setAdminRpcAllowed(null);
       }
       setAssignmentsLoading(false);
     })();
@@ -58,7 +80,7 @@ export function usePermissions() {
     return () => {
       cancelled = true;
     };
-  }, [user, activeClub?.membershipId]);
+  }, [user, activeClub?.membershipId, activeClub?.id]);
 
   const permissions = useMemo(
     () => effectivePermissions(legacyRole, assignments),
@@ -66,8 +88,8 @@ export function usePermissions() {
   );
 
   const isAdmin = useMemo(
-    () => isClubGeneralAdminFromAssignments(legacyRole, assignments),
-    [legacyRole, assignments],
+    () => isClubGeneralAdminFromAssignments(legacyRole, assignments) || adminRpcAllowed === true,
+    [legacyRole, assignments, adminRpcAllowed],
   );
 
   const isTrainer = useMemo(

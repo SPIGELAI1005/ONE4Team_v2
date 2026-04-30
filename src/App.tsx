@@ -11,7 +11,8 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { useLanguage } from "@/hooks/use-language";
 import PageTransition from "@/components/layout/PageTransition";
-import { CookieConsent, requestOpenCookieSettings } from "@/components/ui/cookie-consent";
+import { CookieConsent } from "@/components/ui/cookie-consent";
+import { requestOpenCookieSettings } from "@/lib/cookie-consent";
 import { RequireAdmin, RequireTrainer } from "@/components/auth/require-role";
 import { PlanGate } from "@/components/plan-gate";
 

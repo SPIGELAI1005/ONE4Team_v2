@@ -13,61 +13,12 @@ import {
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-
-const LS_KEY = "one4team.cookieConsent";
-const LS_VERSION = 2;
-const OPEN_SETTINGS_EVENT = "one4team:open-cookie-settings";
-
-export interface CookiePreferences {
-  necessary: true;
-  functional: boolean;
-  analytics: boolean;
-  marketing: boolean;
-}
-
-export function readCookiePreferences(): CookiePreferences | null {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return null;
-    const v = JSON.parse(raw) as Record<string, unknown>;
-    if (v && typeof v === "object") {
-      if (v.v === LS_VERSION && v.preferences && typeof v.preferences === "object") {
-        const p = v.preferences as Record<string, unknown>;
-        return {
-          necessary: true,
-          functional: Boolean(p.functional),
-          analytics: Boolean(p.analytics),
-          marketing: Boolean(p.marketing),
-        };
-      }
-      if (v.level === "all") {
-        return { necessary: true, functional: true, analytics: true, marketing: true };
-      }
-      if (v.level === "essential") {
-        return { necessary: true, functional: false, analytics: false, marketing: false };
-      }
-    }
-  } catch {
-    /* ignore */
-  }
-  return null;
-}
-
-function writeConsent(prefs: CookiePreferences) {
-  localStorage.setItem(
-    LS_KEY,
-    JSON.stringify({
-      v: LS_VERSION,
-      preferences: prefs,
-      savedAt: new Date().toISOString(),
-    }),
-  );
-}
-
-/** Open the cookie preference centre from the footer or elsewhere (signed-out shell). */
-export function requestOpenCookieSettings() {
-  window.dispatchEvent(new CustomEvent(OPEN_SETTINGS_EVENT));
-}
+import {
+  readCookiePreferences,
+  writeCookieConsent,
+  cookieSettingsEventName,
+  type CookiePreferences,
+} from "@/lib/cookie-consent";
 
 type PreferenceTab = "privacy" | "necessary" | "functional" | "analytics" | "marketing";
 
@@ -107,12 +58,13 @@ export function CookieConsent() {
       const existing = readCookiePreferences();
       openPreferences(existing ?? undefined);
     };
-    window.addEventListener(OPEN_SETTINGS_EVENT, onOpen);
-    return () => window.removeEventListener(OPEN_SETTINGS_EVENT, onOpen);
+    const eventName = cookieSettingsEventName();
+    window.addEventListener(eventName, onOpen);
+    return () => window.removeEventListener(eventName, onOpen);
   }, [openPreferences]);
 
   const persistAndClose = useCallback((prefs: CookiePreferences) => {
-    writeConsent(prefs);
+    writeCookieConsent(prefs);
     setBannerVisible(false);
     setPrefsOpen(false);
   }, []);
