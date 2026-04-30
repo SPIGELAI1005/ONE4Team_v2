@@ -101,7 +101,7 @@ export function CookieConsent() {
       >
         <DialogContent
           className={cn(
-            "max-h-[min(90vh,720px)] w-[min(100vw-1.5rem,44rem)] sm:max-w-3xl gap-0 p-0 overflow-hidden flex flex-col",
+            "h-[min(90vh,720px)] w-[min(100vw-1.5rem,44rem)] sm:max-w-3xl gap-0 p-0 overflow-hidden flex flex-col",
             "border-border/80 bg-background shadow-2xl",
           )}
         >

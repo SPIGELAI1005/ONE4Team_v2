@@ -9,6 +9,8 @@
 4) Club front page + invite-only onboarding with invite requests
 5) AI copilots (workflow-first, club-scoped, logged)
 
+**Progress log (handoff):** See `MEMORY_BANK.md`, `PROJECT_STATUS.md`, `CHANGELOG.md`, and `TASKS.md` for dated work. **2026-05-01:** `/reports` admin KPI charts (Recharts), RBAC admin guard fallback + `20260430173000` migration, marketing footer dedupe, cookie UX refinements (`CHANGELOG.md` § 2026-05-01).
+
 ---
 
 ## 0) MVP decisions (locked)

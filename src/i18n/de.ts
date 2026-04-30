@@ -133,7 +133,7 @@ export const de: Translations = {
   cookieConsent: {
     bannerTitle: "Cookies und ähnliche Technologien",
     bannerIntro:
-      "ONE4Team setzt Cookies und vergleichbare Technologien ein, die für Anmeldung, Sicherheit und Kernfunktionen erforderlich sind. Mit Ihrer Einwilligung nutzen wir außerdem optionale Cookies für Performance-Messungen und Produktanalysen sowie—gemeinsam mit ausgewählten Partnern—für Kommunikation und Kampagnenmessung, soweit angeboten. Einige Technologien können Kennungen wie Geräte- oder Netzwerkadressen verarbeiten, wie in unseren Datenschutzhinweisen beschrieben.",
+      "ONE4Team setzt Cookies und vergleichbare Technologien ein, die für Anmeldung, Sicherheit und Kernfunktionen erforderlich sind. Mit Ihrer Einwilligung nutzen wir außerdem optionale Cookies für Performance-Messungen und Produktanalysen sowie (gemeinsam mit ausgewählten Partnern) für Kommunikation und Kampagnenmessung, soweit angeboten. Einige Technologien können Kennungen wie Geräte- oder Netzwerkadressen verarbeiten, wie in unseren Datenschutzhinweisen beschrieben.",
     bannerConsentNote:
       'Mit „Alle akzeptieren“ aktivieren Sie die hier angebotenen optionalen Kategorien. Sie können Ihre Auswahl jederzeit über „Cookie-Einstellungen“ anpassen oder widerrufen (verlinkt auch in der Fußzeile, wenn Sie abgemeldet sind).',
     openPreferences: "Cookie-Einstellungen",
@@ -151,7 +151,7 @@ export const de: Translations = {
     tabMarketing: "Marketing",
     yourPrivacyTitle: "Ihre Privatsphäre",
     yourPrivacyBody:
-      "Wenn Sie eine Website oder Web-App nutzen, können Informationen in Ihrem Browser gespeichert oder ausgelesen werden—häufig in Form von Cookies. Das kann Ihre Präferenzen oder Ihr Gerät betreffen und dient vor allem dazu, dass die Anwendung zuverlässig funktioniert. In der Regel identifiziert Sie das nicht direkt, kann aber ein persönlicheres Erlebnis ermöglichen. Weil wir Ihr Recht auf Privatsphäre respektieren, können Sie bestimmte nicht notwendige Kategorien ablehnen. Nutzen Sie die Register, um mehr zu erfahren und Voreinstellungen zu ändern. Das Blockieren einzelner Kategorien kann Teile der Nutzung oder optionale Funktionen einschränken.",
+      "Wenn Sie eine Website oder Web-App nutzen, können Informationen in Ihrem Browser gespeichert oder ausgelesen werden, häufig in Form von Cookies. Das kann Ihre Präferenzen oder Ihr Gerät betreffen und dient vor allem dazu, dass die Anwendung zuverlässig funktioniert. In der Regel identifiziert Sie das nicht direkt, kann aber ein persönlicheres Erlebnis ermöglichen. Weil wir Ihr Recht auf Privatsphäre respektieren, können Sie bestimmte nicht notwendige Kategorien ablehnen. Nutzen Sie die Register, um mehr zu erfahren und Voreinstellungen zu ändern. Das Blockieren einzelner Kategorien kann Teile der Nutzung oder optionale Funktionen einschränken.",
     moreInfo: "Weitere Informationen",
     confirmSelection: "Meine Auswahl speichern",
     allowAll: "Alle zulassen",
@@ -166,7 +166,7 @@ export const de: Translations = {
       "Diese Cookies merken sich von Ihnen getroffene Auswahl (z. B. Anzeigeoptionen), damit wir Ihnen ein konsistenteres, komfortableres Nutzungserlebnis über Besuche hinweg bieten können.",
     analyticsTitle: "Analyse-Cookies",
     analyticsDesc:
-      "Diese Cookies helfen uns, Nutzung in aggregierter Form zu verstehen—z. B. welche Bereiche besonders genutzt werden—damit wir Stabilität, Performance und Auffindbarkeit in der App verbessern können.",
+      "Diese Cookies helfen uns, anonyme Statistiken zur Nutzung zu erstellen (z. B. welche Funktionen besonders häufig genutzt werden). So können wir Stabilität, Performance und Bedienbarkeit der App verbessern.",
     marketingTitle: "Marketing-Cookies",
     marketingDesc:
       "Diese Cookies können eingesetzt werden, um Kampagnen zu messen, Wiederholungen zu begrenzen und relevante Informationen zu ONE4Team und Partnerangeboten anzuzeigen, sofern wir entsprechende Angebote einsetzen.",
@@ -2776,6 +2776,21 @@ export const de: Translations = {
     linkTrainingImport: "Trainingsplan-Import",
     linkCoachPlaceholders: "Trainer-Platzhalter",
     linkMemberHistory: "Mitgliedsaktivität (Kader)",
+    chartActivityTitle: "Vereinsaktivität (letzte 12 Wochen)",
+    chartActivitySubtitle: "Trainings, Spiele und Events pro Woche.",
+    chartLegendTrainings: "Trainings",
+    chartLegendMatches: "Spiele",
+    chartLegendEvents: "Events",
+    chartCoverageTitle: "Trainerabdeckung",
+    chartCoverageSubtitle: "Teams mit und ohne zugewiesene Trainer:innen.",
+    teamsWithTrainer: "Teams mit Trainer:in",
+    teamsWithoutTrainer: "Teams ohne Trainer:in",
+    chartNewMembersTitle: "Neue Mitglieder (letzte 12 Wochen)",
+    chartLegendNewMembers: "Neue Mitglieder",
+    chartTrainingsByDowTitle: "Trainings nach Wochentag",
+    chartTrainingsByDowSubtitle: "Wie viele Trainings pro Wochentag geplant sind (letzte 12 Wochen).",
+    chartTrainingsByMonthTitle: "Trainings nach Monat",
+    chartTrainingsByMonthSubtitle: "Geplante Trainings pro Monat (letzte 6 Monate).",
     tabScorers: "Torschützen",
     tabAssists: "Vorlagen",
     tabCards: "Karten",

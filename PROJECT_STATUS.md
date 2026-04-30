@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-04-29 (cookie preference centre, public club team page, training import / coach admin routes, docs sync)
+Last updated: 2026-05-01 (reports KPI charts, RBAC admin guard, marketing footer, documentation sync)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -18,6 +18,9 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - **Production readiness implementation (2026-03-30):** Migrations **`20260329103000`** through **`20260330120000`** — platform admin RBAC and audit, analytics RPC batch, player stats/season awards/radar, hotspot indexes (guarded migration file), billing reconciliation, club member stats, **`search_club_members_page`**. Client: Members server paging + search, keyset pagination on Matches and Communication, Platform Admin audit RPC, Health PostgREST probe, `supabase-error-message`. **`src/test/rls.integration.test.ts`** for env-gated RLS checks. CI: **`guardrails`**, **`policies:drift`**, **`budget:bundle`**, workflow updates. Edge correlation logging via **`request_context.ts`**. Ops templates and runbooks under **`ops/`** (see **`CHANGELOG.md` § 2026-03-30**). Apply migrations 32–42 in order per `MEMORY_BANK.md`.
 - **Cookie UX + compliance copy (2026-04-29):** Granular cookie **banner** and **privacy preference centre** (category tabs, toggles, EN/DE `cookieConsent` strings), **`localStorage` v2** consent object, footer shortcuts to reopen settings. **`CHANGELOG.md` § 2026-04-29** and **`MEMORY_BANK.md`**.
 - **Public club team surface (2026-04):** **`/club/:clubSlug/team/:teamId`** with **`get_public_club_team_page`** + RLS for public **`activities`** reads; migrations **`20260426*`**, **`20260429130000`** — apply in filename order with types regeneration. Admin: **`/training-plan-import`**, **`/coach-placeholders`**.
+- **Reports / club management KPIs (2026-05-01):** **`/reports`** (**`PlayerStats.tsx`**) for admins: **Recharts** — weekly activity (trainings / matches / events), coach coverage (teams with/without **`team_coaches`**), new members trend, trainings by weekday and month; resilient **`activities.type`** normalization and **`.ilike`** for KPI counts. See **`CHANGELOG.md` § 2026-05-01**.
+- **RBAC fix (2026-04-30):** **`usePermissions`** uses **`is_club_admin`** RPC fallback when role-assignment reads fail; migration **`20260430173000_fix_club_role_assignments_select_policy.sql`** for safer **`club_role_assignments`** SELECT policy.
+- **Marketing UX (2026-05-01):** Duplicate signed-out fixed footer removed from **`App.tsx`**; single marketing footer in **`landing/Footer.tsx`** with left-aligned copyright and **Cookie settings**.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 
@@ -122,11 +125,14 @@ Go-live readiness checklist (one-screen):
 - All three pages fully translated (EN/DE) with comprehensive translation keys
 - Sidebar routes and pathToId mappings updated for all new pages
 
+### Reports & analytics (2026-05-01)
+- **Reports** (`/reports`): Admin-oriented club health and scheduling KPIs with charts (**Recharts**); extends existing player stats / filters for trainer/player personas.
+
 ### Legal & Compliance (2026-02-14, Session 3)
 - **Terms of Service** (`/terms`): 14-section AGB, German law compliant (TMG, BGB, GDPR)
 - **Privacy Policy** (`/privacy`): 11-section DSGVO/GDPR-compliant policy
 - **Impressum** (`/impressum`): 8-section German legal notice per Section 5 TMG
-- **Cookie consent (updated 2026-04-29):** Banner + **privacy preference centre** dialog (necessary / functional / analytics / marketing), Accept all / Reject non-essential, **`one4team.cookieConsent` v2** in localStorage, EN/DE copy; footer **Cookie settings** opens the dialog
+- **Cookie consent (updated 2026-04-29 / 2026-05-01):** Banner + **privacy preference centre** dialog (necessary / functional / analytics / marketing), Accept all / Reject non-essential, **`one4team.cookieConsent` v2** in localStorage, EN/DE copy; **Cookie settings** on marketing **`Footer`** opens the dialog (duplicate signed-out footer bar removed)
 - **Footer**: Legal links, X.com social icon, email contact icon
 - **Deployment fix**: Supabase client handles missing env vars gracefully (no more blank page on Vercel)
 
@@ -264,6 +270,7 @@ See `HOLD.md`. Remaining items are post-Phase-12 infrastructure optimization and
 3) Introduce Stripe webhook lifecycle handling for subscription state transitions and entitlements.
 4) Add delivery workers for abuse notification events and automation run execution.
 5) Continue v2 commercialization roadmap (payments hardening, partner reporting, multi-sport templates, automation safeguards).
+6) Apply the **April–May 2026** migrations on each Supabase env when releasing reporting/RBAC fixes (`20260426121000`, `20260426122000`, `20260429130000`, `20260430173000`, optional `20260330160000`); extend **`/reports`** if schedule data also lives in **`training_sessions`**.
 
 ## Repo
 - GitHub: https://github.com/SPIGELAI1005/ONE4Team_v2

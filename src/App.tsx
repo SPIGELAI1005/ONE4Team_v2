@@ -12,7 +12,6 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { useLanguage } from "@/hooks/use-language";
 import PageTransition from "@/components/layout/PageTransition";
 import { CookieConsent } from "@/components/ui/cookie-consent";
-import { requestOpenCookieSettings } from "@/lib/cookie-consent";
 import { RequireAdmin, RequireTrainer } from "@/components/auth/require-role";
 import { PlanGate } from "@/components/plan-gate";
 
@@ -331,35 +330,12 @@ const AnimatedRoutes = () => {
 
 function AppShell() {
   const { user } = useAuth();
-  const { t } = useLanguage();
-  const hasFooter = !user;
 
   return (
     <div className="min-h-screen flex flex-col min-w-0 overflow-x-hidden">
-      <div className={`flex-1 min-w-0 ${hasFooter ? "pb-14 sm:pb-12" : ""}`}>
+      <div className="flex-1 min-w-0">
         <AnimatedRoutes />
       </div>
-      {hasFooter && (
-        <footer className="fixed bottom-0 left-0 right-0 z-[70] border-t border-border/60 bg-background/90 backdrop-blur-2xl safe-area-bottom">
-          <div className="container mx-auto px-3 sm:px-4 py-2.5 text-[10px] sm:text-[11px] text-muted-foreground flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-            <span className="font-logo text-[14px] sm:text-[15px] tracking-tight text-foreground shrink-0">
-              ONE <span className="text-gradient-gold-animated">4</span> Team
-            </span>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:gap-4">
-              <a href="/terms" className="hover:text-foreground transition-colors whitespace-nowrap">{t.footer.termsOfService}</a>
-              <a href="/privacy" className="hover:text-foreground transition-colors whitespace-nowrap">{t.footer.privacyPolicy}</a>
-              <a href="/impressum" className="hover:text-foreground transition-colors whitespace-nowrap">{t.footer.legalNotice}</a>
-              <button
-                type="button"
-                onClick={() => requestOpenCookieSettings()}
-                className="hover:text-foreground transition-colors whitespace-nowrap text-left"
-              >
-                {t.cookieConsent.openPreferences}
-              </button>
-            </div>
-          </div>
-        </footer>
-      )}
     </div>
   );
 }

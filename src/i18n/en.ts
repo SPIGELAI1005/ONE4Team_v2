@@ -131,7 +131,7 @@ export const en = {
   cookieConsent: {
     bannerTitle: "Cookies and similar technologies",
     bannerIntro:
-      "ONE4Team uses cookies and similar technologies that are needed for sign-in, security, and core features. With your permission, we also use optional cookies for performance measurement and product analytics, and—together with selected partners—for communications and campaign measurement where applicable. Some technologies may process identifiers such as device or network addresses as described in our privacy documentation.",
+      "ONE4Team uses cookies and similar technologies that are needed for sign-in, security, and core features. With your permission, we also use optional cookies for performance measurement and product analytics, and (together with selected partners) for communications and campaign measurement where applicable. Some technologies may process identifiers such as device or network addresses as described in our privacy documentation.",
     bannerConsentNote:
       'Choosing "Accept all" enables the optional categories offered here. You can refine or withdraw consent anytime via Cookie settings (also linked in the footer when you are signed out).',
     openPreferences: "Cookie settings",
@@ -149,7 +149,7 @@ export const en = {
     tabMarketing: "Marketing",
     yourPrivacyTitle: "Your privacy",
     yourPrivacyBody:
-      "When you use a website or web app, information may be stored or read in your browser—often as cookies. It can relate to your preferences or device and is mainly used so things work as expected. It usually does not identify you directly, but it can make the experience more personal. Because we respect your right to privacy, you can refuse certain non-essential categories. Use the category tabs to learn more and adjust defaults. Blocking some categories may limit parts of the experience or optional features.",
+      "When you use a website or web app, information may be stored or read in your browser, often as cookies. It can relate to your preferences or device and is mainly used so things work as expected. It usually does not identify you directly, but it can make the experience more personal. Because we respect your right to privacy, you can refuse certain non-essential categories. Use the category tabs to learn more and adjust defaults. Blocking some categories may limit parts of the experience or optional features.",
     moreInfo: "More information",
     confirmSelection: "Save my choices",
     allowAll: "Allow all",
@@ -164,7 +164,7 @@ export const en = {
       "These cookies remember choices you make (for example display preferences) so we can offer a smoother, more tailored experience across sessions.",
     analyticsTitle: "Analytics cookies",
     analyticsDesc:
-      "These cookies help us understand aggregate usage—such as which areas are used most—so we can improve stability, performance, and discoverability in the app.",
+      "These cookies help us create aggregated, non-identifying statistics about how the app is used (for example which features are used most). This lets us improve stability, performance, and usability.",
     marketingTitle: "Marketing cookies",
     marketingDesc:
       "These cookies may be used to measure campaigns, limit repetition, and show more relevant messages about ONE4Team and partner offerings where we run promotional experiences.",
@@ -2777,6 +2777,21 @@ export const en = {
     linkTrainingImport: "Training plan import",
     linkCoachPlaceholders: "Coach placeholders",
     linkMemberHistory: "Member activity (from roster)",
+    chartActivityTitle: "Club activity (last 12 weeks)",
+    chartActivitySubtitle: "Trainings, matches, and events per week.",
+    chartLegendTrainings: "Trainings",
+    chartLegendMatches: "Matches",
+    chartLegendEvents: "Events",
+    chartCoverageTitle: "Coach coverage",
+    chartCoverageSubtitle: "Teams with and without assigned trainers.",
+    teamsWithTrainer: "Teams with trainer",
+    teamsWithoutTrainer: "Teams without trainer",
+    chartNewMembersTitle: "New members (last 12 weeks)",
+    chartLegendNewMembers: "New members",
+    chartTrainingsByDowTitle: "Trainings by weekday",
+    chartTrainingsByDowSubtitle: "How many trainings are scheduled on each weekday (last 12 weeks).",
+    chartTrainingsByMonthTitle: "Trainings by month",
+    chartTrainingsByMonthSubtitle: "Scheduled trainings per month (last 6 months).",
     tabScorers: "Top scorers",
     tabAssists: "Most assists",
     tabCards: "Cards",

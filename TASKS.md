@@ -10,11 +10,17 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ### Cookie consent + public team / import surfaces (2026-04-29) — code in repo
 - [x] **COOKIE-001** Banner + privacy preference centre (`cookie-consent.tsx`), granular categories + toggles, **`one4team.cookieConsent` v2** + legacy migration.
-- [x] **COOKIE-002** EN/DE **`cookieConsent`** strings; **`requestOpenCookieSettings()`** in **`App.tsx`** signed-out footer + **`landing/Footer.tsx`**.
+- [x] **COOKIE-002** EN/DE **`cookieConsent`** strings; **`requestOpenCookieSettings()`** from **`@/lib/cookie-consent`** in **`landing/Footer.tsx`** (and any other callers).
 - [x] **COOKIE-003** **`dialog.tsx`** z-index so preference modal stacks above footer and banner.
+- [x] **COOKIE-004** (2026-05-01) Removed duplicate signed-out fixed footer from **`App.tsx`**; marketing pages use **`landing/Footer`** only; preference dialog **fixed height** so tabs do not resize the modal.
 - [x] **PUBLIC-TEAM-001** Route **`/club/:clubSlug/team/:teamId`**, **`ClubTeamPage.tsx`**, migration **`20260429130000_public_club_schedule_and_team_page.sql`** (`get_public_club_team_page`, public **`activities`** read policy).
 - [x] **ADMIN-IMPORT-001** Routes **`/training-plan-import`**, **`/coach-placeholders`** (admin) + **`src/lib/training-plan-import/`**; migrations **`20260426121000`**, **`20260426122000`**, optional **`20260330160000`**.
-- [ ] **PUBLIC-TEAM-002** Operator: apply **`20260330160000`** (if used), **`20260426*`**, **`20260429130000`** in filename order on each Supabase env; **`supabase gen types`** → commit **`types.ts`** if drift.
+- [ ] **PUBLIC-TEAM-002** Operator: apply **`20260330160000`** (if used), **`20260426*`**, **`20260429130000`**, **`20260430173000`** in filename order on each Supabase env; **`supabase gen types`** → commit **`types.ts`** if drift.
+
+### Reports + RBAC (2026-05-01)
+- [x] **REPORTS-001** **`/reports`** admin charts (Recharts): weekly activity, coach coverage, new members, trainings by weekday/month; activity type normalization + **`.ilike`** for training KPI counts.
+- [x] **RBAC-001** **`usePermissions`**: **`is_club_admin`** RPC fallback when **`club_role_assignments`** read fails; migration **`20260430173000_fix_club_role_assignments_select_policy.sql`**.
+- [ ] **REPORTS-002** If env uses **`training_sessions`** as primary schedule: merge counts into reports (or document that **`activities`** must be populated).
 
 ### Production readiness — code landed (2026-03-30)
 - [x] **PROD-PR-001** Migrations `20260329103000`–`20260330120000` in repo: platform admin RBAC/audit, analytics RPCs, guarded hotspot indexes, billing reconciliation, club member stats, `search_club_members_page`.

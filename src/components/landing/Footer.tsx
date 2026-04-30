@@ -77,10 +77,8 @@ const Footer = () => {
           </div>
 
           {/* Bottom: Copyright */}
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground">
-              {t.footer.copyright}
-            </p>
+          <div className="text-left">
+            <p className="text-xs text-muted-foreground">{t.footer.copyright}</p>
           </div>
         </div>
       </div>

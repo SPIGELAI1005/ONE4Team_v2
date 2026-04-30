@@ -3,6 +3,30 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-05-01 (Reports KPI charts, RBAC admin guard, marketing footer, documentation sync)
+
+### Reports (`/reports` → `PlayerStats.tsx`)
+- **Admin dashboard charts (Recharts):** Last **12 weeks** of club activity (trainings / matches / events) with **Monday-based** week buckets (`date-fns` `startOfWeek`); **coach coverage** pie (teams with vs without `team_coaches`); **new active members** per week; **trainings by weekday** and **trainings by month** (last 6 months).
+- **Data robustness:** Client-side **`activities.type`** normalization (training/match/event aliases); KPI training counts use **`.ilike("type","training")`** instead of strict `eq` only.
+- **Follow-up (not done):** If schedule is stored primarily in **`training_sessions`**, union or prefer that source so charts are non-empty in those deployments.
+
+### RBAC / admin routes
+- **`src/hooks/use-permissions.ts`:** When `club_role_assignments` select fails, call **`is_club_admin`** RPC and treat success as admin for **`RequireAdmin`** guards.
+- **`supabase/migrations/20260430173000_fix_club_role_assignments_select_policy.sql`:** Recreate **`club_role_assignments_select_members`** using named `is_member_of_club` parameters.
+
+### Cookie consent and marketing shell
+- **`src/lib/cookie-consent.ts`:** Shared **`readCookiePreferences`**, **`writeCookieConsent`**, **`requestOpenCookieSettings`**, event name helper (react-refresh lint compliance).
+- **`src/components/ui/cookie-consent.tsx`:** Preference dialog **fixed height** `h-[min(90vh,720px)]` so switching tabs does not resize the modal.
+- **`src/App.tsx`:** Removed duplicate signed-out **fixed** footer (marketing pages already include **`landing/Footer`**).
+- **`src/components/landing/Footer.tsx`:** Copyright **left-aligned**; cookie settings still opens preference centre.
+
+### i18n
+- **`reportsPage`:** New strings for chart titles/subtitles/legends (EN/DE).
+- **`cookieConsent`:** Copy tweaks (no em dash in cookie strings where requested).
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`ROADMAP.md`**, **`TASKS.md`**, **`README.md`**, **`MVP_PLAN.md`**, **`ops/PRODUCTION_READINESS_EVIDENCE_LOG.md`**, **`CHANGELOG.md`** (this entry).
+
 ## 2026-04-29 (Cookie preference centre, public club team page, training/coach admin surfaces, documentation sync)
 
 ### Cookie consent and privacy preference centre

@@ -6,6 +6,22 @@ import {
   Loader2, Trophy, AlertTriangle, Award, Filter, Users, Calendar, MapPin, Briefcase,
   ArrowRight, LayoutGrid,
 } from "lucide-react";
+import { format, startOfMonth, startOfWeek } from "date-fns";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,12 +59,57 @@ interface ReportSnapshot {
   playerSessions14d: number | null;
 }
 
+interface ClubKpiSeriesPoint {
+  label: string;
+  trainings: number;
+  matches: number;
+  events: number;
+  newMembers: number;
+}
+
+interface ClubKpiBreakdown {
+  teamsWithoutTrainer: number | null;
+  teamsWithTrainer: number | null;
+}
+
+interface SimpleSeriesPoint {
+  label: string;
+  value: number;
+}
+
 function isMissingRelationError(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const message = String((error as { message?: unknown }).message ?? "");
   if (message.includes("Could not find the table")) return true;
   if (/\brelation\b.*\bdoes not exist\b/i.test(message)) return true;
   return false;
+}
+
+function normalizeActivityType(value: unknown): "training" | "match" | "event" | null {
+  const v = String(value ?? "").trim().toLowerCase();
+  if (!v) return null;
+  if (v === "training" || v === "trainings" || v === "session" || v === "practice") return "training";
+  if (v === "match" || v === "game") return "match";
+  if (v === "event") return "event";
+  return null;
+}
+
+function localDayKey(dateLike: string) {
+  return format(new Date(dateLike), "yyyy-MM-dd");
+}
+
+function weekKey(dateLike: string) {
+  const w = startOfWeek(new Date(dateLike), { weekStartsOn: 1 });
+  return format(w, "yyyy-MM-dd");
+}
+
+function weekLabelFromKey(key: string) {
+  return format(new Date(`${key}T00:00:00`), "dd.MM");
+}
+
+function monthKey(dateLike: string) {
+  const m = startOfMonth(new Date(dateLike));
+  return format(m, "yyyy-MM");
 }
 
 function Kpi({ label, value }: { label: string; value: string | number }) {
@@ -99,6 +160,12 @@ const PlayerStats = () => {
   const [snapshot, setSnapshot] = useState<ReportSnapshot | null>(null);
   const [snapshotLoading, setSnapshotLoading] = useState(false);
   const [snapshotError, setSnapshotError] = useState(false);
+
+  const [clubSeries, setClubSeries] = useState<ClubKpiSeriesPoint[]>([]);
+  const [clubBreakdown, setClubBreakdown] = useState<ClubKpiBreakdown>({ teamsWithoutTrainer: null, teamsWithTrainer: null });
+  const [clubChartsLoading, setClubChartsLoading] = useState(false);
+  const [trainingsByDow, setTrainingsByDow] = useState<SimpleSeriesPoint[]>([]);
+  const [trainingsByMonth, setTrainingsByMonth] = useState<SimpleSeriesPoint[]>([]);
 
   useEffect(() => {
     if (!clubId) return;
@@ -168,7 +235,7 @@ const PlayerStats = () => {
               .from("activities")
               .select("id", { count: "exact", head: true })
               .eq("club_id", clubId)
-              .eq("type", "training")
+              .ilike("type", "training")
               .gte("starts_at", nowIso)
               .lte("starts_at", in14),
             supabase
@@ -212,7 +279,7 @@ const PlayerStats = () => {
               .from("activities")
               .select("id", { count: "exact", head: true })
               .eq("club_id", clubId)
-              .eq("type", "training")
+              .ilike("type", "training")
               .gte("starts_at", nowIso)
               .lte("starts_at", in14)
               .in("team_id", coachTeamIds);
@@ -265,6 +332,200 @@ const PlayerStats = () => {
       cancelled = true;
     };
   }, [clubId, membershipId, persona]);
+
+  useEffect(() => {
+    if (!clubId || persona !== "admin") {
+      setClubSeries([]);
+      setClubBreakdown({ teamsWithoutTrainer: null, teamsWithTrainer: null });
+      return;
+    }
+
+    let cancelled = false;
+    setClubChartsLoading(true);
+
+    void (async () => {
+      const now = new Date();
+      const thisWeek = startOfWeek(now, { weekStartsOn: 1 });
+      const weeks = 12;
+      const from = new Date(thisWeek);
+      from.setDate(from.getDate() - (weeks - 1) * 7);
+      const fromIso = from.toISOString();
+
+      const buckets = Array.from({ length: weeks }, (_, i) => {
+        const start = new Date(from);
+        start.setDate(start.getDate() + i * 7);
+        return {
+          key: format(start, "yyyy-MM-dd"),
+          label: format(start, "dd.MM"),
+          start,
+          trainings: 0,
+          matches: 0,
+          events: 0,
+          newMembers: 0,
+        };
+      });
+      const byKey = new Map(buckets.map((b) => [b.key, b]));
+
+      function bumpWeek(dateLike: string | null | undefined, field: keyof Pick<ClubKpiSeriesPoint, "trainings" | "matches" | "events" | "newMembers">) {
+        if (!dateLike) return;
+        const key = weekKey(dateLike);
+        const bucket = byKey.get(key);
+        if (!bucket) return;
+        bucket[field] += 1;
+      }
+
+      try {
+        const [trainRes, matchRes, eventRes, membersRes] = await Promise.all([
+          supabase
+            .from("activities")
+            .select("starts_at, type")
+            .eq("club_id", clubId)
+            .gte("starts_at", fromIso),
+          supabase
+            .from("matches")
+            .select("match_date, status")
+            .eq("club_id", clubId)
+            .gte("match_date", fromIso)
+            .neq("status", "cancelled"),
+          supabase
+            .from("events")
+            .select("starts_at, status")
+            .eq("club_id", clubId)
+            .gte("starts_at", fromIso)
+            .neq("status", "cancelled"),
+          supabase
+            .from("club_memberships")
+            .select("created_at, status")
+            .eq("club_id", clubId)
+            .gte("created_at", fromIso)
+            .eq("status", "active"),
+        ]);
+
+        if (cancelled) return;
+
+        if (!trainRes.error) {
+          for (const row of trainRes.data ?? []) {
+            const startsAt = String((row as { starts_at?: string }).starts_at ?? "");
+            if (!startsAt) continue;
+            const kind = normalizeActivityType((row as { type?: unknown }).type);
+            if (kind === "training") bumpWeek(startsAt, "trainings");
+            if (kind === "event") bumpWeek(startsAt, "events");
+            if (kind === "match") bumpWeek(startsAt, "matches");
+          }
+        } else if (!isMissingRelationError(trainRes.error)) {
+          setSnapshotError(true);
+        }
+
+        if (!matchRes.error) {
+          for (const row of matchRes.data ?? []) bumpWeek((row as { match_date?: string }).match_date, "matches");
+        } else if (!isMissingRelationError(matchRes.error)) {
+          setSnapshotError(true);
+        }
+
+        if (!eventRes.error) {
+          for (const row of eventRes.data ?? []) bumpWeek((row as { starts_at?: string }).starts_at, "events");
+        } else if (!isMissingRelationError(eventRes.error)) {
+          setSnapshotError(true);
+        }
+
+        if (!membersRes.error) {
+          for (const row of membersRes.data ?? []) bumpWeek((row as { created_at?: string }).created_at, "newMembers");
+        } else if (!isMissingRelationError(membersRes.error)) {
+          setSnapshotError(true);
+        }
+
+        if (!cancelled) {
+          const dowLabels = [
+            { id: 1, label: "Mon" },
+            { id: 2, label: "Tue" },
+            { id: 3, label: "Wed" },
+            { id: 4, label: "Thu" },
+            { id: 5, label: "Fri" },
+            { id: 6, label: "Sat" },
+            { id: 0, label: "Sun" },
+          ];
+          const dowMap = new Map(dowLabels.map((d) => [d.id, { label: d.label, value: 0 }]));
+          const monthMap = new Map<string, number>();
+
+          if (!trainRes.error) {
+            for (const r of trainRes.data ?? []) {
+              const startsAt = String((r as { starts_at?: string }).starts_at ?? "");
+              if (!startsAt) continue;
+              const kind = normalizeActivityType((r as { type?: unknown }).type);
+              if (kind !== "training") continue;
+              const d = new Date(startsAt);
+              if (Number.isNaN(d.getTime())) continue;
+              const dow = d.getDay();
+              const slot = dowMap.get(dow);
+              if (slot) slot.value += 1;
+              const mk = monthKey(startsAt);
+              monthMap.set(mk, (monthMap.get(mk) ?? 0) + 1);
+            }
+          }
+
+          setTrainingsByDow(Array.from(dowMap.values()));
+
+          const months = 6;
+          const monthBuckets: SimpleSeriesPoint[] = [];
+          for (let i = months - 1; i >= 0; i -= 1) {
+            const m = new Date(now);
+            m.setMonth(m.getMonth() - i, 1);
+            m.setHours(0, 0, 0, 0);
+            const key = format(startOfMonth(m), "yyyy-MM");
+            monthBuckets.push({ label: format(m, "MMM"), value: monthMap.get(key) ?? 0 });
+          }
+          setTrainingsByMonth(monthBuckets);
+        }
+
+        const [teamsRes, coachesRes] = await Promise.all([
+          supabase.from("teams").select("id").eq("club_id", clubId),
+          supabase.from("team_coaches").select("team_id"),
+        ]);
+
+        if (!cancelled) {
+          if (!teamsRes.error) {
+            const teamIds = (teamsRes.data ?? []).map((r) => String((r as { id?: string }).id || "")).filter(Boolean);
+            const coachesTeamIdsRaw = !coachesRes.error
+              ? (coachesRes.data ?? []).map((r) => String((r as { team_id?: string }).team_id || "")).filter(Boolean)
+              : [];
+            const teamIdSet = new Set(teamIds);
+            const coachedTeams = new Set(coachesTeamIdsRaw.filter((id) => teamIdSet.has(id)));
+            const teamsWithTrainer = coachedTeams.size;
+            const teamsWithoutTrainer = Math.max(0, teamIds.length - teamsWithTrainer);
+            setClubBreakdown({ teamsWithTrainer, teamsWithoutTrainer });
+          } else {
+            setClubBreakdown({ teamsWithTrainer: null, teamsWithoutTrainer: null });
+          }
+        }
+
+        if (!cancelled) {
+          setClubSeries(
+            buckets.map((b) => ({
+              label: b.label,
+              trainings: b.trainings,
+              matches: b.matches,
+              events: b.events,
+              newMembers: b.newMembers,
+            })),
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setClubSeries([]);
+          setClubBreakdown({ teamsWithoutTrainer: null, teamsWithTrainer: null });
+          setTrainingsByDow([]);
+          setTrainingsByMonth([]);
+          setSnapshotError(true);
+        }
+      } finally {
+        if (!cancelled) setClubChartsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [clubId, persona]);
 
   const teamsForSelect = useMemo(() => {
     if (persona === "trainer" && snapshot?.coachTeamIds && snapshot.coachTeamIds.length > 0) {
@@ -393,6 +654,136 @@ const PlayerStats = () => {
                   <Kpi label={t.reportsPage.kpiUnresolvedPlaceholders} value={snapshot?.unresolvedPlaceholders ?? "—"} />
                 </div>
               )}
+
+              <div className="grid gap-3 lg:grid-cols-3">
+                <Card className="border-border/60 bg-background/30 lg:col-span-2">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">{t.reportsPage.chartActivityTitle}</CardTitle>
+                    <CardDescription className="text-xs">{t.reportsPage.chartActivitySubtitle}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-[260px]">
+                    {clubChartsLoading ? (
+                      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" /> {t.reportsPage.loadingMetrics}
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={clubSeries} margin={{ top: 8, right: 8, bottom: 8, left: -8 }}>
+                          <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
+                          <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="trainings" name={t.reportsPage.chartLegendTrainings} fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                          <Bar dataKey="matches" name={t.reportsPage.chartLegendMatches} fill="hsl(var(--chart-2, var(--muted-foreground)))" radius={[6, 6, 0, 0]} />
+                          <Bar dataKey="events" name={t.reportsPage.chartLegendEvents} fill="hsl(var(--chart-3, var(--muted-foreground)))" radius={[6, 6, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border/60 bg-background/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">{t.reportsPage.chartCoverageTitle}</CardTitle>
+                    <CardDescription className="text-xs">{t.reportsPage.chartCoverageSubtitle}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-[260px] flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Kpi label={t.reportsPage.kpiTeams} value={snapshot?.teamsCount ?? "—"} />
+                      <Kpi label={t.reportsPage.kpiActiveMembers} value={snapshot?.membersActive ?? "—"} />
+                    </div>
+                    <div className="flex-1 min-h-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={[
+                              { name: t.reportsPage.teamsWithTrainer, value: clubBreakdown.teamsWithTrainer ?? 0 },
+                              { name: t.reportsPage.teamsWithoutTrainer, value: clubBreakdown.teamsWithoutTrainer ?? 0 },
+                            ]}
+                            dataKey="value"
+                            nameKey="name"
+                            innerRadius={38}
+                            outerRadius={64}
+                            paddingAngle={2}
+                          >
+                            <Cell fill="hsl(var(--primary))" />
+                            <Cell fill="hsl(var(--muted-foreground))" />
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {clubBreakdown.teamsWithoutTrainer == null ? (
+                        t.common.loading
+                      ) : (
+                        <>
+                          {clubBreakdown.teamsWithTrainer} {t.reportsPage.teamsWithTrainer}
+                          {" · "}
+                          {clubBreakdown.teamsWithoutTrainer} {t.reportsPage.teamsWithoutTrainer}
+                        </>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid gap-3 lg:grid-cols-2">
+                <Card className="border-border/60 bg-background/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">{t.reportsPage.chartTrainingsByDowTitle}</CardTitle>
+                    <CardDescription className="text-xs">{t.reportsPage.chartTrainingsByDowSubtitle}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-[220px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={trainingsByDow} margin={{ top: 8, right: 8, bottom: 8, left: -8 }}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
+                        <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                        <Tooltip />
+                        <Bar dataKey="value" name={t.reportsPage.chartLegendTrainings} fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border/60 bg-background/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">{t.reportsPage.chartTrainingsByMonthTitle}</CardTitle>
+                    <CardDescription className="text-xs">{t.reportsPage.chartTrainingsByMonthSubtitle}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-[220px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={trainingsByMonth} margin={{ top: 8, right: 8, bottom: 8, left: -8 }}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
+                        <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                        <Tooltip />
+                        <Bar dataKey="value" name={t.reportsPage.chartLegendTrainings} fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card className="border-border/60 bg-background/30">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">{t.reportsPage.chartNewMembersTitle}</CardTitle>
+                  <CardDescription className="text-xs">{t.reportsPage.sectionOverview}</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[220px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={clubSeries} margin={{ top: 8, right: 8, bottom: 8, left: -8 }}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
+                      <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="newMembers" name={t.reportsPage.chartLegendNewMembers} stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
               <div>
                 <div className="text-xs font-semibold text-foreground mb-2">{t.reportsPage.quickLinks}</div>

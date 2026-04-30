@@ -8,11 +8,12 @@ Club/team management SaaS with an iOS-style glass UI, full internationalization 
 - **Animated football field**: Canvas-based match simulation with translated chat bubbles
 - **Public pages**: Features, Clubs & Partners, Pricing, About
 - **Legal pages**: Terms of Service, Privacy Policy, Impressum (GDPR/TMG compliant)
-- **Cookie consent**: Bottom banner plus **privacy preference centre** (categories + toggles), Accept all / Reject non-essential, EN/DE copy; choices stored in **`localStorage`** (`one4team.cookieConsent` v2); **Cookie settings** in signed-out footer and marketing footer
+- **Cookie consent**: Bottom banner plus **privacy preference centre** (categories + toggles), Accept all / Reject non-essential, EN/DE copy; choices stored in **`localStorage`** (`one4team.cookieConsent` v2); **Cookie settings** in the marketing **`Footer`** (duplicate signed-out bar removed)
 - **Dashboard**: Role-based views (Admin, Trainer, Player, Sponsor, Supplier, etc.) with personalized greeting
 - **Shop**: Product catalog, orders management, categories (demo data)
 - **Club Page Admin**: Manage public club page (branding, contact, social, SEO, **which sections** appear on `/club/:slug` via `public_page_sections`)
 - **Public club page (`/club/:slug`)**: PWA-friendly mobile header (single menu), hero shortcuts aligned with CTAs, **Powered by ONE4Team** → marketing home (`/`); **Support FAQ** at `/support`; optional **public team page** at **`/club/:slug/team/:teamId`** when migrations and data are applied
+- **Reports** (`/reports`): Club KPI snapshot for admins (charts: weekly activity, coach coverage, member growth, trainings by weekday/month; **Recharts**)
 - **Members**: Server-paged roster with debounced **full-club search** (RPC `search_club_members_page`, ≥2 characters) where migrations are applied
 - **Settings**: Profile, club config, notification preferences, account security
 - **ONE4AI (`/co-trainer`)**: Club-scoped chat with structured context; per-club LLM keys in **Settings → Club → AI provider** (`club_llm_settings`) or platform fallback via Supabase secrets `OPENAI_API_KEY` / `OPENAI_MODEL`. Settings shows a live **connection status** and **Test connection** (calls deployed `co-trainer` with `mode: "health"`).
