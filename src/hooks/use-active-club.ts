@@ -1,9 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 
 const CLUB_KEY_PREFIX = "one4team.activeClubId";
 const ACTIVE_CLUB_CHANGED_EVENT = "one4team:active-club-changed";
+
+/** Dispatch after mutating `club_memberships` (or use `refetchMemberships`) so all `useActiveClub` hooks reload roles. */
+export const MEMBERSHIPS_UPDATED_EVENT = "one4team:memberships-updated";
+
+export function notifyMembershipsUpdated(): void {
+  window.dispatchEvent(new Event(MEMBERSHIPS_UPDATED_EVENT));
+}
 
 export interface ClubOption {
   id: string;
@@ -40,7 +47,7 @@ export function useActiveClub() {
 
   const userClubKey = user ? `${CLUB_KEY_PREFIX}:${user.id}` : null;
 
-  useEffect(() => {
+  const fetchClubs = useCallback(async () => {
     if (!user) {
       setClubs([]);
       setActiveClubId(null);
@@ -48,56 +55,63 @@ export function useActiveClub() {
       return;
     }
 
-    const fetchClubs = async () => {
-      setLoading(true);
+    setLoading(true);
 
-      const { data, error } = await supabase
-        .from("club_memberships")
-        .select("id, club_id, role, created_at, clubs:clubs(id, name, slug)")
-        .eq("user_id", user.id)
-        .eq("status", "active")
-        .order("created_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("club_memberships")
+      .select("id, club_id, role, created_at, clubs:clubs(id, name, slug)")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .order("created_at", { ascending: false });
 
-      if (error) {
-        // keep silent for now; calling screens can decide what to show
-        setClubs([]);
-        setActiveClubId(null);
-        setLoading(false);
-        return;
-      }
-
-      const rows = (data ?? []) as unknown as MembershipRow[];
-      const seenClub = new Set<string>();
-      const options: ClubOption[] = [];
-      for (const r of rows) {
-        if (!r.clubs || seenClub.has(r.club_id)) continue;
-        seenClub.add(r.club_id);
-        options.push({
-          id: r.club_id,
-          membershipId: r.id,
-          name: r.clubs.name,
-          slug: r.clubs.slug,
-          role: r.role,
-        });
-      }
-      options.sort((a, b) => a.name.localeCompare(b.name));
-
-      setClubs(options);
-
-      const stored = (userClubKey ? localStorage.getItem(userClubKey) : null) ?? localStorage.getItem(CLUB_KEY_PREFIX);
-      const preferred = stored && options.some((c) => c.id === stored) ? stored : null;
-      const next = preferred ?? options[0]?.id ?? null;
-
-      setActiveClubId(next);
-      if (next && userClubKey) localStorage.setItem(userClubKey, next);
-      localStorage.removeItem(CLUB_KEY_PREFIX);
-      if (!next && userClubKey) localStorage.removeItem(userClubKey);
-
+    if (error) {
+      setClubs([]);
+      setActiveClubId(null);
       setLoading(false);
-    };
+      return;
+    }
 
-    fetchClubs();
+    const rows = (data ?? []) as unknown as MembershipRow[];
+    const seenClub = new Set<string>();
+    const options: ClubOption[] = [];
+    for (const r of rows) {
+      if (!r.clubs || seenClub.has(r.club_id)) continue;
+      seenClub.add(r.club_id);
+      options.push({
+        id: r.club_id,
+        membershipId: r.id,
+        name: r.clubs.name,
+        slug: r.clubs.slug,
+        role: r.role,
+      });
+    }
+    options.sort((a, b) => a.name.localeCompare(b.name));
+
+    setClubs(options);
+
+    const stored = (userClubKey ? localStorage.getItem(userClubKey) : null) ?? localStorage.getItem(CLUB_KEY_PREFIX);
+    const preferred = stored && options.some((c) => c.id === stored) ? stored : null;
+    const next = preferred ?? options[0]?.id ?? null;
+
+    setActiveClubId(next);
+    if (next && userClubKey) localStorage.setItem(userClubKey, next);
+    localStorage.removeItem(CLUB_KEY_PREFIX);
+    if (!next && userClubKey) localStorage.removeItem(userClubKey);
+
+    setLoading(false);
   }, [user, userClubKey]);
+
+  useEffect(() => {
+    void fetchClubs();
+  }, [fetchClubs]);
+
+  useEffect(() => {
+    function onMembershipsUpdated() {
+      void fetchClubs();
+    }
+    window.addEventListener(MEMBERSHIPS_UPDATED_EVENT, onMembershipsUpdated);
+    return () => window.removeEventListener(MEMBERSHIPS_UPDATED_EVENT, onMembershipsUpdated);
+  }, [fetchClubs]);
 
   useEffect(() => {
     if (!userClubKey) return;
@@ -143,5 +157,5 @@ export function useActiveClub() {
     );
   };
 
-  return { clubs, activeClubId, activeClub, setActiveClubId: setActive, loading };
+  return { clubs, activeClubId, activeClub, setActiveClubId: setActive, loading, refetchMemberships: fetchClubs };
 }

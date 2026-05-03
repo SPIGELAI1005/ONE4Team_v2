@@ -6,7 +6,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageToggle } from "@/components/ui/language-toggle";
 import { TestModeBanner } from "@/components/ui/test-mode-banner";
 import { usePermissions } from "@/hooks/use-permissions";
-import { useActiveClub } from "@/hooks/use-active-club";
+import { useActiveClub, notifyMembershipsUpdated } from "@/hooks/use-active-club";
 import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/hooks/use-language";
 import logo from "@/assets/one4team-logo.png";
@@ -243,6 +243,7 @@ export default function AppHeader({
                             type="button"
                             onClick={() => {
                               localStorage.setItem("one4team.activeRole", r);
+                              notifyMembershipsUpdated();
                               setOpen(false);
                               navigate(`/dashboard/${r}`);
                             }}
@@ -351,6 +352,7 @@ export default function AppHeader({
                           type="button"
                           onClick={() => {
                             localStorage.setItem("one4team.activeRole", r);
+                            notifyMembershipsUpdated();
                             setOpen(false);
                             navigate(`/dashboard/${r}`);
                           }}

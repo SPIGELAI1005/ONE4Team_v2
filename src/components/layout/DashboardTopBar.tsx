@@ -28,7 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { usePermissions } from "@/hooks/use-permissions";
-import { useActiveClub } from "@/hooks/use-active-club";
+import { useActiveClub, notifyMembershipsUpdated } from "@/hooks/use-active-club";
 import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/hooks/use-language";
 import { DashboardTopBarContext } from "@/contexts/dashboard-top-bar-context";
@@ -315,6 +315,7 @@ export default function DashboardTopBar() {
                         type="button"
                         onClick={() => {
                           localStorage.setItem("one4team.activeRole", r);
+                          notifyMembershipsUpdated();
                           setOpen(false);
                           navigate(`/dashboard/${r}`);
                         }}

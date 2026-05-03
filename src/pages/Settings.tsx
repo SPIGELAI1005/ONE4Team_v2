@@ -13,7 +13,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 import { usePermissions } from "@/hooks/use-permissions";
-import { useActiveClub } from "@/hooks/use-active-club";
+import { useActiveClub, notifyMembershipsUpdated } from "@/hooks/use-active-club";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { correlationHeaders } from "@/lib/observability";
@@ -85,7 +85,7 @@ function formatRoleLabel(role: string): string {
 
 export default function Settings() {
   const { user, changeEmail, signOut } = useAuth();
-  const { activeClubId, activeClub, clubs, loading: activeClubLoading } = useActiveClub();
+  const { activeClubId, activeClub, clubs, loading: activeClubLoading, refetchMemberships } = useActiveClub();
   const perms = usePermissions();
   const { t, setLanguage, language } = useLanguage();
   const { toast } = useToast();
@@ -660,10 +660,17 @@ export default function Settings() {
                               return (
                                 <button
                                   key={role}
+                                  type="button"
                                   onClick={() => {
-                                    localStorage.setItem("one4team.activeRole", role);
-                                    toast({ title: "Dashboard role switched", description: `Now viewing as ${formatRoleLabel(role)}. Redirecting…` });
-                                    setTimeout(() => navigate(`/dashboard/${role}`), 600);
+                                    void (async () => {
+                                      localStorage.setItem("one4team.activeRole", role);
+                                      await refetchMemberships();
+                                      toast({
+                                        title: "Dashboard role switched",
+                                        description: `Now viewing as ${formatRoleLabel(role)}.`,
+                                      });
+                                      navigate(`/dashboard/${role}`);
+                                    })();
                                   }}
                                   className={`min-h-11 rounded-xl border px-2.5 py-2 text-center transition-all ${
                                     isSelected
@@ -697,6 +704,7 @@ export default function Settings() {
                                     toast({ title: t.common.error, description: error.message, variant: "destructive" });
                                     return;
                                   }
+                                  notifyMembershipsUpdated();
                                   localStorage.setItem("one4team.activeRole", newRole);
                                   toast({ title: "Role updated", description: `Your membership role is now ${formatRoleLabel(newRole)}. Reloading…` });
                                   setTimeout(() => window.location.reload(), 800);

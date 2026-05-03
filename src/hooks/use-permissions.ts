@@ -19,7 +19,7 @@ function isMissingRelationError(error: unknown): boolean {
 }
 
 export function usePermissions() {
-  const { activeClub } = useActiveClub();
+  const { activeClub, loading: activeClubLoading } = useActiveClub();
   const { user } = useAuth();
   const legacyRole = activeClub?.role ?? null;
 
@@ -28,9 +28,17 @@ export function usePermissions() {
   const [adminRpcAllowed, setAdminRpcAllowed] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!user || !activeClub?.membershipId) {
+    if (!user) {
       setAssignments([]);
       setAdminRpcAllowed(null);
+      setAssignmentsLoading(false);
+      return;
+    }
+
+    if (!activeClub?.membershipId) {
+      setAssignments([]);
+      setAdminRpcAllowed(null);
+      setAssignmentsLoading(false);
       return;
     }
 
@@ -46,35 +54,41 @@ export function usePermissions() {
 
       if (cancelled) return;
 
+      let rows: ClubRoleAssignmentRow[] = [];
       if (error) {
         if (!isMissingRelationError(error)) {
           console.warn("[usePermissions] club_role_assignments:", error.message);
         }
-        setAssignments([]);
-        // Fallback: even if role assignments cannot be read (RLS or schema drift),
-        // we can still determine admin capability via the security-definer RPC.
-        // This prevents admin routes from bouncing to /dashboard/player when the
-        // assignments SELECT policy is misconfigured.
-        try {
-          const { data: isAdmin, error: rpcError } = await supabase.rpc("is_club_admin", {
-            _club_id: activeClub.id,
-            _user_id: user.id,
-          });
-          if (cancelled) return;
-          if (rpcError) {
-            console.warn("[usePermissions] is_club_admin rpc:", rpcError.message);
-            setAdminRpcAllowed(null);
-          } else {
-            setAdminRpcAllowed(Boolean(isAdmin));
-          }
-        } catch {
-          if (!cancelled) setAdminRpcAllowed(null);
-        }
       } else {
-        setAssignments((data as ClubRoleAssignmentRow[]) ?? []);
-        setAdminRpcAllowed(null);
+        rows = (data as ClubRoleAssignmentRow[]) ?? [];
       }
-      setAssignmentsLoading(false);
+
+      if (!cancelled) setAssignments(rows);
+
+      // Always confirm with server: fixes (a) successful empty assignment rows while
+      // `club_memberships.role` is admin in DB but client cache is stale, (b) RLS hiding
+      // assignment rows without surfacing a Postgres "missing relation" error.
+      let rpcAllowed: boolean | null = null;
+      try {
+        const { data: rpcData, error: rpcError } = await supabase.rpc("is_club_admin", {
+          _club_id: activeClub.id,
+          _user_id: user.id,
+        });
+        if (cancelled) return;
+        if (rpcError) {
+          console.warn("[usePermissions] is_club_admin rpc:", rpcError.message);
+          rpcAllowed = null;
+        } else {
+          rpcAllowed = Boolean(rpcData);
+        }
+      } catch {
+        if (!cancelled) rpcAllowed = null;
+      }
+
+      if (!cancelled) {
+        setAdminRpcAllowed(rpcAllowed);
+        setAssignmentsLoading(false);
+      }
     })();
 
     return () => {
@@ -106,6 +120,8 @@ export function usePermissions() {
   return {
     role: legacyRole,
     assignments,
+    /** True while club list / active club is resolving (avoid role-guard redirects on a stale frame). */
+    activeClubLoading,
     assignmentsLoading,
     permissions,
     has: (p: Permission) => hasPermissionInSet(permissions, p),
