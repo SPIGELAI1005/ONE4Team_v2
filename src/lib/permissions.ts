@@ -138,7 +138,11 @@ export function isTrainerCapability(
   assignments: ClubRoleAssignmentRow[] | null | undefined,
 ): boolean {
   if (legacyRole === "admin" || legacyRole === "trainer") return true;
-  return assignments?.some((a) => a.role_kind === "club_admin" || a.role_kind === "trainer") ?? false;
+  return (
+    assignments?.some(
+      (a) => a.role_kind === "club_admin" || a.role_kind === "trainer" || a.role_kind === "team_admin",
+    ) ?? false
+  );
 }
 
 export function teamAdminTeamIds(assignments: ClubRoleAssignmentRow[] | null | undefined): string[] {

@@ -92,9 +92,13 @@ export function usePermissions() {
     [legacyRole, assignments, adminRpcAllowed],
   );
 
+  // Club general admins must satisfy trainer-scoped routes (e.g. /members) even when
+  // `club_role_assignments` is empty/unreadable and we only know admin via `is_club_admin` RPC.
+  // Otherwise RequireTrainer redirects to /dashboard/player and DashboardContent overwrites
+  // `one4team.activeRole` in localStorage, undoing the user's dashboard role switch.
   const isTrainer = useMemo(
-    () => isTrainerCapability(legacyRole, assignments),
-    [legacyRole, assignments],
+    () => isTrainerCapability(legacyRole, assignments) || isAdmin,
+    [legacyRole, assignments, isAdmin],
   );
 
   const teamAdminForTeamIds = useMemo(() => teamAdminTeamIds(assignments), [assignments]);
