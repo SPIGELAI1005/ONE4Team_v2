@@ -1,11 +1,12 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-05-01 (reports KPI charts, RBAC admin guard fix, marketing footer cleanup, doc sync)
+Last updated: 2026-05-03 (public club microsite admin polish, hero overlay config, nav `showInNav` parity, doc sync + changelog)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **Public club microsite — admin + layout (2026-05-02 / 2026-05-03):** **`ClubPageAdmin`** status strip uses **badges** for site visibility (live vs hidden), published snapshot vs never published, and draft in sync vs unpublished changes. **Live public preview** supports **Desktop / Tablet / Mobile** viewport framing (`club-page-admin-live-public-preview.tsx`). **`public-page-flex-config.ts`:** each nav page has **`showInNav`**; **`getEnabledPublicPages`** only lists routes that are enabled **and** shown in nav (matches admin “Show in navigation”). **Homepage default sort** uses spaced orders (10–90) so marketing order stays Stats → Next up → News → Teams → Events → Matches → Join → Partners with gallery last (`club-page-settings-helpers.ts`, `DEFAULT_HOMEPAGE_ORDERS`). **Hero branding:** published/draft JSON **`assets.hero_club_color_overlay`** and **`assets.hero_tint_strength`** (0–1); **`PublicClubHero`**, **`HeroImageTint`** (`clubTintEnabled` turns off club-color duotone; neutral readability gradient remains). **Join requests v2:** migration **`20260503143000_public_join_request_flow_v2.sql`** (and related **`2026050212*`–`2026050312*`** microsite migrations) — apply in filename order; **`Members`** admin review path and **`/club/:slug/join`** public form as implemented in branch. Regenerate **`src/integrations/supabase/types.ts`** after apply if RPCs/columns drift.
 - **Reports / club KPI dashboard (2026-05-01):** Route **`/reports`** maps to **`PlayerStats.tsx`**. For **admin** persona: **Recharts** cards — weekly club activity (trainings / matches / events, last 12 weeks, Monday week start via **`date-fns`**), **coach coverage** (teams with vs without **`team_coaches`**), **new active members** per week, **trainings by weekday** and **by month**. Activity rows are categorized with a **normalized `type`** (handles casing and common aliases). Snapshot KPI “trainings next 14d” uses **`.ilike("type","training")`** on **`activities`**. Charts are empty when there is genuinely no data in range (e.g. no teams / no **`activities`** rows); **next:** optionally merge **`training_sessions`** if that table is the primary schedule source in some envs.
 - **RBAC / admin route access (2026-04-30):** **`usePermissions`** falls back to **`is_club_admin`** RPC when **`club_role_assignments`** select fails, so **`RequireAdmin`** routes do not bounce to player incorrectly. Migration **`20260430173000_fix_club_role_assignments_select_policy.sql`** hardens the SELECT policy with **named** `is_member_of_club` args. Cookie consent helpers live in **`src/lib/cookie-consent.ts`** (keeps **`cookie-consent.tsx`** react-refresh clean).
 - **Marketing footer UX (2026-05-01):** Removed the **duplicate** signed-out **fixed** footer from **`App.tsx`** (text-only bar); marketing pages keep **`src/components/landing/Footer.tsx`** (logo + legal + **Cookie settings**). Copyright line **left-aligned** in that footer.
@@ -152,6 +153,7 @@ Persistent handoff context for future agents so work can continue without re-dis
 45. `20260426122000_activity_pitch_booking_link_and_import_keys.sql`
 46. `20260429130000_public_club_schedule_and_team_page.sql`
 47. `20260430173000_fix_club_role_assignments_select_policy.sql`
+48. `20260502120000_club_public_page_draft_publish.sql` through `20260503143000_public_join_request_flow_v2.sql` (public microsite draft/publish, sections, privacy, schedule flags, join/contact/documents, extended publish/unpublish, privacy/team RPC, join request v2 — **apply in strict filename order**; see `CHANGELOG.md` § 2026-05-03)
 
 Also ensure previously listed communication migrations remain applied in the same project:
 - `20260301152000_add_chat_bridge_connectors_and_events.sql`
@@ -166,7 +168,7 @@ Also ensure previously listed communication migrations remain applied in the sam
 ## Suggested Next Implementation Steps
 - **Reports:** If clubs store schedule only in **`training_sessions`**, extend **`/reports`** queries to union or prefer that table when **`activities`** is sparse; add “no data in range” empty states with links to **Schedule** / **Teams**.
 - **Deploy bundle (2026-03-30):** Apply migrations 24–42 above in filename order in each Supabase env; deploy Edge functions touched by Stripe/LLM/chat changes (**`stripe-checkout`**, **`stripe-webhook`**, **`co-trainer`**, **`chat-bridge`** as applicable); complete **`ops/PRODUCTION_READINESS_ARTIFACTS.md`** rows; optional policy name drift check: generate **`ops/pg_policies.snapshot.txt`** from staging then **`PG_POLICIES_SNAPSHOT_FILE=ops/pg_policies.snapshot.txt npm run policies:drift`** (see script header); **`npm run k6:smoke`** and **`k6 run k6/staged-dashboard-reads.js`** on staging if k6 installed. Include **47** when applying April–May RBAC fix.
-- **Public club:** Optional E2E for `/club/:slug` hash navigation + mobile menu; confirm **`preview=1`** admin path still matches RLS expectations.
+- **Public club:** Optional E2E for `/club/:slug` hash navigation + mobile menu; confirm **`?draft=1`** admin preview path still matches RLS expectations; SSR/meta for public routes remains a follow-up if SEO hardening is required.
 - **Members:** On member join from draft, merge `club_member_drafts.master_data` into `club_member_master_records` (server trigger or app flow); optional photo upload to storage instead of URL-only.
 - **Club card:** Persist `club_pass_generated_at` / internal ID server-side validation if clubs require sequential IDs.
 - **RLS audit:** Revisit policies that still key only on `club_memberships.role` where assignment-based admins need parity.

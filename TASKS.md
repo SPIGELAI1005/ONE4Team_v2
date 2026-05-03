@@ -8,6 +8,14 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ## NOW (top priority)
 
+### Public club microsite — May 2026 wave (2026-05-03) — code in repo
+- [x] **MICROSITE-ADMIN-001** Publication status **badges** on **`ClubPageAdmin`** (live/hidden, snapshot, draft vs published).
+- [x] **MICROSITE-ADMIN-002** Live public preview **Desktop / Tablet / Mobile** viewport framing.
+- [x] **MICROSITE-NAV-001** **`showInNav`** reflected in **`getEnabledPublicPages`** / resolved layout (`public-page-flex-config.ts`).
+- [x] **MICROSITE-HERO-001** Config + UI: **`hero_club_color_overlay`**, **`hero_tint_strength`**; **`HeroImageTint`** `clubTintEnabled`; public **`PublicClubHero`** wired.
+- [x] **MICROSITE-HOME-001** Default homepage module numeric order (join before partners; gallery last).
+- [ ] **MICROSITE-OPS-001** Operator: apply Supabase migrations **`20260502120000`** through **`20260503143000`** in filename order; run **`supabase gen types`** if needed; smoke **`/club-page-admin`**, **`/club/:slug`**, **`/club/:slug/join`**, **`?draft=1`**.
+
 ### Cookie consent + public team / import surfaces (2026-04-29) — code in repo
 - [x] **COOKIE-001** Banner + privacy preference centre (`cookie-consent.tsx`), granular categories + toggles, **`one4team.cookieConsent` v2** + legacy migration.
 - [x] **COOKIE-002** EN/DE **`cookieConsent`** strings; **`requestOpenCookieSettings()`** from **`@/lib/cookie-consent`** in **`landing/Footer.tsx`** (and any other callers).

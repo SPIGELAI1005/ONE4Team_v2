@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-03-30 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` § 2026-03-30, `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
+Last updated: 2026-05-03 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
 
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 
@@ -32,6 +32,21 @@ Apply these in the same Supabase project used by your app environment:
 Why this is critical now:
 - `/communication` depends on `public.messages`, `public.announcements`, bridge connector/event tables, and attachment storage policies.
 - Missing any of the above in the active environment causes schema-cache/runtime errors.
+
+## Public club microsite — May 2026 migrations (operator)
+Apply in **strict filename order** in the same Supabase project as the app (after prior club/public migrations are already applied):
+1. `supabase/migrations/20260502120000_club_public_page_draft_publish.sql`
+2. `supabase/migrations/20260502140000_partners_public_club_visibility.sql`
+3. `supabase/migrations/20260502150000_announcements_public_website_news.sql`
+4. `supabase/migrations/20260502170000_public_team_privacy.sql`
+5. `supabase/migrations/20260502180000_public_club_schedule_publish_flags.sql`
+6. `supabase/migrations/20260502190000_public_matches_events_microsite.sql`
+7. `supabase/migrations/20260502210000_public_club_documents_faq_join_contact.sql`
+8. `supabase/migrations/20260502220000_club_page_extended_publish_unpublish.sql`
+9. `supabase/migrations/20260503120000_public_club_privacy_team_rpc.sql`
+10. `supabase/migrations/20260503143000_public_join_request_flow_v2.sql`
+
+Then regenerate **`src/integrations/supabase/types.ts`** if RPCs/columns changed. Smoke: **`/club-page-admin`**, **`/club/:slug`**, **`/club/:slug/join`**, draft preview **`?draft=1`**.
 
 ## Phase 7 items (need Supabase / infra)
 - Staging + prod Supabase projects (completed for Phase 12 closure)

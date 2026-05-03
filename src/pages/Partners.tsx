@@ -3,7 +3,7 @@ import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, Building2, Search, Mail, Phone, Link2, FileText, Receipt, ListChecks } from "lucide-react";
+import { Loader2, Plus, Building2, Search, Mail, Phone, Link2, FileText, Receipt, ListChecks, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
@@ -11,6 +11,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/use-language";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
+import { Switch } from "@/components/ui/switch";
 
 type PartnerRow = {
   id: string;
@@ -22,6 +23,7 @@ type PartnerRow = {
   email: string | null;
   phone: string | null;
   created_at: string;
+  show_on_public_club_page?: boolean;
 };
 
 type ContractRow = {
@@ -84,7 +86,7 @@ export default function Partners() {
     try {
       const { data, error } = await supabase
         .from("partners")
-        .select("id, club_id, name, partner_type, notes, website, email, phone, created_at")
+        .select("id, club_id, name, partner_type, notes, website, email, phone, created_at, show_on_public_club_page")
         .eq("club_id", clubId)
         .order("created_at", { ascending: false })
         .limit(200);
@@ -130,6 +132,16 @@ export default function Partners() {
         .includes(s)
     );
   }, [partners, q]);
+
+  const setPartnerPublicVisibility = async (partnerId: string, value: boolean) => {
+    if (!canManage) return;
+    const { error } = await supabase.from("partners").update({ show_on_public_club_page: value }).eq("id", partnerId);
+    if (error) {
+      toast({ title: t.common.error, description: error.message, variant: "destructive" });
+      return;
+    }
+    await fetchData();
+  };
 
   const createPartner = async () => {
     if (!clubId || !user || !canManage) return;
@@ -272,7 +284,7 @@ export default function Partners() {
                   {filtered.map((p) => (
                     <div key={p.id} className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
                       <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-[10px] px-2 py-0.5 rounded-full border border-border/60 bg-background/40 text-muted-foreground">
                               {p.partner_type.toUpperCase()}
@@ -298,6 +310,18 @@ export default function Partners() {
                           </div>
                           {p.notes && <div className="mt-2 text-xs text-muted-foreground">{p.notes}</div>}
                         </div>
+                        {canManage ? (
+                          <div className="shrink-0 flex flex-col items-end gap-1 text-right">
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                              <Globe className="h-3.5 w-3.5" />
+                              <span>Public</span>
+                            </div>
+                            <Switch
+                              checked={Boolean(p.show_on_public_club_page)}
+                              onCheckedChange={(checked) => void setPartnerPublicVisibility(p.id, Boolean(checked))}
+                            />
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   ))}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import AppHeader from "@/components/layout/AppHeader";
 import { ArrowLeft, Calendar, Clock, Loader2, MapPin, Medal, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,10 +7,15 @@ import { useAuth } from "@/contexts/useAuth";
 import { useActiveClub } from "@/hooks/use-active-club";
 import { useLanguage } from "@/hooks/use-language";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  getClubPageDraftConfig,
+  mergeClubRowWithPublicPageConfig,
+  mergeRowWithEffectivePublished,
+} from "@/lib/club-public-page-config";
 import logo from "@/assets/one4team-logo.png";
 
 const TEAM_PAGE_CLUB_SELECT =
-  "id, name, slug, description, is_public, logo_url, primary_color, secondary_color, tertiary_color, support_color";
+  "id, name, slug, description, is_public, logo_url, primary_color, secondary_color, tertiary_color, support_color, public_page_published_config";
 
 type ClubTheme = {
   id: string;
@@ -86,6 +91,7 @@ function formatSessionRange(startsAt: string, endsAt: string | null, locale: str
 
 export default function ClubTeamPage() {
   const { clubSlug, teamId } = useParams();
+  const { search: locationSearch } = useLocation();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { activeClubId, activeClub } = useActiveClub();
@@ -94,7 +100,8 @@ export default function ClubTeamPage() {
   const locale = language === "de" ? "de-DE" : "en-GB";
 
   const isPreviewMode = searchParams.get("preview") === "1";
-  const backHref = `/club/${clubSlug ?? ""}${isPreviewMode ? "?preview=1" : ""}`;
+  const isDraftPreviewMode = searchParams.get("draft") === "1";
+  const backHref = `/club/${clubSlug ?? ""}${locationSearch || ""}`;
 
   const [club, setClub] = useState<ClubTheme | null>(null);
   const [clubLoading, setClubLoading] = useState(true);
@@ -105,19 +112,31 @@ export default function ClubTeamPage() {
     if (!clubSlug) return;
     setClubLoading(true);
     const first = await supabase.from("clubs").select(TEAM_PAGE_CLUB_SELECT).eq("slug", clubSlug).maybeSingle();
-    let record = (first.data as unknown as Record<string, unknown> | null) ?? null;
+    let record = first.data ? mergeRowWithEffectivePublished(first.data as unknown as Record<string, unknown>) : null;
     let loadError = first.error;
 
     if (!loadError && !record && isPreviewMode && user && activeClubId && activeClub?.slug === clubSlug) {
       const second = await supabase.from("clubs").select(TEAM_PAGE_CLUB_SELECT).eq("id", activeClubId).maybeSingle();
       loadError = second.error;
-      record = (second.data as unknown as Record<string, unknown> | null) ?? null;
+      record = second.data ? mergeRowWithEffectivePublished(second.data as unknown as Record<string, unknown>) : null;
     }
 
-    if (!loadError && record) setClub(mapClubTheme(record));
-    else setClub(null);
+    if (!loadError && record) {
+      let display = mergeRowWithEffectivePublished(record);
+      if (isDraftPreviewMode && user) {
+        const { data: isAdmin } = await supabase.rpc("is_club_admin", {
+          _club_id: String(display.id),
+          _user_id: user.id,
+        });
+        if (isAdmin) {
+          const { data: draftConfig } = await getClubPageDraftConfig(supabase, String(display.id));
+          if (draftConfig) display = mergeClubRowWithPublicPageConfig(display, draftConfig);
+        }
+      }
+      setClub(mapClubTheme(display));
+    } else setClub(null);
     setClubLoading(false);
-  }, [activeClub?.slug, activeClubId, clubSlug, isPreviewMode, user]);
+  }, [activeClub?.slug, activeClubId, clubSlug, isDraftPreviewMode, isPreviewMode, user]);
 
   useEffect(() => {
     void loadClub();

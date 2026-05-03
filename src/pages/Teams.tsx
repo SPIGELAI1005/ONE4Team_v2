@@ -7,6 +7,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
@@ -31,6 +34,33 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+function parseTeamPublicDocumentLines(text: string): unknown[] {
+  const out: { title: string; url: string }[] = [];
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const bar = trimmed.indexOf("|");
+    if (bar === -1) continue;
+    const title = trimmed.slice(0, bar).trim();
+    const url = trimmed.slice(bar + 1).trim();
+    if (title && url) out.push({ title, url });
+  }
+  return out;
+}
+
+function stringifyTeamPublicDocumentLinks(raw: unknown): string {
+  if (!Array.isArray(raw)) return "";
+  const lines: string[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const title = String(o.title ?? "").trim();
+    const url = String(o.url ?? "").trim();
+    if (title && url) lines.push(`${title} | ${url}`);
+  }
+  return lines.join("\n");
+}
+
 type Team = {
   id: string;
   name: string;
@@ -39,6 +69,11 @@ type Team = {
   coach_name: string | null;
   league: string | null;
   created_at: string;
+  public_website_visible?: boolean;
+  public_description?: string | null;
+  public_training_schedule_visible?: boolean;
+  public_documents_visible?: boolean;
+  public_document_links?: unknown;
 };
 
 type ClubMembershipOption = {
@@ -353,6 +388,7 @@ const Teams = () => {
   const [supportsChangeHistory, setSupportsChangeHistory] = useState(false);
   const [supportsTeamLeagueField, setSupportsTeamLeagueField] = useState(false);
   const [supportsTeamCoachesTable, setSupportsTeamCoachesTable] = useState(false);
+  const [supportsTeamPublicPrivacy, setSupportsTeamPublicPrivacy] = useState(false);
 
   const [trainingCalendarView, setTrainingCalendarView] = useState<TrainingCalendarView>("list");
   const [trainingCalendarGranularity, setTrainingCalendarGranularity] = useState<TrainingCalendarGranularity>("month");
@@ -371,6 +407,12 @@ const Teams = () => {
   const [selectedCoachMembershipIds, setSelectedCoachMembershipIds] = useState<string[]>([]);
   const [selectedPlayerMembershipIds, setSelectedPlayerMembershipIds] = useState<string[]>([]);
   const [teamMemberSearch, setTeamMemberSearch] = useState("");
+  const [teamPublicVisible, setTeamPublicVisible] = useState(true);
+  const [teamPublicTraining, setTeamPublicTraining] = useState(true);
+  const [teamPublicDocs, setTeamPublicDocs] = useState(true);
+  const [teamPublicDescription, setTeamPublicDescription] = useState("");
+  const [teamPublicDocLines, setTeamPublicDocLines] = useState("");
+  const [coachPublicByMembershipId, setCoachPublicByMembershipId] = useState<Record<string, { show: boolean; email: string }>>({});
 
   const [sessionTitle, setSessionTitle] = useState("");
   const [sessionLocation, setSessionLocation] = useState("");
@@ -437,6 +479,12 @@ const Teams = () => {
     setSelectedPlayerMembershipIds([]);
     setTeamMemberSearch("");
     setTeamSport("football");
+    setTeamPublicVisible(true);
+    setTeamPublicTraining(true);
+    setTeamPublicDocs(true);
+    setTeamPublicDescription("");
+    setTeamPublicDocLines("");
+    setCoachPublicByMembershipId({});
   };
 
   const resetSessionForm = () => {
@@ -503,7 +551,7 @@ const Teams = () => {
           .limit(20);
       };
 
-      const [teamsRes, sessionsRes, pitchesRes, bookingsRes, pitchSchemaProbeRes, layerSchemaProbeRes, colorSchemaProbeRes, layersRes, historyProbeRes, historyRes, leagueProbeRes, teamCoachesProbeRes, teamPlayersRes, teamCoachesRes, membershipsRes] = await Promise.all([
+      const [teamsRes, sessionsRes, pitchesRes, bookingsRes, pitchSchemaProbeRes, layerSchemaProbeRes, colorSchemaProbeRes, layersRes, historyProbeRes, historyRes, leagueProbeRes, teamCoachesProbeRes, teamPlayersRes, teamCoachesRes, membershipsRes, teamPublicProbeRes] = await Promise.all([
         supabase.from("teams").select("*").eq("club_id", clubId).order("name"),
         sessionQuery(),
         supabase.from("club_pitches").select("*").eq("club_id", clubId).order("name"),
@@ -519,8 +567,10 @@ const Teams = () => {
         supabase.from("team_players").select("team_id, membership_id").limit(2500),
         supabase.from("team_coaches").select("team_id, membership_id").limit(2500),
         supabase.from("club_memberships").select("id, user_id, role, status").eq("club_id", clubId).eq("status", "active").limit(2500),
+        supabase.from("teams").select("public_website_visible").eq("club_id", clubId).limit(1),
       ]);
       const rawTeams = (teamsRes.data as unknown as Array<Record<string, unknown>>) || [];
+      setSupportsTeamPublicPrivacy(!teamPublicProbeRes.error);
       setTeams(rawTeams.map((team) => ({
         id: String(team.id),
         name: String(team.name),
@@ -529,6 +579,12 @@ const Teams = () => {
         coach_name: (team.coach_name as string | null) ?? null,
         league: (team.league as string | null) ?? null,
         created_at: String(team.created_at),
+        public_website_visible: typeof team.public_website_visible === "boolean" ? team.public_website_visible : true,
+        public_description: (team.public_description as string | null) ?? null,
+        public_training_schedule_visible:
+          typeof team.public_training_schedule_visible === "boolean" ? team.public_training_schedule_visible : true,
+        public_documents_visible: typeof team.public_documents_visible === "boolean" ? team.public_documents_visible : true,
+        public_document_links: team.public_document_links ?? [],
       })));
       setSessions((sessionsRes.data as unknown as TrainingSession[]) || []);
       const rawPitches = (pitchesRes.data as unknown as Array<Record<string, unknown>>) || [];
@@ -1343,6 +1399,37 @@ const Teams = () => {
     return () => window.clearTimeout(timer);
   }, [currentTab, pitchViewMode, selectedBookingPitchId, filteredPitches.length]);
 
+  useEffect(() => {
+    if (!showAddTeam || !editingTeamId) return;
+    if (!supportsTeamCoachesTable || !supportsTeamPublicPrivacy) return;
+
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await supabase
+        .from("team_coaches")
+        .select("membership_id, show_on_public_website, public_contact_email")
+        .eq("team_id", editingTeamId);
+      if (cancelled || error || !data) return;
+      const next: Record<string, { show: boolean; email: string }> = {};
+      for (const row of data as Array<{
+        membership_id: string | null;
+        show_on_public_website?: boolean | null;
+        public_contact_email?: string | null;
+      }>) {
+        if (!row.membership_id) continue;
+        next[row.membership_id] = {
+          show: row.show_on_public_website === true,
+          email: row.public_contact_email?.trim() ?? "",
+        };
+      }
+      setCoachPublicByMembershipId(next);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showAddTeam, editingTeamId, supportsTeamCoachesTable, supportsTeamPublicPrivacy, supabase]);
+
   const syncSessionBookings = async (params: {
     title: string;
     teamId: string | null;
@@ -1812,6 +1899,13 @@ const Teams = () => {
       coach_name: coachNames || teamCoach || null,
     };
     if (supportsTeamLeagueField) insertPayload.league = teamLeague.trim() || null;
+    if (supportsTeamPublicPrivacy) {
+      insertPayload.public_website_visible = teamPublicVisible;
+      insertPayload.public_description = teamPublicDescription.trim() || null;
+      insertPayload.public_training_schedule_visible = teamPublicTraining;
+      insertPayload.public_documents_visible = teamPublicDocs;
+      insertPayload.public_document_links = parseTeamPublicDocumentLines(teamPublicDocLines);
+    }
 
     const { data, error } = await supabase
       .from("teams")
@@ -1822,11 +1916,24 @@ const Teams = () => {
     const createdTeam = data as Team;
     try {
       await persistTeamAssignments(createdTeam.id);
+      if (supportsTeamCoachesTable && supportsTeamPublicPrivacy) {
+        for (const membershipId of selectedCoachMembershipIds) {
+          const cfg = coachPublicByMembershipId[membershipId] ?? { show: false, email: "" };
+          await supabase
+            .from("team_coaches")
+            .update({
+              show_on_public_website: cfg.show,
+              public_contact_email: cfg.email.trim() ? cfg.email.trim() : null,
+            })
+            .eq("team_id", createdTeam.id)
+            .eq("membership_id", membershipId);
+        }
+      }
     } catch (assignmentError: unknown) {
       const message = assignmentError instanceof Error ? assignmentError.message : t.teamsPage.common.error;
       toast({ title: t.teamsPage.common.error, description: message, variant: "destructive" });
     }
-    setTeams(prev => [...prev, createdTeam]);
+    setTeams((prev) => [...prev, createdTeam]);
     await recordChangeHistory({
       scope: "teams",
       action: "create",
@@ -1843,7 +1950,7 @@ const Teams = () => {
       },
     });
     setShowAddTeam(false);
-    setTeamName(""); setTeamAge(""); setTeamCoach(""); setTeamSport("football");
+    resetTeamForm();
     toast({ title: t.teamsPage.toast.teamCreated });
   };
 
@@ -1858,6 +1965,12 @@ const Teams = () => {
     setSelectedCoachMembershipIds(teamCoachIdsByTeamId[team.id] || []);
     setSelectedPlayerMembershipIds(teamPlayerIdsByTeamId[team.id] || []);
     setTeamMemberSearch("");
+    setTeamPublicVisible(team.public_website_visible !== false);
+    setTeamPublicTraining(team.public_training_schedule_visible !== false);
+    setTeamPublicDocs(team.public_documents_visible !== false);
+    setTeamPublicDescription(team.public_description?.trim() ?? "");
+    setTeamPublicDocLines(stringifyTeamPublicDocumentLinks(team.public_document_links));
+    setCoachPublicByMembershipId({});
     setShowAddTeam(true);
   };
 
@@ -1884,6 +1997,13 @@ const Teams = () => {
       coach_name: coachNames || teamCoach || null,
     };
     if (supportsTeamLeagueField) updatePayload.league = teamLeague.trim() || null;
+    if (supportsTeamPublicPrivacy) {
+      updatePayload.public_website_visible = teamPublicVisible;
+      updatePayload.public_description = teamPublicDescription.trim() || null;
+      updatePayload.public_training_schedule_visible = teamPublicTraining;
+      updatePayload.public_documents_visible = teamPublicDocs;
+      updatePayload.public_document_links = parseTeamPublicDocumentLines(teamPublicDocLines);
+    }
 
     const { data, error } = await supabase
       .from("teams")
@@ -1901,11 +2021,24 @@ const Teams = () => {
     const updated = data as Team;
     try {
       await persistTeamAssignments(editingTeamId);
+      if (supportsTeamCoachesTable && supportsTeamPublicPrivacy) {
+        for (const membershipId of selectedCoachMembershipIds) {
+          const cfg = coachPublicByMembershipId[membershipId] ?? { show: false, email: "" };
+          await supabase
+            .from("team_coaches")
+            .update({
+              show_on_public_website: cfg.show,
+              public_contact_email: cfg.email.trim() ? cfg.email.trim() : null,
+            })
+            .eq("team_id", editingTeamId)
+            .eq("membership_id", membershipId);
+        }
+      }
     } catch (assignmentError: unknown) {
       const message = assignmentError instanceof Error ? assignmentError.message : t.teamsPage.common.error;
       toast({ title: t.teamsPage.common.error, description: message, variant: "destructive" });
     }
-    setTeams((previous) => previous.map((team) => (team.id === editingTeamId ? updated : team)));
+    setTeams((previous) => previous.map((team) => (team.id === editingTeamId ? { ...team, ...updated } : team)));
     await recordChangeHistory({
       scope: "teams",
       action: "update",
@@ -2639,11 +2772,16 @@ const Teams = () => {
   };
 
   const toggleCoachSelection = (membershipId: string) => {
-    setSelectedCoachMembershipIds((previous) => (
-      previous.includes(membershipId)
-        ? previous.filter((id) => id !== membershipId)
-        : [...previous, membershipId]
-    ));
+    setSelectedCoachMembershipIds((previous) => {
+      if (previous.includes(membershipId)) {
+        return previous.filter((id) => id !== membershipId);
+      }
+      setCoachPublicByMembershipId((pub) => ({
+        ...pub,
+        [membershipId]: pub[membershipId] ?? { show: false, email: "" },
+      }));
+      return [...previous, membershipId];
+    });
   };
 
   const togglePlayerSelection = (membershipId: string) => {
@@ -3927,6 +4065,101 @@ const Teams = () => {
                     {t.teamsPage.teamModal.selectionSummaryPrefix} {selectedCoachMembershipIds.length} {t.teamsPage.teamModal.selectionSummaryCoaches} · {selectedPlayerMembershipIds.length} {t.teamsPage.teamModal.selectionSummaryPlayers}
                   </div>
                 </div>
+
+                {supportsTeamPublicPrivacy ? (
+                  <div className="rounded-xl border border-border/60 bg-background/40 p-3">
+                    <div className="text-[11px] font-medium text-foreground mb-2">{t.teamsPage.teamModal.publicSectionTitle}</div>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <Label htmlFor="team-public-visible" className="text-xs font-normal leading-snug">
+                          {t.teamsPage.teamModal.publicWebsiteVisibleLabel}
+                        </Label>
+                        <Switch id="team-public-visible" checked={teamPublicVisible} onCheckedChange={setTeamPublicVisible} />
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <Label htmlFor="team-public-training" className="text-xs font-normal leading-snug">
+                          {t.teamsPage.teamModal.publicTrainingVisibleLabel}
+                        </Label>
+                        <Switch id="team-public-training" checked={teamPublicTraining} onCheckedChange={setTeamPublicTraining} />
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <Label htmlFor="team-public-docs" className="text-xs font-normal leading-snug">
+                          {t.teamsPage.teamModal.publicDocumentsVisibleLabel}
+                        </Label>
+                        <Switch id="team-public-docs" checked={teamPublicDocs} onCheckedChange={setTeamPublicDocs} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="team-public-desc" className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                          {t.teamsPage.teamModal.publicDescriptionLabel}
+                        </Label>
+                        <Textarea
+                          id="team-public-desc"
+                          value={teamPublicDescription}
+                          onChange={(e) => setTeamPublicDescription(e.target.value)}
+                          placeholder={t.teamsPage.teamModal.publicDescriptionPlaceholder}
+                          className="min-h-[72px] resize-y bg-background text-sm"
+                          rows={3}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="team-public-doc-lines" className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                          {t.teamsPage.teamModal.publicDocumentLinksLabel}
+                        </Label>
+                        <Textarea
+                          id="team-public-doc-lines"
+                          value={teamPublicDocLines}
+                          onChange={(e) => setTeamPublicDocLines(e.target.value)}
+                          placeholder={t.teamsPage.teamModal.publicDocumentLinksPlaceholder}
+                          className="min-h-[80px] resize-y bg-background font-mono text-[11px]"
+                          rows={4}
+                        />
+                      </div>
+                    </div>
+
+                    {supportsTeamCoachesTable && selectedCoachMembershipIds.length > 0 ? (
+                      <div className="mt-4 space-y-2 border-t border-border/50 pt-3">
+                        <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                          {t.teamsPage.teamModal.coachPublicProfilesSectionTitle}
+                        </div>
+                        <div className="space-y-2">
+                          {selectedCoachMembershipIds.map((membershipId) => {
+                            const label = membershipNameById.get(membershipId) ?? membershipId;
+                            const cfg = coachPublicByMembershipId[membershipId] ?? { show: false, email: "" };
+                            return (
+                              <div key={`coach-public-${membershipId}`} className="rounded-lg border border-border/60 bg-background/50 p-2.5 space-y-2">
+                                <div className="text-xs font-medium text-foreground truncate">{label}</div>
+                                <div className="flex items-center justify-between gap-2">
+                                  <Label className="text-[11px] font-normal shrink">{t.teamsPage.teamModal.coachPublicShowLabel}</Label>
+                                  <Switch
+                                    checked={cfg.show}
+                                    onCheckedChange={(checked) =>
+                                      setCoachPublicByMembershipId((prev) => ({
+                                        ...prev,
+                                        [membershipId]: { ...cfg, show: checked },
+                                      }))
+                                    }
+                                  />
+                                </div>
+                                <Input
+                                  type="email"
+                                  className="h-9 bg-background text-xs"
+                                  placeholder={t.teamsPage.teamModal.coachPublicEmailPlaceholder}
+                                  value={cfg.email}
+                                  onChange={(e) =>
+                                    setCoachPublicByMembershipId((prev) => ({
+                                      ...prev,
+                                      [membershipId]: { ...(prev[membershipId] ?? cfg), email: e.target.value },
+                                    }))
+                                  }
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </div>
             <div className="shrink-0 border-t border-border/60 bg-card/95 px-4 py-4 sm:px-6">

@@ -13,6 +13,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Club reporting + RBAC polish (2026-05-01):** `/reports` admin KPI dashboard (Recharts: weekly activity, coach coverage, member growth, trainings by weekday/month), `usePermissions` fallback via `is_club_admin` RPC when role-assignment reads fail, migration `20260430173000` for safer `club_role_assignments` SELECT, marketing footer dedupe + cookie dialog height fix — see `CHANGELOG.md` § 2026-05-01, `MEMORY_BANK.md`, `TASKS.md`.
 
+**Public club microsite wave (2026-05-03):** Supabase migrations `20260502120000`–`20260503143000` (draft/publish, public visibility, privacy, schedule/matches/events, documents/join/contact, join request v2); Club Page Admin publication badges, responsive preview viewports, nav `showInNav` parity, hero overlay toggle + strength slider, homepage default order — see `CHANGELOG.md` § 2026-05-03, `MEMORY_BANK.md`, `TASKS.md` **MICROSITE-***.
+
 ---
 
 ## Phase 0 — Foundation (Week 0–1)

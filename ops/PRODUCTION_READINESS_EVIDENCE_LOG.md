@@ -86,6 +86,7 @@ Track rows in [SECTION_M_GO_LIVE_CHECKLIST.md](SECTION_M_GO_LIVE_CHECKLIST.md).
 | `health` Edge deploy | Operator | `supabase functions deploy health`; [Health.tsx](../src/pages/Health.tsx) `edgeDatabase: ok` |
 | Cookie preference centre + public team DB wave | Shipped in repo 2026-04-29 | [CHANGELOG.md](../CHANGELOG.md) § 2026-04-29; [MEMORY_BANK.md](../MEMORY_BANK.md); migrations `20260426121000`, `20260426122000`, `20260429130000` (+ optional `20260330160000`) — operator applies per env |
 | Reports KPI + RBAC policy fix | Shipped in repo 2026-05-01 | [CHANGELOG.md](../CHANGELOG.md) § 2026-05-01; `src/pages/PlayerStats.tsx`; migration `20260430173000_fix_club_role_assignments_select_policy.sql` — operator applies per env |
+| Public club microsite (DB + admin UX) | Shipped in repo 2026-05-03 | [CHANGELOG.md](../CHANGELOG.md) § 2026-05-03; [HOLD.md](../HOLD.md) May 2026 migration list; `ClubPageAdmin`, `public-page-flex-config.ts`, hero overlay config — operator applies `20260502120000`–`20260503143000` per env |
 
 ## Phase 6 — Cadence
 

@@ -3,6 +3,36 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-05-03 (Public club microsite: migrations wave, admin polish, hero overlay, nav parity, documentation sync)
+
+### Database (apply per environment in filename order)
+- **`20260502120000_club_public_page_draft_publish.sql`** — club public page draft/publish columns and RPCs.
+- **`20260502140000_partners_public_club_visibility.sql`** — partners visible on public club site.
+- **`20260502150000_announcements_public_website_news.sql`** — announcements / public website news flags.
+- **`20260502170000_public_team_privacy.sql`** — team-level public privacy fields.
+- **`20260502180000_public_club_schedule_publish_flags.sql`** — schedule/training publish flags for public microsite.
+- **`20260502190000_public_matches_events_microsite.sql`** — matches/events microsite surfacing.
+- **`20260502210000_public_club_documents_faq_join_contact.sql`** — public documents, FAQ, join, contact plumbing.
+- **`20260502220000_club_page_extended_publish_unpublish.sql`** — extended publish/unpublish behavior.
+- **`20260503120000_public_club_privacy_team_rpc.sql`** — privacy and team-related RPC updates for public reads.
+- **`20260503143000_public_join_request_flow_v2.sql`** — public join request flow v2 (source, pending, notifications path as defined in migration).
+
+After apply: regenerate **`src/integrations/supabase/types.ts`** if PostgREST schema changes require client types.
+
+### Club Page Admin and public layout (client)
+- **`src/pages/ClubPageAdmin.tsx`:** Publication status **badges** (site live vs hidden, published snapshot vs never, draft in sync vs unpublished changes); **hero** controls — **Apply club color overlay** switch and **overlay strength** slider (`0–100%` mapped to `hero_tint_strength`).
+- **`src/components/club-page-admin/club-page-admin-live-public-preview.tsx`:** **Desktop / Tablet / Mobile** preview width toggles; hero respects **`hero_club_color_overlay`** and **`hero_tint_strength`**.
+- **`src/lib/public-page-flex-config.ts`:** **`showInNav`** on **`PublicNavPageSetting`**; **`buildPagesFromMicro`** / **`getEnabledPublicPages`** hide nav entries when “Show in navigation” is off (while route may remain addressable).
+- **`src/lib/club-page-settings-helpers.ts`:** Default homepage module **order** values adjusted (matches → join → partners/sponsors → gallery last).
+- **`src/lib/club-public-page-config.ts`**, **`src/lib/public-club-models.ts`:** Persist and map **`hero_club_color_overlay`**, **`hero_tint_strength`** in config and **`PublicClubRecord`**.
+- **`src/components/public-club/public-club-hero.tsx`**, **`HeroImageTint.tsx`:** **`clubTintEnabled`** — when overlay is off, skip club-color duotone layers; lighter neutral gradient for text readability.
+
+### i18n
+- **`src/i18n/en.ts`**, **`src/i18n/de.ts`:** Strings for publication badges, preview viewport labels, hero overlay labels.
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`ROADMAP.md`**, **`TASKS.md`**, **`README.md`**, **`HOLD.md`**, **`CHANGELOG.md`** (this entry).
+
 ## 2026-05-01 (Reports KPI charts, RBAC admin guard, marketing footer, documentation sync)
 
 ### Reports (`/reports` → `PlayerStats.tsx`)

@@ -1,9 +1,24 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
-import { Plus, Megaphone, Send, Loader2, X, Hash, MessageSquare, BotMessageSquare, Paperclip, RotateCcw, Search } from "lucide-react";
+import {
+  Plus,
+  Megaphone,
+  Send,
+  Loader2,
+  X,
+  Hash,
+  MessageSquare,
+  BotMessageSquare,
+  Paperclip,
+  RotateCcw,
+  Search,
+  Globe,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
@@ -15,6 +30,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { correlationHeaders } from "@/lib/observability";
 import { supabaseErrorMessage } from "@/lib/supabase-error-message";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PUBLIC_NEWS_CATEGORIES } from "@/lib/public-club-news";
 
 type Announcement = {
   id: string;
@@ -23,6 +39,10 @@ type Announcement = {
   priority: string;
   created_at: string;
   author_id: string;
+  publish_to_public_website?: boolean;
+  public_news_category?: string | null;
+  image_url?: string | null;
+  excerpt?: string | null;
 };
 
 type Message = {
@@ -184,6 +204,10 @@ const Communication = () => {
   const [annTitle, setAnnTitle] = useState("");
   const [annContent, setAnnContent] = useState("");
   const [annPriority, setAnnPriority] = useState("normal");
+  const [annPublishPublic, setAnnPublishPublic] = useState(false);
+  const [annPublicCategory, setAnnPublicCategory] = useState("club");
+  const [annImageUrl, setAnnImageUrl] = useState("");
+  const [annExcerpt, setAnnExcerpt] = useState("");
 
   /** Keeps realtime handler off `messagePage` dependency (avoids channel churn on pagination). */
   const messagePageRef = useRef(messagePage);
@@ -751,6 +775,10 @@ const Communication = () => {
         content: annContent.trim(),
         priority: annPriority,
         author_id: user.id,
+        publish_to_public_website: annPublishPublic,
+        public_news_category: annPublishPublic ? annPublicCategory : "club",
+        image_url: annImageUrl.trim() || null,
+        excerpt: annExcerpt.trim() || null,
       })
       .select()
       .single();
@@ -763,6 +791,10 @@ const Communication = () => {
     setAnnTitle("");
     setAnnContent("");
     setAnnPriority("normal");
+    setAnnPublishPublic(false);
+    setAnnPublicCategory("club");
+    setAnnImageUrl("");
+    setAnnExcerpt("");
     toast({ title: t.communicationPage.announcementPosted });
   };
 
@@ -985,17 +1017,23 @@ const Communication = () => {
                         transition={{ delay: index * 0.04 }}
                         className="rounded-xl bg-background/50 border border-border p-5"
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-display font-semibold text-foreground">
-                            {announcement.title}
-                          </h3>
-                          <span
-                            className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                              priorityColors[announcement.priority] || priorityColors.normal
-                            }`}
-                          >
-                            {announcement.priority}
-                          </span>
+                        <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+                          <h3 className="min-w-0 flex-1 font-display font-semibold text-foreground">{announcement.title}</h3>
+                          <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+                            {announcement.publish_to_public_website ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium text-emerald-800 dark:text-emerald-200">
+                                <Globe className="h-3 w-3" />
+                                {t.communicationPage.publicSiteBadge}
+                              </span>
+                            ) : null}
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                                priorityColors[announcement.priority] || priorityColors.normal
+                              }`}
+                            >
+                              {announcement.priority}
+                            </span>
+                          </div>
                         </div>
                         <p className="text-sm text-muted-foreground mb-2">{announcement.content}</p>
                         <p className="text-xs text-muted-foreground">
@@ -1334,6 +1372,58 @@ const Communication = () => {
                   <SelectItem value="urgent">{t.communicationPage.urgentPriority}</SelectItem>
                 </SelectContent>
               </Select>
+              <div className="rounded-lg border border-border px-3 py-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 space-y-0.5">
+                    <Label htmlFor="ann-publish-public" className="text-xs font-medium">
+                      {t.communicationPage.publishOnPublicWebsite}
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground">{t.communicationPage.publishOnPublicWebsiteHint}</p>
+                  </div>
+                  <Switch id="ann-publish-public" checked={annPublishPublic} onCheckedChange={setAnnPublishPublic} />
+                </div>
+              </div>
+              {annPublishPublic ? (
+                <div className="space-y-2">
+                  <Label className="text-xs">{t.communicationPage.publicNewsCategory}</Label>
+                  <Select value={annPublicCategory} onValueChange={setAnnPublicCategory}>
+                    <SelectTrigger className="h-10 w-full rounded-xl border-border bg-background px-3 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PUBLIC_NEWS_CATEGORIES.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c === "club"
+                            ? t.clubPage.newsCatClub
+                            : c === "teams"
+                              ? t.clubPage.newsCatTeams
+                              : c === "events"
+                                ? t.clubPage.newsCatEvents
+                                : c === "youth"
+                                  ? t.clubPage.newsCatYouth
+                                  : c === "seniors"
+                                    ? t.clubPage.newsCatSeniors
+                                    : t.clubPage.newsCatSponsors}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    placeholder={t.communicationPage.newsImageUrlOptional}
+                    value={annImageUrl}
+                    onChange={(event) => setAnnImageUrl(event.target.value)}
+                    className="bg-background"
+                  />
+                  <textarea
+                    placeholder={t.communicationPage.newsExcerptOptional}
+                    value={annExcerpt}
+                    onChange={(event) => setAnnExcerpt(event.target.value)}
+                    className="min-h-[52px] w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    rows={2}
+                    maxLength={400}
+                  />
+                </div>
+              ) : null}
               <Button
                 onClick={handleAddAnnouncement}
                 disabled={!annTitle.trim() || !annContent.trim()}

@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-05-01 (reports KPI charts, RBAC admin guard, marketing footer, documentation sync)
+Last updated: 2026-05-03 (public club microsite admin + migrations wave, documentation sync)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -21,6 +21,7 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - **Reports / club management KPIs (2026-05-01):** **`/reports`** (**`PlayerStats.tsx`**) for admins: **Recharts** — weekly activity (trainings / matches / events), coach coverage (teams with/without **`team_coaches`**), new members trend, trainings by weekday and month; resilient **`activities.type`** normalization and **`.ilike`** for KPI counts. See **`CHANGELOG.md` § 2026-05-01**.
 - **RBAC fix (2026-04-30):** **`usePermissions`** uses **`is_club_admin`** RPC fallback when role-assignment reads fail; migration **`20260430173000_fix_club_role_assignments_select_policy.sql`** for safer **`club_role_assignments`** SELECT policy.
 - **Marketing UX (2026-05-01):** Duplicate signed-out fixed footer removed from **`App.tsx`**; single marketing footer in **`landing/Footer.tsx`** with left-aligned copyright and **Cookie settings**.
+- **Public club microsite — admin UX + config (2026-05-03):** **`ClubPageAdmin`** publication **badges** (live/hidden, snapshot, draft vs live). **Live preview** **Desktop / Tablet / Mobile** width presets. **`showInNav`** honored in **`getEnabledPublicPages`** (`public-page-flex-config.ts`). **Hero** persisted **`hero_club_color_overlay`** + **`hero_tint_strength`** in page config JSON; admin slider/switch; public hero + **`HeroImageTint`** `clubTintEnabled`. **Homepage** default module order aligned (join before partners strip). **Supabase:** migrations **`20260502120000`** … **`20260503143000`** (draft/publish, visibility, privacy, schedule/matches/events, documents/join/contact, publish RPCs, join v2) — operator applies in filename order; see **`CHANGELOG.md` § 2026-05-03** and **`MEMORY_BANK.md`** migration **48**.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 

@@ -11,7 +11,7 @@ Club/team management SaaS with an iOS-style glass UI, full internationalization 
 - **Cookie consent**: Bottom banner plus **privacy preference centre** (categories + toggles), Accept all / Reject non-essential, EN/DE copy; choices stored in **`localStorage`** (`one4team.cookieConsent` v2); **Cookie settings** in the marketing **`Footer`** (duplicate signed-out bar removed)
 - **Dashboard**: Role-based views (Admin, Trainer, Player, Sponsor, Supplier, etc.) with personalized greeting
 - **Shop**: Product catalog, orders management, categories (demo data)
-- **Club Page Admin**: Manage public club page (branding, contact, social, SEO, **which sections** appear on `/club/:slug` via `public_page_sections`)
+- **Club Page Admin**: Manage public club page (branding, contact, social, SEO, **which sections** appear on `/club/:slug` via `public_page_sections`); **publication status badges**, **Desktop/Tablet/Mobile** live preview framing; **hero** club-color overlay toggle + **strength** slider; **Pages** tab “show in navigation” matches the public navbar
 - **Public club page (`/club/:slug`)**: PWA-friendly mobile header (single menu), hero shortcuts aligned with CTAs, **Powered by ONE4Team** → marketing home (`/`); **Support FAQ** at `/support`; optional **public team page** at **`/club/:slug/team/:teamId`** when migrations and data are applied
 - **Reports** (`/reports`): Club KPI snapshot for admins (charts: weekly activity, coach coverage, member growth, trainings by weekday/month; **Recharts**)
 - **Members**: Server-paged roster with debounced **full-club search** (RPC `search_club_members_page`, ≥2 characters) where migrations are applied

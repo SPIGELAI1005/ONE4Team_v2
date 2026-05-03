@@ -53,6 +53,10 @@ When using master registry, drafts with extended fields, or guardian linking, th
 - `20260324210000_club_member_drafts_master_data.sql` — `club_member_drafts.master_data`
 - `20260325220000_redeem_invite_guardian_links.sql` — `redeem_club_invite` reads optional `invite_payload.guardian_membership_ids` and inserts guardian link rows after membership upsert
 
+## Public club microsite (2026-05-02 — 2026-05-03)
+For draft/publish JSON, extended public pages, team privacy, schedule/match/event publish flags, public join/contact/documents, and join-request v2, apply (in filename order after prior `public_page_*` / club profile migrations):
+- `20260502120000_club_public_page_draft_publish.sql` through `20260503143000_public_join_request_flow_v2.sql` (see `CHANGELOG.md` § 2026-05-03 and `HOLD.md`).
+
 ## Verification artifact
 - Run `supabase/PHASE12_VERIFY.sql` after applying the migrations above.
 - Treat any `ok = false` row as a rollout blocker.

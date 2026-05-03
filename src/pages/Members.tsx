@@ -85,6 +85,13 @@ type InviteRequestRow = {
   request_user_id: string | null;
   status: "pending" | "approved" | "rejected";
   created_at: string;
+  phone?: string | null;
+  interested_role?: string | null;
+  interested_team?: string | null;
+  source?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  internal_note?: string | null;
 };
 
 type ClubInviteRow = {
@@ -313,6 +320,35 @@ function isMissingDraftMasterDataColumnError(error: unknown): boolean {
   return message.includes("master_data") && message.includes("club_member_drafts");
 }
 
+function joinVisitorInterestLabel(
+  id: string | null | undefined,
+  labels: {
+    joinRolePlayer: string;
+    joinRoleParent: string;
+    joinRoleCoach: string;
+    joinRoleVolunteer: string;
+    joinRoleSponsor: string;
+    joinRolePartner: string;
+  },
+): string {
+  switch (id || "") {
+    case "player":
+      return labels.joinRolePlayer;
+    case "parent":
+      return labels.joinRoleParent;
+    case "coach":
+      return labels.joinRoleCoach;
+    case "volunteer":
+      return labels.joinRoleVolunteer;
+    case "sponsor":
+      return labels.joinRoleSponsor;
+    case "partner":
+      return labels.joinRolePartner;
+    default:
+      return id?.trim() ? id : "—";
+  }
+}
+
 const Members = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -385,6 +421,11 @@ const Members = () => {
   const [joinReviewerPolicy, setJoinReviewerPolicy] = useState<"admin_only" | "admin_trainer">("admin_only");
   const [clubSlug, setClubSlug] = useState<string | null>(null);
   const [clubName, setClubName] = useState<string | null>(null);
+  const [clubJoinDefaults, setClubJoinDefaults] = useState<{ role: string; team: string }>({ role: "member", team: "" });
+  const [joinRequestReviewById, setJoinRequestReviewById] = useState<
+    Record<string, { role: string; team: string; note: string }>
+  >({});
+  const [savingJoinNoteId, setSavingJoinNoteId] = useState<string | null>(null);
 
   const [masterByMembershipId, setMasterByMembershipId] = useState<Record<string, ClubMemberMasterRecord | null>>({});
   const [membershipEmails, setMembershipEmails] = useState<Record<string, string>>({});
@@ -813,7 +854,11 @@ const Members = () => {
     if (!clubId) return;
     setInvitesLoading(true);
 
-    const clubRes = await supabase.from("clubs").select("slug, name, join_reviewer_policy").eq("id", clubId).maybeSingle();
+    const clubRes = await supabase
+      .from("clubs")
+      .select("slug, name, join_reviewer_policy, join_default_role, join_default_team")
+      .eq("id", clubId)
+      .maybeSingle();
     if (clubRes.error) {
       toast({ title: "Error", description: clubRes.error.message, variant: "destructive" });
     } else {
@@ -821,6 +866,10 @@ const Members = () => {
       setClubName(clubRes.data?.name ?? null);
       const policy = (clubRes.data?.join_reviewer_policy as "admin_only" | "admin_trainer" | undefined) || "admin_only";
       setJoinReviewerPolicy(policy);
+      setClubJoinDefaults({
+        role: (clubRes.data?.join_default_role as string | undefined) || "member",
+        team: (clubRes.data?.join_default_team as string | undefined)?.trim() || "",
+      });
     }
     const [reqRes, invRes] = await Promise.all([
       supabase.from("club_invite_requests").select("*").eq("club_id", clubId).order("created_at", { ascending: false }).limit(100),
@@ -834,6 +883,26 @@ const Members = () => {
     setInvites((invRes.data as unknown as ClubInviteRow[]) || []);
     setInvitesLoading(false);
   }, [clubId, toast]);
+
+  useEffect(() => {
+    setJoinRequestReviewById((prev) => {
+      const next: Record<string, { role: string; team: string; note: string }> = { ...prev };
+      for (const r of inviteRequests) {
+        if (r.status !== "pending") continue;
+        if (!next[r.id]) {
+          next[r.id] = {
+            role: clubJoinDefaults.role,
+            team: clubJoinDefaults.team,
+            note: (r.internal_note ?? "") || "",
+          };
+        }
+      }
+      for (const id of Object.keys(next)) {
+        if (!inviteRequests.some((x) => x.id === id)) delete next[id];
+      }
+      return next;
+    });
+  }, [inviteRequests, clubJoinDefaults.role, clubJoinDefaults.team]);
 
   const fetchAbuseAudit = useCallback(async () => {
     if (!clubId) return;
@@ -1918,6 +1987,30 @@ const Members = () => {
     toast({ title: status === "approved" ? t.common.approved : t.common.updated });
   };
 
+  const handleSaveJoinRequestNote = async (requestId: string) => {
+    if (!clubId) return;
+    if (!canReviewJoinRequests) {
+      toast({ title: t.common.notAuthorized, description: t.membersPage.invitesTabRestrictedDesc, variant: "destructive" });
+      return;
+    }
+    const note = joinRequestReviewById[requestId]?.note ?? "";
+    setSavingJoinNoteId(requestId);
+    const { error } = await supabase
+      .from("club_invite_requests")
+      .update({ internal_note: note.trim() || null })
+      .eq("club_id", clubId)
+      .eq("id", requestId);
+    setSavingJoinNoteId(null);
+    if (error) {
+      toast({ title: t.common.error, description: error.message, variant: "destructive" });
+      return;
+    }
+    setInviteRequests((prev) =>
+      prev.map((r) => (r.id === requestId ? { ...r, internal_note: note.trim() || null } : r)),
+    );
+    toast({ title: t.membersPage.joinRequestNoteSaved });
+  };
+
   const handleCreateInvite = async (prefillEmail?: string) => {
     if (!clubId) return;
     if (!canReviewJoinRequests) {
@@ -1947,13 +2040,21 @@ const Members = () => {
       toast({ title: t.common.notAuthorized, description: t.membersPage.invitesTabRestrictedDesc, variant: "destructive" });
       return;
     }
-    const { data, error } = await supabase.rpc("approve_club_join_request", { _request_id: request.id });
+    const draft = joinRequestReviewById[request.id];
+    const roleToUse = draft?.role || clubJoinDefaults.role;
+    const teamTrim = draft?.team?.trim() || "";
+    const { data, error } = await supabase.rpc("approve_club_join_request", {
+      _request_id: request.id,
+      _membership_role: roleToUse,
+      _membership_team: teamTrim.length ? teamTrim : null,
+    });
     if (error) {
       toast({ title: t.common.error, description: error.message, variant: "destructive" });
       return;
     }
     const row = Array.isArray(data) ? data[0] : null;
     const outcome = (row?.outcome as string | undefined) || "requires_invite";
+    const resolvedRole = (row?.role as string | undefined) || roleToUse || "member";
 
     if (outcome === "joined") {
       trackEvent("join_request_approved", { outcome: "joined_directly" });
@@ -1965,7 +2066,7 @@ const Members = () => {
     trackEvent("join_request_approved", { outcome: "requires_invite" });
     await handleUpdateInviteRequestStatus(request.id, "approved");
     setInviteEmail(request.email);
-    setInviteRole("member");
+    setInviteRole(resolvedRole);
     setInviteDays("7");
     setCreatedInviteToken(null);
     setShowCreateInvite(true);
@@ -3698,7 +3799,124 @@ const Members = () => {
                                   r.status === "pending" ? "bg-primary/10 text-primary" : r.status === "approved" ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"
                                 }`}>{r.status}</span>
                               </div>
+                              {(r.interested_role || r.interested_team || r.phone || r.source) ? (
+                                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                                  {r.source === "public_club_page" ? (
+                                    <span>
+                                      <span className="text-foreground/70">{t.membersPage.joinRequestSourceLabel}</span>
+                                      {": "}
+                                      {t.membersPage.joinRequestSourcePublicClub}
+                                    </span>
+                                  ) : null}
+                                  {r.interested_role ? (
+                                    <span>
+                                      <span className="text-foreground/70">{t.membersPage.joinRequestInterest}</span>
+                                      {": "}
+                                      {joinVisitorInterestLabel(r.interested_role, t.clubPage)}
+                                    </span>
+                                  ) : null}
+                                  {r.interested_team ? (
+                                    <span className="truncate max-w-[200px]" title={r.interested_team}>
+                                      Team: {r.interested_team}
+                                    </span>
+                                  ) : null}
+                                  {r.phone ? (
+                                    <span>
+                                      {t.membersPage.joinRequestPhone}: {r.phone}
+                                    </span>
+                                  ) : null}
+                                </div>
+                              ) : null}
                               {r.message && <div className="text-xs text-muted-foreground mt-2 leading-relaxed">{r.message}</div>}
+                              {r.status === "pending" ? (
+                                <div className="mt-3 space-y-3 rounded-xl border border-border/50 bg-muted/20 p-3">
+                                  <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="space-y-1.5">
+                                      <div className="text-[10px] font-medium text-muted-foreground">{t.membersPage.joinRequestAssignRole}</div>
+                                      <Select
+                                        value={joinRequestReviewById[r.id]?.role ?? clubJoinDefaults.role}
+                                        onValueChange={(v) =>
+                                          setJoinRequestReviewById((prev) => ({
+                                            ...prev,
+                                            [r.id]: {
+                                              role: v,
+                                              team: prev[r.id]?.team ?? clubJoinDefaults.team,
+                                              note: prev[r.id]?.note ?? "",
+                                            },
+                                          }))
+                                        }
+                                      >
+                                        <SelectTrigger className="h-9 text-xs">
+                                          <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {SUPPORTED_ROLES.map((roleId) => (
+                                            <SelectItem key={roleId} value={roleId} className="text-xs">
+                                              {getRoleLabel(roleId)}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                      <div className="text-[10px] font-medium text-muted-foreground">{t.membersPage.joinRequestAssignTeam}</div>
+                                      <Input
+                                        className="h-9 text-xs"
+                                        value={joinRequestReviewById[r.id]?.team ?? ""}
+                                        onChange={(e) =>
+                                          setJoinRequestReviewById((prev) => ({
+                                            ...prev,
+                                            [r.id]: {
+                                              role: prev[r.id]?.role ?? clubJoinDefaults.role,
+                                              team: e.target.value,
+                                              note: prev[r.id]?.note ?? "",
+                                            },
+                                          }))
+                                        }
+                                        placeholder={t.membersPage.teamPlaceholder}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="space-y-1.5">
+                                    <div className="text-[10px] font-medium text-muted-foreground">{t.membersPage.joinRequestInternalNote}</div>
+                                    <textarea
+                                      className={cn(
+                                        "flex min-h-[72px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-xs shadow-sm",
+                                        "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                                      )}
+                                      value={joinRequestReviewById[r.id]?.note ?? ""}
+                                      onChange={(e) =>
+                                        setJoinRequestReviewById((prev) => ({
+                                          ...prev,
+                                          [r.id]: {
+                                            role: prev[r.id]?.role ?? clubJoinDefaults.role,
+                                            team: prev[r.id]?.team ?? "",
+                                            note: e.target.value,
+                                          },
+                                        }))
+                                      }
+                                    />
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="secondary"
+                                      className="h-8 text-xs"
+                                      disabled={savingJoinNoteId === r.id}
+                                      onClick={() => void handleSaveJoinRequestNote(r.id)}
+                                    >
+                                      {savingJoinNoteId === r.id ? (
+                                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                      ) : null}
+                                      {t.membersPage.joinRequestSaveNote}
+                                    </Button>
+                                  </div>
+                                </div>
+                              ) : r.internal_note ? (
+                                <div className="mt-2 rounded-lg border border-border/40 bg-muted/15 px-2 py-1.5 text-[11px] text-muted-foreground">
+                                  <span className="font-medium text-foreground/80">{t.membersPage.joinRequestInternalNote}: </span>
+                                  {r.internal_note}
+                                </div>
+                              ) : null}
                               <div className="flex items-center justify-between mt-3">
                                 <div className="text-[10px] text-muted-foreground flex items-center gap-1">
                                   <Clock className="w-3 h-3" /> {new Date(r.created_at).toLocaleString()}

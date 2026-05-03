@@ -70,6 +70,7 @@ export type Database = {
           import_key: string | null
           location: string | null
           pitch_booking_id: string | null
+          publish_to_public_schedule: boolean
           starts_at: string
           team_id: string | null
           title: string
@@ -86,6 +87,7 @@ export type Database = {
           import_key?: string | null
           location?: string | null
           pitch_booking_id?: string | null
+          publish_to_public_schedule?: boolean
           starts_at: string
           team_id?: string | null
           title: string
@@ -102,6 +104,7 @@ export type Database = {
           import_key?: string | null
           location?: string | null
           pitch_booking_id?: string | null
+          publish_to_public_schedule?: boolean
           starts_at?: string
           team_id?: string | null
           title?: string
@@ -183,8 +186,12 @@ export type Database = {
           club_id: string
           content: string
           created_at: string
+          excerpt: string | null
           id: string
+          image_url: string | null
           priority: string | null
+          public_news_category: string
+          publish_to_public_website: boolean
           team_id: string | null
           title: string
           updated_at: string
@@ -194,8 +201,12 @@ export type Database = {
           club_id: string
           content: string
           created_at?: string
+          excerpt?: string | null
           id?: string
+          image_url?: string | null
           priority?: string | null
+          public_news_category?: string
+          publish_to_public_website?: boolean
           team_id?: string | null
           title: string
           updated_at?: string
@@ -205,8 +216,12 @@ export type Database = {
           club_id?: string
           content?: string
           created_at?: string
+          excerpt?: string | null
           id?: string
+          image_url?: string | null
           priority?: string | null
+          public_news_category?: string
+          publish_to_public_website?: boolean
           team_id?: string | null
           title?: string
           updated_at?: string
@@ -421,12 +436,23 @@ export type Database = {
           id: string
           instagram_url: string | null
           is_public: boolean
+          join_approval_mode: string
+          join_default_role: string
+          join_default_team: string | null
+          join_reviewer_policy: string
+          latitude: number | null
           logo_url: string | null
+          longitude: number | null
           meta_description: string | null
           meta_title: string | null
           name: string
           phone: string | null
           primary_color: string | null
+          public_location_notes: string | null
+          public_page_publish_version: number
+          public_page_published_at: string | null
+          public_page_published_by: string | null
+          public_page_published_config: Json | null
           public_page_sections: Json
           reference_images: Json
           season_start_month: number
@@ -451,12 +477,23 @@ export type Database = {
           id?: string
           instagram_url?: string | null
           is_public?: boolean
+          join_approval_mode?: string
+          join_default_role?: string
+          join_default_team?: string | null
+          join_reviewer_policy?: string
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           meta_description?: string | null
           meta_title?: string | null
           name: string
           phone?: string | null
           primary_color?: string | null
+          public_location_notes?: string | null
+          public_page_publish_version?: number
+          public_page_published_at?: string | null
+          public_page_published_by?: string | null
+          public_page_published_config?: Json | null
           public_page_sections?: Json
           reference_images?: Json
           season_start_month?: number
@@ -481,12 +518,23 @@ export type Database = {
           id?: string
           instagram_url?: string | null
           is_public?: boolean
+          join_approval_mode?: string
+          join_default_role?: string
+          join_default_team?: string | null
+          join_reviewer_policy?: string
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           meta_description?: string | null
           meta_title?: string | null
           name?: string
           phone?: string | null
           primary_color?: string | null
+          public_location_notes?: string | null
+          public_page_publish_version?: number
+          public_page_published_at?: string | null
+          public_page_published_by?: string | null
+          public_page_published_config?: Json | null
           public_page_sections?: Json
           reference_images?: Json
           season_start_month?: number
@@ -500,6 +548,173 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      club_public_page_drafts: {
+        Row: {
+          club_id: string
+          config: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          club_id: string
+          config?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          club_id?: string
+          config?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_public_page_drafts_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: true
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_public_contact_persons: {
+        Row: {
+          club_id: string
+          created_at: string
+          display_name: string
+          email: string | null
+          id: string
+          phone: string | null
+          role_title: string | null
+          show_on_public_website: boolean
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          display_name: string
+          email?: string | null
+          id?: string
+          phone?: string | null
+          role_title?: string | null
+          show_on_public_website?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          display_name?: string
+          email?: string | null
+          id?: string
+          phone?: string | null
+          role_title?: string | null
+          show_on_public_website?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_public_contact_persons_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_public_documents: {
+        Row: {
+          category: string
+          club_id: string
+          contains_personal_data: boolean
+          created_at: string
+          description: string | null
+          file_url: string
+          id: string
+          is_public: boolean
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          club_id: string
+          contains_personal_data?: boolean
+          created_at?: string
+          description?: string | null
+          file_url: string
+          id?: string
+          is_public?: boolean
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          club_id?: string
+          contains_personal_data?: boolean
+          created_at?: string
+          description?: string | null
+          file_url?: string
+          id?: string
+          is_public?: boolean
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_public_documents_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_public_faq_items: {
+        Row: {
+          answer: string
+          club_id: string
+          created_at: string
+          id: string
+          is_public: boolean
+          question: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          answer: string
+          club_id: string
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          question: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          club_id?: string
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          question?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_public_faq_items_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       club_pitches: {
         Row: {
@@ -793,8 +1008,14 @@ export type Database = {
           ends_at: string | null
           event_type: string
           id: string
+          image_url: string | null
           location: string | null
           max_participants: number | null
+          public_event_detail_enabled: boolean
+          public_registration_enabled: boolean
+          public_summary: string | null
+          publish_to_public_schedule: boolean
+          registration_external_url: string | null
           starts_at: string
           title: string
           updated_at: string
@@ -807,8 +1028,14 @@ export type Database = {
           ends_at?: string | null
           event_type?: string
           id?: string
+          image_url?: string | null
           location?: string | null
           max_participants?: number | null
+          public_event_detail_enabled?: boolean
+          public_registration_enabled?: boolean
+          public_summary?: string | null
+          publish_to_public_schedule?: boolean
+          registration_external_url?: string | null
           starts_at: string
           title: string
           updated_at?: string
@@ -821,8 +1048,14 @@ export type Database = {
           ends_at?: string | null
           event_type?: string
           id?: string
+          image_url?: string | null
           location?: string | null
           max_participants?: number | null
+          public_event_detail_enabled?: boolean
+          public_registration_enabled?: boolean
+          public_summary?: string | null
+          publish_to_public_schedule?: boolean
+          registration_external_url?: string | null
           starts_at?: string
           title?: string
           updated_at?: string
@@ -996,6 +1229,9 @@ export type Database = {
           match_date: string
           notes: string | null
           opponent: string
+          opponent_logo_url: string | null
+          public_match_detail_enabled: boolean
+          publish_to_public_schedule: boolean
           status: string
           team_id: string | null
           updated_at: string
@@ -1012,6 +1248,9 @@ export type Database = {
           match_date: string
           notes?: string | null
           opponent: string
+          opponent_logo_url?: string | null
+          public_match_detail_enabled?: boolean
+          publish_to_public_schedule?: boolean
           status?: string
           team_id?: string | null
           updated_at?: string
@@ -1028,6 +1267,9 @@ export type Database = {
           match_date?: string
           notes?: string | null
           opponent?: string
+          opponent_logo_url?: string | null
+          public_match_detail_enabled?: boolean
+          publish_to_public_schedule?: boolean
           status?: string
           team_id?: string | null
           updated_at?: string
@@ -1587,6 +1829,8 @@ export type Database = {
           id: string
           membership_id: string | null
           placeholder_id: string | null
+          public_contact_email: string | null
+          show_on_public_website: boolean
           team_id: string
         }
         Insert: {
@@ -1594,6 +1838,8 @@ export type Database = {
           id?: string
           membership_id?: string | null
           placeholder_id?: string | null
+          public_contact_email?: string | null
+          show_on_public_website?: boolean
           team_id: string
         }
         Update: {
@@ -1601,6 +1847,8 @@ export type Database = {
           id?: string
           membership_id?: string | null
           placeholder_id?: string | null
+          public_contact_email?: string | null
+          show_on_public_website?: boolean
           team_id?: string
         }
         Relationships: [
@@ -1694,6 +1942,11 @@ export type Database = {
           id: string
           league: string | null
           name: string
+          public_description: string | null
+          public_document_links: Json | null
+          public_documents_visible: boolean
+          public_training_schedule_visible: boolean
+          public_website_visible: boolean
           sport: string | null
           updated_at: string
         }
@@ -1705,6 +1958,11 @@ export type Database = {
           id?: string
           league?: string | null
           name: string
+          public_description?: string | null
+          public_document_links?: Json | null
+          public_documents_visible?: boolean
+          public_training_schedule_visible?: boolean
+          public_website_visible?: boolean
           sport?: string | null
           updated_at?: string
         }
@@ -1716,6 +1974,11 @@ export type Database = {
           id?: string
           league?: string | null
           name?: string
+          public_description?: string | null
+          public_document_links?: Json | null
+          public_documents_visible?: boolean
+          public_training_schedule_visible?: boolean
+          public_website_visible?: boolean
           sport?: string | null
           updated_at?: string
         }
@@ -1738,6 +2001,7 @@ export type Database = {
           ends_at: string
           id: string
           location: string | null
+          publish_to_public_schedule: boolean
           recurring: string | null
           starts_at: string
           team_id: string | null
@@ -1752,6 +2016,7 @@ export type Database = {
           ends_at: string
           id?: string
           location?: string | null
+          publish_to_public_schedule?: boolean
           recurring?: string | null
           starts_at: string
           team_id?: string | null
@@ -1766,6 +2031,7 @@ export type Database = {
           ends_at?: string
           id?: string
           location?: string | null
+          publish_to_public_schedule?: boolean
           recurring?: string | null
           starts_at?: string
           team_id?: string | null
@@ -1856,6 +2122,10 @@ export type Database = {
       is_member_of_club: {
         Args: { _club_id: string; _user_id: string }
         Returns: boolean
+      }
+      publish_club_public_page_config: {
+        Args: { p_club_id: string }
+        Returns: Json
       }
     }
     Enums: {
