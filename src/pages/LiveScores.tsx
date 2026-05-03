@@ -5,6 +5,7 @@ import { Activity, Trophy, Clock, MapPin, RefreshCw } from "lucide-react";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { useAuth } from "@/contexts/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { DASHBOARD_PAGE_MAX_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 // logo is rendered by AppHeader
 
 type LiveMatch = {
@@ -120,9 +121,9 @@ const LiveScores = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className={DASHBOARD_PAGE_ROOT}>
         <DashboardHeaderSlot title={t.liveScores.title} subtitle={t.liveScores.signInToSeeClubs} showBack={false} />
-        <main className="container mx-auto px-4 py-16">
+        <main className={`${DASHBOARD_PAGE_MAX_INNER} py-12 sm:py-16`}>
           <div className="max-w-md mx-auto text-center rounded-3xl glass-card p-8">
             <div className="text-sm font-medium text-foreground">{t.liveScores.signInRequired}</div>
             <div className="text-xs text-muted-foreground mt-1">{t.liveScores.signInRequiredDesc}</div>
@@ -133,7 +134,7 @@ const LiveScores = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot
         title={t.liveScores.title}
         subtitle={t.liveScores.realTimeUpdates}
@@ -155,7 +156,7 @@ const LiveScores = () => {
         }
       />
 
-      <main className="container mx-auto px-4 py-8">
+      <main className={`${DASHBOARD_PAGE_MAX_INNER} py-6 sm:py-8`}>
         {/* Live indicator banner */}
         <div className="flex items-center gap-2 mb-6">
           <span className="relative flex h-3 w-3">

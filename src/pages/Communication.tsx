@@ -25,6 +25,7 @@ import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { useToast } from "@/hooks/use-toast";
+import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useLanguage } from "@/hooks/use-language";
 import { correlationHeaders } from "@/lib/observability";
@@ -872,7 +873,7 @@ const Communication = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot
         title={t.communicationPage.title}
         subtitle={t.communicationPage.subtitle}
@@ -891,7 +892,7 @@ const Communication = () => {
         }
       />
 
-      <div className="flex-1 container mx-auto px-4 py-6">
+      <div className={`${DASHBOARD_PAGE_INNER} flex flex-1 flex-col min-h-0`}>
         {(clubLoading || loading) ? (
           <div className="flex justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />

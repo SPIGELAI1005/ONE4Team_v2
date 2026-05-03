@@ -10,6 +10,7 @@ import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/use-language";
+import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { Switch } from "@/components/ui/switch";
 
@@ -222,7 +223,7 @@ export default function Partners() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot
         title={t.partnersPage.title}
         subtitle={schemaReady ? t.partnersPage.subtitleOperational : t.partnersPage.subtitleFallback}
@@ -241,8 +242,8 @@ export default function Partners() {
         }
       />
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="mb-4 flex flex-wrap gap-2">
+      <div className={`${DASHBOARD_PAGE_INNER} min-w-0`}>
+        <div className="mb-4 flex min-w-0 flex-wrap gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {[
             { id: "partners" as const, label: "Partners", icon: Building2 },
             { id: "contracts" as const, label: "Contracts", icon: FileText },

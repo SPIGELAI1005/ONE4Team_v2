@@ -41,6 +41,12 @@ import { MasterDataTabs } from "@/components/members/master-data-tabs";
 import { Badge } from "@/components/ui/badge";
 import { appendMemberAuditEvent } from "@/lib/member-audit";
 import { cn } from "@/lib/utils";
+import {
+  DASHBOARD_PAGE_INNER,
+  DASHBOARD_PAGE_ROOT,
+  DASHBOARD_TABS_INNER_SCROLL,
+  DASHBOARD_TABS_ROW,
+} from "@/lib/dashboard-page-shell";
 import { supabaseErrorMessage } from "@/lib/supabase-error-message";
 
 type HistoryPreviewState = {
@@ -2625,7 +2631,7 @@ const Members = () => {
     "inline-flex h-8 min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-medium leading-none shadow-none [&_svg]:h-3.5 [&_svg]:w-3.5 [&_svg]:shrink-0";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot
         title={t.membersPage.title}
         subtitle={tab === "members" ? t.membersPage.roster : tab === "roles" ? t.membersPage.roles.subtitle : (clubName ? `${clubName} · ${t.membersPage.invites}` : t.membersPage.invites)}
@@ -2658,19 +2664,21 @@ const Members = () => {
       />
 
       {/* Tabs */}
-      <div className="border-b border-border">
-        <div className="container mx-auto px-4 flex gap-1">
+      <div className={DASHBOARD_TABS_ROW}>
+        <div className={DASHBOARD_TABS_INNER_SCROLL}>
           <button
+            type="button"
             onClick={() => setTab("members")}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               tab === "members" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             <Users className="w-4 h-4" /> {t.membersPage.title}
           </button>
           <button
+            type="button"
             onClick={() => setTab("invites")}
-            className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
               tab === "invites" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -2678,8 +2686,9 @@ const Members = () => {
           </button>
           {perms.isAdmin && (
             <button
+              type="button"
               onClick={() => setTab("roles")}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 tab === "roles" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -2689,7 +2698,7 @@ const Members = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
+      <div className={DASHBOARD_PAGE_INNER}>
         {(clubLoading || loading) ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />

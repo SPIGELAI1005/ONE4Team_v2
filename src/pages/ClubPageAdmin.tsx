@@ -66,6 +66,11 @@ import {
 } from "@/lib/club-page-settings-helpers";
 import { ClubPageAdminLivePublicPreview } from "@/components/club-page-admin/club-page-admin-live-public-preview";
 import type { PrivacyPack } from "@/lib/club-page-settings-helpers";
+import {
+  DASHBOARD_PAGE_INNER_SM,
+  DASHBOARD_PAGE_MAX_INNER,
+  DASHBOARD_PAGE_ROOT,
+} from "@/lib/dashboard-page-shell";
 
 type ClubFormData = ClubPublicPageEditorFormLike;
 
@@ -525,7 +530,7 @@ export default function ClubPageAdmin() {
 
   if (clubLoading || loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className={DASHBOARD_PAGE_ROOT}>
         <DashboardHeaderSlot title={t.clubPageAdmin.title} subtitle={t.clubPageAdmin.subtitle} />
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -536,7 +541,7 @@ export default function ClubPageAdmin() {
 
   if (!activeClubId) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className={DASHBOARD_PAGE_ROOT}>
         <DashboardHeaderSlot title={t.clubPageAdmin.title} subtitle={t.clubPageAdmin.subtitle} />
         <div className="py-20 text-center">
           <Globe className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
@@ -548,7 +553,7 @@ export default function ClubPageAdmin() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot
         title={t.clubPageAdmin.title}
         subtitle={t.clubPageAdmin.subtitle}
@@ -583,7 +588,7 @@ export default function ClubPageAdmin() {
       />
 
       <div className="border-b border-border/60">
-        <div className="container mx-auto space-y-2 px-4 py-3">
+        <div className={`${DASHBOARD_PAGE_INNER_SM} space-y-2`}>
           <div className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-muted/40 px-4 py-2.5 text-[11px]">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-semibold text-foreground">{t.clubPageAdmin.publishStatusLabel}</span>
@@ -645,7 +650,7 @@ export default function ClubPageAdmin() {
         </div>
       </div>
 
-      <div className="container mx-auto max-w-5xl px-4 py-6">
+      <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-5xl py-4 sm:py-6`}>
         {clubRowKeys.size > 0 && !clubRowKeys.has("address") ? (
           <div className="mb-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
             <div className="mb-1 font-semibold text-amber-950 dark:text-amber-100">{t.clubPageAdmin.schemaProfileColumnsMissingTitle}</div>

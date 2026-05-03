@@ -28,6 +28,7 @@ import SeasonAwards from "@/components/analytics/SeasonAwards";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 import { useActiveClub } from "@/hooks/use-active-club";
+import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 
 type UpcomingItem = {
   title: string;
@@ -273,10 +274,10 @@ const DashboardContent = () => {
   const dashboardGreeting = `${t.dashboard.welcomeBack}${firstName ? `, ${firstName}` : ""}${activeClub?.name ? ` · ${activeClub.name}` : ""}`;
 
   return (
-    <div className="bg-background pb-20 lg:pb-0 scroll-glow">
+    <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot title={config.title} greeting={dashboardGreeting} showBack={false} />
 
-      <div className="p-5 lg:p-8 space-y-5">
+      <div className={`${DASHBOARD_PAGE_INNER} space-y-5`}>
         {showGettingStarted && (role === "trainer" || role === "admin") && (
           <div className="rounded-2xl glass-card p-5">
             <div className="font-display font-semibold text-foreground text-[15px] flex items-center gap-2">

@@ -15,6 +15,12 @@ import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
+import {
+  DASHBOARD_PAGE_INNER,
+  DASHBOARD_PAGE_ROOT,
+  DASHBOARD_TABS_INNER_SCROLL,
+  DASHBOARD_TABS_ROW,
+} from "@/lib/dashboard-page-shell";
 // logo is rendered by AppHeader
 
 type FeeType = {
@@ -127,7 +133,7 @@ const Payments = () => {
   const overdueCount = payments.filter(p => p.status === "overdue").length;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot
         title={t.payments.title}
         subtitle={t.payments.adminOnly}
@@ -145,8 +151,8 @@ const Payments = () => {
       />
 
       {/* Tabs */}
-      <div className="border-b border-border">
-        <div className="container mx-auto px-4 flex gap-1">
+      <div className={DASHBOARD_TABS_ROW}>
+        <div className={DASHBOARD_TABS_INNER_SCROLL}>
           {[
             { id: "overview" as const, label: t.payments.paymentsTab, icon: CreditCard },
             { id: "fees" as const, label: t.payments.feeTypes, icon: TrendingUp },
@@ -161,7 +167,7 @@ const Payments = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
+      <div className={DASHBOARD_PAGE_INNER}>
         {(clubLoading || loading) ? (
           <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
         ) : !clubId ? (

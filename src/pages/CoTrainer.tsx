@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useLanguage } from "@/hooks/use-language";
+import { DASHBOARD_PAGE_MAX_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 import { useActiveClub } from "@/hooks/use-active-club";
 import {
   buildClubContext,
@@ -900,7 +901,7 @@ const CoTrainer = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-20 lg:pb-0">
+    <div className={`${DASHBOARD_PAGE_ROOT} min-h-0`}>
       <DashboardHeaderSlot
         title={t.coTrainerPage.headerTitle}
         subtitle={t.coTrainerPage.subtitleForClub.replace("{role}", assistantRoleName).replace("{club}", clubName)}
@@ -925,7 +926,7 @@ const CoTrainer = () => {
       />
 
       <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as typeof mainTab)} className="flex flex-col flex-1 min-h-0">
-        <div className="container mx-auto px-4 pt-4 max-w-3xl shrink-0">
+        <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl shrink-0 pt-4`}>
           <TabsList className="w-full grid grid-cols-3 h-11 rounded-xl bg-muted/50 p-1">
             <TabsTrigger value="chat" className="rounded-lg text-xs gap-1.5">
               <Bot className="w-3.5 h-3.5" />
@@ -944,7 +945,7 @@ const CoTrainer = () => {
 
         <TabsContent value="chat" className="flex-1 flex flex-col min-h-0 mt-0 data-[state=inactive]:hidden">
           <div ref={scrollRef} className="flex-1 overflow-y-auto">
-            <div className="container mx-auto px-4 py-6 max-w-3xl space-y-4">
+            <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl space-y-4 py-6`}>
               <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-2">
@@ -1113,7 +1114,7 @@ const CoTrainer = () => {
           </div>
 
           <div className="border-t border-border bg-background/80 backdrop-blur-xl shrink-0">
-            <div className="container mx-auto px-4 py-3 max-w-3xl">
+            <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl py-3`}>
               <div className="flex gap-2 items-end">
                 <textarea
                   ref={inputRef}
@@ -1142,7 +1143,7 @@ const CoTrainer = () => {
         </TabsContent>
 
         <TabsContent value="actions" className="flex-1 overflow-y-auto mt-0 px-4 pb-20 data-[state=inactive]:hidden">
-          <div className="container mx-auto py-6 max-w-3xl space-y-4">
+          <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl space-y-4 py-6`}>
             {!clubId ? (
               <p className="text-sm text-muted-foreground text-center py-12">{t.ai.selectClub}</p>
             ) : (
@@ -1231,7 +1232,7 @@ const CoTrainer = () => {
         </TabsContent>
 
         <TabsContent value="history" className="flex-1 overflow-y-auto mt-0 px-4 pb-20 data-[state=inactive]:hidden">
-          <div className="container mx-auto py-6 max-w-3xl space-y-6">
+          <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl space-y-6 py-6`}>
             {historyLoading ? (
               <div className="flex justify-center py-16">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />

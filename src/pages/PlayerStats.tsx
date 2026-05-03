@@ -31,6 +31,14 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { useLanguage } from "@/hooks/use-language";
+import {
+  DASHBOARD_PAGE_INNER,
+  DASHBOARD_PAGE_INNER_SM,
+  DASHBOARD_PAGE_MAX_INNER,
+  DASHBOARD_PAGE_ROOT,
+  DASHBOARD_TABS_INNER_SCROLL,
+  DASHBOARD_TABS_ROW,
+} from "@/lib/dashboard-page-shell";
 
 type PlayerStat = {
   membership_id: string;
@@ -622,18 +630,18 @@ const PlayerStats = () => {
   const showFilters = seasons.length > 0 || competitions.length > 0 || teamsForSelect.length > 0;
 
   return (
-    <div className="min-h-screen bg-background pb-20 lg:pb-0">
+    <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot title={t.playerStatsPage.title} subtitle={t.playerStatsPage.subtitle} />
 
       <div className="border-b border-border bg-card/20">
-        <div className="container mx-auto px-4 py-4">
+        <div className={`${DASHBOARD_PAGE_MAX_INNER} py-4`}>
           <p className="text-sm text-muted-foreground">{scopeCopy}</p>
           {snapshotError ? <p className="mt-2 text-xs text-amber-600">{t.reportsPage.snapshotLoadError}</p> : null}
         </div>
       </div>
 
       {persona === "admin" && clubId ? (
-        <div className="container mx-auto px-4 py-6 space-y-4">
+        <div className={`${DASHBOARD_PAGE_INNER} space-y-4`}>
           <Card className="border-border/60 bg-card/40">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">{t.reportsPage.sectionOverview}</CardTitle>
@@ -814,7 +822,7 @@ const PlayerStats = () => {
       ) : null}
 
       {persona === "trainer" && clubId ? (
-        <div className="container mx-auto px-4 py-6">
+        <div className={DASHBOARD_PAGE_INNER}>
           <Card className="border-border/60 bg-card/40">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">{t.reportsPage.sectionCoaching}</CardTitle>
@@ -850,7 +858,7 @@ const PlayerStats = () => {
       ) : null}
 
       {persona === "player" && clubId ? (
-        <div className="container mx-auto px-4 py-6">
+        <div className={DASHBOARD_PAGE_INNER}>
           <Card className="border-border/60 bg-card/40">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">{t.reportsPage.sectionPlayer}</CardTitle>
@@ -889,7 +897,7 @@ const PlayerStats = () => {
       ) : null}
 
       {persona === "sponsor" && clubId ? (
-        <div className="container mx-auto px-4 py-6">
+        <div className={DASHBOARD_PAGE_INNER}>
           <Card className="border-border/60 bg-card/40">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">{t.reportsPage.sectionPartner}</CardTitle>
@@ -907,7 +915,7 @@ const PlayerStats = () => {
       {/* Filters */}
       {showFilters && (
         <div className="border-b border-border">
-          <div className="container mx-auto px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+          <div className={`${DASHBOARD_PAGE_INNER_SM} flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3`}>
             <Filter className="w-4 h-4 text-muted-foreground hidden sm:block" />
             {persona !== "player" && teamsForSelect.length > 0 && (
               <Select value={selectedTeamId} onValueChange={setSelectedTeamId}>
@@ -974,14 +982,14 @@ const PlayerStats = () => {
       )}
 
       {/* Tabs */}
-      <div className="border-b border-border">
-        <div className="container mx-auto px-4 flex gap-1 overflow-x-auto">
+      <div className={DASHBOARD_TABS_ROW}>
+        <div className={DASHBOARD_TABS_INNER_SCROLL}>
           {tabItems.map((item) => (
             <button
               key={item.id}
               type="button"
               onClick={() => setTab(item.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+              className={`flex shrink-0 items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 tab === item.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -991,7 +999,7 @@ const PlayerStats = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
+      <div className={DASHBOARD_PAGE_INNER}>
         {clubLoading || loading ? (
           <div className="flex justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -1001,8 +1009,8 @@ const PlayerStats = () => {
         ) : displayRows.length === 0 ? (
           <div className="max-w-2xl mx-auto rounded-xl bg-card border border-border p-8 text-center text-muted-foreground text-sm">{emptyPerformanceCopy}</div>
         ) : (
-          <div className="max-w-2xl mx-auto rounded-xl bg-card border border-border overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="mx-auto max-w-2xl min-w-0 overflow-x-auto rounded-xl border border-border bg-card">
+            <table className="w-full min-w-[320px] text-sm">
               <thead>
                 <tr className="border-b border-border text-xs text-muted-foreground">
                   <th className="text-center px-3 py-3 w-12">#</th>

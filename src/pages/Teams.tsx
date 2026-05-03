@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useLanguage } from "@/hooks/use-language";
+import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 import { resolveSportId, resolveSportLabel, SPORTS_CATALOG } from "@/lib/sports";
 import { useLocation } from "react-router-dom";
 import { Link } from "react-router-dom";
@@ -2795,7 +2796,7 @@ const Teams = () => {
   const teamsToolbarRevision = `${currentTab}-${canManage}-${canManageLayers}-${bookingActionLabel}-${activeLayerId}-${pitches.length}`;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot
         title={isAssetLayersPage ? t.sidebar.assetLayers : t.teamsPage.title}
         subtitle={canManage ? t.teamsPage.subtitleManage : t.teamsPage.subtitleView}
@@ -2868,8 +2869,10 @@ const Teams = () => {
         }
       />
 
-      <div className="container mx-auto px-4 py-6">
-        {!isAssetLayersPage && <div className="mb-4 inline-flex rounded-xl border border-border/60 bg-card/40 p-1">
+      <div className={`${DASHBOARD_PAGE_INNER} min-w-0`}>
+        {!isAssetLayersPage && (
+          <div className="mb-4 w-full min-w-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="inline-flex rounded-xl border border-border/60 bg-card/40 p-1">
           {(
             [
               { id: "pitches", label: t.teamsPage.tabs.pitches },
@@ -2889,7 +2892,9 @@ const Teams = () => {
               {tab.label}
             </button>
           ))}
-        </div>}
+            </div>
+          </div>
+        )}
 
         {(clubLoading || loading) ? (
           <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>

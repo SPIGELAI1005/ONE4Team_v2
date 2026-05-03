@@ -16,6 +16,13 @@ import {
   uploadShopProductImage,
 } from "@/lib/shop-product-images";
 import { supabaseErrorMessage, isTransientSupabaseMessage } from "@/lib/supabase-error-message";
+import {
+  DASHBOARD_PAGE_INNER,
+  DASHBOARD_PAGE_INNER_SM,
+  DASHBOARD_PAGE_ROOT,
+  DASHBOARD_TABS_INNER_SCROLL,
+  DASHBOARD_TABS_ROW,
+} from "@/lib/dashboard-page-shell";
 
 interface Product {
   id: string;
@@ -308,7 +315,7 @@ export default function Shop() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot
         title={t.shopPage.title}
         subtitle={schemaReady ? t.shopPage.subtitle : `${t.shopPage.subtitle} ${t.shopPage.demoFallbackSuffix}`}
@@ -327,7 +334,7 @@ export default function Shop() {
       />
 
       <div className="border-b border-border/60">
-        <div className="container mx-auto px-4 py-3">
+        <div className={DASHBOARD_PAGE_INNER_SM}>
           {shopLoadError ? (
             <div className="flex flex-col gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3 min-w-0">
@@ -362,10 +369,11 @@ export default function Shop() {
         </div>
       </div>
 
-      <div className="border-b border-border/60">
-        <div className="container mx-auto flex min-w-0 gap-1 overflow-x-auto px-4 touch-manipulation [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className={`${DASHBOARD_TABS_ROW} border-border/60`}>
+        <div className={`${DASHBOARD_TABS_INNER_SCROLL} touch-manipulation`}>
           {tabs.map((tb) => (
             <button
+              type="button"
               key={tb.id}
               onClick={() => setTab(tb.id)}
               className={`flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 touch-manipulation transition-colors ${
@@ -378,7 +386,7 @@ export default function Shop() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
+      <div className={DASHBOARD_PAGE_INNER}>
         {(clubLoading || loading) ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />

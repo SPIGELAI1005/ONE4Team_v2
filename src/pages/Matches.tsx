@@ -13,6 +13,7 @@ import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_INNER_SM, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabaseErrorMessage, isTransientSupabaseMessage } from "@/lib/supabase-error-message";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -367,7 +368,7 @@ const Matches = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20 lg:pb-0 scroll-glow">
+    <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot
         title={t.matchesPage.title}
         subtitle={t.matchesPage.subtitle}
@@ -387,7 +388,7 @@ const Matches = () => {
       />
 
       {/* iOS Segmented Tabs */}
-      <div className="container mx-auto px-4 py-3">
+      <div className={DASHBOARD_PAGE_INNER_SM}>
         <div className="ios-segment flex overflow-x-auto min-w-0">
           {([
             { id: "matches" as const, label: t.matchesPage.tabMatches, icon: Trophy },
@@ -404,7 +405,7 @@ const Matches = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
+      <div className={DASHBOARD_PAGE_INNER}>
         {(clubLoading || loading) ? (
           <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
         ) : !clubId ? (

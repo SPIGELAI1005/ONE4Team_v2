@@ -18,6 +18,12 @@ import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { correlationHeaders } from "@/lib/observability";
 import { supabaseErrorMessage, isTransientSupabaseMessage } from "@/lib/supabase-error-message";
+import {
+  DASHBOARD_PAGE_MAX_INNER,
+  DASHBOARD_PAGE_ROOT,
+  DASHBOARD_TABS_INNER_SCROLL,
+  DASHBOARD_TABS_ROW,
+} from "@/lib/dashboard-page-shell";
 
 const LS_NOTIF_KEY = "one4team.notifications";
 const PROFILE_AVATAR_BUCKET = "images-avatars";
@@ -544,17 +550,18 @@ export default function Settings() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot title={t.settingsPage.title} subtitle={t.settingsPage.subtitle} />
 
       {/* Tabs */}
-      <div className="border-b border-border/60">
-        <div className="container mx-auto px-4 flex gap-1 overflow-x-auto">
+      <div className={DASHBOARD_TABS_ROW}>
+        <div className={DASHBOARD_TABS_INNER_SCROLL}>
           {tabs.map((tb) => (
             <button
+              type="button"
               key={tb.id}
               onClick={() => setTab(tb.id)}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
+              className={`flex shrink-0 items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
                 tab === tb.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -564,7 +571,7 @@ export default function Settings() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6 max-w-2xl">
+      <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-2xl py-4 sm:py-6`}>
         {/* ── Profile ── */}
         {tab === "profile" && (
           <div className="space-y-4">

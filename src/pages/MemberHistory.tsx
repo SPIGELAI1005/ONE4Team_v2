@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useClubId } from "@/hooks/use-club-id";
 import { useLanguage } from "@/hooks/use-language";
+import { DASHBOARD_PAGE_MAX_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { Json } from "@/integrations/supabase/types";
@@ -297,7 +298,7 @@ function MemberHistory() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot
         title={t.memberHistoryPage.title}
         subtitle={
@@ -312,7 +313,7 @@ function MemberHistory() {
         }
       />
 
-      <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 space-y-6">
+      <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl space-y-6 py-4 sm:py-6`}>
         {loading ? (
           <div className="flex justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />

@@ -8,6 +8,7 @@ import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 
 /** ONE4AI admin tools: logged copilots (training plan + admin digest). Route: `/ai`. */
 // Server-first generation path with deterministic fallback if edge function is unavailable.
@@ -249,10 +250,10 @@ export default function AI() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot title={t.ai.title} subtitle={t.ai.subtitle} />
 
-      <div className="container mx-auto px-4 py-6">
+      <div className={DASHBOARD_PAGE_INNER}>
         {(clubLoading || loading) ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />

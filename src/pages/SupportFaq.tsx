@@ -21,6 +21,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { useAuth } from "@/contexts/useAuth";
 import { useActiveClub } from "@/hooks/use-active-club";
 import { useToast } from "@/hooks/use-toast";
+import { DASHBOARD_PAGE_MAX_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 import { Mail, Copy } from "lucide-react";
 
 const DEFAULT_SUPPORT_EMAIL = "spigelai@gmail.com";
@@ -136,10 +137,10 @@ export default function SupportFaq() {
   const dashboardTo = `/dashboard/${dashRole}`;
 
   return (
-    <div className="min-h-screen bg-background pb-20 lg:pb-0">
+    <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot title={p.title} subtitle={p.subtitle} />
 
-      <div className="container mx-auto max-w-3xl px-4 py-6 space-y-8">
+      <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl space-y-8 py-4 sm:py-6`}>
         <p className="text-sm text-muted-foreground leading-relaxed">
           {p.intro}{" "}
           <a

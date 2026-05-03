@@ -10,6 +10,7 @@ import {
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { useLanguage } from "@/hooks/use-language";
+import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 import { supabase } from "@/integrations/supabase/client";
 import PlayerRadarChart from "@/components/analytics/PlayerRadarChart";
 import AttendanceHeatmap from "@/components/analytics/AttendanceHeatmap";
@@ -235,10 +236,10 @@ const PlayerProfile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20 lg:pb-0">
+    <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot title={t.playerProfilePage.title} subtitle={t.playerProfilePage.subtitle} />
 
-      <div className="container mx-auto px-4 py-6">
+      <div className={DASHBOARD_PAGE_INNER}>
         {(clubLoading || loading) ? (
           <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
         ) : (

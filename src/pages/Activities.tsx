@@ -22,6 +22,7 @@ import { useMembershipId } from "@/hooks/use-membership-id";
 import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 import { useLanguage } from "@/hooks/use-language";
 
 type ActivityType = "training" | "match" | "event";
@@ -394,7 +395,7 @@ export default function Activities() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot
         title={t.activitiesPage.title}
         subtitle={perms.isTrainer ? t.activitiesPage.subtitleTrainer : t.activitiesPage.subtitlePlayer}
@@ -420,7 +421,7 @@ export default function Activities() {
         }
       />
 
-      <div className="container mx-auto px-4 py-6">
+      <div className={DASHBOARD_PAGE_INNER}>
         {(clubLoading || membershipLoading || loading) ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
