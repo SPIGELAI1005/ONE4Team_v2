@@ -360,10 +360,19 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
 
       if (teamsRes.error) toast({ title: t.common.error, description: teamsRes.error.message, variant: "destructive" });
       if (sessionsRes.error && !isMissingRelationError(sessionsRes.error)) {
-        toast({ title: t.common.error, description: sessionsRes.error.message, variant: "destructive" });
+        const sMsg = String(sessionsRes.error.message ?? "");
+        const missingSessionPublish = sMsg.includes("publish_to_public_schedule");
+        if (!missingSessionPublish) {
+          toast({ title: t.common.error, description: sessionsRes.error.message, variant: "destructive" });
+        }
       }
-      if (activityTrainingsRes.error)
-        toast({ title: t.common.error, description: activityTrainingsRes.error.message, variant: "destructive" });
+      if (activityTrainingsRes.error) {
+        const aMsg = String(activityTrainingsRes.error.message ?? "");
+        const missingActivityPublish = aMsg.includes("publish_to_public_schedule");
+        if (!missingActivityPublish && !isMissingRelationError(activityTrainingsRes.error)) {
+          toast({ title: t.common.error, description: activityTrainingsRes.error.message, variant: "destructive" });
+        }
+      }
       if (eventsRes.error) {
         const evMsg = String(eventsRes.error.message ?? "");
         const missingEventCols =

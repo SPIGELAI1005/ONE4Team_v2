@@ -14,6 +14,7 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **MICROSITE-NAV-001** **`showInNav`** reflected in **`getEnabledPublicPages`** / resolved layout (`public-page-flex-config.ts`).
 - [x] **MICROSITE-HERO-001** Config + UI: **`hero_club_color_overlay`**, **`hero_tint_strength`**; **`HeroImageTint`** `clubTintEnabled`; public **`PublicClubHero`** wired.
 - [x] **MICROSITE-HOME-001** Default homepage module numeric order (join before partners; gallery last).
+- [x] **MICROSITE-UX-001** (2026-05-03) Public club **contrast** (light-brand **`--club-*`** token flip, **`readableTextOnSolid`** on primary/support fills, draft empty-hint panel) + **accent hovers** on CTAs (**`public-club-cta-classes.ts`**: fill + outline patterns); wired on navbar, home, join, documents, news, contact, event detail, team detail, **`club-page-admin-live-public-preview`**. No new SQL.
 - [ ] **MICROSITE-OPS-001** Operator: apply Supabase migrations **`20260502120000`** through **`20260503143000`** in filename order; run **`supabase gen types`** if needed; smoke **`/club-page-admin`**, **`/club/:slug`**, **`/club/:slug/join`**, **`?draft=1`**.
 
 ### Cookie consent + public team / import surfaces (2026-04-29) — code in repo

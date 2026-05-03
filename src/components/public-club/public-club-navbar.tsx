@@ -1,13 +1,28 @@
 import { useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { Home, LayoutDashboard, Trophy, Calendar, MoreHorizontal, Newspaper } from "lucide-react";
+import {
+  Calendar,
+  CalendarDays,
+  FileText,
+  Home,
+  LayoutDashboard,
+  Menu,
+  Newspaper,
+  Phone,
+  Swords,
+  Trophy,
+  UserPlus,
+} from "lucide-react";
 import { usePublicClub } from "@/contexts/public-club-context";
 import { useLanguage } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { getEnabledPublicPages, publicNavIdToPathSegment } from "@/lib/public-page-flex-config";
 import type { PublicMicroPageId } from "@/lib/club-page-settings-helpers";
+import { readableTextOnSolid } from "@/lib/hex-to-rgb";
+import { clubCtaFillHoverClass } from "@/lib/public-club-cta-classes";
+import { cn } from "@/lib/utils";
 import logo from "@/assets/one4team-logo.png";
 
 function navClass(active: boolean) {
@@ -46,17 +61,35 @@ function defaultNavLabel(id: PublicMicroPageId, t: { clubPage: typeof import("@/
 }
 
 function iconForNavId(id: PublicMicroPageId): LucideIcon {
-  if (id === "teams") return Trophy;
-  if (id === "schedule") return Calendar;
-  if (id === "news") return Newspaper;
-  return LayoutDashboard;
+  switch (id) {
+    case "home":
+      return Home;
+    case "news":
+      return Newspaper;
+    case "teams":
+      return Trophy;
+    case "schedule":
+      return Calendar;
+    case "matches":
+      return Swords;
+    case "events":
+      return CalendarDays;
+    case "documents":
+      return FileText;
+    case "join":
+      return UserPlus;
+    case "contact":
+      return Phone;
+    default:
+      return LayoutDashboard;
+  }
 }
 
 export function PublicClubNavbar() {
   const { t } = useLanguage();
   const { club, basePath, searchSuffix, openDashboardOrAuth, checkingMembership } = usePublicClub();
   const location = useLocation();
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const desktopItems = useMemo(() => {
     if (!club) return [];
@@ -68,29 +101,12 @@ export function PublicClubNavbar() {
     });
   }, [basePath, club, t]);
 
-  const mobileNavSplit = useMemo(() => {
-    if (!club) return { primary: [] as { to: string; label: string; icon: LucideIcon }[], more: [] as { to: string; label: string }[] };
-    const entries = getEnabledPublicPages(club.publicPageLayout);
-    const home = entries.find((e) => e.id === "home");
-    const rest = entries.filter((e) => e.id !== "home");
-    const primaryEntries = [home, ...rest.slice(0, 2)].filter(Boolean) as typeof entries;
-    const moreEntries = rest.slice(2);
-    const primary = primaryEntries.map((e) => {
-      const seg = publicNavIdToPathSegment(e.id);
-      const to = e.id === "home" ? basePath : `${basePath}/${seg}`;
-      const label = e.navLabel.trim() || defaultNavLabel(e.id, t);
-      return { to, label, icon: iconForNavId(e.id) };
-    });
-    const more = moreEntries.map((e) => {
-      const seg = publicNavIdToPathSegment(e.id);
-      const to = `${basePath}/${seg}`;
-      const label = e.navLabel.trim() || defaultNavLabel(e.id, t);
-      return { to, label };
-    });
-    return { primary, more };
-  }, [basePath, club, t]);
-
   if (!club) return null;
+
+  const dashboardFillStyle = {
+    backgroundColor: "var(--club-primary)",
+    color: readableTextOnSolid(club.primary_color || "#C4A052"),
+  } as const;
 
   const isActivePath = (to: string) => {
     if (to === basePath) return location.pathname === basePath || location.pathname === `${basePath}/`;
@@ -124,68 +140,90 @@ export function PublicClubNavbar() {
           ))}
         </nav>
 
-        <div className="flex flex-1 justify-end gap-2 lg:flex-none">
+        <div className="flex flex-1 items-center justify-end gap-2 lg:flex-none">
           <Button
             size="sm"
-            className="hidden lg:inline-flex font-semibold text-white hover:brightness-110 shrink-0"
-            style={{ backgroundColor: "var(--club-primary)" }}
+            className={`hidden lg:inline-flex shrink-0 font-semibold ${clubCtaFillHoverClass}`}
+            style={dashboardFillStyle}
             onClick={openDashboardOrAuth}
             disabled={checkingMembership}
           >
-            <LayoutDashboard className="w-4 h-4 mr-1" />
+            <LayoutDashboard className="mr-1 h-4 w-4" />
             {t.clubPage.openDashboard}
           </Button>
 
-          <div className="flex lg:hidden items-center gap-1">
-            {mobileNavSplit.primary.map((item) => {
-              const Icon = item.icon;
-              const active = isActivePath(item.to);
-              return (
-                <Button key={item.to} size="sm" variant="ghost" className={navClass(active)} asChild>
-                  <Link to={`${item.to}${searchSuffix}`}>
-                    <Icon className="w-4 h-4 mr-1 inline" />
-                    <span className="sr-only sm:not-sr-only sm:inline">{item.label}</span>
-                  </Link>
-                </Button>
-              );
-            })}
-            <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+          <div className="flex items-center gap-2 lg:hidden">
+            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
               <SheetTrigger asChild>
-                <Button size="sm" variant="ghost" className="gap-1 text-[color:var(--club-muted)]">
-                  <MoreHorizontal className="h-5 w-5 shrink-0" />
-                  <span className="max-w-[4.5rem] truncate text-xs font-medium sm:max-w-none">{t.clubPage.moreNav}</span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-10 w-10 shrink-0 p-0 text-[color:var(--club-foreground)] hover:bg-white/10"
+                  aria-label={t.appHeader.openMenu}
+                >
+                  <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="bg-[color:var(--club-tertiary)] border-[color:var(--club-border)] text-[color:var(--club-foreground)]">
+              <SheetContent
+                side="right"
+                className="border-[color:var(--club-border)] bg-[color:var(--club-tertiary)] text-[color:var(--club-foreground)]"
+              >
                 <SheetHeader>
-                  <SheetTitle className="text-left text-[color:var(--club-foreground)]">
-                    {t.clubPage.moreNav} · {club.name}
-                  </SheetTitle>
+                  <SheetTitle className="text-left text-[color:var(--club-foreground)]">{club.name}</SheetTitle>
                 </SheetHeader>
-                <div className="mt-6 flex flex-col gap-1">
-                  {mobileNavSplit.more.map((item) => (
-                    <Link
-                      key={item.to}
-                      to={`${item.to}${searchSuffix}`}
-                      onClick={() => setMoreOpen(false)}
-                      className="rounded-xl px-3 py-3 text-sm font-medium hover:bg-white/10"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                  <button
+                <nav className="mt-6 flex flex-col gap-1">
+                  {desktopItems.map((item) => {
+                    const Icon = iconForNavId(item.id);
+                    const active = isActivePath(item.to);
+                    return (
+                      <NavLink
+                        key={item.to}
+                        to={`${item.to}${searchSuffix}`}
+                        end={item.to === basePath}
+                        onClick={() => setMenuOpen(false)}
+                        className={cn(
+                          "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors",
+                          active
+                            ? "bg-white/15 text-[color:var(--club-foreground)]"
+                            : "text-[color:var(--club-muted)] hover:bg-white/10 hover:text-[color:var(--club-foreground)]",
+                        )}
+                      >
+                        <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+                        {item.label}
+                      </NavLink>
+                    );
+                  })}
+                </nav>
+                <div className="mt-6 border-t border-[color:var(--club-border)] pt-4">
+                  <Button
                     type="button"
-                    className="rounded-xl px-3 py-3 text-left text-sm font-medium hover:bg-white/10"
+                    className={`w-full font-semibold ${clubCtaFillHoverClass}`}
+                    style={dashboardFillStyle}
                     onClick={() => {
-                      setMoreOpen(false);
-                      openDashboardOrAuth();
+                      setMenuOpen(false);
+                      void openDashboardOrAuth();
                     }}
+                    disabled={checkingMembership}
                   >
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
                     {t.clubPage.openDashboard}
-                  </button>
+                  </Button>
                 </div>
               </SheetContent>
             </Sheet>
+
+            <Button
+              type="button"
+              size="sm"
+              className={`shrink-0 px-2.5 font-semibold sm:px-3 ${clubCtaFillHoverClass}`}
+              style={dashboardFillStyle}
+              onClick={() => void openDashboardOrAuth()}
+              disabled={checkingMembership}
+            >
+              <LayoutDashboard className="h-4 w-4 sm:mr-1.5" />
+              <span className="sr-only sm:not-sr-only">{t.clubPage.openDashboard}</span>
+            </Button>
           </div>
         </div>
       </div>

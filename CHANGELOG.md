@@ -33,6 +33,22 @@ After apply: regenerate **`src/integrations/supabase/types.ts`** if PostgREST sc
 ### Documentation sync
 - **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`ROADMAP.md`**, **`TASKS.md`**, **`README.md`**, **`HOLD.md`**, **`CHANGELOG.md`** (this entry).
 
+## 2026-05-03 (Public club microsite — UI polish: theme contrast + accent hovers; documentation sync)
+
+**Scope:** Client-only; **no new Supabase migrations** in this batch (extends the May microsite wave below).
+
+### Theme and readable fills
+- **`src/lib/hex-to-rgb.ts`:** **`relativeLuminance`**, **`readableTextOnSolid`** — pick light vs dark label color on club primary/support solids.
+- **`src/components/public-club/club-theme-provider.tsx`:** When brand secondary/tertiary read as **light**, flip **`--club-*`** tokens so body/muted/card/border stay legible on pale gradients (fixes “white on white” outline CTAs and ghost pills).
+- **`src/components/public-club/public-club-draft-empty-hint.tsx`:** Light-surface empty-state panel for draft hints on bright club backgrounds.
+
+### Accent (crimson) hovers — align with app `Button` / `--accent`
+- **`src/lib/public-club-cta-classes.ts`:** **`clubCtaFillHoverClass`** (`hover:!bg-accent` + `hover:!text-accent-foreground`, wins over inline fill) and **`clubCtaOutlineHoverClass`** (`hover:border-accent/40`, `hover:bg-accent/10`, `hover:text-accent-foreground`).
+- **Applied across:** **`public-club-navbar`**, **`public-club-home-page`**, **`public-club-join-page`**, **`public-club-documents-page`**, **`public-club-news-page`**, **`public-club-contact-page`**, **`public-club-event-detail-page`**, **`public-club-team-detail-page`**, **`club-page-admin-live-public-preview`** (preview chrome; navbar row remains `pointer-events-none` unless changed later).
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`ROADMAP.md`**, **`TASKS.md`**, **`README.md`**, **`MVP_PLAN.md`**, **`HOLD.md`**, **`supabase/SCHEMA_STATUS.md`**, **`ops/PRODUCTION_READINESS_EVIDENCE_LOG.md`**, **`CHANGELOG.md`** (this entry).
+
 ## 2026-05-01 (Reports KPI charts, RBAC admin guard, marketing footer, documentation sync)
 
 ### Reports (`/reports` → `PlayerStats.tsx`)

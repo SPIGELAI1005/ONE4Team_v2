@@ -127,8 +127,8 @@ export default function Health() {
           <code className="text-[10px]">/auth/v1/health</code>), PostgREST root (
           <code className="text-[10px]">/rest/v1/</code>) when{" "}
           <code className="text-[10px]">VITE_SUPABASE_PUBLISHABLE_KEY</code> is set, and optionally the{" "}
-          <code className="text-[10px]">/functions/v1/health</code> Edge function (DB ping via service role — deploy with
-          other functions). <code className="text-[10px]">edgeDatabase: skipped</code> means the function is not deployed
+          <code className="text-[10px]">/functions/v1/health</code> Edge function (DB ping via service role). Deploy it with
+          your other functions. <code className="text-[10px]">edgeDatabase: skipped</code> means the function is not deployed
           or unreachable.
         </div>
         {error ? (

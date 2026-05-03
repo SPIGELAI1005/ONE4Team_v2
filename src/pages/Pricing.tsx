@@ -197,7 +197,7 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
               metadata: { member_count: memberCount, source: "pricing_page" },
               updated_at: new Date().toISOString(),
             }, { onConflict: "club_id" });
-          toast({ title: "Plan selected", description: `${plan.name} (${billing}) saved. Stripe not configured — using trial mode.` });
+          toast({ title: "Plan selected", description: `${plan.name} (${billing}) saved. Stripe is not configured, so trial mode is used.` });
           navigate(`/dashboard/admin`);
           return;
         }

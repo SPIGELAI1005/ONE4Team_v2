@@ -554,6 +554,8 @@ export const de: Translations = {
     inviteOnlyOnboarding: "Einladungsbasiertes Onboarding",
     sections: "Abschnitte",
     menu: "Menü",
+    previewNavMenuHint:
+      "Auf Smartphone und Tablet öffnet die echte Seite dieses Menü, damit alle öffentlichen Seiten ohne Überlappung erreichbar sind.",
     openDashboard: "Dashboard öffnen",
     requestInvite: "Einladung anfragen",
     aboutSection: "Über uns",
@@ -704,15 +706,15 @@ export const de: Translations = {
     draftEmptyHintDocuments:
       "Dieser Bereich ist leer. Fügen Sie öffentliche Dokumente hinzu oder blenden Sie den Dokumente-Bereich in den Seiteneinstellungen aus.",
     draftEmptyHintStats:
-      "Noch keine Kennzahlen. Teams, Trainings, Spiele oder Events ergänzen — oder Statistik unter Startseiten-Module ausblenden.",
+      "Noch keine Kennzahlen. Ergänzen Sie Teams, Trainings, Spiele oder Events, oder blenden Sie die Statistik unter Startseiten-Modulen aus.",
     draftEmptyHintNextUp:
-      "Noch kein Termin. Trainings, Spiele oder Events ergänzen — oder „Als Nächstes“ in den Seiteneinstellungen ausblenden.",
+      "Noch kein Termin. Ergänzen Sie Trainings, Spiele oder Events, oder blenden Sie „Als Nächstes“ unter Startseiten-Modulen aus.",
     draftEmptyHintFeaturedTeams:
-      "Noch keine Teams zur Darstellung. Teams anlegen oder Highlights wählen — oder Highlight-Teams unter Startseiten-Module ausblenden.",
+      "Noch keine Teams zur Darstellung. Legen Sie Teams an oder wählen Sie Highlights, oder blenden Sie Highlight-Teams unter Startseiten-Modulen aus.",
     draftEmptyHintSponsors:
-      "Noch keine Partner. Partner mit Sichtbarkeit auf der Vereinsseite anlegen und Sponsoren-Leiste aktivieren — oder Sponsoren-Modul ausblenden.",
+      "Noch keine Partner. Legen Sie sichtbare Partner an und aktivieren Sie die Sponsoren-Leiste, oder blenden Sie das Sponsoren-Modul aus.",
     draftEmptyHintGallery:
-      "Noch keine Galerie-Bilder. Referenzbilder im Branding ergänzen — oder Galerie unter Startseiten-Module ausblenden.",
+      "Noch keine Galerie-Bilder. Ergänzen Sie Referenzbilder im Branding, oder blenden Sie die Galerie unter Startseiten-Modulen aus.",
     homeUpcomingEventsTitle: "Kommende Events",
     homeMatchesPreviewTitle: "Spiele-Vorschau",
     homeDocumentsPreviewTitle: "Dokumente",
@@ -800,7 +802,7 @@ export const de: Translations = {
     matchDetailNotFound: "Dieses Spiel wurde nicht gefunden.",
     matchDetailPrivate: "Eine öffentliche Detailseite ist für dieses Spiel nicht freigeschaltet.",
     matchDetailFixture: "Spiel",
-    matchDetailSafeOnly: "Nur öffentliche Informationen — keine Aufstellung, Berichte oder Trainer-Notizen.",
+    matchDetailSafeOnly: "Nur öffentliche Informationen. Aufstellung, Berichte und Trainer-Notizen werden nicht gezeigt.",
     matchSideHome: "Heim",
     matchSideAway: "Auswärts",
     eventsPageTitle: "Events",
@@ -823,7 +825,7 @@ export const de: Translations = {
     eventDetailPrivate: "Eine öffentliche Detailseite ist für dieses Event nicht freigeschaltet.",
     eventDetailRegister: "Anmelden",
     eventDetailRegisterViaClub: "Mitgliedschaft / Anmeldung anfragen",
-    eventDetailSafeOnly: "Nur öffentliche Kurzinfo — interne Event-Notizen werden hier nicht gezeigt.",
+    eventDetailSafeOnly: "Nur öffentliche Kurzinfo. Interne Event-Notizen werden hier nicht gezeigt.",
     messagesSection: "Nachrichten",
     messagesPublicTitle: "Team-Kommunikation",
     messagesPublicDesc:
@@ -868,7 +870,7 @@ export const de: Translations = {
     documentsOpenFile: "Herunterladen",
     joinPageHeroLine: "{clubName} beitreten",
     joinPageIntro:
-      "Werde Spieler, Elternteil, Trainer, Ehrenamtler, Sponsor oder Partner — wir führen dich durch die nächsten Schritte.",
+      "Werde Spieler, Elternteil, Trainer, Ehrenamtler, Sponsor oder Partner. Wir führen dich durch die nächsten Schritte.",
     joinDisabledTitle: "Online-Beitritt deaktiviert",
     joinDisabledByPrivacy:
       "Die Vereinsadmins haben offentliche Beitritts- und Einladungsanfragen ausgeschaltet. Bitte kontaktiere den Verein direkt (z. B. uber die Kontaktseite), wenn du mitmachen mochtest.",
@@ -909,7 +911,7 @@ export const de: Translations = {
     joinFormSending: "Wird gesendet…",
     joinFormSuccessTitle: "Anfrage eingegangen",
     joinFormSuccessBody:
-      "Vielen Dank. Der Verein wurde informiert und meldet sich. Du bist noch kein Mitglied — außer der Verein nutzt eine automatische Freigabe.",
+      "Vielen Dank. Der Verein wurde informiert und meldet sich. Du bist noch kein Mitglied, außer der Verein nutzt eine automatische Freigabe.",
     joinFormAnother: "Weitere Anfrage senden",
     joinFaqTitle: "FAQ",
     joinAlreadyInvited: "Schon eingeladen?",
@@ -1152,7 +1154,7 @@ export const de: Translations = {
     invitedDraftEditHint:
       "Diese Person wurde bereits eingeladen. Änderungen aktualisieren die gespeicherte Liste und – solange die Einladung noch offen ist – die Daten bei der Anmeldung (gleicher Link; bei neuer E-Mail muss sie sich mit der neuen Adresse anmelden).",
     inviteSyncSkippedAlreadyJoined:
-      "Einladung wurde bereits genutzt — Stammdaten änderst du beim aktiven Mitglied.",
+      "Die Einladung wurde bereits genutzt. Stammdaten änderst du beim aktiven Mitglied.",
     masterDataColumnMissingTitle: "Datenbank-Migration erforderlich",
     masterDataColumnMissingDesc:
       "Der Tabelle club_member_drafts fehlt die Spalte master_data. In Supabase → SQL Editor die Migration supabase/migrations/20260324210000_club_member_drafts_master_data.sql ausführen (oder supabase db push), danach erneut speichern.",
@@ -1205,7 +1207,8 @@ export const de: Translations = {
     registryTemplateDownloaded: "Import-Vorlage mit allen Spalten und einer Beispielzeile heruntergeladen.",
     registrySaved: "Mitgliederegister gespeichert.",
     registryCompleteness: "Profil",
-    registryEmptyHint: "Öffne das vollständige Register für strukturierte Felder — von Kontakt und Größen bis zu Vereins-IDs und Betreuer:innen.",
+    registryEmptyHint:
+      "Öffne das vollständige Register für strukturierte Felder: Kontakt, Größen, Vereins-IDs, Betreuer:innen und mehr.",
     openFullRegister: "Vollständiges Register & Vereinspass",
     supportingMember: "Begleitperson",
     fieldSex: "Geschlecht",
@@ -1213,7 +1216,7 @@ export const de: Translations = {
     fieldInternalId: "Vereins-ID",
     fieldAddress: "Adresse",
     guardians: "Verknüpfte Betreuer:innen / Eltern",
-    guardiansEmpty: "Noch keine Betreuer:innen — verknüpfe Eltern oder Erziehungsberechtigte.",
+    guardiansEmpty: "Noch keine Betreuer:innen. Verknüpfe Eltern oder Erziehungsberechtigte.",
     linkGuardian: "Eltern- oder Betreuerkonto verknüpfen",
     pickGuardian: "Mitglied wählen",
     linkGuardianAction: "Verknüpfen",
@@ -2097,7 +2100,7 @@ export const de: Translations = {
       publicDocumentLinksPlaceholder: "Aushang | https://…",
       coachPublicShowLabel: "Auf öffentlicher Team-Seite zeigen",
       coachPublicEmailPlaceholder: "Öffentliche Kontakt-E-Mail (optional)",
-      coachPublicProfilesSectionTitle: "Ausgewählte Trainer — öffentliches Profil",
+      coachPublicProfilesSectionTitle: "Ausgewählte Trainer (öffentliches Profil)",
       membersSectionTitle: "Mitgliederzuordnung",
       memberSearchPlaceholder: "Mitglieder suchen...",
       coachesTitle: "Trainer / Ansprechpartner",
@@ -2428,7 +2431,7 @@ export const de: Translations = {
             a: "Nutze Umschalter in der Kopfzeile oder in den Einstellungen. Die Auswahl wird im Browser gespeichert.",
           },
           {
-            q: "Nach einem Update erscheint ein Fehler – was tun?",
+            q: "Nach einem Update erscheint ein Fehler. Was tun?",
             a: "Seite hart neu laden oder bei lokaler Entwicklung Site-Daten leeren. In Produktion kurz warten und erneut versuchen; nach Migrationen Supabase-Projekt prüfen.",
           },
         ],
@@ -2447,7 +2450,7 @@ export const de: Translations = {
       copied: "Adresse kopiert",
       topicPrompt: "Thema wählen",
       validationDetails: "Bitte kurz beschreiben, bevor du sendest.",
-      bodyTruncatedNote: "\n\n[Nachricht gekürzt — bitte Rest manuell ergänzen.]",
+      bodyTruncatedNote: "\n\n[Nachricht gekürzt. Fehlenden Text bitte manuell ergänzen.]",
       topics: {
         account: "Konto & Verein",
         members: "Mitglieder & Kader",
@@ -2709,7 +2712,8 @@ export const de: Translations = {
     publishFailedGeneric: "Veröffentlichen fehlgeschlagen",
     publishStatusLabel: "Status öffentliche Seite",
     publishedVersionLabel: "Veröffentlichte Version",
-    legacyLiveHint: "Noch kein Veröffentlichungs-Snapshot — Besucher sehen weiter die Live-Datenbankzeile, bis Sie einmal veröffentlichen.",
+    legacyLiveHint:
+      "Noch kein Veröffentlichungs-Snapshot. Besucher sehen weiter den Live-Datensatz aus der Datenbank, bis Sie mindestens einmal veröffentlichen.",
     statusUnpublished: "Unveröffentlichte Änderungen (Entwurf weicht von Live ab)",
     statusInSync: "Entwurf entspricht der veröffentlichten Live-Seite",
     badgeSiteLive: "Live im Web",
@@ -2721,7 +2725,7 @@ export const de: Translations = {
     previewViewportDesktop: "Desktop",
     previewViewportTablet: "Tablet",
     previewViewportMobile: "Mobil",
-    previewViewportHint: "Nur die Vorschau-Breite — die öffentliche Seite bleibt adaptiv.",
+    previewViewportHint: "Hier stellen Sie nur die Vorschau-Breite ein. Die öffentliche Seite bleibt responsiv.",
     heroClubColorOverlayLabel: "Vereinsfarben-Overlay auf dem Hero",
     heroTintStrengthLabel: "Overlay-Stärke",
     saveFailedGeneric: "Speichern fehlgeschlagen",
@@ -2785,13 +2789,13 @@ export const de: Translations = {
     privacyJoinApprovalHint:
       "Manuelle Freigabe fur neue Beitritte: Beitrittsmodus auf „Manuelle Freigabe“ setzen (Registerkarte Beitrittsanfragen, empfohlen fur Jugendvereine).",
     privacySensitiveBannerTitle: "Sensible Sichtbarkeit aktiv",
-    privacyWarnPlayerNames: "Einzelne Spielernamen sind offentlich sichtbar — nur mit klarer Einwilligung und Ligaregeln.",
-    privacyWarnPlayerStats: "Aggregierte Spielerstatistiken sind sichtbar — prufen Sie, ob Minderjahrige nicht unangemessen erkennbar sind.",
-    privacyWarnCoachContact: "Telefonnummern und E-Mails konnen offentlich erscheinen — hoheres Risiko fur Spam und Phishing.",
-    privacyWarnMatchResults: "Ergebnisse sind sichtbar — Jugendligen und Datenschutz der Gegner beachten.",
+    privacyWarnPlayerNames: "Einzelne Spielernamen sind öffentlich sichtbar. Nur mit klarer Einwilligung und passenden Ligaregeln.",
+    privacyWarnPlayerStats: "Aggregierte Spielerstatistiken sind sichtbar. Prüfen Sie, ob Minderjährige nicht unangemessen erkennbar sind.",
+    privacyWarnCoachContact: "Telefonnummern und E-Mails können öffentlich erscheinen. Höheres Risiko für Spam und Phishing.",
+    privacyWarnMatchResults: "Ergebnisse sind sichtbar. Denken Sie an Jugendligen und den Datenschutz der Gegner.",
     privacyYouthSectionTitle: "Jugendschutz-Modus",
     privacyYouthSectionDesc:
-      "Wenn aktiv: keine Spielernamen und keine Spielerstatistiken, keine Bilder in Hero/News, keine direkte Trainer-Kontaktaufnahme ausser explizit erlaubten Telefonnummern — Besucher werden zum allgemeinen Vereinskontakt gefuhrt.",
+      "Wenn aktiv: keine Spielernamen und keine Spielerstatistiken, keine Bilder in Hero/News, keine direkte Trainer-Kontaktaufnahme außer explizit erlaubten Telefonnummern. Besucher werden zum allgemeinen Vereinskontakt geführt.",
     privacy_show_member_count_on_public_home: "Mitgliederzahl auf der offentlichen Startseite zeigen",
     privacy_show_coach_names_public: "Trainernamen offentlich zeigen",
     privacy_show_coach_contact_public: "Telefon und direkte E-Mails auf Kontakt- und Teamseiten zeigen",
@@ -2913,8 +2917,8 @@ export const de: Translations = {
     llmLoadFailed: "KI-Einstellungen konnten nicht geladen werden.",
     llmHealthChecking: "Verbindung wird geprüft…",
     llmHealthConnected: "Verbunden",
-    llmHealthSubtitleClub: "Vereins-API-Schlüssel — ONE4AI erreicht das Modell.",
-    llmHealthSubtitlePlatform: "Plattform-Standard (OPENAI_API_KEY) — Verbindung OK.",
+    llmHealthSubtitleClub: "Vereins-API-Schlüssel aktiv. ONE4AI erreicht das Modell.",
+    llmHealthSubtitlePlatform: "Plattform-Standard (OPENAI_API_KEY). Verbindung OK.",
     llmHealthNotConfigured: "Nicht konfiguriert",
     llmHealthNotConfiguredHint:
       "Tragt unten einen Vereins-API-Schlüssel ein oder setzt OPENAI_API_KEY in den Supabase-Secrets.",
@@ -3063,7 +3067,7 @@ export const de: Translations = {
       "Beschreibe deinen öffentlichen Verein. Logo, Farben und mehr kannst du später anpassen.",
     clubDescriptionLabel: "Vereinsbeschreibung",
     clubDescriptionPlaceholder:
-      "Erzähle von eurem Verein — Mission, Geschichte oder was euch ausmacht.",
+      "Beschreibt euren Verein: Mission, Geschichte oder was euch ausmacht.",
     charCount: "{count}/500 Zeichen",
     customizeLaterTitle: "Später anpassbar:",
     customizeLaterLogo: "Logo und Titelbild hochladen",

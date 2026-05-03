@@ -156,8 +156,14 @@ export default function DashboardTopBar() {
     <header className="sticky top-0 z-50 shrink-0 border-b border-border bg-background/70 backdrop-blur-2xl">
       <div className="px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3">
         <div className="flex flex-col gap-2 min-w-0">
-          <div className="flex items-start sm:items-center justify-between gap-2 min-w-0">
-            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+          <div
+            className="
+              flex min-w-0 flex-wrap items-start justify-between gap-2
+              sm:items-center
+              lg:grid lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:flex-nowrap lg:items-center lg:justify-start lg:gap-x-3
+            "
+          >
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2 lg:w-full lg:min-w-0 lg:max-w-full lg:overflow-hidden">
               <Button
                 variant="ghost"
                 size="icon"
@@ -183,28 +189,28 @@ export default function DashboardTopBar() {
 
               <img src={logo} alt="" className="w-7 h-7 shrink-0 md:hidden" />
 
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                  <h1 className="font-display font-bold text-[15px] sm:text-base lg:text-lg text-foreground tracking-tight truncate">
+              <div className="min-w-0 flex-1 overflow-hidden lg:max-w-full">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <h1 className="font-display min-w-0 truncate text-[15px] font-bold tracking-tight text-foreground sm:text-base lg:text-lg">
                     {titleText}
                   </h1>
-                  <span className="hidden sm:inline-flex text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/15 shrink-0">
+                  <span className="hidden shrink-0 rounded-full border border-primary/15 bg-primary/10 px-2 py-0.5 text-[10px] text-primary sm:inline-flex">
                     {roleLabel}
                   </span>
                 </div>
                 {subtitleResolved ? (
-                  <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-2 sm:line-clamp-none mt-0.5">
+                  <p className="mt-0.5 line-clamp-2 break-words text-[11px] text-muted-foreground sm:text-xs sm:line-clamp-none lg:line-clamp-2">
                     {subtitleResolved}
                   </p>
                 ) : null}
               </div>
             </div>
 
-            <div className="hidden lg:flex items-center gap-2 shrink-0 max-w-[min(100%,42rem)] flex-wrap justify-end">
+            <div className="hidden min-w-0 max-w-full flex-wrap items-center justify-end gap-2 lg:flex">
               {config?.renderRightSlot?.()}
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 lg:justify-self-end">
               <div className="hidden sm:block max-w-[200px] min-w-0">
                 <ClubSwitcher />
               </div>

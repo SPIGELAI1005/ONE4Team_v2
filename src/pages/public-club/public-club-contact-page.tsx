@@ -10,6 +10,8 @@ import { useLanguage } from "@/hooks/use-language";
 import { supabase } from "@/integrations/supabase/client";
 import type { PublicClubRecord } from "@/lib/public-club-models";
 import { isMissingRelationError, matchesSectionFilter, normalizeSectionSearch } from "@/lib/public-club-models";
+import { readableTextOnSolid } from "@/lib/hex-to-rgb";
+import { clubCtaFillHoverClass } from "@/lib/public-club-cta-classes";
 
 interface ContactPersonRow {
   id: string;
@@ -38,6 +40,9 @@ export default function PublicClubContactPage() {
   const { t } = useLanguage();
   const { club } = usePublicClub();
 
+  const [contactFilter, setContactFilter] = useState("");
+  const [persons, setPersons] = useState<ContactPersonRow[]>([]);
+
   const personsForDisplay = useMemo(() => {
     if (!club) return persons;
     if (club.micrositePrivacy.youthProtectionMode) {
@@ -48,8 +53,6 @@ export default function PublicClubContactPage() {
     }
     return persons;
   }, [club, persons]);
-  const [contactFilter, setContactFilter] = useState("");
-  const [persons, setPersons] = useState<ContactPersonRow[]>([]);
 
   const loadPersons = useCallback(async () => {
     if (!club?.id) return;
@@ -202,8 +205,11 @@ export default function PublicClubContactPage() {
             )}
             <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
               <Button
-                className="font-semibold text-white hover:brightness-110"
-                style={{ backgroundColor: "var(--club-primary)" }}
+                className={`font-semibold ${clubCtaFillHoverClass}`}
+                style={{
+                  backgroundColor: "var(--club-primary)",
+                  color: readableTextOnSolid(club?.primary_color || "#C4A052"),
+                }}
                 onClick={() => window.open(directionsUrl, "_blank")}
               >
                 <Navigation className="mr-2 h-4 w-4" />

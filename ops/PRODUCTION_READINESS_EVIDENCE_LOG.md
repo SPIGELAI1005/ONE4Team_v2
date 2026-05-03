@@ -17,31 +17,6 @@ Single index for [PRODUCTION_READINESS_COMPLETION_PLAN.md](PRODUCTION_READINESS_
 |------|--------|--------|----------|
 | 1.1 | Apply migrations 32–42 on **staging** | Pending operator | Supabase migration list + `supabase migration list` or dashboard |
 | 1.2 | RLS JWT tests with `RLS_TEST_*` | Pending env | Output of `npm test` with env set; or CI secret |
-
-
- RUN  v3.2.4 C:/Users/georg/ONE4Team_v2/ONE4Team_v2
-
-stderr | src/test/rls.integration.test.ts > RLS tenant isolation (JWT against staging) > user A cannot read club B row by id
-GoTrueClient@sb-qbtunzuztvnkerbdazjs-auth-token:1 (2.95.3) 2026-04-25T15:58:45.537Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
-
-stderr | src/test/rls.integration.test.ts > RLS tenant isolation (JWT against staging) > user A can read own club membership row
-GoTrueClient@sb-qbtunzuztvnkerbdazjs-auth-token:2 (2.95.3) 2026-04-25T15:58:45.663Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
-
-stderr | src/test/rls.integration.test.ts > RLS tenant isolation (JWT against staging) > user A cannot update club B row (mutation probe)
-GoTrueClient@sb-qbtunzuztvnkerbdazjs-auth-token:3 (2.95.3) 2026-04-25T15:58:45.743Z Multiple GoTrueClient instances detected in the same browser context. It is not an error, but this should be avoided as it may produce undefined behavior when used concurrently under the same storage key.
-
- ✓ src/test/rls.integration.test.ts (4 tests) 663ms
-   ✓ RLS tenant isolation (JWT against staging) > user A cannot list memberships for club B  377ms
-   ✓ RLS tenant isolation (JWT against staging) > user A cannot read club B row by id 126ms
-   ✓ RLS tenant isolation (JWT against staging) > user A can read own club membership row 80ms
-   ✓ RLS tenant isolation (JWT against staging) > user A cannot update club B row (mutation probe) 79ms
-
- Test Files  1 passed (1)      
-      Tests  4 passed (4)      
-   Start at  17:58:38
-   Duration  8.41s (transform 43ms, setup 125ms, collect 66ms, tests 663ms, environment 771ms, prepare 118ms)
-
-PS C:\Users\georg\ONE4Team_v2\ONE4Team_v2>
 | 1.3 | Optional `policies:drift` | Pending | Log excerpt |
 | 1.4 | EXPLAIN snapshots (hotspot queries) | Pending | [EXPLAIN_EVIDENCE_TEMPLATE.md](EXPLAIN_EVIDENCE_TEMPLATE.md) + ticket |
 | 1.5 | k6 smoke, journeys, staged-reads vs **staging** URLs | Pending | k6 stdout + [PHASE_A_STAGING_RUNBOOK.md](PHASE_A_STAGING_RUNBOOK.md) A5 |
@@ -87,6 +62,7 @@ Track rows in [SECTION_M_GO_LIVE_CHECKLIST.md](SECTION_M_GO_LIVE_CHECKLIST.md).
 | Cookie preference centre + public team DB wave | Shipped in repo 2026-04-29 | [CHANGELOG.md](../CHANGELOG.md) § 2026-04-29; [MEMORY_BANK.md](../MEMORY_BANK.md); migrations `20260426121000`, `20260426122000`, `20260429130000` (+ optional `20260330160000`) — operator applies per env |
 | Reports KPI + RBAC policy fix | Shipped in repo 2026-05-01 | [CHANGELOG.md](../CHANGELOG.md) § 2026-05-01; `src/pages/PlayerStats.tsx`; migration `20260430173000_fix_club_role_assignments_select_policy.sql` — operator applies per env |
 | Public club microsite (DB + admin UX) | Shipped in repo 2026-05-03 | [CHANGELOG.md](../CHANGELOG.md) § 2026-05-03; [HOLD.md](../HOLD.md) May 2026 migration list; `ClubPageAdmin`, `public-page-flex-config.ts`, hero overlay config — operator applies `20260502120000`–`20260503143000` per env |
+| Public club microsite UI (contrast + accent hovers) | Shipped in repo 2026-05-03 | [CHANGELOG.md](../CHANGELOG.md) second **2026-05-03** entry; `src/lib/public-club-cta-classes.ts`, `club-theme-provider.tsx`, public club pages — **no** migration delta |
 
 ## Phase 6 — Cadence
 

@@ -16,6 +16,8 @@ import {
   PUBLIC_NEWS_CATEGORIES,
   type PublicNewsCategoryId,
 } from "@/lib/public-club-news";
+import { readableTextOnSolid } from "@/lib/hex-to-rgb";
+import { clubCtaFillHoverClass, clubCtaOutlineHoverClass } from "@/lib/public-club-cta-classes";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 12;
@@ -34,7 +36,7 @@ function mockPublicNews(): NewsRowLite[] {
       publish_to_public_website: true,
       public_news_category: "club",
       image_url: null,
-      excerpt: "Funding is secured for pitches, lighting, and drainage — here is what members can expect next season.",
+      excerpt: "Funding covers pitches, lighting, and drainage. More on timing for members next season.",
     },
     {
       id: "mock-demo-2",
@@ -49,14 +51,14 @@ function mockPublicNews(): NewsRowLite[] {
     },
     {
       id: "mock-demo-3",
-      title: "Club summer festival — save the date",
+      title: "Club summer festival: save the date",
       content: "Food stalls, mini tournaments, and music on the main pitch. Volunteers welcome; contact the office to help out.",
       created_at: new Date(Date.now() - 172800000).toISOString(),
       priority: "normal",
       publish_to_public_website: true,
       public_news_category: "events",
       image_url: null,
-      excerpt: "A full day for families and teams — mark your calendar and join us on the club grounds.",
+      excerpt: "A full day for families and teams. Mark your calendar and join us at the club.",
     },
   ];
 }
@@ -296,7 +298,7 @@ export default function PublicClubNewsPage() {
                   "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
                   category === tab.id
                     ? "border-[color:var(--club-primary)] bg-[color:var(--club-primary)]/15 text-[color:var(--club-foreground)]"
-                    : "border-[color:var(--club-border)] text-[color:var(--club-muted)] hover:border-[color:var(--club-primary)]/40 hover:text-[color:var(--club-foreground)]"
+                    : `border-[color:var(--club-border)] text-[color:var(--club-muted)] hover:text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`
                 )}
               >
                 {tab.label}
@@ -361,7 +363,8 @@ export default function PublicClubNewsPage() {
                         </span>
                         <Link
                           to={`${basePath}/news/${featuredArticle.id}${searchSuffix}`}
-                          className="inline-flex items-center gap-1 rounded-full bg-[color:var(--club-primary)] px-4 py-2 text-xs font-semibold text-white hover:brightness-110"
+                          className={`inline-flex items-center gap-1 rounded-full bg-[color:var(--club-primary)] px-4 py-2 text-xs font-semibold ${clubCtaFillHoverClass}`}
+                          style={{ color: readableTextOnSolid(club?.primary_color || "#C4A052") }}
                         >
                           {t.clubPage.newsReadMore}
                           <ArrowRight className="h-3.5 w-3.5" />

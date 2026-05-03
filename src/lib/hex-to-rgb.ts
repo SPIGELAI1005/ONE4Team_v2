@@ -31,3 +31,22 @@ export function hexToRgb(hex: string): string {
   const v = parseHexRgb(hex);
   return v ? `${v.r}, ${v.g}, ${v.b}` : FALLBACK_PRIMARY_RGB_STRING;
 }
+
+/** WCAG relative luminance in linear sRGB (0 = black, 1 = white). */
+export function relativeLuminance(hex: string): number {
+  const rgb = parseHexRgb(hex);
+  if (!rgb) return 0;
+  const lin = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  const R = lin(rgb.r);
+  const G = lin(rgb.g);
+  const B = lin(rgb.b);
+  return 0.2126 * R + 0.7152 * G + 0.0722 * B;
+}
+
+/** Pick white or near-black text for solid fills (primary/support CTAs, badges). */
+export function readableTextOnSolid(hex: string): "#ffffff" | "#0f172a" {
+  return relativeLuminance(hex) > 0.45 ? "#0f172a" : "#ffffff";
+}

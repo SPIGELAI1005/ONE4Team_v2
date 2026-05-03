@@ -4326,7 +4326,7 @@ const Teams = () => {
                   className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-background/30"
                   aria-expanded={elementColorSectionOpen}
                   aria-controls="element-color-panel"
-                  aria-label={`${t.teamsPage.elementModal.colorLabel} — ${elementColorSectionOpen ? t.teamsPage.elementModal.colorSectionCollapse : t.teamsPage.elementModal.colorSectionExpand}`}
+                  aria-label={`${t.teamsPage.elementModal.colorLabel}: ${elementColorSectionOpen ? t.teamsPage.elementModal.colorSectionCollapse : t.teamsPage.elementModal.colorSectionExpand}`}
                 >
                   <ChevronDown
                     className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${elementColorSectionOpen ? "rotate-180" : ""}`}

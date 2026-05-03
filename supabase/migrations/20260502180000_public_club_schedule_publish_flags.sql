@@ -1,24 +1,46 @@
 -- Public club schedule: opt-out flags for trainings/activities, matches, and events;
 -- tighter anon/authenticated public SELECT policies; public read for published events;
 -- align get_public_club_team_page with the same visibility rules.
+--
+-- Each object is guarded with to_regclass so this file applies on projects that have not
+-- yet created events/matches/training_sessions (e.g. partial bundles).
 
-alter table public.activities
-  add column if not exists publish_to_public_schedule boolean not null default true;
+do $ddl$
+begin
+  if to_regclass('public.activities') is not null then
+    execute $sql$
+      alter table public.activities
+        add column if not exists publish_to_public_schedule boolean not null default true;
+    $sql$;
+    execute $sql$
+      comment on column public.activities.publish_to_public_schedule is
+        'When false, this activity is hidden from anonymous public club schedule and tightened public activity reads.';
+    $sql$;
+  end if;
 
-comment on column public.activities.publish_to_public_schedule is
-  'When false, this activity is hidden from anonymous public club schedule and tightened public activity reads.';
+  if to_regclass('public.events') is not null then
+    execute $sql$
+      alter table public.events
+        add column if not exists publish_to_public_schedule boolean not null default true;
+    $sql$;
+    execute $sql$
+      comment on column public.events.publish_to_public_schedule is
+        'When false, this event is hidden from the public club website schedule for non-members.';
+    $sql$;
+  end if;
 
-alter table public.events
-  add column if not exists publish_to_public_schedule boolean not null default true;
-
-comment on column public.events.publish_to_public_schedule is
-  'When false, this event is hidden from the public club website schedule for non-members.';
-
-alter table public.matches
-  add column if not exists publish_to_public_schedule boolean not null default true;
-
-comment on column public.matches.publish_to_public_schedule is
-  'When false, this match is hidden from anonymous public club schedule and match lists.';
+  if to_regclass('public.matches') is not null then
+    execute $sql$
+      alter table public.matches
+        add column if not exists publish_to_public_schedule boolean not null default true;
+    $sql$;
+    execute $sql$
+      comment on column public.matches.publish_to_public_schedule is
+        'When false, this match is hidden from anonymous public club schedule and match lists.';
+    $sql$;
+  end if;
+end
+$ddl$;
 
 do $policy$
 begin
@@ -36,34 +58,44 @@ end
 $policy$;
 
 -- Activities: public readers only see published training rows for public clubs, with team privacy.
-drop policy if exists "Public can view activities of public clubs" on public.activities;
-create policy "Public can view activities of public clubs"
-on public.activities
-for select
-to anon, authenticated
-using (
-  exists (
-    select 1
-    from public.clubs c
-    where c.id = activities.club_id
-      and c.is_public = true
-  )
-  and coalesce(activities.publish_to_public_schedule, true) = true
-  and activities.type = 'training'
-  and (
-    activities.team_id is null
-    or exists (
-      select 1
-      from public.teams t
-      where t.id = activities.team_id
-        and t.club_id = activities.club_id
-        and coalesce(t.public_website_visible, true) = true
-        and coalesce(t.public_training_schedule_visible, true) = true
-    )
-  )
-);
+do $act_pol$
+begin
+  if to_regclass('public.activities') is not null then
+    execute $sql$
+      drop policy if exists "Public can view activities of public clubs" on public.activities;
+    $sql$;
+    execute $sql$
+      create policy "Public can view activities of public clubs"
+      on public.activities
+      for select
+      to anon, authenticated
+      using (
+        exists (
+          select 1
+          from public.clubs c
+          where c.id = activities.club_id
+            and c.is_public = true
+        )
+        and coalesce(activities.publish_to_public_schedule, true) = true
+        and activities.type = 'training'
+        and (
+          activities.team_id is null
+          or exists (
+            select 1
+            from public.teams t
+            where t.id = activities.team_id
+              and t.club_id = activities.club_id
+              and coalesce(t.public_website_visible, true) = true
+              and coalesce(t.public_training_schedule_visible, true) = true
+          )
+        )
+      );
+    $sql$;
+  end if;
+end
+$act_pol$;
 
-do $policy$
+do $ts_pol$
 begin
   if to_regclass('public.training_sessions') is not null then
     execute $sql$
@@ -95,49 +127,69 @@ begin
     $sql$;
   end if;
 end
-$policy$;
+$ts_pol$;
 
-drop policy if exists "Public can view matches of public clubs" on public.matches;
-create policy "Public can view matches of public clubs"
-on public.matches
-for select
-to anon, authenticated
-using (
-  exists (
-    select 1
-    from public.clubs c
-    where c.id = matches.club_id
-      and c.is_public = true
-  )
-  and coalesce(matches.publish_to_public_schedule, true) = true
-  and (
-    matches.team_id is null
-    or exists (
-      select 1
-      from public.teams t
-      where t.id = matches.team_id
-        and t.club_id = matches.club_id
-        and coalesce(t.public_website_visible, true) = true
-    )
-  )
-);
+do $mat_pol$
+begin
+  if to_regclass('public.matches') is not null then
+    execute $sql$
+      drop policy if exists "Public can view matches of public clubs" on public.matches;
+    $sql$;
+    execute $sql$
+      create policy "Public can view matches of public clubs"
+      on public.matches
+      for select
+      to anon, authenticated
+      using (
+        exists (
+          select 1
+          from public.clubs c
+          where c.id = matches.club_id
+            and c.is_public = true
+        )
+        and coalesce(matches.publish_to_public_schedule, true) = true
+        and (
+          matches.team_id is null
+          or exists (
+            select 1
+            from public.teams t
+            where t.id = matches.team_id
+              and t.club_id = matches.club_id
+              and coalesce(t.public_website_visible, true) = true
+          )
+        )
+      );
+    $sql$;
+  end if;
+end
+$mat_pol$;
 
-drop policy if exists "Public can view published events of public clubs" on public.events;
-create policy "Public can view published events of public clubs"
-on public.events
-for select
-to anon, authenticated
-using (
-  exists (
-    select 1
-    from public.clubs c
-    where c.id = events.club_id
-      and c.is_public = true
-  )
-  and coalesce(events.publish_to_public_schedule, true) = true
-);
+do $ev_pol$
+begin
+  if to_regclass('public.events') is not null then
+    execute $sql$
+      drop policy if exists "Public can view published events of public clubs" on public.events;
+    $sql$;
+    execute $sql$
+      create policy "Public can view published events of public clubs"
+      on public.events
+      for select
+      to anon, authenticated
+      using (
+        exists (
+          select 1
+          from public.clubs c
+          where c.id = events.club_id
+            and c.is_public = true
+        )
+        and coalesce(events.publish_to_public_schedule, true) = true
+      );
+    $sql$;
+  end if;
+end
+$ev_pol$;
 
--- Team page RPC: respect publish flags on activities and matches.
+-- Team page RPC: respect publish flags on activities and matches (matches block skipped if table missing).
 create or replace function public.get_public_club_team_page(_club_slug text, _team_id uuid)
 returns jsonb
 language plpgsql

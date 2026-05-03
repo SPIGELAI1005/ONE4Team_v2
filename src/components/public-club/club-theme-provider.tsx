@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { PublicClubRecord } from "@/lib/public-club-models";
-import { hexToRgb, parseHexRgb } from "@/lib/hex-to-rgb";
+import { hexToRgb, parseHexRgb, relativeLuminance } from "@/lib/hex-to-rgb";
 
 function mixTowardWhite(hex: string, amount: number): string {
   const rgb = parseHexRgb(hex);
@@ -33,6 +33,25 @@ export function clubBrandingSurfaceCssVars(branding: {
   const secondary = branding.secondary_color?.trim() || "#1E293B";
   const tertiary = branding.tertiary_color?.trim() || "#0F172A";
   const support = branding.support_color?.trim() || "#22C55E";
+
+  const surfaceL = Math.max(relativeLuminance(tertiary), relativeLuminance(secondary));
+  /** Bright brand surfaces need dark body copy; dark surfaces keep light text. */
+  const lightBrand = surfaceL > 0.48;
+
+  if (lightBrand) {
+    return {
+      "--club-primary": primary,
+      "--club-primary-rgb": hexToRgb(primary),
+      "--club-secondary": secondary,
+      "--club-tertiary": tertiary,
+      "--club-support": support,
+      "--club-foreground": mixTowardBlack(tertiary, 0.88),
+      "--club-muted": mixTowardBlack(tertiary, 0.42),
+      "--club-card": "rgba(255,255,255,0.42)",
+      "--club-border": "rgba(15,23,42,0.14)",
+    } as React.CSSProperties;
+  }
+
   return {
     "--club-primary": primary,
     /** Comma-separated `r, g, b` for `rgba(var(--club-primary-rgb), a)` (e.g. hero tint). */

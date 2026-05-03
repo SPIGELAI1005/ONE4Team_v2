@@ -26,6 +26,8 @@ import { decodePublicTeamPathSegment } from "@/lib/public-club-team-slug";
 import { PUBLIC_CLUB_ROUTE_SEGMENTS } from "@/lib/public-club-routes";
 import { publicNewsExcerpt } from "@/lib/public-club-news";
 import type { NewsRowLite } from "@/lib/public-club-models";
+import { readableTextOnSolid } from "@/lib/hex-to-rgb";
+import { clubCtaFillHoverClass, clubCtaOutlineHoverClass } from "@/lib/public-club-cta-classes";
 
 interface PublicTeamPayloadTeam {
   id: string;
@@ -266,7 +268,11 @@ export default function PublicClubTeamDetailPage() {
                   <div className="flex flex-col gap-2 sm:items-end">
                     <Button
                       type="button"
-                      className="rounded-full bg-[color:var(--club-primary)] text-white hover:brightness-110"
+                      className={`rounded-full ${clubCtaFillHoverClass}`}
+                      style={{
+                        backgroundColor: "var(--club-primary)",
+                        color: readableTextOnSolid(club?.primary_color || "#C4A052"),
+                      }}
                       onClick={() => setShowRequestInvite(true)}
                     >
                       {ct.joinThisTeam}
@@ -299,17 +305,21 @@ export default function PublicClubTeamDetailPage() {
             <div className="flex flex-col gap-3 sm:hidden">
               <Button
                 type="button"
-                className="w-full rounded-full bg-[color:var(--club-primary)] text-white"
+                className={`w-full rounded-full ${clubCtaFillHoverClass}`}
+                style={{
+                  backgroundColor: "var(--club-primary)",
+                  color: readableTextOnSolid(club?.primary_color || "#C4A052"),
+                }}
                 onClick={() => setShowRequestInvite(true)}
               >
                 {ct.joinThisTeam}
               </Button>
               {primaryCoachMail ? (
-                <Button asChild variant="outline" className="w-full rounded-full border-[color:var(--club-border)]">
+                <Button asChild variant="outline" className={`w-full rounded-full border-[color:var(--club-border)] ${clubCtaOutlineHoverClass}`}>
                   <a href={`mailto:${primaryCoachMail}`}>{ct.contactCoach}</a>
                 </Button>
               ) : (
-                <Button asChild variant="outline" className="w-full rounded-full border-[color:var(--club-border)]">
+                <Button asChild variant="outline" className={`w-full rounded-full border-[color:var(--club-border)] ${clubCtaOutlineHoverClass}`}>
                   <Link to={contactHref}>{ct.contactClubInstead}</Link>
                 </Button>
               )}

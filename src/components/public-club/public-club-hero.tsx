@@ -40,7 +40,7 @@ export function PublicClubHero({
     club.hero_image_url?.trim() ||
     club.cover_image_url?.trim() ||
     getDefaultHeroAssetPublicPath(club.default_hero_asset_id);
-  const heroAlt = `${club.name} — ${t.clubPage.heroImageAltContext}`;
+  const heroAlt = `${club.name}, ${t.clubPage.heroImageAltContext}`;
 
   return (
     <section className="relative py-12 sm:py-16 md:py-24 lg:py-28 overflow-hidden">

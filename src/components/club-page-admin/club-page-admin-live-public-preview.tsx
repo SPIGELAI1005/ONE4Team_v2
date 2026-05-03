@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { LayoutDashboard, LayoutTemplate, Monitor, Newspaper, Smartphone, Tablet, Trophy } from "lucide-react";
+import { LayoutDashboard, LayoutTemplate, Menu, Monitor, Newspaper, Smartphone, Tablet, Trophy } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { HeroImageTint } from "@/components/public-club/HeroImageTint";
 import { clubBrandingSurfaceCssVars } from "@/components/public-club/club-theme-provider";
@@ -7,17 +7,12 @@ import { getDefaultHeroAssetPublicPath } from "@/lib/club-hero-default-assets";
 import type { ClubPublicPageEditorFormLike } from "@/lib/club-public-page-config";
 import { isPrimaryForegroundContrastLow, PUBLIC_MICRO_PAGE_ORDER, type PublicMicroPageId } from "@/lib/club-page-settings-helpers";
 import { useLanguage } from "@/hooks/use-language";
+import { readableTextOnSolid } from "@/lib/hex-to-rgb";
+import { clubCtaFillHoverClass } from "@/lib/public-club-cta-classes";
 import { cn } from "@/lib/utils";
 import logoFallback from "@/assets/one4team-logo.png";
 
 type PreviewViewport = "desktop" | "tablet" | "mobile";
-
-function navPillClass(active: boolean) {
-  return [
-    "rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors",
-    active ? "text-[color:var(--club-foreground)] bg-white/10" : "text-[color:var(--club-muted)] bg-transparent",
-  ].join(" ");
-}
 
 export interface ClubPageAdminLivePublicPreviewProps {
   form: ClubPublicPageEditorFormLike;
@@ -143,29 +138,34 @@ export function ClubPageAdminLivePublicPreview({ form }: ClubPageAdminLivePublic
 
       <div className={cn("mx-auto w-full overflow-hidden rounded-2xl border border-border/60 shadow-sm transition-[max-width] duration-200", previewMaxClass)} style={surfaceStyle}>
         <div className="pointer-events-none border-b border-[color:var(--club-border)] bg-[color:var(--club-tertiary)]/95 px-3 py-2.5 backdrop-blur-xl">
-          <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2">
-            <div className="flex min-w-0 shrink-0 items-center gap-2">
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
               <div className="h-8 w-8 shrink-0 overflow-hidden rounded-lg border border-[color:var(--club-border)] bg-white/10">
                 <img src={form.logo_url?.trim() || logoFallback} alt="" className="h-full w-full object-cover" />
               </div>
-              <span className="max-w-[9rem] truncate font-display text-sm font-bold text-[color:var(--club-foreground)] sm:max-w-[12rem]">
+              <span className="min-w-0 truncate font-display text-sm font-bold text-[color:var(--club-foreground)]">
                 {clubTitle}
               </span>
             </div>
-            <nav className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-0.5 lg:justify-center">
-              {navPreviewItems.map((item, index) => (
-                <span key={item.id} className={navPillClass(index === 0)} title={item.label}>
-                  {item.label}
-                </span>
-              ))}
-            </nav>
-            <span
-              className="hidden shrink-0 items-center rounded-md px-3 py-1.5 text-xs font-semibold text-white sm:inline-flex"
-              style={{ backgroundColor: "var(--club-primary)" }}
-            >
-              <LayoutDashboard className="mr-1 h-3.5 w-3.5" />
-              {t.clubPage.openDashboard}
-            </span>
+            <div className="flex shrink-0 items-center gap-2">
+              <div
+                className="inline-flex h-9 items-center gap-2 rounded-full border border-border bg-muted/70 px-3 text-muted-foreground"
+                title={t.clubPage.previewNavMenuHint}
+              >
+                <Menu className="h-4 w-4 shrink-0 text-foreground" aria-hidden />
+                <span className="text-[10px] font-semibold tabular-nums text-foreground">{navPreviewItems.length}</span>
+              </div>
+              <span
+                className={`inline-flex h-9 shrink-0 items-center rounded-full px-3 text-xs font-semibold ${clubCtaFillHoverClass}`}
+                style={{
+                  backgroundColor: "var(--club-primary)",
+                  color: readableTextOnSolid(form.primary_color?.trim() || "#C4A052"),
+                }}
+              >
+                <LayoutDashboard className="mr-1 h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span className="max-w-[7.5rem] truncate sm:max-w-[11rem]">{t.clubPage.openDashboard}</span>
+              </span>
+            </div>
           </div>
         </div>
 

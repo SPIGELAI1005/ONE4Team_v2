@@ -550,6 +550,8 @@ export const en = {
     inviteOnlyOnboarding: "Invite-only onboarding",
     sections: "Sections",
     menu: "Menu",
+    previewNavMenuHint:
+      "On phones and tablets the real site uses this menu to list every public page without crowding the header.",
     openDashboard: "Open Dashboard",
     requestInvite: "Request Invite",
     aboutSection: "About",
@@ -700,15 +702,15 @@ export const en = {
     draftEmptyHintDocuments:
       "This section is empty. Add public documents or hide the documents section in Page settings.",
     draftEmptyHintStats:
-      "Nothing to count yet. Add teams, schedule entries, fixtures, or events — or hide Stats under Homepage modules in Club Page settings.",
+      "Nothing to count yet. Add teams, schedule entries, fixtures, or events, or turn off Stats under Homepage modules in Club Page settings.",
     draftEmptyHintNextUp:
-      "Nothing scheduled yet. Add trainings, fixtures, or events — or hide Next up in Club Page settings.",
+      "Nothing scheduled yet. Add trainings, fixtures, or events, or hide Next up under Homepage modules in Club Page settings.",
     draftEmptyHintFeaturedTeams:
-      "No teams to highlight yet. Create teams or pick featured squads — or hide Featured teams in Club Page settings.",
+      "No teams to highlight yet. Create teams or pick featured squads, or hide Featured teams under Homepage modules in Club Page settings.",
     draftEmptyHintSponsors:
-      "No partners to show yet. Add partners marked visible on the public club page and enable the partners strip — or hide Sponsors in Club Page settings.",
+      "No partners to show yet. Add partners visible on the public club page and enable the partners strip, or hide Sponsors under Homepage modules in Club Page settings.",
     draftEmptyHintGallery:
-      "No gallery images yet. Add reference images in Branding — or hide Gallery under Homepage modules in Club Page settings.",
+      "No gallery images yet. Add reference images in Branding, or hide Gallery under Homepage modules in Club Page settings.",
     homeUpcomingEventsTitle: "Upcoming events",
     homeMatchesPreviewTitle: "Fixtures preview",
     homeDocumentsPreviewTitle: "Documents",
@@ -796,7 +798,7 @@ export const en = {
     matchDetailNotFound: "This fixture could not be found.",
     matchDetailPrivate: "A detailed public page is not enabled for this fixture.",
     matchDetailFixture: "Fixture",
-    matchDetailSafeOnly: "Public information only — no lineup, reports, or coach notes.",
+    matchDetailSafeOnly: "Public information only. Lineups, reports, and coach notes are not shown.",
     matchSideHome: "Home",
     matchSideAway: "Away",
     eventsPageTitle: "Events",
@@ -819,7 +821,7 @@ export const en = {
     eventDetailPrivate: "A detailed public page is not enabled for this event.",
     eventDetailRegister: "Register",
     eventDetailRegisterViaClub: "Request to join / register",
-    eventDetailSafeOnly: "Public summary only — internal event notes are not shown here.",
+    eventDetailSafeOnly: "Public summary only. Internal event notes are not shown here.",
     messagesSection: "Messages",
     messagesPublicTitle: "Team communication",
     messagesPublicDesc:
@@ -830,7 +832,7 @@ export const en = {
     messagesCtaSignedOut: "Sign in to use messaging",
     one4aiSection: "ONE4AI",
     one4aiPublicTitle: "ONE4AI Co-Trainer",
-    one4aiPublicDesc: "AI-assisted coaching prompts, drills, and chat — available to members after sign-in.",
+    one4aiPublicDesc: "AI-assisted coaching prompts, drills, and chat for signed-in members.",
     one4aiBulletTactics: "Tactics and session ideas",
     one4aiBulletChat: "Conversational coach assistant",
     one4aiBulletPlans: "Plan-aware with your club context",
@@ -861,7 +863,7 @@ export const en = {
     documentsFaqSeeAll: "See all questions",
     documentsOpenFile: "Download",
     joinPageHeroLine: "Join {clubName}",
-    joinPageIntro: "Become a player, parent, coach, volunteer, sponsor, or partner — we guide you through the next steps.",
+    joinPageIntro: "Become a player, parent, coach, volunteer, sponsor, or partner. We walk you through the next steps.",
     joinDisabledTitle: "Online join requests are off",
     joinDisabledByPrivacy: "This club’s admins have disabled public join and invite requests. Please contact the club directly (e.g. via the contact page) if you would like to get involved.",
     joinRolesTitle: "How would you like to get involved?",
@@ -1140,7 +1142,7 @@ export const en = {
     draftUpdated: "Draft updated",
     invitedDraftEditHint:
       "This person was already invited. Your changes update the saved list and, until they accept, the signup data on the pending invite (same link; if you change email, they must sign in with the new address).",
-    inviteSyncSkippedAlreadyJoined: "Invite was already used — roster data is managed on the active member.",
+    inviteSyncSkippedAlreadyJoined: "This invite was already used. Edit roster details on the active member record.",
     masterDataColumnMissingTitle: "Database migration required",
     masterDataColumnMissingDesc:
       "The club_member_drafts table is missing the master_data column. Open Supabase → SQL Editor and run the migration supabase/migrations/20260324210000_club_member_drafts_master_data.sql (or run supabase db push), then save again.",
@@ -1192,7 +1194,7 @@ export const en = {
     registryTemplateDownloaded: "Downloaded the import template with all registry columns and one example row.",
     registrySaved: "Member registry saved.",
     registryCompleteness: "Profile",
-    registryEmptyHint: "Open the full registry to add structured fields — from contact and kit sizes to club IDs and guardian links.",
+    registryEmptyHint: "Open the full registry to add structured fields: contact, kit sizes, club IDs, guardian links, and more.",
     openFullRegistry: "Full registry & club pass",
     supportingMember: "Supporting",
     fieldSex: "Sex",
@@ -1200,7 +1202,7 @@ export const en = {
     fieldInternalId: "Club ID",
     fieldAddress: "Address",
     guardians: "Linked guardians / parents",
-    guardiansEmpty: "No guardian links yet — add parents or carers who manage this profile.",
+    guardiansEmpty: "No guardian links yet. Add parents or carers who manage this profile.",
     linkGuardian: "Link a parent or guardian account",
     pickGuardian: "Choose member",
     linkGuardianAction: "Link",
@@ -2085,7 +2087,7 @@ export const en = {
       publicDocumentLinksPlaceholder: "Club rules | https://…",
       coachPublicShowLabel: "Show on public team page",
       coachPublicEmailPlaceholder: "Public contact email (optional)",
-      coachPublicProfilesSectionTitle: "Selected coaches — public profile",
+      coachPublicProfilesSectionTitle: "Selected coaches (public profile)",
       membersSectionTitle: "Member assignments",
       memberSearchPlaceholder: "Search members...",
       coachesTitle: "Coaches / contacts",
@@ -2416,7 +2418,7 @@ export const en = {
             a: "Use the language toggle and theme control in the header or settings, depending on your screen. Preference is stored in the browser for convenience.",
           },
           {
-            q: "The app shows an error after an update—what should I do?",
+            q: "The app shows an error after an update. What should I do?",
             a: "Hard-refresh the page or clear site data for localhost if you develop locally. In production, wait a minute and retry; if migrations were required, ensure your Supabase project applied them.",
           },
         ],
@@ -2435,7 +2437,7 @@ export const en = {
       copied: "Address copied",
       topicPrompt: "Select a topic",
       validationDetails: "Please add a short description before sending.",
-      bodyTruncatedNote: "\n\n[Message truncated — please add remaining detail manually.]",
+      bodyTruncatedNote: "\n\n[Message truncated. Add any missing detail manually.]",
       topics: {
         account: "Account & club",
         members: "Members & roster",
@@ -2696,7 +2698,8 @@ export const en = {
     publishFailedGeneric: "Publish failed",
     publishStatusLabel: "Public page status",
     publishedVersionLabel: "Published version",
-    legacyLiveHint: "No published snapshot yet — visitors still see data from the live database row until you publish once.",
+    legacyLiveHint:
+      "No published snapshot yet. Visitors still see the live club record from the database until you publish at least once.",
     statusUnpublished: "Unpublished changes (draft differs from live)",
     statusInSync: "Draft matches published live page",
     badgeSiteLive: "Live on web",
@@ -2708,7 +2711,7 @@ export const en = {
     previewViewportDesktop: "Desktop",
     previewViewportTablet: "Tablet",
     previewViewportMobile: "Mobile",
-    previewViewportHint: "Preview width only — the public site is still responsive.",
+    previewViewportHint: "This only changes the preview width. The public site stays responsive.",
     heroClubColorOverlayLabel: "Apply club color overlay",
     heroTintStrengthLabel: "Overlay strength",
     saveFailedGeneric: "Save failed",
@@ -2770,10 +2773,10 @@ export const en = {
     privacyJoinApprovalHint:
       "Require admin approval for new join requests: set Join approval to “Manual approval” on the Join requests tab (recommended for youth clubs).",
     privacySensitiveBannerTitle: "Sensitive visibility enabled",
-    privacyWarnPlayerNames: "Individual player names are visible on the public site — use only with clear consent and league rules.",
-    privacyWarnPlayerStats: "Aggregate player statistics are visible — confirm they cannot identify minors inappropriately.",
-    privacyWarnCoachContact: "Direct phone numbers and emails may appear on public contact and team pages — phishing and spam risk increases.",
-    privacyWarnMatchResults: "Scores and results are visible — consider youth leagues and opponent privacy.",
+    privacyWarnPlayerNames: "Individual player names are visible on the public site. Use only with clear consent and league rules.",
+    privacyWarnPlayerStats: "Aggregate player statistics are visible. Check that minors are not identifiable inappropriately.",
+    privacyWarnCoachContact: "Phone numbers and emails may appear on public contact and team pages. Spam and phishing risk goes up.",
+    privacyWarnMatchResults: "Scores and results are visible. Think about youth leagues and the other club’s privacy.",
     privacyYouthSectionTitle: "Youth protection mode",
     privacyYouthSectionDesc:
       "When enabled: player names and stats stay off, hero/news images are hidden, coach direct contact is off unless you explicitly allow phone numbers, and visitors are steered toward generic club contact.",
@@ -2894,8 +2897,8 @@ export const en = {
     llmLoadFailed: "Could not load AI settings.",
     llmHealthChecking: "Checking connection…",
     llmHealthConnected: "Connected",
-    llmHealthSubtitleClub: "Club API key — ONE4AI can reach the model.",
-    llmHealthSubtitlePlatform: "Platform default (OPENAI_API_KEY) — link OK.",
+    llmHealthSubtitleClub: "Club API key in use. ONE4AI can reach the model.",
+    llmHealthSubtitlePlatform: "Platform default (OPENAI_API_KEY). Connection OK.",
     llmHealthNotConfigured: "Not configured",
     llmHealthNotConfiguredHint:
       "Add a club API key below or set OPENAI_API_KEY in your Supabase project secrets.",
@@ -3044,7 +3047,7 @@ export const en = {
     clubPageStepDesc:
       "Add a description for your public club page. You can customize branding, logos, and more later.",
     clubDescriptionLabel: "Club description",
-    clubDescriptionPlaceholder: "Tell people about your club — its mission, history, or what makes it special.",
+    clubDescriptionPlaceholder: "Describe your club: mission, history, or what sets you apart.",
     charCount: "{count}/500 characters",
     customizeLaterTitle: "You can customize later:",
     customizeLaterLogo: "Upload logo and cover image",

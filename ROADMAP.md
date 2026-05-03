@@ -15,6 +15,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Public club microsite wave (2026-05-03):** Supabase migrations `20260502120000`–`20260503143000` (draft/publish, public visibility, privacy, schedule/matches/events, documents/join/contact, join request v2); Club Page Admin publication badges, responsive preview viewports, nav `showInNav` parity, hero overlay toggle + strength slider, homepage default order — see `CHANGELOG.md` § 2026-05-03, `MEMORY_BANK.md`, `TASKS.md` **MICROSITE-***.
 
+**Public club UI polish (2026-05-03):** Client-only **accessibility/visual** pass — light-brand **`--club-*`** token adjustments, **`readableTextOnSolid`** on club-primary buttons, shared **`accent`** (crimson) hover utilities for public CTAs (matches app `Button` outline language). See `CHANGELOG.md` second **2026-05-03** entry and `TASKS.md` **MICROSITE-UX-001**.
+
 ---
 
 ## Phase 0 — Foundation (Week 0–1)

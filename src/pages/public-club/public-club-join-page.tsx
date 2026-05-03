@@ -11,6 +11,8 @@ import { PublicClubCard } from "@/components/public-club/public-club-card";
 import { PublicClubHero } from "@/components/public-club/public-club-hero";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { usePublicClub } from "@/contexts/public-club-context";
+import { readableTextOnSolid } from "@/lib/hex-to-rgb";
+import { clubCtaFillHoverClass, clubCtaOutlineHoverClass } from "@/lib/public-club-cta-classes";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -272,8 +274,8 @@ export default function PublicClubJoinPage() {
                   className={[
                     "rounded-2xl border px-4 py-3 text-sm font-semibold transition-colors sm:px-5",
                     role === r.id
-                      ? "border-transparent text-white"
-                      : "border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-muted)] hover:text-[color:var(--club-foreground)]",
+                      ? `border-transparent text-white ${clubCtaFillHoverClass}`
+                      : `border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-muted)] hover:text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`,
                   ].join(" ")}
                   style={role === r.id ? { backgroundColor: "var(--club-primary)" } : undefined}
                 >
@@ -309,7 +311,7 @@ export default function PublicClubJoinPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="mt-6 border-[color:var(--club-border)]"
+                    className={`mt-6 border-[color:var(--club-border)] ${clubCtaOutlineHoverClass}`}
                     onClick={() => {
                       setSent(false);
                       setMessage("");
@@ -435,8 +437,11 @@ export default function PublicClubJoinPage() {
                       !consent ||
                       (!user && (!email.trim() || !email.includes("@")))
                     }
-                    className="w-full font-semibold text-white hover:brightness-110 disabled:opacity-40"
-                    style={{ backgroundColor: "var(--club-primary)" }}
+                    className={`w-full font-semibold disabled:opacity-40 ${clubCtaFillHoverClass}`}
+                    style={{
+                      backgroundColor: "var(--club-primary)",
+                      color: readableTextOnSolid(club.primary_color || "#C4A052"),
+                    }}
                     onClick={() => void submit()}
                   >
                     {submitting ? (
@@ -481,7 +486,7 @@ export default function PublicClubJoinPage() {
           <Button
             type="button"
             variant="outline"
-            className="border-[color:var(--club-border)]"
+            className={`border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`}
             onClick={() => goToAuthWithReturn(`${basePath}${searchSuffix}`)}
           >
             {t.clubPage.joinSignInCta}

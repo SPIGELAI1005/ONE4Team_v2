@@ -186,6 +186,10 @@ const privacyLabelKeys: (keyof PrivacyPack)[] = [
   "allow_join_requests_public",
 ];
 
+/** Same active treatment as Members page tabs (`border-primary` + `text-primary`). */
+const clubPageAdminSettingsTabTriggerClass =
+  "min-h-11 justify-center rounded-none border-b-2 border-transparent bg-transparent px-1.5 py-3 text-center text-[11px] font-medium leading-snug text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:!bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none sm:px-2 sm:text-xs md:text-sm";
+
 export default function ClubPageAdmin() {
   const { activeClub, activeClubId, loading: clubLoading } = useActiveClub();
   const { user } = useAuth();
@@ -651,36 +655,36 @@ export default function ClubPageAdmin() {
 
         <ClubPageAdminLivePublicPreview form={form} />
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="flex h-auto min-h-11 w-full flex-wrap justify-start gap-1 bg-muted/50 p-1">
-            <TabsTrigger value="basics" className="text-xs sm:text-sm">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-10 space-y-6">
+          <TabsList className="grid h-auto w-full grid-cols-5 gap-0 rounded-none border-b border-border bg-transparent p-0 text-muted-foreground">
+            <TabsTrigger value="basics" className={clubPageAdminSettingsTabTriggerClass}>
               {t.clubPageAdmin.tabBasics}
             </TabsTrigger>
-            <TabsTrigger value="branding" className="text-xs sm:text-sm">
+            <TabsTrigger value="branding" className={clubPageAdminSettingsTabTriggerClass}>
               {t.clubPageAdmin.tabBranding}
             </TabsTrigger>
-            <TabsTrigger value="assets" className="text-xs sm:text-sm">
+            <TabsTrigger value="assets" className={clubPageAdminSettingsTabTriggerClass}>
               {t.clubPageAdmin.tabAssets}
             </TabsTrigger>
-            <TabsTrigger value="pages" className="text-xs sm:text-sm">
+            <TabsTrigger value="pages" className={clubPageAdminSettingsTabTriggerClass}>
               {t.clubPageAdmin.tabPages}
             </TabsTrigger>
-            <TabsTrigger value="homepage" className="text-xs sm:text-sm">
+            <TabsTrigger value="homepage" className={clubPageAdminSettingsTabTriggerClass}>
               {t.clubPageAdmin.tabHomepage}
             </TabsTrigger>
-            <TabsTrigger value="privacy" className="text-xs sm:text-sm">
+            <TabsTrigger value="privacy" className={clubPageAdminSettingsTabTriggerClass}>
               {t.clubPageAdmin.tabPrivacy}
             </TabsTrigger>
-            <TabsTrigger value="join" className="text-xs sm:text-sm">
+            <TabsTrigger value="join" className={clubPageAdminSettingsTabTriggerClass}>
               {t.clubPageAdmin.tabJoin}
             </TabsTrigger>
-            <TabsTrigger value="contact" className="text-xs sm:text-sm">
+            <TabsTrigger value="contact" className={clubPageAdminSettingsTabTriggerClass}>
               {t.clubPageAdmin.tabContactSocial}
             </TabsTrigger>
-            <TabsTrigger value="seo" className="text-xs sm:text-sm">
+            <TabsTrigger value="seo" className={clubPageAdminSettingsTabTriggerClass}>
               {t.clubPageAdmin.tabSeo}
             </TabsTrigger>
-            <TabsTrigger value="publish" className="text-xs sm:text-sm">
+            <TabsTrigger value="publish" className={clubPageAdminSettingsTabTriggerClass}>
               {t.clubPageAdmin.tabPublish}
             </TabsTrigger>
           </TabsList>

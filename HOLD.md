@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-05-03 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
+Last updated: 2026-05-03 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03 — **two** May 3 entries: migrations wave + **UI polish**), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list). The **UI polish** entry is **client-only** (no extra migrations beyond `20260502120000`–`20260503143000`).
 
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 

@@ -12,7 +12,7 @@ Club/team management SaaS with an iOS-style glass UI, full internationalization 
 - **Dashboard**: Role-based views (Admin, Trainer, Player, Sponsor, Supplier, etc.) with personalized greeting
 - **Shop**: Product catalog, orders management, categories (demo data)
 - **Club Page Admin**: Manage public club page (branding, contact, social, SEO, **which sections** appear on `/club/:slug` via `public_page_sections`); **publication status badges**, **Desktop/Tablet/Mobile** live preview framing; **hero** club-color overlay toggle + **strength** slider; **Pages** tab “show in navigation” matches the public navbar
-- **Public club page (`/club/:slug`)**: PWA-friendly mobile header (single menu), hero shortcuts aligned with CTAs, **Powered by ONE4Team** → marketing home (`/`); **Support FAQ** at `/support`; optional **public team page** at **`/club/:slug/team/:teamId`** when migrations and data are applied
+- **Public club page (`/club/:slug`)**: PWA-friendly mobile header (single menu), hero shortcuts aligned with CTAs, **Powered by ONE4Team** → marketing home (`/`); **Support FAQ** at `/support`; optional **public team page** at **`/club/:slug/team/:teamId`** when migrations and data are applied; **light-brand contrast** + **accent (crimson) hovers** on public CTAs (`CHANGELOG.md` § 2026-05-03 UI polish)
 - **Reports** (`/reports`): Club KPI snapshot for admins (charts: weekly activity, coach coverage, member growth, trainings by weekday/month; **Recharts**)
 - **Members**: Server-paged roster with debounced **full-club search** (RPC `search_club_members_page`, ≥2 characters) where migrations are applied
 - **Settings**: Profile, club config, notification preferences, account security

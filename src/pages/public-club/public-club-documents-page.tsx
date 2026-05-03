@@ -13,6 +13,8 @@ import { useLanguage } from "@/hooks/use-language";
 import { supabase } from "@/integrations/supabase/client";
 import { isMissingRelationError, normalizeSectionSearch } from "@/lib/public-club-models";
 import { PUBLIC_CLUB_ROUTE_SEGMENTS } from "@/lib/public-club-routes";
+import { readableTextOnSolid } from "@/lib/hex-to-rgb";
+import { clubCtaFillHoverClass, clubCtaOutlineHoverClass } from "@/lib/public-club-cta-classes";
 
 type DocumentCategory = "membership" | "policies" | "training" | "events" | "forms";
 
@@ -149,13 +151,13 @@ export default function PublicClubDocumentsPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t.clubPage.documentsSearchPlaceholder}
-              className="border-[color:var(--club-border)] bg-[color:var(--club-card)] pl-9 text-[color:var(--club-foreground)]"
+              className="border-[color:var(--club-border)] bg-[color:var(--club-card)] pl-9 text-[color:var(--club-foreground)] placeholder:text-[color:var(--club-muted)]"
             />
           </div>
           <Button
             type="button"
             variant="outline"
-            className="shrink-0 border-[color:var(--club-border)] text-[color:var(--club-foreground)]"
+            className={`shrink-0 border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`}
             onClick={documentsCta}
           >
             {user ? t.clubPage.documentsSignedInCta : t.clubPage.documentsSignedOutCta}
@@ -168,11 +170,16 @@ export default function PublicClubDocumentsPage() {
             onClick={() => setCategory("all")}
             className={[
               "rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide transition-colors sm:text-sm",
-              category === "all"
-                ? "text-white"
-                : "border border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-muted)] hover:text-[color:var(--club-foreground)]",
+              category === "all" ? clubCtaFillHoverClass : `border border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-foreground)]/85 hover:text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`,
             ].join(" ")}
-            style={category === "all" ? { backgroundColor: "var(--club-primary)" } : undefined}
+            style={
+              category === "all"
+                ? {
+                    backgroundColor: "var(--club-primary)",
+                    color: readableTextOnSolid(club.primary_color || "#C4A052"),
+                  }
+                : undefined
+            }
           >
             {t.clubPage.documentsCategoryAll}
           </button>
@@ -184,10 +191,17 @@ export default function PublicClubDocumentsPage() {
               className={[
                 "rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide transition-colors sm:text-sm",
                 category === cat
-                  ? "text-white"
-                  : "border border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-muted)] hover:text-[color:var(--club-foreground)]",
+                  ? clubCtaFillHoverClass
+                  : `border border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-foreground)]/85 hover:text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`,
               ].join(" ")}
-              style={category === cat ? { backgroundColor: "var(--club-primary)" } : undefined}
+              style={
+                category === cat
+                  ? {
+                      backgroundColor: "var(--club-primary)",
+                      color: readableTextOnSolid(club.primary_color || "#C4A052"),
+                    }
+                  : undefined
+              }
             >
               {categoryLabel(cat, t.clubPage)}
             </button>
@@ -241,8 +255,11 @@ export default function PublicClubDocumentsPage() {
                     <Button
                       asChild
                       size="sm"
-                      className="mt-4 w-full font-semibold text-white hover:brightness-110 sm:w-auto"
-                      style={{ backgroundColor: "var(--club-primary)" }}
+                      className={`mt-4 w-full font-semibold sm:w-auto ${clubCtaFillHoverClass}`}
+                      style={{
+                        backgroundColor: "var(--club-primary)",
+                        color: readableTextOnSolid(club.primary_color || "#C4A052"),
+                      }}
                     >
                       <a href={d.file_url} target="_blank" rel="noopener noreferrer" download>
                         <Download className="mr-2 h-4 w-4" />
@@ -274,7 +291,11 @@ export default function PublicClubDocumentsPage() {
             </Accordion>
             {faq.length > 3 ? (
               <div className="mt-4 text-center sm:text-left">
-                <Button asChild variant="outline" className="border-[color:var(--club-border)] text-[color:var(--club-foreground)]">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-foreground)] hover:bg-[color:color-mix(in_srgb,var(--club-card)_82%,var(--club-foreground))]"
+                >
                   <Link to={joinFaqHref}>{t.clubPage.documentsFaqSeeAll}</Link>
                 </Button>
               </div>

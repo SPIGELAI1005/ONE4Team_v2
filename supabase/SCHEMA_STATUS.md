@@ -57,6 +57,8 @@ When using master registry, drafts with extended fields, or guardian linking, th
 For draft/publish JSON, extended public pages, team privacy, schedule/match/event publish flags, public join/contact/documents, and join-request v2, apply (in filename order after prior `public_page_*` / club profile migrations):
 - `20260502120000_club_public_page_draft_publish.sql` through `20260503143000_public_join_request_flow_v2.sql` (see `CHANGELOG.md` § 2026-05-03 and `HOLD.md`).
 
+**Client-only (same release window, no schema delta):** Public microsite **theme contrast** and **accent CTA hovers** live in `src/` only — see `CHANGELOG.md` § **2026-05-03 (Public club microsite — UI polish)**.
+
 ## Verification artifact
 - Run `supabase/PHASE12_VERIFY.sql` after applying the migrations above.
 - Treat any `ok = false` row as a rollout blocker.

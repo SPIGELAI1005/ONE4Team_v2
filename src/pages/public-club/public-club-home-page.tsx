@@ -35,6 +35,8 @@ import { PUBLIC_CLUB_ROUTE_SEGMENTS } from "@/lib/public-club-routes";
 import { encodePublicTeamPathSegment } from "@/lib/public-club-team-slug";
 import type { PublicMatchLite, TrainingSessionRowLite } from "@/lib/public-club-models";
 import { normalizePublicNewsCategory, publicNewsExcerpt } from "@/lib/public-club-news";
+import { readableTextOnSolid } from "@/lib/hex-to-rgb";
+import { clubCtaFillHoverClass, clubCtaOutlineHoverClass } from "@/lib/public-club-cta-classes";
 
 const HORIZON_MS = 12 * 3600000;
 const MAX_FEATURED_TEAMS_CAP = 12;
@@ -298,7 +300,7 @@ export default function PublicClubHomePage() {
   ]);
 
   const heroCtaClass =
-    "inline-flex min-h-[44px] flex-1 min-w-[140px] items-center justify-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-white/20 sm:flex-none";
+    "inline-flex min-h-[44px] flex-1 min-w-[140px] items-center justify-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white shadow-sm drop-shadow-[0_1px_3px_rgba(0,0,0,0.65)] transition-colors hover:!border-accent/50 hover:!bg-accent hover:!text-accent-foreground sm:flex-none";
 
   return (
     <PublicClubPageGate section="home">
@@ -325,8 +327,11 @@ export default function PublicClubHomePage() {
                   <Button
                     type="button"
                     size="lg"
-                    className={`${heroCtaClass} border-transparent`}
-                    style={{ backgroundColor: "var(--club-primary)" }}
+                    className={`${heroCtaClass} border-transparent ${clubCtaFillHoverClass}`}
+                    style={{
+                      backgroundColor: "var(--club-primary)",
+                      color: readableTextOnSolid(club.primary_color || "#C4A052"),
+                    }}
                     onClick={() => setShowRequestInvite(true)}
                   >
                     {t.clubPage.homeJoinOrInvite}
@@ -336,8 +341,11 @@ export default function PublicClubHomePage() {
                 <Button
                   type="button"
                   size="lg"
-                  className={`${heroCtaClass} border-transparent font-semibold text-white`}
-                  style={{ backgroundColor: "var(--club-support)" }}
+                  className={`${heroCtaClass} border-transparent font-semibold ${clubCtaFillHoverClass}`}
+                  style={{
+                    backgroundColor: "var(--club-support)",
+                    color: readableTextOnSolid(club.support_color || "#22C55E"),
+                  }}
                   onClick={openDashboardOrAuth}
                 >
                   <LayoutDashboard className="h-4 w-4" />
@@ -566,7 +574,11 @@ export default function PublicClubHomePage() {
                           })}
                         </div>
                         <div className="mt-6 flex justify-center">
-                          <Button asChild variant="outline" className="border-[color:var(--club-border)] text-[color:var(--club-foreground)]">
+                          <Button
+                            asChild
+                            variant="outline"
+                            className={`border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-foreground)] shadow-sm ${clubCtaOutlineHoverClass}`}
+                          >
                             <Link to={teamsHref}>
                               {t.clubPage.homeViewAllTeams}
                               <ArrowRight className="ml-2 h-4 w-4" />
@@ -726,8 +738,11 @@ export default function PublicClubHomePage() {
                           <p className="mt-2 text-sm text-[color:var(--club-muted)]">{t.clubPage.homeBecomePartSubtitle}</p>
                           <div className="mt-6 flex justify-center">
                             <Button
-                              className="font-semibold text-white hover:brightness-110"
-                              style={{ backgroundColor: "var(--club-primary)" }}
+                              className={`font-semibold ${clubCtaFillHoverClass}`}
+                              style={{
+                                backgroundColor: "var(--club-primary)",
+                                color: readableTextOnSolid(club.primary_color || "#C4A052"),
+                              }}
                               onClick={() => setShowRequestInvite(true)}
                             >
                               {t.clubPage.requestInvite}

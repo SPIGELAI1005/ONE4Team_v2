@@ -9,6 +9,8 @@ import { useLanguage } from "@/hooks/use-language";
 import { supabase } from "@/integrations/supabase/client";
 import { PUBLIC_CLUB_ROUTE_SEGMENTS } from "@/lib/public-club-routes";
 import type { EventRowLite } from "@/lib/public-club-models";
+import { readableTextOnSolid } from "@/lib/hex-to-rgb";
+import { clubCtaFillHoverClass, clubCtaOutlineHoverClass } from "@/lib/public-club-cta-classes";
 
 export default function PublicClubEventDetailPage() {
   const { t, language } = useLanguage();
@@ -147,8 +149,11 @@ export default function PublicClubEventDetailPage() {
                       href={row.registration_external_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex min-h-[44px] items-center justify-center rounded-full px-5 text-sm font-semibold text-white hover:brightness-110"
-                      style={{ backgroundColor: "var(--club-primary)" }}
+                      className={`inline-flex min-h-[44px] items-center justify-center rounded-full px-5 text-sm font-semibold ${clubCtaFillHoverClass}`}
+                      style={{
+                        backgroundColor: "var(--club-primary)",
+                        color: readableTextOnSolid(club?.primary_color || "#C4A052"),
+                      }}
                     >
                       {t.clubPage.eventDetailRegister}
                     </a>
@@ -156,7 +161,7 @@ export default function PublicClubEventDetailPage() {
                   {regOpen && !row.registration_external_url?.trim() ? (
                     <Link
                       to={joinHref}
-                      className="inline-flex min-h-[44px] items-center justify-center rounded-full border border-[color:var(--club-border)] px-5 text-sm font-semibold text-[color:var(--club-foreground)] hover:bg-[color:var(--club-tertiary)]"
+                      className={`inline-flex min-h-[44px] items-center justify-center rounded-full border border-[color:var(--club-border)] bg-[color:var(--club-card)] px-5 text-sm font-semibold text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`}
                     >
                       {t.clubPage.eventDetailRegisterViaClub}
                     </Link>
