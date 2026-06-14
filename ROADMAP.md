@@ -17,6 +17,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Public club UI polish (2026-05-03):** Client-only **accessibility/visual** pass — light-brand **`--club-*`** token adjustments, **`readableTextOnSolid`** on club-primary buttons, shared **`accent`** (crimson) hover utilities for public CTAs (matches app `Button` outline language). See `CHANGELOG.md` second **2026-05-03** entry and `TASKS.md` **MICROSITE-UX-001**.
 
+**Admin operations + financial P&L (2026-06-14):** Live admin dashboard KPIs and club setup from DB; **`FinancialSummary`** + **`/reports?section=financial`**; **`club_expenses`** migration; German Mitgliederliste import; role-based dashboard sections; Lucide icon pass — see `CHANGELOG.md` § 2026-06-14, `MEMORY_BANK.md`, `TASKS.md` **FIN-*** / **DASH-***.
+
 ---
 
 ## Phase 0 — Foundation (Week 0–1)

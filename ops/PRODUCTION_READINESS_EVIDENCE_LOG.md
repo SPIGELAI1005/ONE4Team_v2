@@ -1,5 +1,7 @@
 # Production readiness — consolidated evidence log
 
+Last updated: 2026-06-14 — see `CHANGELOG.md` § 2026-06-14 for admin financial reporting (`20260614120000_club_expenses.sql`); operator migration apply tracked under `TASKS.md` **FIN-OPS-001**.
+
 Single index for [PRODUCTION_READINESS_COMPLETION_PLAN.md](PRODUCTION_READINESS_COMPLETION_PLAN.md). Link tickets, screenshots, or CI logs in the **Evidence** column as you complete each step.
 
 ## Repo / CI (automatable)

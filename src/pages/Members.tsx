@@ -28,6 +28,7 @@ import {
   getMissingRequiredMasterFields,
   masterFieldsFromFlatImport,
   masterRecordCompletenessPct,
+  normalizeImportEmail,
   parseMembershipKind,
   readDraftGuardianMembershipIds,
 } from "@/lib/member-master-schema";
@@ -153,6 +154,7 @@ type BulkRowIssue =
   | "invalid_email"
   | "duplicate_email"
   | "already_in_club"
+  | "already_in_saved_list"
   | "invite_exists"
   | "unknown_role";
 
@@ -287,7 +289,7 @@ function mergeDraftMasterValuesForTabs(
 }
 
 function normalizeEmail(value: string) {
-  return value.trim().toLowerCase();
+  return normalizeImportEmail(value);
 }
 
 /** Shape for club_invites.invite_payload (redeem_club_invite reads these keys). */
@@ -406,6 +408,7 @@ const Members = () => {
   const [abuseAlerts, setAbuseAlerts] = useState<AbuseAlertRow[]>([]);
   const [resolvingAlertId, setResolvingAlertId] = useState<string | null>(null);
   const [memberDrafts, setMemberDrafts] = useState<MemberDraftRow[]>([]);
+  const [memberDraftTotalCount, setMemberDraftTotalCount] = useState(0);
   const [draftsLoading, setDraftsLoading] = useState(false);
   const [draftActionId, setDraftActionId] = useState<string | null>(null);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
@@ -443,6 +446,8 @@ const Members = () => {
     Array<{
       email: string;
       membershipId: string | null;
+      draftId: string | null;
+      matchLabel: string | null;
       missing: string[];
       payload: Partial<ClubMemberMasterRecord>;
       guardianEmail: string;
@@ -487,6 +492,8 @@ const Members = () => {
         return t.membersPage.importIssueInvalidEmail;
       case "duplicate_email":
         return t.membersPage.importIssueDuplicateInImport;
+      case "already_in_saved_list":
+        return t.membersPage.importIssueAlreadyInSavedList;
       case "already_in_club":
         return t.membersPage.importIssueAlreadyInClub;
       case "invite_exists":
@@ -628,118 +635,52 @@ const Members = () => {
   };
 
   const handleImportSpreadsheet = async (file: File) => {
-    const isCsv = file.name.toLowerCase().endsWith(".csv");
-    if (isCsv) {
-      const raw = await file.text();
-      const rows = raw
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean);
-      if (rows.length < 2) {
-        toast({ title: t.membersPage.importFailed, description: t.membersPage.importCsvNoDataRows, variant: "destructive" });
-        return;
-      }
-      const headers = rows[0].split(",").map((h) => h.trim().toLowerCase());
-      const dataRows = rows.slice(1).map((line) => line.split(","));
-      const imported = dataRows.map((columns) => {
-        const get = (key: string) => {
-          const index = headers.indexOf(key);
-          return index >= 0 ? (columns[index] ?? "").trim() : "";
-        };
-        const parsedRole = normalizeRole(get("role"));
-        const masterFields = masterFieldsFromFlatImport(
-          Object.fromEntries(
-            Object.entries(record).map(([k, v]) => [k.toLowerCase().trim(), String(v ?? "").trim()]),
-          ),
-        );
-        return {
-          id: crypto.randomUUID(),
-          include: true,
-          name: get("name") || get("full_name"),
-          email: get("email"),
-          role: parsedRole.role,
-          unknownRole: parsedRole.unknownRole,
-          team: get("team"),
-          ageGroup: get("age_group"),
-          position: get("position"),
-          masterData: masterFields,
-        } as BulkMemberDraft;
-      });
-
-      const usable = imported.filter((item) => normalizeEmail(item.email));
-      const duplicates = new Set<string>();
-      const seen = new Set<string>();
-      let invalid = 0;
-      let unknownRole = 0;
-      for (const item of usable) {
-        const email = normalizeEmail(item.email);
-        if (!EMAIL_PATTERN.test(email)) invalid += 1;
-        if (item.unknownRole) unknownRole += 1;
-        if (seen.has(email)) duplicates.add(email);
-        seen.add(email);
-      }
-
-      setBulkRows((previous) => [...previous, ...usable]);
-      setImportSummary({
-        imported: imported.length,
-        usable: usable.length,
-        invalidEmail: invalid,
-        duplicateInFile: duplicates.size,
-        unknownRole,
-      });
-      toast({
-        title: t.membersPage.importComplete,
-        description: t.membersPage.importedRowsFromCsv.replace("{count}", String(usable.length)),
-      });
-      return;
-    }
-
-    const xlsx = await import("xlsx");
-    const buffer = await file.arrayBuffer();
-    const workbook = xlsx.read(buffer, { type: "array" });
-    const firstSheetName = workbook.SheetNames[0];
-    const firstSheet = workbook.Sheets[firstSheetName];
-    const records = xlsx.utils.sheet_to_json<Record<string, unknown>>(firstSheet, { defval: "" });
-
-    const imported = records.map((record) => {
-      const get = (...keys: string[]) => {
-        for (const key of keys) {
-          const entry = Object.entries(record).find(([k]) => k.toLowerCase().trim() === key);
-          if (entry) return String(entry[1] ?? "").trim();
-        }
-        return "";
-      };
-      const parsedRole = normalizeRole(get("role"));
-      const masterFields = masterFieldsFromFlatImport(
-        Object.fromEntries(
-          Object.entries(record).map(([k, v]) => [String(k).toLowerCase().trim(), String(v ?? "").trim()]),
-        ),
-      );
-      return {
-        id: crypto.randomUUID(),
-        include: true,
-        name: get("name", "full_name"),
-        email: get("email"),
-        role: parsedRole.role,
-        unknownRole: parsedRole.unknownRole,
-        team: get("team"),
-        ageGroup: get("age_group"),
-        position: get("position"),
-        masterData: masterFields,
-      } as BulkMemberDraft;
-    });
-
-    const usable = imported.filter((row) => row.email);
-    if (!usable.length) {
+    const parsed = await parseRegistrySpreadsheetFirstSheet(file);
+    if (!parsed.length) {
       toast({
         title: t.membersPage.importFailed,
-        description: t.membersPage.importNoValidRows,
+        description: t.membersPage.importCsvNoDataRows,
         variant: "destructive",
       });
       return;
     }
 
+    const imported = parsed.map((row) => {
+      const masterFields = masterFieldsFromFlatImport(row.raw);
+      const name =
+        [masterFields.first_name, masterFields.last_name].filter(Boolean).join(" ") ||
+        row.raw.name ||
+        row.raw.full_name ||
+        [row.raw.vorname, row.raw.nachname].filter(Boolean).join(" ");
+      const parsedRole = normalizeRole(row.role || "member");
+      return {
+        id: crypto.randomUUID(),
+        include: true,
+        name,
+        email: row.email,
+        role: parsedRole.role,
+        unknownRole: parsedRole.unknownRole,
+        team: row.team || row.raw.team || "",
+        ageGroup: row.ageGroup || row.raw.age_group || "",
+        position: row.position || row.raw.position || "",
+        masterData: masterFields,
+      } as BulkMemberDraft;
+    });
+
+    const rowsToAdd = imported.filter((item) => item.name.trim() || normalizeEmail(item.email));
+    const usable = rowsToAdd.filter((item) => normalizeEmail(item.email));
+
     const duplicates = new Set<string>();
+    const emailCounts = new Map<string, number>();
+    for (const item of imported) {
+      const email = normalizeEmail(item.email);
+      if (!email) continue;
+      emailCounts.set(email, (emailCounts.get(email) ?? 0) + 1);
+    }
+    for (const [email, count] of emailCounts.entries()) {
+      if (count > 1) duplicates.add(email);
+    }
+
     const seen = new Set<string>();
     let invalid = 0;
     let unknownRole = 0;
@@ -751,7 +692,7 @@ const Members = () => {
       seen.add(email);
     }
 
-    setBulkRows((previous) => [...previous, ...usable]);
+    setBulkRows((previous) => [...previous, ...rowsToAdd]);
     setImportSummary({
       imported: imported.length,
       usable: usable.length,
@@ -759,9 +700,15 @@ const Members = () => {
       duplicateInFile: duplicates.size,
       unknownRole,
     });
+
+    const isGerman = parsed.some((r) => r.sourceFormat === "german_mitgliederliste");
     toast({
       title: t.membersPage.importComplete,
-      description: t.membersPage.importedRowsFromSpreadsheet.replace("{count}", String(usable.length)),
+      description: isGerman
+        ? t.membersPage.importedRowsFromGermanExport.replace("{count}", String(rowsToAdd.length))
+        : file.name.toLowerCase().endsWith(".csv")
+          ? t.membersPage.importedRowsFromCsv.replace("{count}", String(rowsToAdd.length))
+          : t.membersPage.importedRowsFromSpreadsheet.replace("{count}", String(rowsToAdd.length)),
     });
   };
 
@@ -810,19 +757,27 @@ const Members = () => {
   const fetchMemberDrafts = useCallback(async () => {
     if (!clubId || !perms.isAdmin) return;
     setDraftsLoading(true);
-    const { data, error } = await supabase
-      .from("club_member_drafts")
-      .select("*")
-      .eq("club_id", clubId)
-      .order("created_at", { ascending: false })
-      .limit(500);
-    if (error) {
-      toast({ title: t.common.error, description: error.message, variant: "destructive" });
+    const [listRes, countRes] = await Promise.all([
+      supabase
+        .from("club_member_drafts")
+        .select("*")
+        .eq("club_id", clubId)
+        .order("created_at", { ascending: false })
+        .limit(500),
+      supabase
+        .from("club_member_drafts")
+        .select("id", { count: "exact", head: true })
+        .eq("club_id", clubId),
+    ]);
+    if (listRes.error) {
+      toast({ title: t.common.error, description: listRes.error.message, variant: "destructive" });
       setMemberDrafts([]);
+      setMemberDraftTotalCount(0);
       setDraftsLoading(false);
       return;
     }
-    setMemberDrafts((data as unknown as MemberDraftRow[]) ?? []);
+    setMemberDrafts((listRes.data as unknown as MemberDraftRow[]) ?? []);
+    setMemberDraftTotalCount(countRes.count ?? listRes.data?.length ?? 0);
     setDraftsLoading(false);
   }, [clubId, perms.isAdmin, t.common.error, toast]);
 
@@ -1534,19 +1489,52 @@ const Members = () => {
           emailToMembership.set(normalizeEmail(entry.email), entry.membership_id);
         }
 
+        const emailToDraft = new Map<string, { id: string; name: string | null }>();
+        const chunkSize = 100;
+        for (let i = 0; i < emails.length; i += chunkSize) {
+          const chunk = emails.slice(i, i + chunkSize);
+          const { data: draftMatches, error: draftError } = await supabase
+            .from("club_member_drafts")
+            .select("id, email, name")
+            .eq("club_id", clubId)
+            .in("email", chunk);
+          if (draftError) {
+            toast({ title: t.membersPage.registryImportFailed, description: draftError.message, variant: "destructive" });
+            setRegistryImportPreview([]);
+            return;
+          }
+          for (const draft of draftMatches ?? []) {
+            const key = normalizeEmail(String(draft.email ?? ""));
+            if (key && !emailToDraft.has(key)) {
+              emailToDraft.set(key, { id: String(draft.id), name: draft.name != null ? String(draft.name) : null });
+            }
+          }
+        }
+
         const preview: typeof registryImportPreview = [];
         for (const r of rows) {
           const email = normalizeEmail(r.email);
           const membershipId = email ? emailToMembership.get(email) ?? null : null;
+          const draftMatch = email ? emailToDraft.get(email) ?? null : null;
+          const draftId = membershipId ? null : draftMatch?.id ?? null;
           const payload = masterFieldsFromFlatImport(r.raw);
           const mem = membershipId ? members.find((mm) => mm.id === membershipId) : null;
           const roleParsed = mem?.role || (r.role ? normalizeRole(r.role).role : "member");
           const missing = membershipId
             ? getMissingRequiredMasterFields(payload, roleParsed)
-            : ["email_not_in_club"];
+            : draftId
+              ? getMissingRequiredMasterFields(payload, r.role ? normalizeRole(r.role).role : "member")
+              : ["email_not_in_club"];
+          const matchLabel = membershipId
+            ? t.membersPage.registryMatchRoster
+            : draftId
+              ? draftMatch?.name?.trim() || t.membersPage.registryMatchDraft
+              : null;
           preview.push({
             email: r.email,
             membershipId,
+            draftId,
+            matchLabel,
             missing: missing.map((m) => String(m)),
             payload,
             guardianEmail: r.guardianEmail,
@@ -1554,9 +1542,13 @@ const Members = () => {
           });
         }
         setRegistryImportPreview(preview);
+        const isGerman = rows.some((r) => r.sourceFormat === "german_mitgliederliste");
         toast({
           title: t.membersPage.registryImportParsed,
-          description: t.membersPage.registryImportParsedDesc.replace("{count}", String(preview.length)),
+          description: (isGerman ? t.membersPage.registryImportParsedGermanDesc : t.membersPage.registryImportParsedDesc).replace(
+            "{count}",
+            String(preview.length),
+          ),
         });
       } finally {
         setRegistryImportBusy(false);
@@ -1567,15 +1559,16 @@ const Members = () => {
 
   const handleApplyRegistryImport = useCallback(async () => {
     if (!clubId || !perms.isAdmin) return;
-    const applicable = registryImportPreview.filter((row) => row.membershipId);
-    if (!applicable.length) {
+    const applicableMembers = registryImportPreview.filter((row) => row.membershipId);
+    const applicableDrafts = registryImportPreview.filter((row) => row.draftId && !row.membershipId);
+    if (!applicableMembers.length && !applicableDrafts.length) {
       toast({ title: t.membersPage.registryImportNothingToApply, variant: "destructive" });
       return;
     }
     setRegistryImportBusy(true);
     try {
       let ok = 0;
-      for (const row of applicable) {
+      for (const row of applicableMembers) {
         const memberId = row.membershipId as string;
         const rawKind = row.payload.membership_kind;
         const parsedKind = typeof rawKind === "string" ? parseMembershipKind(rawKind) : null;
@@ -1602,6 +1595,39 @@ const Members = () => {
         }
       }
 
+      let draftsOk = 0;
+      for (const row of applicableDrafts) {
+        const draftId = row.draftId as string;
+        const existing = memberDrafts.find((d) => d.id === draftId);
+        const mergedMaster = {
+          ...((existing?.master_data as Record<string, unknown> | null) ?? {}),
+          ...row.payload,
+        };
+        const firstName = row.payload.first_name?.trim();
+        const lastName = row.payload.last_name?.trim();
+        const combinedName = [firstName, lastName].filter(Boolean).join(" ").trim();
+        const { error } = await supabase
+          .from("club_member_drafts")
+          .update({
+            master_data: mergedMaster,
+            ...(combinedName ? { name: combinedName } : {}),
+            ...(row.payload.membership_kind ? {} : {}),
+          } as Record<string, unknown>)
+          .eq("club_id", clubId)
+          .eq("id", draftId);
+        if (!error) {
+          draftsOk += 1;
+          void appendMemberAuditEvent({
+            clubId,
+            draftId,
+            correlationEmail: normalizeEmail(row.email),
+            eventType: "registry_import_draft_row",
+            summary: "Draft registry updated from import",
+            detail: { source: "spreadsheet" },
+          });
+        }
+      }
+
       let linksOk = 0;
       for (const r of registryImportPreview) {
         if (!r.membershipId || !normalizeEmail(r.guardianEmail)) continue;
@@ -1619,15 +1645,19 @@ const Members = () => {
 
       toast({
         title: t.membersPage.registryImportApplied,
-        description: t.membersPage.registryImportAppliedDesc.replace("{rows}", String(ok)).replace("{links}", String(linksOk)),
+        description: t.membersPage.registryImportAppliedDesc
+          .replace("{rows}", String(ok))
+          .replace("{drafts}", String(draftsOk))
+          .replace("{links}", String(linksOk)),
       });
       setShowRegistryImport(false);
       setRegistryImportPreview([]);
       void fetchMembers();
+      void fetchMemberDrafts();
     } finally {
       setRegistryImportBusy(false);
     }
-  }, [clubId, perms.isAdmin, registryImportPreview, emailToMembershipIdFromEmail, t, toast, fetchMembers]);
+  }, [clubId, perms.isAdmin, registryImportPreview, memberDrafts, emailToMembershipIdFromEmail, t, toast, fetchMembers, fetchMemberDrafts]);
 
   const allRoles = ["all", "admin", "trainer", "player", "staff", "member", "parent", "sponsor"];
   const existingInviteEmails = useMemo(
@@ -1638,6 +1668,30 @@ const Members = () => {
           .filter(Boolean)
       ),
     [invites]
+  );
+
+  const existingDraftEmails = useMemo(
+    () =>
+      new Set(
+        memberDrafts
+          .map((draft) => normalizeEmail(draft.email))
+          .filter(Boolean)
+      ),
+    [memberDrafts]
+  );
+
+  const getRegistryMissingLabel = useCallback(
+    (code: string) => {
+      switch (code) {
+        case "email_not_in_club":
+          return t.membersPage.registryMissingNotInClub;
+        case "email_matched_draft":
+          return t.membersPage.registryMissingMatchedDraft;
+        default:
+          return code.replace(/_/g, " ");
+      }
+    },
+    [t],
   );
 
   const bulkRowIssues = useMemo(() => {
@@ -1658,13 +1712,14 @@ const Members = () => {
       }
       if (!EMAIL_PATTERN.test(email)) issues.push("invalid_email");
       if ((counts.get(email) ?? 0) > 1) issues.push("duplicate_email");
+      if (existingDraftEmails.has(email)) issues.push("already_in_saved_list");
       if (existingMemberEmails.has(email)) issues.push("already_in_club");
       if (existingInviteEmails.has(email)) issues.push("invite_exists");
       if (row.unknownRole) issues.push("unknown_role");
       byRowId.set(row.id, issues);
     }
     return byRowId;
-  }, [bulkRows, existingInviteEmails, existingMemberEmails]);
+  }, [bulkRows, existingDraftEmails, existingInviteEmails, existingMemberEmails]);
 
   const handleDeleteMember = async (membershipId: string) => {
     if (!perms.isAdmin || !clubId) {
@@ -2084,7 +2139,7 @@ const Members = () => {
       if (!row.include || !normalizeEmail(row.email)) return false;
       const issues = bulkRowIssues.get(row.id) ?? [];
       const hasBlockingIssue = issues.some((issue) =>
-        ["invalid_email", "duplicate_email", "already_in_club"].includes(issue)
+        ["invalid_email", "duplicate_email", "already_in_club", "already_in_saved_list"].includes(issue)
       );
       return !hasBlockingIssue;
     });
@@ -2767,7 +2822,7 @@ const Members = () => {
             </div>
 
             {/* Stats (club-wide via RPC; accurate with server-paged roster) */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
               {[
                 {
                   label: t.membersPage.total,
@@ -2788,6 +2843,11 @@ const Members = () => {
                   label: t.common.trainers,
                   value: clubMemberStats?.trainers ?? members.filter((m) => m.role === "trainer").length,
                   color: "text-accent",
+                },
+                {
+                  label: t.membersPage.pendingImport,
+                  value: memberDraftTotalCount,
+                  color: "text-violet-400",
                 },
               ].map((s, i) => (
                 <div key={i} className="p-4 rounded-xl bg-card border border-border text-center">
@@ -2835,7 +2895,7 @@ const Members = () => {
                 <div className="flex items-center gap-3">
                   <div className="text-xs text-muted-foreground">
                     {t.membersPage.savedMemberCount
-                      .replace("{draftCount}", String(memberDrafts.filter((row) => row.status === "draft").length))
+                      .replace("{draftCount}", String(memberDraftTotalCount || memberDrafts.filter((row) => row.status === "draft").length))
                       .replace("{invitedCount}", String(memberDrafts.filter((row) => row.status === "invited").length))}
                   </div>
                   {memberDrafts.length > 8 && !showAllDrafts ? (
@@ -4424,6 +4484,8 @@ const Members = () => {
                                 className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
                                   issue === "unknown_role"
                                     ? "bg-amber-500/10 text-amber-500"
+                                    : issue === "duplicate_email" || issue === "already_in_saved_list"
+                                      ? "bg-orange-500/10 text-orange-400"
                                     : "bg-accent/10 text-accent"
                                 }`}
                               >
@@ -4576,9 +4638,17 @@ const Members = () => {
                   <tbody>
                     {registryImportPreview.map((row, idx) => (
                       <tr key={`${row.email}-${idx}`} className="border-t border-border/60">
-                        <td className="px-2 py-2">{row.membershipId ? "✓" : "—"}</td>
-                        <td className="px-2 py-2 font-mono truncate max-w-[220px]">{row.email}</td>
-                        <td className="px-2 py-2 text-amber-600">{row.missing.join(", ")}</td>
+                        <td className="px-2 py-2">
+                          {row.matchLabel ? (
+                            <span className="text-emerald-500 font-medium">{row.matchLabel}</span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className="px-2 py-2 font-mono truncate max-w-[220px]">{row.email || "—"}</td>
+                        <td className="px-2 py-2 text-amber-600">
+                          {row.missing.map((code) => getRegistryMissingLabel(code)).join(", ")}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -4589,7 +4659,7 @@ const Members = () => {
               <Button variant="outline" onClick={() => setShowRegistryImport(false)}>{t.common.cancel}</Button>
               <Button
                 className="bg-gradient-gold-static text-primary-foreground"
-                disabled={registryImportBusy || !registryImportPreview.some((r) => r.membershipId)}
+                disabled={registryImportBusy || !registryImportPreview.some((r) => r.membershipId || r.draftId)}
                 onClick={() => void handleApplyRegistryImport()}
               >
                 {t.membersPage.registryImportApply}

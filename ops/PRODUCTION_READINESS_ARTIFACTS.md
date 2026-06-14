@@ -1,6 +1,6 @@
 # ONE4Team Production Readiness Audit + Roadmap
 
-Last updated: 2026-03-30 (doc sync: `CHANGELOG.md` § 2026-03-30, `MEMORY_BANK.md`, `PROJECT_STATUS.md`, `TASKS.md`, `README.md`, `DEPLOYMENT.md`)
+Last updated: 2026-06-14 (doc sync: `CHANGELOG.md` § 2026-06-14 — admin dashboard live data, financial P&L, German import; operator apply `20260614120000_club_expenses.sql`)
 
 This document captures the strict production-readiness review and a comprehensive remediation roadmap for scaling ONE4Team from early usage to multi-tenant SaaS operation.
 

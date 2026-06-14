@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
   Plus, CalendarDays, MapPin, Clock, Users,
-  Loader2, X, Trophy, CheckCircle2, XCircle, Mail, ChevronDown
+  Loader2, X, Trophy, Calendar, CheckCircle2, XCircle, Mail, ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -209,10 +209,20 @@ const Events = () => {
                 onClick={() => openEventDetail(ev)}>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-display font-semibold text-foreground">{ev.title}</h3>
-                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full ${
                     ev.event_type === "tournament" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
                   }`}>
-                    {ev.event_type === "tournament" ? t.eventsPage.badgeTournament : t.eventsPage.badgeEvent}
+                    {ev.event_type === "tournament" ? (
+                      <>
+                        <Trophy className="w-3 h-3 shrink-0" strokeWidth={1.5} />
+                        {t.eventsPage.badgeTournament}
+                      </>
+                    ) : (
+                      <>
+                        <Calendar className="w-3 h-3 shrink-0" strokeWidth={1.5} />
+                        {t.eventsPage.badgeEvent}
+                      </>
+                    )}
                   </span>
                 </div>
                 {ev.description && <p className="text-sm text-muted-foreground mb-2">{ev.description}</p>}

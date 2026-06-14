@@ -78,7 +78,7 @@ export const MEMBER_MASTER_FIELDS: MemberMasterFieldMeta[] = [
   {
     key: "birth_date",
     column: "birth_date",
-    aliases: ["birthday", "date_of_birth", "dob", "geburtsdatum"],
+    aliases: ["birthday", "date_of_birth", "dob", "geburtsdatum", "geburtstag"],
     required: false,
     recommended: true,
     group: "identity",
@@ -93,8 +93,8 @@ export const MEMBER_MASTER_FIELDS: MemberMasterFieldMeta[] = [
   { key: "nationality", column: "nationality", aliases: ["citizenship", "staatsangehoerigkeit"], required: false, group: "identity" },
   { key: "photo_url", column: "photo_url", aliases: ["picture", "avatar", "image_url", "foto"], required: false, group: "identity" },
 
-  { key: "street_line", column: "street_line", aliases: ["street", "address", "strasse", "strasse_zeile1"], required: false, group: "contact" },
-  { key: "address_line2", column: "address_line2", aliases: ["address2", "line2"], required: false, group: "contact" },
+  { key: "street_line", column: "street_line", aliases: ["street", "address", "strasse", "strasse_zeile1", "strae"], required: false, group: "contact" },
+  { key: "address_line2", column: "address_line2", aliases: ["address2", "line2", "zusatzadresse"], required: false, group: "contact" },
   { key: "postal_code", column: "postal_code", aliases: ["zip", "plz"], required: false, group: "contact" },
   { key: "city", column: "city", aliases: ["town", "ort", "stadt"], required: false, group: "contact" },
   { key: "country", column: "country", aliases: ["land"], required: false, group: "contact" },
@@ -146,7 +146,7 @@ export const MEMBER_MASTER_FIELDS: MemberMasterFieldMeta[] = [
   {
     key: "squad_status",
     column: "squad_status",
-    aliases: ["squad", "squad_state", "squad_membership", "kaderstatus"],
+    aliases: ["squad", "squad_state", "squad_membership", "kaderstatus", "spielrecht"],
     required: false,
     group: "performance",
   },
@@ -161,7 +161,7 @@ export const MEMBER_MASTER_FIELDS: MemberMasterFieldMeta[] = [
   {
     key: "club_registration_date",
     column: "club_registration_date",
-    aliases: ["registered_at", "member_since", "vereinsbeitritt"],
+    aliases: ["registered_at", "member_since", "vereinsbeitritt", "eintrittsdatum"],
     required: false,
     recommended: true,
     group: "club",
@@ -169,25 +169,32 @@ export const MEMBER_MASTER_FIELDS: MemberMasterFieldMeta[] = [
   {
     key: "team_assignment_date",
     column: "team_assignment_date",
-    aliases: ["assigned_to_team_at", "team_since"],
+    aliases: ["assigned_to_team_at", "team_since", "abteilungseintritt_1"],
     required: false,
     group: "club",
   },
-  { key: "club_exit_date", column: "club_exit_date", aliases: ["left_at", "exit_date", "austritt"], required: false, group: "club" },
-  { key: "invoice_reference", column: "invoice_reference", aliases: ["invoice", "billing_ref", "rechnung"], required: false, group: "club" },
+  { key: "club_exit_date", column: "club_exit_date", aliases: ["left_at", "exit_date", "austritt", "austrittsdatum"], required: false, group: "club" },
+  { key: "invoice_reference", column: "invoice_reference", aliases: ["invoice", "billing_ref", "rechnung", "debitorenkonto"], required: false, group: "club" },
   {
     key: "player_passport_number",
     column: "player_passport_number",
-    aliases: ["passport", "spielerpass", "pass_nr"],
+    aliases: ["passport", "spielerpass", "pass_nr", "passnummer"],
     required: false,
     group: "club",
   },
   {
     key: "internal_club_number",
     column: "internal_club_number",
-    aliases: ["club_id_number", "member_number", "vereinsnummer", "mitgliedsnummer"],
+    aliases: ["club_id_number", "member_number", "vereinsnummer", "mitgliedsnummer", "mitglieds_nr"],
     required: false,
     recommended: true,
+    group: "club",
+  },
+  {
+    key: "club_pass_generated_at",
+    column: "club_pass_generated_at",
+    aliases: ["pass_generated_at", "pass_issued_at", "passdatum"],
+    required: false,
     group: "club",
   },
 
@@ -198,7 +205,7 @@ export const MEMBER_MASTER_FIELDS: MemberMasterFieldMeta[] = [
   {
     key: "emergency_contact_name",
     column: "emergency_contact_name",
-    aliases: ["emergency_name", "notfallkontakt_name"],
+    aliases: ["emergency_name", "notfallkontakt_name", "notfallkontakt"],
     required: false,
     recommended: true,
     group: "safety",
@@ -206,7 +213,7 @@ export const MEMBER_MASTER_FIELDS: MemberMasterFieldMeta[] = [
   {
     key: "emergency_contact_phone",
     column: "emergency_contact_phone",
-    aliases: ["emergency_phone", "notfalltelefon"],
+    aliases: ["emergency_phone", "notfalltelefon", "notfallnummer"],
     required: false,
     recommended: true,
     group: "safety",
@@ -258,6 +265,14 @@ export function readDraftGuardianMembershipIds(masterData: Record<string, unknow
   return [...new Set(ids)];
 }
 
+export function normalizeImportEmail(value: string): string {
+  return value
+    .trim()
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/\s+/g, "");
+}
+
 export function normalizeHeaderKey(raw: string): string {
   return raw
     .replace(/^\ufeff/, "")
@@ -291,10 +306,13 @@ export function parseMembershipKind(raw: string): "active_participant" | "suppor
 }
 
 export function parseSex(raw: string): ClubMemberMasterRecord["sex"] {
+  const t = raw.trim().toLowerCase();
+  if (!t) return null;
+  if (t.includes("männ") || t.includes("maenn") || t === "m") return "male";
+  if (t.includes("weib") || t === "w" || t === "f") return "female";
   const n = normalizeHeaderKey(raw);
-  if (!raw.trim()) return null;
-  if (["male", "m", "man", "herr", "maennlich"].includes(n)) return "male";
-  if (["female", "f", "woman", "frau", "weiblich"].includes(n)) return "female";
+  if (["male", "man", "herr", "maennlich", "mannlich", "mnlich"].includes(n)) return "male";
+  if (["female", "woman", "frau", "weiblich"].includes(n)) return "female";
   if (["other", "diverse", "divers"].includes(n)) return "other";
   if (["prefer_not_to_say", "unknown", "keineangabe"].includes(n)) return "prefer_not_to_say";
   return null;
@@ -355,17 +373,18 @@ export function emptyMasterPayload(membershipId: string, clubId: string): Partia
 export function parseFlexibleDate(raw: string): string | null {
   const t = raw.trim();
   if (!t) return null;
-  const iso = new Date(t);
-  if (!Number.isNaN(iso.getTime())) return iso.toISOString().slice(0, 10);
   const m = t.match(/^(\d{1,2})[./](\d{1,2})[./](\d{2,4})$/);
   if (m) {
     const d = Number(m[1]);
     const mo = Number(m[2]);
     let y = Number(m[3]);
     if (y < 100) y += 2000;
-    const dt = new Date(y, mo - 1, d);
-    if (!Number.isNaN(dt.getTime())) return dt.toISOString().slice(0, 10);
+    if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12) {
+      return `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    }
   }
+  const iso = new Date(t);
+  if (!Number.isNaN(iso.getTime())) return iso.toISOString().slice(0, 10);
   return null;
 }
 
@@ -393,7 +412,9 @@ export function masterFieldsFromFlatImport(raw: Record<string, string>): Partial
       case "birth_date":
       case "club_registration_date":
       case "team_assignment_date":
-      case "club_exit_date": {
+      case "club_exit_date":
+      case "club_pass_generated_at":
+      case "last_evaluation_date": {
         const d = parseFlexibleDate(v);
         if (d) (out as Record<string, string | null>)[key] = d;
         break;

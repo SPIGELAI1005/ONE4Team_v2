@@ -3,6 +3,41 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-06-14 (Admin dashboard operations, financial reporting P&L, German member import, UI polish, documentation sync)
+
+### Admin dashboard — live data and role-aware layout
+- **`src/lib/dashboard-page-shell.ts`:** Shared layout tokens (`DASHBOARD_PAGE_ROOT`, inner/max widths, tab rows) for consistent responsive behavior under **`DashboardLayout`**.
+- **`src/lib/club-dashboard-snapshot.ts`:** `fetchAdminDashboardSnapshot`, `fetchDashboardUpcoming`, `fetchClubSetupProfile` — real KPIs and club profile for admin dashboard (members, teams, schedule, unpaid dues, public page status).
+- **`src/components/dashboard/DashboardContent.tsx`:** Admin KPIs from database (not placeholders); **Your club setup** section reads live **`clubs`** row + registration fallback; AI insights driven by snapshot; **Head-to-Head Comparison** removed from dashboard.
+- **`src/lib/dashboard-section-visibility.ts`:** Role-based dashboard section flags — **admin** sees finances + club setup + ONE4AI digest; **trainer/player** see sports analytics widgets; **sponsor** gets minimal upcoming/insights only.
+- **`src/components/dashboard/LiveMatchTicker.tsx`:** Demo matches removed; hidden when no live matches.
+
+### Financial reporting (Phases 1–3)
+- **`supabase/migrations/20260614120000_club_expenses.sql`:** `club_expenses` table (category, amount_cents, expense_date, description) with admin-only RLS.
+- **`src/lib/club-financial-snapshot.ts`:** Unified snapshot from **`payments`**, **`membership_dues`**, **`shop_orders`**, **`club_expenses`**; monthly series, revenue/cost breakdowns, CSV export, create/delete expense helpers.
+- **`src/lib/club-expense-categories.ts`:** Expense category constants (facility, equipment, staff, travel, referees, other).
+- **`src/components/dashboard/FinancialSummary.tsx`:** Admin dashboard card — collected, outstanding, overdue, costs, net, 12-month chart; links to Payments, Dues, **`/reports?section=financial`**.
+- **`src/components/reports/FinancialReportPanel.tsx`:** Full admin financial report on **`/reports`** — KPIs, monthly cash-flow charts, revenue/cost pies, fee-type breakdown, expense CRUD, CSV export.
+- **`src/pages/PlayerStats.tsx`:** Admin report sections — **Operations** | **Financial** | **Performance** (`?section=financial`); performance tables hidden when not on Performance tab.
+
+### Members — German Mitgliederliste import
+- **`src/lib/german-mitgliederliste-import.ts`:** Detection and parse for semicolon German club exports; row enrichment (role, status, team, master fields).
+- **`src/lib/german-mitgliederliste-import.test.ts`:** Unit tests (7 passing).
+- **`src/lib/member-master-schema.ts`:** German field aliases, `normalizeImportEmail`, flexible date/sex parsing fixes.
+- **`src/lib/member-master-xlsx.ts`:** Auto-detect German format in registry spreadsheet parser.
+- **`src/pages/Members.tsx`:** Unified bulk import; Option B registry import matches **saved drafts** by email; **Pending import** KPI; duplicate/`already_in_saved_list` validation.
+
+### Icons and UI consistency (Lucide)
+- **`src/lib/notification-type-meta.ts`:** Shared notification type icons (used by **`AdminNotificationSender`** and **`NotificationBell`**).
+- **`src/lib/achievement-badge-icons.ts`:** Lucide icons for achievement badges (replaces emojis).
+- **`src/components/dashboard/AdminNotificationSender.tsx`**, **`AchievementBadges.tsx`**, **`SeasonAwards.tsx`**, **`Events.tsx`:** Emoji icons replaced with Lucide; i18n event badges use icon + text.
+
+### i18n
+- **`src/i18n/en.ts`**, **`src/i18n/de.ts`:** `financial.*` namespace; dashboard club-setup strings; reports admin tabs (Operations / Financial / Performance); German import and pending-draft strings.
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`ROADMAP.md`**, **`TASKS.md`**, **`README.md`**, **`HOLD.md`**, **`supabase/SCHEMA_STATUS.md`**, **`CHANGELOG.md`** (this entry).
+
 ## 2026-05-03 (Public club microsite: migrations wave, admin polish, hero overlay, nav parity, documentation sync)
 
 ### Database (apply per environment in filename order)

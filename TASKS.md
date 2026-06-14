@@ -8,6 +8,20 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ## NOW (top priority)
 
+### Admin dashboard + financial reporting (2026-06-14) — code in repo
+- [x] **DASH-001** Shared **`dashboard-page-shell.ts`** tokens; responsive layout under **`DashboardLayout`**.
+- [x] **DASH-002** Admin KPIs from **`club-dashboard-snapshot.ts`** (live members, teams, schedule, dues).
+- [x] **DASH-003** **Your club setup** card from live **`clubs`** profile + public page status + quick links.
+- [x] **DASH-004** **`dashboard-section-visibility.ts`** — role-based widget visibility (admin vs trainer vs player vs sponsor).
+- [x] **DASH-005** Remove **Head-to-Head Comparison** from admin dashboard; **LiveMatchTicker** without demo data.
+- [x] **FIN-001** **`club-financial-snapshot.ts`** — aggregate Payments, Dues, Shop orders.
+- [x] **FIN-002** **`FinancialSummary`** on admin dashboard; Outstanding KPI in €.
+- [x] **FIN-003** **`FinancialReportPanel`** + admin tabs on **`/reports`** (Operations | Financial | Performance).
+- [x] **FIN-004** Migration **`20260614120000_club_expenses.sql`** + expense CRUD + P&L net line.
+- [x] **FIN-005** Lucide icons for notifications, badges, events (replace emoji chrome).
+- [x] **IMPORT-DE-001** German **Mitgliederliste** CSV import profile + tests; Option A/B fixes; pending-import KPI.
+- [ ] **FIN-OPS-001** Operator: apply **`20260614120000_club_expenses.sql`** per Supabase env; smoke financial dashboard + reports + expense add/delete.
+
 ### Public club microsite — May 2026 wave (2026-05-03) — code in repo
 - [x] **MICROSITE-ADMIN-001** Publication status **badges** on **`ClubPageAdmin`** (live/hidden, snapshot, draft vs published).
 - [x] **MICROSITE-ADMIN-002** Live public preview **Desktop / Tablet / Mobile** viewport framing.

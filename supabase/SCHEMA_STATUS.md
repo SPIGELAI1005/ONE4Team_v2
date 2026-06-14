@@ -59,6 +59,12 @@ For draft/publish JSON, extended public pages, team privacy, schedule/match/even
 
 **Client-only (same release window, no schema delta):** Public microsite **theme contrast** and **accent CTA hovers** live in `src/` only — see `CHANGELOG.md` § **2026-05-03 (Public club microsite — UI polish)**.
 
+## Financial reporting (2026-06-14)
+For admin P&L (collected revenue vs recorded costs), apply:
+- `supabase/migrations/20260614120000_club_expenses.sql` — `club_expenses` table + admin RLS
+
+Depends on existing **`payments`**, **`membership_dues`**, and optional **`shop_orders`** tables. Smoke: `/dashboard/admin` financial card, `/reports?section=financial`, add/delete expense.
+
 ## Verification artifact
 - Run `supabase/PHASE12_VERIFY.sql` after applying the migrations above.
 - Treat any `ok = false` row as a rollout blocker.

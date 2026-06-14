@@ -9,13 +9,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { isErrorWithMessage } from "@/types/dashboard";
-
-const notificationTypes = [
-  { value: "match", label: "Match", icon: "🏆" },
-  { value: "event", label: "Event", icon: "📅" },
-  { value: "announcement", label: "Announcement", icon: "📢" },
-  { value: "general", label: "General", icon: "ℹ️" },
-];
+import { NOTIFICATION_TYPES } from "@/lib/notification-type-meta";
 
 const AdminNotificationSender = () => {
   const { user } = useAuth();
@@ -124,19 +118,25 @@ const AdminNotificationSender = () => {
         <div className="space-y-3">
           {/* Type selector */}
           <div className="flex gap-2 flex-wrap">
-            {notificationTypes.map((nt) => (
-              <button
-                key={nt.value}
-                onClick={() => setType(nt.value)}
-                className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                  type === nt.value
-                    ? "bg-primary/10 border-primary text-primary"
-                    : "bg-muted/50 border-border text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {nt.icon} {nt.label}
-              </button>
-            ))}
+            {NOTIFICATION_TYPES.map((nt) => {
+              const Icon = nt.icon;
+              const isSelected = type === nt.value;
+              return (
+                <button
+                  key={nt.value}
+                  type="button"
+                  onClick={() => setType(nt.value)}
+                  className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                    isSelected
+                      ? "bg-primary/10 border-primary text-primary"
+                      : "bg-muted/50 border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5 shrink-0" strokeWidth={1.5} />
+                  {nt.label}
+                </button>
+              );
+            })}
           </div>
 
           {/* Title */}

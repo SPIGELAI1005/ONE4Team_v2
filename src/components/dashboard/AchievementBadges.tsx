@@ -4,6 +4,7 @@ import { Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useClubId } from "@/hooks/use-club-id";
 import { useAuth } from "@/contexts/useAuth";
+import { getAchievementBadgeIcon } from "@/lib/achievement-badge-icons";
 
 type Achievement = {
   id: string;
@@ -15,14 +16,14 @@ type Achievement = {
 
 // Badge definitions for auto-awarding
 const BADGE_DEFS = [
-  { type: "goals_5", name: "Sharp Shooter", icon: "⚽", threshold: 5, stat: "goals" },
-  { type: "goals_10", name: "Goal Machine", icon: "🔥", threshold: 10, stat: "goals" },
-  { type: "goals_25", name: "Legend Striker", icon: "👑", threshold: 25, stat: "goals" },
-  { type: "assists_5", name: "Playmaker", icon: "🅰️", threshold: 5, stat: "assists" },
-  { type: "assists_10", name: "Vision Master", icon: "👁️", threshold: 10, stat: "assists" },
-  { type: "matches_10", name: "Squad Regular", icon: "🏟️", threshold: 10, stat: "matches" },
-  { type: "matches_25", name: "Veteran", icon: "⭐", threshold: 25, stat: "matches" },
-  { type: "matches_50", name: "Club Legend", icon: "🏆", threshold: 50, stat: "matches" },
+  { type: "goals_5", name: "Sharp Shooter", threshold: 5, stat: "goals" },
+  { type: "goals_10", name: "Goal Machine", threshold: 10, stat: "goals" },
+  { type: "goals_25", name: "Legend Striker", threshold: 25, stat: "goals" },
+  { type: "assists_5", name: "Playmaker", threshold: 5, stat: "assists" },
+  { type: "assists_10", name: "Vision Master", threshold: 10, stat: "assists" },
+  { type: "matches_10", name: "Squad Regular", threshold: 10, stat: "matches" },
+  { type: "matches_25", name: "Veteran", threshold: 25, stat: "matches" },
+  { type: "matches_50", name: "Club Legend", threshold: 50, stat: "matches" },
 ] as const;
 
 const AchievementBadges = ({ membershipId }: { membershipId?: string }) => {
@@ -84,7 +85,7 @@ const AchievementBadges = ({ membershipId }: { membershipId?: string }) => {
 
     BADGE_DEFS.forEach(def => {
       if (!existingTypes.has(def.type) && statMap[def.stat] >= def.threshold) {
-        newBadges.push({ badge_type: def.type, badge_name: def.name, badge_icon: def.icon });
+        newBadges.push({ badge_type: def.type, badge_name: def.name, badge_icon: def.type });
       }
     });
 
@@ -110,15 +111,18 @@ const AchievementBadges = ({ membershipId }: { membershipId?: string }) => {
         <Award className="w-4 h-4 text-primary" /> Achievements
       </h3>
       <div className="flex flex-wrap gap-3">
-        {achievements.map((a, i) => (
+        {achievements.map((a, i) => {
+          const BadgeIcon = getAchievementBadgeIcon(a.badge_type);
+          return (
           <motion.div key={a.id} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.05 }}
             className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-gradient-gold-subtle border border-primary/10 min-w-[80px]"
             title={`Earned ${new Date(a.earned_at).toLocaleDateString()}`}>
-            <span className="text-2xl">{a.badge_icon}</span>
+            <BadgeIcon className="w-6 h-6 text-primary" strokeWidth={1.5} />
             <span className="text-[10px] font-medium text-foreground text-center leading-tight">{a.badge_name}</span>
           </motion.div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

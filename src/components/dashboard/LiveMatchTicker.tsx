@@ -88,34 +88,10 @@ const LiveMatchTicker = () => {
     };
   }, [user]);
 
-  // Demo data when no live matches
-  const displayMatches: LiveMatch[] =
-    matches.length > 0
-      ? matches
-      : [
-          {
-            id: "demo-1",
-            opponent: "FC Thunder",
-            is_home: true,
-            home_score: 2,
-            away_score: 1,
-            match_date: new Date().toISOString(),
-            status: "in_progress",
-            team_name: "U17",
-          },
-          {
-            id: "demo-2",
-            opponent: "SC Eagles",
-            is_home: false,
-            home_score: 0,
-            away_score: 0,
-            match_date: new Date().toISOString(),
-            status: "in_progress",
-            team_name: "U14",
-          },
-        ];
+  // Demo data when no live matches — hide ticker instead of showing placeholders.
+  if (matches.length === 0) return null;
 
-  if (displayMatches.length === 0) return null;
+  const displayMatches = matches;
 
   const safeIndex = current % displayMatches.length;
   const match = displayMatches[safeIndex];

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Award, Trophy } from "lucide-react";
+import { Award, CalendarCheck, Handshake, Target, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { useClubId } from "@/hooks/use-club-id";
@@ -9,11 +9,16 @@ import { useToast } from "@/hooks/use-toast";
 interface AwardResult {
   type: string;
   name: string;
-  icon: string;
   winner: string;
   membershipId: string;
   value: string;
 }
+
+const AWARD_ICONS = {
+  golden_boot: Target,
+  playmaker: Handshake,
+  mr_reliable: CalendarCheck,
+} as const;
 
 interface SeasonAwardWinnersRow {
   completed_matches_count: number | null;
@@ -59,7 +64,6 @@ const SeasonAwards = () => {
       results.push({
         type: "golden_boot",
         name: "Golden Boot",
-        icon: "⚽",
         winner: row.golden_boot_display_name || "Player",
         membershipId: row.golden_boot_membership_id,
         value: `${row.golden_boot_goals} goals`,
@@ -70,7 +74,6 @@ const SeasonAwards = () => {
       results.push({
         type: "playmaker",
         name: "Master Playmaker",
-        icon: "🅰️",
         winner: row.playmaker_display_name || "Player",
         membershipId: row.playmaker_membership_id,
         value: `${row.playmaker_assists} assists`,
@@ -81,7 +84,6 @@ const SeasonAwards = () => {
       results.push({
         type: "mr_reliable",
         name: "Mr. Reliable",
-        icon: "💪",
         winner: row.reliable_display_name || "Player",
         membershipId: row.reliable_membership_id,
         value: `${row.reliable_appearances ?? 0} appearances`,
@@ -110,21 +112,24 @@ const SeasonAwards = () => {
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
       className="rounded-xl bg-card border border-primary/20 p-5">
       <h3 className="font-display font-semibold text-foreground mb-4 text-sm flex items-center gap-2">
-        <Trophy className="w-4 h-4 text-primary" /> Season Awards 🏆
+        <Trophy className="w-4 h-4 text-primary" /> Season Awards
       </h3>
       <div className="space-y-3">
-        {awards.map((a, i) => (
+        {awards.map((a, i) => {
+          const AwardIcon = AWARD_ICONS[a.type as keyof typeof AWARD_ICONS] ?? Award;
+          return (
           <motion.div key={a.type} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.15 }}
             className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-gold-subtle border border-primary/10">
-            <span className="text-2xl">{a.icon}</span>
+            <AwardIcon className="w-5 h-5 text-primary shrink-0" strokeWidth={1.5} />
             <div className="flex-1">
               <div className="text-xs font-bold text-primary">{a.name}</div>
               <div className="text-sm font-semibold text-foreground">{a.winner}</div>
             </div>
             <span className="text-xs text-muted-foreground">{a.value}</span>
           </motion.div>
-        ))}
+          );
+        })}
         {awards.length === 0 && (
           <p className="text-xs text-muted-foreground text-center">Not enough data to generate awards.</p>
         )}

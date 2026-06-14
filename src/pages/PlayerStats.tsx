@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
   Loader2, Trophy, AlertTriangle, Award, Filter, Users, Calendar, MapPin, Briefcase,
-  ArrowRight, LayoutGrid,
+  ArrowRight, LayoutGrid, Wallet, BarChart3,
 } from "lucide-react";
 import { format, startOfMonth, startOfWeek } from "date-fns";
 import {
@@ -39,6 +39,9 @@ import {
   DASHBOARD_TABS_INNER_SCROLL,
   DASHBOARD_TABS_ROW,
 } from "@/lib/dashboard-page-shell";
+import FinancialReportPanel from "@/components/reports/FinancialReportPanel";
+
+type AdminReportSection = "operations" | "financial" | "performance";
 
 type PlayerStat = {
   membership_id: string;
@@ -131,6 +134,7 @@ function Kpi({ label, value }: { label: string; value: string | number }) {
 
 const PlayerStats = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { clubId, loading: clubLoading } = useClubId();
   const { activeClub } = useActiveClub();
   const { isAdmin, isTrainer, role } = usePermissions();
@@ -147,13 +151,28 @@ const PlayerStats = () => {
     return "member";
   }, [isAdmin, isTrainer, role]);
 
+  const adminSection = useMemo<AdminReportSection>(() => {
+    const raw = searchParams.get("section");
+    if (raw === "financial") return "financial";
+    if (raw === "performance") return "performance";
+    return "operations";
+  }, [searchParams]);
+
+  const setAdminSection = (section: AdminReportSection) => {
+    const next = new URLSearchParams(searchParams);
+    if (section === "operations") next.delete("section");
+    else next.set("section", section);
+    setSearchParams(next, { replace: true });
+  };
+
   const scopeCopy = useMemo(() => {
+    if (persona === "admin" && adminSection === "financial") return t.reportsPage.scopeFinancial;
     if (persona === "admin") return t.reportsPage.scopeAdmin;
     if (persona === "trainer") return t.reportsPage.scopeTrainer;
     if (persona === "player") return t.reportsPage.scopePlayer;
     if (persona === "sponsor") return t.reportsPage.scopeSponsor;
     return t.reportsPage.scopeMember;
-  }, [persona, t.reportsPage]);
+  }, [persona, adminSection, t.reportsPage]);
 
   const [stats, setStats] = useState<PlayerStat[]>([]);
   const [loading, setLoading] = useState(true);
@@ -628,6 +647,17 @@ const PlayerStats = () => {
   }, [persona, tab, t.reportsPage]);
 
   const showFilters = seasons.length > 0 || competitions.length > 0 || teamsForSelect.length > 0;
+  const showPerformanceSection = persona !== "admin" || adminSection === "performance";
+
+  const adminSectionTabs = useMemo(
+    () =>
+      [
+        { id: "operations" as const, label: t.reportsPage.tabOperations, icon: BarChart3 },
+        { id: "financial" as const, label: t.reportsPage.tabFinancial, icon: Wallet },
+        { id: "performance" as const, label: t.reportsPage.tabPerformance, icon: Trophy },
+      ] as const,
+    [t.reportsPage.tabFinancial, t.reportsPage.tabOperations, t.reportsPage.tabPerformance],
+  );
 
   return (
     <div className={DASHBOARD_PAGE_ROOT}>
@@ -641,6 +671,34 @@ const PlayerStats = () => {
       </div>
 
       {persona === "admin" && clubId ? (
+        <div className={DASHBOARD_TABS_ROW}>
+          <div className={DASHBOARD_TABS_INNER_SCROLL}>
+            {adminSectionTabs.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setAdminSection(item.id)}
+                className={`flex shrink-0 items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  adminSection === item.id
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <item.icon className="w-4 h-4" />
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {persona === "admin" && clubId && adminSection === "financial" ? (
+        <div className={`${DASHBOARD_PAGE_INNER} space-y-4`}>
+          <FinancialReportPanel />
+        </div>
+      ) : null}
+
+      {persona === "admin" && clubId && adminSection === "operations" ? (
         <div className={`${DASHBOARD_PAGE_INNER} space-y-4`}>
           <Card className="border-border/60 bg-card/40">
             <CardHeader className="pb-3">
@@ -814,6 +872,12 @@ const PlayerStats = () => {
                   <Button asChild variant="outline" size="sm" className="rounded-xl">
                     <Link to="/coach-placeholders"><Users className="w-3.5 h-3.5 mr-1" />{t.reportsPage.linkCoachPlaceholders}<ArrowRight className="w-3 h-3 ml-1 opacity-60" /></Link>
                   </Button>
+                  <Button asChild variant="outline" size="sm" className="rounded-xl">
+                    <Link to="/payments"><Wallet className="w-3.5 h-3.5 mr-1" />{t.reportsPage.linkPayments}<ArrowRight className="w-3 h-3 ml-1 opacity-60" /></Link>
+                  </Button>
+                  <Button asChild variant="outline" size="sm" className="rounded-xl">
+                    <Link to="/dues"><Briefcase className="w-3.5 h-3.5 mr-1" />{t.reportsPage.linkDues}<ArrowRight className="w-3 h-3 ml-1 opacity-60" /></Link>
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -913,7 +977,7 @@ const PlayerStats = () => {
       ) : null}
 
       {/* Filters */}
-      {showFilters && (
+      {showPerformanceSection && showFilters && (
         <div className="border-b border-border">
           <div className={`${DASHBOARD_PAGE_INNER_SM} flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3`}>
             <Filter className="w-4 h-4 text-muted-foreground hidden sm:block" />
@@ -982,6 +1046,8 @@ const PlayerStats = () => {
       )}
 
       {/* Tabs */}
+      {showPerformanceSection ? (
+      <>
       <div className={DASHBOARD_TABS_ROW}>
         <div className={DASHBOARD_TABS_INNER_SCROLL}>
           {tabItems.map((item) => (
@@ -1068,6 +1134,8 @@ const PlayerStats = () => {
           </div>
         )}
       </div>
+      </>
+      ) : null}
     </div>
   );
 };

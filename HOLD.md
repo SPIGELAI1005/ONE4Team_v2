@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-05-03 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03 — **two** May 3 entries: migrations wave + **UI polish**), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list). The **UI polish** entry is **client-only** (no extra migrations beyond `20260502120000`–`20260503143000`).
+Last updated: 2026-06-14 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14**), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
 
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 
@@ -47,6 +47,12 @@ Apply in **strict filename order** in the same Supabase project as the app (afte
 10. `supabase/migrations/20260503143000_public_join_request_flow_v2.sql`
 
 Then regenerate **`src/integrations/supabase/types.ts`** if RPCs/columns changed. Smoke: **`/club-page-admin`**, **`/club/:slug`**, **`/club/:slug/join`**, draft preview **`?draft=1`**.
+
+## Financial reporting — club expenses (2026-06-14)
+Apply after payments/dues (and optional shop) tables exist:
+11. `supabase/migrations/20260614120000_club_expenses.sql`
+
+Smoke: **`/dashboard/admin`** financial summary card, **`/reports?section=financial`**, add/delete expense, CSV export. See **`CHANGELOG.md` § 2026-06-14** and **`TASKS.md` FIN-OPS-001**.
 
 ## Phase 7 items (need Supabase / infra)
 - Staging + prod Supabase projects (completed for Phase 12 closure)

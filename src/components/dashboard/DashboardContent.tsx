@@ -14,21 +14,34 @@ import {
   CheckCircle2,
   Building2,
   Briefcase,
+  ExternalLink,
 } from "lucide-react";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import AnalyticsWidgets from "@/components/dashboard/AnalyticsWidgets";
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
 import LiveMatchTicker from "@/components/dashboard/LiveMatchTicker";
 import AdminNotificationSender from "@/components/dashboard/AdminNotificationSender";
+import FinancialSummary from "@/components/dashboard/FinancialSummary";
 import SeasonProgressionChart from "@/components/analytics/SeasonProgressionChart";
 import TeamChemistry from "@/components/analytics/TeamChemistry";
-import HeadToHead from "@/components/analytics/HeadToHead";
 import NaturalLanguageStats from "@/components/ai/NaturalLanguageStats";
 import SeasonAwards from "@/components/analytics/SeasonAwards";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 import { useActiveClub } from "@/hooks/use-active-club";
+import {
+  fetchAdminDashboardSnapshot,
+  fetchClubSetupProfile,
+  fetchDashboardUpcoming,
+  type AdminDashboardSnapshot,
+  type ClubSetupProfile,
+} from "@/lib/club-dashboard-snapshot";
 import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
+import { getDashboardSections } from "@/lib/dashboard-section-visibility";
+import {
+  fetchClubFinancialSnapshot,
+  formatMoneyFromCents,
+} from "@/lib/club-financial-snapshot";
 
 type UpcomingItem = {
   title: string;
@@ -63,6 +76,15 @@ type RegistrationSummary = {
 function parseRegistrationSummary(raw: unknown): RegistrationSummary | null {
   if (!raw || typeof raw !== "object") return null;
   return raw as RegistrationSummary;
+}
+
+function formatClubTypeLabel(
+  raw: string | null | undefined,
+  clubTypeOptions: Record<string, string>,
+): string | null {
+  if (!raw?.trim()) return null;
+  const key = raw.trim();
+  return clubTypeOptions[key] ?? key;
 }
 
 const DashboardContent = () => {
@@ -106,7 +128,7 @@ const DashboardContent = () => {
           { id: "totalMembers", label: t.dashboard.totalMembers, value: "—", change: "", icon: Users },
           { id: "activeTeams", label: t.dashboard.activeTeams, value: "—", change: "", icon: Trophy },
           { id: "upcoming", label: t.dashboard.upcoming, value: "—", change: "", icon: Calendar },
-          { id: "unpaidDues", label: t.dashboard.unpaidDues, value: "—", change: "", icon: TrendingUp },
+          { id: "unpaidDues", label: t.financial.outstanding, value: "—", change: "", icon: TrendingUp },
         ],
       },
       trainer: {
@@ -155,18 +177,16 @@ const DashboardContent = () => {
     [t]
   );
 
-  const defaultUpcoming: UpcomingItem[] = useMemo(
-    () => [
-      { title: t.dashboard.addFirstTraining, time: t.common.thisWeek, type: "training" },
-      { title: t.dashboard.invitePlayers, time: t.common.today, type: "members" },
-    ],
-    [t]
-  );
-
   const config = roleConfig[role || ""] || defaultConfig;
 
   const [kpis, setKpis] = useState<Kpi[]>(config.kpis);
-  const [upcoming, setUpcoming] = useState<UpcomingItem[]>(defaultUpcoming);
+  const [upcoming, setUpcoming] = useState<UpcomingItem[]>([]);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [adminSnapshot, setAdminSnapshot] = useState<AdminDashboardSnapshot | null>(null);
+  const [clubSetupProfile, setClubSetupProfile] = useState<ClubSetupProfile | null>(null);
+  const [aiInsights, setAiInsights] = useState<string[]>([]);
+
+  const sections = useMemo(() => getDashboardSections(role), [role]);
 
   // Route-driven profile (A): persist selected role so the unified top bar reflects it on every page.
   useEffect(() => {
@@ -181,17 +201,114 @@ const DashboardContent = () => {
 
   useEffect(() => {
     if (!activeClubId) {
-      setUpcoming(defaultUpcoming);
+      setUpcoming([]);
+      setAdminSnapshot(null);
+      setClubSetupProfile(null);
+      setAiInsights([]);
+      setKpis(config.kpis);
       return;
     }
 
+    let cancelled = false;
+
     const run = async () => {
-      // Best-effort. If Supabase isn't applied yet, pages should still render.
+      setDashboardLoading(true);
       try {
+        const profilePromise = fetchClubSetupProfile(activeClubId);
+
+        if (role === "admin") {
+          const [snapshot, schedule, profile, financial] = await Promise.all([
+            fetchAdminDashboardSnapshot(activeClubId),
+            fetchDashboardUpcoming(activeClubId, 7),
+            profilePromise,
+            fetchClubFinancialSnapshot(activeClubId),
+          ]);
+          if (cancelled) return;
+
+          setClubSetupProfile(profile);
+          setAdminSnapshot(snapshot);
+          setUpcoming(
+            schedule.map((item) => ({
+              title: item.title,
+              time: item.time,
+              type: item.type,
+            })),
+          );
+
+          const pendingNote =
+            snapshot.pendingDrafts > 0
+              ? t.dashboard.pendingDraftsKpiNote.replace("{count}", String(snapshot.pendingDrafts))
+              : "";
+
+          setKpis((prev) =>
+            prev.map((k) => {
+              if (k.id === "totalMembers") {
+                return {
+                  ...k,
+                  value: String(snapshot.membersActive + snapshot.pendingDrafts),
+                  change: pendingNote,
+                };
+              }
+              if (k.id === "activeTeams") return { ...k, value: String(snapshot.teamsCount) };
+              if (k.id === "upcoming") return { ...k, value: String(snapshot.upcomingCount7d) };
+              if (k.id === "unpaidDues") {
+                return {
+                  ...k,
+                  value: formatMoneyFromCents(financial.outstandingTotalCents, financial.currency),
+                  change:
+                    financial.overduePaymentCount + financial.overdueDuesCount > 0
+                      ? t.financial.overdueItemsCount.replace(
+                          "{count}",
+                          String(financial.overduePaymentCount + financial.overdueDuesCount),
+                        )
+                      : "",
+                };
+              }
+              return k;
+            }),
+          );
+
+          const insights: string[] = [];
+          if (snapshot.pendingDrafts > 0) {
+            insights.push(
+              t.dashboard.aiInsightPendingDrafts.replace("{count}", String(snapshot.pendingDrafts)),
+            );
+          }
+          if (snapshot.teamsCount > 0) {
+            insights.push(
+              t.dashboard.aiInsightTeamsMatches
+                .replace("{teams}", String(snapshot.teamsCount))
+                .replace("{matches}", String(snapshot.upcomingMatches)),
+            );
+          }
+          if (financial.outstandingTotalCents > 0) {
+            insights.push(
+              t.financial.aiInsightOutstanding.replace(
+                "{amount}",
+                formatMoneyFromCents(financial.outstandingTotalCents, financial.currency),
+              ),
+            );
+          } else if (snapshot.unpaidDues > 0) {
+            insights.push(
+              t.dashboard.aiInsightUnpaidDues.replace("{count}", String(snapshot.unpaidDues)),
+            );
+          }
+          if (snapshot.completedMatches > 0) {
+            insights.push(
+              t.dashboard.aiInsightLogMatches.replace("{count}", String(snapshot.completedMatches)),
+            );
+          }
+          if (insights.length === 0) {
+            insights.push(t.dashboard.aiTip1, t.dashboard.aiTip2, t.dashboard.aiTip3);
+          }
+          setAiInsights(insights);
+          return;
+        }
+
         const now = new Date();
         const to = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-        const [{ data: acts }, { data: members }, { data: dues }] = await Promise.all([
+        const [{ data: acts }, { data: members }, { data: dues }, profile] = await Promise.all([
           supabase
             .from("activities")
             .select("title, type, starts_at")
@@ -212,7 +329,12 @@ const DashboardContent = () => {
             .eq("club_id", activeClubId)
             .eq("status", "due")
             .limit(1000),
+          profilePromise,
         ]);
+
+        if (cancelled) return;
+
+        setClubSetupProfile(profile);
 
         const nextUpcoming: UpcomingItem[] = (acts ?? []).map((a) => ({
           title: (a as { title: string }).title,
@@ -226,35 +348,53 @@ const DashboardContent = () => {
           }),
         }));
 
-        setUpcoming(nextUpcoming.length ? nextUpcoming : defaultUpcoming);
+        setUpcoming(nextUpcoming);
+        setAiInsights([t.dashboard.aiTip1, t.dashboard.aiTip2, t.dashboard.aiTip3]);
 
         const membersCount = (members ?? []).length;
         const dueCount = (dues ?? []).length;
 
-        // Only fill the KPIs we can compute cheaply.
         setKpis((prev) =>
           prev.map((k) => {
             if (k.id === "myPlayers") return { ...k, value: String(membersCount) };
             if (k.id === "totalMembers") return { ...k, value: String(membersCount) };
             if (k.id === "upcoming") return { ...k, value: String(nextUpcoming.length) };
-            if (k.id === "sessionsThisWeek") return { ...k, value: String(nextUpcoming.filter((x) => x.type === "training").length) };
+            if (k.id === "sessionsThisWeek") {
+              return { ...k, value: String(nextUpcoming.filter((x) => x.type === "training").length) };
+            }
             if (k.id === "unpaidDues") return { ...k, value: String(dueCount) };
             return k;
-          })
+          }),
         );
       } catch {
-        // keep placeholders
+        if (!cancelled) {
+          setUpcoming([]);
+          setAiInsights([t.dashboard.aiTip1, t.dashboard.aiTip2, t.dashboard.aiTip3]);
+        }
+      } finally {
+        if (!cancelled) setDashboardLoading(false);
       }
     };
 
     void run();
-  }, [activeClubId, defaultUpcoming]);
+    return () => {
+      cancelled = true;
+    };
+  }, [activeClubId, config.kpis, role, t]);
 
   const showGettingStarted = useMemo(() => {
-    // Keep it simple: if no club or no upcoming, show.
     if (!activeClubId) return true;
-    return upcoming.length === 0 || upcoming === defaultUpcoming;
-  }, [activeClubId, upcoming, defaultUpcoming]);
+    if (role === "admin" && adminSnapshot) {
+      const hasPeople = adminSnapshot.membersActive > 0 || adminSnapshot.pendingDrafts > 0;
+      const hasSchedule =
+        adminSnapshot.upcomingCount7d > 0 || adminSnapshot.upcomingMatches > 0;
+      return !hasPeople || !hasSchedule;
+    }
+    if (role === "trainer") {
+      return upcoming.length === 0;
+    }
+    return false;
+  }, [activeClubId, adminSnapshot, role, upcoming.length]);
 
   const registrationSummary = useMemo(() => {
     const fromMetadata = parseRegistrationSummary((user?.user_metadata as Record<string, unknown> | undefined) ?? null);
@@ -271,6 +411,68 @@ const DashboardContent = () => {
     }
   }, [user?.user_metadata]);
 
+  const showClubSetup = useMemo(() => {
+    if (role === "admin" && activeClubId) return true;
+    return Boolean(registrationSummary?.registration_track);
+  }, [activeClubId, registrationSummary, role]);
+
+  const clubSetupDisplay = useMemo(() => {
+    const isClubAdmin =
+      registrationSummary?.registration_track !== "partner" || Boolean(clubSetupProfile || activeClub);
+
+    if (!isClubAdmin) {
+      return {
+        track: "partner" as const,
+        companyName: registrationSummary?.partner_setup?.companyName || "—",
+        partnerType:
+          formatClubTypeLabel(
+            registrationSummary?.partner_setup?.partnerType,
+            t.onboarding.partnerTypeOptions,
+          ) || "—",
+        country: registrationSummary?.partner_setup?.country || "—",
+      };
+    }
+
+    const clubName =
+      clubSetupProfile?.name ||
+      activeClub?.name ||
+      registrationSummary?.club_setup?.clubName ||
+      "—";
+    const clubType =
+      formatClubTypeLabel(clubSetupProfile?.clubCategory, t.onboarding.clubTypeOptions) ||
+      formatClubTypeLabel(registrationSummary?.club_setup?.clubType, t.onboarding.clubTypeOptions) ||
+      "—";
+    const location =
+      clubSetupProfile?.address ||
+      registrationSummary?.club_setup?.country ||
+      "—";
+    const website = clubSetupProfile?.website || registrationSummary?.club_setup?.website || null;
+
+    let publicPageStatus = t.dashboard.clubSetupStatusPrivate;
+    if (clubSetupProfile?.isPublic) {
+      publicPageStatus = clubSetupProfile.publicPagePublishedAt
+        ? t.dashboard.clubSetupStatusPublished.replace("{slug}", clubSetupProfile.slug)
+        : t.dashboard.clubSetupStatusPublicDraft;
+    }
+
+    const teamsMembers =
+      adminSnapshot && role === "admin"
+        ? `${adminSnapshot.teamsCount} · ${adminSnapshot.membersActive + adminSnapshot.pendingDrafts}`
+        : null;
+
+    return {
+      track: "club_admin" as const,
+      clubName,
+      clubType,
+      location,
+      website,
+      publicPageStatus,
+      teamsMembers,
+      slug: clubSetupProfile?.slug || activeClub?.slug || null,
+      timezone: clubSetupProfile?.timezone || null,
+    };
+  }, [activeClub, adminSnapshot, clubSetupProfile, registrationSummary, role, t]);
+
   const dashboardGreeting = `${t.dashboard.welcomeBack}${firstName ? `, ${firstName}` : ""}${activeClub?.name ? ` · ${activeClub.name}` : ""}`;
 
   return (
@@ -281,7 +483,8 @@ const DashboardContent = () => {
         {showGettingStarted && (role === "trainer" || role === "admin") && (
           <div className="rounded-2xl glass-card p-5">
             <div className="font-display font-semibold text-foreground text-[15px] flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-primary" /> {t.dashboard.gettingStarted}
+              <CheckCircle2 className="w-4 h-4 text-primary" />{" "}
+              {role === "admin" ? t.dashboard.gettingStartedAdmin : t.dashboard.gettingStarted}
             </div>
             <div className="mt-3 grid gap-2 text-[13px] text-muted-foreground">
               <div>
@@ -300,48 +503,91 @@ const DashboardContent = () => {
           </div>
         )}
 
-        {registrationSummary && (
+        {showClubSetup && sections.clubSetup ? (
           <div className="rounded-2xl glass-card p-5 border border-primary/20 bg-primary/5">
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center">
-                {registrationSummary.registration_track === "club_admin" ? (
+                {clubSetupDisplay.track === "club_admin" ? (
                   <Building2 className="w-4 h-4" />
                 ) : (
                   <Briefcase className="w-4 h-4" />
                 )}
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <div className="font-display font-semibold text-foreground text-[15px]">
                   {t.dashboard.registrationSummaryTitle}
                 </div>
                 <p className="text-[12px] text-muted-foreground mt-1">
                   {t.dashboard.registrationSummaryDesc}
                 </p>
-                <div className="mt-3 text-[12px] text-foreground/85 grid sm:grid-cols-2 gap-1">
-                  {registrationSummary.registration_track === "club_admin" ? (
+                <div className="mt-3 text-[12px] text-foreground/85 grid sm:grid-cols-2 gap-x-4 gap-y-1">
+                  {clubSetupDisplay.track === "club_admin" ? (
                     <>
-                      <span>{t.onboarding.clubName}: {registrationSummary.club_setup?.clubName || "—"}</span>
-                      <span>{t.onboarding.clubType}: {registrationSummary.club_setup?.clubType || "—"}</span>
-                      <span>{t.onboarding.country}: {registrationSummary.club_setup?.country || "—"}</span>
+                      <span>{t.onboarding.clubName}: {clubSetupDisplay.clubName}</span>
+                      <span>{t.onboarding.clubType}: {clubSetupDisplay.clubType}</span>
+                      <span>{t.dashboard.clubSetupLocation}: {clubSetupDisplay.location}</span>
+                      <span>{t.dashboard.clubSetupPublicPage}: {clubSetupDisplay.publicPageStatus}</span>
+                      {clubSetupDisplay.teamsMembers ? (
+                        <span>
+                          {t.dashboard.clubSetupTeamsMembers}: {clubSetupDisplay.teamsMembers}
+                        </span>
+                      ) : null}
+                      {clubSetupDisplay.website ? (
+                        <span>
+                          {t.dashboard.clubSetupWebsite}:{" "}
+                          <a
+                            href={clubSetupDisplay.website.startsWith("http") ? clubSetupDisplay.website : `https://${clubSetupDisplay.website}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            {clubSetupDisplay.website}
+                          </a>
+                        </span>
+                      ) : null}
+                      {clubSetupDisplay.timezone ? (
+                        <span>{t.dashboard.clubSetupTimezone}: {clubSetupDisplay.timezone}</span>
+                      ) : null}
                     </>
                   ) : (
                     <>
-                      <span>{t.onboarding.companyName}: {registrationSummary.partner_setup?.companyName || "—"}</span>
-                      <span>{t.onboarding.partnerType}: {registrationSummary.partner_setup?.partnerType || "—"}</span>
-                      <span>{t.onboarding.country}: {registrationSummary.partner_setup?.country || "—"}</span>
+                      <span>{t.onboarding.companyName}: {clubSetupDisplay.companyName}</span>
+                      <span>{t.onboarding.partnerType}: {clubSetupDisplay.partnerType}</span>
+                      <span>{t.onboarding.country}: {clubSetupDisplay.country}</span>
                     </>
                   )}
                 </div>
+                {clubSetupDisplay.track === "club_admin" && clubSetupDisplay.slug ? (
+                  <div className="mt-3 flex flex-wrap gap-3 text-[11px]">
+                    <a
+                      href={`/club/${clubSetupDisplay.slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-primary hover:underline"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      {t.dashboard.clubSetupViewPage}
+                    </a>
+                    {role === "admin" ? (
+                      <Link
+                        to="/club-page-admin"
+                        className="inline-flex items-center gap-1 text-primary hover:underline"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        {t.dashboard.clubSetupManagePage}
+                      </Link>
+                    ) : null}
+                  </div>
+                ) : null}
                 <p className="text-[11px] text-muted-foreground mt-3">
                   {t.onboarding.professionalInfoNotice}
                 </p>
               </div>
             </div>
           </div>
-        )}
+        ) : null}
 
-        {/* Live Match Ticker */}
-        <LiveMatchTicker />
+        {sections.liveMatchTicker ? <LiveMatchTicker /> : null}
 
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -364,31 +610,23 @@ const DashboardContent = () => {
                   </span>
                 )}
               </div>
-              <div className="text-2xl font-display font-bold text-foreground tracking-tight">{kpi.value}</div>
+              <div className="text-2xl font-display font-bold text-foreground tracking-tight">
+                {dashboardLoading && kpi.value === "—" ? "…" : kpi.value}
+              </div>
               <div className="text-[11px] text-muted-foreground mt-0.5">{kpi.label}</div>
             </motion.div>
           ))}
         </div>
 
-        {/* Analytics Charts */}
-        <AnalyticsWidgets />
+        {sections.financialSummary && role === "admin" ? <FinancialSummary compact /> : null}
 
-        {/* Season Progression */}
-        <SeasonProgressionChart />
+        {sections.analyticsWidgets ? <AnalyticsWidgets /> : null}
+        {sections.seasonProgression ? <SeasonProgressionChart /> : null}
+        {sections.teamChemistry ? <TeamChemistry /> : null}
+        {sections.achievementBadges ? <AchievementBadges /> : null}
+        {sections.naturalLanguageStats ? <NaturalLanguageStats /> : null}
 
-        {/* Team Chemistry */}
-        <TeamChemistry />
-
-        {/* Head-to-Head Comparison */}
-        <HeadToHead />
-
-        {/* Achievement Badges */}
-        <AchievementBadges />
-
-        {/* Natural Language Stats Query */}
-        <NaturalLanguageStats />
-
-        {role === "admin" ? (
+        {sections.one4aiWeeklyDigest ? (
           <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <div className="text-sm font-semibold text-foreground">{t.dashboard.one4aiWeeklySummary}</div>
@@ -405,12 +643,11 @@ const DashboardContent = () => {
           </div>
         ) : null}
 
-        {/* Season Awards */}
-        <SeasonAwards />
+        {sections.seasonAwards ? <SeasonAwards /> : null}
 
-        {/* Admin Notification Sender - only for admin role */}
-        {role === "admin" && <AdminNotificationSender />}
+        {sections.adminNotificationSender ? <AdminNotificationSender /> : null}
 
+        {sections.upcomingAndAi ? (
         <div className="grid lg:grid-cols-3 gap-5">
           {/* Upcoming */}
           <div className="lg:col-span-2 rounded-2xl glass-card p-5">
@@ -421,9 +658,12 @@ const DashboardContent = () => {
               {t.dashboard.upcoming}
             </h2>
             <div className="space-y-1">
-              {upcoming.map((event, i) => (
+              {upcoming.length === 0 ? (
+                <div className="py-6 text-center text-sm text-muted-foreground">{t.dashboard.noUpcoming}</div>
+              ) : (
+                upcoming.map((event, i) => (
                 <motion.div
-                  key={i}
+                  key={`${event.title}-${event.time}-${i}`}
                   whileTap={{ scale: 0.98 }}
                   className="flex items-center justify-between py-3 px-3 rounded-xl hover:bg-muted/30 transition-all duration-200 cursor-default"
                 >
@@ -443,7 +683,8 @@ const DashboardContent = () => {
                     {event.type}
                   </span>
                 </motion.div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -457,11 +698,7 @@ const DashboardContent = () => {
               <span className="text-gradient-gold">{t.dashboard.aiInsights}</span>
             </h2>
             <div className="space-y-2.5 relative">
-              {[
-                t.dashboard.aiTip1,
-                t.dashboard.aiTip2,
-                t.dashboard.aiTip3,
-              ].map((s, i) => (
+              {(aiInsights.length ? aiInsights : [t.dashboard.aiTip1, t.dashboard.aiTip2, t.dashboard.aiTip3]).map((s, i) => (
                 <motion.div
                   key={i}
                   whileTap={{ scale: 0.98 }}
@@ -473,9 +710,11 @@ const DashboardContent = () => {
             </div>
           </div>
         </div>
+        ) : null}
 
         <div className="text-[11px] text-muted-foreground flex items-center gap-1">
-          <Clock className="w-3.5 h-3.5" /> {t.dashboard.bestEffort}
+          <Clock className="w-3.5 h-3.5" />{" "}
+          {activeClubId ? t.dashboard.liveClubData : t.dashboard.bestEffort}
         </div>
       </div>
     </div>

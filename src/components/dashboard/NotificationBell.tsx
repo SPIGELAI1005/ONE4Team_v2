@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Bell, Check, X, Trophy, Calendar, Megaphone, Info } from "lucide-react";
+import { Bell, Check, X } from "lucide-react";
 import { useLanguage } from "@/hooks/use-language";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { formatDistanceToNow } from "date-fns";
+import { getNotificationTypeMeta } from "@/lib/notification-type-meta";
 
 type Notification = {
   id: string;
@@ -14,20 +15,6 @@ type Notification = {
   notification_type: string;
   is_read: boolean;
   created_at: string;
-};
-
-const typeIcons: Record<string, React.ElementType> = {
-  match: Trophy,
-  event: Calendar,
-  announcement: Megaphone,
-  general: Info,
-};
-
-const typeColors: Record<string, string> = {
-  match: "text-accent",
-  event: "text-primary",
-  announcement: "text-gold",
-  general: "text-muted-foreground",
 };
 
 const NotificationBell = () => {
@@ -197,8 +184,7 @@ const NotificationBell = () => {
                   </div>
                 ) : (
                   displayNotifications.map((n) => {
-                    const Icon = typeIcons[n.notification_type] || Info;
-                    const color = typeColors[n.notification_type] || "text-muted-foreground";
+                    const { icon: Icon, color } = getNotificationTypeMeta(n.notification_type);
                     return (
                       <motion.div
                         key={n.id}
