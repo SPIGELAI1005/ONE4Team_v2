@@ -17,8 +17,8 @@ Club/team management SaaS with an iOS-style glass UI, full internationalization 
 - **Club Page Admin**: Manage public club page (branding, contact, social, SEO, **which sections** appear on `/club/:slug` via `public_page_sections`); publication status badges, responsive preview viewports, hero overlay toggle + strength slider
 - **Public club page (`/club/:slug`)**: PWA-friendly mobile header, hero shortcuts, **Powered by ONE4Team** → marketing home (`/`); Support FAQ at `/support`; optional public team page at `/club/:slug/team/:teamId`; light-brand contrast + accent hovers on public CTAs
 - **Settings**: Profile, club config, notification preferences, account security
-- **ONE4AI (`/co-trainer`)**: Club-scoped chat with structured context; per-club LLM keys in **Settings → Club → AI provider** (`club_llm_settings`) or platform fallback via Supabase secrets `OPENAI_API_KEY` / `OPENAI_MODEL`. Settings shows a live **connection status** and **Test connection** (calls deployed `co-trainer` with `mode: "health"`).
-- **AI copilots**: Co-Trainer (ONE4AI) + Co-AImin with club-scoped logging and optional server generation
+- **AI4Team (`/co-trainer`)**: Club-scoped chat with structured context and fair-use scope (training, match prep, club ops — not general news/shopping). Per-club LLM keys in **Settings → Club → AI provider** or platform fallback via Edge secrets. **Pro plan**, active trial subscription, or **feature trial** required. Settings shows **connection status** and **Test connection**. See **`DEPLOYMENT.md` § AI4Team**.
+- **Support & FAQ (`/support`)**: Expanded FAQs for AI4Team, billing trials, imports, and reports — written for club users (no backend setup jargon).
 - **Partner showcase**: TSV Allach 09 + Sportecke München with images and testimonials
 - **Test Mode Banner**: Dismissible beta disclaimer across all pages
 

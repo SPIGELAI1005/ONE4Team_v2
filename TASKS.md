@@ -8,6 +8,14 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ## NOW (top priority)
 
+### AI4Team rebrand + trials + scope (2026-06-14) — code in repo
+- [x] **AI-REBRAND-001** ONE4AI → **AI4Team** display strings, i18n keys, public section id **`ai4team`** (legacy **`one4ai`** read).
+- [x] **AI-TRIAL-001** Migration **`20260614140000_club_feature_trials.sql`**; **`plan_entitlements.ts`** trial check; **`club-feature-trials.ts`** + **`use-subscription`** / **`use-plan-guard`**.
+- [x] **AI-SCOPE-001** **`ai4team_scope.ts`**; wired in **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`**; scope hint in **`CoTrainer.tsx`**.
+- [x] **AI-FAQ-001** Support & FAQ expanded (AI4Team, trials, imports, reports); user-facing copy without backend jargon.
+- [x] **AI-DOC-001** **`DEPLOYMENT.md`** AI4Team section; **`README.md`**, **`.env.example`** updates.
+- [ ] **AI-OPS-001** Operator: apply **`20260614140000`**; deploy **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`**; set Edge **`OPENAI_*`** secrets; smoke **`/co-trainer`** for trial/Pro clubs.
+
 ### Admin dashboard + financial reporting (2026-06-14) — code in repo
 - [x] **DASH-001** Shared **`dashboard-page-shell.ts`** tokens; responsive layout under **`DashboardLayout`**.
 - [x] **DASH-002** Admin KPIs from **`club-dashboard-snapshot.ts`** (live members, teams, schedule, dues).
@@ -60,11 +68,12 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **PROD-OPS-001** `k6/` scripts + `npm run k6:*`; `ops/PRODUCTION_READINESS_ARTIFACTS.md`.
 - [x] **PROD-DEPLOY-001** Repo-side production-readiness deliverables: consolidated index [`ops/PRODUCTION_READINESS_EVIDENCE_LOG.md`](ops/PRODUCTION_READINESS_EVIDENCE_LOG.md); CSP deferral record [`ops/CSP_ROLLOUT.md`](ops/CSP_ROLLOUT.md); degraded-mode UX (retry + errors) on Settings, Shop, Matches. **Operator still required:** staging/prod migrations, secrets (Phase B), Section L dashboards, Section M evidence rows, `supabase functions deploy health`, k6/realtime soak — fill the evidence log and checklists.
 
-### ONE4AI / LLM operations (2026-03-28)
+### ONE4AI / LLM operations (2026-03-28, rebranded AI4Team 2026-06-14)
 - [x] **AI-HEALTH-001** Settings: AI provider connection status + Test connection via `supabase.functions.invoke("co-trainer", { body: { mode: "health", club_id } })`.
 - [x] **AI-HEALTH-002** Edge: `co-trainer` health branch, `pingLlm`, `assertClubAdmin` in `_shared/llm.ts`.
 - [x] **AI-CHAT-001** `CoTrainer.tsx`: stop masking failures with demo responses when backend exists; improve SSE + error surfacing; `edge-function-auth` refreshSession fallback.
-- [ ] **AI-OPS-001** In each Supabase env: apply `20260328200000_club_llm_settings` (+ related `20260328*` migrations as needed), set secrets, **`supabase functions deploy co-trainer`**.
+- [x] **AI-SCOPE-002** Fair-use scope module + Edge wiring (see **AI-SCOPE-001** above).
+- [ ] **AI-OPS-002** Legacy tracker — superseded by **AI-OPS-001** above; apply `20260328200000` + related `20260328*` + **`20260614140000`**, set secrets, deploy LLM Edge functions.
 
 ### i18n + mobile polish (2026-03-27)
 - [x] **I18N-AUTH-SETTINGS** Third i18n pass on `Auth.tsx` and `Settings.tsx` (placeholders, toasts, role UI, locale-aware club settings).

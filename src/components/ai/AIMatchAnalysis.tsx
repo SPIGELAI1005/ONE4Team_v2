@@ -5,6 +5,7 @@ import { Bot, Loader2, FileText, Eye, Dumbbell, AlertTriangle } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { getEdgeFunctionAuthHeaders } from "@/lib/edge-function-auth";
+import { useLanguage } from "@/hooks/use-language";
 import ReactMarkdown from "react-markdown";
 import type { AIMatchAnalysisData } from "@/types/ai";
 
@@ -28,6 +29,7 @@ const analysisTypes: { type: AnalysisType; label: string; icon: React.ElementTyp
 
 const AIMatchAnalysis = ({ matchData, teamData, context, matchStatus, matchId, clubId }: AIMatchAnalysisProps) => {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeType, setActiveType] = useState<AnalysisType | null>(null);
@@ -148,7 +150,7 @@ const AIMatchAnalysis = ({ matchData, teamData, context, matchStatus, matchId, c
           to={continueHref}
           className="text-[11px] font-medium text-primary hover:underline inline-flex items-center gap-1"
         >
-          Continue in ONE4AI
+          {t.coTrainerPage.continueInAi4Team}
         </Link>
       </div>
     </div>

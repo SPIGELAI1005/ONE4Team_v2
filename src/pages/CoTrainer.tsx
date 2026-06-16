@@ -603,6 +603,7 @@ const CoTrainer = () => {
             club_id: clubId,
             messages: allMessages,
             context: contextPayload,
+            language,
           });
         } catch (stringifyErr) {
           console.error(stringifyErr);
@@ -863,7 +864,7 @@ const CoTrainer = () => {
     const { error } = await supabase.rpc("enqueue_automation_run", {
       _club_id: clubId,
       _rule_type: "weekly_digest",
-      _payload: { requested_by: user?.id, source: "one4ai_hub_manual_trigger" },
+      _payload: { requested_by: user?.id, source: "ai4team_hub_manual_trigger" },
     });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -958,6 +959,9 @@ const CoTrainer = () => {
                         {t.coTrainerPage.workspaceSubtitle}
                         {contextLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
                       </div>
+                      <p className="text-[10px] text-muted-foreground/90 mt-0.5 max-w-md leading-snug">
+                        {t.coTrainerPage.scopeHint}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">

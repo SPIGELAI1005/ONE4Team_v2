@@ -65,6 +65,12 @@ For admin P&L (collected revenue vs recorded costs), apply:
 
 Depends on existing **`payments`**, **`membership_dues`**, and optional **`shop_orders`** tables. Smoke: `/dashboard/admin` financial card, `/reports?section=financial`, add/delete expense.
 
+## AI4Team feature trials (2026-06-14)
+For pilot access to **AI4Team** (or shop) without a full plan upgrade, apply:
+- `supabase/migrations/20260614140000_club_feature_trials.sql` — `club_feature_trials` table + optional Allach seed
+
+Edge **`clubHasPlanFeature`** and client **`usePlanGuard`** read active trials. Deploy **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`** after applying. Operator helper: `supabase/scripts/fix_tsv_allach_ai_access.sql`.
+
 ## Verification artifact
 - Run `supabase/PHASE12_VERIFY.sql` after applying the migrations above.
 - Treat any `ok = false` row as a rollout blocker.

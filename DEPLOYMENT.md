@@ -22,17 +22,92 @@ Recommended additional env:
 - `VITE_APP_ENV=staging|prod`
 - `VITE_LOG_LEVEL=debug|info|warn|error`
 
-### ONE4AI (Edge Functions — Supabase project secrets)
-Do **not** put OpenAI keys in Vite env (they would ship to the browser). In the Supabase Dashboard (**Project → Edge Functions → Secrets**) or CLI:
-- `OPENAI_API_KEY` — optional platform-wide fallback when clubs have not saved a key in **Settings → Club → AI provider**
-- `OPENAI_MODEL` — e.g. `gpt-4o-mini`
+### AI4Team (Edge Functions — Supabase project secrets)
 
-Deploy or redeploy after changing shared edge code:
-```bash
-supabase functions deploy co-trainer
+AI4Team chat runs through the **`co-trainer`** Edge Function. API keys must **never** go in Vite `.env` (they would ship to the browser).
+
+#### Quick setup checklist
+
+1. **App env (local `.env`)** — point at your Supabase project:
+   - `VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY=your_anon_key`
+   - Restart `npm run dev` after changes.
+
+2. **Database** — apply LLM migrations on the same Supabase project (if not already):
+   - `supabase/migrations/20260328200000_club_llm_settings.sql` (per-club keys)
+   - Related `20260328180000_ai_conversations.sql` for saved chats (optional but recommended)
+
+3. **Choose credential mode** (pick one or both):
+   - **Platform default (simplest):** Supabase Dashboard → **Project Settings → Edge Functions → Secrets** (or CLI):
+     ```bash
+     supabase secrets set OPENAI_API_KEY="sk-..."
+     supabase secrets set OPENAI_MODEL="gpt-4o-mini"
+     ```
+     All clubs without their own key use this fallback.
+   - **Per-club key (recommended for production):** As club admin → **Settings → Club → AI provider** — save provider, model, and API key. Stored in `club_llm_settings` (admin-only RLS).
+
+4. **Deploy Edge Function** (required after code or secret changes):
+   ```bash
+   supabase link --project-ref YOUR_PROJECT_REF
+   supabase functions deploy co-trainer
+   ```
+   Optional CORS allowlist for production:
+   ```bash
+   supabase secrets set EDGE_ALLOWED_ORIGINS="https://your-app.vercel.app,http://localhost:8080"
+   ```
+
+5. **Verify in the app** — sign in as club admin → **Settings → Club → AI provider** → **Test connection**.  
+   Success shows **Connected** (club key or platform `OPENAI_API_KEY`). Then open **`/co-trainer`** (AI4Team) and send a chat message.
+
+#### Supported providers (club settings)
+
+OpenAI, Anthropic (Claude), Google Gemini, Azure OpenAI, GitHub Models — configured per club in Settings. Platform fallback is **OpenAI only** via `OPENAI_API_KEY` / `OPENAI_MODEL`.
+
+#### Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|--------|----------------|-----|
+| **Not configured** | No club key and no `OPENAI_API_KEY` secret | Set platform secret or save club key in Settings |
+| **Failed to fetch** | Wrong `VITE_*` URL/key, ad blocker, or function not deployed | Fix `.env`, redeploy `co-trainer`, disable blockers for localhost |
+| **Club admin required** | Non-admin ran Test connection | Use an admin account for the active club |
+| **Plan does not include AI** | Subscription tier | Upgrade plan, grant a **club feature trial** (see below), or enable `VITE_DEV_UNLOCK_ALL_FEATURES=true` locally only |
+| **401 / invalid JWT** | Session expired | Sign out/in; Settings refresh uses `refreshSession` automatically |
+| Provider error in detail | Bad key, wrong model, or Azure endpoint missing | Re-check key, model name, Azure resource URL in Settings |
+
+The Settings **Test connection** and AI4Team chat require the app’s `VITE_*` URLs to reach this project and a successful deploy of `co-trainer` (including `mode: "health"` support).
+
+### Club feature trials (AI4Team / Shop without full plan upgrade)
+
+Apply migration `supabase/migrations/20260614140000_club_feature_trials.sql` (seeds **TSV Allach 09** with a 90-day **AI** trial when the club name/slug matches `%allach%`).
+
+**Grant AI4Team trial to a club** (Supabase SQL Editor — adjust name/slug and duration):
+
+```sql
+-- Find the club id first
+select id, name, slug from public.clubs where name ilike '%Your Club%' or slug ilike '%your-slug%';
+
+insert into public.club_feature_trials (club_id, feature, expires_at, note)
+values (
+  '<club-uuid>',
+  'ai',
+  now() + interval '90 days',
+  'Pilot AI4Team access'
+)
+on conflict (club_id, feature) do update
+  set expires_at = excluded.expires_at,
+      note = excluded.note,
+      updated_at = now();
 ```
 
-The Settings **Test connection** and ONE4AI chat require the app’s `VITE_*` URLs to reach this project and a successful deploy of `co-trainer` (including `mode: "health"` support).
+Supported `feature` values: `ai`, `shop`. After changing trials or `plan_entitlements.ts`, redeploy Edge functions that call `clubHasPlanFeature` (`co-trainer`, `co-aimin`, `ai-match-analysis`).
+
+**Alternative (full Pro trial):** upgrade `billing_subscriptions` instead — gives all Pro limits, not AI-only:
+
+```sql
+update public.billing_subscriptions
+set plan_id = 'pro', status = 'trialing', current_period_end = now() + interval '90 days'
+where club_id = '<club-uuid>';
+```
 
 ## Environments (HOLD — needs Supabase)
 Recommended:

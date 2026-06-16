@@ -19,6 +19,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Admin operations + financial P&L (2026-06-14):** Live admin dashboard KPIs and club setup from DB; **`FinancialSummary`** + **`/reports?section=financial`**; **`club_expenses`** migration; German Mitgliederliste import; role-based dashboard sections; Lucide icon pass — see `CHANGELOG.md` § 2026-06-14, `MEMORY_BANK.md`, `TASKS.md` **FIN-*** / **DASH-***.
 
+**AI4Team rebrand + pilot trials + fair-use (2026-06-14):** ONE4AI → **AI4Team**; **`club_feature_trials`** migration; scope guardrails in **`ai4team_scope.ts`**; Support & FAQ user copy; **`DEPLOYMENT.md`** AI4Team setup — see `CHANGELOG.md` second **2026-06-14** entry, `TASKS.md` **AI-***.
+
 ---
 
 ## Phase 0 — Foundation (Week 0–1)

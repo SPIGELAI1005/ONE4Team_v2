@@ -528,11 +528,11 @@ export const de: Translations = {
     consultantDesc: "Finanz-, Steuer- oder Rechtsberatung",
   },
 
-  // ─── ONE4AI (Admin / protokollierte Anfragen) ───
+  // ─── AI4Team (Admin / protokollierte Anfragen) ───
   ai: {
-    title: "ONE4AI",
+    title: "AI4Team",
     subtitle: "Copilots v1 (protokolliert + vereinsbezogen)",
-    selectClub: "Wähle einen Verein, um ONE4AI-Copilots zu nutzen.",
+    selectClub: "Wähle einen Verein, um AI4Team-Copilots zu nutzen.",
     coTrainer: "Co‑Trainer",
     coTrainerDesc: "Wöchentlicher Trainingsplan (deterministischer Platzhalter).",
     generatePlan: "Plan generieren",
@@ -541,11 +541,11 @@ export const de: Translations = {
     generateDigest: "Zusammenfassung generieren",
     output: "Ausgabe",
     outputPlaceholder: "Generiere einen Plan oder eine Zusammenfassung, um die Ausgabe hier zu sehen.",
-    recentRequests: "Letzte ONE4AI-Anfragen (Verein)",
+    recentRequests: "Letzte AI4Team-Anfragen (Verein)",
     noRequests: "Noch keine Anfragen.",
-    failedToLoadInputs: "ONE4AI-Eingaben konnten nicht geladen werden",
+    failedToLoadInputs: "AI4Team-Eingaben konnten nicht geladen werden",
     generated: "Generiert",
-    savedToRequests: "In ONE4AI-Anfragen gespeichert",
+    savedToRequests: "In AI4Team-Anfragen gespeichert",
     failedToGenerate: "Generierung fehlgeschlagen",
   },
 
@@ -834,14 +834,14 @@ export const de: Translations = {
     messagesBulletChat: "Geschützter Chat nach der Anmeldung",
     messagesCtaSignedIn: "Kommunikation öffnen",
     messagesCtaSignedOut: "Zum Messaging anmelden",
-    one4aiSection: "ONE4AI",
-    one4aiPublicTitle: "ONE4AI Co-Trainer",
-    one4aiPublicDesc: "KI-gestützte Coaching-Impulse, Übungen und Chat – für Mitglieder nach der Anmeldung.",
-    one4aiBulletTactics: "Taktik und Trainingseinheiten",
-    one4aiBulletChat: "Gesprächiger Trainer-Assistent",
-    one4aiBulletPlans: "Planbewusst mit Vereinskontext",
-    one4aiCtaSignedIn: "Co-Trainer öffnen",
-    one4aiCtaSignedOut: "Für ONE4AI anmelden",
+    ai4teamSection: "AI4Team",
+    ai4teamPublicTitle: "AI4Team Co-Trainer",
+    ai4teamPublicDesc: "KI-gestützte Coaching-Impulse, Übungen und Chat – für Mitglieder nach der Anmeldung.",
+    ai4teamBulletTactics: "Taktik und Trainingseinheiten",
+    ai4teamBulletChat: "Gesprächiger Trainer-Assistent",
+    ai4teamBulletPlans: "Planbewusst mit Vereinskontext",
+    ai4teamCtaSignedIn: "Co-Trainer öffnen",
+    ai4teamCtaSignedOut: "Für AI4Team anmelden",
     documentsSection: "Dokumente",
     documentsPublicTitle: "Wichtige Dokumente",
     documentsPublicDesc:
@@ -1027,8 +1027,8 @@ export const de: Translations = {
     noTeam: "Kein Team",
     details: "Details",
     joined: "Beigetreten",
-    askOne4Ai: "ONE4AI fragen",
-    askOne4AiPrompt:
+    askAi4Team: "AI4Team fragen",
+    askAi4TeamPrompt:
       "Hilf mir bei der Einschätzung von {name} im Verein: Stärken, Unterstützung und konkrete nächste Schritte für Trainer.",
     playerAttributes: "Spieler-Attribute",
     position: "Position",
@@ -1960,8 +1960,8 @@ export const de: Translations = {
     aiTip1: "Nutze den Zeitplan, um Bestätigungen für diese Woche zu verfolgen.",
     aiTip2: "Nach jedem Spiel Ereignisse eintragen. Statistiken werden automatisch aktualisiert.",
     aiTip3: "Probiere KI → Wochenplan für einen strukturierten Trainingsüberblick.",
-    one4aiWeeklySummary: "Wochenübersicht in ONE4AI",
-    one4aiWeeklySummaryDesc: "Chat mit vorausgefüllter Admin-Digest-Anfrage öffnen.",
+    ai4teamWeeklySummary: "Wochenübersicht in AI4Team",
+    ai4teamWeeklySummaryDesc: "Chat mit vorausgefüllter Admin-Digest-Anfrage öffnen.",
     bestEffort: "Best-Effort-Daten: Wenn Supabase noch nicht eingerichtet ist, zeigt dieses Dashboard Platzhalter.",
     liveClubData: "Live-Vereinsdaten aus deiner Datenbank.",
     noUpcoming: "Keine Trainings, Spiele oder Events in den nächsten 7 Tagen.",
@@ -2291,7 +2291,7 @@ export const de: Translations = {
     partners: "Partner",
     shop: "Vereins-Shop",
     clubPage: "Vereinsseite",
-    oneAi: "ONE4AI",
+    ai4Team: "AI4Team",
     coAImin: "Co-AImin",
     settings: "Einstellungen",
     schedule: "Zeitplan",
@@ -2320,7 +2320,7 @@ export const de: Translations = {
         faqs: [
           {
             q: "Wie melde ich mich an?",
-            a: "Nutze die E-Mail-Adresse und das Passwort aus der Registrierung oder einen Magic-Link auf der Anmeldeseite, falls aktiviert. Bei vergessenem Passwort nutze die Wiederherstellung auf der Auth-Seite.",
+            a: "Nutze die E-Mail-Adresse und das Passwort aus der Registrierung oder einen Magic-Link auf der Anmeldeseite, falls aktiviert. Bei vergessenem Passwort nutze Passwort vergessen auf derselben Seite.",
           },
           {
             q: "Wie wechsle ich zwischen Vereinen?",
@@ -2341,11 +2341,11 @@ export const de: Translations = {
           },
           {
             q: "Wie funktionieren Importe?",
-            a: "Tabellenimport ist verfügbar, wenn der Verein es nutzt. Verwende die vorgegebenen Spalten für Namen, E-Mails und Rollen. Prüfe den Kader danach auf Duplikate oder Lücken.",
+            a: "Tabellen- und CSV-Import ist verfügbar, wenn der Verein es nutzt. Verwende die vorgegebenen Spalten für Namen, E-Mails und Rollen. Deutsche Vereins-Exporte (Mitgliederliste, Semikolon-CSV) werden erkannt, wenn die Spaltenüberschriften zu gängigen Mustern passen. Prüfe den Kader danach auf Duplikate oder Lücken.",
           },
           {
             q: "Was ist die Mitglieder-Historie?",
-            a: "Trainer und Admins können aktivitätsnahe Ansichten öffnen, um Einladungen, Kaderänderungen und Ereignisse zu sehen, sofern Audit-Logging in der Datenbank aktiv ist.",
+            a: "Trainer und Admins können aktivitätsnahe Ansichten öffnen, um Einladungen, Kaderänderungen und Ereignisse zu sehen, wenn diese Funktion für euren Verein aktiv ist.",
           },
         ],
       },
@@ -2379,7 +2379,7 @@ export const de: Translations = {
           },
           {
             q: "Was zeigen Berichte?",
-            a: "Berichte fasst Treffer- und Kartenmetriken aus erfassten Ereignissen zusammen – eine Vereinsübersicht für Trainer und Admins, kein externes Analytics-System.",
+            a: "Für Admins umfasst Berichte Betrieb (Übersichtsdiagramme für den Verein), Finanzen (Einnahmen, Kosten und Ergebnis, sobald euer Verein entsprechende Zahlungs- und Kostendaten erfasst hat) und Leistung (Spielerstatistik aus Spieldaten). Trainer und Spieler sehen vor allem Leistungstabellen. Es ist eine Vereinsübersicht, kein separates Analyse-Tool.",
           },
         ],
       },
@@ -2392,7 +2392,7 @@ export const de: Translations = {
           },
           {
             q: "Kann ich mit externem Kalender synchronisieren?",
-            a: "Falls eure Installation Export- oder Abo-Links anbietet, nutze diese. Andernfalls Termine manuell übernehmen, bis eine Integration konfiguriert ist.",
+            a: "Falls euer Verein Kalender-Export oder Abo-Links anbietet, nutze diese auf dem jeweiligen Bildschirm. Andernfalls Termine manuell übernehmen, bis diese Option verfügbar ist.",
           },
         ],
       },
@@ -2405,7 +2405,7 @@ export const de: Translations = {
           },
           {
             q: "Werden Nachrichten sicher gespeichert?",
-            a: "Inhalte liegen in eurem Supabase-Projekt gemäß den gesetzten Richtlinien. Keine Passwörter oder Kartendaten im Chat – dafür die offiziellen Zahlungswege nutzen.",
+            a: "Nachrichten werden sicher im ONE4Team-Konto eures Vereins gespeichert und sind nur für berechtigte Personen sichtbar. Keine Passwörter oder Kartendaten im Chat – dafür die offiziellen Zahlungswege nutzen.",
           },
         ],
       },
@@ -2414,11 +2414,15 @@ export const de: Translations = {
         faqs: [
           {
             q: "Wer zahlt das Abo?",
-            a: "Meist schließt ein Vereins-Admin per Stripe-Checkout für den Verein ab. Limits folgen dem aktiven Plan, soweit deine Rolle Einsicht hat.",
+            a: "Meist schließt ein Vereins-Admin das Abo über den Checkout in den Abrechnungseinstellungen ab. Limits folgen dem dort angezeigten aktiven Plan, soweit deine Rolle Einsicht hat.",
           },
           {
             q: "Warum ist eine Funktion gesperrt?",
-            a: "Plan-Gates blenden Premium-Bereiche wie KI, Shop oder Module aus, wenn der Tarif sie nicht enthält. Wo möglich, verweisen gesperrte Screens auf Upgrades.",
+            a: "Euer Tarif schließt ggf. Premium-Bereiche wie AI4Team, Shop oder Module aus. Ausgewählte Pilotvereine können eine zeitlich begrenzte Feature-Testphase erhalten (z. B. nur KI), ohne den gesamten Plan zu wechseln. Gesperrte Bereiche verweisen wo möglich auf Upgrade-Optionen.",
+          },
+          {
+            q: "Was ist eine Feature-Testphase?",
+            a: "ONE4Team kann einzelnen Vereinen vorübergehend Zugang zu einer Premium-Funktion (z. B. AI4Team) zur Evaluation geben. Testphasen richtet ONE4Team ein und sie laufen automatisch ab. Danach bleiben nur Funktionen des bezahlten Plans aktiv, sofern kein Upgrade erfolgt.",
           },
         ],
       },
@@ -2431,7 +2435,7 @@ export const de: Translations = {
           },
           {
             q: "Wie funktioniert die öffentliche Vereinsseite?",
-            a: "Admins pflegen Branding und Inhalte unter Vereinsseite. Besucher sehen nur Öffentliches; private Kaderdaten bleiben hinter Login und RLS.",
+            a: "Admins pflegen Branding und Inhalte unter Vereinsseite. Besucher sehen nur Öffentliches; private Kaderdaten bleiben geschützt und sind nur für angemeldete Mitglieder mit Berechtigung sichtbar.",
           },
           {
             q: "Wer kann im Vereins-Shop bestellen?",
@@ -2440,15 +2444,27 @@ export const de: Translations = {
         ],
       },
       {
-        title: "ONE4AI & Co-Trainer",
+        title: "AI4Team & Co-Trainer",
         faqs: [
           {
-            q: "Warum meldet Co-Trainer „nicht konfiguriert“?",
-            a: "Entweder fehlt ein API-Schlüssel in den Vereins-KI-Einstellungen oder der Plattform-Fallback im Backend. Admins können ggf. einen Verbindungstest aus den Einstellungen starten.",
+            q: "Was ist AI4Team?",
+            a: "AI4Team ist der KI-Assistent eures Vereins (Co-Trainer und Co-AImin) im Dashboard. Er nutzt Vereinskontext – Teams, Terminplan, Spiele und Kader, soweit vorhanden – für Training, Spielvorbereitung, Admin-Zusammenfassungen und alltägliche Vereinsfragen. Kein allgemeiner Chatbot für Nachrichten, Shopping oder Off-Topic.",
+          },
+          {
+            q: "Warum meldet AI4Team „nicht konfiguriert“?",
+            a: "Ein Vereins-Admin muss unter Einstellungen → Verein → KI-Anbieter einen Anbieter verbinden und Verbindung testen ausführen. Wenn der Test klappt, der Chat aber weiterhin nicht funktioniert, wende dich mit Vereinsname und kurzer Fehlerbeschreibung an den Support.",
+          },
+          {
+            q: "Warum steht, dass mein Plan AI4Team nicht enthält?",
+            a: "AI4Team erfordert einen Pro-Tarif, ein aktives Pro-Testabo oder eine aktive Feature-Testphase für euren Verein. Kickoff und Squad enthalten standardmäßig keine KI. Admins sehen Upgrade-Hinweise auf dem gesperrten Screen; Pilotvereine können eine befristete KI-Testphase von ONE4Team erhalten.",
+          },
+          {
+            q: "Welche Themen sind erlaubt?",
+            a: "Bleibt beim Verein: Training, Aufstellungen, Spielnachbesprechung, Mitglieder- oder Terminfragen, Admin-Zusammenfassungen. Allgemeine Sportnachrichten (z. B. unrelated Bundesliga-Gerüchte), Online-Shopping, Hausaufgaben oder private Ratgeber-Themen sind nicht vorgesehen. Off-Topic-Anfragen erhalten eine kurze Umleitung mit Vereins-Vorschlägen.",
           },
           {
             q: "Gibt es Ratenlimits?",
-            a: "Ja. Edge-Funktionen begrenzen Anfragen pro Nutzer und Verein zum Kosten- und Fairness-Schutz. Kurz warten oder den Support zu höheren Kontingenten kontaktieren.",
+            a: "Ja. ONE4Team begrenzt Anfragen pro Nutzer und Verein, damit der Dienst fair und nachhaltig bleibt. Kurz warten und erneut versuchen – oder den Support kontaktieren, wenn ihr mehr Kontingent braucht.",
           },
         ],
       },
@@ -2461,7 +2477,7 @@ export const de: Translations = {
           },
           {
             q: "Nach einem Update erscheint ein Fehler. Was tun?",
-            a: "Seite hart neu laden oder bei lokaler Entwicklung Site-Daten leeren. In Produktion kurz warten und erneut versuchen; nach Migrationen Supabase-Projekt prüfen.",
+            a: "Lade die Seite vollständig neu (Strg+F5 unter Windows, Cmd+Umschalt+R am Mac). Melde dich ab und wieder an, wenn das Problem bleibt. Tritt der Fehler nach ein paar Minuten weiter auf, nutze das Meldeformular unten und beschreibe, was du gerade gemacht hast.",
           },
         ],
       },
@@ -2489,7 +2505,7 @@ export const de: Translations = {
         communication: "Kommunikation",
         billing: "Abrechnung & Pläne",
         partners: "Partner & Sponsoren",
-        one4ai: "ONE4AI / Co-Trainer",
+        ai4team: "AI4Team / Co-Trainer",
         clubPage: "Vereinsseite (öffentlich)",
         shop: "Vereins-Shop",
         settings: "Einstellungen & Profil",
@@ -2630,7 +2646,7 @@ export const de: Translations = {
     sectionEvents: "Events",
     sectionMatches: "Spiele",
     sectionMessages: "Nachrichten",
-    sectionOne4ai: "ONE4AI",
+    sectionAi4Team: "AI4Team",
     sectionDocuments: "Dokumente",
     sectionFaq: "FAQ",
     sectionNextSteps: "Nächste Schritte zum Beitritt",
@@ -2926,7 +2942,7 @@ export const de: Translations = {
     seasonStart: "Saisonstart-Monat",
     clubSettingsSaved: "Vereinseinstellungen gespeichert",
     adminOnly: "Nur Vereinsadmins konnen diese Einstellungen andern.",
-    llmTitle: "KI-Anbieter (ONE4AI)",
+    llmTitle: "KI-Anbieter (AI4Team)",
     llmDesc:
       "Jeder Verein nutzt eigenen API-Schlussel und Modell. Ohne Eintrag gilt optional das Projekt-Geheimnis OPENAI_API_KEY.",
     llmProvider: "Anbieter",
@@ -2946,7 +2962,7 @@ export const de: Translations = {
     llmLoadFailed: "KI-Einstellungen konnten nicht geladen werden.",
     llmHealthChecking: "Verbindung wird geprüft…",
     llmHealthConnected: "Verbunden",
-    llmHealthSubtitleClub: "Vereins-API-Schlüssel aktiv. ONE4AI erreicht das Modell.",
+    llmHealthSubtitleClub: "Vereins-API-Schlüssel aktiv. AI4Team erreicht das Modell.",
     llmHealthSubtitlePlatform: "Plattform-Standard (OPENAI_API_KEY). Verbindung OK.",
     llmHealthNotConfigured: "Nicht konfiguriert",
     llmHealthNotConfiguredHint:
@@ -3509,7 +3525,7 @@ export const de: Translations = {
   },
 
   coTrainerPage: {
-    headerTitle: "ONE4AI",
+    headerTitle: "AI4Team",
     subtitleForClub: "{role} für {club}",
     clearChat: "Chat leeren",
     newChat: "Neuer Chat",
@@ -3527,18 +3543,21 @@ export const de: Translations = {
     linkMatchAnalysisDesc: "Zur Seite Spiele für KI vor/nach dem Spiel.",
     linkStats: "Statistik-Fragen",
     linkStatsDesc: "Assistent für Statistiken im Dashboard nutzen.",
-    workspaceTitle: "ONE4AI-Arbeitsbereich",
+    continueInAi4Team: "Weiter in AI4Team",
+    workspaceTitle: "AI4Team-Arbeitsbereich",
     workspaceSubtitle: "Rollenbewusster Copilot mit kontextbezogenen Vorschlägen und strukturierten Antworten.",
-    welcomeTitle: "Willkommen bei deinem ONE AI Assistenten",
-    demoIntro: "Gute Frage! Als dein {role} in ONE4AI kann ich dir helfen bei:",
+    scopeHint:
+      "Nur Vereinsbezug: Training, Spiele, Mitglieder und Vereinsbetrieb — keine allgemeinen Nachrichten, kein Shopping oder Off-Topic.",
+    welcomeTitle: "Willkommen bei AI4Team",
+    demoIntro: "Gute Frage! Als dein {role} in AI4Team kann ich dir helfen bei:",
     demoNote:
-      "*Hinweis: Dies ist eine Demo. Sobald das ONE4AI-Backend angebunden ist, erhältst du personalisierte Einblicke auf Basis eurer Vereinsdaten.*",
-    chatErrorTitle: "ONE4AI",
+      "*Hinweis: Dies ist eine Demo. Sobald das AI4Team-Backend angebunden ist, erhältst du personalisierte Einblicke auf Basis eurer Vereinsdaten.*",
+    chatErrorTitle: "AI4Team",
     chatErrorHeading: "Antwort konnte nicht erstellt werden",
     chatErrorHint:
       "Admins: prüft Einstellungen → KI-Anbieter und Supabase-Secrets (z. B. OPENAI_API_KEY oder Vereins-Keys). Meldungen zu „LLM“ oder „API key“ bedeuten meist, dass der Server das Modell nicht erreichen konnte.",
-    chatErrorNoClub: "Wähle einen Verein, um ONE4AI zu nutzen.",
-    chatErrorSignIn: "Melde dich an, um ONE4AI zu nutzen.",
+    chatErrorNoClub: "Wähle einen Verein, um AI4Team zu nutzen.",
+    chatErrorSignIn: "Melde dich an, um AI4Team zu nutzen.",
     chatErrorNoStream: "Der Server hat keinen Antwort-Stream geliefert.",
     chatErrorEmptyResponse:
       "Das Modell hat eine leere Antwort geliefert. Prüft Modellname und API-Key.",

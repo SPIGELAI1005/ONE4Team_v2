@@ -94,7 +94,7 @@ export default function DashboardTopBar() {
       { label: t.sidebar.schedule, to: "/activities", icon: ClipboardList, gate: () => true },
       { label: t.sidebar.matches, to: "/matches", icon: Swords, gate: () => true },
       { label: t.sidebar.partners, to: "/partners", icon: Building2, gate: (p) => p.has("partners:read") },
-      { label: t.sidebar.oneAi, to: "/co-trainer", icon: Sparkles, gate: () => true },
+      { label: t.sidebar.ai4Team, to: "/co-trainer", icon: Sparkles, gate: () => true },
     ];
     const base = navItems.filter((i) => (i.gate ? i.gate(perms) : true));
     return [{ label: t.sidebar.dashboard, to: dashboardTo, icon: Home }, ...base];

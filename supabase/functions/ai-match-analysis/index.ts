@@ -10,6 +10,7 @@ import {
   streamChat,
 } from "../_shared/llm.ts";
 import { clubHasPlanFeature } from "../_shared/plan_entitlements.ts";
+import { appendScopeToMatchAnalysisPrompt } from "../_shared/ai4team_scope.ts";
 
 const MAX_BODY_BYTES = 400_000;
 
@@ -142,6 +143,8 @@ ${context || ""}`;
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    systemPrompt = appendScopeToMatchAnalysisPrompt(systemPrompt);
 
     const userPayload = type === "stats_query"
       ? JSON.stringify({ stats: matchData })

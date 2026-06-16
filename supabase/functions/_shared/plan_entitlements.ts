@@ -17,11 +17,36 @@ function planAllows(planId: string | null | undefined, feature: BillablePlanFeat
   return AI_PLANS.has(id);
 }
 
+async function clubHasActiveFeatureTrial(
+  admin: SupabaseClient,
+  clubId: string,
+  feature: BillablePlanFeature,
+): Promise<boolean> {
+  const { data, error } = await admin
+    .from("club_feature_trials")
+    .select("expires_at")
+    .eq("club_id", clubId)
+    .eq("feature", feature)
+    .maybeSingle();
+
+  if (error) {
+    console.error("clubHasActiveFeatureTrial:", error.message);
+    return false;
+  }
+  if (!data?.expires_at) return false;
+  const expires = Date.parse(String(data.expires_at));
+  return Number.isFinite(expires) && expires > Date.now();
+}
+
 export async function clubHasPlanFeature(
   admin: SupabaseClient,
   clubId: string,
   feature: BillablePlanFeature,
 ): Promise<{ allowed: boolean; detail?: string }> {
+  if (await clubHasActiveFeatureTrial(admin, clubId, feature)) {
+    return { allowed: true };
+  }
+
   const { data, error } = await admin
     .from("billing_subscriptions")
     .select("plan_id, status")

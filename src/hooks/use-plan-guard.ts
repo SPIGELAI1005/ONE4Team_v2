@@ -1,5 +1,6 @@
 import { useSubscription } from "@/hooks/use-subscription";
 import { getPlanLimits, isFeatureAvailable, type FeatureKey } from "@/lib/plan-limits";
+import { hasActiveFeatureTrial } from "@/lib/club-feature-trials";
 
 const DEV_UNLOCK_ALL =
   import.meta.env.DEV && import.meta.env.VITE_DEV_UNLOCK_ALL_FEATURES === "true";
@@ -15,7 +16,7 @@ interface UsePlanGuardReturn {
 }
 
 export function usePlanGuard(): UsePlanGuardReturn {
-  const { planId, isActive, loading } = useSubscription();
+  const { planId, isActive, loading, trialFeatures } = useSubscription();
 
   if (DEV_UNLOCK_ALL) {
     const bespoke = getPlanLimits("bespoke");
@@ -36,7 +37,8 @@ export function usePlanGuard(): UsePlanGuardReturn {
     planId,
     isActive,
     loading,
-    canUseFeature: (feature: FeatureKey) => isFeatureAvailable(planId, feature),
+    canUseFeature: (feature: FeatureKey) =>
+      hasActiveFeatureTrial(trialFeatures, feature) || isFeatureAvailable(planId, feature),
     maxMembers: limits.maxMembers,
     maxTeams: limits.maxTeams,
     maxStorageMb: limits.maxStorageMb,

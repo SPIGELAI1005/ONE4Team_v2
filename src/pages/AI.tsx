@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 
-/** ONE4AI admin tools: logged copilots (training plan + admin digest). Route: `/ai`. */
+/** AI4Team admin tools: logged copilots (training plan + admin digest). Route: `/ai`. */
 // Server-first generation path with deterministic fallback if edge function is unavailable.
 
 type ActivityRow = {

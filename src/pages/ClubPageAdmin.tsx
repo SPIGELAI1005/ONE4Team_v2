@@ -363,7 +363,7 @@ export default function ClubPageAdmin() {
         events: t.clubPageAdmin.sectionEvents,
         matches: t.clubPageAdmin.sectionMatches,
         messages: t.clubPageAdmin.sectionMessages,
-        one4ai: t.clubPageAdmin.sectionOne4ai,
+        ai4team: t.clubPageAdmin.sectionAi4Team,
         documents: t.clubPageAdmin.sectionDocuments,
         faq: t.clubPageAdmin.sectionFaq,
         nextsteps: t.clubPageAdmin.sectionNextSteps,

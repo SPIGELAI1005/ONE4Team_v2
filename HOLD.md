@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-06-14 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14**), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
+Last updated: 2026-06-14 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI4Team**), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
 
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 
@@ -53,6 +53,15 @@ Apply after payments/dues (and optional shop) tables exist:
 11. `supabase/migrations/20260614120000_club_expenses.sql`
 
 Smoke: **`/dashboard/admin`** financial summary card, **`/reports?section=financial`**, add/delete expense, CSV export. See **`CHANGELOG.md` § 2026-06-14** and **`TASKS.md` FIN-OPS-001**.
+
+## AI4Team — feature trials + Edge deploy (2026-06-14)
+Apply in the same Supabase project as the app:
+1. `supabase/migrations/20260614140000_club_feature_trials.sql` (trigger uses **`update_updated_at()`**)
+2. Deploy Edge: **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`**
+3. Set Edge secrets **`OPENAI_API_KEY`** (and optional **`OPENAI_MODEL`**)
+4. Optional operator SQL: **`supabase/scripts/fix_tsv_allach_ai_access.sql`** for Allach pilot clubs
+
+See **`DEPLOYMENT.md` § AI4Team** and **`TASKS.md` AI-OPS-001**.
 
 ## Phase 7 items (need Supabase / infra)
 - Staging + prod Supabase projects (completed for Phase 12 closure)

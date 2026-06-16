@@ -3,6 +3,42 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-06-14 (AI4Team rebrand, feature trials, fair-use scope, Support & FAQ)
+
+### Product rebrand: ONE4AI → AI4Team
+- **`src/i18n/en.ts`**, **`src/i18n/de.ts`:** Display strings and keys (`ai4Team`, `askAi4Team`, `sectionAi4Team`, weekly digest labels, Co-Trainer workspace copy).
+- **`src/lib/club-public-page-sections.ts`:** Section id **`ai4team`** with legacy read of **`one4ai`** in stored JSON.
+- **`src/lib/dashboard-section-visibility.ts`:** **`ai4teamWeeklyDigest`** flag for admin dashboard widget.
+- **UI wiring:** **`DashboardContent`**, **`DashboardSidebar`**, **`AppHeader`**, **`DashboardTopBar`**, **`Members`**, **`ClubPageAdmin`**, **`CoTrainer`**, **`AIMatchAnalysis`**, **`AI.tsx`**, **`public-club-context.tsx`** (`ai4teamCta`).
+- **`src/pages/SupportFaq.tsx`:** Report topic **`ai4team`**.
+
+### Club feature trials (pilot access without full plan upgrade)
+- **`supabase/migrations/20260614140000_club_feature_trials.sql`:** **`club_feature_trials`** table (`feature` **`ai`** | **`shop`**, **`expires_at`**, member SELECT + platform-admin manage RLS); seeds 90-day AI trial for clubs matching **`%allach%`** / **`%TSV Allach%`** (idempotent).
+- **`supabase/functions/_shared/plan_entitlements.ts`:** **`clubHasPlanFeature`** checks active trials before **`billing_subscriptions`** plan map.
+- **`src/lib/club-feature-trials.ts`**, **`src/hooks/use-subscription.ts`**, **`src/hooks/use-plan-guard.ts`:** Client-side trial awareness for plan gates and AI routes.
+- **`supabase/scripts/fix_tsv_allach_ai_access.sql`:** Operator helper — trial row + Pro **`trialing`** subscription for Allach clubs (run manually in SQL Editor when needed).
+
+### AI4Team fair-use / scope guardrails
+- **`supabase/functions/_shared/ai4team_scope.ts`:** System prompt scope policy; heuristics for obvious off-topic abuse (shopping, general news, homework, jailbreaks); EN/DE refusal messages; SSE refusal stream helper.
+- **Edge:** **`co-trainer/index.ts`**, **`co-aimin/index.ts`**, **`ai-match-analysis/index.ts`** — scope check before LLM call; policy appended to system prompt.
+- **`src/pages/CoTrainer.tsx`:** Passes user **`language`** to edge; scope hint under workspace title.
+- **i18n:** **`scopeHint`** strings (EN/DE).
+
+### Support & FAQ (user-facing copy)
+- **`supportPage`** categories in **`en.ts`** / **`de.ts`:** Expanded **AI4Team & Co-Trainer** (what it is, setup, plan/trial, allowed topics, rate limits); billing **feature trial** FAQ; reports/financial and German import notes; troubleshooting without backend jargon (no Supabase/migrations/localhost in end-user answers).
+
+### Documentation & deploy notes
+- **`DEPLOYMENT.md`:** AI4Team setup section (Edge secrets, **`co-trainer`** deploy, club AI provider settings).
+- **`README.md`**, **`.env.example`:** AI4Team naming and setup pointers.
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`ROADMAP.md`**, **`TASKS.md`**, **`README.md`**, **`HOLD.md`**, **`MVP_PLAN.md`**, **`supabase/SCHEMA_STATUS.md`**, **`ops/PRODUCTION_READINESS_EVIDENCE_LOG.md`**, **`CHANGELOG.md`** (this entry).
+
+### Operator follow-up
+- Apply **`20260614140000_club_feature_trials.sql`** per Supabase env (uses **`update_updated_at()`** trigger — not **`update_updated_at_column`**).
+- Deploy **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`** after scope + trial entitlement changes.
+- Set **`OPENAI_API_KEY`** / optional **`OPENAI_MODEL`** in Edge secrets; club admins can override via **Settings → Club → AI provider**.
+
 ## 2026-06-14 (Admin dashboard operations, financial reporting P&L, German member import, UI polish, documentation sync)
 
 ### Admin dashboard — live data and role-aware layout

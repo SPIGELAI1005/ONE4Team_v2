@@ -626,11 +626,11 @@ const DashboardContent = () => {
         {sections.achievementBadges ? <AchievementBadges /> : null}
         {sections.naturalLanguageStats ? <NaturalLanguageStats /> : null}
 
-        {sections.one4aiWeeklyDigest ? (
+        {sections.ai4teamWeeklyDigest ? (
           <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <div className="text-sm font-semibold text-foreground">{t.dashboard.one4aiWeeklySummary}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">{t.dashboard.one4aiWeeklySummaryDesc}</div>
+              <div className="text-sm font-semibold text-foreground">{t.dashboard.ai4teamWeeklySummary}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">{t.dashboard.ai4teamWeeklySummaryDesc}</div>
             </div>
             <Link
               to={`/co-trainer?tab=chat&prompt=${encodeURIComponent(
@@ -638,7 +638,7 @@ const DashboardContent = () => {
               )}`}
               className="inline-flex items-center justify-center rounded-xl bg-gradient-gold-static px-4 py-2 text-xs font-semibold text-primary-foreground hover:brightness-110 shrink-0"
             >
-              {t.dashboard.one4aiWeeklySummary}
+              {t.dashboard.ai4teamWeeklySummary}
             </Link>
           </div>
         ) : null}

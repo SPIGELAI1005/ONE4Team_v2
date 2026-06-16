@@ -65,7 +65,7 @@ export default function DashboardSidebar() {
       { icon: CreditCard, label: t.sidebar.payments, id: "payments", route: "/payments" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
       { icon: Briefcase, label: t.sidebar.partners, id: "partners", route: "/partners" },
-      { icon: Bot, label: t.sidebar.oneAi, id: "ai", route: "/co-trainer" },
+      { icon: Bot, label: t.sidebar.ai4Team, id: "ai", route: "/co-trainer" },
       { icon: Globe, label: t.sidebar.clubPage, id: "clubpage", route: "/club-page-admin" },
       { icon: ShoppingBag, label: t.sidebar.shop, id: "shop", route: "/shop" },
       { icon: Settings, label: t.sidebar.settings, id: "settings", route: "/settings" },
@@ -80,7 +80,7 @@ export default function DashboardSidebar() {
       { icon: CalendarDays, label: t.sidebar.events, id: "events", route: "/events" },
       { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/reports" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
-      { icon: Bot, label: t.sidebar.oneAi, id: "ai", route: "/co-trainer" },
+      { icon: Bot, label: t.sidebar.ai4Team, id: "ai", route: "/co-trainer" },
       { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
     ],
     player: [
@@ -91,7 +91,7 @@ export default function DashboardSidebar() {
       { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/reports" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
       { icon: ShoppingBag, label: t.sidebar.shop, id: "shop", route: "/shop" },
-      { icon: Bot, label: t.sidebar.oneAi, id: "ai", route: "/co-trainer" },
+      { icon: Bot, label: t.sidebar.ai4Team, id: "ai", route: "/co-trainer" },
       { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
     ],
     sponsor: [

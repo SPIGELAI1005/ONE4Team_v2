@@ -12,6 +12,14 @@ import {
   streamChat,
 } from "../_shared/llm.ts";
 import { clubHasPlanFeature } from "../_shared/plan_entitlements.ts";
+import {
+  buildCoTrainerSystemPrompt,
+  detectObviousOffScope,
+  extractLatestUserMessage,
+  getScopeRefusalMessage,
+  parseAiLanguage,
+  streamScopeRefusal,
+} from "../_shared/ai4team_scope.ts";
 import { logStructured, resolveCorrelationId } from "../_shared/request_context.ts";
 
 const MAX_BODY_BYTES = 600_000;
@@ -117,7 +125,25 @@ serve(async (req) => {
     if (rateLimited) return rateLimited;
 
     const messages = body.messages;
-    const context = body.context;
+    const context = typeof body.context === "string" ? body.context : "";
+    const lang = parseAiLanguage(body.language, context);
+
+    const latestUser = extractLatestUserMessage(messages);
+    const offScope = detectObviousOffScope(latestUser);
+    if (offScope.blocked) {
+      logStructured("warn", "ai4team off-scope request (heuristic)", {
+        correlationId,
+        facet: "co_trainer",
+        clubId,
+        category: offScope.category ?? "unrelated",
+        preview: latestUser.slice(0, 120),
+      });
+      return streamScopeRefusal(
+        getScopeRefusalMessage(lang, offScope.category ?? "unrelated"),
+        corsHeaders,
+      );
+    }
+
     const clubRow = await fetchClubLlmSettings(admin, clubId);
     const creds = resolveLlmCredentials(clubRow);
     if (!creds) {
@@ -130,35 +156,7 @@ serve(async (req) => {
       );
     }
 
-    const systemPrompt = `You are "Co-Trainer", an expert AI sports assistant for a club management platform called ONE4Team. You help coaches and administrators with:
-
-- **Lineup suggestions**: Based on player form, attendance, and position preferences
-- **Tactical insights**: Analyze team strengths, weaknesses, and opponent patterns  
-- **Training recommendations**: Suggest drills, session plans, and focus areas
-- **Performance analysis**: Identify trends, standout players, and areas for improvement
-- **Motivation**: Provide encouraging, professional coaching advice
-
-## Structured club context (authoritative when present)
-The client sends a markdown document with sections such as:
-- **Club** name, club id, UI language
-- **Members**: active counts, role distribution, recent joins, roster snapshot (names, roles, positions, teams)
-- **Schedule (next 7 days)**: activities, club events, upcoming matches
-- **Recent match results**: last completed matches with scores when available
-- **Finance**: unpaid dues count for admins only; omitted for non-admins
-- **Additional context (from app link)**: optional JSON or notes from deep links (e.g. a specific member or match)
-
-Use this data explicitly when answering. If a section is missing or says "(none)", say so briefly and proceed with general coaching advice. Never invent specific member names, scores, or financial numbers that are not in the context.
-
-Full context:
-${context || "No additional context provided."}
-
-Guidelines:
-- Be concise, actionable, and motivational
-- Use football/sports terminology naturally
-- Format responses with clear sections using markdown
-- When suggesting lineups, consider player form and fitness
-- Always encourage team spirit and development
-- Use emojis sparingly for visual appeal (⚽ 🏆 💪 📊)`;
+    const systemPrompt = buildCoTrainerSystemPrompt(context);
 
     const response = await streamChat(creds, systemPrompt, Array.isArray(messages) ? messages : []);
 

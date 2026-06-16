@@ -81,7 +81,7 @@ interface PublicClubContextValue {
   openDashboardOrAuth: () => void;
   goToAuthWithReturn: (path: string) => void;
   messagesCta: () => void;
-  one4aiCta: () => void;
+  ai4teamCta: () => void;
   documentsCta: () => void;
   reportsCta: () => void;
   liveScoresCta: () => void;
@@ -583,7 +583,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
     }
   }, [club?.id, goToAuthWithReturn, navigate, user]);
 
-  const one4aiCta = useCallback(() => {
+  const ai4teamCta = useCallback(() => {
     if (!club?.id) return;
     if (user) {
       localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
@@ -733,7 +733,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       openDashboardOrAuth,
       goToAuthWithReturn,
       messagesCta,
-      one4aiCta,
+      ai4teamCta,
       documentsCta,
       reportsCta,
       liveScoresCta,
@@ -760,7 +760,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       memberCount,
       messagesCta,
       news,
-      one4aiCta,
+      ai4teamCta,
       openDashboardOrAuth,
       goToAuthWithReturn,
       publicCoachCountByTeamId,

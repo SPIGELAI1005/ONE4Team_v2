@@ -9,7 +9,7 @@ export interface DashboardSectionFlags {
   naturalLanguageStats: boolean;
   seasonAwards: boolean;
   adminNotificationSender: boolean;
-  one4aiWeeklyDigest: boolean;
+  ai4teamWeeklyDigest: boolean;
   upcomingAndAi: boolean;
 }
 
@@ -24,7 +24,7 @@ const TRAINER_SECTIONS: DashboardSectionFlags = {
   naturalLanguageStats: true,
   seasonAwards: true,
   adminNotificationSender: false,
-  one4aiWeeklyDigest: false,
+  ai4teamWeeklyDigest: false,
   upcomingAndAi: true,
 };
 
@@ -39,7 +39,7 @@ const ADMIN_SECTIONS: DashboardSectionFlags = {
   naturalLanguageStats: true,
   seasonAwards: false,
   adminNotificationSender: true,
-  one4aiWeeklyDigest: true,
+  ai4teamWeeklyDigest: true,
   upcomingAndAi: true,
 };
 
@@ -54,7 +54,7 @@ const PLAYER_SECTIONS: DashboardSectionFlags = {
   naturalLanguageStats: false,
   seasonAwards: false,
   adminNotificationSender: false,
-  one4aiWeeklyDigest: false,
+  ai4teamWeeklyDigest: false,
   upcomingAndAi: true,
 };
 
@@ -69,7 +69,7 @@ const SPONSOR_SECTIONS: DashboardSectionFlags = {
   naturalLanguageStats: false,
   seasonAwards: false,
   adminNotificationSender: false,
-  one4aiWeeklyDigest: false,
+  ai4teamWeeklyDigest: false,
   upcomingAndAi: true,
 };
 
@@ -84,7 +84,7 @@ const DEFAULT_SECTIONS: DashboardSectionFlags = {
   naturalLanguageStats: false,
   seasonAwards: false,
   adminNotificationSender: false,
-  one4aiWeeklyDigest: false,
+  ai4teamWeeklyDigest: false,
   upcomingAndAi: true,
 };
 

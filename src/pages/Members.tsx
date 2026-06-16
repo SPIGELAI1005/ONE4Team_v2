@@ -3440,7 +3440,7 @@ const Members = () => {
                                 <Button variant="outline" size="sm" className="h-9 rounded-lg text-xs" asChild>
                                   <Link
                                     to={`/co-trainer?tab=chat&prompt=${encodeURIComponent(
-                                      t.membersPage.askOne4AiPrompt.replace("{name}", getMemberRosterName(member)),
+                                      t.membersPage.askAi4TeamPrompt.replace("{name}", getMemberRosterName(member)),
                                     )}&context=${encodeURIComponent(
                                       JSON.stringify({
                                         source: "members",
@@ -3453,7 +3453,7 @@ const Members = () => {
                                       }),
                                     )}`}
                                   >
-                                    {t.membersPage.askOne4Ai}
+                                    {t.membersPage.askAi4Team}
                                   </Link>
                                 </Button>
                                 <Button

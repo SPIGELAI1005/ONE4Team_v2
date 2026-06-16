@@ -36,7 +36,7 @@ const REPORT_TOPIC_ORDER = [
   "communication",
   "billing",
   "partners",
-  "one4ai",
+  "ai4team",
   "clubPage",
   "shop",
   "settings",

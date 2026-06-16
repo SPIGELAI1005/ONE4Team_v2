@@ -10,6 +10,7 @@ import {
   resolveLlmCredentials,
 } from "../_shared/llm.ts";
 import { clubHasPlanFeature } from "../_shared/plan_entitlements.ts";
+import { buildCoAiminSystemPrompt } from "../_shared/ai4team_scope.ts";
 
 const MAX_BODY_BYTES = 280_000;
 
@@ -83,18 +84,7 @@ serve(async (req) => {
       );
     }
 
-    const systemPrompt = `You are "Co-AImin", an operations assistant for ONE4Team admins.
-
-You produce concise, actionable operational digests based on club data.
-Always return:
-1) Executive Summary
-2) Risks and Alerts
-3) Recommended Actions (prioritized)
-4) Suggested follow-up checks
-
-Be practical, short, and suitable for administrative decision-making.
-Use markdown headings and bullets.
-Do not invent numbers that are not present in the provided payload.`;
+    const systemPrompt = buildCoAiminSystemPrompt();
 
     const { text, error, status } = await completeChat(creds, systemPrompt, JSON.stringify(payload ?? {}));
     if (error) {

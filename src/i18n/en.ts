@@ -524,11 +524,11 @@ export const en = {
     consultantDesc: "Finance, tax, or legal advisory",
   },
 
-  // ─── ONE4AI (admin / logged requests) ───
+  // ─── AI4Team (admin / logged requests) ───
   ai: {
-    title: "ONE4AI",
+    title: "AI4Team",
     subtitle: "Copilots v1 (logged + club-scoped)",
-    selectClub: "Select a club to use ONE4AI copilots.",
+    selectClub: "Select a club to use AI4Team copilots.",
     coTrainer: "Co‑Trainer",
     coTrainerDesc: "Weekly training plan (deterministic stub for now).",
     generatePlan: "Generate plan",
@@ -537,11 +537,11 @@ export const en = {
     generateDigest: "Generate digest",
     output: "Output",
     outputPlaceholder: "Generate a plan or digest to see output here.",
-    recentRequests: "Recent ONE4AI requests (club)",
+    recentRequests: "Recent AI4Team requests (club)",
     noRequests: "No requests yet.",
-    failedToLoadInputs: "Failed to load ONE4AI inputs",
+    failedToLoadInputs: "Failed to load AI4Team inputs",
     generated: "Generated",
-    savedToRequests: "Saved to ONE4AI requests",
+    savedToRequests: "Saved to AI4Team requests",
     failedToGenerate: "Failed to generate",
   },
 
@@ -830,14 +830,14 @@ export const en = {
     messagesBulletChat: "Secure chat after you sign in",
     messagesCtaSignedIn: "Open Communication",
     messagesCtaSignedOut: "Sign in to use messaging",
-    one4aiSection: "ONE4AI",
-    one4aiPublicTitle: "ONE4AI Co-Trainer",
-    one4aiPublicDesc: "AI-assisted coaching prompts, drills, and chat for signed-in members.",
-    one4aiBulletTactics: "Tactics and session ideas",
-    one4aiBulletChat: "Conversational coach assistant",
-    one4aiBulletPlans: "Plan-aware with your club context",
-    one4aiCtaSignedIn: "Open Co-Trainer",
-    one4aiCtaSignedOut: "Sign in to try ONE4AI",
+    ai4teamSection: "AI4Team",
+    ai4teamPublicTitle: "AI4Team Co-Trainer",
+    ai4teamPublicDesc: "AI-assisted coaching prompts, drills, and chat for signed-in members.",
+    ai4teamBulletTactics: "Tactics and session ideas",
+    ai4teamBulletChat: "Conversational coach assistant",
+    ai4teamBulletPlans: "Plan-aware with your club context",
+    ai4teamCtaSignedIn: "Open Co-Trainer",
+    ai4teamCtaSignedOut: "Sign in to try AI4Team",
     documentsSection: "Documents",
     documentsPublicTitle: "Important documents",
     documentsPublicDesc:
@@ -1016,8 +1016,8 @@ export const en = {
     noTeam: "No team",
     details: "Details",
     joined: "Joined",
-    askOne4Ai: "Ask ONE4AI",
-    askOne4AiPrompt:
+    askAi4Team: "Ask AI4Team",
+    askAi4TeamPrompt:
       "Help me think about {name}'s development in the club: strengths, areas to support, and concrete next steps for coaches.",
     playerAttributes: "Player Attributes",
     position: "Position",
@@ -1949,8 +1949,8 @@ export const en = {
     aiTip1: "Use Schedule to track confirmations for this week.",
     aiTip2: "After each match, log events. Stats update automatically.",
     aiTip3: "Try AI → Weekly plan for a structured session outline.",
-    one4aiWeeklySummary: "Get weekly summary in ONE4AI",
-    one4aiWeeklySummaryDesc: "Open chat with a pre-filled admin digest request.",
+    ai4teamWeeklySummary: "Get weekly summary in AI4Team",
+    ai4teamWeeklySummaryDesc: "Open chat with a pre-filled admin digest request.",
     bestEffort: "Best-effort data: if Supabase isn't applied yet, this dashboard shows placeholders.",
     liveClubData: "Live club data from your database.",
     noUpcoming: "No trainings, matches, or events in the next 7 days.",
@@ -2278,7 +2278,7 @@ export const en = {
     partners: "Partners",
     shop: "Club Shop",
     clubPage: "Club Page",
-    oneAi: "ONE4AI",
+    ai4Team: "AI4Team",
     coAImin: "Co-AImin",
     settings: "Settings",
     schedule: "Schedule",
@@ -2307,7 +2307,7 @@ export const en = {
         faqs: [
           {
             q: "How do I sign in?",
-            a: "Use the email and password you registered with, or request a magic link on the sign-in page if your club enabled it. If you forgot your password, use the recovery flow from the auth screen.",
+            a: "Use the email and password you registered with, or request a magic link on the sign-in page if your club enabled it. If you forgot your password, use Forgot password on the same page.",
           },
           {
             q: "How do I switch between clubs?",
@@ -2328,11 +2328,11 @@ export const en = {
           },
           {
             q: "How do imports work?",
-            a: "Spreadsheet import is available where your club enabled it. Use the provided template columns so names, emails, and roles map correctly. After import, review the roster for duplicates or missing fields.",
+            a: "Spreadsheet and CSV import is available where your club enabled it. Use the provided template columns so names, emails, and roles map correctly. German club exports (Mitgliederliste-style semicolon CSV) are detected automatically when column headers match common patterns. After import, review the roster for duplicates or missing fields.",
           },
           {
             q: "What is member history?",
-            a: "Trainers and admins can open activity-style views for members to see invitations, roster changes, and related events when audit logging is enabled for your database.",
+            a: "Trainers and admins can open activity-style views for members to see invitations, roster changes, and related events when this feature is enabled for your club.",
           },
         ],
       },
@@ -2366,7 +2366,7 @@ export const en = {
           },
           {
             q: "What do Reports show?",
-            a: "Reports summarizes scoring and discipline metrics from recorded match events. It is not a full analytics warehouse but a club-level snapshot for coaches and admins.",
+            a: "For admins, Reports includes Operations (overview charts for your club), Financial (revenue, costs, and profit once your club has expense and payment data recorded), and Performance (player statistics from match events). Trainers and players mainly see performance tables. It is a club-level overview, not a separate analytics tool.",
           },
         ],
       },
@@ -2379,7 +2379,7 @@ export const en = {
           },
           {
             q: "Can I sync to an external calendar?",
-            a: "If your deployment exposes export or subscription links, use them from the relevant screen. Otherwise copy key dates manually until a calendar integration is configured.",
+            a: "If your club offers calendar export or subscription links, use them from the relevant screen. Otherwise copy key dates manually until that option is available.",
           },
         ],
       },
@@ -2392,7 +2392,7 @@ export const en = {
           },
           {
             q: "Are messages stored securely?",
-            a: "Content lives in your Supabase project under the policies your club applied. Do not share passwords or payment card numbers in chat; use official payment flows instead.",
+            a: "Messages are stored securely within your club’s ONE4Team account and only visible to people with access. Do not share passwords or payment card numbers in chat; use official payment flows instead.",
           },
         ],
       },
@@ -2401,11 +2401,15 @@ export const en = {
         faqs: [
           {
             q: "Who pays for the subscription?",
-            a: "Typically a club admin completes Stripe checkout for the club. Seat or feature limits then follow the active plan shown in billing settings where your role has access.",
+            a: "Typically a club admin completes subscription checkout in Billing settings for the club. Seat or feature limits then follow the active plan shown there, where your role has access.",
           },
           {
             q: "Why is a feature locked?",
-            a: "Plan gates hide premium areas such as AI, club shop, or advanced modules when your subscription does not include them. Upgrade paths are linked from the locked screen where applicable.",
+            a: "Your subscription plan may not include premium areas such as AI4Team, the club shop, or advanced modules. Some pilot clubs receive a time-limited feature trial (for example AI only) without upgrading the full plan. Where available, locked screens link to upgrade options.",
+          },
+          {
+            q: "What is a feature trial?",
+            a: "ONE4Team may grant selected clubs temporary access to a premium feature (such as AI4Team) for evaluation. Trials are set up by ONE4Team and expire automatically. When a trial ends, only features included in your paid plan remain available unless you upgrade.",
           },
         ],
       },
@@ -2418,7 +2422,7 @@ export const en = {
           },
           {
             q: "How does the public club page work?",
-            a: "Admins edit branding and content under Club Page. Public visitors see only what you mark public; private roster data stays behind authentication and RLS.",
+            a: "Admins edit branding and content under Club Page. Public visitors see only what you mark public; private roster data stays protected and is only visible to signed-in members with permission.",
           },
           {
             q: "Who can order from the club shop?",
@@ -2427,15 +2431,27 @@ export const en = {
         ],
       },
       {
-        title: "ONE4AI & Co-Trainer",
+        title: "AI4Team & Co-Trainer",
         faqs: [
           {
-            q: "Why does Co-Trainer say it is not configured?",
-            a: "Either your club has not stored an API key under club AI settings, or the platform fallback key is missing in the backend. Admins can run a connection check from settings when available.",
+            q: "What is AI4Team?",
+            a: "AI4Team is your club’s AI assistant (Co-Trainer and Co-AImin) in the dashboard. It uses your club context—teams, schedule, matches, and roster when available—to help with training ideas, match prep, admin summaries, and day-to-day club questions. It is not a general chatbot for news, shopping, or off-topic tasks.",
+          },
+          {
+            q: "Why does AI4Team say it is not configured?",
+            a: "A club admin must connect an AI provider under Settings → Club → AI provider and run Test connection. If the test succeeds but chat still does not work, contact support with your club name and a short description of the error.",
+          },
+          {
+            q: "Why does AI4Team say my plan does not include it?",
+            a: "AI4Team requires a Pro-level plan, an active trialing Pro subscription, or an active club feature trial granted for your organization. Kickoff and Squad plans do not include AI by default. Admins see upgrade options on the locked screen; pilot clubs may receive a temporary AI trial from ONE4Team support.",
+          },
+          {
+            q: "What topics can I ask about?",
+            a: "Stay within your club: trainings, lineups, match review, member or schedule questions, and admin summaries. General sports news (for example unrelated Bundesliga gossip), online shopping, homework, or personal advice are out of scope. Off-topic requests receive a short redirect with club-relevant suggestions instead of a full answer.",
           },
           {
             q: "Are requests rate limited?",
-            a: "Yes. Edge functions enforce per-user and per-club limits to protect cost and fairness. If you hit a limit, wait briefly and try again or contact support for higher tiers.",
+            a: "Yes. ONE4Team limits requests per user and club to keep the service fair and sustainable. If you hit a limit, wait a few minutes and try again, or contact support if you need higher usage for your club.",
           },
         ],
       },
@@ -2448,7 +2464,7 @@ export const en = {
           },
           {
             q: "The app shows an error after an update. What should I do?",
-            a: "Hard-refresh the page or clear site data for localhost if you develop locally. In production, wait a minute and retry; if migrations were required, ensure your Supabase project applied them.",
+            a: "Try a full refresh of the page (Ctrl+F5 on Windows, Cmd+Shift+R on Mac). Sign out and sign back in if the problem continues. If the error still appears after a few minutes, use the report form below and tell us what you were doing when it happened.",
           },
         ],
       },
@@ -2476,7 +2492,7 @@ export const en = {
         communication: "Communication",
         billing: "Billing & plans",
         partners: "Partners & sponsors",
-        one4ai: "ONE4AI / Co-Trainer",
+        ai4team: "AI4Team / Co-Trainer",
         clubPage: "Club page (public)",
         shop: "Club shop",
         settings: "Settings & profile",
@@ -2617,7 +2633,7 @@ export const en = {
     sectionEvents: "Events",
     sectionMatches: "Matches",
     sectionMessages: "Messages",
-    sectionOne4ai: "ONE4AI",
+    sectionAi4Team: "AI4Team",
     sectionDocuments: "Documents",
     sectionFaq: "FAQ",
     sectionNextSteps: "Next steps to join",
@@ -2906,7 +2922,7 @@ export const en = {
     seasonStart: "Season Start Month",
     clubSettingsSaved: "Club settings saved",
     adminOnly: "Only club admins can change these settings.",
-    llmTitle: "AI provider (ONE4AI)",
+    llmTitle: "AI provider (AI4Team)",
     llmDesc:
       "Each club uses its own API key and model. If unset, the platform OPENAI_API_KEY secret is used when configured.",
     llmProvider: "Provider",
@@ -2926,7 +2942,7 @@ export const en = {
     llmLoadFailed: "Could not load AI settings.",
     llmHealthChecking: "Checking connection…",
     llmHealthConnected: "Connected",
-    llmHealthSubtitleClub: "Club API key in use. ONE4AI can reach the model.",
+    llmHealthSubtitleClub: "Club API key in use. AI4Team can reach the model.",
     llmHealthSubtitlePlatform: "Platform default (OPENAI_API_KEY). Connection OK.",
     llmHealthNotConfigured: "Not configured",
     llmHealthNotConfiguredHint:
@@ -3479,7 +3495,7 @@ export const en = {
     },
   },
 
-  // ─── Co-Trainer / ONE4AI lab ───
+  // ─── Co-Trainer / AI4Team lab ───
   partnersPage: {
     title: "Partners",
     subtitleOperational: "Operational partner workflows",
@@ -3496,7 +3512,7 @@ export const en = {
   },
 
   coTrainerPage: {
-    headerTitle: "ONE4AI",
+    headerTitle: "AI4Team",
     subtitleForClub: "{role} for {club}",
     clearChat: "Clear chat",
     newChat: "New chat",
@@ -3514,18 +3530,21 @@ export const en = {
     linkMatchAnalysisDesc: "Open Matches for pre/post-match AI tools.",
     linkStats: "Ask about stats",
     linkStatsDesc: "Use the dashboard stats assistant widget.",
-    workspaceTitle: "ONE4AI workspace",
+    continueInAi4Team: "Continue in AI4Team",
+    workspaceTitle: "AI4Team workspace",
     workspaceSubtitle: "Role-aware copilot with contextual suggestions and structured responses.",
-    welcomeTitle: "Welcome to Your ONE AI Assistant",
-    demoIntro: "Great question! As your {role} in ONE4AI, I can help you with:",
+    scopeHint:
+      "Club-scoped only: training, matches, members, and club operations — not general news, shopping, or off-topic chat.",
+    welcomeTitle: "Welcome to AI4Team",
+    demoIntro: "Great question! As your {role} in AI4Team, I can help you with:",
     demoNote:
-      "*Note: This is a demo response. Once the ONE4AI backend is connected, you'll receive personalized insights based on your actual club data.*",
-    chatErrorTitle: "ONE4AI",
+      "*Note: This is a demo response. Once the AI4Team backend is connected, you'll receive personalized insights based on your actual club data.*",
+    chatErrorTitle: "AI4Team",
     chatErrorHeading: "Could not complete this reply",
     chatErrorHint:
       "Admins: check Settings → AI provider and Supabase secrets (e.g. OPENAI_API_KEY or club keys). Errors mentioning “LLM” or “API key” usually mean the server could not call the model.",
-    chatErrorNoClub: "Select a club to use ONE4AI.",
-    chatErrorSignIn: "Sign in to use ONE4AI.",
+    chatErrorNoClub: "Select a club to use AI4Team.",
+    chatErrorSignIn: "Sign in to use AI4Team.",
     chatErrorNoStream: "The server did not return a response stream.",
     chatErrorEmptyResponse:
       "The model returned an empty reply. Check the configured model name and API key.",
