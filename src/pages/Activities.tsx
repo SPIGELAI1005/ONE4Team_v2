@@ -24,6 +24,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 import { useLanguage } from "@/hooks/use-language";
+import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
+import { useRegisterAiAgentContext } from "@/hooks/use-register-ai-agent-context";
 
 type ActivityType = "training" | "match" | "event";
 
@@ -98,6 +100,8 @@ export default function Activities() {
   const { t } = useLanguage();
 
   const canCreate = perms.isTrainer;
+  const agentPageContext = useMemo(() => ({ source: "activities" as const }), []);
+  useRegisterAiAgentContext(agentPageContext);
 
   const [loading, setLoading] = useState(true);
   const [teams, setTeams] = useState<TeamRow[]>([]);
@@ -402,6 +406,7 @@ export default function Activities() {
         toolbarRevision={`${perms.isTrainer}-${canCreate}`}
         rightSlot={
           <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-end">
+            <AiAgentHeaderButton intent="plan_training_week" />
             {perms.isTrainer && (
               <Button size="sm" variant="outline" className="rounded-2xl text-xs sm:text-sm shrink-0" onClick={createWeekTemplate} disabled={!clubId}>
                 <Sparkles className="w-4 h-4 mr-1" /> {t.activitiesPage.weekTemplate}

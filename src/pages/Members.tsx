@@ -20,6 +20,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
 import { RoleManager } from "@/components/members/role-manager";
+import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
+import { useRegisterAiAgentContext } from "@/hooks/use-register-ai-agent-context";
 import { trackEvent } from "@/lib/telemetry";
 import logo from "@/assets/one4team-logo.png";
 import type { ClubMemberMasterRecord } from "@/lib/member-master-schema";
@@ -364,6 +366,8 @@ const Members = () => {
   const { t } = useLanguage();
   const { clubId, loading: clubLoading } = useClubId();
   const perms = usePermissions();
+  const agentPageContext = useMemo(() => ({ source: "members" as const }), []);
+  useRegisterAiAgentContext(agentPageContext);
   const [tab, setTab] = useState<"members" | "invites" | "roles">("members");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -2692,29 +2696,33 @@ const Members = () => {
         subtitle={tab === "members" ? t.membersPage.roster : tab === "roles" ? t.membersPage.roles.subtitle : (clubName ? `${clubName} · ${t.membersPage.invites}` : t.membersPage.invites)}
         toolbarRevision={`${tab}-${canManageMembers}-${canReviewJoinRequests}`}
         rightSlot={
-          tab === "members" ? (canManageMembers ? (
-            <Button
-              size="sm"
-              className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
-              onClick={() => setShowAddMembers(true)}
-            >
-              <Plus className="w-4 h-4 mr-1" /> {t.membersPage.addMember}
-            </Button>
-          ) : null) : canReviewJoinRequests ? (
-            <Button
-              size="sm"
-              className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
-              onClick={() => {
-                setCreatedInviteToken(null);
-                setInviteEmail("");
-                setInviteRole("member");
-                setInviteDays("7");
-                setShowCreateInvite(true);
-              }}
-            >
-              <UserPlus className="w-4 h-4 mr-1" /> {t.membersPage.createInvite}
-            </Button>
-          ) : null
+          <div className="flex gap-2 flex-wrap justify-end">
+            <AiAgentHeaderButton intent="add_member_draft" />
+            {tab === "members" && canManageMembers ? (
+              <Button
+                size="sm"
+                className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
+                onClick={() => setShowAddMembers(true)}
+              >
+                <Plus className="w-4 h-4 mr-1" /> {t.membersPage.addMember}
+              </Button>
+            ) : null}
+            {tab !== "members" && canReviewJoinRequests ? (
+              <Button
+                size="sm"
+                className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
+                onClick={() => {
+                  setCreatedInviteToken(null);
+                  setInviteEmail("");
+                  setInviteRole("member");
+                  setInviteDays("7");
+                  setShowCreateInvite(true);
+                }}
+              >
+                <UserPlus className="w-4 h-4 mr-1" /> {t.membersPage.createInvite}
+              </Button>
+            ) : null}
+          </div>
         }
       />
 

@@ -21,6 +21,8 @@ import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-
 import { resolveSportId, resolveSportLabel, SPORTS_CATALOG } from "@/lib/sports";
 import { useLocation } from "react-router-dom";
 import { Link } from "react-router-dom";
+import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
+import { useRegisterAiAgentContext } from "@/hooks/use-register-ai-agent-context";
 import { addDays, endOfDay, endOfMonth, endOfWeek, format, isSameDay, startOfDay, startOfMonth, startOfWeek } from "date-fns";
 import { Calendar as UiCalendar } from "@/components/ui/calendar";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -360,6 +362,8 @@ const Teams = () => {
   const { t } = useLanguage();
   const canManage = perms.isTrainer || perms.isAdmin;
   const canManageLayers = perms.isAdmin;
+  const agentPageContext = useMemo(() => ({ source: "teams" as const }), []);
+  useRegisterAiAgentContext(agentPageContext);
   const [activeTab, setActiveTab] = useState<"pitches" | "teams" | "sessions" | "history">("pitches");
 
   const [teams, setTeams] = useState<Team[]>([]);
@@ -2803,6 +2807,7 @@ const Teams = () => {
         toolbarRevision={teamsToolbarRevision}
         rightSlot={
           <div className="flex gap-2 flex-wrap">
+            <AiAgentHeaderButton intent="create_training" />
             {canManage && (
               <Button asChild size="sm" variant="outline">
                 <Link to="/training-plan-import">Training plan import</Link>

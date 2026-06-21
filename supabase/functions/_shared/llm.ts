@@ -353,14 +353,29 @@ function geminiSseToOpenAi(source: ReadableStream<Uint8Array>): ReadableStream<U
 }
 
 /** Non-streaming completion for tools that expect a single string (e.g. co-aimin). */
+export interface CompleteChatOptions {
+  temperature?: number;
+  maxTokens?: number;
+}
+
 export async function completeChat(
   creds: ResolvedLlmCall,
   systemPrompt: string,
   userContent: string,
+  options?: CompleteChatOptions,
 ): Promise<{ text: string; error?: string; status?: number }> {
+  const maxTokens = options?.maxTokens ?? 8192;
+  const temperature = options?.temperature;
   const messages = [{ role: "user", content: userContent }];
 
   if (creds.provider === "anthropic") {
+    const body: Record<string, unknown> = {
+      model: creds.model,
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages: [{ role: "user", content: userContent }],
+    };
+    if (temperature != null) body.temperature = temperature;
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -368,12 +383,7 @@ export async function completeChat(
         "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model: creds.model,
-        max_tokens: 8192,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userContent }],
-      }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) return { text: "", error: await res.text(), status: res.status };
     const json = (await res.json()) as { content?: Array<{ text?: string }> };
@@ -402,7 +412,9 @@ export async function completeChat(
   }
 
   const openAiMsgs = buildOpenAiMessages(systemPrompt, messages);
-  const body = { model: creds.model, messages: openAiMsgs, stream: false };
+  const body: Record<string, unknown> = { model: creds.model, messages: openAiMsgs, stream: false };
+  if (temperature != null) body.temperature = temperature;
+  if (maxTokens != null) body.max_tokens = maxTokens;
 
   let url: string;
   let authMode: "bearer" | "azure_api_key" = "bearer";

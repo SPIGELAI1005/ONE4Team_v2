@@ -1,11 +1,12 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-06-14 (AI4Team rebrand, feature trials, fair-use scope, Support FAQ; admin dashboard + financial P&L)
+Last updated: 2026-06-15 (AI4Team Agent Phases 0–4: workflows, contextual sheet, voice, NL interpret)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **AI4Team Agent (2026-06-15):** Club-scoped **propose → confirm → execute** workflows via Edge **`ai4team-agent`** and Postgres RPCs. Six intents: create/cancel training, plan training week, notify trainers, add member draft, send club announcement. **`ai_agent_runs`** audit table; migrations **`20260615120000`**–**`20260615150000`**. Co-Trainer **3 tabs** (Chat | Agent | History). **Contextual entry:** `AiAgentProvider` in **`DashboardLayout`**, Sparkles header button + **`AiAgentSheet`** on Teams/Members/Activities; pages register context via **`use-register-ai-agent-context`**. **Voice:** Web Speech STT/TTS in Chat/Agent (`use-ai4team-voice`, **`Ai4TeamVoiceControls`**). **NL interpret:** **`ai4team_agent_interpret.ts`** maps natural language to workflow intents. Chat **`/agent`** slash commands. See **`CHANGELOG.md`** § **2026-06-15** and **`docs/AI4TEAM_AGENT_IMPLEMENTATION_PLAN.md`**.
 - **AI4Team rebrand + trials + scope (2026-06-14):** Product name **AI4Team** (was ONE4AI) across i18n and UI; public page section **`ai4team`** with legacy **`one4ai`** read. **`club_feature_trials`** migration **`20260614140000`** grants time-boxed **`ai`** / **`shop`** access — checked in **`plan_entitlements.ts`** before subscription plan map; client **`club-feature-trials.ts`** + **`use-plan-guard`**. **`ai4team_scope.ts`** enforces club-only fair use in **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`** (heuristic + system prompt). Support & FAQ expanded with user-facing answers (no Supabase jargon). Operator script **`supabase/scripts/fix_tsv_allach_ai_access.sql`** for Allach pilot clubs. See **`CHANGELOG.md`** § **2026-06-14 (AI4Team rebrand…)**.
 - **Financial reporting (2026-06-14):** Admin **`FinancialSummary`** on dashboard; full **`FinancialReportPanel`** at **`/reports?section=financial`**. Data from **`payments`**, **`membership_dues`**, **`shop_orders`**, **`club_expenses`** via **`club-financial-snapshot.ts`**. Migration **`20260614120000_club_expenses.sql`** — apply per env; admin CRUD for expenses; net = collected − costs. Outstanding KPI shows € amount with overdue badge.
 - **Admin dashboard live ops (2026-06-14):** **`club-dashboard-snapshot.ts`** feeds admin KPIs, upcoming schedule, club setup card (name, category, address, public page status, teams/members, links to **`/club/:slug`** and **`/club-page-admin`**). **`dashboard-section-visibility.ts`** — admin dashboard emphasizes finances/ops + **AI4Team** weekly digest; trainer/player keep sports widgets (analytics, season progression, achievements); sponsor minimal.
@@ -163,6 +164,10 @@ Persistent handoff context for future agents so work can continue without re-dis
 48. `20260502120000_club_public_page_draft_publish.sql` through `20260503143000_public_join_request_flow_v2.sql` (public microsite draft/publish, sections, privacy, schedule flags, join/contact/documents, extended publish/unpublish, privacy/team RPC, join request v2 — **apply in strict filename order**; see `CHANGELOG.md` § 2026-05-03)
 49. `20260614120000_club_expenses.sql` — club cost entries for admin financial P&L (`CHANGELOG.md` § 2026-06-14)
 50. `20260614140000_club_feature_trials.sql` — time-boxed **`ai`** / **`shop`** trials; seeds Allach pilot (`CHANGELOG.md` § 2026-06-14 AI4Team)
+51. `20260615120000_ai_agent_runs.sql` — AI4Team Agent audit + proposal lifecycle (`CHANGELOG.md` § 2026-06-15)
+52. `20260615130000_ai_agent_tool_rpcs.sql` — `agent_create_training`, `agent_cancel_training`
+53. `20260615140000_ai_agent_runs_conversation_id.sql` — link runs to `ai_conversations`
+54. `20260615150000_ai_agent_tool_rpcs_extended.sql` — `agent_create_member_draft`, `agent_send_club_announcement`
 
 Also ensure previously listed communication migrations remain applied in the same project:
 - `20260301152000_add_chat_bridge_connectors_and_events.sql`
@@ -175,6 +180,7 @@ Also ensure previously listed communication migrations remain applied in the sam
 - If behavior mismatches local code expectations, verify app env vars point to the same Supabase project where all required migrations are applied.
 
 ## Suggested Next Implementation Steps
+- **AI4Team Agent:** Apply migrations **`20260615120000`**–**`20260615150000`**; deploy **`ai4team-agent`**; smoke Agent tab (create training propose → confirm), header Sparkles on Teams/Members, Chat **`/agent`** commands; optional E2E for idempotency and permission denial paths.
 - **AI4Team:** Apply **`20260614140000_club_feature_trials.sql`**; deploy **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`**; smoke **`/co-trainer`** for Pro/trial clubs; narrow Allach seed to single slug if only **`tsv-allach-09`** should receive pilot (migration uses **`%allach%`** pattern).
 - **Financial:** Apply **`20260614120000_club_expenses.sql`** in each Supabase env; smoke **`/dashboard/admin`**, **`/reports?section=financial`**, add expense, export CSV; optional overdue-member drill-down on Financial tab.
 - **Members import:** Second batch save if >500 drafts in one CSV pass; consider raising draft list fetch cap for display vs count query.

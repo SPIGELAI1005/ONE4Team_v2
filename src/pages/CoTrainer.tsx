@@ -34,6 +34,9 @@ import {
   type ClubQuickPrompt,
 } from "@/lib/ai-context";
 import { getEdgeFunctionAuthHeaders } from "@/lib/edge-function-auth";
+import { AiAgentWorkspace } from "@/components/ai-agent/AiAgentWorkspace";
+import { useAiAgent } from "@/contexts/ai-agent-context";
+import { parseChatAgentCommand } from "@/lib/ai-agent/chat-intent-detect";
 // logo is rendered by AppHeader
 import ReactMarkdown from "react-markdown";
 
@@ -339,7 +342,7 @@ const CoTrainer = () => {
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [mainTab, setMainTab] = useState<"chat" | "actions" | "history">("chat");
+  const [mainTab, setMainTab] = useState<"chat" | "agent" | "history">("chat");
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -378,6 +381,8 @@ const CoTrainer = () => {
     conversationIdRef.current = conversationId;
   }, [conversationId]);
 
+  const { focusAgentIntent } = useAiAgent();
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
@@ -387,7 +392,8 @@ const CoTrainer = () => {
     const tabParam = searchParams.get("tab");
     const promptParam = searchParams.get("prompt");
     const contextParam = searchParams.get("context");
-    if (tabParam === "actions" || tabParam === "history") setMainTab(tabParam);
+    if (tabParam === "agent" || tabParam === "actions") setMainTab("agent");
+    else if (tabParam === "history") setMainTab("history");
     if (promptParam) setInput(decodeURIComponent(promptParam));
     if (contextParam) extraUrlContextRef.current = decodeURIComponent(contextParam);
     if (tabParam || promptParam || contextParam) {
@@ -894,6 +900,15 @@ const CoTrainer = () => {
   const handleSend = async (text?: string) => {
     const msg = text || input.trim();
     if (!msg || isLoading) return;
+
+    const agentCmd = parseChatAgentCommand(msg);
+    if (agentCmd) {
+      setInput("");
+      setMainTab("agent");
+      if (agentCmd !== "open_agent") focusAgentIntent(agentCmd.intent);
+      return;
+    }
+
     const userMsg: Msg = { role: "user", content: msg };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
@@ -933,9 +948,9 @@ const CoTrainer = () => {
               <Bot className="w-3.5 h-3.5" />
               {t.coTrainerPage.tabChat}
             </TabsTrigger>
-            <TabsTrigger value="actions" className="rounded-lg text-xs gap-1.5">
+            <TabsTrigger value="agent" className="rounded-lg text-xs gap-1.5">
               <Sparkles className="w-3.5 h-3.5" />
-              {t.coTrainerPage.tabActions}
+              {t.coTrainerPage.tabAgent}
             </TabsTrigger>
             <TabsTrigger value="history" className="rounded-lg text-xs gap-1.5">
               <History className="w-3.5 h-3.5" />
@@ -1146,91 +1161,21 @@ const CoTrainer = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="actions" className="flex-1 overflow-y-auto mt-0 px-4 pb-20 data-[state=inactive]:hidden">
-          <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl space-y-4 py-6`}>
+        <TabsContent value="agent" className="flex-1 overflow-y-auto mt-0 px-4 pb-20 data-[state=inactive]:hidden">
+          <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl py-6`}>
             {!clubId ? (
               <p className="text-sm text-muted-foreground text-center py-12">{t.ai.selectClub}</p>
             ) : (
-              <>
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
-                    <div className="flex items-center gap-2 font-display font-bold">
-                      <ClipboardList className="w-5 h-5" /> {t.ai.coTrainer}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">{t.ai.coTrainerDesc}</p>
-                    <div className="mt-3">
-                      <Button
-                        className="bg-gradient-gold-static text-primary-foreground font-semibold"
-                        onClick={() => runToolGenerate("training_plan")}
-                        disabled={toolBusy !== null}
-                      >
-                        {toolBusy === "training_plan" ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                          <Sparkles className="w-4 h-4 mr-2" />
-                        )}
-                        {t.ai.generatePlan}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
-                    <div className="flex items-center gap-2 font-display font-bold">
-                      <ScrollText className="w-5 h-5" /> {t.ai.coAImin}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">{t.ai.coAIminDesc}</p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <Button
-                        className="bg-gradient-gold-static text-primary-foreground font-semibold"
-                        onClick={() => runToolGenerate("admin_digest")}
-                        disabled={toolBusy !== null}
-                      >
-                        {toolBusy === "admin_digest" ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                          <Sparkles className="w-4 h-4 mr-2" />
-                        )}
-                        {t.ai.generateDigest}
-                      </Button>
-                      <Button variant="outline" onClick={() => void triggerAutomationDigest()} disabled={toolBusy !== null}>
-                        Queue digest automation
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <Link
-                    to="/matches"
-                    className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-4 flex items-center justify-between gap-2 hover:border-primary/30 transition-colors"
-                  >
-                    <div>
-                      <div className="text-sm font-semibold">{t.coTrainerPage.linkMatchAnalysis}</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">{t.coTrainerPage.linkMatchAnalysisDesc}</div>
-                    </div>
-                    <ExternalLink className="w-4 h-4 text-muted-foreground shrink-0" />
-                  </Link>
-                  <Link
-                    to={`/dashboard/${dashboardRolePath}`}
-                    className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-4 flex items-center justify-between gap-2 hover:border-primary/30 transition-colors"
-                  >
-                    <div>
-                      <div className="text-sm font-semibold">{t.coTrainerPage.linkStats}</div>
-                      <div className="text-[11px] text-muted-foreground mt-0.5">{t.coTrainerPage.linkStatsDesc}</div>
-                    </div>
-                    <ExternalLink className="w-4 h-4 text-muted-foreground shrink-0" />
-                  </Link>
-                </div>
-
-                <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
-                  <div className="flex items-center gap-2 font-display font-bold">
-                    <Shield className="w-5 h-5" /> {t.ai.output}
-                  </div>
-                  <pre className="mt-3 whitespace-pre-wrap text-xs text-foreground/80 leading-relaxed">
-                    {toolOutput || t.ai.outputPlaceholder}
-                  </pre>
-                </div>
-              </>
+              <AiAgentWorkspace
+                conversationId={conversationId}
+                toolActivities={toolActivities}
+                toolBusy={toolBusy}
+                toolOutput={toolOutput}
+                onGeneratePlan={() => void runToolGenerate("training_plan")}
+                onGenerateDigest={() => void runToolGenerate("admin_digest")}
+                onTriggerAutomationDigest={() => void triggerAutomationDigest()}
+                dashboardRolePath={dashboardRolePath}
+              />
             )}
           </div>
         </TabsContent>

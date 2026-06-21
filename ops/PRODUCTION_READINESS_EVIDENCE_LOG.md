@@ -1,6 +1,6 @@
 # Production readiness — consolidated evidence log
 
-Last updated: 2026-06-14 — see `CHANGELOG.md` § 2026-06-14 (admin financial **`20260614120000`**, AI4Team **`20260614140000`**); operator tasks **`FIN-OPS-001`**, **`AI-OPS-001`** in `TASKS.md`.
+Last updated: 2026-06-15 — see `CHANGELOG.md` § 2026-06-15 (AI4Team Agent **`20260615120000`**–**`20260615150000`**); prior § 2026-06-14 (admin financial **`20260614120000`**, AI4Team **`20260614140000`**); operator tasks **`AI-AGENT-OPS-001`**, **`FIN-OPS-001`**, **`AI-OPS-001`** in `TASKS.md`.
 
 Single index for [PRODUCTION_READINESS_COMPLETION_PLAN.md](PRODUCTION_READINESS_COMPLETION_PLAN.md). Link tickets, screenshots, or CI logs in the **Evidence** column as you complete each step.
 

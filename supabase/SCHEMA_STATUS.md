@@ -69,7 +69,16 @@ Depends on existing **`payments`**, **`membership_dues`**, and optional **`shop_
 For pilot access to **AI4Team** (or shop) without a full plan upgrade, apply:
 - `supabase/migrations/20260614140000_club_feature_trials.sql` — `club_feature_trials` table + optional Allach seed
 
-Edge **`clubHasPlanFeature`** and client **`usePlanGuard`** read active trials. Deploy **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`** after applying. Operator helper: `supabase/scripts/fix_tsv_allach_ai_access.sql`.
+Edge **`clubHasPlanFeature`** and client **`usePlanGuard`** read active trials. Deploy **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`**, **`ai4team-agent`** after applying. Operator helper: `supabase/scripts/fix_tsv_allach_ai_access.sql`.
+
+## AI4Team Agent workflows (2026-06-15)
+For propose → confirm → execute club workflows (trainings, member drafts, announcements), apply in order:
+- `supabase/migrations/20260615120000_ai_agent_runs.sql` — `ai_agent_runs` audit table
+- `supabase/migrations/20260615130000_ai_agent_tool_rpcs.sql` — `agent_create_training`, `agent_cancel_training`
+- `supabase/migrations/20260615140000_ai_agent_runs_conversation_id.sql` — link runs to `ai_conversations`
+- `supabase/migrations/20260615150000_ai_agent_tool_rpcs_extended.sql` — `agent_create_member_draft`, `agent_send_club_announcement`
+
+Deploy **`ai4team-agent`** Edge function. Smoke: `/co-trainer` Agent tab, dashboard Sparkles shortcut. See `CHANGELOG.md` § 2026-06-15 and `DEPLOYMENT.md` § AI4Team Agent.
 
 ## Verification artifact
 - Run `supabase/PHASE12_VERIFY.sql` after applying the migrations above.

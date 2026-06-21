@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-06-14 (AI4Team rebrand, feature trials, fair-use scope, Support FAQ; admin dashboard + financial P&L)
+Last updated: 2026-06-15 (AI4Team Agent Phases 0–4; prior: AI4Team rebrand, feature trials, fair-use scope, Support FAQ; admin dashboard + financial P&L)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -25,6 +25,7 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - **Public club microsite — UI polish (2026-05-03, client-only):** Contrast fixes for **light club brand** surfaces (`club-theme-provider`, **`readableTextOnSolid`** on primary fills) and **accent (crimson) hovers** on public CTAs via **`public-club-cta-classes.ts`**, aligned with dashboard **`Button`** tokens. See **`CHANGELOG.md`** second **2026-05-03** entry.
 - **Admin dashboard + finances (2026-06-14):** Live admin KPIs and club setup from DB; **`FinancialSummary`** on dashboard; full **`FinancialReportPanel`** at **`/reports?section=financial`** (Payments + Dues + Shop + **`club_expenses`** P&L). Role-aware dashboard visibility (**`dashboard-section-visibility.ts`**). German **Mitgliederliste** import path + Option A/B fixes. Lucide icon consistency on dashboard chrome. See **`CHANGELOG.md` § 2026-06-14**.
 - **AI4Team rebrand + trials + scope (2026-06-14):** ONE4AI → **AI4Team** across i18n/UI; **`club_feature_trials`** + **`plan_entitlements`** trial gate; **`ai4team_scope.ts`** fair-use guardrails on LLM Edge functions; expanded **Support & FAQ** (user-facing copy). Deploy **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`** after apply. See **`CHANGELOG.md`** second **2026-06-14** entry and **`DEPLOYMENT.md` § AI4Team**.
+- **AI4Team Agent (2026-06-15):** Propose → confirm → execute workflows via **`ai4team-agent`** Edge function and Postgres RPCs (six intents: trainings, member drafts, announcements). Co-Trainer Agent tab + History; contextual **Sparkles** sheet from dashboard header on Teams/Members/Activities; voice STT/TTS; Chat **`/agent`** commands; NL intent interpret. Migrations **`20260615120000`**–**`20260615150000`**. See **`CHANGELOG.md` § 2026-06-15** and **`docs/AI4TEAM_AGENT_IMPLEMENTATION_PLAN.md`**.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 

@@ -289,7 +289,7 @@ const AnimatedRoutes = () => {
             path="/ai"
             element={
               <PlanGate feature="ai">
-                <Navigate to="/co-trainer" replace />
+                <Navigate to="/co-trainer?tab=agent" replace />
               </PlanGate>
             }
           />

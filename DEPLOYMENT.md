@@ -99,7 +99,26 @@ on conflict (club_id, feature) do update
       updated_at = now();
 ```
 
-Supported `feature` values: `ai`, `shop`. After changing trials or `plan_entitlements.ts`, redeploy Edge functions that call `clubHasPlanFeature` (`co-trainer`, `co-aimin`, `ai-match-analysis`).
+Supported `feature` values: `ai`, `shop`. After changing trials or `plan_entitlements.ts`, redeploy Edge functions that call `clubHasPlanFeature` (`co-trainer`, `co-aimin`, `ai-match-analysis`, **`ai4team-agent`**).
+
+### AI4Team Agent (workflows — propose → confirm → execute)
+
+Club workflows use the **`ai4team-agent`** Edge Function and Postgres RPCs. Six intents: create/cancel training, plan training week, notify trainers, add member draft (admin), send club announcement (trainer).
+
+1. Apply migrations (in order):
+   - `supabase/migrations/20260615120000_ai_agent_runs.sql`
+   - `supabase/migrations/20260615130000_ai_agent_tool_rpcs.sql`
+   - `supabase/migrations/20260615140000_ai_agent_runs_conversation_id.sql`
+   - `supabase/migrations/20260615150000_ai_agent_tool_rpcs_extended.sql`
+2. Deploy:
+   ```bash
+   supabase functions deploy ai4team-agent
+   ```
+3. In the app:
+   - **`/co-trainer` → Agent tab** — pick workflow → **Review & propose** → **Confirm & run**
+   - **Dashboard header Sparkles** — contextual Agent sheet on Teams, Members, Activities
+   - **Chat tab** — `/agent` slash commands (e.g. `/agent plan-week`) or natural-language workflow detection
+4. Requires the same AI plan gate as chat (`clubHasPlanFeature('ai')`) and trainer/admin role per intent.
 
 **Alternative (full Pro trial):** upgrade `billing_subscriptions` instead — gives all Pro limits, not AI-only:
 

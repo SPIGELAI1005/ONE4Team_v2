@@ -21,6 +21,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **AI4Team rebrand + pilot trials + fair-use (2026-06-14):** ONE4AI → **AI4Team**; **`club_feature_trials`** migration; scope guardrails in **`ai4team_scope.ts`**; Support & FAQ user copy; **`DEPLOYMENT.md`** AI4Team setup — see `CHANGELOG.md` second **2026-06-14** entry, `TASKS.md` **AI-***.
 
+**AI4Team Agent workflows (2026-06-15):** Propose → confirm → execute club workflows (trainings, member drafts, announcements) via **`ai4team-agent`** Edge + RPCs; Co-Trainer Agent tab; contextual header sheet; voice + NL interpret; migrations **`20260615120000`**–**`20260615150000`** — see `CHANGELOG.md` § **2026-06-15**, `docs/AI4TEAM_AGENT_IMPLEMENTATION_PLAN.md`, `TASKS.md` **AI-AGENT-***.
+
 ---
 
 ## Phase 0 — Foundation (Week 0–1)

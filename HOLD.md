@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-06-14 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI4Team**), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
+Last updated: 2026-06-15 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI4Team**, § **2026-06-15** AI4Team Agent), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
 
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 
@@ -62,6 +62,16 @@ Apply in the same Supabase project as the app:
 4. Optional operator SQL: **`supabase/scripts/fix_tsv_allach_ai_access.sql`** for Allach pilot clubs
 
 See **`DEPLOYMENT.md` § AI4Team** and **`TASKS.md` AI-OPS-001**.
+
+## AI4Team Agent — workflow migrations + Edge deploy (2026-06-15)
+Apply in the same Supabase project as the app (after **`20260614140000`** if using feature trials):
+1. `supabase/migrations/20260615120000_ai_agent_runs.sql`
+2. `supabase/migrations/20260615130000_ai_agent_tool_rpcs.sql`
+3. `supabase/migrations/20260615140000_ai_agent_runs_conversation_id.sql`
+4. `supabase/migrations/20260615150000_ai_agent_tool_rpcs_extended.sql`
+5. Deploy Edge: **`ai4team-agent`** (`supabase functions deploy ai4team-agent`)
+
+Smoke: **`/co-trainer` → Agent tab** (propose → confirm create training); dashboard **Sparkles** on Teams/Members; Chat **`/agent`** command. See **`DEPLOYMENT.md` § AI4Team Agent** and **`TASKS.md` AI-AGENT-OPS-001**.
 
 ## Phase 7 items (need Supabase / infra)
 - Staging + prod Supabase projects (completed for Phase 12 closure)

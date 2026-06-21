@@ -8,13 +8,14 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ## NOW (top priority)
 
-### AI4Team rebrand + trials + scope (2026-06-14) — code in repo
-- [x] **AI-REBRAND-001** ONE4AI → **AI4Team** display strings, i18n keys, public section id **`ai4team`** (legacy **`one4ai`** read).
-- [x] **AI-TRIAL-001** Migration **`20260614140000_club_feature_trials.sql`**; **`plan_entitlements.ts`** trial check; **`club-feature-trials.ts`** + **`use-subscription`** / **`use-plan-guard`**.
-- [x] **AI-SCOPE-001** **`ai4team_scope.ts`**; wired in **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`**; scope hint in **`CoTrainer.tsx`**.
-- [x] **AI-FAQ-001** Support & FAQ expanded (AI4Team, trials, imports, reports); user-facing copy without backend jargon.
-- [x] **AI-DOC-001** **`DEPLOYMENT.md`** AI4Team section; **`README.md`**, **`.env.example`** updates.
-- [ ] **AI-OPS-001** Operator: apply **`20260614140000`**; deploy **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`**; set Edge **`OPENAI_*`** secrets; smoke **`/co-trainer`** for trial/Pro clubs.
+### AI4Team Agent Phases 0–4 (2026-06-15) — code in repo
+- [x] **AI-AGENT-001** Migrations **`20260615120000_ai_agent_runs.sql`**, **`20260615130000_ai_agent_tool_rpcs.sql`**, **`20260615140000_ai_agent_runs_conversation_id.sql`**, **`20260615150000_ai_agent_tool_rpcs_extended.sql`**.
+- [x] **AI-AGENT-002** Edge **`ai4team-agent`** + **`ai4team_agent_tools.ts`**, **`ai4team_agent_interpret.ts`** (propose/execute + NL interpret).
+- [x] **AI-AGENT-003** Co-Trainer **3 tabs** (Chat | Agent | History); **`AiAgentWorkspace`** + proposal confirm UX.
+- [x] **AI-AGENT-004** Workflows: create/cancel training, plan week, notify trainers, add member draft, send announcement; History workflow runs.
+- [x] **AI-AGENT-005** Contextual entry: **`AiAgentProvider`**, **`AiAgentSheet`**, **`AiAgentHeaderButton`**, page context on Teams/Members/Activities.
+- [x] **AI-AGENT-006** Voice STT/TTS (`use-ai4team-voice`, **`Ai4TeamVoiceControls`**); Chat **`/agent`** slash commands; voice-to-form patches.
+- [ ] **AI-AGENT-OPS-001** Operator: apply agent migrations **`20260615120000`**–**`20260615150000`**; **`supabase functions deploy ai4team-agent`**; smoke Agent tab + header shortcut end-to-end.
 
 ### Admin dashboard + financial reporting (2026-06-14) — code in repo
 - [x] **DASH-001** Shared **`dashboard-page-shell.ts`** tokens; responsive layout under **`DashboardLayout`**.
@@ -29,6 +30,14 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **FIN-005** Lucide icons for notifications, badges, events (replace emoji chrome).
 - [x] **IMPORT-DE-001** German **Mitgliederliste** CSV import profile + tests; Option A/B fixes; pending-import KPI.
 - [ ] **FIN-OPS-001** Operator: apply **`20260614120000_club_expenses.sql`** per Supabase env; smoke financial dashboard + reports + expense add/delete.
+
+### AI4Team rebrand + trials + scope (2026-06-14) — code in repo
+- [x] **AI-REBRAND-001** ONE4AI → **AI4Team** display strings, i18n keys, public section id **`ai4team`** (legacy **`one4ai`** read).
+- [x] **AI-TRIAL-001** Migration **`20260614140000_club_feature_trials.sql`**; **`plan_entitlements.ts`** trial check; **`club-feature-trials.ts`** + **`use-subscription`** / **`use-plan-guard`**.
+- [x] **AI-SCOPE-001** **`ai4team_scope.ts`**; wired in **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`**; scope hint in **`CoTrainer.tsx`**.
+- [x] **AI-FAQ-001** Support & FAQ expanded (AI4Team, trials, imports, reports); user-facing copy without backend jargon.
+- [x] **AI-DOC-001** **`DEPLOYMENT.md`** AI4Team section; **`README.md`**, **`.env.example`** updates.
+- [ ] **AI-OPS-001** Operator: apply **`20260614140000`**; deploy **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`**; set Edge **`OPENAI_*`** secrets; smoke **`/co-trainer`** for trial/Pro clubs.
 
 ### Public club microsite — May 2026 wave (2026-05-03) — code in repo
 - [x] **MICROSITE-ADMIN-001** Publication status **badges** on **`ClubPageAdmin`** (live/hidden, snapshot, draft vs published).

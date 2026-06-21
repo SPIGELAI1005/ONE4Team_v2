@@ -3,6 +3,56 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-06-15 (AI4Team Agent Phases 0–4: workflows, contextual sheet, voice, NL interpret)
+
+### Database
+- **`20260615120000_ai_agent_runs.sql`:** `ai_agent_runs` audit table (`proposed` → `confirmed` → `executed` lifecycle, idempotency key, expiry).
+- **`20260615130000_ai_agent_tool_rpcs.sql`:** `agent_create_training`, `agent_cancel_training` RPCs (trainer gate inside RPC).
+- **`20260615140000_ai_agent_runs_conversation_id.sql`:** `conversation_id` FK → `ai_conversations` (link workflow runs to saved Co-Trainer chats).
+- **`20260615150000_ai_agent_tool_rpcs_extended.sql`:** `agent_create_member_draft` (admin), `agent_send_club_announcement` (trainer).
+
+### Edge
+- **`supabase/functions/ai4team-agent`:** `mode: propose | execute`, idempotency, plan gate (`clubHasPlanFeature('ai')`), trainer/admin checks per intent.
+- **`supabase/functions/_shared/ai4team_agent_tools.ts`:** proposal builder + RPC executors for six intents.
+- **`supabase/functions/_shared/ai4team_agent_interpret.ts`:** natural-language → workflow intent (EN/DE, club timezone, team/training context from DB).
+- **`supabase/functions/_shared/llm.ts`:** shared `completeChat` for interpret path.
+
+### Workflows (propose → confirm → execute)
+| Intent | Permission | Action |
+|--------|------------|--------|
+| `create_training` | trainer | Insert activity/training session |
+| `cancel_training` | trainer | Cancel upcoming training |
+| `plan_training_week` | trainer | Multi-session week plan |
+| `notify_trainers` | trainer | Post club announcement |
+| `add_member_draft` | admin | Create `club_member_drafts` row (no silent invite) |
+| `send_club_announcement` | trainer | Post to `announcements` |
+
+### Client — Co-Trainer
+- **`/co-trainer`:** **3 tabs** — Chat | **Agent** | History (Quick actions merged into Agent).
+- **`src/components/ai-agent/`:** `AiAgentWorkspace`, `AiAgentProposalCard`, `Ai4TeamVoiceControls`.
+- **`src/lib/ai-agent/`:** types, API, intents, `page-context`, `chat-intent-detect` (`/agent` slash commands), `apply-voice-to-forms`, `voice-text`.
+- Chat tab: **`/agent`** commands route to Agent tab or inline propose; voice input/output via Web Speech API (STT/TTS, persisted toggle).
+- History tab: workflow runs list with status.
+
+### Client — contextual entry (Phase 3–4)
+- **`src/contexts/ai-agent-context.tsx`:** global propose/confirm state, page context registration.
+- **`src/hooks/use-register-ai-agent-context.ts`:** pages register entity context (team, member, activity).
+- **`AiAgentSheet`** + **`AiAgentHeaderButton`** + **`Ai4TeamNavIcon`:** Sparkles shortcut in dashboard header/sidebar; sheet opens compact Agent workspace.
+- **`DashboardLayout`:** wraps dashboard routes with `AiAgentProvider` + `AiAgentSheet`.
+- **Page hooks:** **`Teams.tsx`**, **`Members.tsx`**, **`Activities.tsx`** register page context and expose deep-link intents.
+
+### i18n
+- **`src/i18n/en.ts`**, **`src/i18n/de.ts`:** `coTrainerPage.agent.*`, voice controls, intent labels, sheet copy.
+
+### Documentation
+- **`docs/AI4TEAM_AGENT_IMPLEMENTATION_PLAN.md`:** implementation plan (Phases 0–4 marked complete).
+- Doc sync: **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`ROADMAP.md`**, **`TASKS.md`**, **`README.md`**, **`HOLD.md`**, **`MVP_PLAN.md`**, **`supabase/SCHEMA_STATUS.md`**, **`ops/PRODUCTION_READINESS_EVIDENCE_LOG.md`**, **`DEPLOYMENT.md`**.
+
+### Operator
+- Apply migrations **`20260615120000`** → **`20260615150000`** in order; `supabase functions deploy ai4team-agent`.
+- Smoke: **`/co-trainer` → Agent tab** (create training propose → confirm); header Sparkles on Teams/Members; **`/agent plan-week`** in Chat tab.
+- See **`DEPLOYMENT.md` § AI4Team Agent**.
+
 ## 2026-06-14 (AI4Team rebrand, feature trials, fair-use scope, Support & FAQ)
 
 ### Product rebrand: ONE4AI → AI4Team
