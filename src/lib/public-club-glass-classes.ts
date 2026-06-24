@@ -1,0 +1,56 @@
+import type { CSSProperties } from "react";
+
+import { clubBrandingSurfaceCssVars } from "@/components/public-club/club-theme-provider";
+
+/**
+ * Apple-style liquid glass surfaces for the public club microsite.
+ * CSS: `club-glass` / `club-glass-interactive` in `index.css` (theme tokens from ClubThemeProvider).
+ */
+
+/** Static panels (stats, empty states, accordions). */
+export const clubGlassPanelClass = "club-glass rounded-2xl";
+
+/** Tappable cards and list rows — subtle hover glow, no scale lift. */
+export const clubGlassInteractiveClass =
+  "club-glass club-glass-interactive rounded-2xl transition-[box-shadow,border-color] duration-300";
+
+/** Large hero-style panels (news feature, modals). */
+export const clubGlassPanelLgClass = "club-glass rounded-3xl";
+
+/** Panel tint opacity (5% white glass — dark brand fills looked opaque with backdrop-blur). */
+export const clubMobileMenuGlassOpacity = 0.05;
+
+export const clubMobileMenuGlassOverlayClass = "bg-black/25";
+
+/** Hamburger sheet — translucent club-themed glass. */
+export const clubMobileMenuGlassPanelClass = [
+  "border border-white/15 !bg-transparent shadow-none",
+  "text-[color:var(--club-foreground)] backdrop-blur-xl backdrop-saturate-150",
+].join(" ");
+
+/** AI 4 T modal on public club pages — bright white glass (readable on any club theme). */
+export const clubAi4tModalPanelClass = [
+  "rounded-3xl border border-white/80",
+  "bg-white/90 backdrop-blur-2xl",
+  "shadow-[0_24px_80px_rgba(15,23,42,0.16),inset_0_1px_0_rgba(255,255,255,0.9)]",
+].join(" ");
+
+export const clubAi4tModalOverlayClass = "bg-white/40 backdrop-blur-md";
+
+/** Compact chips and filter pills on glass surfaces. */
+export const clubGlassChipClass =
+  "club-glass club-glass-interactive rounded-full border border-[color:var(--club-border)]";
+
+/** Search / text inputs on club pages. */
+export const clubGlassInputClass =
+  "club-glass rounded-xl border border-[color:var(--club-border)] bg-transparent text-[color:var(--club-foreground)] placeholder:text-[color:var(--club-muted)] focus-visible:ring-2 focus-visible:ring-[color:var(--club-primary)]";
+
+export function clubMobileMenuGlassStyle(
+  branding: Parameters<typeof clubBrandingSurfaceCssVars>[0],
+): CSSProperties {
+  return {
+    ...clubBrandingSurfaceCssVars(branding),
+    backgroundColor: `rgba(255, 255, 255, ${clubMobileMenuGlassOpacity})`,
+    backgroundImage: "none",
+  };
+}

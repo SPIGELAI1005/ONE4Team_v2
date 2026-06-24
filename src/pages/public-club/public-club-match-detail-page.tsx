@@ -100,19 +100,19 @@ export default function PublicClubMatchDetailPage() {
               <Loader2 className="h-8 w-8 animate-spin text-[color:var(--club-primary)]" />
             </div>
           ) : error ? (
-            <div className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-6 text-sm text-[color:var(--club-muted)]">
+            <div className="rounded-2xl club-glass p-6 text-sm text-[color:var(--club-muted)]">
               {error}
             </div>
           ) : !row ? (
-            <div className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-6 text-sm text-[color:var(--club-muted)]">
+            <div className="rounded-2xl club-glass p-6 text-sm text-[color:var(--club-muted)]">
               {t.clubPage.matchDetailNotFound}
             </div>
           ) : !enabled ? (
-            <div className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-6 text-sm text-[color:var(--club-muted)]">
+            <div className="rounded-2xl club-glass p-6 text-sm text-[color:var(--club-muted)]">
               {t.clubPage.matchDetailPrivate}
             </div>
           ) : displayRow ? (
-            <div className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-6 shadow-sm">
+            <div className="rounded-2xl club-glass p-6 shadow-sm">
               <div className="mb-2 text-center text-[10px] font-semibold uppercase tracking-wide text-[color:var(--club-muted)]">
                 {displayRow.competitions?.name || t.clubPage.matchDetailFixture}
               </div>

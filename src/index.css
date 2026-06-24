@@ -71,6 +71,9 @@
     --shadow-gold: 0 0 30px hsl(42 76% 42% / 0.12);
     --shadow-card: 0 2px 20px hsl(228 12% 0% / 0.06);
     --shadow-glass: 0 8px 32px hsl(228 12% 0% / 0.06), inset 0 1px 0 hsl(0 0% 100% / 0.8);
+
+    --scrollbar-thumb: 228 10% 46% / 0.42;
+    --scrollbar-thumb-hover: 228 10% 36% / 0.62;
   }
 
   /* ============================================================
@@ -134,6 +137,9 @@
     --shadow-gold: 0 0 30px hsl(42 76% 55% / 0.15);
     --shadow-card: 0 2px 20px hsl(0 0% 0% / 0.25);
     --shadow-glass: 0 8px 32px hsl(0 0% 0% / 0.3), inset 0 1px 0 hsl(0 0% 100% / 0.06);
+
+    --scrollbar-thumb: 228 8% 62% / 0.3;
+    --scrollbar-thumb-hover: 228 8% 72% / 0.48;
   }
 }
 
@@ -144,6 +150,44 @@
 
   * {
     @apply border-border;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--scrollbar-thumb)) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--scrollbar-thumb));
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--scrollbar-thumb-hover));
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Hide legacy arrow buttons (Windows classic scrollbar chrome). */
+  *::-webkit-scrollbar-button:single-button,
+  *::-webkit-scrollbar-button:double-button,
+  *::-webkit-scrollbar-button:vertical:start:decrement,
+  *::-webkit-scrollbar-button:vertical:end:increment,
+  *::-webkit-scrollbar-button:horizontal:start:decrement,
+  *::-webkit-scrollbar-button:horizontal:end:increment {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   body {
@@ -165,6 +209,23 @@
   select optgroup {
     background-color: hsl(var(--popover));
     color: hsl(var(--popover-foreground));
+  }
+}
+
+@layer components {
+  /* AI 4 T wordmark — wins over base h1–h6 Outfit + parent font-display */
+  .ai-4-t-wordmark {
+    display: inline;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif !important;
+    font-size: inherit;
+    font-weight: 600 !important;
+    line-height: inherit;
+    letter-spacing: normal !important;
+  }
+
+  .ai-4-t-wordmark-digit,
+  .brand-digit-four {
+    color: #e31e24 !important;
   }
 }
 
@@ -339,6 +400,84 @@
   .glass-input:focus {
     border-color: hsl(var(--primary) / 0.5);
     box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+  }
+
+  /* === PUBLIC CLUB LIQUID GLASS (Apple-style; tokens from ClubThemeProvider) === */
+  .club-glass {
+    position: relative;
+    isolation: isolate;
+    background: var(--club-card);
+    backdrop-filter: saturate(var(--club-glass-saturate, 180%)) blur(var(--club-glass-blur, 28px));
+    -webkit-backdrop-filter: saturate(var(--club-glass-saturate, 180%)) blur(var(--club-glass-blur, 28px));
+    border: 1px solid var(--club-border);
+    box-shadow: var(--club-glass-shadow);
+  }
+
+  .club-glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      160deg,
+      var(--club-glass-edge-top, rgba(255, 255, 255, 0.48)) 0%,
+      var(--club-glass-edge-mid, rgba(255, 255, 255, 0.14)) 32%,
+      rgba(255, 255, 255, 0.04) 52%,
+      rgba(255, 255, 255, 0.1) 72%,
+      var(--club-glass-edge-bottom, rgba(255, 255, 255, 0.3)) 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .club-glass::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      175deg,
+      var(--club-glass-shine-top, rgba(255, 255, 255, 0.2)) 0%,
+      rgba(255, 255, 255, 0.06) 36%,
+      transparent 56%,
+      rgba(255, 255, 255, 0.03) 82%,
+      rgba(255, 255, 255, 0.09) 100%
+    );
+    box-shadow: inset 0 1.5px 1px var(--club-glass-inset-top, rgba(255, 255, 255, 0.14));
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .club-glass > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .club-glass-interactive:hover {
+    border-color: var(--club-glass-border-hover, var(--club-border));
+    box-shadow: var(--club-glass-shadow-hover, var(--club-glass-shadow));
+  }
+
+  .club-glass-nav {
+    position: relative;
+    isolation: isolate;
+    background: var(--club-nav-glass, var(--club-card));
+    backdrop-filter: saturate(var(--club-glass-saturate, 180%)) blur(var(--club-glass-blur, 28px));
+    -webkit-backdrop-filter: saturate(var(--club-glass-saturate, 180%)) blur(var(--club-glass-blur, 28px));
+    border-bottom: 1px solid var(--club-border);
+    box-shadow: var(--club-glass-nav-shadow, var(--club-glass-shadow));
+  }
+
+  .club-glass-nav::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, transparent 42%);
+    pointer-events: none;
   }
 
   /* === SCROLL ILLUMINATION === */
@@ -578,5 +717,12 @@
     @apply rounded-md;
     background: hsl(var(--card));
     box-shadow: var(--shadow-card);
+  }
+
+  /** @deprecated Use global theme scrollbars; kept for existing class hooks. */
+  .ai4t-subtle-scroll,
+  .app-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--scrollbar-thumb)) transparent;
   }
 }

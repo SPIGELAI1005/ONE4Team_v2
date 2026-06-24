@@ -220,11 +220,9 @@ const AnimatedRoutes = () => {
         <Route
           path="/club/:clubSlug"
           element={
-            <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                <PublicClubLayout />
-              </Suspense>
-            </PageTransition>
+            <Suspense fallback={<RouteFallback />}>
+              <PublicClubLayout />
+            </Suspense>
           }
         >
           <Route index element={<Suspense fallback={<RouteFallback />}><PublicClubHomePage /></Suspense>} />

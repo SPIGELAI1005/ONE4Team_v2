@@ -40,7 +40,7 @@ export const DEFAULT_PUBLIC_PAGE_SECTIONS: PublicPageSectionsState = {
   contact: true,
 };
 
-/** Legacy JSON key from pre-AI4Team rebrand (`public_page_sections.one4ai`). */
+/** Legacy JSON key from pre-AI 4 T rebrand (`public_page_sections.one4ai`). */
 const LEGACY_AI_SECTION_KEY = "one4ai";
 
 export function parsePublicPageSections(raw: unknown): PublicPageSectionsState {

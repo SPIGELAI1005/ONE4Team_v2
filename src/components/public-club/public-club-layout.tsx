@@ -4,12 +4,14 @@ import { PublicClubProvider, usePublicClub } from "@/contexts/public-club-contex
 import { PublicClubRouteSeoProvider } from "@/contexts/public-club-route-seo-context";
 import { ClubThemeProvider } from "@/components/public-club/club-theme-provider";
 import { PublicClubDocumentHead } from "@/components/public-club/public-club-document-head";
+import { PublicClubFixedHeader } from "@/components/public-club/public-club-fixed-header";
 import { PublicClubNavbar } from "@/components/public-club/public-club-navbar";
 import { PublicClubFooter } from "@/components/public-club/public-club-footer";
 import { PublicClubInviteModal } from "@/components/public-club/public-club-invite-modal";
+import { PublicClubAi4tModal } from "@/components/public-club/public-club-ai4t-modal";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { useLanguage } from "@/hooks/use-language";
+import { PublicClubAttendanceProvider } from "@/contexts/public-club-attendance-context";
 
 function PublicClubLayoutInner() {
   const { t } = useLanguage();
@@ -35,26 +37,31 @@ function PublicClubLayoutInner() {
         </div>
       ) : (
         <ClubThemeProvider club={club}>
+          <PublicClubAttendanceProvider>
           <div className="flex min-h-screen flex-col">
-            {isPreviewMode ? (
-              <div className="border-b border-amber-400/30 bg-amber-500/10 px-4 py-2 text-center text-xs font-medium text-amber-950 dark:text-amber-100">
-                {t.clubPage.previewMode} · {t.clubPage.previewModeDesc}
-              </div>
-            ) : null}
-            {isDraftPreviewMode ? (
-              <div className="border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-center text-xs font-medium text-amber-950 dark:text-amber-100">
-                {draftPreviewBlocked
-                  ? `${t.clubPage.draftPreviewBlocked} · ${t.clubPage.draftPreviewBlockedDesc}`
-                  : `${t.clubPage.draftPreviewMode} · ${t.clubPage.draftPreviewModeDesc}`}
-              </div>
-            ) : null}
-            <PublicClubNavbar />
+            <PublicClubFixedHeader>
+              {isPreviewMode ? (
+                <div className="border-b border-amber-400/30 bg-amber-500/95 px-4 py-2 text-center text-xs font-medium text-amber-950 backdrop-blur-xl dark:text-amber-100">
+                  {t.clubPage.previewMode} · {t.clubPage.previewModeDesc}
+                </div>
+              ) : null}
+              {isDraftPreviewMode ? (
+                <div className="border-b border-amber-500/30 bg-amber-500/95 px-4 py-2 text-center text-xs font-medium text-amber-950 backdrop-blur-xl dark:text-amber-100">
+                  {draftPreviewBlocked
+                    ? `${t.clubPage.draftPreviewBlocked} · ${t.clubPage.draftPreviewBlockedDesc}`
+                    : `${t.clubPage.draftPreviewMode} · ${t.clubPage.draftPreviewModeDesc}`}
+                </div>
+              ) : null}
+              <PublicClubNavbar />
+            </PublicClubFixedHeader>
             <main className="flex-1">
               <Outlet />
             </main>
             <PublicClubFooter club={club} />
             <PublicClubInviteModal />
+            <PublicClubAi4tModal />
           </div>
+          </PublicClubAttendanceProvider>
         </ClubThemeProvider>
       )}
     </PublicClubRouteSeoProvider>

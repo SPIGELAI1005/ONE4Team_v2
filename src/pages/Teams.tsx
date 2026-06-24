@@ -22,6 +22,7 @@ import { resolveSportId, resolveSportLabel, SPORTS_CATALOG } from "@/lib/sports"
 import { useLocation } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
+import { AiAgentTeamsShortcuts } from "@/components/ai-agent/AiAgentTeamsShortcuts";
 import { useRegisterAiAgentContext } from "@/hooks/use-register-ai-agent-context";
 import { addDays, endOfDay, endOfMonth, endOfWeek, format, isSameDay, startOfDay, startOfMonth, startOfWeek } from "date-fns";
 import { Calendar as UiCalendar } from "@/components/ui/calendar";
@@ -3010,6 +3011,7 @@ const Teams = () => {
           </div>
         ) : currentTab === "sessions" ? (
           <div>
+            <AiAgentTeamsShortcuts />
             <h2 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2">
               <Dumbbell className="w-4 h-4 text-primary" /> {t.teamsPage.tabs.sessions} ({sessions.length})
             </h2>

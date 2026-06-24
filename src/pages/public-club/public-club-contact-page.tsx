@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ExternalLink, Mail, MapPin, Navigation, Phone, Share2, UserCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { PublicClubButton } from "@/components/public-club/public-club-button";
 import { PublicClubPageGate } from "@/components/public-club/public-club-page-gate";
 import { PublicClubSection } from "@/components/public-club/public-club-section";
 import { PublicClubSectionSearchBar } from "@/components/public-club/public-club-page-shared";
@@ -10,8 +10,6 @@ import { useLanguage } from "@/hooks/use-language";
 import { supabase } from "@/integrations/supabase/client";
 import type { PublicClubRecord } from "@/lib/public-club-models";
 import { isMissingRelationError, matchesSectionFilter, normalizeSectionSearch } from "@/lib/public-club-models";
-import { readableTextOnSolid } from "@/lib/hex-to-rgb";
-import { clubCtaFillHoverClass } from "@/lib/public-club-cta-classes";
 
 interface ContactPersonRow {
   id: string;
@@ -176,7 +174,7 @@ export default function PublicClubContactPage() {
           />
         ) : null}
         {contactSearchNoResults ? (
-          <div className="mb-4 rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-6 text-center text-sm text-[color:var(--club-muted)]">
+          <div className="mb-4 rounded-2xl club-glass p-6 text-center text-sm text-[color:var(--club-muted)]">
             {t.clubPage.noSearchResults}
           </div>
         ) : null}
@@ -204,17 +202,10 @@ export default function PublicClubContactPage() {
               </PublicClubCard>
             )}
             <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
-              <Button
-                className={`font-semibold ${clubCtaFillHoverClass}`}
-                style={{
-                  backgroundColor: "var(--club-primary)",
-                  color: readableTextOnSolid(club?.primary_color || "#C4A052"),
-                }}
-                onClick={() => window.open(directionsUrl, "_blank")}
-              >
+              <PublicClubButton clubPrimaryColor={club?.primary_color} onClick={() => window.open(directionsUrl, "_blank")}>
                 <Navigation className="mr-2 h-4 w-4" />
                 {t.clubPage.contactDirectionsCta}
-              </Button>
+              </PublicClubButton>
             </div>
           </div>
         ) : null}
@@ -229,38 +220,38 @@ export default function PublicClubContactPage() {
         {club?.address || club?.phone || club?.email || club?.website ? (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
             {contactBlocksVisible.address && club.address ? (
-              <div className="rounded-xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-4 text-center sm:p-5">
+              <div className="rounded-xl club-glass p-4 text-center sm:p-5">
                 <MapPin className="mx-auto mb-2 h-6 w-6 text-[color:var(--club-primary)]" />
                 <div className="mb-1 text-xs text-[color:var(--club-muted)]">{t.clubPage.address}</div>
                 <div className="break-words text-sm whitespace-pre-line text-[color:var(--club-foreground)]">{club.address}</div>
               </div>
             ) : null}
             {contactBlocksVisible.phone && club.phone ? (
-              <div className="rounded-xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-4 text-center sm:p-5">
+              <div className="rounded-xl club-glass p-4 text-center sm:p-5">
                 <Phone className="mx-auto mb-2 h-6 w-6 text-[color:var(--club-primary)]" />
                 <div className="mb-1 text-xs text-[color:var(--club-muted)]">{t.clubPage.phone}</div>
                 <div className="break-all text-sm text-[color:var(--club-foreground)]">{club.phone}</div>
               </div>
             ) : null}
             {contactBlocksVisible.email && club.email ? (
-              <div className="rounded-xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-4 text-center sm:p-5">
+              <div className="rounded-xl club-glass p-4 text-center sm:p-5">
                 <Mail className="mx-auto mb-2 h-6 w-6 text-[color:var(--club-primary)]" />
                 <div className="mb-1 text-xs text-[color:var(--club-muted)]">{t.clubPage.emailLabel}</div>
                 <div className="break-all text-sm text-[color:var(--club-foreground)]">{club.email}</div>
               </div>
             ) : null}
             {contactBlocksVisible.website && club.website ? (
-              <div className="flex flex-col items-center rounded-xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-4 text-center sm:p-5">
+              <div className="flex flex-col items-center rounded-xl club-glass p-4 text-center sm:p-5">
                 <ExternalLink className="mx-auto mb-2 h-6 w-6 text-[color:var(--club-primary)]" />
                 <div className="mb-1 text-xs text-[color:var(--club-muted)]">{t.clubPage.website}</div>
-                <Button
-                  variant="outline"
+                <PublicClubButton
+                  appearance="outline"
                   size="sm"
-                  className="mt-1 border-[color:var(--club-border)] text-[color:var(--club-foreground)]"
+                  className="mt-1"
                   onClick={() => window.open(club.website || "", "_blank")}
                 >
                   {t.clubPage.visitWebsite}
-                </Button>
+                </PublicClubButton>
               </div>
             ) : null}
           </div>
@@ -296,19 +287,19 @@ export default function PublicClubContactPage() {
             <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-[color:var(--club-muted)]">{t.clubPage.socialLinksHeading}</div>
             <div className="flex flex-wrap justify-center gap-2">
               {socialVisible.facebook && club.facebook_url ? (
-                <Button variant="outline" size="sm" className="border-[color:var(--club-border)]" onClick={() => window.open(club.facebook_url || "", "_blank")}>
+                <PublicClubButton appearance="outline" size="sm" onClick={() => window.open(club.facebook_url || "", "_blank")}>
                   <Share2 className="mr-1.5 h-3.5 w-3.5" /> {t.clubPage.followFacebook}
-                </Button>
+                </PublicClubButton>
               ) : null}
               {socialVisible.instagram && club.instagram_url ? (
-                <Button variant="outline" size="sm" className="border-[color:var(--club-border)]" onClick={() => window.open(club.instagram_url || "", "_blank")}>
+                <PublicClubButton appearance="outline" size="sm" onClick={() => window.open(club.instagram_url || "", "_blank")}>
                   <Share2 className="mr-1.5 h-3.5 w-3.5" /> {t.clubPage.followInstagram}
-                </Button>
+                </PublicClubButton>
               ) : null}
               {socialVisible.twitter && club.twitter_url ? (
-                <Button variant="outline" size="sm" className="border-[color:var(--club-border)]" onClick={() => window.open(club.twitter_url || "", "_blank")}>
+                <PublicClubButton appearance="outline" size="sm" onClick={() => window.open(club.twitter_url || "", "_blank")}>
                   <Share2 className="mr-1.5 h-3.5 w-3.5" /> {t.clubPage.followX}
-                </Button>
+                </PublicClubButton>
               ) : null}
             </div>
           </div>
@@ -323,7 +314,7 @@ export default function PublicClubContactPage() {
         !club?.public_location_notes?.trim() &&
         persons.length === 0 &&
         !directionsUrl ? (
-          <div className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-8 text-center text-sm text-[color:var(--club-muted)]">
+          <div className="rounded-2xl club-glass p-8 text-center text-sm text-[color:var(--club-muted)]">
             {t.clubPage.noContactDetails}
           </div>
         ) : null}

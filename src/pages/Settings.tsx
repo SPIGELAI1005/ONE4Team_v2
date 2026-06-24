@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
+import { BrandedText } from "@/components/ai/Ai4TBrand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -123,6 +124,12 @@ export default function Settings() {
   const [llmAzureEndpoint, setLlmAzureEndpoint] = useState("");
   const [llmAzureApiVersion, setLlmAzureApiVersion] = useState("2024-02-15-preview");
   const [llmHasSavedKey, setLlmHasSavedKey] = useState(false);
+  const [clubAiInstructions, setClubAiInstructions] = useState("");
+  const [aiUsageStats, setAiUsageStats] = useState<{
+    conversations_updated?: number;
+    agent_runs_total?: number;
+    agent_runs_executed?: number;
+  } | null>(null);
 
   type LlmHealthUi = "idle" | "checking" | "connected" | "not_configured" | "error";
   const [llmHealth, setLlmHealth] = useState<LlmHealthUi>("idle");
@@ -218,7 +225,7 @@ export default function Settings() {
       try {
         const { data, error } = await supabase
           .from("club_llm_settings")
-          .select("provider, model, azure_endpoint, azure_api_version, api_key")
+          .select("provider, model, azure_endpoint, azure_api_version, api_key, club_ai_instructions")
           .eq("club_id", activeClubId)
           .maybeSingle();
         if (cancelled) return;
@@ -229,8 +236,10 @@ export default function Settings() {
           setLlmAzureEndpoint(data.azure_endpoint ?? "");
           setLlmAzureApiVersion(data.azure_api_version ?? "2024-02-15-preview");
           setLlmHasSavedKey(Boolean((data.api_key as string)?.trim()));
+          setClubAiInstructions((data.club_ai_instructions as string) ?? "");
         } else {
           setLlmHasSavedKey(false);
+          setClubAiInstructions("");
           setLlmModel("");
           setLlmAzureEndpoint("");
           setLlmAzureApiVersion("2024-02-15-preview");
@@ -243,6 +252,9 @@ export default function Settings() {
       }
     };
     void loadLlm();
+    void supabase.rpc("get_club_ai_usage_stats", { _club_id: activeClubId }).then(({ data, error }) => {
+      if (!cancelled && !error && data) setAiUsageStats(data as typeof aiUsageStats);
+    });
     return () => {
       cancelled = true;
     };
@@ -359,6 +371,7 @@ export default function Settings() {
             model: llmModel.trim() || null,
             azure_endpoint: llmProvider === "azure_openai" ? (llmAzureEndpoint.trim() || null) : null,
             azure_api_version: llmProvider === "azure_openai" ? (llmAzureApiVersion.trim() || "2024-02-15-preview") : null,
+            club_ai_instructions: clubAiInstructions.trim() || null,
           },
           { onConflict: "club_id" },
         );
@@ -371,6 +384,7 @@ export default function Settings() {
             model: llmModel.trim() || null,
             azure_endpoint: llmProvider === "azure_openai" ? (llmAzureEndpoint.trim() || null) : null,
             azure_api_version: llmProvider === "azure_openai" ? (llmAzureApiVersion.trim() || "2024-02-15-preview") : null,
+            club_ai_instructions: clubAiInstructions.trim() || null,
           })
           .eq("club_id", activeClubId);
         if (error) throw error;
@@ -920,7 +934,9 @@ export default function Settings() {
                       <Sparkles className="w-4.5 h-4.5 text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <h2 className="font-display font-bold text-foreground">{t.settingsPage.llmTitle}</h2>
+                      <h2 className="font-display font-bold text-foreground">
+                        <BrandedText text={t.settingsPage.llmTitle} />
+                      </h2>
                       <p className="text-[11px] text-muted-foreground">{t.settingsPage.llmDesc}</p>
                     </div>
                   </div>
@@ -956,7 +972,7 @@ export default function Settings() {
                             <span className="text-[10px] opacity-90 pl-6 sm:pl-0 max-w-[260px] sm:text-right">
                               {llmHealthSource === "platform"
                                 ? t.settingsPage.llmHealthSubtitlePlatform
-                                : t.settingsPage.llmHealthSubtitleClub}
+                                : <BrandedText text={t.settingsPage.llmHealthSubtitleClub} />}
                             </span>
                           </div>
                         ) : null}
@@ -1080,6 +1096,29 @@ export default function Settings() {
                         <p className="text-[10px] text-muted-foreground mt-1">{t.settingsPage.llmApiKeyKeep}</p>
                       ) : null}
                     </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">{t.settingsPage.llmInstructionsTitle}</div>
+                      <textarea
+                        value={clubAiInstructions}
+                        onChange={(e) => setClubAiInstructions(e.target.value)}
+                        placeholder={t.settingsPage.llmInstructionsPlaceholder}
+                        rows={4}
+                        className="w-full rounded-xl border border-border/60 bg-background/50 px-3 py-2 text-sm resize-y min-h-[96px]"
+                      />
+                      <p className="text-[10px] text-muted-foreground mt-1">{t.settingsPage.llmInstructionsHint}</p>
+                    </div>
+                    {aiUsageStats ? (
+                      <div className="rounded-xl border border-border/50 bg-background/30 p-3 text-xs space-y-1">
+                        <div className="font-medium text-foreground">{t.settingsPage.aiUsageTitle}</div>
+                        <div className="text-muted-foreground">
+                          {t.settingsPage.aiUsageConversations}: {aiUsageStats.conversations_updated ?? 0}
+                        </div>
+                        <div className="text-muted-foreground">
+                          {t.settingsPage.aiUsageAgentRuns}: {aiUsageStats.agent_runs_total ?? 0} (
+                          {t.settingsPage.aiUsageExecuted}: {aiUsageStats.agent_runs_executed ?? 0})
+                        </div>
+                      </div>
+                    ) : null}
                     <div className="flex flex-wrap justify-end gap-2 pt-2">
                       <Button type="button" variant="outline" onClick={() => void clearLlmSettings()} disabled={!llmHasSavedKey || llmSaving}>
                         <Trash2 className="w-4 h-4 mr-1" />

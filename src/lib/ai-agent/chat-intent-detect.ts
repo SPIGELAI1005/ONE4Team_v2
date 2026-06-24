@@ -26,6 +26,16 @@ export function parseChatAgentCommand(message: string): ChatWorkflowCommand | "o
     return { intent: "create_training", params: {} };
   }
 
+  if (rest === "cancel-training" || rest === "cancel") {
+    return { intent: "cancel_training", params: {} };
+  }
+  if (rest === "cancel-notify" || rest === "cancel-parents") {
+    return { intent: "cancel_training_with_parent_notice", params: {} };
+  }
+  if (rest === "duplicate-week" || rest === "duplicate week") {
+    return { intent: "duplicate_training_week", params: {} };
+  }
+
   return "open_agent";
 }
 
@@ -35,6 +45,9 @@ export function chatCommandNeedsAgentForm(result: ChatWorkflowCommand | "open_ag
     result.intent === "plan_training_week" ||
     result.intent === "notify_trainers" ||
     result.intent === "add_member_draft" ||
-    result.intent === "create_training"
+    result.intent === "create_training" ||
+    result.intent === "cancel_training" ||
+    result.intent === "cancel_training_with_parent_notice" ||
+    result.intent === "duplicate_training_week"
   );
 }

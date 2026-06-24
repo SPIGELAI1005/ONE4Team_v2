@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
+import { BrandedText } from "@/components/ai/Ai4TBrand";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ import {
   Shield,
   UserPlus,
   Megaphone,
+  Lock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
@@ -40,8 +42,10 @@ import {
 import {
   editorFormToPublicPageConfig,
   emptyClubPublicPageEditorForm,
+  enforceMultilingualOnEditorForm,
   getClubPageDraftConfig,
   getPublishedBaselineConfig,
+  normalizeBrandingColorInput,
   publicPageConfigToEditorForm,
   publishClubPageConfig,
   saveClubPageDraftConfig,
@@ -55,7 +59,9 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useActiveClub } from "@/hooks/use-active-club";
 import { useLanguage } from "@/hooks/use-language";
+import { usePlanGuard } from "@/hooks/use-plan-guard";
 import { useToast } from "@/hooks/use-toast";
+import { getPlanDisplayName } from "@/lib/plan-limits";
 import {
   HOMEPAGE_MODULE_IDS,
   PUBLIC_MICRO_PAGE_ORDER,
@@ -71,8 +77,23 @@ import {
   DASHBOARD_PAGE_MAX_INNER,
   DASHBOARD_PAGE_ROOT,
 } from "@/lib/dashboard-page-shell";
+import { Link } from "react-router-dom";
+import {
+  normalizeClubPageLanguage,
+  oppositeClubPageLanguage,
+  type ClubLocalizedContent,
+  type ClubPageLanguage,
+} from "@/lib/club-public-page-i18n";
 
 type ClubFormData = ClubPublicPageEditorFormLike;
+
+function secondaryLanguageForForm(form: ClubFormData): ClubPageLanguage {
+  return oppositeClubPageLanguage(normalizeClubPageLanguage(form.default_language));
+}
+
+function clubLanguageLabel(lang: ClubPageLanguage, labels: { languageEnglish: string; languageGerman: string }): string {
+  return lang === "de" ? labels.languageGerman : labels.languageEnglish;
+}
 
 const CLUB_ASSETS_BUCKET = "images-clubs";
 
@@ -96,6 +117,9 @@ interface ColorFieldProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  helper?: string;
+  allowAuto?: boolean;
+  autoPlaceholder?: string;
 }
 
 function SectionCard({ icon: Icon, title, children }: SectionCardProps) {
@@ -136,19 +160,36 @@ function FieldRow({ label, value, onChange, placeholder, type = "text", helper, 
   );
 }
 
-function ColorField({ label, value, onChange }: ColorFieldProps) {
+function ColorField({ label, value, onChange, helper, allowAuto, autoPlaceholder }: ColorFieldProps) {
+  const trimmed = value.trim();
+  const pickerValue = /^#[0-9a-fA-F]{6}$/.test(trimmed) ? trimmed : "#94A3B8";
+
   return (
     <div>
       <div className="mb-1 text-xs text-muted-foreground">{label}</div>
       <div className="flex items-center gap-2">
         <input
           type="color"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
+          value={pickerValue}
+          onChange={(event) => onChange(normalizeBrandingColorInput(event.target.value, pickerValue))}
           className="h-10 w-11 cursor-pointer rounded-xl border border-border/60 bg-transparent"
         />
-        <Input value={value} onChange={(event) => onChange(event.target.value)} />
+        <Input
+          value={value}
+          placeholder={allowAuto ? autoPlaceholder : undefined}
+          onChange={(event) => onChange(event.target.value)}
+          onBlur={(event) => {
+            const normalized = normalizeBrandingColorInput(event.target.value, value);
+            if (normalized !== event.target.value) onChange(normalized);
+          }}
+        />
+        {allowAuto && trimmed ? (
+          <Button type="button" variant="ghost" size="sm" className="shrink-0 text-xs" onClick={() => onChange("")}>
+            Auto
+          </Button>
+        ) : null}
       </div>
+      {helper ? <div className="mt-1 text-[10px] text-muted-foreground">{helper}</div> : null}
     </div>
   );
 }
@@ -200,6 +241,8 @@ export default function ClubPageAdmin() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { toast } = useToast();
+  const { canUseFeature, planId, loading: planLoading } = usePlanGuard();
+  const canUseMultilingual = canUseFeature("clubPageMultilingual");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -265,15 +308,12 @@ export default function ClubPageAdmin() {
           description: silent ? t.clubPageAdmin.reloadFailedAfterSave : message,
           variant: "destructive",
         });
-        if (activeClub) {
-          setForm((previous) => ({ ...previous, name: activeClub.name, slug: activeClub.slug }));
-        }
         return false;
       } finally {
         if (!silent) setLoading(false);
       }
     },
-    [activeClub, activeClubId, t.clubPageAdmin.fetchClubFailedGeneric, t.clubPageAdmin.reloadFailedAfterSave, t.common.error, toast]
+    [activeClubId, t.clubPageAdmin.fetchClubFailedGeneric, t.clubPageAdmin.reloadFailedAfterSave, t.common.error, toast]
   );
 
   useEffect(() => {
@@ -322,6 +362,15 @@ export default function ClubPageAdmin() {
   const updateField = <K extends keyof ClubFormData>(key: K, value: ClubFormData[K]) =>
     setForm((previous) => ({ ...previous, [key]: value }));
 
+  const updateLocalizedSecondary = <K extends keyof ClubLocalizedContent>(key: K, value: string) =>
+    setForm((previous) => ({
+      ...previous,
+      localized_secondary: { ...previous.localized_secondary, [key]: value },
+    }));
+
+  const primaryLanguage = normalizeClubPageLanguage(form.default_language);
+  const secondaryLanguage = secondaryLanguageForForm(form);
+
   const updateMicroPage = useCallback((id: PublicMicroPageId, patch: Partial<ClubFormData["microPages"][PublicMicroPageId]>) => {
     setForm((prev) => ({
       ...prev,
@@ -350,6 +399,12 @@ export default function ClubPageAdmin() {
   }, []);
 
   const referenceList = useMemo(() => form.reference_images.filter((image) => image.trim().length > 0), [form.reference_images]);
+  const formRef = useRef(form);
+  formRef.current = form;
+  const referenceListRef = useRef(referenceList);
+  referenceListRef.current = referenceList;
+  const configSaveBaselineRef = useRef(configSaveBaseline);
+  configSaveBaselineRef.current = configSaveBaseline;
 
   const publicSectionLabels = useMemo(
     () =>
@@ -384,6 +439,58 @@ export default function ClubPageAdmin() {
     return data.publicUrl;
   };
 
+  const addReferenceImage = () => {
+    const url = referenceDraft.trim();
+    if (!url) return;
+    if (referenceList.includes(url)) return;
+    updateField("reference_images", [url, ...referenceList].slice(0, 8));
+    setReferenceDraft("");
+  };
+
+  const removeReferenceImage = (url: string) => updateField("reference_images", referenceList.filter((item) => item !== url));
+
+  const applyDraftConfigToEditor = useCallback((config: ClubPublicPageConfig) => {
+    setConfigSaveBaseline(config);
+    setForm({
+      ...emptyClubPublicPageEditorForm(),
+      ...publicPageConfigToEditorForm(config),
+    });
+  }, []);
+
+  const buildDraftPayload = useCallback((editorState?: ClubFormData, refs?: string[]) => {
+    const raw = editorState ?? formRef.current;
+    const f = enforceMultilingualOnEditorForm(raw, canUseMultilingual);
+    const reference_images = refs ?? referenceListRef.current;
+    return editorFormToPublicPageConfig({ ...f, reference_images }, configSaveBaselineRef.current);
+  }, [canUseMultilingual]);
+
+  const persistDraftConfig = useCallback(
+    async (draftPayload: ClubPublicPageConfig, options?: { reload?: boolean }) => {
+      if (!activeClubId) return { ok: false as const, error: new Error("no_club") };
+      const savedFingerprint = stableConfigFingerprint(draftPayload);
+      const { error } = await saveClubPageDraftConfig(supabase, activeClubId, draftPayload, user?.id ?? null);
+      if (error) return { ok: false as const, error };
+      applyDraftConfigToEditor(draftPayload);
+      if (options?.reload !== false) {
+        const { data: reloaded, error: reloadError } = await getClubPageDraftConfig(supabase, activeClubId);
+        if (!reloadError && reloaded) {
+          if (stableConfigFingerprint(reloaded) !== savedFingerprint) {
+            toast({
+              title: t.common.error,
+              description: t.clubPageAdmin.draftReloadMismatch,
+              variant: "destructive",
+            });
+          }
+          applyDraftConfigToEditor(reloaded);
+        }
+      }
+      const { data: dr } = await supabase.from("club_public_page_drafts").select("updated_at").eq("club_id", activeClubId).maybeSingle();
+      setDraftUpdatedAt((dr as { updated_at?: string } | null)?.updated_at ?? new Date().toISOString());
+      return { ok: true as const, draftPayload };
+    },
+    [activeClubId, applyDraftConfigToEditor, t.clubPageAdmin.draftReloadMismatch, t.common.error, toast, user?.id]
+  );
+
   const handleUpload = async (
     file: File,
     key: "logo_url" | "favicon_url" | "cover_image_url" | "hero_image_url" | "reference_images" | "seo_og_image_url"
@@ -393,13 +500,23 @@ export default function ClubPageAdmin() {
     try {
       const url = await uploadAsset(file, key);
       if (!url) return;
+      let nextForm: ClubFormData;
+      let nextRefs: string[];
       if (key === "reference_images") {
-        const nextImages = [url, ...referenceList].slice(0, 8);
-        updateField("reference_images", nextImages);
+        nextRefs = [url, ...referenceListRef.current].slice(0, 8);
+        nextForm = { ...formRef.current, reference_images: nextRefs };
+        setForm(nextForm);
       } else {
-        updateField(key, url);
+        nextRefs = referenceListRef.current;
+        nextForm = { ...formRef.current, [key]: url };
+        setForm(nextForm);
       }
-      toast({ title: t.clubPageAdmin.uploadSuccess });
+      formRef.current = nextForm;
+      referenceListRef.current = nextRefs;
+      const draftPayload = buildDraftPayload(nextForm, nextRefs);
+      const saved = await persistDraftConfig(draftPayload);
+      if (!saved.ok) throw saved.error;
+      toast({ title: t.clubPageAdmin.uploadSuccess, description: t.clubPageAdmin.uploadDraftSavedDesc });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload failed";
       toast({
@@ -412,37 +529,22 @@ export default function ClubPageAdmin() {
     }
   };
 
-  const addReferenceImage = () => {
-    const url = referenceDraft.trim();
-    if (!url) return;
-    if (referenceList.includes(url)) return;
-    updateField("reference_images", [url, ...referenceList].slice(0, 8));
-    setReferenceDraft("");
-  };
-
-  const removeReferenceImage = (url: string) => updateField("reference_images", referenceList.filter((item) => item !== url));
-
-  const buildDraftPayload = useCallback(() => {
-    return editorFormToPublicPageConfig({ ...form, reference_images: referenceList }, configSaveBaseline);
-  }, [configSaveBaseline, form, referenceList]);
-
   const saveChanges = async () => {
     if (!activeClubId || saving) return;
-    if (!form.name.trim() || !form.slug.trim()) {
+    const current = formRef.current;
+    if (!current.name.trim() || !current.slug.trim()) {
       toast({ title: t.common.error, description: t.clubPageAdmin.fillRequiredNameSlug, variant: "destructive" });
       return;
     }
-    if (clubRowKeys.has("address") && !form.address.trim()) {
+    if (clubRowKeys.has("address") && !current.address.trim()) {
       toast({ title: t.common.error, description: t.clubPageAdmin.fillRequiredAddress, variant: "destructive" });
       return;
     }
     setSaving(true);
     try {
       const draftPayload = buildDraftPayload();
-      const { error } = await saveClubPageDraftConfig(supabase, activeClubId, draftPayload, user?.id ?? null);
-      if (error) throw error;
-      const { data: dr } = await supabase.from("club_public_page_drafts").select("updated_at").eq("club_id", activeClubId).maybeSingle();
-      setDraftUpdatedAt((dr as { updated_at?: string } | null)?.updated_at ?? new Date().toISOString());
+      const result = await persistDraftConfig(draftPayload);
+      if (!result.ok) throw result.error;
       toast({ title: t.clubPageAdmin.draftSavedTitle, description: t.clubPageAdmin.draftSavedDesc });
     } catch (error) {
       const message =
@@ -459,23 +561,27 @@ export default function ClubPageAdmin() {
 
   const publishChanges = async () => {
     if (!activeClubId || publishing) return;
-    if (!form.name.trim() || !form.slug.trim()) {
+    const current = formRef.current;
+    if (!current.name.trim() || !current.slug.trim()) {
       toast({ title: t.common.error, description: t.clubPageAdmin.fillRequiredNameSlug, variant: "destructive" });
       return;
     }
-    if (clubRowKeys.has("address") && !form.address.trim()) {
+    if (clubRowKeys.has("address") && !current.address.trim()) {
       toast({ title: t.common.error, description: t.clubPageAdmin.fillRequiredAddress, variant: "destructive" });
       return;
     }
     setPublishing(true);
     try {
       const draftPayload = buildDraftPayload();
-      const saveDraft = await saveClubPageDraftConfig(supabase, activeClubId, draftPayload, user?.id ?? null);
-      if (saveDraft.error) throw saveDraft.error;
+      const saveDraft = await persistDraftConfig(draftPayload, { reload: false });
+      if (!saveDraft.ok) throw saveDraft.error;
       const { error } = await publishClubPageConfig(supabase, activeClubId);
       if (error) throw error;
       toast({ title: t.clubPageAdmin.publishSuccessTitle, description: t.clubPageAdmin.publishSuccessDesc });
-      await fetchClubData({ silent: true });
+      const reloaded = await fetchClubData({ silent: true });
+      if (!reloaded) {
+        applyDraftConfigToEditor(draftPayload);
+      }
     } catch (error) {
       const message =
         error instanceof Error
@@ -509,8 +615,8 @@ export default function ClubPageAdmin() {
   const hasUnpublishedChanges = publishedBaselineFingerprint !== "" && currentDraftFingerprint !== publishedBaselineFingerprint;
 
   const contrastNotes = useMemo(
-    () => brandingContrastWarnings(form.primary_color, form.secondary_color, form.tertiary_color, form.foreground_color),
-    [form.foreground_color, form.primary_color, form.secondary_color, form.tertiary_color]
+    () => brandingContrastWarnings(form.primary_color, form.secondary_color, form.tertiary_color, form.foreground_color, form.muted_color),
+    [form.foreground_color, form.muted_color, form.primary_color, form.secondary_color, form.tertiary_color]
   );
 
   const primaryForegroundContrastLow = useMemo(
@@ -702,10 +808,16 @@ export default function ClubPageAdmin() {
               <div className="grid gap-3">
                 <FieldRow required label={t.clubPageAdmin.clubName} value={form.name} onChange={(v) => updateField("name", v)} placeholder={t.clubPageAdmin.clubNamePlaceholder} />
                 <FieldRow required label={t.clubPageAdmin.slug} value={form.slug} onChange={(v) => updateField("slug", v)} placeholder="my-club" helper={t.clubPageAdmin.slugHelper} />
+                <p className="text-[11px] text-muted-foreground">
+                  {t.clubPageAdmin.primaryLanguageContentHint.replace(
+                    "{language}",
+                    clubLanguageLabel(primaryLanguage, t.clubPageAdmin),
+                  )}
+                </p>
                 <div>
                   <div className="mb-1 text-xs text-muted-foreground">{t.clubPageAdmin.description}</div>
                   <textarea
-                    className="min-h-[90px] w-full resize-y rounded-2xl border border-border/60 bg-background/50 px-3 py-2 text-sm"
+                    className="app-scroll min-h-[90px] w-full resize-y overflow-y-auto rounded-2xl border border-border/60 bg-background/50 px-3 py-2 text-sm"
                     value={form.description}
                     onChange={(e) => updateField("description", e.target.value)}
                     placeholder={t.clubPageAdmin.descriptionPlaceholder}
@@ -713,9 +825,70 @@ export default function ClubPageAdmin() {
                 </div>
                 <FieldRow label={t.clubPageAdmin.clubCategoryLabel} value={form.club_category} onChange={(v) => updateField("club_category", v)} placeholder={t.clubPageAdmin.clubCategoryPlaceholder} />
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <FieldRow label={t.clubPageAdmin.defaultLanguageLabel} value={form.default_language} onChange={(v) => updateField("default_language", v)} placeholder="en" />
+                  <div>
+                    <div className="mb-1 text-xs text-muted-foreground">{t.clubPageAdmin.defaultLanguageLabel}</div>
+                    <Select
+                      value={primaryLanguage}
+                      onValueChange={(v) => updateField("default_language", v as ClubPageLanguage)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="en">{t.clubPageAdmin.languageEnglish}</SelectItem>
+                        <SelectItem value="de">{t.clubPageAdmin.languageGerman}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <FieldRow label={t.clubPageAdmin.timezoneLabel} value={form.timezone} onChange={(v) => updateField("timezone", v)} placeholder="Europe/Berlin" />
                 </div>
+                <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/30 px-3 py-2.5">
+                  <Switch
+                    checked={form.secondary_language_enabled}
+                    disabled={!canUseMultilingual || planLoading}
+                    onCheckedChange={(checked) => {
+                      if (!canUseMultilingual) return;
+                      updateField("secondary_language_enabled", Boolean(checked));
+                    }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 text-sm font-medium">
+                      {!canUseMultilingual && !planLoading ? <Lock className="h-3.5 w-3.5 text-muted-foreground" /> : null}
+                      {t.clubPageAdmin.secondaryLanguageEnabledLabel}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">{t.clubPageAdmin.secondaryLanguageEnabledDesc}</div>
+                  </div>
+                </div>
+                {!canUseMultilingual && !planLoading ? (
+                  <Alert className="border-primary/20 bg-primary/5">
+                    <AlertTitle className="text-sm">{t.clubPageAdmin.multilingualUpgradeTitle}</AlertTitle>
+                    <AlertDescription className="text-xs text-muted-foreground">
+                      {t.clubPageAdmin.multilingualUpgradeDesc.replace("{planName}", getPlanDisplayName(planId))}{" "}
+                      <Link to="/pricing" className="font-medium text-primary underline-offset-2 hover:underline">
+                        {t.common.viewPlans}
+                      </Link>
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
+                {canUseMultilingual && form.secondary_language_enabled ? (
+                  <div className="space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-4">
+                    <div className="text-sm font-medium">
+                      {t.clubPageAdmin.secondaryLanguageContentTitle.replace(
+                        "{language}",
+                        clubLanguageLabel(secondaryLanguage, t.clubPageAdmin),
+                      )}
+                    </div>
+                    <div>
+                      <div className="mb-1 text-xs text-muted-foreground">{t.clubPageAdmin.description}</div>
+                      <textarea
+                        className="app-scroll min-h-[90px] w-full resize-y overflow-y-auto rounded-2xl border border-border/60 bg-background/50 px-3 py-2 text-sm"
+                        value={form.localized_secondary.description}
+                        onChange={(e) => updateLocalizedSecondary("description", e.target.value)}
+                        placeholder={t.clubPageAdmin.descriptionPlaceholder}
+                      />
+                    </div>
+                  </div>
+                ) : null}
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -745,7 +918,15 @@ export default function ClubPageAdmin() {
                 <ColorField label={t.clubPageAdmin.secondaryColor} value={form.secondary_color} onChange={(v) => updateField("secondary_color", v)} />
                 <ColorField label={t.clubPageAdmin.tertiaryColor} value={form.tertiary_color} onChange={(v) => updateField("tertiary_color", v)} />
                 <ColorField label={t.clubPageAdmin.supportColor} value={form.support_color} onChange={(v) => updateField("support_color", v)} />
-                <ColorField label={t.clubPageAdmin.foregroundColorLabel} value={form.foreground_color} onChange={(v) => updateField("foreground_color", v)} />
+                <ColorField label={t.clubPageAdmin.foregroundColorLabel} value={form.foreground_color} onChange={(v) => updateField("foreground_color", v)} helper={t.clubPageAdmin.foregroundColorHelper} />
+                <ColorField
+                  label={t.clubPageAdmin.mutedColorLabel}
+                  value={form.muted_color}
+                  onChange={(v) => updateField("muted_color", v)}
+                  helper={t.clubPageAdmin.mutedColorHelper}
+                  allowAuto
+                  autoPlaceholder={t.clubPageAdmin.mutedColorAuto}
+                />
                 <div>
                   <div className="mb-1 text-xs text-muted-foreground">{t.clubPageAdmin.themePreferenceLabel}</div>
                   <Select value={form.theme_preference} onValueChange={(v) => updateField("theme_preference", v as ClubFormData["theme_preference"])}>
@@ -1010,7 +1191,9 @@ export default function ClubPageAdmin() {
               <div className="grid gap-3 sm:grid-cols-2">
                 {PUBLIC_PAGE_SECTION_KEYS.filter((k) => !["news", "teams", "schedule", "events", "matches", "documents", "nextsteps", "contact"].includes(k)).map((key) => (
                   <div key={key} className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/30 px-3 py-2.5">
-                    <span className="pr-2 text-sm text-foreground">{publicSectionLabels[key]}</span>
+                    <span className="pr-2 text-sm text-foreground">
+                      <BrandedText text={publicSectionLabels[key]} />
+                    </span>
                     <Switch
                       disabled={!clubRowKeys.has("public_page_sections")}
                       checked={form.publicPageSections[key]}
@@ -1195,7 +1378,7 @@ export default function ClubPageAdmin() {
                 <div>
                   <div className="mb-1 text-xs text-muted-foreground">{t.clubPageAdmin.joinNotifyEmailsLabel}</div>
                   <textarea
-                    className="min-h-[72px] w-full rounded-2xl border border-border/60 bg-background/50 px-3 py-2 text-sm"
+                    className="app-scroll min-h-[72px] w-full resize-y overflow-y-auto rounded-2xl border border-border/60 bg-background/50 px-3 py-2 text-sm"
                     value={form.join_notify_emails}
                     onChange={(e) => updateField("join_notify_emails", e.target.value)}
                     placeholder={t.clubPageAdmin.joinNotifyEmailsPlaceholder}
@@ -1223,12 +1406,29 @@ export default function ClubPageAdmin() {
                 <div className="sm:col-span-2">
                   <div className="mb-1 text-xs text-muted-foreground">{t.clubPageAdmin.publicLocationNotesLabel}</div>
                   <textarea
-                    className="min-h-[72px] w-full rounded-2xl border border-border/60 bg-background/50 px-3 py-2 text-sm"
+                    className="app-scroll min-h-[72px] w-full resize-y overflow-y-auto rounded-2xl border border-border/60 bg-background/50 px-3 py-2 text-sm"
                     value={form.public_location_notes}
                     onChange={(e) => updateField("public_location_notes", e.target.value)}
                     placeholder={t.clubPageAdmin.publicLocationNotesPlaceholder}
                   />
                 </div>
+                {canUseMultilingual && form.secondary_language_enabled ? (
+                  <div className="sm:col-span-2 space-y-2 rounded-xl border border-primary/25 bg-primary/5 p-4">
+                    <div className="text-sm font-medium">
+                      {t.clubPageAdmin.secondaryLanguageContentTitle.replace(
+                        "{language}",
+                        clubLanguageLabel(secondaryLanguage, t.clubPageAdmin),
+                      )}
+                    </div>
+                    <div className="mb-1 text-xs text-muted-foreground">{t.clubPageAdmin.publicLocationNotesLabel}</div>
+                    <textarea
+                      className="app-scroll min-h-[72px] w-full resize-y overflow-y-auto rounded-2xl border border-border/60 bg-background/50 px-3 py-2 text-sm"
+                      value={form.localized_secondary.public_location_notes}
+                      onChange={(e) => updateLocalizedSecondary("public_location_notes", e.target.value)}
+                      placeholder={t.clubPageAdmin.publicLocationNotesPlaceholder}
+                    />
+                  </div>
+                ) : null}
               </div>
             </SectionCard>
             <SectionCard icon={Share2} title={t.clubPageAdmin.socialLinks}>
@@ -1249,7 +1449,7 @@ export default function ClubPageAdmin() {
                 <div>
                   <div className="mb-1 text-xs text-muted-foreground">{t.clubPageAdmin.metaDescription}</div>
                   <textarea
-                    className="min-h-[60px] w-full rounded-2xl border border-border/60 bg-background/50 px-3 py-2 text-sm"
+                    className="app-scroll min-h-[60px] w-full resize-y overflow-y-auto rounded-2xl border border-border/60 bg-background/50 px-3 py-2 text-sm"
                     value={form.meta_description}
                     onChange={(e) => updateField("meta_description", e.target.value)}
                     placeholder={t.clubPageAdmin.metaDescriptionPlaceholder}
@@ -1282,6 +1482,35 @@ export default function ClubPageAdmin() {
                   <span className="text-sm">{t.clubPageAdmin.seoStructuredData}</span>
                   <Switch checked={form.seo_structured_data_enabled} onCheckedChange={(c) => updateField("seo_structured_data_enabled", Boolean(c))} />
                 </div>
+                {canUseMultilingual && form.secondary_language_enabled ? (
+                  <div className="space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-4">
+                    <div className="text-sm font-medium">
+                      {t.clubPageAdmin.secondaryLanguageContentTitle.replace(
+                        "{language}",
+                        clubLanguageLabel(secondaryLanguage, t.clubPageAdmin),
+                      )}
+                    </div>
+                    <FieldRow
+                      label={t.clubPageAdmin.metaTitle}
+                      value={form.localized_secondary.meta_title}
+                      onChange={(v) => updateLocalizedSecondary("meta_title", v)}
+                    />
+                    <div>
+                      <div className="mb-1 text-xs text-muted-foreground">{t.clubPageAdmin.metaDescription}</div>
+                      <textarea
+                        className="app-scroll min-h-[60px] w-full resize-y overflow-y-auto rounded-2xl border border-border/60 bg-background/50 px-3 py-2 text-sm"
+                        value={form.localized_secondary.meta_description}
+                        onChange={(e) => updateLocalizedSecondary("meta_description", e.target.value)}
+                        placeholder={t.clubPageAdmin.metaDescriptionPlaceholder}
+                      />
+                    </div>
+                    <FieldRow
+                      label={t.clubPageAdmin.newsPageSubtitleLabel}
+                      value={form.localized_secondary.news_page_subtitle}
+                      onChange={(v) => updateLocalizedSecondary("news_page_subtitle", v)}
+                    />
+                  </div>
+                ) : null}
               </div>
             </SectionCard>
           </TabsContent>

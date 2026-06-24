@@ -19,9 +19,11 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Admin operations + financial P&L (2026-06-14):** Live admin dashboard KPIs and club setup from DB; **`FinancialSummary`** + **`/reports?section=financial`**; **`club_expenses`** migration; German Mitgliederliste import; role-based dashboard sections; Lucide icon pass — see `CHANGELOG.md` § 2026-06-14, `MEMORY_BANK.md`, `TASKS.md` **FIN-*** / **DASH-***.
 
-**AI4Team rebrand + pilot trials + fair-use (2026-06-14):** ONE4AI → **AI4Team**; **`club_feature_trials`** migration; scope guardrails in **`ai4team_scope.ts`**; Support & FAQ user copy; **`DEPLOYMENT.md`** AI4Team setup — see `CHANGELOG.md` second **2026-06-14** entry, `TASKS.md` **AI-***.
+**AI 4 T rebrand + pilot trials + fair-use (2026-06-14):** ONE4AI → **AI 4 T**; **`club_feature_trials`** migration; scope guardrails in **`ai4team_scope.ts`**; Support & FAQ user copy; **`DEPLOYMENT.md`** AI 4 T setup — see `CHANGELOG.md` second **2026-06-14** entry, `TASKS.md` **AI-***.
 
-**AI4Team Agent workflows (2026-06-15):** Propose → confirm → execute club workflows (trainings, member drafts, announcements) via **`ai4team-agent`** Edge + RPCs; Co-Trainer Agent tab; contextual header sheet; voice + NL interpret; migrations **`20260615120000`**–**`20260615150000`** — see `CHANGELOG.md` § **2026-06-15**, `docs/AI4TEAM_AGENT_IMPLEMENTATION_PLAN.md`, `TASKS.md` **AI-AGENT-***.
+**AI 4 T Agent workflows (2026-06-15):** Propose → confirm → execute club workflows (trainings, member drafts, announcements) via **`ai4team-agent`** Edge + RPCs; Co-Trainer Agent tab; contextual header sheet; voice + NL interpret; migrations **`20260615120000`**–**`20260615150000`** — see `CHANGELOG.md` § **2026-06-15**, `docs/AI4TEAM_AGENT_IMPLEMENTATION_PLAN.md`, `TASKS.md` **AI-AGENT-***.
+
+**Training attendance + public club + AI 4 T pilot (2026-06-24):** RSVP with decline reasons on **`/activities`** and public club schedule surfaces; hero **team filter** (`?team=`); AI 4 T Phases 1–4 (golden context, feedback, duplicate week, team scope, public AI modal); migrations **`20260624120000`**–**`20260626120000`** — see `CHANGELOG.md` § **2026-06-24**, `MEMORY_BANK.md`, `TASKS.md` **ATTEND-*** / **AI4T-P***.
 
 ---
 

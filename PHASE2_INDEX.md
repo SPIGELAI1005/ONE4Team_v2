@@ -19,8 +19,10 @@ Recommended apply order (fresh project):
 ---
 
 ## App implementation
-- Page: `/activities` (Phase 2 schedule list + RSVP)
+- Page: `/activities` (Phase 2 schedule list + RSVP + trainer roster panel)
+- Public club: RSVP on **Next up**, **schedule**, **matches** (`PublicClubAttendanceRsvp`)
 - Hook: `useMembershipId` (maps current user + active club → membership id)
+- Lib: `training-attendance.ts`, `public-club-attendance.ts`
 
 ---
 

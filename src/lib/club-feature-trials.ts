@@ -1,6 +1,6 @@
 import type { FeatureKey } from "@/lib/plan-limits";
 
-export type TrialFeatureKey = "ai" | "shop";
+export type TrialFeatureKey = "ai" | "shop" | "multilingual";
 
 export interface ClubFeatureTrialRow {
   feature: TrialFeatureKey;
@@ -8,7 +8,7 @@ export interface ClubFeatureTrialRow {
   note?: string | null;
 }
 
-const TRIAL_FEATURES = new Set<TrialFeatureKey>(["ai", "shop"]);
+const TRIAL_FEATURES = new Set<TrialFeatureKey>(["ai", "shop", "multilingual"]);
 
 export function isTrialFeatureKey(value: string): value is TrialFeatureKey {
   return TRIAL_FEATURES.has(value as TrialFeatureKey);
@@ -32,5 +32,6 @@ export function hasActiveFeatureTrial(
   feature: FeatureKey,
 ): boolean {
   if (feature === "ai" || feature === "shop") return trials.has(feature);
+  if (feature === "clubPageMultilingual") return trials.has("multilingual");
   return false;
 }

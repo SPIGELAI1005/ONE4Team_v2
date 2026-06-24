@@ -65,20 +65,30 @@ For admin P&L (collected revenue vs recorded costs), apply:
 
 Depends on existing **`payments`**, **`membership_dues`**, and optional **`shop_orders`** tables. Smoke: `/dashboard/admin` financial card, `/reports?section=financial`, add/delete expense.
 
-## AI4Team feature trials (2026-06-14)
-For pilot access to **AI4Team** (or shop) without a full plan upgrade, apply:
+## AI 4 T feature trials (2026-06-14)
+For pilot access to **AI 4 T** (or shop) without a full plan upgrade, apply:
 - `supabase/migrations/20260614140000_club_feature_trials.sql` — `club_feature_trials` table + optional Allach seed
 
 Edge **`clubHasPlanFeature`** and client **`usePlanGuard`** read active trials. Deploy **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`**, **`ai4team-agent`** after applying. Operator helper: `supabase/scripts/fix_tsv_allach_ai_access.sql`.
 
-## AI4Team Agent workflows (2026-06-15)
+## AI 4 T Agent workflows (2026-06-15)
 For propose → confirm → execute club workflows (trainings, member drafts, announcements), apply in order:
 - `supabase/migrations/20260615120000_ai_agent_runs.sql` — `ai_agent_runs` audit table
 - `supabase/migrations/20260615130000_ai_agent_tool_rpcs.sql` — `agent_create_training`, `agent_cancel_training`
 - `supabase/migrations/20260615140000_ai_agent_runs_conversation_id.sql` — link runs to `ai_conversations`
 - `supabase/migrations/20260615150000_ai_agent_tool_rpcs_extended.sql` — `agent_create_member_draft`, `agent_send_club_announcement`
 
-Deploy **`ai4team-agent`** Edge function. Smoke: `/co-trainer` Agent tab, dashboard Sparkles shortcut. See `CHANGELOG.md` § 2026-06-15 and `DEPLOYMENT.md` § AI4Team Agent.
+Deploy **`ai4team-agent`** Edge function. Smoke: `/co-trainer` Agent tab, dashboard Sparkles shortcut. See `CHANGELOG.md` § 2026-06-15 and `DEPLOYMENT.md` § AI 4 T Agent.
+
+## AI 4 T pilot + public club extensions (2026-06-24)
+Apply after agent migrations above:
+- `supabase/migrations/20260624120000_club_public_feature_flags_rpc.sql` — public feature access RPCs
+- `supabase/migrations/20260624180000_club_page_multilingual_feature.sql` — multilingual public club pages (Pro gate)
+- `supabase/migrations/20260624190000_ai_message_feedback.sql` — thumbs up/down on AI messages
+- `supabase/migrations/20260625120000_ai_agent_team_training_scope.sql` — team-scoped agent training RBAC
+- `supabase/migrations/20260626120000_ai4t_duplicate_week_club_ai_stats.sql` — duplicate week RPC + club AI usage stats
+
+Client-only (no new SQL beyond above): training attendance RSVP on `/activities` + public club; hero team filter (`?team=`). See `CHANGELOG.md` § 2026-06-24.
 
 ## Verification artifact
 - Run `supabase/PHASE12_VERIFY.sql` after applying the migrations above.

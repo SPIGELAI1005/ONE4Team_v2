@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { stripMarkdownForSpeech } from "@/lib/ai-agent/voice-text";
+import { detectSpeechLanguage, prepareTextForSpeech, speechLanguageToBcp47, type SpeechLanguage } from "@/lib/ai-agent/voice-text";
 
 const STORAGE_KEY = "ai4team-voice-enabled";
+
+/** Slightly upbeat delivery for coaching assistant replies. */
+const TTS_SPEECH_RATE = 1.1;
+const TTS_SPEECH_PITCH = 1.06;
 
 interface SpeechRecognitionResultLike {
   isFinal: boolean;
@@ -62,17 +66,25 @@ export function useAi4TeamVoice(language: "en" | "de") {
     return () => speechSynthesis.removeEventListener("voiceschanged", load);
   }, [ttsSupported]);
 
-  const pickVoice = useCallback(() => {
-    if (!ttsSupported) return null;
-    const langPrefix = language === "de" ? "de" : "en";
-    const voices = speechSynthesis.getVoices();
-    return (
-      voices.find((v) => v.lang.startsWith(langPrefix) && /google|natural|premium/i.test(v.name)) ??
-      voices.find((v) => v.lang.startsWith(langPrefix)) ??
-      voices[0] ??
-      null
-    );
-  }, [language, ttsSupported]);
+  const pickVoice = useCallback(
+    (speechLang: SpeechLanguage) => {
+      if (!ttsSupported) return null;
+      const langPrefix = speechLang === "de" ? "de" : "en";
+      const voices = speechSynthesis.getVoices();
+      return (
+        voices.find((v) => v.lang.startsWith(langPrefix) && /google|natural|premium|enhanced/i.test(v.name)) ??
+        voices.find((v) => v.lang.startsWith(langPrefix)) ??
+        voices[0] ??
+        null
+      );
+    },
+    [ttsSupported],
+  );
+
+  const uiLanguageRef = useRef(language);
+  useEffect(() => {
+    uiLanguageRef.current = language;
+  }, [language]);
 
   const stopSpeaking = useCallback(() => {
     if (!ttsSupported) return;
@@ -81,24 +93,27 @@ export function useAi4TeamVoice(language: "en" | "de") {
   }, [ttsSupported]);
 
   const speak = useCallback(
-    (text: string) => {
+    (text: string, speechLanguage?: SpeechLanguage) => {
       if (!voiceEnabled || !ttsSupported || !text.trim()) return;
       stopSpeaking();
-      const plain = stripMarkdownForSpeech(text);
+      const plain = prepareTextForSpeech(text);
       if (!plain) return;
 
+      const utterLang =
+        speechLanguage ?? detectSpeechLanguage(plain, uiLanguageRef.current);
+
       const utter = new SpeechSynthesisUtterance(plain);
-      utter.lang = language === "de" ? "de-DE" : "en-US";
-      utter.rate = 1;
-      utter.pitch = 1;
-      const voice = pickVoice();
+      utter.lang = speechLanguageToBcp47(utterLang);
+      utter.rate = TTS_SPEECH_RATE;
+      utter.pitch = TTS_SPEECH_PITCH;
+      const voice = pickVoice(utterLang);
       if (voice) utter.voice = voice;
       utter.onstart = () => setIsSpeaking(true);
       utter.onend = () => setIsSpeaking(false);
       utter.onerror = () => setIsSpeaking(false);
       speechSynthesis.speak(utter);
     },
-    [voiceEnabled, language, ttsSupported, pickVoice, stopSpeaking],
+    [voiceEnabled, ttsSupported, pickVoice, stopSpeaking],
   );
 
   const stopListening = useCallback(() => {

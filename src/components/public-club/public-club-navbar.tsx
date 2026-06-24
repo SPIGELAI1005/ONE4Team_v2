@@ -22,6 +22,11 @@ import { getEnabledPublicPages, publicNavIdToPathSegment } from "@/lib/public-pa
 import type { PublicMicroPageId } from "@/lib/club-page-settings-helpers";
 import { readableTextOnSolid } from "@/lib/hex-to-rgb";
 import { clubCtaFillHoverClass } from "@/lib/public-club-cta-classes";
+import {
+  clubMobileMenuGlassPanelClass,
+  clubMobileMenuGlassStyle,
+} from "@/lib/public-club-glass-classes";
+import { PublicClubLanguageToggle } from "@/components/public-club/public-club-language-toggle";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/one4team-logo.png";
 
@@ -87,7 +92,16 @@ function iconForNavId(id: PublicMicroPageId): LucideIcon {
 
 export function PublicClubNavbar() {
   const { t } = useLanguage();
-  const { club, basePath, searchSuffix, openDashboardOrAuth, checkingMembership } = usePublicClub();
+  const {
+    club,
+    basePath,
+    searchSuffix,
+    openDashboardOrAuth,
+    checkingMembership,
+    supportedLanguages,
+    activePageLanguage,
+    setPublicLanguage,
+  } = usePublicClub();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -113,8 +127,17 @@ export function PublicClubNavbar() {
     return location.pathname === to || location.pathname.startsWith(`${to}/`);
   };
 
+  const mobileMenuThemeStyle = clubMobileMenuGlassStyle({
+    primary_color: club.primary_color || "#C4A052",
+    secondary_color: club.secondary_color || "#1E293B",
+    tertiary_color: club.tertiary_color || "#0F172A",
+    support_color: club.support_color || "#22C55E",
+    foreground_color: club.foreground_color,
+    muted_color: club.muted_color,
+  });
+
   return (
-    <header className="sticky top-0 z-40 border-b border-[color:var(--club-border)] bg-[color:var(--club-tertiary)]/90 backdrop-blur-xl">
+    <header className="club-glass-nav shadow-sm">
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
         <Link to={`${basePath}${searchSuffix}`} className="flex min-w-0 items-center gap-2 shrink-0">
           <img
@@ -141,6 +164,12 @@ export function PublicClubNavbar() {
         </nav>
 
         <div className="flex flex-1 items-center justify-end gap-2 lg:flex-none">
+          <PublicClubLanguageToggle
+            languages={supportedLanguages}
+            value={activePageLanguage}
+            onChange={setPublicLanguage}
+            className="hidden sm:inline-flex"
+          />
           <Button
             size="sm"
             className={`hidden lg:inline-flex shrink-0 font-semibold ${clubCtaFillHoverClass}`}
@@ -167,10 +196,16 @@ export function PublicClubNavbar() {
               </SheetTrigger>
               <SheetContent
                 side="right"
-                className="border-[color:var(--club-border)] bg-[color:var(--club-tertiary)] text-[color:var(--club-foreground)]"
+                overlayClassName="bg-black/25"
+                style={mobileMenuThemeStyle}
+                className={cn(
+                  "flex w-[min(100vw-1.5rem,20rem)] flex-col border-l p-6",
+                  clubMobileMenuGlassPanelClass,
+                  "[&>button]:text-[color:var(--club-foreground)] [&>button]:opacity-90 [&>button]:hover:bg-white/10 [&>button]:hover:opacity-100",
+                )}
               >
                 <SheetHeader>
-                  <SheetTitle className="text-left text-[color:var(--club-foreground)]">{club.name}</SheetTitle>
+                  <SheetTitle className="text-left font-display text-[color:var(--club-foreground)]">{club.name}</SheetTitle>
                 </SheetHeader>
                 <nav className="mt-6 flex flex-col gap-1">
                   {desktopItems.map((item) => {
@@ -183,18 +218,28 @@ export function PublicClubNavbar() {
                         end={item.to === basePath}
                         onClick={() => setMenuOpen(false)}
                         className={cn(
-                          "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors",
+                          "flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-colors",
                           active
-                            ? "bg-white/15 text-[color:var(--club-foreground)]"
-                            : "text-[color:var(--club-muted)] hover:bg-white/10 hover:text-[color:var(--club-foreground)]",
+                            ? "bg-white/10 text-[color:var(--club-foreground)]"
+                            : "text-[color:var(--club-foreground)]/90 hover:bg-white/5 hover:text-[color:var(--club-foreground)]",
                         )}
                       >
-                        <Icon className="h-4 w-4 shrink-0 opacity-90" aria-hidden />
+                        <Icon className="h-4 w-4 shrink-0" aria-hidden />
                         {item.label}
                       </NavLink>
                     );
                   })}
                 </nav>
+                <div className="mt-4 sm:hidden">
+                  <PublicClubLanguageToggle
+                    languages={supportedLanguages}
+                    value={activePageLanguage}
+                    onChange={(lang) => {
+                      setPublicLanguage(lang);
+                      setMenuOpen(false);
+                    }}
+                  />
+                </div>
                 <div className="mt-6 border-t border-[color:var(--club-border)] pt-4">
                   <Button
                     type="button"

@@ -7,10 +7,12 @@ import {
   type ReactNode,
 } from "react";
 import { useLanguage } from "@/hooks/use-language";
+import { getBrowserTimezone } from "@/lib/ai-agent/voice-text";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useClubId } from "@/hooks/use-club-id";
 import { proposeAgentRun, executeAgentRun } from "@/lib/ai-agent/api";
-import type { AgentIntent, AgentPageContext, AgentProposeResponse } from "@/lib/ai-agent/types";
+import { enrichAgentProposalDisplay, getCancelStepActivityId } from "@/lib/ai-agent/enrich-agent-proposal";
+import type { AgentIntent, AgentPageContext, AgentProposeResponse, AgentExecuteResponse } from "@/lib/ai-agent/types";
 
 interface AiAgentContextValue {
   clubId: string | null;
@@ -31,7 +33,7 @@ interface AiAgentContextValue {
     params: Record<string, unknown>,
     opts?: { conversationId?: string | null; pageContext?: AgentPageContext },
   ) => Promise<AgentProposeResponse>;
-  confirmProposal: () => Promise<void>;
+  confirmProposal: () => Promise<AgentExecuteResponse | void>;
   dismissProposal: () => void;
   applyProposal: (proposal: AgentProposeResponse) => void;
   focusAgentIntent: (intent: AgentIntent) => void;
@@ -39,13 +41,20 @@ interface AiAgentContextValue {
 
 const AiAgentContext = createContext<AiAgentContextValue | null>(null);
 
-export function AiAgentProvider({ children }: { children: ReactNode }) {
-  const { clubId } = useClubId();
-  const { language } = useLanguage();
-  const perms = usePermissions();
+interface AiAgentProviderInnerProps {
+  clubId: string | null;
+  canManageSchedule: boolean;
+  canManageMembers: boolean;
+  children: ReactNode;
+}
 
-  const canManageSchedule = perms.has("schedule:write");
-  const canManageMembers = perms.has("members:write");
+function AiAgentProviderInner({
+  clubId,
+  canManageSchedule,
+  canManageMembers,
+  children,
+}: AiAgentProviderInnerProps) {
+  const { language } = useLanguage();
 
   const [pageContext, setPageContext] = useState<AgentPageContext>({});
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -88,23 +97,29 @@ export function AiAgentProvider({ children }: { children: ReactNode }) {
         language,
         pageContext: mergedContext,
         conversationId: opts?.conversationId ?? null,
+        timezone: getBrowserTimezone(),
       });
-      setPendingProposal(proposal);
-      return proposal;
+      const enriched = await enrichAgentProposalDisplay(proposal, clubId, language);
+      setPendingProposal(enriched);
+      return enriched;
     },
     [clubId, language, pageContext],
   );
 
-  const confirmProposal = useCallback(async () => {
+  const confirmProposal = useCallback(async (): Promise<AgentExecuteResponse | void> => {
     if (!clubId || !pendingProposal) return;
+    const cancelActivityId = getCancelStepActivityId(pendingProposal);
     setWorkflowBusy(true);
     try {
-      await executeAgentRun({
+      const result = await executeAgentRun({
         clubId,
         runId: pendingProposal.run_id,
         idempotencyKey: crypto.randomUUID(),
+        cancelActivityId,
+        timezone: getBrowserTimezone(),
       });
       setPendingProposal(null);
+      return result;
     } finally {
       setWorkflowBusy(false);
     }
@@ -166,6 +181,44 @@ export function AiAgentProvider({ children }: { children: ReactNode }) {
   );
 
   return <AiAgentContext.Provider value={value}>{children}</AiAgentContext.Provider>;
+}
+
+export function AiAgentProvider({ children }: { children: ReactNode }) {
+  const { clubId } = useClubId();
+  const perms = usePermissions();
+
+  return (
+    <AiAgentProviderInner
+      clubId={clubId}
+      canManageSchedule={perms.has("schedule:write")}
+      canManageMembers={perms.has("members:write")}
+    >
+      {children}
+    </AiAgentProviderInner>
+  );
+}
+
+/** Public club pages: explicit club + membership-derived permissions (no dashboard active club). */
+export function ClubScopedAiAgentProvider({
+  clubId,
+  canManageSchedule,
+  canManageMembers,
+  children,
+}: {
+  clubId: string;
+  canManageSchedule: boolean;
+  canManageMembers: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <AiAgentProviderInner
+      clubId={clubId}
+      canManageSchedule={canManageSchedule}
+      canManageMembers={canManageMembers}
+    >
+      {children}
+    </AiAgentProviderInner>
+  );
 }
 
 export function useAiAgent(): AiAgentContextValue {

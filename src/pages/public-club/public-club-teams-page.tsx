@@ -66,7 +66,7 @@ export default function PublicClubTeamsPage() {
             <Loader2 className="h-9 w-9 animate-spin text-[color:var(--club-primary)]" />
           </div>
         ) : teams.length === 0 ? (
-          <div className="mx-auto max-w-2xl rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-8 text-center">
+          <div className="mx-auto max-w-2xl rounded-2xl club-glass p-8 text-center">
             <div className="text-sm font-medium text-[color:var(--club-foreground)]">{t.clubPage.noTeamsYet}</div>
             <div className="mt-1 text-xs text-[color:var(--club-muted)]">{t.clubPage.teamsWillAppear}</div>
           </div>
@@ -96,13 +96,13 @@ export default function PublicClubTeamsPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={t.clubPage.sectionSearchTeams}
-                  className="rounded-xl border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-foreground)] placeholder:text-[color:var(--club-muted)]"
+                  className="rounded-xl club-glass text-[color:var(--club-foreground)] placeholder:text-[color:var(--club-muted)]"
                 />
               </div>
             </div>
 
             {!filtered.length ? (
-              <div className="mx-auto max-w-2xl rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-6 text-center text-sm text-[color:var(--club-muted)]">
+              <div className="mx-auto max-w-2xl rounded-2xl club-glass p-6 text-center text-sm text-[color:var(--club-muted)]">
                 {t.clubPage.noSearchResults}
               </div>
             ) : (
@@ -115,7 +115,7 @@ export default function PublicClubTeamsPage() {
                     <Link
                       key={team.id}
                       to={`${basePath}/${PUBLIC_CLUB_ROUTE_SEGMENTS.teams}/${seg}${searchSuffix}`}
-                      className="flex h-full flex-col rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-5 text-left text-inherit no-underline shadow-[0_10px_30px_rgba(0,0,0,0.12)] transition-colors hover:border-[color:var(--club-primary)]/35"
+                      className="flex h-full flex-col rounded-2xl club-glass p-5 text-left text-inherit no-underline shadow-[0_10px_30px_rgba(0,0,0,0.12)] transition-colors hover:border-[color:var(--club-primary)]/35"
                     >
                       <div
                         className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl text-white"

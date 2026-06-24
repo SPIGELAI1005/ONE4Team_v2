@@ -27,7 +27,7 @@ import { PUBLIC_CLUB_ROUTE_SEGMENTS } from "@/lib/public-club-routes";
 import { publicNewsExcerpt } from "@/lib/public-club-news";
 import type { NewsRowLite } from "@/lib/public-club-models";
 import { readableTextOnSolid } from "@/lib/hex-to-rgb";
-import { clubCtaFillHoverClass, clubCtaOutlineHoverClass } from "@/lib/public-club-cta-classes";
+import { clubCtaAccentHoverClass, clubCtaFillHoverClass, clubCtaOutlineButtonClass } from "@/lib/public-club-cta-classes";
 
 interface PublicTeamPayloadTeam {
   id: string;
@@ -228,7 +228,7 @@ export default function PublicClubTeamDetailPage() {
     <PublicClubPageGate section="teams">
       <div className={`${publicClubSectionContainer} py-6 pb-16`}>
         <div className="mb-6">
-          <Button asChild variant="outline" size="sm" className="border-[color:var(--club-border)] text-[color:var(--club-foreground)]">
+          <Button asChild variant="outline" size="sm" className={clubCtaOutlineButtonClass}>
             <Link to={teamsHref}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               {ct.backToTeams}
@@ -241,13 +241,13 @@ export default function PublicClubTeamDetailPage() {
             <Loader2 className="h-9 w-9 animate-spin text-[color:var(--club-primary)]" />
           </div>
         ) : !payload ? (
-          <div className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-8 text-center text-sm text-[color:var(--club-muted)]">
+          <div className="rounded-2xl club-glass p-8 text-center text-sm text-[color:var(--club-muted)]">
             {ct.notFound}
             <div className="mt-2 text-xs opacity-80">{ct.privateClubHint}</div>
           </div>
         ) : (
           <div className="space-y-10">
-            <section className="overflow-hidden rounded-3xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] text-left shadow-[0_16px_48px_rgba(0,0,0,0.18)]">
+            <section className="overflow-hidden rounded-3xl club-glass text-left shadow-[0_16px_48px_rgba(0,0,0,0.18)]">
               <div className="relative min-h-[200px] bg-gradient-to-br from-[color:var(--club-primary)]/35 via-[color:var(--club-card)] to-[color:var(--club-border)]/50 px-6 py-10 sm:px-10 sm:py-12">
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
                 <div className="relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -278,14 +278,14 @@ export default function PublicClubTeamDetailPage() {
                       {ct.joinThisTeam}
                     </Button>
                     {primaryCoachMail ? (
-                      <Button asChild variant="secondary" className="rounded-full border-white/20 bg-white/15 text-white hover:bg-white/25">
+                      <Button asChild variant="secondary" className={`rounded-full border border-white/20 bg-white/15 text-white ${clubCtaAccentHoverClass}`}>
                         <a href={`mailto:${primaryCoachMail}`}>
                           <Mail className="mr-2 h-4 w-4" />
                           {ct.contactCoach}
                         </a>
                       </Button>
                     ) : (
-                      <Button asChild variant="secondary" className="rounded-full border-white/20 bg-white/15 text-white hover:bg-white/25">
+                      <Button asChild variant="secondary" className={`rounded-full border border-white/20 bg-white/15 text-white ${clubCtaAccentHoverClass}`}>
                         <Link to={contactHref}>
                           <Mail className="mr-2 h-4 w-4" />
                           {ct.contactClubInstead}
@@ -315,11 +315,11 @@ export default function PublicClubTeamDetailPage() {
                 {ct.joinThisTeam}
               </Button>
               {primaryCoachMail ? (
-                <Button asChild variant="outline" className={`w-full rounded-full border-[color:var(--club-border)] ${clubCtaOutlineHoverClass}`}>
+                <Button asChild variant="outline" className={`w-full rounded-full ${clubCtaOutlineButtonClass}`}>
                   <a href={`mailto:${primaryCoachMail}`}>{ct.contactCoach}</a>
                 </Button>
               ) : (
-                <Button asChild variant="outline" className={`w-full rounded-full border-[color:var(--club-border)] ${clubCtaOutlineHoverClass}`}>
+                <Button asChild variant="outline" className={`w-full rounded-full ${clubCtaOutlineButtonClass}`}>
                   <Link to={contactHref}>{ct.contactClubInstead}</Link>
                 </Button>
               )}
@@ -335,7 +335,7 @@ export default function PublicClubTeamDetailPage() {
               ) : (
                 <ul className="space-y-2">
                   {payload.trainings.map((tr) => (
-                    <li key={`${tr.source}-${tr.id}`} className="rounded-xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] px-4 py-3">
+                    <li key={`${tr.source}-${tr.id}`} className="rounded-xl club-glass px-4 py-3">
                       <div className="font-medium text-[color:var(--club-foreground)]">{tr.title}</div>
                       <div className="mt-1 flex flex-col gap-1 text-xs text-[color:var(--club-muted)] sm:flex-row sm:flex-wrap sm:gap-x-3">
                         <span className="inline-flex items-center gap-1">
@@ -365,7 +365,7 @@ export default function PublicClubTeamDetailPage() {
                   {payload.coaches.map((c) => (
                     <li
                       key={`${c.name}-${c.contact_email ?? ""}`}
-                      className="rounded-full border border-[color:var(--club-border)] bg-[color:var(--club-card)] px-3 py-1.5 text-sm text-[color:var(--club-foreground)]"
+                      className="rounded-full club-glass px-3 py-1.5 text-sm text-[color:var(--club-foreground)]"
                     >
                       {c.name}
                       {c.contact_email?.trim() ? (
@@ -417,7 +417,7 @@ export default function PublicClubTeamDetailPage() {
                   {matchesWithoutNext.map((m) => (
                     <li
                       key={m.id}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] px-4 py-3"
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl club-glass px-4 py-3"
                     >
                       <div>
                         <div className="font-medium text-[color:var(--club-foreground)]">
@@ -459,7 +459,7 @@ export default function PublicClubTeamDetailPage() {
                 </h2>
                 <ul className="grid gap-3 sm:grid-cols-2">
                   {newsAsRowLite.map((row) => (
-                    <li key={row.id} className="rounded-xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-4">
+                    <li key={row.id} className="rounded-xl club-glass p-4">
                       <div className="text-[10px] text-[color:var(--club-muted)]">{new Date(row.created_at).toLocaleDateString(locale)}</div>
                       <div className="mt-1 font-medium text-[color:var(--club-foreground)]">{row.title}</div>
                       <p className="mt-1 line-clamp-3 text-xs text-[color:var(--club-muted)]">{publicNewsExcerpt(row)}</p>
@@ -489,7 +489,7 @@ export default function PublicClubTeamDetailPage() {
                         href={doc.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-between gap-2 rounded-xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] px-4 py-3 text-sm font-medium text-[color:var(--club-primary)] hover:bg-[color:var(--club-card)]/80"
+                        className="flex items-center justify-between gap-2 rounded-xl club-glass px-4 py-3 text-sm font-medium text-[color:var(--club-primary)] hover:bg-[color:var(--club-card)]/80"
                       >
                         <span className="truncate text-[color:var(--club-foreground)]">{doc.title}</span>
                         <ArrowRight className="h-4 w-4 shrink-0" />
@@ -504,17 +504,17 @@ export default function PublicClubTeamDetailPage() {
               <section className="space-y-3 text-left">
                 <h2 className="font-display text-lg font-semibold text-[color:var(--club-foreground)]">{ct.teamOverviewTitle}</h2>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <div className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-4 text-center">
+                  <div className="rounded-2xl club-glass p-4 text-center">
                     <Users className="mx-auto mb-2 h-5 w-5 text-[color:var(--club-primary)]" />
                     <div className="text-2xl font-bold tabular-nums text-[color:var(--club-foreground)]">{payload.stats.registered_players ?? 0}</div>
                     <div className="text-[11px] text-[color:var(--club-muted)]">{ct.statPlayersRegistered}</div>
                   </div>
-                  <div className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-4 text-center">
+                  <div className="rounded-2xl club-glass p-4 text-center">
                     <Trophy className="mx-auto mb-2 h-5 w-5 text-[color:var(--club-primary)]" />
                     <div className="text-2xl font-bold tabular-nums text-[color:var(--club-foreground)]">{payload.stats.public_coaches ?? 0}</div>
                     <div className="text-[11px] text-[color:var(--club-muted)]">{ct.statPublicCoaches}</div>
                   </div>
-                  <div className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-4 text-center sm:col-span-2">
+                  <div className="rounded-2xl club-glass p-4 text-center sm:col-span-2">
                     <Calendar className="mx-auto mb-2 h-5 w-5 text-[color:var(--club-primary)]" />
                     <div className="text-2xl font-bold tabular-nums text-[color:var(--club-foreground)]">{payload.stats.upcoming_trainings ?? 0}</div>
                     <div className="text-[11px] text-[color:var(--club-muted)]">{ct.statUpcomingSessions}</div>

@@ -20,6 +20,15 @@ import {
   type PrivacyPack,
   type PublicMicroPageId,
 } from "@/lib/club-page-settings-helpers";
+import {
+  emptyClubLocalizedContent,
+  normalizeClubPageLanguage,
+  oppositeClubPageLanguage,
+  parseLocalizedContentMap,
+  parseSupportedLanguages,
+  type ClubLocalizedContent,
+  type ClubPageLanguage,
+} from "@/lib/club-public-page-i18n";
 import { normalizeDefaultHeroAssetId } from "@/lib/club-hero-default-assets";
 import { parsePublicPageConfigPatch, type PublicPageConfigPatch } from "@/lib/public-page-flex-config";
 
@@ -36,6 +45,9 @@ export interface ClubPublicPageConfig {
     description: string | null;
     is_public: boolean;
     default_language: string;
+    /** When length > 1, public site offers a language switcher (en/de). */
+    supported_languages: ClubPageLanguage[];
+    localized: Partial<Record<ClubPageLanguage, Partial<ClubLocalizedContent>>>;
     timezone: string;
     club_category: string;
   };
@@ -45,6 +57,8 @@ export interface ClubPublicPageConfig {
     tertiary_color: string;
     support_color: string;
     foreground_color: string;
+    /** Empty string = derive automatically from brand surfaces. */
+    muted_color: string;
     theme_preference: "system" | "light" | "dark";
   };
   assets: {
@@ -134,6 +148,38 @@ function asTrimmedString(value: unknown, fallback = ""): string {
   return value.trim();
 }
 
+/** Prefer a non-empty trimmed string; empty `clubs` column values must not wipe JSON config. */
+function asNonemptyTrimmedString(value: unknown, fallback: string): string {
+  const trimmed = asTrimmedString(value);
+  return trimmed || fallback;
+}
+
+/** Normalize admin color input to `#rrggbb` or empty string (auto). */
+export function normalizeBrandingColorInput(value: string, fallback = ""): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) return trimmed;
+  if (/^[0-9a-fA-F]{6}$/.test(trimmed)) return `#${trimmed}`;
+  if (/^#[0-9a-fA-F]{3}$/.test(trimmed)) {
+    const h = trimmed.slice(1);
+    return `#${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`;
+  }
+  return fallback;
+}
+
+function normalizeConfigRawInput(raw: unknown): Record<string, unknown> | null {
+  let value: unknown = raw;
+  if (typeof value === "string") {
+    try {
+      value = JSON.parse(value) as unknown;
+    } catch {
+      return null;
+    }
+  }
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.map((v) => String(v)).filter(Boolean);
@@ -158,17 +204,17 @@ function numOrStringToCoordString(value: unknown): string {
 }
 
 export function parseClubPublicPageConfig(raw: unknown): ClubPublicPageConfig | null {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
-  const o = raw as Record<string, unknown>;
-  if (Number(o.schemaVersion) !== CLUB_PUBLIC_PAGE_CONFIG_SCHEMA_VERSION) return null;
-  const g = o.general as Record<string, unknown> | undefined;
-  const b = o.branding as Record<string, unknown> | undefined;
-  const a = o.assets as Record<string, unknown> | undefined;
-  const ct = o.contact as Record<string, unknown> | undefined;
-  const so = o.social as Record<string, unknown> | undefined;
-  const se = o.seo as Record<string, unknown> | undefined;
-  const ob = o.onboarding as Record<string, unknown> | undefined;
-  if (!g || !b || !a || !ct || !so || !se || !ob) return null;
+  const o = normalizeConfigRawInput(raw);
+  if (!o) return null;
+  const schemaVersion = Number(o.schemaVersion);
+  if (Number.isFinite(schemaVersion) && schemaVersion !== CLUB_PUBLIC_PAGE_CONFIG_SCHEMA_VERSION) return null;
+  const g = (o.general as Record<string, unknown> | undefined) ?? {};
+  const b = (o.branding as Record<string, unknown> | undefined) ?? {};
+  const a = (o.assets as Record<string, unknown> | undefined) ?? {};
+  const ct = (o.contact as Record<string, unknown> | undefined) ?? {};
+  const so = (o.social as Record<string, unknown> | undefined) ?? {};
+  const se = (o.seo as Record<string, unknown> | undefined) ?? {};
+  const ob = (o.onboarding as Record<string, unknown> | undefined) ?? {};
   const jam = asTrimmedString(ob.join_approval_mode, "manual");
   const jrp = asTrimmedString(ob.join_reviewer_policy, "admin_only");
   const themeRaw = asTrimmedString(b.theme_preference, "system");
@@ -189,6 +235,11 @@ export function parseClubPublicPageConfig(raw: unknown): ClubPublicPageConfig | 
       description: g.description == null || g.description === "" ? null : String(g.description),
       is_public: asBool(g.is_public, true),
       default_language: asTrimmedString(g.default_language, "en"),
+      supported_languages: parseSupportedLanguages(
+        g.supported_languages,
+        normalizeClubPageLanguage(g.default_language, "en"),
+      ),
+      localized: parseLocalizedContentMap(g.localized),
       timezone: asTrimmedString(g.timezone, "Europe/Berlin"),
       club_category: asTrimmedString(g.club_category),
     },
@@ -198,6 +249,7 @@ export function parseClubPublicPageConfig(raw: unknown): ClubPublicPageConfig | 
       tertiary_color: asTrimmedString(b.tertiary_color, "#0F172A"),
       support_color: asTrimmedString(b.support_color, "#22C55E"),
       foreground_color: asTrimmedString(b.foreground_color, "#F8FAFC"),
+      muted_color: asTrimmedString(b.muted_color, ""),
       theme_preference,
     },
     assets: {
@@ -268,8 +320,104 @@ export function parseClubPublicPageConfig(raw: unknown): ClubPublicPageConfig | 
   };
 }
 
-/** Build a full config object from a `clubs` row (legacy columns). */
-export function clubRowToPublicPageConfig(row: Record<string, unknown>): ClubPublicPageConfig {
+/** Merge synced `clubs` columns onto a parsed published/draft config (columns win when set). */
+export function overlayClubRowOntoPublicPageConfig(
+  config: ClubPublicPageConfig,
+  row: Record<string, unknown>
+): ClubPublicPageConfig {
+  const rowReferenceImages = Array.isArray(row.reference_images)
+    ? row.reference_images.map((item) => String(item)).filter(Boolean)
+    : null;
+  return {
+    ...config,
+    general: {
+      ...config.general,
+      name: asTrimmedString(row.name, config.general.name),
+      slug: asTrimmedString(row.slug, config.general.slug),
+      description:
+        row.description == null || String(row.description).trim() === ""
+          ? config.general.description
+          : String(row.description),
+      is_public: row.is_public !== false,
+      default_language: asTrimmedString(row.default_language, config.general.default_language),
+      timezone: asTrimmedString(row.timezone, config.general.timezone),
+      club_category: asTrimmedString(row.club_category, config.general.club_category),
+    },
+    branding: {
+      ...config.branding,
+      primary_color: asTrimmedString(row.primary_color, config.branding.primary_color),
+      secondary_color: asTrimmedString(row.secondary_color, config.branding.secondary_color),
+      tertiary_color: asTrimmedString(row.tertiary_color, config.branding.tertiary_color),
+      support_color: asTrimmedString(row.support_color, config.branding.support_color),
+    },
+    assets: {
+      ...config.assets,
+      logo_url: asNonemptyTrimmedString(row.logo_url, config.assets.logo_url),
+      favicon_url: asNonemptyTrimmedString(row.favicon_url, config.assets.favicon_url),
+      cover_image_url: asNonemptyTrimmedString(row.cover_image_url, config.assets.cover_image_url),
+      hero_image_url: asNonemptyTrimmedString(row.hero_image_url, config.assets.hero_image_url),
+      reference_images: (rowReferenceImages ?? config.assets.reference_images).slice(0, 8),
+    },
+    contact: {
+      ...config.contact,
+      address: asNonemptyTrimmedString(row.address, config.contact.address),
+      phone: asNonemptyTrimmedString(row.phone, config.contact.phone),
+      email: asNonemptyTrimmedString(row.email, config.contact.email),
+      website: asNonemptyTrimmedString(row.website, config.contact.website),
+      latitude: numOrStringToCoordString(row.latitude ?? config.contact.latitude),
+      longitude: numOrStringToCoordString(row.longitude ?? config.contact.longitude),
+      public_location_notes: asNonemptyTrimmedString(row.public_location_notes, config.contact.public_location_notes),
+    },
+    social: {
+      ...config.social,
+      facebook_url: asNonemptyTrimmedString(row.facebook_url, config.social.facebook_url),
+      instagram_url: asNonemptyTrimmedString(row.instagram_url, config.social.instagram_url),
+      twitter_url: asNonemptyTrimmedString(row.twitter_url, config.social.twitter_url),
+      youtube_url: asNonemptyTrimmedString(row.youtube_url, config.social.youtube_url),
+      tiktok_url: asNonemptyTrimmedString(row.tiktok_url, config.social.tiktok_url),
+    },
+    seo: {
+      ...config.seo,
+      meta_title: asNonemptyTrimmedString(row.meta_title, config.seo.meta_title),
+      meta_description: asNonemptyTrimmedString(row.meta_description, config.seo.meta_description),
+      og_image_url: asNonemptyTrimmedString(row.og_image_url, config.seo.og_image_url),
+      allow_indexing:
+        (row as { public_seo_allow_indexing?: boolean }).public_seo_allow_indexing !== undefined
+          ? (row as { public_seo_allow_indexing?: boolean }).public_seo_allow_indexing !== false
+          : config.seo.allow_indexing,
+      structured_data_enabled:
+        (row as { public_seo_structured_data?: boolean }).public_seo_structured_data !== undefined
+          ? (row as { public_seo_structured_data?: boolean }).public_seo_structured_data !== false
+          : config.seo.structured_data_enabled,
+    },
+    onboarding: {
+      ...config.onboarding,
+      join_approval_mode:
+        (row.join_approval_mode as "manual" | "auto" | undefined) === "auto" ||
+        (row.join_approval_mode as "manual" | "auto" | undefined) === "manual"
+          ? (row.join_approval_mode as "manual" | "auto")
+          : config.onboarding.join_approval_mode,
+      join_reviewer_policy:
+        (row.join_reviewer_policy as "admin_only" | "admin_trainer" | undefined) === "admin_trainer"
+          ? "admin_trainer"
+          : (row.join_reviewer_policy as "admin_only" | "admin_trainer" | undefined) === "admin_only"
+            ? "admin_only"
+            : config.onboarding.join_reviewer_policy,
+      join_default_role: asTrimmedString(row.join_default_role, config.onboarding.join_default_role),
+      join_default_team: asTrimmedString(row.join_default_team, config.onboarding.join_default_team),
+      join_auto_approve_invited_only:
+        (row as { join_auto_approve_invited_only?: boolean }).join_auto_approve_invited_only === true,
+    },
+    publicPageSections: {
+      ...config.publicPageSections,
+      ...parsePublicPageSections(row.public_page_sections),
+    },
+  };
+}
+
+function buildLegacyClubRowPublicPageConfig(row: Record<string, unknown>): ClubPublicPageConfig {
+  const publishedBranding = parseClubPublicPageConfig(row.public_page_published_config)?.branding;
+  const publishedAssets = parseClubPublicPageConfig(row.public_page_published_config)?.assets;
   const referenceImages = Array.isArray(row.reference_images)
     ? row.reference_images.map((item) => String(item)).filter(Boolean)
     : [];
@@ -285,6 +433,11 @@ export function clubRowToPublicPageConfig(row: Record<string, unknown>): ClubPub
       description: (row.description as string | null) ?? null,
       is_public: row.is_public !== false,
       default_language: asTrimmedString(row.default_language, "en"),
+      supported_languages: parseSupportedLanguages(
+        parseClubPublicPageConfig(row.public_page_published_config)?.general.supported_languages,
+        normalizeClubPageLanguage(row.default_language, "en"),
+      ),
+      localized: parseClubPublicPageConfig(row.public_page_published_config)?.general.localized ?? {},
       timezone: asTrimmedString(row.timezone, "Europe/Berlin"),
       club_category: asTrimmedString(row.club_category),
     },
@@ -293,25 +446,29 @@ export function clubRowToPublicPageConfig(row: Record<string, unknown>): ClubPub
       secondary_color: asTrimmedString(row.secondary_color, "#1E293B"),
       tertiary_color: asTrimmedString(row.tertiary_color, "#0F172A"),
       support_color: asTrimmedString(row.support_color, "#22C55E"),
-      foreground_color: "#F8FAFC",
-      theme_preference: "system",
+      foreground_color: asTrimmedString(publishedBranding?.foreground_color, "#F8FAFC"),
+      muted_color: asTrimmedString(publishedBranding?.muted_color, ""),
+      theme_preference:
+        publishedBranding?.theme_preference === "light" || publishedBranding?.theme_preference === "dark"
+          ? publishedBranding.theme_preference
+          : "system",
     },
     assets: {
       logo_url: asTrimmedString(row.logo_url),
       favicon_url: asTrimmedString(row.favicon_url),
-      cover_image_url: asTrimmedString(row.cover_image_url),
-      hero_image_url: "",
+      cover_image_url: asNonemptyTrimmedString(row.cover_image_url, asTrimmedString(publishedAssets?.cover_image_url)),
+      hero_image_url: asNonemptyTrimmedString(row.hero_image_url, asTrimmedString(publishedAssets?.hero_image_url)),
       reference_images: referenceImages.slice(0, 8),
-      logo_alt: "",
-      favicon_alt: "",
-      cover_alt: "",
-      hero_alt: "",
-      cover_object_position: "center",
-      hero_object_position: "center",
-      default_generated_asset: "cover",
-      default_hero_asset_id: normalizeDefaultHeroAssetId(null),
-      hero_club_color_overlay: true,
-      hero_tint_strength: 0.45,
+      logo_alt: asTrimmedString(publishedAssets?.logo_alt),
+      favicon_alt: asTrimmedString(publishedAssets?.favicon_alt),
+      cover_alt: asTrimmedString(publishedAssets?.cover_alt),
+      hero_alt: asTrimmedString(publishedAssets?.hero_alt),
+      cover_object_position: asTrimmedString(publishedAssets?.cover_object_position, "center"),
+      hero_object_position: asTrimmedString(publishedAssets?.hero_object_position, "center"),
+      default_generated_asset: asTrimmedString(publishedAssets?.default_generated_asset, "cover"),
+      default_hero_asset_id: normalizeDefaultHeroAssetId(publishedAssets?.default_hero_asset_id),
+      hero_club_color_overlay: publishedAssets?.hero_club_color_overlay !== false,
+      hero_tint_strength: asUnitInterval(publishedAssets?.hero_tint_strength, 0.45),
     },
     contact: {
       address: asTrimmedString(row.address),
@@ -356,6 +513,13 @@ export function clubRowToPublicPageConfig(row: Record<string, unknown>): ClubPub
     privacy,
     publicPageConfig: undefined,
   };
+}
+
+/** Build a full config object from a `clubs` row (legacy columns + published JSON when present). */
+export function clubRowToPublicPageConfig(row: Record<string, unknown>): ClubPublicPageConfig {
+  const published = parseClubPublicPageConfig(row.public_page_published_config);
+  if (published) return overlayClubRowOntoPublicPageConfig(published, row);
+  return buildLegacyClubRowPublicPageConfig(row);
 }
 
 export function publicPageConfigToJson(config: ClubPublicPageConfig): Record<string, unknown> {
@@ -572,6 +736,10 @@ export interface ClubPublicPageEditorFormLike {
   description: string;
   is_public: boolean;
   default_language: string;
+  /** When true, public site is available in default + secondary language. */
+  secondary_language_enabled: boolean;
+  /** Content for the non-default language (en/de). */
+  localized_secondary: ClubLocalizedContent;
   timezone: string;
   club_category: string;
   logo_url: string;
@@ -583,6 +751,7 @@ export interface ClubPublicPageEditorFormLike {
   tertiary_color: string;
   support_color: string;
   foreground_color: string;
+  muted_color: string;
   theme_preference: "system" | "light" | "dark";
   logo_alt: string;
   favicon_alt: string;
@@ -632,12 +801,43 @@ export interface ClubPublicPageEditorFormLike {
 }
 
 export function publicPageConfigToEditorForm(c: ClubPublicPageConfig): ClubPublicPageEditorFormLike {
+  const defaultLang = normalizeClubPageLanguage(c.general.default_language);
+  const supported = c.general.supported_languages;
+  const secondaryLang = supported.find((l) => l !== defaultLang);
+  const secondaryEnabled = supported.length > 1 && Boolean(secondaryLang);
+  const localized = c.general.localized;
+
+  const primaryDescription =
+    localized[defaultLang]?.description?.trim()
+    || c.general.description?.trim()
+    || "";
+  const primaryMetaTitle = localized[defaultLang]?.meta_title?.trim() || c.seo.meta_title.trim();
+  const primaryMetaDescription =
+    localized[defaultLang]?.meta_description?.trim() || c.seo.meta_description.trim();
+  const primaryNewsSubtitle =
+    localized[defaultLang]?.news_page_subtitle?.trim() || c.seo.news_page_subtitle?.trim() || "";
+  const primaryLocationNotes =
+    localized[defaultLang]?.public_location_notes?.trim() || c.contact.public_location_notes.trim();
+
+  const secondaryContent = secondaryLang
+    ? {
+        ...emptyClubLocalizedContent(),
+        description: localized[secondaryLang]?.description?.trim() ?? "",
+        meta_title: localized[secondaryLang]?.meta_title?.trim() ?? "",
+        meta_description: localized[secondaryLang]?.meta_description?.trim() ?? "",
+        news_page_subtitle: localized[secondaryLang]?.news_page_subtitle?.trim() ?? "",
+        public_location_notes: localized[secondaryLang]?.public_location_notes?.trim() ?? "",
+      }
+    : emptyClubLocalizedContent();
+
   return {
     name: c.general.name,
     slug: c.general.slug,
-    description: c.general.description ?? "",
+    description: primaryDescription,
     is_public: c.general.is_public,
-    default_language: c.general.default_language,
+    default_language: defaultLang,
+    secondary_language_enabled: secondaryEnabled,
+    localized_secondary: secondaryContent,
     timezone: c.general.timezone,
     club_category: c.general.club_category,
     logo_url: c.assets.logo_url,
@@ -649,6 +849,7 @@ export function publicPageConfigToEditorForm(c: ClubPublicPageConfig): ClubPubli
     tertiary_color: c.branding.tertiary_color,
     support_color: c.branding.support_color,
     foreground_color: c.branding.foreground_color,
+    muted_color: c.branding.muted_color,
     theme_preference: c.branding.theme_preference,
     logo_alt: c.assets.logo_alt,
     favicon_alt: c.assets.favicon_alt,
@@ -667,15 +868,15 @@ export function publicPageConfigToEditorForm(c: ClubPublicPageConfig): ClubPubli
     website: c.contact.website,
     contact_latitude: c.contact.latitude,
     contact_longitude: c.contact.longitude,
-    public_location_notes: c.contact.public_location_notes,
+    public_location_notes: primaryLocationNotes,
     facebook_url: c.social.facebook_url,
     instagram_url: c.social.instagram_url,
     twitter_url: c.social.twitter_url,
     youtube_url: c.social.youtube_url,
     tiktok_url: c.social.tiktok_url,
-    meta_title: c.seo.meta_title,
-    meta_description: c.seo.meta_description,
-    news_page_subtitle: c.seo.news_page_subtitle ?? "",
+    meta_title: primaryMetaTitle,
+    meta_description: primaryMetaDescription,
+    news_page_subtitle: primaryNewsSubtitle,
     seo_og_image_url: c.seo.og_image_url,
     seo_allow_indexing: c.seo.allow_indexing,
     seo_structured_data_enabled: c.seo.structured_data_enabled,
@@ -705,6 +906,23 @@ export function editorFormToPublicPageConfig(
   const baseSections = { ...DEFAULT_PUBLIC_PAGE_SECTIONS, ...f.publicPageSections };
   const mergedSections = applyMicroPagesToSections(microPages, baseSections);
   const privacy = { ...f.privacy };
+  const defaultLang = normalizeClubPageLanguage(f.default_language);
+  const secondaryLang = oppositeClubPageLanguage(defaultLang);
+  const supported: ClubPageLanguage[] = f.secondary_language_enabled
+    ? [defaultLang, secondaryLang]
+    : [defaultLang];
+  const localized: Partial<Record<ClubPageLanguage, Partial<ClubLocalizedContent>>> = {
+    [defaultLang]: {
+      description: f.description.trim(),
+      meta_title: f.meta_title.trim(),
+      meta_description: f.meta_description.trim(),
+      news_page_subtitle: f.news_page_subtitle.trim(),
+      public_location_notes: f.public_location_notes.trim(),
+    },
+  };
+  if (f.secondary_language_enabled) {
+    localized[secondaryLang] = { ...f.localized_secondary };
+  }
   return {
     schemaVersion: CLUB_PUBLIC_PAGE_CONFIG_SCHEMA_VERSION,
     general: {
@@ -712,16 +930,19 @@ export function editorFormToPublicPageConfig(
       slug: f.slug.trim(),
       description: f.description.trim() || null,
       is_public: f.is_public,
-      default_language: f.default_language.trim() || "en",
+      default_language: defaultLang,
+      supported_languages: supported,
+      localized,
       timezone: f.timezone.trim() || "Europe/Berlin",
       club_category: f.club_category.trim(),
     },
     branding: {
-      primary_color: f.primary_color.trim() || "#C4A052",
-      secondary_color: f.secondary_color.trim() || "#1E293B",
-      tertiary_color: f.tertiary_color.trim() || "#0F172A",
-      support_color: f.support_color.trim() || "#22C55E",
-      foreground_color: f.foreground_color.trim() || "#F8FAFC",
+      primary_color: normalizeBrandingColorInput(f.primary_color, "#C4A052") || "#C4A052",
+      secondary_color: normalizeBrandingColorInput(f.secondary_color, "#1E293B") || "#1E293B",
+      tertiary_color: normalizeBrandingColorInput(f.tertiary_color, "#0F172A") || "#0F172A",
+      support_color: normalizeBrandingColorInput(f.support_color, "#22C55E") || "#22C55E",
+      foreground_color: normalizeBrandingColorInput(f.foreground_color, "#F8FAFC") || "#F8FAFC",
+      muted_color: normalizeBrandingColorInput(f.muted_color, ""),
       theme_preference: f.theme_preference === "light" || f.theme_preference === "dark" ? f.theme_preference : "system",
     },
     assets: {
@@ -789,6 +1010,31 @@ export function editorFormToPublicPageConfig(
   };
 }
 
+/** Serialize → parse → editor form; used to verify admin field round-trips. */
+export function roundTripClubPageEditorForm(
+  form: ClubPublicPageEditorFormLike,
+  preserve?: ClubPublicPageConfig | null
+): ClubPublicPageEditorFormLike {
+  const config = editorFormToPublicPageConfig(form, preserve);
+  const json = publicPageConfigToJson(config);
+  const reparsed = parseClubPublicPageConfig(json);
+  if (!reparsed) throw new Error("club_page_config_round_trip_parse_failed");
+  return publicPageConfigToEditorForm(reparsed);
+}
+
+/** Strip bilingual settings when the club's plan does not include multilingual public pages. */
+export function enforceMultilingualOnEditorForm(
+  form: ClubPublicPageEditorFormLike,
+  multilingualAllowed: boolean,
+): ClubPublicPageEditorFormLike {
+  if (multilingualAllowed || !form.secondary_language_enabled) return form;
+  return {
+    ...form,
+    secondary_language_enabled: false,
+    localized_secondary: emptyClubLocalizedContent(),
+  };
+}
+
 export function emptyClubPublicPageEditorForm(): ClubPublicPageEditorFormLike {
   const sections = { ...DEFAULT_PUBLIC_PAGE_SECTIONS };
   return {
@@ -797,6 +1043,8 @@ export function emptyClubPublicPageEditorForm(): ClubPublicPageEditorFormLike {
     description: "",
     is_public: true,
     default_language: "en",
+    secondary_language_enabled: false,
+    localized_secondary: emptyClubLocalizedContent(),
     timezone: "Europe/Berlin",
     club_category: "",
     logo_url: "",
@@ -808,6 +1056,7 @@ export function emptyClubPublicPageEditorForm(): ClubPublicPageEditorFormLike {
     tertiary_color: "#0F172A",
     support_color: "#22C55E",
     foreground_color: "#F8FAFC",
+    muted_color: "",
     theme_preference: "system",
     logo_alt: "",
     favicon_alt: "",

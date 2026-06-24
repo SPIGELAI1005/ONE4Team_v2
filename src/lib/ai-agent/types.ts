@@ -1,9 +1,11 @@
 export type AgentIntent =
   | "create_training"
   | "cancel_training"
+  | "cancel_training_with_parent_notice"
   | "add_member_draft"
   | "send_club_announcement"
   | "plan_training_week"
+  | "duplicate_training_week"
   | "notify_trainers";
 
 export type AgentRunStatus =
@@ -50,6 +52,39 @@ export interface AgentInterpretResponse {
   params: Record<string, unknown>;
   confidence?: number;
 }
+
+export interface AgentClarifyResponse {
+  kind: "clarify";
+  intent: AgentIntent;
+  field: "reason" | "activity_id";
+  question: string;
+  params: Record<string, unknown>;
+}
+
+export interface TeamTrainerSuggestion {
+  membership_id: string;
+  display_name: string;
+  email: string;
+}
+
+export interface AgentTeamAccessDeniedResponse {
+  kind: "team_access_denied";
+  error: string;
+  team_id?: string | null;
+  team_name?: string | null;
+  activity_id?: string | null;
+  activity_title?: string | null;
+  suggested_trainers?: TeamTrainerSuggestion[];
+  recommend_notify_trainers?: boolean;
+  notify_suggestion?: string;
+}
+
+export type AgentInterpretApiResponse =
+  | AgentInterpretResponse
+  | AgentClarifyResponse
+  | { kind: "chat" }
+  | AgentTeamAccessDeniedResponse
+  | { error?: string };
 
 export interface AgentExecuteResponse {
   run_id: string;

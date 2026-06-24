@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { isMissingRelationError, normalizeSectionSearch } from "@/lib/public-club-models";
 import { PUBLIC_CLUB_ROUTE_SEGMENTS } from "@/lib/public-club-routes";
 import { readableTextOnSolid } from "@/lib/hex-to-rgb";
-import { clubCtaFillHoverClass, clubCtaOutlineHoverClass } from "@/lib/public-club-cta-classes";
+import { clubCtaFillHoverClass, clubCtaOutlineButtonClass, clubCtaOutlineHoverClass } from "@/lib/public-club-cta-classes";
 
 type DocumentCategory = "membership" | "policies" | "training" | "events" | "forms";
 
@@ -151,13 +151,13 @@ export default function PublicClubDocumentsPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t.clubPage.documentsSearchPlaceholder}
-              className="border-[color:var(--club-border)] bg-[color:var(--club-card)] pl-9 text-[color:var(--club-foreground)] placeholder:text-[color:var(--club-muted)]"
+              className="club-glass pl-9 text-[color:var(--club-foreground)] placeholder:text-[color:var(--club-muted)]"
             />
           </div>
           <Button
             type="button"
             variant="outline"
-            className={`shrink-0 border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`}
+            className={`shrink-0 ${clubCtaOutlineButtonClass}`}
             onClick={documentsCta}
           >
             {user ? t.clubPage.documentsSignedInCta : t.clubPage.documentsSignedOutCta}
@@ -170,7 +170,7 @@ export default function PublicClubDocumentsPage() {
             onClick={() => setCategory("all")}
             className={[
               "rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide transition-colors sm:text-sm",
-              category === "all" ? clubCtaFillHoverClass : `border border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-foreground)]/85 hover:text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`,
+              category === "all" ? clubCtaFillHoverClass : `club-glass text-[color:var(--club-foreground)]/85 hover:text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`,
             ].join(" ")}
             style={
               category === "all"
@@ -192,7 +192,7 @@ export default function PublicClubDocumentsPage() {
                 "rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wide transition-colors sm:text-sm",
                 category === cat
                   ? clubCtaFillHoverClass
-                  : `border border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-foreground)]/85 hover:text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`,
+                  : `club-glass text-[color:var(--club-foreground)]/85 hover:text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`,
               ].join(" ")}
               style={
                 category === cat
@@ -208,7 +208,7 @@ export default function PublicClubDocumentsPage() {
           ))}
         </div>
 
-        <div className="mx-auto mt-10 max-w-5xl text-left">
+        <div className="mx-auto mt-10 max-w-5xl text-left" id="club-documents">
           <h3 className="mb-4 flex items-center gap-2 font-display text-lg font-semibold text-[color:var(--club-foreground)]">
             <FileText className="h-5 w-5 text-[color:var(--club-primary)]" />
             {t.clubPage.documentsUsefulDownloads}
@@ -274,12 +274,12 @@ export default function PublicClubDocumentsPage() {
         </div>
 
         {faqPreview.length > 0 ? (
-          <div className="mx-auto mt-14 max-w-3xl text-left">
+          <div className="mx-auto mt-14 max-w-3xl text-left" id="club-faq">
             <h3 className="mb-4 flex items-center gap-2 font-display text-lg font-semibold text-[color:var(--club-foreground)]">
               <HelpCircle className="h-5 w-5 text-[color:var(--club-primary)]" />
               {t.clubPage.documentsFaqPreviewTitle}
             </h3>
-            <Accordion type="single" collapsible className="w-full rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] px-2">
+            <Accordion type="single" collapsible className="w-full rounded-2xl club-glass px-2">
               {faqPreview.map((item) => (
                 <AccordionItem key={item.id} value={item.id} className="border-[color:var(--club-border)]">
                   <AccordionTrigger className="text-left text-[color:var(--club-foreground)] hover:no-underline">
@@ -294,7 +294,7 @@ export default function PublicClubDocumentsPage() {
                 <Button
                   asChild
                   variant="outline"
-                  className="border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-foreground)] hover:bg-[color:color-mix(in_srgb,var(--club-card)_82%,var(--club-foreground))]"
+                  className={clubCtaOutlineButtonClass}
                 >
                   <Link to={joinFaqHref}>{t.clubPage.documentsFaqSeeAll}</Link>
                 </Button>

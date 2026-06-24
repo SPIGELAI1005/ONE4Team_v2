@@ -29,8 +29,10 @@ export function ClubPageAdminLivePublicPreview({ form }: ClubPageAdminLivePublic
         secondary_color: form.secondary_color,
         tertiary_color: form.tertiary_color,
         support_color: form.support_color,
+        foreground_color: form.foreground_color,
+        muted_color: form.muted_color,
       }),
-    [form.primary_color, form.secondary_color, form.tertiary_color, form.support_color]
+    [form.foreground_color, form.muted_color, form.primary_color, form.secondary_color, form.tertiary_color, form.support_color]
   );
 
   const heroSrc = useMemo(() => {

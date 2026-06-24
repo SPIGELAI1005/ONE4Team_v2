@@ -98,19 +98,19 @@ export default function PublicClubEventDetailPage() {
               <Loader2 className="h-8 w-8 animate-spin text-[color:var(--club-primary)]" />
             </div>
           ) : error ? (
-            <div className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-6 text-sm text-[color:var(--club-muted)]">
+            <div className="rounded-2xl club-glass p-6 text-sm text-[color:var(--club-muted)]">
               {error}
             </div>
           ) : !row ? (
-            <div className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-6 text-sm text-[color:var(--club-muted)]">
+            <div className="rounded-2xl club-glass p-6 text-sm text-[color:var(--club-muted)]">
               {t.clubPage.eventDetailNotFound}
             </div>
           ) : !enabled ? (
-            <div className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-6 text-sm text-[color:var(--club-muted)]">
+            <div className="rounded-2xl club-glass p-6 text-sm text-[color:var(--club-muted)]">
               {t.clubPage.eventDetailPrivate}
             </div>
           ) : (
-            <article className="overflow-hidden rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] shadow-sm">
+            <article className="overflow-hidden rounded-2xl club-glass shadow-sm">
               {row.image_url?.trim() ? (
                 <div className="border-b border-[color:var(--club-border)]">
                   <img src={row.image_url} alt="" className="aspect-[16/9] w-full object-cover" loading="lazy" />
@@ -161,7 +161,7 @@ export default function PublicClubEventDetailPage() {
                   {regOpen && !row.registration_external_url?.trim() ? (
                     <Link
                       to={joinHref}
-                      className={`inline-flex min-h-[44px] items-center justify-center rounded-full border border-[color:var(--club-border)] bg-[color:var(--club-card)] px-5 text-sm font-semibold text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`}
+                      className={`inline-flex min-h-[44px] items-center justify-center rounded-full club-glass px-5 text-sm font-semibold text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`}
                     >
                       {t.clubPage.eventDetailRegisterViaClub}
                     </Link>

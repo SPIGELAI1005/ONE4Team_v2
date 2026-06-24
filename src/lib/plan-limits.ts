@@ -14,6 +14,8 @@ export interface PlanLimits {
     partners: boolean;
     shop: boolean;
     clubPage: boolean;
+    /** Public club page in two languages (e.g. EN + DE). Pro+ or trial. */
+    clubPageMultilingual: boolean;
     ai: boolean;
     analytics: boolean;
     customBranding: boolean;
@@ -37,6 +39,7 @@ const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
       partners: false,
       shop: false,
       clubPage: true,
+      clubPageMultilingual: false,
       ai: false,
       analytics: false,
       customBranding: false,
@@ -58,6 +61,7 @@ const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
       partners: true,
       shop: true,
       clubPage: true,
+      clubPageMultilingual: false,
       ai: false,
       analytics: false,
       customBranding: false,
@@ -79,6 +83,7 @@ const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
       partners: true,
       shop: true,
       clubPage: true,
+      clubPageMultilingual: true,
       ai: true,
       analytics: true,
       customBranding: true,
@@ -100,6 +105,7 @@ const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
       partners: true,
       shop: true,
       clubPage: true,
+      clubPageMultilingual: true,
       ai: true,
       analytics: true,
       customBranding: true,
@@ -121,6 +127,7 @@ const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
       partners: true,
       shop: true,
       clubPage: true,
+      clubPageMultilingual: true,
       ai: true,
       analytics: true,
       customBranding: true,

@@ -8,6 +8,7 @@ import {
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import logo from "@/assets/one4team-logo.png";
+import { BrandedText } from "@/components/ai/Ai4TBrand";
 
 type NavItem = { icon: React.ElementType; label: string; id: string; route?: string };
 
@@ -173,7 +174,7 @@ export default function DashboardSidebar() {
             title={collapsed ? item.label : undefined}
           >
             <item.icon className="w-[18px] h-[18px] shrink-0" strokeWidth={1.5} />
-            {!collapsed && <span>{item.label}</span>}
+            {!collapsed && <span><BrandedText text={item.label} /></span>}
           </motion.button>
         ))}
       </nav>

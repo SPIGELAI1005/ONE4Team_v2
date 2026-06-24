@@ -22,9 +22,9 @@ Recommended additional env:
 - `VITE_APP_ENV=staging|prod`
 - `VITE_LOG_LEVEL=debug|info|warn|error`
 
-### AI4Team (Edge Functions — Supabase project secrets)
+### AI 4 T (Edge Functions — Supabase project secrets)
 
-AI4Team chat runs through the **`co-trainer`** Edge Function. API keys must **never** go in Vite `.env` (they would ship to the browser).
+AI 4 T chat runs through the **`co-trainer`** Edge Function. API keys must **never** go in Vite `.env` (they would ship to the browser).
 
 #### Quick setup checklist
 
@@ -57,7 +57,7 @@ AI4Team chat runs through the **`co-trainer`** Edge Function. API keys must **ne
    ```
 
 5. **Verify in the app** — sign in as club admin → **Settings → Club → AI provider** → **Test connection**.  
-   Success shows **Connected** (club key or platform `OPENAI_API_KEY`). Then open **`/co-trainer`** (AI4Team) and send a chat message.
+   Success shows **Connected** (club key or platform `OPENAI_API_KEY`). Then open **`/co-trainer`** (AI 4 T) and send a chat message.
 
 #### Supported providers (club settings)
 
@@ -74,13 +74,13 @@ OpenAI, Anthropic (Claude), Google Gemini, Azure OpenAI, GitHub Models — confi
 | **401 / invalid JWT** | Session expired | Sign out/in; Settings refresh uses `refreshSession` automatically |
 | Provider error in detail | Bad key, wrong model, or Azure endpoint missing | Re-check key, model name, Azure resource URL in Settings |
 
-The Settings **Test connection** and AI4Team chat require the app’s `VITE_*` URLs to reach this project and a successful deploy of `co-trainer` (including `mode: "health"` support).
+The Settings **Test connection** and AI 4 T chat require the app’s `VITE_*` URLs to reach this project and a successful deploy of `co-trainer` (including `mode: "health"` support).
 
-### Club feature trials (AI4Team / Shop without full plan upgrade)
+### Club feature trials (AI 4 T / Shop without full plan upgrade)
 
 Apply migration `supabase/migrations/20260614140000_club_feature_trials.sql` (seeds **TSV Allach 09** with a 90-day **AI** trial when the club name/slug matches `%allach%`).
 
-**Grant AI4Team trial to a club** (Supabase SQL Editor — adjust name/slug and duration):
+**Grant AI 4 T trial to a club** (Supabase SQL Editor — adjust name/slug and duration):
 
 ```sql
 -- Find the club id first
@@ -91,7 +91,7 @@ values (
   '<club-uuid>',
   'ai',
   now() + interval '90 days',
-  'Pilot AI4Team access'
+  'Pilot AI 4 T access'
 )
 on conflict (club_id, feature) do update
   set expires_at = excluded.expires_at,
@@ -101,7 +101,7 @@ on conflict (club_id, feature) do update
 
 Supported `feature` values: `ai`, `shop`. After changing trials or `plan_entitlements.ts`, redeploy Edge functions that call `clubHasPlanFeature` (`co-trainer`, `co-aimin`, `ai-match-analysis`, **`ai4team-agent`**).
 
-### AI4Team Agent (workflows — propose → confirm → execute)
+### AI 4 T Agent (workflows — propose → confirm → execute)
 
 Club workflows use the **`ai4team-agent`** Edge Function and Postgres RPCs. Six intents: create/cancel training, plan training week, notify trainers, add member draft (admin), send club announcement (trainer).
 
@@ -110,6 +110,8 @@ Club workflows use the **`ai4team-agent`** Edge Function and Postgres RPCs. Six 
    - `supabase/migrations/20260615130000_ai_agent_tool_rpcs.sql`
    - `supabase/migrations/20260615140000_ai_agent_runs_conversation_id.sql`
    - `supabase/migrations/20260615150000_ai_agent_tool_rpcs_extended.sql`
+   - `supabase/migrations/20260625120000_ai_agent_team_training_scope.sql` — team-scoped training RBAC
+   - `supabase/migrations/20260626120000_ai4t_duplicate_week_club_ai_stats.sql` — duplicate week + usage stats
 2. Deploy:
    ```bash
    supabase functions deploy ai4team-agent

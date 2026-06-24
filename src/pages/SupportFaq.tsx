@@ -22,6 +22,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useActiveClub } from "@/hooks/use-active-club";
 import { useToast } from "@/hooks/use-toast";
 import { DASHBOARD_PAGE_MAX_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
+import { BrandedText } from "@/components/ai/Ai4TBrand";
 import { Mail, Copy } from "lucide-react";
 
 const DEFAULT_SUPPORT_EMAIL = "spigelai@gmail.com";
@@ -163,16 +164,16 @@ export default function SupportFaq() {
                 className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4 sm:p-5"
               >
                 <h3 className="font-display text-sm font-semibold text-foreground mb-2">
-                  {cat.title}
+                  <BrandedText text={cat.title} />
                 </h3>
                 <Accordion type="single" collapsible className="w-full">
                   {cat.faqs.map((faq, fi) => (
                     <AccordionItem key={fi} value={`${ci}-${fi}`} className="border-border/60">
                       <AccordionTrigger className="text-left text-sm hover:no-underline">
-                        {faq.q}
+                        <BrandedText text={faq.q} />
                       </AccordionTrigger>
                       <AccordionContent className="text-muted-foreground text-sm leading-relaxed">
-                        {faq.a}
+                        <BrandedText text={faq.a} />
                       </AccordionContent>
                     </AccordionItem>
                   ))}
@@ -208,7 +209,7 @@ export default function SupportFaq() {
               <SelectContent>
                 {REPORT_TOPIC_ORDER.map((id) => (
                   <SelectItem key={id} value={id}>
-                    {topicLabels[id] ?? id}
+                    <BrandedText text={topicLabels[id] ?? id} />
                   </SelectItem>
                 ))}
               </SelectContent>

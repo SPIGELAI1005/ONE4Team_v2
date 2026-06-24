@@ -17,6 +17,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
+import { BrandedText } from "@/components/ai/Ai4TBrand";
 import AnalyticsWidgets from "@/components/dashboard/AnalyticsWidgets";
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
 import LiveMatchTicker from "@/components/dashboard/LiveMatchTicker";
@@ -629,7 +630,9 @@ const DashboardContent = () => {
         {sections.ai4teamWeeklyDigest ? (
           <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <div className="text-sm font-semibold text-foreground">{t.dashboard.ai4teamWeeklySummary}</div>
+              <div className="text-sm font-semibold text-foreground">
+                <BrandedText text={t.dashboard.ai4teamWeeklySummary} />
+              </div>
               <div className="text-xs text-muted-foreground mt-0.5">{t.dashboard.ai4teamWeeklySummaryDesc}</div>
             </div>
             <Link
@@ -638,7 +641,7 @@ const DashboardContent = () => {
               )}`}
               className="inline-flex items-center justify-center rounded-xl bg-gradient-gold-static px-4 py-2 text-xs font-semibold text-primary-foreground hover:brightness-110 shrink-0"
             >
-              {t.dashboard.ai4teamWeeklySummary}
+              <BrandedText text={t.dashboard.ai4teamWeeklySummary} />
             </Link>
           </div>
         ) : null}

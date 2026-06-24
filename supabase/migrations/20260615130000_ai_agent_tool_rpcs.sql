@@ -1,4 +1,4 @@
--- AI4Team Agent tool RPCs (security definer; caller _user_id must be trainer+).
+-- AI 4 T Agent tool RPCs (security definer; caller _user_id must be trainer+).
 
 create or replace function public.agent_create_training(
   _club_id uuid,

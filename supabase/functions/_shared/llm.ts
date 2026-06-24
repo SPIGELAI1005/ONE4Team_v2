@@ -14,6 +14,7 @@ export interface ClubLlmSettingsRow {
   model: string | null;
   azure_endpoint: string | null;
   azure_api_version: string | null;
+  club_ai_instructions?: string | null;
 }
 
 const DEFAULTS: Record<LlmProvider, string> = {

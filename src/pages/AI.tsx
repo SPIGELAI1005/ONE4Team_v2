@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
+import { BrandedText } from "@/components/ai/Ai4TBrand";
 import { useLanguage } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, ClipboardList, Shield, ScrollText } from "lucide-react";
@@ -10,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 
-/** AI4Team admin tools: logged copilots (training plan + admin digest). Route: `/ai`. */
+/** AI 4 T admin tools: logged copilots (training plan + admin digest). Route: `/ai`. */
 // Server-first generation path with deterministic fallback if edge function is unavailable.
 
 type ActivityRow = {
@@ -225,7 +226,7 @@ export default function AI() {
 
       if (error) throw error;
 
-      toast({ title: t.ai.generated, description: t.ai.savedToRequests });
+      toast({ title: t.ai.generated, description: <BrandedText text={t.ai.savedToRequests} /> });
       await fetchData();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t.ai.failedToGenerate;
@@ -260,7 +261,9 @@ export default function AI() {
           </div>
         ) : !clubId ? (
           <div className="text-center py-20">
-            <p className="text-muted-foreground">{t.ai.selectClub}</p>
+            <p className="text-muted-foreground">
+              <BrandedText text={t.ai.selectClub} />
+            </p>
           </div>
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
@@ -317,7 +320,9 @@ export default function AI() {
 
             {canSeeLog && (
               <div className="lg:col-span-2 rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
-                <div className="font-display font-bold">{t.ai.recentRequests}</div>
+                <div className="font-display font-bold">
+                  <BrandedText text={t.ai.recentRequests} />
+                </div>
                 <div className="mt-2 grid gap-2">
                   {aiLog.length === 0 ? (
                     <div className="text-xs text-muted-foreground">{t.ai.noRequests}</div>

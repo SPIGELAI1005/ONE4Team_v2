@@ -4,8 +4,16 @@ import type {
   AgentPageContext,
   AgentIntent,
   AgentProposeResponse,
+  AgentClarifyResponse,
+  AgentTeamAccessDeniedResponse,
   AgentInterpretResponse,
 } from "./types";
+
+export type AgentInterpretResult =
+  | AgentInterpretResponse
+  | AgentClarifyResponse
+  | AgentTeamAccessDeniedResponse
+  | null;
 
 function supabaseFunctionsBase(): string {
   const raw = import.meta.env.VITE_SUPABASE_URL;
@@ -13,7 +21,17 @@ function supabaseFunctionsBase(): string {
   return `${String(raw).trim().replace(/\/+$/, "")}/functions/v1/ai4team-agent`;
 }
 
-async function parseAgentError(resp: Response): Promise<string> {
+async function parseAgentJson(resp: Response): Promise<Record<string, unknown>> {
+  try {
+    return (await resp.json()) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+async function parseAgentError(resp: Response, data?: Record<string, unknown>): Promise<string> {
+  if (data?.error && typeof data.error === "string") return data.error;
+  if (data?.kind === "team_access_denied" && typeof data.error === "string") return data.error;
   try {
     const j = (await resp.json()) as { error?: string };
     if (j.error) return j.error;
@@ -22,7 +40,6 @@ async function parseAgentError(resp: Response): Promise<string> {
   }
   return `Request failed (${resp.status})`;
 }
-
 export async function proposeAgentRun(input: {
   clubId: string;
   intent: AgentIntent;
@@ -30,6 +47,7 @@ export async function proposeAgentRun(input: {
   language: "en" | "de";
   pageContext?: AgentPageContext;
   conversationId?: string | null;
+  timezone?: string;
 }): Promise<AgentProposeResponse> {
   const headers = await getEdgeFunctionAuthHeaders();
   const resp = await fetch(supabaseFunctionsBase(), {
@@ -41,16 +59,26 @@ export async function proposeAgentRun(input: {
       intent: input.intent,
       params: input.params,
       language: input.language,
+      timezone: input.timezone ?? null,
       page_context: input.pageContext ?? {},
       conversation_id: input.conversationId ?? null,
     }),
   });
 
+  const data = await parseAgentJson(resp);
+
   if (!resp.ok) {
-    throw new Error(await parseAgentError(resp));
+    if (data.kind === "team_access_denied") {
+      throw Object.assign(new Error(String(data.error ?? "Access denied")), { agentDenied: data });
+    }
+    throw new Error(await parseAgentError(resp, data));
   }
 
-  return (await resp.json()) as AgentProposeResponse;
+  if (data.kind === "clarify") {
+    throw Object.assign(new Error(String(data.question ?? "Clarification needed")), { agentClarify: data });
+  }
+
+  return data as unknown as AgentProposeResponse;
 }
 
 /** Natural-language message → workflow proposal (or null = use normal chat). */
@@ -77,17 +105,20 @@ export async function proposeAgentFromMessage(input: {
     }),
   });
 
+  const data = await parseAgentJson(resp);
+
   if (resp.status === 204 || resp.status === 404) return null;
-
-  const data = (await resp.json()) as AgentProposeResponse & { kind?: string; error?: string };
-
   if (data.kind === "chat") return null;
+  if (data.kind === "clarify") return null;
 
   if (!resp.ok) {
-    throw new Error(data.error ?? await parseAgentError(resp));
+    if (data.kind === "team_access_denied") {
+      throw Object.assign(new Error(String(data.error ?? "Access denied")), { agentDenied: data });
+    }
+    throw new Error(await parseAgentError(resp, data));
   }
 
-  return data;
+  return data as unknown as AgentProposeResponse;
 }
 
 /** Interpret voice/text for Agent tab form fill (no DB proposal yet). */
@@ -97,7 +128,7 @@ export async function interpretAgentFromMessage(input: {
   language: "en" | "de";
   pageContext?: AgentPageContext;
   timezone?: string;
-}): Promise<AgentInterpretResponse | null> {
+}): Promise<AgentInterpretResult> {
   const headers = await getEdgeFunctionAuthHeaders();
   const resp = await fetch(supabaseFunctionsBase(), {
     method: "POST",
@@ -112,16 +143,27 @@ export async function interpretAgentFromMessage(input: {
     }),
   });
 
-  const data = (await resp.json()) as AgentInterpretResponse & { kind?: string; error?: string };
+  const data = await parseAgentJson(resp);
 
   if (data.kind === "chat") return null;
 
   if (!resp.ok) {
-    throw new Error(data.error ?? (await parseAgentError(resp)));
+    if (data.kind === "team_access_denied") {
+      return data as unknown as AgentTeamAccessDeniedResponse;
+    }
+    throw new Error(await parseAgentError(resp, data));
+  }
+
+  if (data.kind === "clarify") {
+    return data as unknown as AgentClarifyResponse;
+  }
+
+  if (data.kind === "team_access_denied") {
+    return data as unknown as AgentTeamAccessDeniedResponse;
   }
 
   if (data.kind === "workflow" && data.intent && data.params) {
-    return data;
+    return data as unknown as AgentInterpretResponse;
   }
 
   return null;
@@ -131,6 +173,8 @@ export async function executeAgentRun(input: {
   clubId: string;
   runId: string;
   idempotencyKey: string;
+  cancelActivityId?: string | null;
+  timezone?: string;
 }): Promise<AgentExecuteResponse> {
   const headers = await getEdgeFunctionAuthHeaders();
   const resp = await fetch(supabaseFunctionsBase(), {
@@ -141,6 +185,8 @@ export async function executeAgentRun(input: {
       mode: "execute",
       run_id: input.runId,
       idempotency_key: input.idempotencyKey,
+      cancel_activity_id: input.cancelActivityId ?? null,
+      timezone: input.timezone ?? null,
     }),
   });
 

@@ -1,7 +1,7 @@
-# AI4Team Agent — Concrete Implementation Plan
+# AI 4 T Agent — Concrete Implementation Plan
 
-**Status:** Phases 0–4 implemented (2026-06-15)  
-**Last updated:** 2026-06-15  
+**Status:** Phases 0–4 implemented (2026-06-15); pilot Phases 1–4 extensions (2026-06-24) — team scope, duplicate week, public club Agent modal  
+**Last updated:** 2026-06-24  
 **Scope:** Club-scoped AI agent that **proposes** workflows and **executes** them only after explicit user confirmation — integrated with `/co-trainer` and contextual header shortcuts.
 
 **Related code today:**
@@ -20,7 +20,7 @@
 ## 1. Goals and non-goals
 
 ### Goals
-- Trainers/admins can run **workflows** from AI4Team: create/update/cancel trainings, notify trainers, add member **drafts** (not silent invites).
+- Trainers/admins can run **workflows** from AI 4 T: create/update/cancel trainings, notify trainers, add member **drafts** (not silent invites).
 - **Two-step safety:** `propose` → user reviews → `execute` (no silent LLM mutations).
 - **Same RBAC** as manual UI (`schedule:write`, `members:write`, etc.).
 - **Audit trail** per run (who, what, when, outcome).
@@ -371,7 +371,7 @@ User confirms once; Edge executes sequentially; partial failure → status `fail
 - `agentShortcutAria` (header button)
 - User-facing errors: `agentErrorNotAuthorized`, `agentErrorExpired`, `agentErrorRateLimit`
 
-**Support FAQ (later):** one FAQ under AI4Team: “Can AI4Team change my schedule?” → explains confirm step.
+**Support FAQ (later):** one FAQ under AI 4 T: “Can AI 4 T change my schedule?” → explains confirm step.
 
 ---
 
@@ -477,7 +477,7 @@ User confirms once; Edge executes sequentially; partial failure → status `fail
 ## 12. Documentation & ops (on ship)
 
 Update in same PR as Phase 1:
-- `CHANGELOG.md` — AI4Team Agent section
+- `CHANGELOG.md` — AI 4 T Agent section
 - `MEMORY_BANK.md` — agent runs table + Edge name
 - `DEPLOYMENT.md` — deploy `ai4team-agent`, apply migrations `20260615120000`, `20260615130000`
 - `TASKS.md` — `AI-AGENT-001` … operator checklist

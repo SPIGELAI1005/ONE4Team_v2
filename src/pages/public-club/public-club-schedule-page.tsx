@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Calendar as CalendarIcon, LayoutList, Loader2, MapPin, Trophy } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { PublicClubPageGate } from "@/components/public-club/public-club-page-gate";
@@ -22,7 +22,8 @@ import {
   type PublicScheduleEntryKind,
   type PublicScheduleRangePreset,
 } from "@/lib/public-schedule-page";
-import { cn } from "@/lib/utils";
+import { PublicClubAttendanceRsvp } from "@/components/public-club/public-club-attendance-rsvp";
+import { publicClubRsvpTargetFromMatch, publicClubRsvpTargetFromTraining } from "@/lib/public-club-attendance";
 import { Input } from "@/components/ui/input";
 
 type ScheduleViewMode = "list" | "calendar";
@@ -41,6 +42,7 @@ function badgeClass(kind: PublicScheduleEntryKind) {
 
 export default function PublicClubSchedulePage() {
   const { t, language } = useLanguage();
+  const [searchParams] = useSearchParams();
   const { club, teams, sessions, events, publicMatches, publicMatchesUpcoming, loadingData, basePath, searchSuffix } =
     usePublicClub();
   const scheduleLocale = language === "de" ? "de-DE" : "en-GB";
@@ -52,6 +54,15 @@ export default function PublicClubSchedulePage() {
   const [scheduleSearch, setScheduleSearch] = useState("");
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => new Date());
   const [calendarDay, setCalendarDay] = useState<Date | undefined>(undefined);
+
+  useEffect(() => {
+    const param = searchParams.get("team")?.trim() ?? "";
+    if (!param) {
+      setTeamFilterId("");
+      return;
+    }
+    setTeamFilterId(teams.some((tm) => tm.id === param) ? param : "");
+  }, [searchParams, teams]);
 
   const rangeBounds = useMemo(() => getPublicScheduleRangeBounds(rangePreset), [rangePreset]);
 
@@ -209,7 +220,7 @@ export default function PublicClubSchedulePage() {
       "rounded-full px-3 py-1.5 text-xs font-medium transition-colors border",
       active
         ? "border-[color:var(--club-primary)] bg-[color:var(--club-primary)]/15 text-[color:var(--club-foreground)]"
-        : "border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-muted)] hover:text-[color:var(--club-foreground)]"
+        : "club-glass text-[color:var(--club-muted)] hover:text-[color:var(--club-foreground)]"
     );
 
   return (
@@ -220,7 +231,7 @@ export default function PublicClubSchedulePage() {
             <Loader2 className="h-8 w-8 animate-spin text-[color:var(--club-primary)]" />
           </div>
         ) : hasDedicatedEmpty ? (
-          <div className="mx-auto max-w-md rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] px-6 py-10 text-center">
+          <div className="mx-auto max-w-md rounded-2xl club-glass px-6 py-10 text-center">
             <CalendarIcon className="mx-auto mb-3 h-10 w-10 text-[color:var(--club-muted)] opacity-80" />
             <p className="text-sm font-medium text-[color:var(--club-foreground)]">{t.clubPage.scheduleEmptyDedicated}</p>
           </div>
@@ -269,7 +280,7 @@ export default function PublicClubSchedulePage() {
                 <select
                   value={teamFilterId}
                   onChange={(e) => setTeamFilterId(e.target.value)}
-                  className="h-10 w-full max-w-md rounded-xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] px-3 text-sm text-[color:var(--club-foreground)]"
+                  className="h-10 w-full max-w-md rounded-xl club-glass px-3 text-sm text-[color:var(--club-foreground)]"
                 >
                   <option value="">{t.clubPage.scheduleTeamAll}</option>
                   {teamOptions.map((tm) => (
@@ -303,11 +314,11 @@ export default function PublicClubSchedulePage() {
               value={scheduleSearch}
               onChange={(e) => setScheduleSearch(e.target.value)}
               placeholder={t.clubPage.scheduleSearchPlaceholder}
-              className="max-w-md border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-foreground)]"
+              className="max-w-md club-glass text-[color:var(--club-foreground)]"
             />
 
             {viewMode === "calendar" ? (
-              <div className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-3 sm:p-4">
+              <div className="rounded-2xl club-glass p-3 sm:p-4">
                 <Calendar
                   mode="single"
                   month={calendarMonth}
@@ -325,7 +336,7 @@ export default function PublicClubSchedulePage() {
             ) : null}
 
             {hasNoMatchesForFilters || calendarDayEmpty ? (
-              <div className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-6 text-center text-sm text-[color:var(--club-muted)]">
+              <div className="rounded-2xl club-glass p-6 text-center text-sm text-[color:var(--club-muted)]">
                 {calendarDayEmpty ? t.clubPage.scheduleEmptyCalendarDay : t.clubPage.scheduleEmptyFilters}
               </div>
             ) : (
@@ -364,7 +375,7 @@ export default function PublicClubSchedulePage() {
                           return (
                             <div
                               key={`${entry.kind}-${entry.id}`}
-                              className="flex flex-col gap-2 rounded-xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] px-3 py-2.5 shadow-sm sm:flex-row sm:gap-4 sm:px-4 sm:py-3"
+                              className="flex flex-col gap-2 rounded-xl club-glass px-3 py-2.5 shadow-sm sm:flex-row sm:gap-4 sm:px-4 sm:py-3"
                             >
                               <div className="flex shrink-0 gap-3 sm:w-36 sm:flex-col sm:items-end sm:gap-0.5 sm:text-right">
                                 <div
@@ -404,6 +415,30 @@ export default function PublicClubSchedulePage() {
                                     </span>
                                   ) : null}
                                 </div>
+                                {entry.kind === "training" || entry.kind === "match" ? (
+                                  <PublicClubAttendanceRsvp
+                                    title={entry.title}
+                                    compact
+                                    target={
+                                      entry.kind === "training"
+                                        ? publicClubRsvpTargetFromTraining({
+                                            id: entry.id,
+                                            source: entry.source,
+                                            starts_at: entry.startsAt,
+                                            team_id: entry.teamId,
+                                            title: entry.title,
+                                          })
+                                        : publicClubRsvpTargetFromMatch({
+                                            id: entry.id,
+                                            match_date: entry.startsAt,
+                                            team_id: entry.teamId,
+                                            opponent: entry.match?.opponent ?? entry.title,
+                                            is_home: entry.match?.is_home ?? true,
+                                            clubName: club?.name ?? "",
+                                          })
+                                    }
+                                  />
+                                ) : null}
                                 {cta ? (
                                   <div className="mt-2">
                                     <Link

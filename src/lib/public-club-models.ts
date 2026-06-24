@@ -1,5 +1,11 @@
 import { parsePublicPageSections, type PublicPageSectionsState } from "@/lib/club-public-page-sections";
 import { clubRowToPublicPageConfig, parseClubPublicPageConfig, type ClubPublicPageConfig } from "@/lib/club-public-page-config";
+import {
+  normalizeClubPageLanguage,
+  resolveLocalizedField,
+  type ClubLocalizedContent,
+  type ClubPageLanguage,
+} from "@/lib/club-public-page-i18n";
 import { resolvePublicPageConfigFromClub, type PublicPageConfig } from "@/lib/public-page-flex-config";
 import {
   normalizeHomepageModuleDefs,
@@ -14,6 +20,8 @@ export type PublicClubRecord = {
   id: string;
   name: string;
   slug: string;
+  /** e.g. "Abteilung Fußball" — shown in public footer subtitle when set. */
+  club_category: string | null;
   description: string | null;
   is_public: boolean;
   logo_url: string | null;
@@ -33,6 +41,10 @@ export type PublicClubRecord = {
   secondary_color: string | null;
   tertiary_color: string | null;
   support_color: string | null;
+  /** Primary body text on public pages (from published branding config). */
+  foreground_color: string | null;
+  /** Secondary / caption text on public pages; null = auto from surfaces. */
+  muted_color: string | null;
   reference_images: string[] | null;
   address: string | null;
   phone: string | null;
@@ -75,6 +87,12 @@ export type PublicClubRecord = {
   featured_news_ids: string[];
   /** Optional subtitle under “News & Updates” on the public news page. */
   news_page_subtitle: string | null;
+  /** Primary language for club-authored public copy. */
+  default_language: ClubPageLanguage;
+  /** Languages published on the public club site (en/de). */
+  supported_languages: ClubPageLanguage[];
+  /** Per-language overrides for visitor-facing copy. */
+  pageLocalized: Partial<Record<ClubPageLanguage, Partial<ClubLocalizedContent>>>;
   /** Resolved flexible public nav + homepage module layout. */
   publicPageLayout: PublicPageConfig;
 };
@@ -213,60 +231,132 @@ function unitIntervalOr(value: unknown, fallback: number): number {
   return Math.min(1, Math.max(0, n));
 }
 
+function nonemptyAssetUrl(rowValue: unknown, configValue: string | undefined): string | null {
+  const fromRow = typeof rowValue === "string" ? rowValue.trim() : "";
+  if (fromRow) return fromRow;
+  const fromConfig = configValue?.trim();
+  return fromConfig || null;
+}
+
+export function applyClubPageLanguage(club: PublicClubRecord, lang: ClubPageLanguage): PublicClubRecord {
+  if (club.supported_languages.length <= 1) return club;
+  const { default_language, supported_languages, pageLocalized } = club;
+  return {
+    ...club,
+    description: resolveLocalizedField(
+      lang,
+      default_language,
+      supported_languages,
+      pageLocalized,
+      club.description,
+      "description",
+    ),
+    meta_title: resolveLocalizedField(
+      lang,
+      default_language,
+      supported_languages,
+      pageLocalized,
+      club.meta_title,
+      "meta_title",
+    ),
+    meta_description: resolveLocalizedField(
+      lang,
+      default_language,
+      supported_languages,
+      pageLocalized,
+      club.meta_description,
+      "meta_description",
+    ),
+    news_page_subtitle: resolveLocalizedField(
+      lang,
+      default_language,
+      supported_languages,
+      pageLocalized,
+      club.news_page_subtitle,
+      "news_page_subtitle",
+    ),
+    public_location_notes: resolveLocalizedField(
+      lang,
+      default_language,
+      supported_languages,
+      pageLocalized,
+      club.public_location_notes,
+      "public_location_notes",
+    ),
+  };
+}
+
 export function mapClubRow(
   record: Record<string, unknown>,
   options?: { homepageConfig?: ClubPublicPageConfig | null }
 ): PublicClubRecord {
-  const cfg =
-    options?.homepageConfig !== undefined
-      ? options.homepageConfig
-      : parseClubPublicPageConfig(record.public_page_published_config);
+  const publishedCfg = parseClubPublicPageConfig(record.public_page_published_config);
+  const cfg = options?.homepageConfig ?? publishedCfg;
   const layoutCfg = cfg ?? clubRowToPublicPageConfig(record);
-  const home = homepageFieldsFromConfig(cfg ?? null);
+  const home = homepageFieldsFromConfig(layoutCfg);
+  const assets = layoutCfg.assets;
+  const general = layoutCfg.general;
+  const onboarding = layoutCfg.onboarding;
+  const defaultLang = normalizeClubPageLanguage(general.default_language);
+  const supportedLanguages = general.supported_languages?.length
+    ? general.supported_languages
+    : [defaultLang];
+  const pageLocalized = general.localized ?? {};
   return {
     id: String(record.id),
     name: String(record.name),
     slug: String(record.slug),
-    description: (record.description as string | null) ?? null,
+    club_category: general.club_category?.trim() || (typeof record.club_category === "string" && record.club_category.trim()) || null,
+    description: general.description ?? (record.description as string | null) ?? null,
     is_public: record.is_public !== false,
-    logo_url: (record.logo_url as string | null) ?? null,
-    cover_image_url: (record.cover_image_url as string | null) ?? null,
-    hero_image_url:
-      (typeof record.hero_image_url === "string" && record.hero_image_url.trim()) ||
-      (cfg?.assets?.hero_image_url?.trim() ?? "") ||
-      null,
-    hero_object_position: (cfg?.assets?.hero_object_position?.trim() || "center") as string,
-    hero_club_color_overlay: cfg?.assets?.hero_club_color_overlay !== false,
-    hero_tint_strength: unitIntervalOr(cfg?.assets?.hero_tint_strength, 0.45),
-    default_hero_asset_id: normalizeDefaultHeroAssetId(cfg?.assets?.default_hero_asset_id),
-    favicon_url: (record.favicon_url as string | null) ?? null,
-    primary_color: (record.primary_color as string | null) ?? null,
-    secondary_color: (record.secondary_color as string | null) ?? null,
-    tertiary_color: (record.tertiary_color as string | null) ?? null,
-    support_color: (record.support_color as string | null) ?? null,
-    reference_images: Array.isArray(record.reference_images) ? record.reference_images.map(String) : [],
-    address: (record.address as string | null) ?? null,
-    phone: (record.phone as string | null) ?? null,
-    email: (record.email as string | null) ?? null,
-    website: (record.website as string | null) ?? null,
-    meta_title: (record.meta_title as string | null) ?? null,
-    meta_description: (record.meta_description as string | null) ?? null,
-    facebook_url: (record.facebook_url as string | null) ?? null,
-    instagram_url: (record.instagram_url as string | null) ?? null,
-    twitter_url: (record.twitter_url as string | null) ?? null,
-    youtube_url: (record.youtube_url as string | null) ?? null,
-    tiktok_url: (record.tiktok_url as string | null) ?? null,
-    og_image_url: (record.og_image_url as string | null) ?? null,
-    seoAllowIndexing: (record as { public_seo_allow_indexing?: boolean }).public_seo_allow_indexing !== false,
-    seoStructuredDataEnabled: (record as { public_seo_structured_data?: boolean }).public_seo_structured_data !== false,
-    latitude: toOptionalFiniteNumber(record.latitude),
-    longitude: toOptionalFiniteNumber(record.longitude),
-    public_location_notes: (record.public_location_notes as string | null) ?? null,
-    join_approval_mode: (record.join_approval_mode as "manual" | "auto") || "manual",
-    join_auto_approve_invited_only: (record as { join_auto_approve_invited_only?: boolean }).join_auto_approve_invited_only === true,
-    join_default_role: (record.join_default_role as string | null) ?? "member",
-    join_default_team: (record.join_default_team as string | null) ?? null,
-    sectionVisibility: parsePublicPageSections(record.public_page_sections),
+    logo_url: nonemptyAssetUrl(record.logo_url, assets.logo_url),
+    cover_image_url: nonemptyAssetUrl(record.cover_image_url, assets.cover_image_url),
+    hero_image_url: (() => {
+      const fromConfig = assets.hero_image_url?.trim();
+      if (fromConfig) return fromConfig;
+      const fromRow = typeof record.hero_image_url === "string" ? record.hero_image_url.trim() : "";
+      return fromRow || null;
+    })(),
+    hero_object_position: (assets.hero_object_position?.trim() || "center") as string,
+    hero_club_color_overlay: assets.hero_club_color_overlay !== false,
+    hero_tint_strength: unitIntervalOr(assets.hero_tint_strength, 0.45),
+    default_hero_asset_id: normalizeDefaultHeroAssetId(assets.default_hero_asset_id),
+    favicon_url: nonemptyAssetUrl(record.favicon_url, assets.favicon_url),
+    primary_color: (record.primary_color as string | null) ?? layoutCfg.branding.primary_color ?? null,
+    secondary_color: (record.secondary_color as string | null) ?? layoutCfg.branding.secondary_color ?? null,
+    tertiary_color: (record.tertiary_color as string | null) ?? layoutCfg.branding.tertiary_color ?? null,
+    support_color: (record.support_color as string | null) ?? layoutCfg.branding.support_color ?? null,
+    foreground_color: layoutCfg.branding.foreground_color?.trim() || null,
+    muted_color: layoutCfg.branding.muted_color?.trim() || null,
+    reference_images: Array.isArray(record.reference_images)
+      ? record.reference_images.map(String)
+      : [...assets.reference_images],
+    address: (record.address as string | null) ?? (layoutCfg.contact.address || null),
+    phone: (record.phone as string | null) ?? (layoutCfg.contact.phone || null),
+    email: (record.email as string | null) ?? (layoutCfg.contact.email || null),
+    website: (record.website as string | null) ?? (layoutCfg.contact.website || null),
+    meta_title: (record.meta_title as string | null) ?? (layoutCfg.seo.meta_title || null),
+    meta_description: (record.meta_description as string | null) ?? (layoutCfg.seo.meta_description || null),
+    facebook_url: (record.facebook_url as string | null) ?? (layoutCfg.social.facebook_url || null),
+    instagram_url: (record.instagram_url as string | null) ?? (layoutCfg.social.instagram_url || null),
+    twitter_url: (record.twitter_url as string | null) ?? (layoutCfg.social.twitter_url || null),
+    youtube_url: (record.youtube_url as string | null) ?? (layoutCfg.social.youtube_url || null),
+    tiktok_url: (record.tiktok_url as string | null) ?? (layoutCfg.social.tiktok_url || null),
+    og_image_url: (record.og_image_url as string | null) ?? (layoutCfg.seo.og_image_url || null),
+    seoAllowIndexing: layoutCfg.seo.allow_indexing,
+    seoStructuredDataEnabled: layoutCfg.seo.structured_data_enabled,
+    latitude: toOptionalFiniteNumber(record.latitude) ?? toOptionalFiniteNumber(layoutCfg.contact.latitude),
+    longitude: toOptionalFiniteNumber(record.longitude) ?? toOptionalFiniteNumber(layoutCfg.contact.longitude),
+    public_location_notes:
+      (record.public_location_notes as string | null) ?? (layoutCfg.contact.public_location_notes || null),
+    join_approval_mode: onboarding.join_approval_mode,
+    join_auto_approve_invited_only: onboarding.join_auto_approve_invited_only === true,
+    join_default_role: onboarding.join_default_role || "member",
+    join_default_team: onboarding.join_default_team || null,
+    sectionVisibility: layoutCfg.publicPageSections,
+    default_language: defaultLang,
+    supported_languages: supportedLanguages,
+    pageLocalized,
     publicPageLayout: resolvePublicPageConfigFromClub(layoutCfg),
     ...home,
   };

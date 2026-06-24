@@ -25,13 +25,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useAiAgent } from "@/contexts/ai-agent-context";
 import { supabase } from "@/integrations/supabase/client";
 import { AGENT_INTENT_META, visibleIntentsForUser } from "@/lib/ai-agent/page-context";
-import { interpretAgentFromMessage } from "@/lib/ai-agent/api";
-import { buildFormPatchFromParams, type VoiceFormPatch } from "@/lib/ai-agent/apply-voice-to-forms";
-import { getBrowserTimezone } from "@/lib/ai-agent/voice-text";
+import { formatTeamAccessDeniedMessage, type PendingWorkflowState } from "@/lib/ai-agent/chat-workflow-handler";
+import { runAgentWorkflowFromUtterance } from "@/lib/ai-agent/run-agent-workflow-utterance";
 import { Ai4TeamVoiceControls } from "@/components/ai-agent/Ai4TeamVoiceControls";
+import { Ai4tChatWatermark } from "@/components/ai/Ai4tChatWatermark";
+import { Ai4tChatComposer } from "@/components/ai/Ai4tChatComposer";
 import { useAi4TeamVoice } from "@/hooks/use-ai4team-voice";
 import type { AgentIntent, AgentRunRow, PlanWeekSessionInput } from "@/lib/ai-agent/types";
 import { AiAgentProposalCard } from "./AiAgentProposalCard";
+import { AiAgentOutcomeLinks } from "./AiAgentOutcomeLinks";
+import { cn } from "@/lib/utils";
 
 type AiRequestKind = "training_plan" | "admin_digest";
 
@@ -104,6 +107,7 @@ export function AiAgentWorkspace({
     propose,
     confirmProposal,
     dismissProposal,
+    applyProposal,
   } = useAiAgent();
 
   const [teams, setTeams] = useState<TeamOption[]>([]);
@@ -139,7 +143,11 @@ export function AiAgentWorkspace({
   const [planNotify, setPlanNotify] = useState(false);
   const [planNotifyTitle, setPlanNotifyTitle] = useState("");
   const [planNotifyContent, setPlanNotifyContent] = useState("");
-  const [voiceInterpreting, setVoiceInterpreting] = useState(false);
+  const [outcomeLinks, setOutcomeLinks] = useState<{ label: string; href: string }[]>([]);
+  const [nlInput, setNlInput] = useState("");
+  const [nlLoading, setNlLoading] = useState(false);
+  const [pendingNlWorkflow, setPendingNlWorkflow] = useState<PendingWorkflowState | null>(null);
+  const [nlClarifyQuestion, setNlClarifyQuestion] = useState<string | null>(null);
 
   const aiVoice = useAi4TeamVoice(language);
 
@@ -147,6 +155,16 @@ export function AiAgentWorkspace({
     () => visibleIntentsForUser({ canManageSchedule, canManageMembers }),
     [canManageSchedule, canManageMembers],
   );
+
+  /** Public club modal is always light; shadcn `bg-background` follows app dark mode. */
+  const compactFieldClass = compact
+    ? "border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-400 shadow-none focus-visible:ring-[color:var(--club-primary)] focus-visible:ring-offset-0 [color-scheme:light]"
+    : "";
+  const compactLabelClass = compact ? "text-neutral-700" : "";
+  const compactSelectContentClass = compact
+    ? "z-[140] border-neutral-200 bg-white text-neutral-900 shadow-lg"
+    : "";
+  const compactSelectItemClass = compact ? "focus:bg-neutral-100 focus:text-neutral-900" : "";
 
   const trainingOptions = useMemo(() => {
     const source = toolActivitiesProp ?? localActivities;
@@ -220,10 +238,14 @@ export function AiAgentWorkspace({
           return p.intentCreateTraining;
         case "cancel_training":
           return p.intentCancelTraining;
+        case "cancel_training_with_parent_notice":
+          return p.intentCancelTrainingNotifyParents;
         case "add_member_draft":
           return p.intentAddMemberDraft;
         case "plan_training_week":
           return p.intentPlanWeek;
+        case "duplicate_training_week":
+          return p.intentDuplicateWeek;
         case "notify_trainers":
         case "send_club_announcement":
           return p.intentNotifyTrainers;
@@ -234,86 +256,136 @@ export function AiAgentWorkspace({
     [p],
   );
 
-  const applyFormPatch = useCallback((patch: VoiceFormPatch) => {
-    setActiveIntent(patch.intent);
-    if (patch.intent === "create_training") {
-      setCreateTeamId(patch.teamId);
-      setCreateTitle(patch.title);
-      setCreateStart(patch.startLocal);
-      setCreateEnd(patch.endLocal);
-      setCreateLocation(patch.location);
-    } else if (patch.intent === "cancel_training") {
-      setCancelActivityId(patch.activityId);
-      setCancelReason(patch.reason);
-    } else if (patch.intent === "add_member_draft") {
-      setMemberEmail(patch.email);
-      setMemberName(patch.name);
-      setMemberRole(patch.role);
-      setMemberTeam(patch.team);
-      setMemberPosition(patch.position);
-    } else if (patch.intent === "notify_trainers") {
-      setNotifyTitle(patch.title);
-      setNotifyContent(patch.content);
-    } else if (patch.intent === "plan_training_week") {
-      setPlanTeamId(patch.teamId);
-      setPlanLocation(patch.location);
-      setPlanSessions(patch.sessions);
-      setPlanNotify(patch.notify);
-      setPlanNotifyTitle(patch.notifyTitle);
-      setPlanNotifyContent(patch.notifyContent);
-    }
-  }, []);
+  const intentDescription = useCallback(
+    (intent: AgentIntent): string => {
+      switch (intent) {
+        case "create_training":
+          return p.intentCreateTrainingDesc;
+        case "cancel_training":
+          return p.intentCancelTrainingDesc;
+        case "cancel_training_with_parent_notice":
+          return p.intentCancelTrainingNotifyParentsDesc;
+        case "add_member_draft":
+          return p.intentAddMemberDraftDesc;
+        case "plan_training_week":
+          return p.intentPlanWeekDesc;
+        case "duplicate_training_week":
+          return p.intentDuplicateWeekDesc;
+        case "notify_trainers":
+        case "send_club_announcement":
+          return p.intentNotifyTrainersDesc;
+        default:
+          return "";
+      }
+    },
+    [p],
+  );
 
-  const handleAgentVoiceCommand = useCallback(
-    async (transcript: string) => {
-      if (!clubId || !transcript.trim()) return;
-      setVoiceInterpreting(true);
+  const handleAgentUtterance = useCallback(
+    async (text: string) => {
+      const msg = text.trim();
+      if (!msg || nlLoading || workflowBusy || !clubId) return;
+
+      setNlLoading(true);
+      aiVoice.stopSpeaking();
       try {
-        const interpreted = await interpretAgentFromMessage({
+        const result = await runAgentWorkflowFromUtterance({
           clubId,
-          message: transcript.trim(),
+          message: msg,
           language,
-          timezone: getBrowserTimezone(),
-          pageContext: { source: compact ? "header-sheet" : "co-trainer-agent" },
+          pendingWorkflow: pendingNlWorkflow,
+          canUseAgent: visibleIntents.length > 0,
+          pageContext: { source: compact ? "public-club-agent" : "co-trainer-agent" },
+          conversationId,
         });
-        if (!interpreted) {
-          toast({ title: p.voiceNotWorkflow, variant: "destructive" });
-          aiVoice.speak(p.voiceNotWorkflow);
+
+        if (result.type === "skip") {
+          toast({
+            title: p.agentUtteranceNotAction,
+            description: p.agentUtteranceUseChatHint,
+          });
           return;
         }
-        if (!visibleIntents.includes(interpreted.intent)) {
-          toast({ title: p.voiceNoPermission, variant: "destructive" });
+
+        setNlInput("");
+
+        if (result.type === "clarify") {
+          setPendingNlWorkflow(result.pending);
+          setNlClarifyQuestion(result.question);
+          toast({ title: result.question });
+          aiVoice.speak(result.question);
           return;
         }
-        const patch = buildFormPatchFromParams(interpreted.intent, interpreted.params);
-        if (!patch) {
-          toast({ title: p.voiceNotWorkflow, variant: "destructive" });
+
+        setPendingNlWorkflow(null);
+        setNlClarifyQuestion(null);
+
+        if (result.type === "denied") {
+          const deniedMsg = formatTeamAccessDeniedMessage(result.body, language);
+          toast({
+            title: p.teamAccessDeniedTitle,
+            description: deniedMsg,
+            variant: "destructive",
+          });
+          aiVoice.speak(deniedMsg);
           return;
         }
-        applyFormPatch(patch);
-        toast({ title: p.voiceFormFilled, description: intentLabel(interpreted.intent) });
-        aiVoice.speak(p.voiceFormFilled);
-      } catch (e) {
+
+        if (result.type === "proposal") {
+          applyProposal(result.proposal);
+          aiVoice.speak(
+            language === "de"
+              ? "Vorschlag ist bereit. Bitte prüfen und bestätigen."
+              : "Proposal is ready. Please review and confirm.",
+          );
+          return;
+        }
+
+        if (result.type === "error") {
+          toast({
+            title: p.proposeFailed,
+            description: result.message,
+            variant: "destructive",
+          });
+          return;
+        }
+
         toast({
-          title: p.voiceInterpretError,
-          description: e instanceof Error ? e.message : String(e),
-          variant: "destructive",
+          title: p.nlInterpretFailed,
+          description: p.agentWorkflowExamples,
         });
       } finally {
-        setVoiceInterpreting(false);
+        setNlLoading(false);
       }
     },
     [
+      nlLoading,
+      workflowBusy,
       clubId,
       language,
+      pendingNlWorkflow,
+      visibleIntents.length,
       compact,
-      visibleIntents,
-      applyFormPatch,
+      conversationId,
+      aiVoice,
+      applyProposal,
       toast,
       p,
-      aiVoice,
-      intentLabel,
     ],
+  );
+
+  const handleAgentVoiceCommand = useCallback(
+    async (transcript: string) => {
+      await handleAgentUtterance(transcript);
+    },
+    [handleAgentUtterance],
+  );
+
+  const handleNlSend = useCallback(
+    async (text?: string) => {
+      await handleAgentUtterance(text ?? nlInput);
+    },
+    [handleAgentUtterance, nlInput],
   );
 
   const handlePropose = async (intent: AgentIntent) => {
@@ -335,16 +407,23 @@ export function AiAgentWorkspace({
           ends_at: ends,
           location: createLocation.trim() || null,
         };
-      } else if (intent === "cancel_training") {
+      } else if (intent === "cancel_training" || intent === "cancel_training_with_parent_notice") {
         if (!cancelActivityId) {
           toast({ title: p.validationSelectTraining, variant: "destructive" });
           return;
         }
+        if (intent === "cancel_training_with_parent_notice" && !cancelReason.trim()) {
+          toast({ title: p.validationCancelReasonRequired, variant: "destructive" });
+          return;
+        }
         const picked = trainingOptions.find((x) => x.id === cancelActivityId);
+        const teamName = picked?.team_id ? teams.find((t) => t.id === picked.team_id)?.name ?? null : null;
         params = {
           activity_id: cancelActivityId,
+          activity_title: picked?.title ?? null,
+          starts_at: picked?.starts_at ?? null,
+          team_name: teamName,
           reason: cancelReason.trim() || null,
-          title: picked?.title ?? cancelActivityId,
         };
       } else if (intent === "add_member_draft") {
         if (!memberEmail.trim()) {
@@ -364,6 +443,11 @@ export function AiAgentWorkspace({
           return;
         }
         params = { title: notifyTitle.trim(), content: notifyContent.trim() };
+      } else if (intent === "duplicate_training_week") {
+        params = {
+          team_id: planTeamId || null,
+          days_shift: 7,
+        };
       } else if (intent === "plan_training_week") {
         const sessions = planSessions
           .map((s) => ({
@@ -406,13 +490,20 @@ export function AiAgentWorkspace({
 
   const handleConfirm = async () => {
     try {
-      await confirmProposal();
+      const result = await confirmProposal();
       toast({ title: p.executeSuccess });
+      setOutcomeLinks(result?.result?.links ?? []);
+      setPendingNlWorkflow(null);
+      setNlClarifyQuestion(null);
       onRunCompleted?.();
     } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      if (/not pending|expired/i.test(message)) {
+        dismissProposal();
+      }
       toast({
         title: p.executeFailed,
-        description: e instanceof Error ? e.message : String(e),
+        description: message,
         variant: "destructive",
       });
     }
@@ -431,7 +522,10 @@ export function AiAgentWorkspace({
   }
 
   return (
-    <div className="space-y-6">
+    <div className={cn("relative flex min-h-0 flex-1 flex-col", compact && "h-full")}>
+      {compact ? <Ai4tChatWatermark className="top-[4.5rem]" /> : null}
+
+      <div className={cn("relative z-10 min-h-0 flex-1 overflow-y-auto", compact ? "space-y-4 pb-2 pt-4" : "space-y-6")}>
       {!compact && onGeneratePlan && onGenerateDigest && onTriggerAutomationDigest ? (
         <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
           <div className="text-sm font-semibold text-foreground">{p.sectionQuickTitle}</div>
@@ -482,62 +576,108 @@ export function AiAgentWorkspace({
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4 space-y-4">
+      <div
+        className={cn(
+          "space-y-4 rounded-2xl border p-4",
+          compact
+            ? "border-neutral-200/80 bg-white/80 shadow-sm backdrop-blur-sm"
+            : "border-border/60 bg-card/40 backdrop-blur-2xl",
+        )}
+      >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <div className="text-sm font-semibold text-foreground">{p.sectionWorkflowsTitle}</div>
-            <p className="text-[11px] text-muted-foreground mt-1">{p.sectionWorkflowsDesc}</p>
-            {(aiVoice.speechSupported || aiVoice.ttsSupported) ? (
-              <p className="text-[10px] text-muted-foreground mt-1.5">{p.voiceAgentHint}</p>
+            <div className={cn("text-sm font-semibold", compact ? "text-neutral-900" : "text-foreground")}>
+              {p.sectionWorkflowsTitle}
+            </div>
+            <p className={cn("mt-1 text-xs leading-snug", compact ? "text-neutral-600" : "text-muted-foreground")}>
+              {p.sectionWorkflowsDesc}
+            </p>
+            {compact ? (
+              <p className="mt-1.5 text-[11px] leading-snug text-neutral-500">{t.coTrainerPage.voice.hint}</p>
             ) : null}
           </div>
-          <div className="flex items-center gap-2">
-            {voiceInterpreting ? (
-              <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
-            ) : null}
-            <Ai4TeamVoiceControls
-              disabled={workflowBusy || voiceInterpreting}
-              voice={aiVoice}
-              onVoiceCommand={(transcript) => void handleAgentVoiceCommand(transcript)}
-            />
-          </div>
+          {!compact ? (
+            <div className="flex shrink-0 items-center gap-2">
+              {nlLoading ? (
+                <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
+              ) : null}
+              <Ai4TeamVoiceControls
+                disabled={workflowBusy || nlLoading}
+                voice={aiVoice}
+                onVoiceCommand={(transcript) => void handleAgentVoiceCommand(transcript)}
+              />
+            </div>
+          ) : null}
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="space-y-2" role="list" aria-label={p.sectionWorkflowsTitle}>
           {visibleIntents.map((intent) => {
             const Icon = AGENT_INTENT_META[intent].icon;
+            const isActive = activeIntent === intent;
             return (
-              <Button
+              <button
                 key={intent}
                 type="button"
-                variant={activeIntent === intent ? "default" : "outline"}
-                size="sm"
-                className="rounded-xl gap-1.5"
-                onClick={() => setActiveIntent(intent)}
+                role="listitem"
+                aria-pressed={isActive}
+                onClick={() => setActiveIntent(isActive ? null : intent)}
+                className={cn(
+                  "flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors",
+                  compact
+                    ? isActive
+                      ? "border-[color:var(--club-primary)] bg-white shadow-sm ring-1 ring-[color:var(--club-primary)]/15"
+                      : "border-neutral-200/90 bg-white/90 hover:border-neutral-300 hover:bg-white"
+                    : isActive
+                      ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                      : "border-border/60 bg-background/40 hover:border-primary/30 hover:bg-background/60",
+                )}
               >
-                <Icon className="w-3.5 h-3.5" />
-                {intentLabel(intent)}
-              </Button>
+                <div
+                  className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                    isActive
+                      ? "bg-[color:var(--club-primary)]/10 text-[color:var(--club-primary)]"
+                      : compact
+                        ? "bg-neutral-100 text-neutral-700"
+                        : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <div className={cn("text-sm font-semibold", compact ? "text-neutral-900" : "text-foreground")}>
+                    {intentLabel(intent)}
+                  </div>
+                  <p className={cn("mt-0.5 text-xs leading-snug", compact ? "text-neutral-600" : "text-muted-foreground")}>
+                    {intentDescription(intent)}
+                  </p>
+                </div>
+              </button>
             );
           })}
         </div>
 
         {activeIntent === "create_training" ? (
-          <div className="grid gap-3 sm:grid-cols-2 rounded-xl border border-border/50 bg-background/30 p-4">
+          <div
+            className={cn(
+              "grid gap-3 rounded-xl border p-4 sm:grid-cols-2",
+              compact ? "border-neutral-200/80 bg-white/95" : "border-border/50 bg-background/30",
+            )}
+          >
             <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">{p.fieldTitle}</Label>
-              <Input value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} className="h-9" />
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldTitle}</Label>
+              <Input value={createTitle} onChange={(e) => setCreateTitle(e.target.value)} className={cn("h-9", compactFieldClass)} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{p.fieldTeam}</Label>
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldTeam}</Label>
               <Select value={createTeamId || "__none__"} onValueChange={(v) => setCreateTeamId(v === "__none__" ? "" : v)}>
-                <SelectTrigger className="h-9">
+                <SelectTrigger className={cn("h-9", compactFieldClass)}>
                   <SelectValue placeholder={p.fieldTeamOptional} />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">{p.fieldTeamOptional}</SelectItem>
+                <SelectContent className={compactSelectContentClass}>
+                  <SelectItem className={compactSelectItemClass} value="__none__">{p.fieldTeamOptional}</SelectItem>
                   {teams.map((team) => (
-                    <SelectItem key={team.id} value={team.id}>
+                    <SelectItem className={compactSelectItemClass} key={team.id} value={team.id}>
                       {team.name}
                     </SelectItem>
                   ))}
@@ -546,21 +686,21 @@ export function AiAgentWorkspace({
               {teamsLoading ? <span className="text-[10px] text-muted-foreground">{p.loadingTeams}</span> : null}
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{p.fieldLocation}</Label>
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldLocation}</Label>
               <Input
                 value={createLocation}
                 onChange={(e) => setCreateLocation(e.target.value)}
-                className="h-9"
+                className={cn("h-9", compactFieldClass)}
                 placeholder={p.fieldLocationPlaceholder}
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{p.fieldStarts}</Label>
-              <Input type="datetime-local" value={createStart} onChange={(e) => setCreateStart(e.target.value)} className="h-9" />
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldStarts}</Label>
+              <Input type="datetime-local" value={createStart} onChange={(e) => setCreateStart(e.target.value)} className={cn("h-9", compactFieldClass)} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{p.fieldEnds}</Label>
-              <Input type="datetime-local" value={createEnd} onChange={(e) => setCreateEnd(e.target.value)} className="h-9" />
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldEnds}</Label>
+              <Input type="datetime-local" value={createEnd} onChange={(e) => setCreateEnd(e.target.value)} className={cn("h-9", compactFieldClass)} />
             </div>
             <div className="sm:col-span-2">
               <Button
@@ -576,36 +716,48 @@ export function AiAgentWorkspace({
           </div>
         ) : null}
 
-        {activeIntent === "cancel_training" ? (
-          <div className="grid gap-3 rounded-xl border border-border/50 bg-background/30 p-4">
+        {(activeIntent === "cancel_training" || activeIntent === "cancel_training_with_parent_notice") ? (
+          <div
+            className={cn(
+              "grid gap-3 rounded-xl border p-4",
+              compact ? "border-neutral-200/80 bg-white/95" : "border-border/50 bg-background/30",
+            )}
+          >
             <div className="space-y-1.5">
-              <Label className="text-xs">{p.fieldTrainingSession}</Label>
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldTrainingSession}</Label>
               <Select value={cancelActivityId || undefined} onValueChange={setCancelActivityId}>
-                <SelectTrigger className="h-9">
+                <SelectTrigger className={cn("h-9", compactFieldClass)}>
                   <SelectValue placeholder={p.fieldTrainingPlaceholder} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className={compactSelectContentClass}>
                   {trainingOptions.length === 0 ? (
-                    <SelectItem value="__empty__" disabled>
+                    <SelectItem className={compactSelectItemClass} value="__empty__" disabled>
                       {p.noUpcomingTrainings}
                     </SelectItem>
                   ) : (
-                    trainingOptions.map((a) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.title} · {new Date(a.starts_at).toLocaleString(language === "de" ? "de-DE" : "en-GB")}
+                    trainingOptions.map((a) => {
+                      const teamName = a.team_id ? teams.find((t) => t.id === a.team_id)?.name : null;
+                      const when = new Date(a.starts_at).toLocaleString(language === "de" ? "de-DE" : "en-GB");
+                      const label = [teamName, a.title, when].filter(Boolean).join(" · ");
+                      return (
+                      <SelectItem className={compactSelectItemClass} key={a.id} value={a.id}>
+                        {label}
                       </SelectItem>
-                    ))
+                      );
+                    })
                   )}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{p.fieldCancelReason}</Label>
+              <Label className={cn("text-xs", compactLabelClass)}>
+                {activeIntent === "cancel_training_with_parent_notice" ? p.fieldCancelReasonRequired : p.fieldCancelReason}
+              </Label>
               <Textarea
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
                 rows={2}
-                className="text-sm"
+                className={cn("text-sm", compactFieldClass)}
                 placeholder={p.fieldCancelReasonPlaceholder}
               />
             </div>
@@ -613,44 +765,51 @@ export function AiAgentWorkspace({
               type="button"
               variant="destructive"
               disabled={workflowBusy || trainingOptions.length === 0}
-              onClick={() => void handlePropose("cancel_training")}
+              onClick={() => void handlePropose(activeIntent!)}
             >
               {workflowBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-              {p.reviewCancelTraining}
+              {activeIntent === "cancel_training_with_parent_notice"
+                ? p.reviewCancelTrainingNotifyParents
+                : p.reviewCancelTraining}
             </Button>
           </div>
         ) : null}
 
         {activeIntent === "add_member_draft" ? (
-          <div className="grid gap-3 sm:grid-cols-2 rounded-xl border border-border/50 bg-background/30 p-4">
+          <div
+            className={cn(
+              "grid gap-3 rounded-xl border p-4 sm:grid-cols-2",
+              compact ? "border-neutral-200/80 bg-white/95" : "border-border/50 bg-background/30",
+            )}
+          >
             <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">{p.fieldMemberEmail}</Label>
-              <Input type="email" value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} className="h-9" />
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldMemberEmail}</Label>
+              <Input type="email" value={memberEmail} onChange={(e) => setMemberEmail(e.target.value)} className={cn("h-9", compactFieldClass)} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{p.fieldMemberName}</Label>
-              <Input value={memberName} onChange={(e) => setMemberName(e.target.value)} className="h-9" />
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldMemberName}</Label>
+              <Input value={memberName} onChange={(e) => setMemberName(e.target.value)} className={cn("h-9", compactFieldClass)} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{p.fieldMemberRole}</Label>
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldMemberRole}</Label>
               <Select value={memberRole} onValueChange={setMemberRole}>
-                <SelectTrigger className="h-9">
+                <SelectTrigger className={cn("h-9", compactFieldClass)}>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="member">{p.roleMember}</SelectItem>
-                  <SelectItem value="player">{p.rolePlayer}</SelectItem>
-                  <SelectItem value="trainer">{p.roleTrainer}</SelectItem>
+                <SelectContent className={compactSelectContentClass}>
+                  <SelectItem className={compactSelectItemClass} value="member">{p.roleMember}</SelectItem>
+                  <SelectItem className={compactSelectItemClass} value="player">{p.rolePlayer}</SelectItem>
+                  <SelectItem className={compactSelectItemClass} value="trainer">{p.roleTrainer}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{p.fieldMemberTeam}</Label>
-              <Input value={memberTeam} onChange={(e) => setMemberTeam(e.target.value)} className="h-9" />
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldMemberTeam}</Label>
+              <Input value={memberTeam} onChange={(e) => setMemberTeam(e.target.value)} className={cn("h-9", compactFieldClass)} />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label className="text-xs">{p.fieldMemberPosition}</Label>
-              <Input value={memberPosition} onChange={(e) => setMemberPosition(e.target.value)} className="h-9" />
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldMemberPosition}</Label>
+              <Input value={memberPosition} onChange={(e) => setMemberPosition(e.target.value)} className={cn("h-9", compactFieldClass)} />
             </div>
             <div className="sm:col-span-2">
               <Button
@@ -667,18 +826,23 @@ export function AiAgentWorkspace({
         ) : null}
 
         {activeIntent === "notify_trainers" ? (
-          <div className="grid gap-3 rounded-xl border border-border/50 bg-background/30 p-4">
+          <div
+            className={cn(
+              "grid gap-3 rounded-xl border p-4",
+              compact ? "border-neutral-200/80 bg-white/95" : "border-border/50 bg-background/30",
+            )}
+          >
             <div className="space-y-1.5">
-              <Label className="text-xs">{p.fieldAnnouncementTitle}</Label>
-              <Input value={notifyTitle} onChange={(e) => setNotifyTitle(e.target.value)} className="h-9" />
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldAnnouncementTitle}</Label>
+              <Input value={notifyTitle} onChange={(e) => setNotifyTitle(e.target.value)} className={cn("h-9", compactFieldClass)} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">{p.fieldAnnouncementContent}</Label>
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldAnnouncementContent}</Label>
               <Textarea
                 value={notifyContent}
                 onChange={(e) => setNotifyContent(e.target.value)}
                 rows={4}
-                className="text-sm"
+                className={cn("text-sm", compactFieldClass)}
               />
             </div>
             <Button
@@ -693,19 +857,60 @@ export function AiAgentWorkspace({
           </div>
         ) : null}
 
+        {activeIntent === "duplicate_training_week" ? (
+          <div
+            className={cn(
+              "grid gap-3 rounded-xl border p-4",
+              compact ? "border-neutral-200/80 bg-white/95" : "border-border/50 bg-background/30",
+            )}
+          >
+            <p className="text-xs text-muted-foreground">{p.duplicateWeekHint}</p>
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldTeam}</Label>
+              <Select value={planTeamId || "__none__"} onValueChange={(v) => setPlanTeamId(v === "__none__" ? "" : v)}>
+                <SelectTrigger className={cn("h-9", compactFieldClass)}>
+                  <SelectValue placeholder={p.fieldTeamOptional} />
+                </SelectTrigger>
+                <SelectContent className={compactSelectContentClass}>
+                  <SelectItem className={compactSelectItemClass} value="__none__">{p.fieldTeamOptional}</SelectItem>
+                  {teams.map((team) => (
+                    <SelectItem className={compactSelectItemClass} key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              type="button"
+              disabled={workflowBusy}
+              className="bg-gradient-gold-static text-primary-foreground"
+              onClick={() => void handlePropose("duplicate_training_week")}
+            >
+              {workflowBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              {p.reviewDuplicateWeek}
+            </Button>
+          </div>
+        ) : null}
+
         {activeIntent === "plan_training_week" ? (
-          <div className="space-y-4 rounded-xl border border-border/50 bg-background/30 p-4">
+          <div
+            className={cn(
+              "space-y-4 rounded-xl border p-4",
+              compact ? "border-neutral-200/80 bg-white/95" : "border-border/50 bg-background/30",
+            )}
+          >
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs">{p.fieldTeam}</Label>
+                <Label className={cn("text-xs", compactLabelClass)}>{p.fieldTeam}</Label>
                 <Select value={planTeamId || "__none__"} onValueChange={(v) => setPlanTeamId(v === "__none__" ? "" : v)}>
-                  <SelectTrigger className="h-9">
+                  <SelectTrigger className={cn("h-9", compactFieldClass)}>
                     <SelectValue placeholder={p.fieldTeamOptional} />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">{p.fieldTeamOptional}</SelectItem>
+                  <SelectContent className={compactSelectContentClass}>
+                    <SelectItem className={compactSelectItemClass} value="__none__">{p.fieldTeamOptional}</SelectItem>
                     {teams.map((team) => (
-                      <SelectItem key={team.id} value={team.id}>
+                      <SelectItem className={compactSelectItemClass} key={team.id} value={team.id}>
                         {team.name}
                       </SelectItem>
                     ))}
@@ -713,8 +918,8 @@ export function AiAgentWorkspace({
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">{p.fieldLocation}</Label>
-                <Input value={planLocation} onChange={(e) => setPlanLocation(e.target.value)} className="h-9" />
+                <Label className={cn("text-xs", compactLabelClass)}>{p.fieldLocation}</Label>
+                <Input value={planLocation} onChange={(e) => setPlanLocation(e.target.value)} className={cn("h-9", compactFieldClass)} />
               </div>
             </div>
 
@@ -731,7 +936,7 @@ export function AiAgentWorkspace({
                     setPlanSessions(next);
                   }}
                   placeholder={p.fieldTitle}
-                  className="h-9 sm:col-span-2"
+                  className={cn("h-9 sm:col-span-2", compactFieldClass)}
                 />
                 <Input
                   type="datetime-local"
@@ -741,7 +946,7 @@ export function AiAgentWorkspace({
                     next[idx] = { ...next[idx], starts_at: e.target.value };
                     setPlanSessions(next);
                   }}
-                  className="h-9"
+                  className={cn("h-9", compactFieldClass)}
                 />
                 <Input
                   type="datetime-local"
@@ -751,7 +956,7 @@ export function AiAgentWorkspace({
                     next[idx] = { ...next[idx], ends_at: e.target.value };
                     setPlanSessions(next);
                   }}
-                  className="h-9"
+                  className={cn("h-9", compactFieldClass)}
                 />
               </div>
             ))}
@@ -767,7 +972,7 @@ export function AiAgentWorkspace({
 
             <div className="flex items-center gap-2 pt-1">
               <Checkbox id="plan-notify" checked={planNotify} onCheckedChange={(v) => setPlanNotify(v === true)} />
-              <Label htmlFor="plan-notify" className="text-xs cursor-pointer">
+              <Label htmlFor="plan-notify" className={cn("text-xs cursor-pointer", compactLabelClass)}>
                 {p.planWeekNotifyLabel}
               </Label>
             </div>
@@ -777,14 +982,14 @@ export function AiAgentWorkspace({
                   value={planNotifyTitle}
                   onChange={(e) => setPlanNotifyTitle(e.target.value)}
                   placeholder={p.fieldAnnouncementTitle}
-                  className="h-9"
+                  className={cn("h-9", compactFieldClass)}
                 />
                 <Textarea
                   value={planNotifyContent}
                   onChange={(e) => setPlanNotifyContent(e.target.value)}
                   rows={3}
                   placeholder={p.fieldAnnouncementContent}
-                  className="text-sm"
+                  className={cn("text-sm", compactFieldClass)}
                 />
               </div>
             ) : null}
@@ -802,13 +1007,47 @@ export function AiAgentWorkspace({
         ) : null}
       </div>
 
-      {pendingProposal ? (
+      {outcomeLinks.length > 0 ? <AiAgentOutcomeLinks links={outcomeLinks} /> : null}
+
+      {!compact && pendingProposal ? (
         <AiAgentProposalCard
           proposal={pendingProposal}
           busy={workflowBusy}
+          variant="default"
+          clubId={clubId}
           onConfirm={() => void handleConfirm()}
-          onDismiss={dismissProposal}
+          onDismiss={() => {
+            dismissProposal();
+            setOutcomeLinks([]);
+            setPendingNlWorkflow(null);
+            setNlClarifyQuestion(null);
+          }}
         />
+      ) : null}
+
+      {!compact ? (
+        <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4 space-y-2">
+          <div>
+            <div className="text-sm font-semibold text-foreground">{p.agentComposerTitle}</div>
+            <p className="mt-1 text-xs text-muted-foreground">{p.agentComposerHint}</p>
+          </div>
+          {nlClarifyQuestion ? (
+            <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-snug text-amber-100">
+              {nlClarifyQuestion}
+            </p>
+          ) : null}
+          <Ai4tChatComposer
+            value={nlInput}
+            onChange={setNlInput}
+            onSend={() => void handleNlSend()}
+            isLoading={nlLoading}
+            disabled={workflowBusy}
+            voice={aiVoice}
+            onVoiceCommand={(transcript) => void handleNlSend(transcript)}
+            sendAriaLabel={t.coTrainerPage.tabAgent}
+            className="rounded-xl border border-border/60 bg-background/50"
+          />
+        </div>
       ) : null}
 
       {!compact ? (
@@ -845,6 +1084,43 @@ export function AiAgentWorkspace({
             </div>
           ) : null}
         </>
+      ) : null}
+      </div>
+
+      {compact ? (
+        <div className="relative z-10 shrink-0 space-y-2 border-t border-neutral-200/80 bg-white/95 px-1 pt-2">
+          {pendingProposal ? (
+            <AiAgentProposalCard
+              proposal={pendingProposal}
+              busy={workflowBusy}
+              variant="light"
+              clubId={clubId}
+              onConfirm={() => void handleConfirm()}
+              onDismiss={() => {
+                dismissProposal();
+                setOutcomeLinks([]);
+                setPendingNlWorkflow(null);
+                setNlClarifyQuestion(null);
+              }}
+            />
+          ) : null}
+          {nlClarifyQuestion ? (
+            <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs leading-snug text-amber-950">
+              {nlClarifyQuestion}
+            </p>
+          ) : null}
+          <Ai4tChatComposer
+            value={nlInput}
+            onChange={setNlInput}
+            onSend={() => void handleNlSend()}
+            isLoading={nlLoading}
+            disabled={workflowBusy}
+            voice={aiVoice}
+            onVoiceCommand={(transcript) => void handleNlSend(transcript)}
+            sendAriaLabel={t.coTrainerPage.tabAgent}
+            className="rounded-b-2xl border-t border-neutral-200/80 bg-white/90"
+          />
+        </div>
       ) : null}
     </div>
   );

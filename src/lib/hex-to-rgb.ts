@@ -32,6 +32,14 @@ export function hexToRgb(hex: string): string {
   return v ? `${v.r}, ${v.g}, ${v.b}` : FALLBACK_PRIMARY_RGB_STRING;
 }
 
+/** `rgba(...)` from `#rgb` / `#rrggbb` with alpha 0–1. */
+export function hexToRgba(hex: string, alpha: number, fallbackRgb = FALLBACK_PRIMARY_RGB_STRING): string {
+  const v = parseHexRgb(hex);
+  const a = Math.min(1, Math.max(0, alpha));
+  if (!v) return `rgba(${fallbackRgb}, ${a})`;
+  return `rgba(${v.r}, ${v.g}, ${v.b}, ${a})`;
+}
+
 /** WCAG relative luminance in linear sRGB (0 = black, 1 = white). */
 export function relativeLuminance(hex: string): number {
   const rgb = parseHexRgb(hex);

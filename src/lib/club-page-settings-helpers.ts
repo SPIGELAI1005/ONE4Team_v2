@@ -304,7 +304,13 @@ export function isPrimaryForegroundContrastLow(
   return r != null && r < minRatio;
 }
 
-export function brandingContrastWarnings(primary: string, secondary: string, tertiary: string, foreground: string): string[] {
+export function brandingContrastWarnings(
+  primary: string,
+  secondary: string,
+  tertiary: string,
+  foreground: string,
+  muted?: string
+): string[] {
   const warnings: string[] = [];
   const fgOnBg = contrastRatio(foreground, tertiary);
   if (fgOnBg != null && fgOnBg < 3) {
@@ -317,6 +323,17 @@ export function brandingContrastWarnings(primary: string, secondary: string, ter
   const fgOnSec = contrastRatio(foreground, secondary);
   if (fgOnSec != null && fgOnSec < 3) {
     warnings.push("Foreground on secondary background has low contrast.");
+  }
+  const mutedColor = muted?.trim();
+  if (mutedColor) {
+    const mutedOnSec = contrastRatio(mutedColor, secondary);
+    if (mutedOnSec != null && mutedOnSec < 3) {
+      warnings.push("Muted text on secondary background has low contrast.");
+    }
+    const mutedOnTer = contrastRatio(mutedColor, tertiary);
+    if (mutedOnTer != null && mutedOnTer < 3) {
+      warnings.push("Muted text on page background has low contrast.");
+    }
   }
   return warnings;
 }

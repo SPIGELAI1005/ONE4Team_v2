@@ -6,6 +6,7 @@ export interface DashboardHeaderSlotProps {
   subtitle?: string;
   greeting?: string;
   showBack?: boolean;
+  titleIcon?: ReactNode;
   rightSlot?: ReactNode;
   /**
    * Change when toolbar actions depend on state not reflected in title/subtitle
@@ -22,6 +23,7 @@ export function DashboardHeaderSlot({
   subtitle,
   greeting,
   showBack = true,
+  titleIcon,
   rightSlot,
   toolbarRevision = 0,
 }: DashboardHeaderSlotProps) {
@@ -39,10 +41,11 @@ export function DashboardHeaderSlot({
       subtitle,
       greeting,
       showBack,
+      titleIcon,
       renderRightSlot: () => slotRef.current,
     });
     return () => setConfig(null);
-  }, [title, subtitle, greeting, showBack, toolbarRevision, setConfig]);
+  }, [title, subtitle, greeting, showBack, titleIcon, toolbarRevision, setConfig]);
 
   return null;
 }

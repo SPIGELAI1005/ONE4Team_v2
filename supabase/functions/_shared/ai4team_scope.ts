@@ -1,5 +1,5 @@
 /**
- * AI4Team fair-use scope: club-scoped assistant policy, light heuristics, and refusal streaming.
+ * AI 4 T fair-use scope: club-scoped assistant policy, light heuristics, and refusal streaming.
  * Defense in depth: (1) cheap heuristic for obvious abuse, (2) system prompt for gray areas.
  */
 
@@ -15,7 +15,7 @@ export type OffScopeCategory =
 
 const SCOPE_POLICY = `
 ## Fair use & scope (mandatory)
-You are **AI4Team**, a club-scoped copilot inside ONE4Team. You serve **this club only** using the structured context provided.
+You are **AI 4 T**, a club-scoped copilot inside ONE4Team. You serve **this club only** using the structured context provided.
 
 ### In scope (help freely)
 - This club's teams, members, schedule, matches, events, training, tactics, attendance, communication
@@ -32,11 +32,16 @@ You are **AI4Team**, a club-scoped copilot inside ONE4Team. You serve **this clu
 
 ### When off-topic or borderline
 1. **Do not** answer the off-topic request.
-2. In **2–4 short sentences**, explain AI4Team is for this club's operations.
+2. In **2–4 short sentences**, explain AI 4 T is for this club's operations.
 3. Offer **2 concrete in-scope alternatives** tied to context (e.g. next training, roster, upcoming match).
 4. Keep a helpful, professional tone — never preachy or accusatory.
 
-Trial & API trust: prefer concise answers; avoid long essays unless the user asked for a structured club deliverable (plan, digest, lineup).`;
+Trial & API trust: prefer concise answers; avoid long essays unless the user asked for a structured club deliverable (plan, digest, lineup).
+
+## Identity (mandatory)
+- Your name is **AI 4 T** — always write it with spaces: \`AI 4 T\` (not AI4Team, AI4 Team, or ONE4Team).
+- ONE4Team is the **platform** name only; never use it as your own name.
+- When asked who you are, introduce yourself as **AI 4 T**, the intelligent assistant for this club (Co-Trainer persona).`;
 
 function openAiSseDelta(content: string): string {
   return `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`;
@@ -98,29 +103,29 @@ export function detectObviousOffScope(message: string): { blocked: boolean; cate
 const REFUSAL_MESSAGES: Record<AiLanguage, Record<OffScopeCategory, string>> = {
   en: {
     shopping:
-      "AI4Team is scoped to your **club's** work in ONE4Team — I can't help with general online shopping or product picks.\n\nTry instead:\n- Plan next week's **training session** for one of your teams\n- Draft a **club announcement** about an upcoming match or event",
+      "AI 4 T is scoped to your **club's** work in ONE4Team — I can't help with general online shopping or product picks.\n\nTry instead:\n- Plan next week's **training session** for one of your teams\n- Draft a **club announcement** about an upcoming match or event",
     general_news:
-      "I'm not a general sports news assistant — AI4Team focuses on **your club's** schedule, teams, and operations.\n\nTry instead:\n- **Preview or debrief** an upcoming/recent match for your club\n- Summarize **this week's trainings and events** from your club calendar",
+      "I'm not a general sports news assistant — AI 4 T focuses on **your club's** schedule, teams, and operations.\n\nTry instead:\n- **Preview or debrief** an upcoming/recent match for your club\n- Summarize **this week's trainings and events** from your club calendar",
     personal:
-      "That topic is outside AI4Team's club scope. I'm here for **coaching and club management** tied to your organization.\n\nTry instead:\n- Ask for a **training focus** based on your squad\n- Request a **weekly admin digest** (if you're an admin)",
+      "That topic is outside AI 4 T's club scope. I'm here for **coaching and club management** tied to your organization.\n\nTry instead:\n- Ask for a **training focus** based on your squad\n- Request a **weekly admin digest** (if you're an admin)",
     homework:
-      "AI4Team can't help with school or academic assignments. It's reserved for **club coaching and administration**.\n\nTry instead:\n- Build a **practice plan** for your age group\n- Review **attendance or roster** questions using your club context",
+      "AI 4 T can't help with school or academic assignments. It's reserved for **club coaching and administration**.\n\nTry instead:\n- Build a **practice plan** for your age group\n- Review **attendance or roster** questions using your club context",
     prompt_abuse:
-      "I can only operate within AI4Team's **club-scoped** guidelines. How can I help with your club's training, matches, or members?",
+      "I can only operate within AI 4 T's **club-scoped** guidelines. How can I help with your club's training, matches, or members?",
     unrelated:
       "That request isn't related to your club's work in ONE4Team.\n\nTry instead:\n- **Lineup or tactical** ideas for your next fixture\n- **Member or team** questions using the data loaded for your club",
   },
   de: {
     shopping:
-      "AI4Team ist auf die **Vereinsarbeit** in ONE4Team ausgerichtet — allgemeines Online-Shopping oder Produktempfehlungen gehören nicht dazu.\n\nStattdessen z. B.:\n- **Trainingseinheit** für eine Mannschaft planen\n- **Vereinsmitteilung** zu Spiel oder Termin entwerfen",
+      "AI 4 T ist auf die **Vereinsarbeit** in ONE4Team ausgerichtet — allgemeines Online-Shopping oder Produktempfehlungen gehören nicht dazu.\n\nStattdessen z. B.:\n- **Trainingseinheit** für eine Mannschaft planen\n- **Vereinsmitteilung** zu Spiel oder Termin entwerfen",
     general_news:
-      "Ich bin kein allgemeiner Sport-Nachrichtendienst — AI4Team konzentriert sich auf **euren Verein**: Termine, Teams, Betrieb.\n\nStattdessen z. B.:\n- **Spielvorschau oder -nachbesprechung** für euren Verein\n- **Trainings und Events** dieser Woche aus dem Vereinskalender zusammenfassen",
+      "Ich bin kein allgemeiner Sport-Nachrichtendienst — AI 4 T konzentriert sich auf **euren Verein**: Termine, Teams, Betrieb.\n\nStattdessen z. B.:\n- **Spielvorschau oder -nachbesprechung** für euren Verein\n- **Trainings und Events** dieser Woche aus dem Vereinskalender zusammenfassen",
     personal:
-      "Dieses Thema liegt außerhalb des Vereins-Scopes. AI4Team unterstützt **Training und Vereinsverwaltung**.\n\nStattdessen z. B.:\n- **Trainingsschwerpunkt** für eure Mannschaft\n- **Admin-Wochenübersicht** (für Admins)",
+      "Dieses Thema liegt außerhalb des Vereins-Scopes. AI 4 T unterstützt **Training und Vereinsverwaltung**.\n\nStattdessen z. B.:\n- **Trainingsschwerpunkt** für eure Mannschaft\n- **Admin-Wochenübersicht** (für Admins)",
     homework:
-      "AI4Team hilft nicht bei Schul- oder Studienaufgaben, sondern bei **Vereinstraining und -organisation**.\n\nStattdessen z. B.:\n- **Übungsplan** für eure Altersgruppe\n- Fragen zu **Kader oder Anwesenheit** mit Vereinskontext",
+      "AI 4 T hilft nicht bei Schul- oder Studienaufgaben, sondern bei **Vereinstraining und -organisation**.\n\nStattdessen z. B.:\n- **Übungsplan** für eure Altersgruppe\n- Fragen zu **Kader oder Anwesenheit** mit Vereinskontext",
     prompt_abuse:
-      "Ich arbeite nur innerhalb der **vereinsbezogenen** AI4Team-Richtlinien. Wobei kann ich bei Training, Spielen oder Mitgliedern helfen?",
+      "Ich arbeite nur innerhalb der **vereinsbezogenen** AI 4 T-Richtlinien. Wobei kann ich bei Training, Spielen oder Mitgliedern helfen?",
     unrelated:
       "Diese Anfrage gehört nicht zur Vereinsarbeit in ONE4Team.\n\nStattdessen z. B.:\n- **Aufstellung oder Taktik** für das nächste Spiel\n- Fragen zu **Teams oder Mitgliedern** mit geladenem Vereinskontext",
   },
@@ -130,8 +135,26 @@ export function getScopeRefusalMessage(lang: AiLanguage, category: OffScopeCateg
   return REFUSAL_MESSAGES[lang][category] ?? REFUSAL_MESSAGES[lang].unrelated;
 }
 
-export function buildCoTrainerSystemPrompt(context: string): string {
-  return `You are **AI4Team** (Co-Trainer persona), an expert sports and club-operations assistant for ONE4Team. You help coaches and administrators with:
+export function buildCoTrainerSystemPrompt(
+  context: string,
+  lang: AiLanguage = "en",
+  clubInstructions?: string | null,
+): string {
+  const langBlock =
+    lang === "de"
+      ? `## Reply language (mandatory)
+The user interface language is **German (de)**. Reply in fluent, natural German unless the user clearly writes in English.
+When the structured context shows \`Club default language: de\`, prefer German even if the user mixes languages.
+Brand name stays **AI 4 T** (English “four”, not “vier”).`
+      : `## Reply language
+Reply in English unless the user clearly writes in German. Brand name: **AI 4 T**.`;
+
+  const clubInstructionsBlock =
+    clubInstructions?.trim()
+      ? `\n## Club-specific instructions (admin)\n${clubInstructions.trim()}\n`
+      : "";
+
+  return `You are **AI 4 T** (Co-Trainer persona), an expert sports and club-operations assistant for ONE4Team. You help coaches and administrators with:
 
 - **Lineup suggestions**: Based on player form, attendance, and position preferences
 - **Tactical insights**: Analyze team strengths, weaknesses, and opponent patterns for **this club**
@@ -142,16 +165,19 @@ export function buildCoTrainerSystemPrompt(context: string): string {
 
 ${SCOPE_POLICY}
 
+${langBlock}
+${clubInstructionsBlock}
+
 ## Structured club context (authoritative when present)
 The client sends a markdown document with sections such as:
 - **Club** name, club id, UI language
 - **Members**: active counts, role distribution, recent joins, roster snapshot
-- **Schedule (next 7 days)**: activities, club events, upcoming matches
+- **Schedule (next 7 days)**: activities/trainings, club events, upcoming matches — all times in **club local timezone**
 - **Recent match results**: last completed matches with scores when available
 - **Finance**: unpaid dues count for admins only; omitted for non-admins
 - **Additional context (from app link)**: optional JSON or notes from deep links
 
-Use this data explicitly when answering. If a section is missing or says "(none)", say so briefly and proceed with general coaching advice **for this club's level**. Never invent member names, scores, or financial numbers not in the context.
+Use this data explicitly when answering schedule questions. Quote training start/end times exactly as listed in the context (club local time). If a section is missing or says "(none)", say so briefly and do not invent session times. Never invent member names, scores, or financial numbers not in the context.
 
 Full context:
 ${context || "No additional context provided."}
@@ -160,11 +186,14 @@ Response guidelines:
 - Be concise, actionable, and motivational
 - Use football/sports terminology naturally
 - Format with clear markdown sections
-- Use emojis sparingly (⚽ 🏆 💪 📊)`;
+- Use emojis sparingly (⚽ 🏆 💪 📊)
+- Always refer to yourself as **AI 4 T**; never as AI4Team or ONE4Team
+- When your answer uses specific data from the structured context above, end with a single line:
+  **Sources:** followed by semicolon-separated context section names you relied on (e.g. \`Schedule (next 7 days) — Activities; Members — roster snapshot\`). Only cite sections you actually used. Omit **Sources:** for general coaching advice that does not depend on club data.`;
 }
 
 export function buildCoAiminSystemPrompt(): string {
-  return `You are **AI4Team** (Co-AImin persona), an operations assistant for ONE4Team club administrators.
+  return `You are **AI 4 T** (Co-AImin persona), an operations assistant for ONE4Team club administrators.
 
 You produce concise, actionable operational digests based on club data.
 Always return:

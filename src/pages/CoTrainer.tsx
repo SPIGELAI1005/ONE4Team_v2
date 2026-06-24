@@ -3,10 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
-  Bot,
-  Send,
   Loader2,
-  Sparkles,
   ShieldCheck,
   Building2,
   Briefcase,
@@ -15,8 +12,11 @@ import {
   Shield,
   History,
   ExternalLink,
+  MessageSquare,
   MessageSquarePlus,
+  Info,
 } from "lucide-react";
+import { Ai4TeamAgentIcon } from "@/components/ai-agent/Ai4TeamNavIcon";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/useAuth";
@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useLanguage } from "@/hooks/use-language";
+import { useTheme } from "@/hooks/use-theme";
 import { DASHBOARD_PAGE_MAX_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 import { useActiveClub } from "@/hooks/use-active-club";
 import {
@@ -33,12 +34,36 @@ import {
   mergeQuickPrompts,
   type ClubQuickPrompt,
 } from "@/lib/ai-context";
+import {
+  buildAi4TRoleQuickPrompts,
+  getAi4TRoleWelcomeMessage,
+  getAi4TAssistantRoleName,
+  type Ai4TRoleKey,
+} from "@/lib/ai-4-t-role-prompts";
 import { getEdgeFunctionAuthHeaders } from "@/lib/edge-function-auth";
 import { AiAgentWorkspace } from "@/components/ai-agent/AiAgentWorkspace";
+import { Ai4TIntroModal } from "@/components/ai/Ai4TIntroModal";
+import { Ai4TLogo } from "@/components/ai/Ai4TLogo";
+import { Ai4tChatWatermark } from "@/components/ai/Ai4tChatWatermark";
+import { Ai4TSendButton } from "@/components/ai/Ai4TSendButton";
+import { Ai4TBrand, BrandedText } from "@/components/ai/Ai4TBrand";
+import { Ai4TeamVoiceControls } from "@/components/ai-agent/Ai4TeamVoiceControls";
+import { useAi4TeamVoice } from "@/hooks/use-ai4team-voice";
 import { useAiAgent } from "@/contexts/ai-agent-context";
 import { parseChatAgentCommand } from "@/lib/ai-agent/chat-intent-detect";
+import {
+  formatTeamAccessDeniedMessage,
+  type PendingWorkflowState,
+} from "@/lib/ai-agent/chat-workflow-handler";
+import { buildProposalUnderstandingMessage } from "@/lib/ai-agent/enrich-agent-proposal";
+import { runAgentWorkflowFromUtterance } from "@/lib/ai-agent/run-agent-workflow-utterance";
+import { AiAgentProposalCard } from "@/components/ai-agent/AiAgentProposalCard";
+import { AiAgentOutcomeLinks } from "@/components/ai-agent/AiAgentOutcomeLinks";
+import type { AgentRunRow } from "@/lib/ai-agent/types";
 // logo is rendered by AppHeader
-import ReactMarkdown from "react-markdown";
+import { Ai4tAssistantMessage } from "@/components/ai/Ai4tAssistantMessage";
+import { fetchAiMessageFeedbackMap, type AiMessageFeedbackRating } from "@/lib/ai-message-feedback";
+import { ai4tDashboardTabListClass, ai4tDashboardTabTriggerClass } from "@/lib/ai4t-tab-classes";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -62,112 +87,16 @@ type AiConversationRow = {
   messages: unknown;
 };
 
-type RoleKey = "admin" | "trainer" | "player" | "member" | "staff" | "parent" | "sponsor" | "supplier" | "service_provider" | "consultant";
+type RoleKey = Ai4TRoleKey;
 
 type QuickPrompt = { label: string; prompt: string };
 
 function buildQuickPrompts(role: RoleKey, language: "en" | "de"): QuickPrompt[] {
-  const isGerman = language === "de";
-  if (role === "admin") {
-    return [
-      {
-        label: isGerman ? "Wochendigest" : "Weekly admin digest",
-        prompt: isGerman
-          ? "Erstelle ein wochentliches Leadership-Digest mit Top-Prioritaten, Risiken und Verantwortlichen."
-          : "Create a weekly leadership digest with top priorities, risks, and owner actions.",
-      },
-      {
-        label: isGerman ? "Beitrags-Follow-up" : "Payment follow-up plan",
-        prompt: isGerman
-          ? "Entwirf einen professionellen Follow-up-Plan fur uberfallige Mitgliedsbeitrage."
-          : "Draft a professional follow-up plan for overdue membership dues.",
-      },
-      {
-        label: isGerman ? "Vereinsankundigung" : "Club announcement",
-        prompt: isGerman
-          ? "Schreibe eine kurze vereinsweite Ankundigung fur den Zeitplan der nachsten zwei Wochen."
-          : "Write a concise club-wide announcement for the next two weeks schedule.",
-      },
-      {
-        label: isGerman ? "Operations-Checkliste" : "Operations checklist",
-        prompt: isGerman
-          ? "Erstelle eine Operations-Checkliste fur Spieltag, Training und Kommunikation."
-          : "Generate an operations checklist for matchday, training, and communication tasks.",
-      },
-    ];
-  }
-
-  if (role === "player") {
-    return [
-      {
-        label: isGerman ? "Personlicher 7-Tage-Plan" : "Personal improvement plan",
-        prompt: isGerman
-          ? "Erstelle einen personlichen 7-Tage-Verbesserungsplan fur einen Spieler mit Fokus auf Fitness und Entscheidungen."
-          : "Create a 7-day personal improvement plan for a player focusing on fitness and decision-making.",
-      },
-      {
-        label: isGerman ? "Match-Vorbereitung" : "Match preparation",
-        prompt: isGerman
-          ? "Gib mir eine Vorbereitungsroutine fur den Abend vor dem Spiel und den Spieltag-Morgen."
-          : "Give me a pre-match preparation routine for the evening before and match day morning.",
-      },
-      {
-        label: isGerman ? "Leistungsanalyse" : "Performance review",
-        prompt: isGerman
-          ? "Hilf mir bei der Analyse meines letzten Spiels mit Starken, Fehlern und 3 konkreten Verbesserungen."
-          : "Help me review my last match with strengths, mistakes, and 3 concrete improvements.",
-      },
-      {
-        label: isGerman ? "Mentale Fokusroutine" : "Mental focus routine",
-        prompt: isGerman
-          ? "Schlage eine kurze mentale Fokusroutine vor Training und Spielen vor."
-          : "Suggest a short mental focus routine before training and matches.",
-      },
-    ];
-  }
-
-  return [
-    {
-      label: isGerman ? "Aufstellung vorschlagen" : "Suggest a lineup",
-      prompt: isGerman
-        ? "Schlage basierend auf der aktuellen Form eine optimale Startelf fur unser nachstes Spiel vor."
-        : "Based on recent form, suggest an optimal starting XI for our next match.",
-    },
-    {
-      label: isGerman ? "Trainingsplan" : "Training plan",
-      prompt: isGerman
-        ? "Erstelle einen Wochen-Trainingsplan mit Fokus auf verbesserte Defensivorganisation."
-        : "Create a week-long training plan focusing on improving our defensive organization.",
-    },
-    {
-      label: isGerman ? "Leistung analysieren" : "Analyze performance",
-      prompt: isGerman
-        ? "Analysiere unsere letzten Spiele und identifiziere die wichtigsten Verbesserungsfelder."
-        : "Analyze our recent match performance and identify key areas for improvement.",
-    },
-    {
-      label: isGerman ? "Team motivieren" : "Motivate the team",
-      prompt: isGerman
-        ? "Schreibe eine motivierende Ansprache vor einem wichtigen Pokalspiel."
-        : "Write a motivational pre-match speech for an important cup game.",
-    },
-  ];
+  return buildAi4TRoleQuickPrompts(role, language);
 }
 
 function getAssistantRoleName(role: RoleKey): string {
-  const roleNames: Record<RoleKey, string> = {
-    admin: "Co-Admin",
-    trainer: "Co-Trainer",
-    player: "Co-Player",
-    member: "Co-Member",
-    staff: "Co-Staff",
-    parent: "Co-Parent",
-    sponsor: "Co-Sponsor",
-    supplier: "Co-Supplier",
-    service_provider: "Co-Service",
-    consultant: "Co-Consultant",
-  };
-  return roleNames[role];
+  return getAi4TAssistantRoleName(role);
 }
 
 function startOfDayCtx(d: Date): Date {
@@ -339,6 +268,7 @@ const CoTrainer = () => {
   const { activeClub } = useActiveClub();
   const perms = usePermissions();
   const { t, language, setLanguage } = useLanguage();
+  const { resolvedTheme } = useTheme();
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -362,26 +292,54 @@ const CoTrainer = () => {
   const [toolDuesUnpaid, setToolDuesUnpaid] = useState<number | null>(null);
 
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [feedbackRatings, setFeedbackRatings] = useState<Record<number, AiMessageFeedbackRating>>({});
   const [aiLog, setAiLog] = useState<AiRequestRow[]>([]);
   const [conversations, setConversations] = useState<AiConversationRow[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
   const [toolBusy, setToolBusy] = useState<AiRequestKind | null>(null);
   const [toolOutput, setToolOutput] = useState("");
+  const [showIntroModal, setShowIntroModal] = useState(false);
+  const [pendingWorkflow, setPendingWorkflow] = useState<PendingWorkflowState | null>(null);
+  const [chatOutcomeLinks, setChatOutcomeLinks] = useState<{ label: string; href: string }[]>([]);
+  const [agentRuns, setAgentRuns] = useState<AgentRunRow[]>([]);
 
   const roleKey = (perms.role || "trainer") as RoleKey;
   const assistantRoleName = useMemo(() => getAssistantRoleName(roleKey), [roleKey]);
   const fallbackPrompts = useMemo(() => buildQuickPrompts(roleKey, language), [roleKey, language]);
   const quickPrompts = useMemo(() => mergeQuickPrompts(smartPrompts, fallbackPrompts, 8), [smartPrompts, fallbackPrompts]);
   const clubName = activeClub?.name || "your club";
+  const roleWelcome = useMemo(
+    () => getAi4TRoleWelcomeMessage(roleKey, language, clubName),
+    [roleKey, language, clubName],
+  );
   const canSeeAiLog = perms.isTrainer;
   const dashboardRolePath = perms.role || "player";
+  const aiVoice = useAi4TeamVoice(language);
 
   useEffect(() => {
     conversationIdRef.current = conversationId;
   }, [conversationId]);
 
-  const { focusAgentIntent } = useAiAgent();
+  useEffect(() => {
+    let cancelled = false;
+    void fetchAiMessageFeedbackMap(conversationId).then((map) => {
+      if (!cancelled) setFeedbackRatings(map);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId]);
+
+  const {
+    focusAgentIntent,
+    applyProposal,
+    confirmProposal,
+    dismissProposal,
+    pendingProposal,
+    workflowBusy,
+    canManageSchedule,
+  } = useAiAgent();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -460,14 +418,26 @@ const CoTrainer = () => {
             .order("created_at", { ascending: false })
             .limit(20)
         : Promise.resolve({ data: [] as AiRequestRow[], error: null as null });
-      const [cRes, lRes] = await Promise.all([convoPromise, logPromise]);
+      const runsPromise = canManageSchedule
+        ? supabase
+            .from("ai_agent_runs")
+            .select(
+              "id, club_id, user_id, status, intent, proposal, execution_result, error_message, conversation_id, created_at, executed_at",
+            )
+            .eq("club_id", clubId)
+            .order("created_at", { ascending: false })
+            .limit(25)
+        : Promise.resolve({ data: [] as AgentRunRow[], error: null as null });
+      const [cRes, lRes, rRes] = await Promise.all([convoPromise, logPromise, runsPromise]);
       if (!cRes.error && cRes.data) setConversations((cRes.data as unknown as AiConversationRow[]) ?? []);
       if (canSeeAiLog && lRes && "data" in lRes && !lRes.error)
         setAiLog((lRes.data as unknown as AiRequestRow[]) ?? []);
+      if (canManageSchedule && rRes && "data" in rRes && !rRes.error)
+        setAgentRuns((rRes.data as unknown as AgentRunRow[]) ?? []);
     } finally {
       setHistoryLoading(false);
     }
-  }, [user, clubId, canSeeAiLog]);
+  }, [user, clubId, canSeeAiLog, canManageSchedule]);
 
   useEffect(() => {
     if (mainTab === "history") void loadHistoryData();
@@ -556,7 +526,7 @@ const CoTrainer = () => {
 
       const showChatError = (description: string, includeHint: boolean) => {
         toast({
-          title: t.coTrainerPage.chatErrorTitle,
+          title: <Ai4TBrand />,
           description,
           variant: "destructive",
         });
@@ -718,7 +688,7 @@ const CoTrainer = () => {
             : t.coTrainerPage.chatErrorNetwork;
         if (assistantSoFar.trim()) {
           toast({
-            title: t.coTrainerPage.chatErrorTitle,
+            title: <Ai4TBrand />,
             description: detail || msg,
             variant: "destructive",
           });
@@ -732,10 +702,14 @@ const CoTrainer = () => {
         setIsLoading(false);
         extraUrlContextRef.current = null;
         const tail = assistantSoFar;
-        if (tail) schedulePersistMessages([...allMessages, { role: "assistant", content: tail }]);
+        if (tail) {
+          schedulePersistMessages([...allMessages, { role: "assistant", content: tail }]);
+          aiVoice.speak(tail);
+        }
       }
     },
     [
+      aiVoice,
       assistantRoleName,
       clubId,
       language,
@@ -883,7 +857,11 @@ const CoTrainer = () => {
     setMessages([]);
     setConversationId(null);
     conversationIdRef.current = null;
+    setFeedbackRatings({});
     setInput("");
+    setPendingWorkflow(null);
+    dismissProposal();
+    setChatOutcomeLinks([]);
   };
 
   const resumeConversation = (row: AiConversationRow) => {
@@ -897,9 +875,32 @@ const CoTrainer = () => {
     setMainTab("chat");
   };
 
+  const handleChatProposalConfirm = async () => {
+    try {
+      const result = await confirmProposal();
+      setChatOutcomeLinks(result?.result?.links ?? []);
+      toast({ title: t.coTrainerPage.agent.executeSuccess });
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: language === "de" ? "Workflow wurde ausgeführt." : "Workflow completed.",
+        },
+      ]);
+    } catch (e) {
+      toast({
+        title: t.coTrainerPage.agent.executeFailed,
+        description: e instanceof Error ? e.message : String(e),
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSend = async (text?: string) => {
     const msg = text || input.trim();
     if (!msg || isLoading) return;
+
+    aiVoice.stopSpeaking();
 
     const agentCmd = parseChatAgentCommand(msg);
     if (agentCmd) {
@@ -913,7 +914,68 @@ const CoTrainer = () => {
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput("");
+    setIsLoading(true);
+
+    if (clubId && canManageSchedule) {
+      const workflow = await runAgentWorkflowFromUtterance({
+        clubId,
+        message: msg,
+        language,
+        conversationId,
+        pendingWorkflow,
+        canUseAgent: true,
+        pageContext: { source: "co-trainer-chat" },
+      });
+
+      if (workflow.type !== "skip") {
+        if (workflow.type === "clarify") {
+          setPendingWorkflow(workflow.pending);
+          setMessages([...newMessages, { role: "assistant", content: workflow.question }]);
+          setIsLoading(false);
+          return;
+        }
+
+        setPendingWorkflow(null);
+
+        if (workflow.type === "denied") {
+          setMessages([
+            ...newMessages,
+            { role: "assistant", content: formatTeamAccessDeniedMessage(workflow.body, language) },
+          ]);
+          setIsLoading(false);
+          return;
+        }
+
+        if (workflow.type === "proposal") {
+          applyProposal(workflow.proposal);
+          setMainTab("agent");
+          setMessages([
+            ...newMessages,
+            { role: "assistant", content: buildProposalUnderstandingMessage(workflow.proposal, language) },
+          ]);
+          setIsLoading(false);
+          return;
+        }
+
+        if (workflow.type === "error") {
+          toast({
+            title: t.coTrainerPage.agent.proposeFailed,
+            description: workflow.message,
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+    }
+
     await streamChat(newMessages);
+  };
+
+  const handleVoiceCommand = (transcript: string) => {
+    const text = transcript.trim();
+    if (!text || isLoading) return;
+    void handleSend(text);
   };
 
   return (
@@ -934,8 +996,8 @@ const CoTrainer = () => {
               <MessageSquarePlus className="w-4 h-4" />
             </button>
           ) : (
-            <div className="w-9 h-9 rounded-2xl bg-gradient-gold flex items-center justify-center text-primary-foreground shadow-gold">
-              <Bot className="w-4 h-4" />
+            <div className="w-9 h-9 rounded-2xl bg-card/40 border border-border/60 backdrop-blur-xl flex items-center justify-center overflow-hidden p-0.5">
+              <Ai4TLogo size="xs" className="h-7 w-7" />
             </div>
           )
         }
@@ -943,16 +1005,16 @@ const CoTrainer = () => {
 
       <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as typeof mainTab)} className="flex flex-col flex-1 min-h-0">
         <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl shrink-0 pt-4`}>
-          <TabsList className="w-full grid grid-cols-3 h-11 rounded-xl bg-muted/50 p-1">
-            <TabsTrigger value="chat" className="rounded-lg text-xs gap-1.5">
-              <Bot className="w-3.5 h-3.5" />
+          <TabsList className={ai4tDashboardTabListClass}>
+            <TabsTrigger value="chat" className={ai4tDashboardTabTriggerClass}>
+              <MessageSquare className="w-3.5 h-3.5" />
               {t.coTrainerPage.tabChat}
             </TabsTrigger>
-            <TabsTrigger value="agent" className="rounded-lg text-xs gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" />
+            <TabsTrigger value="agent" className={ai4tDashboardTabTriggerClass}>
+              <Ai4TeamAgentIcon />
               {t.coTrainerPage.tabAgent}
             </TabsTrigger>
-            <TabsTrigger value="history" className="rounded-lg text-xs gap-1.5">
+            <TabsTrigger value="history" className={ai4tDashboardTabTriggerClass}>
               <History className="w-3.5 h-3.5" />
               {t.coTrainerPage.tabHistory}
             </TabsTrigger>
@@ -960,16 +1022,19 @@ const CoTrainer = () => {
         </div>
 
         <TabsContent value="chat" className="flex-1 flex flex-col min-h-0 mt-0 data-[state=inactive]:hidden">
-          <div ref={scrollRef} className="flex-1 overflow-y-auto">
-            <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl space-y-4 py-6`}>
+          <div ref={scrollRef} className="relative flex-1 overflow-y-auto">
+            {resolvedTheme === "light" ? <Ai4tChatWatermark /> : null}
+            <div className={`relative z-[1] ${DASHBOARD_PAGE_MAX_INNER} max-w-3xl space-y-4 py-6`}>
               <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-2">
                     <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                      <Bot className="w-4 h-4 text-primary" />
+                      <MessageSquare className="w-4 h-4 text-primary" />
                     </div>
                     <div>
-                      <div className="text-sm font-semibold text-foreground">{t.coTrainerPage.workspaceTitle}</div>
+                      <div className="text-sm font-semibold text-foreground">
+                        <BrandedText text={t.coTrainerPage.workspaceTitle} />
+                      </div>
                       <div className="text-[11px] text-muted-foreground flex items-center gap-2">
                         {t.coTrainerPage.workspaceSubtitle}
                         {contextLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
@@ -1042,22 +1107,25 @@ const CoTrainer = () => {
                   className="grid gap-4 lg:grid-cols-[1.1fr_1fr]"
                 >
                   <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-5">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-gold mb-4 flex items-center justify-center">
-                      <Sparkles className="w-6 h-6 text-primary-foreground" />
+                    <div className="mb-4 flex items-start justify-between gap-2">
+                      <Ai4TLogo size="lg" />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0 gap-1.5 rounded-full text-xs"
+                        onClick={() => setShowIntroModal(true)}
+                      >
+                        <Info className="h-3.5 w-3.5" />
+                        <BrandedText text={t.coTrainerPage.introLearnMore} />
+                      </Button>
                     </div>
-                    <h2 className="font-display text-xl font-bold text-foreground mb-2">{t.coTrainerPage.welcomeTitle}</h2>
+                    <h2 className="text-xl text-foreground mb-2">
+                      <span className="font-display font-bold">{t.coTrainerPage.welcomeTitlePrefix}</span>{" "}
+                      <Ai4TBrand />
+                    </h2>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      {language === "de" ? (
-                        <>
-                          Du arbeitest mit <span className="text-foreground font-medium">{assistantRoleName}</span>. Stelle
-                          strategische Fragen, fordere Plane an und erhalte strukturierte Empfehlungen passend zu deiner Rolle.
-                        </>
-                      ) : (
-                        <>
-                          You are working with <span className="text-foreground font-medium">{assistantRoleName}</span>. Ask
-                          strategic questions, request plans, and get structured recommendations tailored to your role.
-                        </>
-                      )}
+                      {roleWelcome}
                     </p>
                     <div className="mt-4 grid grid-cols-2 gap-2">
                       <div className="rounded-xl border border-border/60 bg-background/50 p-3">
@@ -1111,9 +1179,17 @@ const CoTrainer = () => {
                         }`}
                       >
                         {msg.role === "assistant" ? (
-                          <div className="prose prose-sm prose-invert max-w-none text-sm text-foreground [&_p]:my-1 [&_ul]:my-1 [&_li]:my-0.5 [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_strong]:text-primary">
-                            <ReactMarkdown>{msg.content}</ReactMarkdown>
-                          </div>
+                          <Ai4tAssistantMessage
+                            content={msg.content}
+                            clubId={clubId ?? ""}
+                            conversationId={conversationId}
+                            messageIndex={i}
+                            feedbackRating={feedbackRatings[i] ?? null}
+                            showFeedback={Boolean(clubId)}
+                            onRated={(rating) =>
+                              setFeedbackRatings((prev) => ({ ...prev, [i]: rating }))
+                            }
+                          />
                         ) : (
                           <p className="text-sm">{msg.content}</p>
                         )}
@@ -1122,6 +1198,22 @@ const CoTrainer = () => {
                   ))}
                 </AnimatePresence>
               )}
+              {chatOutcomeLinks.length > 0 ? (
+                <div className="mt-4">
+                  <AiAgentOutcomeLinks links={chatOutcomeLinks} />
+                </div>
+              ) : null}
+              {pendingProposal ? (
+                <div className="mt-4">
+                  <AiAgentProposalCard
+                    proposal={pendingProposal}
+                    busy={workflowBusy}
+                    clubId={clubId}
+                    onConfirm={() => void handleChatProposalConfirm()}
+                    onDismiss={dismissProposal}
+                  />
+                </div>
+              ) : null}
               {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
                 <div className="flex justify-start">
                   <div className="bg-card border border-border rounded-2xl px-4 py-3">
@@ -1134,7 +1226,7 @@ const CoTrainer = () => {
 
           <div className="border-t border-border bg-background/80 backdrop-blur-xl shrink-0">
             <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl py-3`}>
-              <div className="flex gap-2 items-end">
+              <div className="flex items-end gap-1.5">
                 <textarea
                   ref={inputRef}
                   value={input}
@@ -1145,18 +1237,25 @@ const CoTrainer = () => {
                       handleSend();
                     }
                   }}
-                  placeholder={t.coTrainerPage.inputPlaceholder.replace("{role}", assistantRoleName)}
+                  placeholder={t.coTrainerPage.inputPlaceholder}
                   rows={1}
                   className="flex-1 resize-none rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 />
-                <Button
-                  onClick={() => handleSend()}
+                <Ai4TSendButton
                   disabled={!input.trim() || isLoading}
-                  className="h-11 w-11 rounded-xl bg-gradient-gold-static text-primary-foreground hover:brightness-110 shrink-0"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
+                  onClick={() => void handleSend()}
+                  variant="default"
+                  aria-label={t.coTrainerPage.tabChat}
+                />
+                <Ai4TeamVoiceControls
+                  disabled={isLoading}
+                  voice={aiVoice}
+                  onVoiceCommand={handleVoiceCommand}
+                />
               </div>
+              {aiVoice.speechSupported || aiVoice.ttsSupported ? (
+                <p className="mt-1.5 text-[10px] text-muted-foreground">{t.coTrainerPage.voice.hint}</p>
+              ) : null}
             </div>
           </div>
         </TabsContent>
@@ -1215,6 +1314,35 @@ const CoTrainer = () => {
                   </div>
                 </div>
 
+                {canManageSchedule ? (
+                  <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
+                    <div className="font-display font-bold">{t.coTrainerPage.agent.workflowRunsTitle}</div>
+                    <p className="text-xs text-muted-foreground mt-1">{t.coTrainerPage.agent.workflowRunsHint}</p>
+                    <div className="mt-3 grid gap-2">
+                      {agentRuns.length === 0 ? (
+                        <div className="text-xs text-muted-foreground">{t.coTrainerPage.agent.noWorkflowRuns}</div>
+                      ) : (
+                        agentRuns.map((run) => {
+                          const links = (run.execution_result as { links?: { label: string; href: string }[] } | null)
+                            ?.links;
+                          return (
+                            <div key={run.id} className="rounded-2xl border border-border/60 bg-background/40 p-3 space-y-2">
+                              <div className="flex flex-wrap items-center gap-2 text-xs">
+                                <span className="font-medium text-foreground">{run.intent}</span>
+                                <span className="text-muted-foreground">· {run.status}</span>
+                                <span className="text-muted-foreground">
+                                  · {new Date(run.created_at).toLocaleString()}
+                                </span>
+                              </div>
+                              {links?.length ? <AiAgentOutcomeLinks links={links} compact /> : null}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+
                 {canSeeAiLog ? (
                   <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
                     <div className="font-display font-bold">{t.ai.recentRequests}</div>
@@ -1225,7 +1353,7 @@ const CoTrainer = () => {
                         aiLog.map((r) => (
                           <div key={r.id} className="rounded-2xl border border-border/60 bg-background/40 p-3">
                             <div className="text-xs text-muted-foreground">
-                              {new Date(r.created_at).toLocaleString()} • {r.kind} • {r.model ?? "—"}
+                              {new Date(r.created_at).toLocaleString()} • {r.kind} • {r.model ?? "-"}
                             </div>
                             <div className="mt-1 text-[11px] text-foreground/80">user: {r.user_id.slice(0, 8)}…</div>
                           </div>
@@ -1239,6 +1367,18 @@ const CoTrainer = () => {
           </div>
         </TabsContent>
       </Tabs>
+      <Ai4TIntroModal
+        open={showIntroModal}
+        onOpenChange={setShowIntroModal}
+        surface="app"
+        clubName={clubName}
+        isSignedIn={Boolean(user)}
+        onLaunch={(prompt) => {
+          setMainTab("chat");
+          if (prompt) setInput(prompt);
+          window.requestAnimationFrame(() => inputRef.current?.focus());
+        }}
+      />
     </div>
   );
 };

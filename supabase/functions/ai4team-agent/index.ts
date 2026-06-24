@@ -16,12 +16,20 @@ import {
   buildResultLinks,
   executeProposalStep,
   intentRequiresAdmin,
+  intentsRequiringTrainingScope,
   parseAgentIntent,
+  validateTrainingScope,
   type AgentIntent,
   type AgentPageContext,
   type AgentProposalPayload,
+  type TrainingScopeValidation,
 } from "../_shared/ai4team_agent_tools.ts";
-import { interpretAgentMessage, loadClubAgentContext } from "../_shared/ai4team_agent_interpret.ts";
+import {
+  interpretAgentMessage,
+  loadClubAgentContext,
+  normalizeInterpretedParams,
+  validateWorkflowParams,
+} from "../_shared/ai4team_agent_interpret.ts";
 import { detectObviousOffScope, parseAiLanguage } from "../_shared/ai4team_scope.ts";
 import { logStructured, resolveCorrelationId } from "../_shared/request_context.ts";
 
@@ -96,7 +104,7 @@ serve(async (req) => {
       }
 
       if (detectObviousOffScope(message).blocked) {
-        return jsonResponse({ error: "Request is outside AI4Team club scope." }, 400, corsHeaders);
+        return jsonResponse({ error: "Request is outside AI 4 T club scope." }, 400, corsHeaders);
       }
 
       const clubRow = await fetchClubLlmSettings(admin, clubId);
@@ -126,11 +134,36 @@ serve(async (req) => {
         return jsonResponse({ error: interpreted.message }, 502, corsHeaders);
       }
 
+      if (interpreted.kind === "clarify") {
+        return jsonResponse(
+          {
+            kind: "clarify",
+            intent: interpreted.intent,
+            field: interpreted.field,
+            question: interpreted.question,
+            params: interpreted.params,
+          },
+          200,
+          corsHeaders,
+        );
+      }
+
+      const scopeResult = await mergeTrainingScopeForProposal(
+        admin,
+        clubId,
+        userId,
+        interpreted.intent,
+        interpreted.params,
+      );
+      if (!scopeResult.ok) {
+        return teamAccessDeniedResponse(scopeResult.denial, language, corsHeaders);
+      }
+
       return jsonResponse(
         {
           kind: "workflow",
           intent: interpreted.intent,
-          params: interpreted.params,
+          params: scopeResult.params,
           confidence: interpreted.confidence,
         },
         200,
@@ -154,7 +187,7 @@ serve(async (req) => {
         }
 
         if (detectObviousOffScope(message).blocked) {
-          return jsonResponse({ error: "Request is outside AI4Team club scope." }, 400, corsHeaders);
+          return jsonResponse({ error: "Request is outside AI 4 T club scope." }, 400, corsHeaders);
         }
 
         const clubRow = await fetchClubLlmSettings(admin, clubId);
@@ -182,6 +215,19 @@ serve(async (req) => {
         if (interpreted.kind === "error") {
           return jsonResponse({ error: interpreted.message }, 502, corsHeaders);
         }
+        if (interpreted.kind === "clarify") {
+          return jsonResponse(
+            {
+              kind: "clarify",
+              intent: interpreted.intent,
+              field: interpreted.field,
+              question: interpreted.question,
+              params: interpreted.params,
+            },
+            200,
+            corsHeaders,
+          );
+        }
 
         intent = interpreted.intent;
         params = interpreted.params;
@@ -189,9 +235,47 @@ serve(async (req) => {
         return jsonResponse({ error: "intent or message is required." }, 400, corsHeaders);
       }
 
-      if (intentRequiresAdmin(intent)) {
-        const isClubAdmin = await assertClubAdmin(admin, userId, clubId);
-        if (!isClubAdmin) {
+      const isClubAdminForPropose = await assertClubAdmin(admin, userId, clubId);
+
+      if (
+        intent &&
+        (intent === "cancel_training" || intent === "cancel_training_with_parent_notice")
+      ) {
+        const ctx = await loadClubAgentContext(admin, clubId);
+        const timezone =
+          typeof body.timezone === "string" && body.timezone.trim()
+            ? body.timezone.trim()
+            : "Europe/Berlin";
+        params = normalizeInterpretedParams(intent, params, ctx, timezone);
+        const validation = validateWorkflowParams(intent, params, language, isClubAdminForPropose);
+        if (validation && "clarify" in validation) {
+          return jsonResponse(
+            {
+              kind: "clarify",
+              intent,
+              field: validation.clarify.field,
+              question: validation.clarify.question,
+              params,
+            },
+            200,
+            corsHeaders,
+          );
+        }
+        if (validation && "error" in validation) {
+          return jsonResponse({ error: validation.error }, 400, corsHeaders);
+        }
+      }
+
+      if (intent && intentsRequiringTrainingScope(intent)) {
+        const scopeResult = await mergeTrainingScopeForProposal(admin, clubId, userId, intent, params);
+        if (!scopeResult.ok) {
+          return teamAccessDeniedResponse(scopeResult.denial, language, corsHeaders);
+        }
+        params = scopeResult.params;
+      }
+
+      if (intentRequiresAdmin(intent!)) {
+        if (!isClubAdminForPropose) {
           return jsonResponse({ error: "Admin access required for this workflow." }, 403, corsHeaders);
         }
       } else {
@@ -204,8 +288,29 @@ serve(async (req) => {
       if (message && intent) {
         const offScope = detectObviousOffScope(message);
         if (offScope.blocked) {
-          return jsonResponse({ error: "Request is outside AI4Team club scope." }, 400, corsHeaders);
+          return jsonResponse({ error: "Request is outside AI 4 T club scope." }, 400, corsHeaders);
         }
+      }
+
+      if (intent === "duplicate_training_week") {
+        const teamId = params.team_id != null ? String(params.team_id).trim() : null;
+        const daysShift = params.days_shift != null ? Number(params.days_shift) : 7;
+        const { data: dupData, error: dupError } = await admin.rpc("agent_duplicate_training_week_sessions", {
+          _club_id: clubId,
+          _user_id: userId,
+          _team_id: teamId || null,
+          _days_shift: Number.isFinite(daysShift) ? daysShift : 7,
+        });
+        if (dupError) {
+          return jsonResponse({ error: dupError.message }, 400, corsHeaders);
+        }
+        const dupRow = (dupData ?? {}) as Record<string, unknown>;
+        params = {
+          ...params,
+          sessions: dupRow.sessions ?? [],
+          days_shift: dupRow.days_shift ?? daysShift,
+          source_count: dupRow.source_count,
+        };
       }
 
       let proposal: AgentProposalPayload;
@@ -334,7 +439,74 @@ serve(async (req) => {
     }
 
     const proposal = run.proposal as AgentProposalPayload;
-    const steps = Array.isArray(proposal?.steps) ? proposal.steps : [];
+    let steps = Array.isArray(proposal?.steps) ? [...proposal.steps] : [];
+
+    const cancelOverride =
+      typeof body.cancel_activity_id === "string" ? body.cancel_activity_id.trim() : "";
+    const executeTimezone =
+      typeof body.timezone === "string" && body.timezone.trim()
+        ? body.timezone.trim()
+        : "Europe/Berlin";
+
+    if (
+      intentsRequiringTrainingScope(runIntent) &&
+      (cancelOverride || steps.some((s) => s.tool === "cancel_training"))
+    ) {
+      const cancelIdx = steps.findIndex((s) => s.tool === "cancel_training");
+      if (cancelIdx >= 0) {
+        const step = steps[cancelIdx];
+        const stepParams = { ...(step.params ?? {}) };
+        let activityId =
+          typeof stepParams.activity_id === "string" ? stepParams.activity_id.trim() : "";
+
+        if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(cancelOverride)) {
+          activityId = cancelOverride;
+        }
+
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(activityId)) {
+          const ctx = await loadClubAgentContext(admin, clubId);
+          const normalized = normalizeInterpretedParams(runIntent, stepParams, ctx, executeTimezone);
+          const resolved =
+            typeof normalized.activity_id === "string" ? normalized.activity_id.trim() : "";
+          if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(resolved)) {
+            activityId = resolved;
+          }
+        }
+
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(activityId)) {
+          return jsonResponse(
+            {
+              error:
+                language === "de"
+                  ? "Keine Trainingseinheit zum Absagen gefunden. Bitte erneut vorschlagen."
+                  : "No training session found to cancel. Please create a new proposal.",
+            },
+            400,
+            corsHeaders,
+          );
+        }
+
+        const scopeResult = await mergeTrainingScopeForProposal(
+          admin,
+          clubId,
+          userId,
+          runIntent,
+          { ...stepParams, activity_id: activityId },
+        );
+        if (!scopeResult.ok) {
+          return teamAccessDeniedResponse(scopeResult.denial, language, corsHeaders);
+        }
+
+        steps[cancelIdx] = {
+          ...step,
+          params: {
+            ...stepParams,
+            ...scopeResult.params,
+            activity_id: activityId,
+          },
+        };
+      }
+    }
 
     await admin
       .from("ai_agent_runs")
@@ -354,7 +526,7 @@ serve(async (req) => {
 
       const executionResult = {
         steps: stepResults,
-        links: buildResultLinks(runIntent, language),
+        links: buildResultLinks(runIntent, language, stepResults),
       };
 
       await admin
@@ -400,4 +572,76 @@ function jsonResponse(payload: Record<string, unknown>, status: number, cors: Re
     status,
     headers: { ...cors, "Content-Type": "application/json" },
   });
+}
+
+async function mergeTrainingScopeForProposal(
+  admin: ReturnType<typeof createSupabaseAdmin>,
+  clubId: string,
+  userId: string,
+  intent: AgentIntent,
+  params: Record<string, unknown>,
+): Promise<
+  | { ok: true; params: Record<string, unknown> }
+  | { ok: false; denial: TrainingScopeValidation }
+> {
+  if (!intentsRequiringTrainingScope(intent)) {
+    return { ok: true, params };
+  }
+  const activityId = typeof params.activity_id === "string" ? params.activity_id.trim() : "";
+  if (!activityId) return { ok: true, params };
+
+  const scope = await validateTrainingScope(admin, clubId, userId, activityId);
+  if (!scope.allowed) {
+    return { ok: false, denial: scope };
+  }
+
+  return {
+    ok: true,
+    params: {
+      ...params,
+      team_id: scope.team_id ?? params.team_id,
+      team_name: scope.team_name ?? params.team_name,
+      activity_title: scope.activity_title ?? params.activity_title,
+      starts_at: scope.starts_at ?? params.starts_at,
+    },
+  };
+}
+
+function teamAccessDeniedResponse(
+  denial: TrainingScopeValidation,
+  language: "en" | "de",
+  cors: Record<string, string>,
+): Response {
+  const de = language === "de";
+  const teamLabel = denial.team_name?.trim() || (de ? "dieses Team" : "this team");
+  const trainers = denial.suggested_trainers ?? [];
+  const trainerNames = trainers
+    .map((t) => t.display_name?.trim())
+    .filter(Boolean)
+    .slice(0, 3);
+  const message = de
+    ? `Du bist nicht als Trainer für ${teamLabel} eingetragen und darfst dieses Training nicht absagen.`
+    : `You are not assigned as coach for ${teamLabel} and cannot cancel this training.`;
+
+  return jsonResponse(
+    {
+      kind: "team_access_denied",
+      error: message,
+      team_id: denial.team_id ?? null,
+      team_name: denial.team_name ?? null,
+      activity_id: denial.activity_id ?? null,
+      activity_title: denial.activity_title ?? null,
+      suggested_trainers: trainers,
+      recommend_notify_trainers: trainerNames.length > 0,
+      notify_suggestion: trainerNames.length
+        ? de
+          ? `Empfehlung: Bitte ${trainerNames.join(", ")} kontaktieren oder eine Anfrage an die Trainer senden.`
+          : `Recommendation: Contact ${trainerNames.join(", ")} or send a request to the assigned coaches.`
+        : de
+          ? "Empfehlung: Wende dich an einen Vereinsadmin oder den zuständigen Trainer."
+          : "Recommendation: Contact a club admin or the assigned coach.",
+    },
+    403,
+    cors,
+  );
 }

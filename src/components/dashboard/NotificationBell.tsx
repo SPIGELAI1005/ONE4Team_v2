@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, Check, X } from "lucide-react";
+import { Bell, Check, Loader2, X } from "lucide-react";
 import { useLanguage } from "@/hooks/use-language";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,26 +23,37 @@ const NotificationBell = () => {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(false);
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   useEffect(() => {
-    if (!user || !clubId) return;
+    if (!user || !clubId) {
+      setNotifications([]);
+      return;
+    }
+
+    let cancelled = false;
 
     const fetchNotifications = async () => {
-      const { data } = await supabase
+      setLoading(true);
+      const { data, error } = await supabase
         .from("notifications")
-        .select("*")
+        .select("id, title, body, notification_type, is_read, created_at")
         .eq("club_id", clubId)
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(20);
-      if (data) setNotifications(data);
+
+      if (!cancelled) {
+        if (!error && data) setNotifications(data);
+        setLoading(false);
+      }
     };
 
-    fetchNotifications();
+    void fetchNotifications();
 
     const channel = supabase
-      .channel("notifications-realtime")
+      .channel(`notifications-${clubId}-${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -52,13 +63,41 @@ const NotificationBell = () => {
           filter: `club_id=eq.${clubId},user_id=eq.${user.id}`,
         },
         (payload) => {
-          setNotifications((prev) => [payload.new as Notification, ...prev]);
+          const row = payload.new as Notification;
+          setNotifications((prev) => [row, ...prev.filter((n) => n.id !== row.id)].slice(0, 20));
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "notifications",
+          filter: `club_id=eq.${clubId},user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const row = payload.new as Notification;
+          setNotifications((prev) => prev.map((n) => (n.id === row.id ? row : n)));
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "notifications",
+          filter: `club_id=eq.${clubId},user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const id = String((payload.old as { id?: string }).id ?? "");
+          if (id) setNotifications((prev) => prev.filter((n) => n.id !== id));
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      void supabase.removeChannel(channel);
     };
   }, [user, clubId]);
 
@@ -70,13 +109,11 @@ const NotificationBell = () => {
       .eq("club_id", clubId)
       .eq("user_id", user.id)
       .eq("id", id);
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
-    );
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
   };
 
   const markAllRead = async () => {
-    if (!user || !clubId) return;
+    if (!user || !clubId || unreadCount === 0) return;
     await supabase
       .from("notifications")
       .update({ is_read: true })
@@ -97,54 +134,23 @@ const NotificationBell = () => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
-  // Demo notifications for display when no real data
-  const displayNotifications =
-    notifications.length > 0
-      ? notifications
-      : [
-          {
-            id: "demo-1",
-            title: t.notifications.demoMatch,
-            body: t.notifications.demoMatchBody,
-            notification_type: "match",
-            is_read: false,
-            created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-          },
-          {
-            id: "demo-2",
-            title: t.notifications.demoMeeting,
-            body: t.notifications.demoMeetingBody,
-            notification_type: "announcement",
-            is_read: false,
-            created_at: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-          },
-          {
-            id: "demo-3",
-            title: t.notifications.demoCancelled,
-            body: t.notifications.demoCancelledBody,
-            notification_type: "event",
-            is_read: true,
-            created_at: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
-          },
-        ];
-
-  const demoUnread = notifications.length > 0 ? unreadCount : 2;
-
   return (
     <div className="relative">
       <motion.button
         whileTap={{ scale: 0.9 }}
         onClick={() => setOpen(!open)}
-        className="w-9 h-9 rounded-xl glass-card flex items-center justify-center text-muted-foreground hover:text-foreground transition-all duration-200 relative"
+        className="relative flex h-9 w-9 items-center justify-center rounded-xl glass-card text-muted-foreground transition-all duration-200 hover:text-foreground"
+        aria-label={t.notifications.title}
+        aria-expanded={open}
       >
-        <Bell className="w-4 h-4" strokeWidth={1.5} />
-        {demoUnread > 0 && (
+        <Bell className="h-4 w-4" strokeWidth={1.5} />
+        {unreadCount > 0 && (
           <motion.span
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 bg-accent rounded-full flex items-center justify-center text-[9px] font-bold text-accent-foreground"
+            className="absolute -right-1 -top-1 flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-accent px-1 text-[9px] font-bold text-accent-foreground"
           >
-            {demoUnread > 9 ? "9+" : demoUnread}
+            {unreadCount > 9 ? "9+" : unreadCount}
           </motion.span>
         )}
       </motion.button>
@@ -158,77 +164,80 @@ const NotificationBell = () => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.95 }}
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              className="absolute right-0 top-12 z-50 w-80 sm:w-96 rounded-2xl glass-heavy overflow-hidden"
+              className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-2xl glass-heavy sm:w-96"
             >
-              {/* Header */}
-              <div className="px-4 py-3 flex items-center justify-between border-b border-border/60">
-                <h3 className="font-display font-semibold text-[13px] text-foreground">
-                  {t.notifications.title}
-                </h3>
-                {demoUnread > 0 && (
+              <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+                <h3 className="font-display text-[13px] font-semibold text-foreground">{t.notifications.title}</h3>
+                {unreadCount > 0 ? (
                   <button
-                    onClick={markAllRead}
-                    className="text-xs text-primary hover:underline flex items-center gap-1"
+                    type="button"
+                    onClick={() => void markAllRead()}
+                    className="flex items-center gap-1 text-xs text-primary hover:underline"
                   >
-                    <Check className="w-3 h-3" />
+                    <Check className="h-3 w-3" />
                     {t.notifications.markAllRead}
                   </button>
-                )}
+                ) : null}
               </div>
 
-              {/* List */}
               <div className="max-h-80 overflow-y-auto">
-                {displayNotifications.length === 0 ? (
-                  <div className="p-6 text-center text-sm text-muted-foreground">
-                    {t.notifications.noNotifications}
+                {loading ? (
+                  <div className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {t.notifications.loading}
+                  </div>
+                ) : notifications.length === 0 ? (
+                  <div className="px-6 py-8 text-center">
+                    <Bell className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" aria-hidden />
+                    <p className="text-sm font-medium text-foreground">{t.notifications.noNotifications}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{t.notifications.emptyHint}</p>
                   </div>
                 ) : (
-                  displayNotifications.map((n) => {
+                  notifications.map((n) => {
                     const { icon: Icon, color } = getNotificationTypeMeta(n.notification_type);
                     return (
                       <motion.div
                         key={n.id}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className={`px-4 py-3 hover:bg-muted/20 transition-all duration-200 flex gap-3 ${
+                        className={`flex gap-3 border-b border-border/40 px-4 py-3 transition-all duration-200 hover:bg-muted/20 ${
                           !n.is_read ? "bg-primary/5" : ""
-                        } border-b border-border/40`}
+                        }`}
                       >
                         <div className={`mt-0.5 ${color}`}>
-                          <Icon className="w-4 h-4" strokeWidth={1.5} />
+                          <Icon className="h-4 w-4" strokeWidth={1.5} />
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-start justify-between gap-2">
                             <p className={`text-sm ${!n.is_read ? "font-semibold text-foreground" : "text-foreground/80"}`}>
                               {n.title}
                             </p>
                             <button
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                dismissNotification(n.id);
+                                void dismissNotification(n.id);
                               }}
-                              className="text-muted-foreground/50 hover:text-muted-foreground shrink-0"
+                              className="shrink-0 text-muted-foreground/50 hover:text-muted-foreground"
+                              aria-label={t.notifications.dismiss}
                             >
-                              <X className="w-3 h-3" />
+                              <X className="h-3 w-3" />
                             </button>
                           </div>
-                          {n.body && (
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                              {n.body}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-2 mt-1">
+                          {n.body ? <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{n.body}</p> : null}
+                          <div className="mt-1 flex items-center gap-2">
                             <span className="text-[10px] text-muted-foreground">
                               {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                             </span>
-                            {!n.is_read && (
+                            {!n.is_read ? (
                               <button
-                                onClick={() => markAsRead(n.id)}
+                                type="button"
+                                onClick={() => void markAsRead(n.id)}
                                 className="text-[10px] text-primary hover:underline"
                               >
                                 {t.notifications.markRead}
                               </button>
-                            )}
+                            ) : null}
                           </div>
                         </div>
                       </motion.div>

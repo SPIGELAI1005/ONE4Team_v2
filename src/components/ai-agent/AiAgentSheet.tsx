@@ -15,12 +15,12 @@ export function AiAgentSheet() {
 
   return (
     <Sheet open={sheetOpen} onOpenChange={(open) => !open && closeAgent()}>
-      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
+      <SheetContent side="right" className="flex w-full flex-col overflow-hidden sm:max-w-lg p-0">
+        <SheetHeader className="px-6 pt-6">
           <SheetTitle>{t.coTrainerPage.tabAgent}</SheetTitle>
           <SheetDescription>{t.coTrainerPage.agent.sheetDesc}</SheetDescription>
         </SheetHeader>
-        <div className="mt-4">
+        <div className="flex min-h-0 flex-1 flex-col px-6 pb-4">
           <AiAgentWorkspace compact onRunCompleted={closeAgent} />
         </div>
       </SheetContent>

@@ -10,6 +10,7 @@ import { useActiveClub, notifyMembershipsUpdated } from "@/hooks/use-active-club
 import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/hooks/use-language";
 import logo from "@/assets/one4team-logo.png";
+import { BrandedText } from "@/components/ai/Ai4TBrand";
 
 interface NavItem {
   label: string;
@@ -156,7 +157,9 @@ export default function AppHeader({
             {titleLeading ?? <img src={logo} alt="" className="w-7 h-7 shrink-0 rounded-md object-cover" />}
             <div className="min-w-0">
               <div className="flex items-center gap-2 min-w-0">
-                <h1 className="font-display font-bold text-[15px] sm:text-base text-foreground tracking-tight truncate">{title}</h1>
+                <h1 className="font-display font-bold text-[15px] sm:text-base text-foreground tracking-tight truncate">
+                  <BrandedText text={title} />
+                </h1>
                 <span
                   className={
                     isClubPublic
@@ -171,7 +174,7 @@ export default function AppHeader({
                 <p
                   className={`text-[11px] sm:text-xs text-muted-foreground truncate ${isClubPublic ? "max-md:hidden" : ""}`}
                 >
-                  {subtitleResolved}
+                  <BrandedText text={subtitleResolved} />
                 </p>
               ) : null}
             </div>
@@ -284,7 +287,9 @@ export default function AppHeader({
                             <Icon className="w-4 h-4" />
                           </div>
                           <div className="text-left min-w-0">
-                            <div className="font-medium leading-tight truncate">{item.label}</div>
+                            <div className="font-medium leading-tight truncate">
+                              <BrandedText text={item.label} />
+                            </div>
                             <div className="text-[11px] text-muted-foreground leading-tight truncate">{item.to}</div>
                           </div>
                         </button>
@@ -391,7 +396,9 @@ export default function AppHeader({
                           <Icon className="w-4 h-4" />
                         </div>
                         <div className="text-left min-w-0">
-                          <div className="font-medium leading-tight truncate">{item.label}</div>
+                          <div className="font-medium leading-tight truncate">
+                            <BrandedText text={item.label} />
+                          </div>
                           <div className="text-[11px] text-muted-foreground leading-tight truncate">{item.to}</div>
                         </div>
                       </button>

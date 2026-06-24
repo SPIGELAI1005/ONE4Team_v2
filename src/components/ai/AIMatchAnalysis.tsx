@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { getEdgeFunctionAuthHeaders } from "@/lib/edge-function-auth";
 import { useLanguage } from "@/hooks/use-language";
+import { BrandedText } from "@/components/ai/Ai4TBrand";
 import ReactMarkdown from "react-markdown";
 import type { AIMatchAnalysisData } from "@/types/ai";
 
@@ -150,7 +151,7 @@ const AIMatchAnalysis = ({ matchData, teamData, context, matchStatus, matchId, c
           to={continueHref}
           className="text-[11px] font-medium text-primary hover:underline inline-flex items-center gap-1"
         >
-          {t.coTrainerPage.continueInAi4Team}
+          <BrandedText text={t.coTrainerPage.continueInAi4Team} />
         </Link>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/hooks/use-language";
 import { motion } from "framer-motion";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
+import { BrandedText } from "@/components/ai/Ai4TBrand";
 import {
   Users, Search, Plus,
   Shield, Dumbbell, Crown, UserCheck, Heart, MoreHorizontal,
@@ -3461,7 +3462,7 @@ const Members = () => {
                                       }),
                                     )}`}
                                   >
-                                    {t.membersPage.askAi4Team}
+                                    <BrandedText text={t.membersPage.askAi4Team} />
                                   </Link>
                                 </Button>
                                 <Button

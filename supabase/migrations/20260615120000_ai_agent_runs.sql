@@ -1,4 +1,4 @@
--- AI4Team Agent: proposal + execution audit trail (propose → confirm → execute).
+-- AI 4 T Agent: proposal + execution audit trail (propose → confirm → execute).
 
 create table if not exists public.ai_agent_runs (
   id uuid primary key default gen_random_uuid(),

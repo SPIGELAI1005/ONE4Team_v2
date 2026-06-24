@@ -9,6 +9,8 @@ import { usePublicClub } from "@/contexts/public-club-context";
 import { useLanguage } from "@/hooks/use-language";
 import { matchesSectionFilter } from "@/lib/public-club-models";
 import { PUBLIC_CLUB_ROUTE_SEGMENTS } from "@/lib/public-club-routes";
+import { clubCtaOutlineLinkClass, clubCtaPrimaryLinkClass } from "@/lib/public-club-cta-classes";
+import { readableTextOnSolid } from "@/lib/hex-to-rgb";
 import { cn } from "@/lib/utils";
 
 function filterChip(active: boolean) {
@@ -16,7 +18,7 @@ function filterChip(active: boolean) {
     "rounded-full px-3 py-1.5 text-xs font-medium transition-colors border",
     active
       ? "border-[color:var(--club-primary)] bg-[color:var(--club-primary)]/15 text-[color:var(--club-foreground)]"
-      : "border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-muted)] hover:text-[color:var(--club-foreground)]"
+      : "club-glass text-[color:var(--club-muted)] hover:text-[color:var(--club-foreground)]"
   );
 }
 
@@ -27,7 +29,7 @@ function isPublicListedEvent(e: { publish_to_public_schedule?: boolean }) {
 export default function PublicClubEventsPage() {
   const { t, language } = useLanguage();
   const locale = language === "de" ? "de-DE" : "en-GB";
-  const { events, loadingData, basePath, searchSuffix, showAdminDraftEmptyHints } = usePublicClub();
+  const { club, events, loadingData, basePath, searchSuffix, showAdminDraftEmptyHints } = usePublicClub();
   const [filter, setFilter] = useState("");
   const [category, setCategory] = useState<string>("all");
 
@@ -87,7 +89,7 @@ export default function PublicClubEventsPage() {
     return (
       <div
         key={`${variant}-${event.id}`}
-        className="flex flex-col overflow-hidden rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] text-left shadow-sm"
+        className="flex flex-col overflow-hidden rounded-2xl club-glass text-left shadow-sm"
       >
         {event.image_url?.trim() ? (
           <div className="border-b border-[color:var(--club-border)]">
@@ -123,10 +125,7 @@ export default function PublicClubEventsPage() {
           {summary ? <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-[color:var(--club-muted)]">{summary}</p> : null}
           <div className="mt-4 flex flex-wrap gap-2">
             {showLearnMore ? (
-              <Link
-                to={detailHref}
-                className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-[color:var(--club-border)] px-4 text-xs font-semibold text-[color:var(--club-foreground)] hover:bg-[color:var(--club-tertiary)]"
-              >
+              <Link to={detailHref} className={clubCtaOutlineLinkClass}>
                 {t.clubPage.eventsCtaLearnMore}
               </Link>
             ) : null}
@@ -135,8 +134,11 @@ export default function PublicClubEventsPage() {
                 href={event.registration_external_url!}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-[40px] items-center justify-center rounded-full px-4 text-xs font-semibold text-white hover:brightness-110"
-                style={{ backgroundColor: "var(--club-primary)" }}
+                className={clubCtaPrimaryLinkClass}
+                style={{
+                  backgroundColor: "var(--club-primary)",
+                  color: readableTextOnSolid(club?.primary_color || "#C4A052"),
+                }}
               >
                 {t.clubPage.eventsCtaRegister}
               </a>
@@ -144,8 +146,11 @@ export default function PublicClubEventsPage() {
             {showRegisterClub ? (
               <Link
                 to={joinHref}
-                className="inline-flex min-h-[40px] items-center justify-center rounded-full px-4 text-xs font-semibold text-white hover:brightness-110"
-                style={{ backgroundColor: "var(--club-primary)" }}
+                className={clubCtaPrimaryLinkClass}
+                style={{
+                  backgroundColor: "var(--club-primary)",
+                  color: readableTextOnSolid(club?.primary_color || "#C4A052"),
+                }}
               >
                 {t.clubPage.eventsCtaRegisterClub}
               </Link>
@@ -172,7 +177,7 @@ export default function PublicClubEventsPage() {
             <Loader2 className="h-8 w-8 animate-spin text-[color:var(--club-primary)]" />
           </div>
         ) : publicEvents.length === 0 ? (
-          <div className="mx-auto max-w-2xl rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-8 text-center">
+          <div className="mx-auto max-w-2xl rounded-2xl club-glass p-8 text-center">
             <div className="text-sm font-medium text-[color:var(--club-foreground)]">{t.clubPage.eventsEmptyDedicated}</div>
             {showAdminDraftEmptyHints ? (
               <div className="mt-4 text-left">
@@ -201,7 +206,7 @@ export default function PublicClubEventsPage() {
               placeholder={t.clubPage.sectionSearchEvents}
             />
             {!categoryFiltered.length ? (
-              <div className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-6 text-center text-sm text-[color:var(--club-muted)]">
+              <div className="rounded-2xl club-glass p-6 text-center text-sm text-[color:var(--club-muted)]">
                 {t.clubPage.noSearchResults}
               </div>
             ) : (

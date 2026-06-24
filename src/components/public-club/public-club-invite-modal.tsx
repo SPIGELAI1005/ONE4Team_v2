@@ -2,6 +2,8 @@ import { motion } from "framer-motion";
 import { Loader2, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { clubCtaFillHoverClass, clubCtaPrimaryInlineStyle } from "@/lib/public-club-cta-classes";
+import { clubGlassPanelLgClass } from "@/lib/public-club-glass-classes";
 import { usePublicClub } from "@/contexts/public-club-context";
 import { useLanguage } from "@/hooks/use-language";
 
@@ -32,7 +34,7 @@ export function PublicClubInviteModal() {
       <motion.div
         initial={{ opacity: 0, scale: 0.98, y: 6 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-md rounded-3xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
+        className={`w-full max-w-md ${clubGlassPanelLgClass} p-6`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -76,8 +78,8 @@ export function PublicClubInviteModal() {
             <Button
               onClick={() => void submitInviteRequest()}
               disabled={submitting || !reqName.trim() || !reqEmail.trim()}
-              className="w-full text-white hover:brightness-110 disabled:opacity-40"
-              style={{ backgroundColor: "var(--club-primary)" }}
+              className={`w-full font-semibold disabled:opacity-40 ${clubCtaFillHoverClass}`}
+              style={clubCtaPrimaryInlineStyle(club?.primary_color)}
             >
               {submitting ? (
                 <>

@@ -3,7 +3,49 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
-## 2026-06-15 (AI4Team Agent Phases 0–4: workflows, contextual sheet, voice, NL interpret)
+## 2026-06-24 (Training attendance on club page, AI 4 T pilot Phases 1–4, public club UX)
+
+### Training attendance (dashboard + public club)
+- **`/activities`:** Professional RSVP UX — **I'm coming** / **Can't make it** with required decline reason (presets + notes via `activity_attendance.notes`). Trainer **roster panel** (coming / declined / no response, jersey numbers, copy list, nudge). Team-scoped roster via **`team_players`**. Components: `training-attendance-rsvp.tsx`, `training-attendance-trainer-panel.tsx`, `training-attendance-summary-bar.tsx`; lib **`training-attendance.ts`**.
+- **Public club (`/club/:slug`):** Same attendance data for signed-in members on **Next up**, **schedule** (training/match rows), **matches** (upcoming/live), and **home matches preview**. **`PublicClubAttendanceRsvp`**, **`PublicClubAttendanceProvider`**, **`use-public-club-attendance`**, **`public-club-attendance.ts`** (maps public schedule rows → `activities.id`). Sign-in CTA for anonymous visitors.
+
+### Public club home & navigation
+- **Hero team filter:** **View teams** dropdown filters home content by team (`?team=` URL param): Next up, stats, featured teams, matches preview; schedule/matches links preserve filter.
+- **`PublicClubHeroTeamFilter`**, **`public-club-home-team-filter.ts`**, **`homeTeamFilterId`** in **`public-club-context`**.
+
+### AI 4 T — pilot Phases 1–4 (code complete; pilot metrics open)
+- **Phase 1:** Golden context tests (`ai-context-golden.ts`, `ai-context.test.ts`); **Sources:** citations in chat; **`ai_message_feedback`** migration + thumbs UI; richer **`buildClubContext()`**; DE-first replies.
+- **Phase 2:** Teams agent shortcuts; outcome links after execute; **`duplicate_training_week`** intent + RPC; team-scoped training RBAC; **`cancel_training_with_parent_notice`**; chat NL → agent workflow (`run-agent-workflow-utterance.ts`, public embed).
+- **Phase 3:** Role-based welcome prompts; team access denied UX; **public club AI 4 T modal** with Chat | Agent | Guide tabs (`public-club-ai4t-modal.tsx`, scoped **`AiAgentProvider`**).
+- **Phase 4:** Club AI instructions in Settings; **`get_club_ai_usage_stats`** RPC.
+- **Docs:** `docs/AI4T_ROADMAP.md`, `docs/AI4T_GOLDEN_QUESTIONS.md`, `docs/AI4T_PILOT_SUCCESS_METRICS.md`, `docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`; GitHub issue templates (Phase 0 smoke, monthly pilot review).
+
+### Database (operator apply in filename order)
+- **`20260624120000_club_public_feature_flags_rpc.sql`** — public feature access RPCs for club page gating.
+- **`20260624180000_club_page_multilingual_feature.sql`** — multilingual public club pages (Pro feature gate).
+- **`20260624190000_ai_message_feedback.sql`** — thumbs up/down on AI messages.
+- **`20260625120000_ai_agent_team_training_scope.sql`** — team-scoped training RBAC for agent RPCs.
+- **`20260626120000_ai4t_duplicate_week_club_ai_stats.sql`** — duplicate week RPC + club AI usage stats.
+
+### Co-Trainer & AI 4 T UX polish
+- Agent tab icon → **Bot** (`Ai4TeamAgentIcon`); cancel-training proposal card shows session details + grey Dismiss.
+- **Tab pills:** theme-aware grey inactive / red active (`ai4t-tab-classes.ts`).
+- **Intro modal:** logo removed on dashboard; club wordmark unchanged on public modal.
+- **Chat watermark:** visible in **light** mode only on `/co-trainer`; always on public club embed.
+- Voice + chat unified agent workflow path; proposal card pinned in compact Agent/chat surfaces.
+
+### Public club platform (broader wave in branch)
+- Flexible homepage modules, glass styling, multilingual copy (`club-public-page-i18n`), AI 4 T branding assets, notification bell, club page admin live preview enhancements.
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`README.md`**, **`ROADMAP.md`**, **`MVP_PLAN.md`**, **`PHASE2_INDEX.md`**, **`supabase/SCHEMA_STATUS.md`**, **`ops/PRODUCTION_READINESS_*.md`**, **`DEPLOYMENT.md`**, **`HOLD.md`**.
+
+### Operator
+- Apply migrations **`20260624120000`** through **`20260626120000`** after prior AI agent migrations.
+- Deploy **`ai4team-agent`**, **`co-trainer`** (if Edge changes not yet deployed).
+- Smoke: club home **Next up** RSVP as member; `/activities` trainer roster; **`?team=`** filter on public home.
+
+## 2026-06-15 (AI 4 T Agent Phases 0–4: workflows, contextual sheet, voice, NL interpret)
 
 ### Database
 - **`20260615120000_ai_agent_runs.sql`:** `ai_agent_runs` audit table (`proposed` → `confirmed` → `executed` lifecycle, idempotency key, expiry).
@@ -51,11 +93,11 @@ It records notable changes, features, and hardening steps.
 ### Operator
 - Apply migrations **`20260615120000`** → **`20260615150000`** in order; `supabase functions deploy ai4team-agent`.
 - Smoke: **`/co-trainer` → Agent tab** (create training propose → confirm); header Sparkles on Teams/Members; **`/agent plan-week`** in Chat tab.
-- See **`DEPLOYMENT.md` § AI4Team Agent**.
+- See **`DEPLOYMENT.md` § AI 4 T Agent**.
 
-## 2026-06-14 (AI4Team rebrand, feature trials, fair-use scope, Support & FAQ)
+## 2026-06-14 (AI 4 T rebrand, feature trials, fair-use scope, Support & FAQ)
 
-### Product rebrand: ONE4AI → AI4Team
+### Product rebrand: ONE4AI → AI 4 T
 - **`src/i18n/en.ts`**, **`src/i18n/de.ts`:** Display strings and keys (`ai4Team`, `askAi4Team`, `sectionAi4Team`, weekly digest labels, Co-Trainer workspace copy).
 - **`src/lib/club-public-page-sections.ts`:** Section id **`ai4team`** with legacy read of **`one4ai`** in stored JSON.
 - **`src/lib/dashboard-section-visibility.ts`:** **`ai4teamWeeklyDigest`** flag for admin dashboard widget.
@@ -68,18 +110,18 @@ It records notable changes, features, and hardening steps.
 - **`src/lib/club-feature-trials.ts`**, **`src/hooks/use-subscription.ts`**, **`src/hooks/use-plan-guard.ts`:** Client-side trial awareness for plan gates and AI routes.
 - **`supabase/scripts/fix_tsv_allach_ai_access.sql`:** Operator helper — trial row + Pro **`trialing`** subscription for Allach clubs (run manually in SQL Editor when needed).
 
-### AI4Team fair-use / scope guardrails
+### AI 4 T fair-use / scope guardrails
 - **`supabase/functions/_shared/ai4team_scope.ts`:** System prompt scope policy; heuristics for obvious off-topic abuse (shopping, general news, homework, jailbreaks); EN/DE refusal messages; SSE refusal stream helper.
 - **Edge:** **`co-trainer/index.ts`**, **`co-aimin/index.ts`**, **`ai-match-analysis/index.ts`** — scope check before LLM call; policy appended to system prompt.
 - **`src/pages/CoTrainer.tsx`:** Passes user **`language`** to edge; scope hint under workspace title.
 - **i18n:** **`scopeHint`** strings (EN/DE).
 
 ### Support & FAQ (user-facing copy)
-- **`supportPage`** categories in **`en.ts`** / **`de.ts`:** Expanded **AI4Team & Co-Trainer** (what it is, setup, plan/trial, allowed topics, rate limits); billing **feature trial** FAQ; reports/financial and German import notes; troubleshooting without backend jargon (no Supabase/migrations/localhost in end-user answers).
+- **`supportPage`** categories in **`en.ts`** / **`de.ts`:** Expanded **AI 4 T & Co-Trainer** (what it is, setup, plan/trial, allowed topics, rate limits); billing **feature trial** FAQ; reports/financial and German import notes; troubleshooting without backend jargon (no Supabase/migrations/localhost in end-user answers).
 
 ### Documentation & deploy notes
-- **`DEPLOYMENT.md`:** AI4Team setup section (Edge secrets, **`co-trainer`** deploy, club AI provider settings).
-- **`README.md`**, **`.env.example`:** AI4Team naming and setup pointers.
+- **`DEPLOYMENT.md`:** AI 4 T setup section (Edge secrets, **`co-trainer`** deploy, club AI provider settings).
+- **`README.md`**, **`.env.example`:** AI 4 T naming and setup pointers.
 
 ### Documentation sync
 - **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`ROADMAP.md`**, **`TASKS.md`**, **`README.md`**, **`HOLD.md`**, **`MVP_PLAN.md`**, **`supabase/SCHEMA_STATUS.md`**, **`ops/PRODUCTION_READINESS_EVIDENCE_LOG.md`**, **`CHANGELOG.md`** (this entry).

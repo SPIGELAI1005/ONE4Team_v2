@@ -5,13 +5,12 @@ import {
   Calendar,
   Loader2,
   Plus,
-  Check,
-  X,
   Clock,
   Filter,
   Users,
   PanelRight,
   Sparkles,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +25,14 @@ import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-
 import { useLanguage } from "@/hooks/use-language";
 import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
 import { useRegisterAiAgentContext } from "@/hooks/use-register-ai-agent-context";
+import { TrainingAttendanceRsvp } from "@/components/activities/training-attendance-rsvp";
+import { TrainingAttendanceSummaryBar } from "@/components/activities/training-attendance-summary-bar";
+import { TrainingAttendanceTrainerPanel } from "@/components/activities/training-attendance-trainer-panel";
+import {
+  buildRosterAttendanceLines,
+  summarizeTrainingAttendance,
+  type TrainingAttendanceRow,
+} from "@/lib/training-attendance";
 
 type ActivityType = "training" | "match" | "event";
 
@@ -45,19 +52,19 @@ type ActivityRow = {
 
 type TeamRow = { id: string; name: string };
 
-type AttendanceRow = {
-  id: string;
-  club_id: string;
-  activity_id: string;
+type AttendanceRow = TrainingAttendanceRow & { club_id: string };
+
+type TeamPlayerRow = {
+  team_id: string;
   membership_id: string;
-  status: "invited" | "confirmed" | "declined" | "attended";
+  jersey_number: number | null;
 };
 
-type AttendanceSummary = {
-  invited: number;
-  confirmed: number;
-  declined: number;
-  attended: number;
+type RosterMember = {
+  membershipId: string;
+  name: string;
+  role: string;
+  jerseyNumber: number | null;
 };
 
 type MembershipRow = {
@@ -66,10 +73,6 @@ type MembershipRow = {
   status: string;
   profiles?: { display_name: string | null } | null;
 };
-
-function emptySummary(): AttendanceSummary {
-  return { invited: 0, confirmed: 0, declined: 0, attended: 0 };
-}
 
 function fmtTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -91,6 +94,35 @@ function nextDowAt(hour: number, minute: number, dow0Sun: number): Date {
   return d;
 }
 
+function rosterMemberFromMembership(m: MembershipRow, jerseyNumber: number | null = null): RosterMember {
+  return {
+    membershipId: m.id,
+    name: m.profiles?.display_name || m.id.slice(0, 8),
+    role: m.role,
+    jerseyNumber,
+  };
+}
+
+function buildActivityRoster(
+  activity: ActivityRow,
+  memberships: MembershipRow[],
+  teamPlayers: TeamPlayerRow[],
+): RosterMember[] {
+  if (activity.team_id) {
+    const jerseyByMember = new Map(
+      teamPlayers.filter((tp) => tp.team_id === activity.team_id).map((tp) => [tp.membership_id, tp.jersey_number]),
+    );
+    const memberIds = new Set(jerseyByMember.keys());
+    return memberships
+      .filter((m) => m.status === "active" && memberIds.has(m.id))
+      .map((m) => rosterMemberFromMembership(m, jerseyByMember.get(m.id) ?? null));
+  }
+
+  return memberships
+    .filter((m) => m.status === "active" && (m.role === "player" || m.role === "member"))
+    .map((m) => rosterMemberFromMembership(m));
+}
+
 export default function Activities() {
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
@@ -108,6 +140,8 @@ export default function Activities() {
   const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [attendance, setAttendance] = useState<AttendanceRow[]>([]);
   const [memberships, setMemberships] = useState<MembershipRow[]>([]);
+  const [teamPlayers, setTeamPlayers] = useState<TeamPlayerRow[]>([]);
+  const [rsvpBusyId, setRsvpBusyId] = useState<string | null>(null);
 
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle] = useState("");
@@ -152,14 +186,15 @@ export default function Activities() {
       setActivities(actRows);
 
       const actIds = actRows.map((a) => a.id);
+      const teamIds = ((teamData as unknown as TeamRow[]) ?? []).map((team) => team.id);
 
       // trainer: overview needs membership roster (for drawer)
       if (perms.isTrainer) {
-        const [{ data: att, error: attErr }, { data: ms, error: msErr }] = await Promise.all([
+        const [{ data: att, error: attErr }, { data: ms, error: msErr }, { data: tp, error: tpErr }] = await Promise.all([
           actIds.length
             ? supabase
                 .from("activity_attendance")
-                .select("id, club_id, activity_id, membership_id, status")
+                .select("id, club_id, activity_id, membership_id, status, notes")
                 .eq("club_id", clubId)
                 .in("activity_id", actIds)
             : Promise.resolve({ data: [] as AttendanceRow[], error: null } as { data: AttendanceRow[]; error: null }),
@@ -170,18 +205,23 @@ export default function Activities() {
             .eq("status", "active")
             .order("created_at", { ascending: true })
             .limit(ACTIVITY_ROSTER_FETCH_CAP),
+          teamIds.length
+            ? supabase.from("team_players").select("team_id, membership_id, jersey_number").in("team_id", teamIds)
+            : Promise.resolve({ data: [] as TeamPlayerRow[], error: null } as { data: TeamPlayerRow[]; error: null }),
         ]);
 
         if (attErr) throw attErr;
         if (msErr) throw msErr;
+        if (tpErr) throw tpErr;
 
         setAttendance((att as unknown as AttendanceRow[]) ?? []);
         setMemberships((ms as unknown as MembershipRow[]) ?? []);
+        setTeamPlayers((tp as unknown as TeamPlayerRow[]) ?? []);
       } else if (membershipId) {
         const { data: att, error: attErr } = actIds.length
           ? await supabase
               .from("activity_attendance")
-              .select("id, club_id, activity_id, membership_id, status")
+              .select("id, club_id, activity_id, membership_id, status, notes")
               .eq("club_id", clubId)
               .eq("membership_id", membershipId)
               .in("activity_id", actIds)
@@ -190,9 +230,11 @@ export default function Activities() {
         if (attErr) throw attErr;
         setAttendance((att as unknown as AttendanceRow[]) ?? []);
         setMemberships([]);
+        setTeamPlayers([]);
       } else {
         setAttendance([]);
         setMemberships([]);
+        setTeamPlayers([]);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t.activitiesPage.loadFailed;
@@ -216,17 +258,37 @@ export default function Activities() {
   }, [attendance, membershipId]);
 
   const attendanceByActivity = useMemo(() => {
-    const map: Record<string, AttendanceSummary> = {};
+    const map: Record<string, ReturnType<typeof summarizeTrainingAttendance>> = {};
     if (!perms.isTrainer) return map;
-    for (const row of attendance) {
-      const s = (map[row.activity_id] ??= emptySummary());
-      if (row.status === "invited") s.invited++;
-      else if (row.status === "confirmed") s.confirmed++;
-      else if (row.status === "declined") s.declined++;
-      else if (row.status === "attended") s.attended++;
+    for (const activity of activities) {
+      const roster = buildActivityRoster(activity, memberships, teamPlayers);
+      const byMember: Record<string, AttendanceRow> = {};
+      for (const row of attendance) {
+        if (row.activity_id === activity.id) byMember[row.membership_id] = row;
+      }
+      const lines = buildRosterAttendanceLines({ roster, attendanceByMember: byMember });
+      map[activity.id] = summarizeTrainingAttendance(
+        lines.map((line) => ({
+          id: byMember[line.membershipId]?.id ?? line.membershipId,
+          activity_id: activity.id,
+          membership_id: line.membershipId,
+          status: line.status,
+          notes: byMember[line.membershipId]?.notes ?? null,
+        })),
+      );
     }
     return map;
-  }, [attendance, perms.isTrainer]);
+  }, [activities, attendance, memberships, perms.isTrainer, teamPlayers]);
+
+  const drawerActivity = useMemo(() => {
+    if (!drawerActivityId) return null;
+    return activities.find((a) => a.id === drawerActivityId) ?? null;
+  }, [activities, drawerActivityId]);
+
+  const drawerRoster = useMemo(() => {
+    if (!drawerActivity) return [];
+    return buildActivityRoster(drawerActivity, memberships, teamPlayers);
+  }, [drawerActivity, memberships, teamPlayers]);
 
   const visibleActivities = useMemo(() => {
     const now = Date.now();
@@ -251,11 +313,6 @@ export default function Activities() {
     return byDay;
   }, [visibleActivities]);
 
-  const drawerActivity = useMemo(() => {
-    if (!drawerActivityId) return null;
-    return activities.find((a) => a.id === drawerActivityId) ?? null;
-  }, [activities, drawerActivityId]);
-
   const drawerLists = useMemo(() => {
     if (!drawerActivityId || !perms.isTrainer) return null;
 
@@ -264,21 +321,13 @@ export default function Activities() {
       if (row.activity_id === drawerActivityId) byMember[row.membership_id] = row;
     }
 
-    const rows = memberships
-      .filter((m) => m.status === "active")
-      .map((m) => {
-        const status = byMember[m.id]?.status ?? "invited";
-        const name = m.profiles?.display_name || m.id.slice(0, 8);
-        return { membershipId: m.id, name, role: m.role, status };
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    const confirmed = rows.filter((r) => r.status === "confirmed" || r.status === "attended");
-    const declined = rows.filter((r) => r.status === "declined");
-    const invited = rows.filter((r) => r.status === "invited");
-
-    return { confirmed, declined, invited };
-  }, [attendance, memberships, drawerActivityId, perms.isTrainer]);
+    const lines = buildRosterAttendanceLines({ roster: drawerRoster, attendanceByMember: byMember });
+    return {
+      confirmed: lines.filter((l) => l.status === "confirmed" || l.status === "attended"),
+      declined: lines.filter((l) => l.status === "declined"),
+      invited: lines.filter((l) => l.status === "invited"),
+    };
+  }, [attendance, drawerActivityId, drawerRoster, perms.isTrainer]);
 
   const openDrawer = (activityId: string) => {
     setDrawerActivityId(activityId);
@@ -368,35 +417,95 @@ export default function Activities() {
     await fetchData();
   };
 
-  const rsvp = async (activityId: string, status: "confirmed" | "declined") => {
+  const rsvp = async (activityId: string, status: "confirmed" | "declined", notes?: string | null) => {
     if (!user || !clubId || !membershipId) return;
 
-    const existing = myAttendanceByActivity[activityId];
-    if (existing) {
-      const { error } = await supabase
-        .from("activity_attendance")
-        .update({ status })
-        .eq("club_id", clubId)
-        .eq("id", existing.id);
+    setRsvpBusyId(activityId);
+    try {
+      const existing = myAttendanceByActivity[activityId];
+      const payload = {
+        status,
+        notes: status === "declined" ? notes?.trim() || null : null,
+      };
 
-      if (error) {
-        toast({ title: t.common.error, description: error.message, variant: "destructive" });
-        return;
-      }
-    } else {
-      const { error } = await supabase
-        .from("activity_attendance")
-        .insert({ club_id: clubId, activity_id: activityId, membership_id: membershipId, status });
+      if (existing) {
+        const { error } = await supabase
+          .from("activity_attendance")
+          .update(payload)
+          .eq("club_id", clubId)
+          .eq("id", existing.id);
 
-      if (error) {
-        toast({ title: t.common.error, description: error.message, variant: "destructive" });
-        return;
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("activity_attendance").insert({
+          club_id: clubId,
+          activity_id: activityId,
+          membership_id: membershipId,
+          ...payload,
+        });
+
+        if (error) throw error;
       }
+
+      toast({
+        title: status === "confirmed" ? t.activitiesPage.rsvpConfirmed : t.activitiesPage.rsvpDeclined,
+        description: status === "declined" && notes?.trim() ? notes.trim() : undefined,
+      });
+      await fetchData();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t.common.error;
+      toast({ title: t.common.error, description: msg, variant: "destructive" });
+    } finally {
+      setRsvpBusyId(null);
     }
-
-    toast({ title: status === "confirmed" ? t.activitiesPage.rsvpConfirmed : t.activitiesPage.rsvpDeclined });
-    await fetchData();
   };
+
+  const rsvpLabels = useMemo(
+    () => ({
+      coming: t.activitiesPage.attendanceComing,
+      notComing: t.activitiesPage.attendanceNotComing,
+      changeResponse: t.activitiesPage.attendanceYourResponse,
+      statusComing: t.activitiesPage.attendanceStatusComing,
+      statusNotComing: t.activitiesPage.attendanceStatusNotComing,
+      statusPending: t.activitiesPage.attendanceStatusPending,
+      declineTitle: t.activitiesPage.attendanceDeclineTitle,
+      declineDescription: t.activitiesPage.attendanceDeclineDescription,
+      declineReasonLabel: t.activitiesPage.attendanceDeclineReasonLabel,
+      declineReasonPlaceholder: t.activitiesPage.attendanceDeclineReasonPlaceholder,
+      declineConfirm: t.activitiesPage.attendanceDeclineConfirm,
+      declineCancel: t.common.cancel,
+      reasonRequired: t.activitiesPage.attendanceReasonRequired,
+      presets: [
+        { id: "injury", label: t.activitiesPage.attendancePresetInjury },
+        { id: "illness", label: t.activitiesPage.attendancePresetIllness },
+        { id: "school", label: t.activitiesPage.attendancePresetSchool },
+        { id: "work", label: t.activitiesPage.attendancePresetWork },
+        { id: "vacation", label: t.activitiesPage.attendancePresetVacation },
+      ],
+    }),
+    [t],
+  );
+
+  const trainerPanelLabels = useMemo(
+    () => ({
+      title: t.activitiesPage.attendancePanelTitle,
+      coming: t.activitiesPage.attendanceStatComing,
+      declined: t.activitiesPage.attendanceStatDeclined,
+      pending: t.activitiesPage.attendanceStatPending,
+      summaryComing: t.activitiesPage.attendanceSummaryHeadline,
+      tabComing: t.activitiesPage.attendanceTabComing,
+      tabDeclined: t.activitiesPage.attendanceTabDeclined,
+      tabPending: t.activitiesPage.attendanceTabPending,
+      nudge: t.activitiesPage.attendanceNudge,
+      noPlayers: t.activitiesPage.attendanceNoPlayers,
+      reasonPrefix: t.activitiesPage.attendanceReasonPrefix,
+      rosterScopeTeam: t.activitiesPage.attendanceRosterTeam,
+      rosterScopeClub: t.activitiesPage.attendanceRosterClub,
+      nudgeFootnote: t.activitiesPage.attendanceNudgeFootnote,
+      copyList: t.activitiesPage.attendanceCopyList,
+    }),
+    [t],
+  );
 
   return (
     <div className={DASHBOARD_PAGE_ROOT}>
@@ -519,20 +628,20 @@ export default function Activities() {
                   <div className="text-xs font-semibold text-muted-foreground mb-2">{day}</div>
                   <div className="grid gap-3">
                     {items.map((a) => {
-                      const my = myAttendanceByActivity[a.id];
-                      const status = my?.status ?? null;
+                      const my = myAttendanceByActivity[a.id] ?? null;
                       const sum = attendanceByActivity[a.id] ?? null;
-                      const teamName = a.team_id ? teams.find((t) => t.id === a.team_id)?.name ?? null : null;
+                      const teamName = a.team_id ? teams.find((tm) => tm.id === a.team_id)?.name ?? null : null;
+                      const showAttendance = a.type === "training" || a.type === "match";
 
                       return (
                         <motion.div
                           key={a.id}
                           initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4"
+                          className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4 sm:p-5"
                         >
                           <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-[10px] px-2 py-0.5 rounded-full border border-border/60 bg-background/40 text-muted-foreground">
                                   {a.type.toUpperCase()}
@@ -540,49 +649,50 @@ export default function Activities() {
                                 <span className="text-[11px] text-muted-foreground flex items-center gap-1">
                                   <Clock className="w-3 h-3" /> {fmtTime(a.starts_at)}
                                 </span>
-                                {teamName && (
+                                {teamName ? (
                                   <span className="text-[11px] text-muted-foreground flex items-center gap-1">
                                     <Users className="w-3 h-3" /> {teamName}
                                   </span>
-                                )}
+                                ) : null}
+                                {a.location ? (
+                                  <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                    <MapPin className="w-3 h-3" /> {a.location}
+                                  </span>
+                                ) : null}
                               </div>
 
-                              <div className="mt-1 font-display font-bold text-foreground truncate">{a.title}</div>
-
-                              {status && (
-                                <div className="mt-2 text-[11px] text-muted-foreground">
-                                  Your RSVP: <span className="text-foreground/80 font-medium">{status}</span>
-                                </div>
-                              )}
-
-                              {perms.isTrainer && sum && (
-                                <div className="mt-2 text-[11px] text-muted-foreground">
-                                  Attendance: <span className="text-foreground/80">{sum.confirmed}</span> confirmed •{" "}
-                                  <span className="text-foreground/80">{sum.declined}</span> declined •{" "}
-                                  <span className="text-foreground/80">{sum.invited}</span> invited
-                                </div>
-                              )}
+                              <div className="mt-1 font-display text-lg font-bold text-foreground">{a.title}</div>
                             </div>
 
-                            <div className="flex gap-2 shrink-0">
-                              {perms.isTrainer && (
-                                <Button size="sm" variant="outline" className="rounded-2xl" onClick={() => openDrawer(a.id)}>
-                                  <PanelRight className="w-4 h-4" />
-                                </Button>
-                              )}
-
-                              {membershipId && (
-                                <>
-                                  <Button size="sm" variant="outline" className="rounded-2xl" onClick={() => rsvp(a.id, "confirmed")}>
-                                    <Check className="w-4 h-4" />
-                                  </Button>
-                                  <Button size="sm" variant="outline" className="rounded-2xl" onClick={() => rsvp(a.id, "declined")}>
-                                    <X className="w-4 h-4" />
-                                  </Button>
-                                </>
-                              )}
-                            </div>
+                            {perms.isTrainer && showAttendance ? (
+                              <Button size="sm" variant="outline" className="shrink-0 rounded-2xl" onClick={() => openDrawer(a.id)}>
+                                <PanelRight className="mr-1.5 h-4 w-4" />
+                                {t.activitiesPage.attendanceViewRoster}
+                              </Button>
+                            ) : null}
                           </div>
+
+                          {perms.isTrainer && sum && showAttendance ? (
+                            <TrainingAttendanceSummaryBar
+                              summary={sum}
+                              headline={t.activitiesPage.attendanceSummaryHeadline
+                                .replace("{count}", String(sum.confirmed + sum.attended))
+                                .replace("{total}", String(sum.total))}
+                              statComing={t.activitiesPage.attendanceStatComing}
+                              statDeclined={t.activitiesPage.attendanceStatDeclined}
+                              statPending={t.activitiesPage.attendanceStatPending}
+                            />
+                          ) : null}
+
+                          {membershipId && showAttendance ? (
+                            <TrainingAttendanceRsvp
+                              activityTitle={a.title}
+                              myAttendance={my}
+                              busy={rsvpBusyId === a.id}
+                              onRespond={(status, notes) => rsvp(a.id, status, notes)}
+                              labels={rsvpLabels}
+                            />
+                          ) : null}
                         </motion.div>
                       );
                     })}
@@ -659,74 +769,20 @@ export default function Activities() {
         </div>
       )}
 
-      {/* Attendance drawer */}
-      {drawerOpen && drawerActivity && drawerLists && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setDrawerOpen(false)} />
-          <div className="relative w-full max-w-2xl rounded-3xl border border-border/60 bg-card/70 backdrop-blur-2xl p-5 shadow-2xl">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-xs text-muted-foreground">Attendance</div>
-                <div className="font-display font-bold text-foreground truncate">{drawerActivity.title}</div>
-                <div className="mt-1 text-xs text-muted-foreground">
-                  {new Date(drawerActivity.starts_at).toLocaleString()} • {drawerActivity.type.toUpperCase()}
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" className="rounded-2xl" onClick={nudgeUnconfirmed}>
-                  <Sparkles className="w-4 h-4 mr-1" /> Nudge unconfirmed
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setDrawerOpen(false)}>
-                  Close
-                </Button>
-              </div>
-            </div>
-
-            <div className="mt-4 grid sm:grid-cols-3 gap-3">
-              <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
-                <div className="text-[11px] text-muted-foreground">Confirmed</div>
-                <div className="text-xl font-display font-bold text-foreground">{drawerLists.confirmed.length}</div>
-              </div>
-              <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
-                <div className="text-[11px] text-muted-foreground">Declined</div>
-                <div className="text-xl font-display font-bold text-foreground">{drawerLists.declined.length}</div>
-              </div>
-              <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
-                <div className="text-[11px] text-muted-foreground">Unconfirmed</div>
-                <div className="text-xl font-display font-bold text-foreground">{drawerLists.invited.length}</div>
-              </div>
-            </div>
-
-            <div className="mt-4 grid sm:grid-cols-3 gap-3 max-h-[45vh] overflow-auto pr-1">
-              {([
-                { label: "Confirmed", rows: drawerLists.confirmed },
-                { label: "Declined", rows: drawerLists.declined },
-                { label: "Unconfirmed", rows: drawerLists.invited },
-              ] as const).map((sec) => (
-                <div key={sec.label} className="rounded-2xl border border-border/60 bg-background/40 p-3">
-                  <div className="text-xs font-semibold text-muted-foreground mb-2">{sec.label}</div>
-                  {sec.rows.length === 0 ? (
-                    <div className="text-xs text-muted-foreground">—</div>
-                  ) : (
-                    <div className="grid gap-1">
-                      {sec.rows.map((r) => (
-                        <div key={r.membershipId} className="text-xs text-foreground/80 truncate">
-                          {r.name}
-                          <span className="text-[10px] text-muted-foreground"> • {r.role}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-3 text-[10px] text-muted-foreground">
-              “Nudge unconfirmed” copies a message template (sending is HOLD until messaging is wired).
-            </div>
-          </div>
-        </div>
-      )}
+      {drawerOpen && drawerActivity && drawerLists ? (
+        <TrainingAttendanceTrainerPanel
+          open={drawerOpen}
+          onOpenChange={setDrawerOpen}
+          activityTitle={drawerActivity.title}
+          activityStartsAt={drawerActivity.starts_at}
+          activityType={drawerActivity.type}
+          teamName={drawerActivity.team_id ? teams.find((tm) => tm.id === drawerActivity.team_id)?.name ?? null : null}
+          roster={drawerRoster}
+          attendance={attendance.filter((row) => row.activity_id === drawerActivity.id)}
+          onNudgeUnconfirmed={nudgeUnconfirmed}
+          labels={trainerPanelLabels}
+        />
+      ) : null}
     </div>
   );
 }

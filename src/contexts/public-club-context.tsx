@@ -22,6 +22,7 @@ import {
   mergeRowWithEffectivePublished,
   parseClubPublicPageConfig,
 } from "@/lib/club-public-page-config";
+import { fetchClubMemberPremiumFeature, fetchClubPublicHasFeature } from "@/lib/club-public-feature-access";
 import {
   redactEventForPrivacy,
   redactMatchScoresForPrivacy,
@@ -29,6 +30,7 @@ import {
   redactSessionTimesForPrivacy,
 } from "@/lib/public-club-privacy";
 import {
+  applyClubPageLanguage,
   isMissingRelationError,
   mapClubRow,
   type PublicClubRecord,
@@ -40,6 +42,7 @@ import {
   type PublicMatchLite,
   type ShopProductLite,
 } from "@/lib/public-club-models";
+import { normalizeClubPageLanguage, type ClubPageLanguage } from "@/lib/club-public-page-i18n";
 
 interface PublicClubContextValue {
   clubSlug: string;
@@ -61,6 +64,7 @@ interface PublicClubContextValue {
   memberCount: number;
   user: ReturnType<typeof useAuth>["user"];
   isMember: boolean;
+  membershipId: string | null;
   checkingMembership: boolean;
   isPreviewMode: boolean;
   isDraftPreviewMode: boolean;
@@ -81,12 +85,27 @@ interface PublicClubContextValue {
   openDashboardOrAuth: () => void;
   goToAuthWithReturn: (path: string) => void;
   messagesCta: () => void;
-  ai4teamCta: () => void;
+  showAi4tModal: boolean;
+  setShowAi4tModal: (v: boolean) => void;
+  openAi4tModal: () => void;
+  ai4teamLaunch: (prompt?: string) => void;
   documentsCta: () => void;
   reportsCta: () => void;
   liveScoresCta: () => void;
+  /** Club pays for AI (Pro plan, trialing sub, or active AI trial). */
+  clubHasAiFeature: boolean;
+  clubHasAiFeatureLoading: boolean;
   reloadClub: (options?: { quiet?: boolean }) => Promise<void>;
   basePath: string;
+  /** Languages available on this club's public site. */
+  supportedLanguages: ClubPageLanguage[];
+  /** Active visitor language for club-authored copy. */
+  activePageLanguage: ClubPageLanguage;
+  setPublicLanguage: (lang: ClubPageLanguage) => void;
+  /** Home hero team filter (`?team=` UUID); empty = all teams. */
+  homeTeamFilterId: string;
+  setHomeTeamFilterId: (teamId: string) => void;
+  selectedHomeTeam: TeamRowLite | null;
 }
 
 const PublicClubContext = createContext<PublicClubContextValue | null>(null);
@@ -100,11 +119,11 @@ export function usePublicClub() {
 export function PublicClubProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const { clubSlug = "" } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { user } = useAuth();
   const { activeClubId, activeClub } = useActiveClub();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
 
   const isPreviewMode = searchParams.get("preview") === "1";
   const isDraftPreviewMode = searchParams.get("draft") === "1";
@@ -125,16 +144,96 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
   const [memberCount, setMemberCount] = useState(0);
   const [loadingData, setLoadingData] = useState(false);
   const [isMember, setIsMember] = useState(false);
+  const [membershipId, setMembershipId] = useState<string | null>(null);
   const [checkingMembership, setCheckingMembership] = useState(false);
   const [showRequestInvite, setShowRequestInvite] = useState(false);
+  const [showAi4tModal, setShowAi4tModal] = useState(false);
   const [reqName, setReqName] = useState("");
   const [reqEmail, setReqEmail] = useState("");
   const [reqMessage, setReqMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [clubHasAiFeature, setClubHasAiFeature] = useState(false);
+  const [clubHasAiFeatureLoading, setClubHasAiFeatureLoading] = useState(false);
+  const [clubHasMultilingual, setClubHasMultilingual] = useState(false);
+  const [clubHasMultilingualLoading, setClubHasMultilingualLoading] = useState(false);
 
   const basePath = `/club/${clubSlug}`;
   const canRequestInvite = Boolean(club?.is_public && club?.micrositePrivacy.allowJoinRequestsPublic);
   const showAdminDraftEmptyHints = isDraftPreviewMode && !draftPreviewBlocked;
+
+  const effectiveSupportedLanguages = useMemo((): ClubPageLanguage[] => {
+    if (!club) return [];
+    if (!clubHasMultilingual && club.supported_languages.length > 1) {
+      return [club.default_language];
+    }
+    return club.supported_languages;
+  }, [club, clubHasMultilingual]);
+
+  const activePageLanguage = useMemo((): ClubPageLanguage => {
+    if (!club) return normalizeClubPageLanguage(language);
+    const param = searchParams.get("lang");
+    const paramLang = param === "de" || param === "en" ? param : null;
+    if (paramLang && effectiveSupportedLanguages.includes(paramLang)) return paramLang;
+    const uiLang = normalizeClubPageLanguage(language);
+    if (effectiveSupportedLanguages.includes(uiLang)) return uiLang;
+    return club.default_language;
+  }, [club, effectiveSupportedLanguages, language, searchParams]);
+
+  const displayClub = useMemo(() => {
+    if (!club) return null;
+    const localizedClub =
+      effectiveSupportedLanguages.length === club.supported_languages.length
+        ? club
+        : { ...club, supported_languages: effectiveSupportedLanguages };
+    return applyClubPageLanguage(localizedClub, activePageLanguage);
+  }, [activePageLanguage, club, effectiveSupportedLanguages]);
+
+  const setPublicLanguage = useCallback(
+    (lang: ClubPageLanguage) => {
+      if (!effectiveSupportedLanguages.includes(lang)) return;
+      setLanguage(lang);
+      const next = new URLSearchParams(searchParams);
+      next.set("lang", lang);
+      setSearchParams(next, { replace: true });
+    },
+    [effectiveSupportedLanguages, searchParams, setLanguage, setSearchParams],
+  );
+
+  const homeTeamFilterId = useMemo(() => {
+    const param = searchParams.get("team")?.trim();
+    if (!param) return "";
+    return teams.some((tm) => tm.id === param) ? param : "";
+  }, [searchParams, teams]);
+
+  const setHomeTeamFilterId = useCallback(
+    (teamId: string) => {
+      const next = new URLSearchParams(searchParams);
+      const id = teamId.trim();
+      if (id && teams.some((tm) => tm.id === id)) next.set("team", id);
+      else next.delete("team");
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams, teams],
+  );
+
+  const selectedHomeTeam = useMemo(
+    () => (homeTeamFilterId ? teams.find((tm) => tm.id === homeTeamFilterId) ?? null : null),
+    [homeTeamFilterId, teams],
+  );
+
+  useEffect(() => {
+    if (!club || effectiveSupportedLanguages.length <= 1) return;
+    const param = searchParams.get("lang");
+    const paramLang = param === "de" || param === "en" ? param : null;
+    if (paramLang && effectiveSupportedLanguages.includes(paramLang)) {
+      if (language !== paramLang) setLanguage(paramLang);
+      return;
+    }
+    const preferred = effectiveSupportedLanguages.includes(club.default_language)
+      ? club.default_language
+      : effectiveSupportedLanguages[0];
+    if (!paramLang && language !== preferred) setLanguage(preferred);
+  }, [club, effectiveSupportedLanguages, language, searchParams, setLanguage]);
 
   const loadClub = useCallback(
     async (options?: { quiet?: boolean }) => {
@@ -231,6 +330,52 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
   }, [isPreviewMode, clubSlug, loadClub]);
 
   useEffect(() => {
+    if (!club?.id) {
+      setClubHasAiFeature(false);
+      setClubHasAiFeatureLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setClubHasAiFeatureLoading(true);
+    void (async () => {
+      let hasAi = await fetchClubPublicHasFeature(club.id, "ai");
+      if (!hasAi && user) {
+        hasAi = await fetchClubMemberPremiumFeature(club.id, "ai");
+      }
+      if (!cancelled) {
+        setClubHasAiFeature(hasAi);
+        setClubHasAiFeatureLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [club?.id, user]);
+
+  useEffect(() => {
+    if (!club?.id) {
+      setClubHasMultilingual(false);
+      setClubHasMultilingualLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setClubHasMultilingualLoading(true);
+    void (async () => {
+      let hasMultilingual = await fetchClubPublicHasFeature(club.id, "multilingual");
+      if (!hasMultilingual && user) {
+        hasMultilingual = await fetchClubMemberPremiumFeature(club.id, "multilingual");
+      }
+      if (!cancelled) {
+        setClubHasMultilingual(hasMultilingual);
+        setClubHasMultilingualLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [club?.id, user]);
+
+  useEffect(() => {
     if (!club?.id) return;
     const run = async () => {
       if (user) {
@@ -243,9 +388,11 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
           .eq("status", "active")
           .maybeSingle();
         setIsMember(!membershipError && Boolean(membership?.id));
+        setMembershipId(!membershipError && membership?.id ? String(membership.id) : null);
         setCheckingMembership(false);
       } else {
         setIsMember(false);
+        setMembershipId(null);
       }
 
       setLoadingData(true);
@@ -583,15 +730,25 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
     }
   }, [club?.id, goToAuthWithReturn, navigate, user]);
 
-  const ai4teamCta = useCallback(() => {
-    if (!club?.id) return;
-    if (user) {
-      localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
-      navigate("/co-trainer");
-    } else {
-      goToAuthWithReturn("/co-trainer");
-    }
-  }, [club?.id, goToAuthWithReturn, navigate, user]);
+  const openAi4tModal = useCallback(() => {
+    setShowAi4tModal(true);
+  }, []);
+
+  const ai4teamLaunch = useCallback(
+    (prompt?: string) => {
+      if (!club?.id) return;
+      const path = prompt
+        ? `/co-trainer?prompt=${encodeURIComponent(prompt)}`
+        : "/co-trainer";
+      if (user) {
+        localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
+        navigate(path);
+      } else {
+        goToAuthWithReturn(path);
+      }
+    },
+    [club?.id, goToAuthWithReturn, navigate, user],
+  );
 
   const documentsCta = useCallback(() => {
     if (!club?.id) return;
@@ -699,7 +856,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
     () => ({
       clubSlug,
       searchSuffix,
-      club,
+      club: displayClub,
       loading,
       loadingData,
       teams,
@@ -714,6 +871,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       memberCount,
       user,
       isMember,
+      membershipId,
       checkingMembership,
       isPreviewMode,
       isDraftPreviewMode,
@@ -733,25 +891,43 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       openDashboardOrAuth,
       goToAuthWithReturn,
       messagesCta,
-      ai4teamCta,
+      showAi4tModal,
+      setShowAi4tModal,
+      openAi4tModal,
+      ai4teamLaunch,
       documentsCta,
       reportsCta,
       liveScoresCta,
+      clubHasAiFeature,
+      clubHasAiFeatureLoading,
       reloadClub: loadClub,
       basePath,
+      supportedLanguages: effectiveSupportedLanguages,
+      activePageLanguage,
+      setPublicLanguage,
+      homeTeamFilterId,
+      setHomeTeamFilterId,
+      selectedHomeTeam,
     }),
     [
+      activePageLanguage,
+      homeTeamFilterId,
+      selectedHomeTeam,
+      setHomeTeamFilterId,
       basePath,
       canRequestInvite,
       checkingMembership,
       club,
       clubSlug,
+      displayClub,
+      effectiveSupportedLanguages,
       documentsCta,
       draftPreviewBlocked,
       events,
       isDraftPreviewMode,
       showAdminDraftEmptyHints,
       isMember,
+      membershipId,
       isPreviewMode,
       liveScoresCta,
       loadClub,
@@ -759,8 +935,12 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       loadingData,
       memberCount,
       messagesCta,
-      news,
-      ai4teamCta,
+      showAi4tModal,
+      setShowAi4tModal,
+      openAi4tModal,
+      ai4teamLaunch,
+      clubHasAiFeature,
+      clubHasAiFeatureLoading,
       openDashboardOrAuth,
       goToAuthWithReturn,
       publicCoachCountByTeamId,
@@ -772,6 +952,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       reqMessage,
       reqName,
       searchSuffix,
+      setPublicLanguage,
       sessions,
       shopProducts,
       showRequestInvite,

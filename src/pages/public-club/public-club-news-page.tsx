@@ -17,7 +17,7 @@ import {
   type PublicNewsCategoryId,
 } from "@/lib/public-club-news";
 import { readableTextOnSolid } from "@/lib/hex-to-rgb";
-import { clubCtaFillHoverClass, clubCtaOutlineHoverClass } from "@/lib/public-club-cta-classes";
+import { clubCtaFillHoverClass, clubCtaOutlineButtonClass, clubCtaOutlineHoverClass } from "@/lib/public-club-cta-classes";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 12;
@@ -36,7 +36,7 @@ function mockPublicNews(): NewsRowLite[] {
       publish_to_public_website: true,
       public_news_category: "club",
       image_url: null,
-      excerpt: "Funding covers pitches, lighting, and drainage. More on timing for members next season.",
+      excerpt: "Funding covers pitches, lighting and drainage. More on timing for members next season.",
     },
     {
       id: "mock-demo-2",
@@ -52,7 +52,7 @@ function mockPublicNews(): NewsRowLite[] {
     {
       id: "mock-demo-3",
       title: "Club summer festival: save the date",
-      content: "Food stalls, mini tournaments, and music on the main pitch. Volunteers welcome; contact the office to help out.",
+      content: "Food stalls, mini tournaments and music on the main pitch. Volunteers welcome; contact the office to help out.",
       created_at: new Date(Date.now() - 172800000).toISOString(),
       priority: "normal",
       publish_to_public_website: true,
@@ -100,7 +100,7 @@ function NewsGridCard({
 }) {
   const cat = normalizePublicNewsCategory(item.public_news_category);
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
+    <article className="flex h-full flex-col overflow-hidden rounded-2xl club-glass shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
       <NewsCardImage imageUrl={item.image_url} title={item.title} />
       <div className="flex flex-1 flex-col p-4 sm:p-5">
         <div className="mb-2 flex flex-wrap items-center gap-2 text-[10px] text-[color:var(--club-muted)]">
@@ -311,7 +311,7 @@ export default function PublicClubNewsPage() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder={t.clubPage.newsSearchPlaceholder}
-              className="rounded-xl border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-foreground)] placeholder:text-[color:var(--club-muted)]"
+              className="rounded-xl club-glass text-[color:var(--club-foreground)] placeholder:text-[color:var(--club-muted)]"
             />
           </div>
         </div>
@@ -321,7 +321,7 @@ export default function PublicClubNewsPage() {
             <Loader2 className="h-9 w-9 animate-spin text-[color:var(--club-primary)]" />
           </div>
         ) : showDedicatedEmpty ? (
-          <div className="mx-auto max-w-lg rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] px-6 py-12 text-center">
+          <div className="mx-auto max-w-lg rounded-2xl club-glass px-6 py-12 text-center">
             <p className="text-sm font-medium text-[color:var(--club-foreground)]">{t.clubPage.newsEmptyDedicated}</p>
             {showAdminDraftEmptyHints ? (
               <div className="mt-4 text-left">
@@ -330,13 +330,13 @@ export default function PublicClubNewsPage() {
             ) : null}
           </div>
         ) : showFilteredEmpty ? (
-          <p className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] py-12 text-center text-sm text-[color:var(--club-muted)]">
+          <p className="rounded-2xl club-glass py-12 text-center text-sm text-[color:var(--club-muted)]">
             {t.clubPage.noSearchResults}
           </p>
         ) : (
           <>
             {featuredArticle && (category === "all" || normalizePublicNewsCategory(featuredArticle.public_news_category) === category) ? (
-              <div className="mb-10 overflow-hidden rounded-3xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] text-left shadow-[0_16px_48px_rgba(0,0,0,0.18)]">
+              <div className="mb-10 overflow-hidden rounded-3xl club-glass text-left shadow-[0_16px_48px_rgba(0,0,0,0.18)]">
                 <div className="grid gap-0 lg:grid-cols-2">
                   <div className="relative min-h-[200px] lg:min-h-[280px]">
                     {featuredArticle.image_url?.trim() ? (
@@ -400,7 +400,7 @@ export default function PublicClubNewsPage() {
                 ))}
               </div>
             ) : featuredArticle ? null : items.length === 0 ? null : (
-              <p className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] py-10 text-center text-sm text-[color:var(--club-muted)]">
+              <p className="rounded-2xl club-glass py-10 text-center text-sm text-[color:var(--club-muted)]">
                 {t.clubPage.noSearchResults}
               </p>
             )}
@@ -412,7 +412,7 @@ export default function PublicClubNewsPage() {
                   variant="outline"
                   disabled={loadingMore}
                   onClick={() => void loadMore()}
-                  className="rounded-full border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-foreground)] hover:bg-[color:var(--club-card)]/80"
+                  className={`rounded-full ${clubCtaOutlineButtonClass}`}
                 >
                   {loadingMore ? (
                     <>

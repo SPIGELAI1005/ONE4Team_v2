@@ -1,5 +1,5 @@
 /**
- * AI4Team Agent — intent proposals and RPC execution (Phases 0–3).
+ * AI 4 T Agent — intent proposals and RPC execution (Phases 0–3).
  */
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
@@ -7,10 +7,29 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1
 export type AgentIntent =
   | "create_training"
   | "cancel_training"
+  | "cancel_training_with_parent_notice"
   | "add_member_draft"
   | "send_club_announcement"
   | "plan_training_week"
+  | "duplicate_training_week"
   | "notify_trainers";
+
+export interface TeamTrainerSuggestion {
+  membership_id: string;
+  display_name: string;
+  email: string;
+}
+
+export interface TrainingScopeValidation {
+  allowed: boolean;
+  code: string;
+  activity_id?: string;
+  team_id?: string | null;
+  team_name?: string | null;
+  activity_title?: string;
+  starts_at?: string;
+  suggested_trainers?: TeamTrainerSuggestion[];
+}
 
 export interface AgentPageContext {
   source?: string;
@@ -68,13 +87,70 @@ export async function assertClubAdmin(
   return Boolean(data);
 }
 
+export async function validateTrainingScope(
+  admin: SupabaseClient,
+  clubId: string,
+  userId: string,
+  activityId: string,
+): Promise<TrainingScopeValidation> {
+  const { data, error } = await admin.rpc("agent_validate_training_scope", {
+    _club_id: clubId,
+    _user_id: userId,
+    _activity_id: activityId,
+  });
+  if (error) {
+    console.error("agent_validate_training_scope:", error.message);
+    return { allowed: false, code: "validation_error" };
+  }
+  const row = (data ?? {}) as Record<string, unknown>;
+  return {
+    allowed: Boolean(row.allowed),
+    code: String(row.code ?? "unknown"),
+    activity_id: row.activity_id != null ? String(row.activity_id) : undefined,
+    team_id: row.team_id != null ? String(row.team_id) : row.team_id === null ? null : undefined,
+    team_name: row.team_name != null ? String(row.team_name) : null,
+    activity_title: row.activity_title != null ? String(row.activity_title) : undefined,
+    starts_at: row.starts_at != null ? String(row.starts_at) : undefined,
+    suggested_trainers: Array.isArray(row.suggested_trainers)
+      ? (row.suggested_trainers as TeamTrainerSuggestion[])
+      : [],
+  };
+}
+
+export function intentsRequiringTrainingScope(intent: AgentIntent): boolean {
+  return intent === "cancel_training" || intent === "cancel_training_with_parent_notice";
+}
+
+function buildParentNoticeCopy(
+  params: Record<string, unknown>,
+  language: "en" | "de",
+): { title: string; content: string } {
+  const de = language === "de";
+  const teamName = params.team_name != null ? String(params.team_name) : "";
+  const activityTitle = params.activity_title != null ? String(params.activity_title) : "Training";
+  const reason = params.reason != null ? String(params.reason).trim() : "";
+  const title = teamName
+    ? de
+      ? `${teamName}: Training abgesagt`
+      : `${teamName}: Training cancelled`
+    : de
+      ? "Training abgesagt"
+      : "Training cancelled";
+  const content = de
+    ? `Das Training „${activityTitle}“${teamName ? ` (${teamName})` : ""} entfällt.${reason ? ` Grund: ${reason}` : ""}`
+    : `Training "${activityTitle}"${teamName ? ` (${teamName})` : ""} is cancelled.${reason ? ` Reason: ${reason}` : ""}`;
+  return { title, content };
+}
+
 export function parseAgentIntent(raw: unknown): AgentIntent | null {
   const allowed: AgentIntent[] = [
     "create_training",
     "cancel_training",
+    "cancel_training_with_parent_notice",
     "add_member_draft",
     "send_club_announcement",
     "plan_training_week",
+    "duplicate_training_week",
     "notify_trainers",
   ];
   if (typeof raw === "string" && allowed.includes(raw as AgentIntent)) {
@@ -100,6 +176,52 @@ function parseSessions(raw: unknown): SessionInput[] {
       location: s.location != null ? String(s.location) : null,
       team_id: s.team_id != null ? String(s.team_id) : null,
     }));
+}
+
+function formatTrainingWhen(iso: string, language: "en" | "de"): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const locale = language === "de" ? "de-DE" : "en-GB";
+  return d.toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" });
+}
+
+function cancelTrainingDisplay(params: Record<string, unknown>, language: "en" | "de") {
+  const de = language === "de";
+  const teamName = params.team_name != null ? String(params.team_name).trim() : "";
+  const activityTitle =
+    params.activity_title != null
+      ? String(params.activity_title).trim()
+      : params.title != null
+        ? String(params.title).trim()
+        : de
+          ? "Training"
+          : "Training";
+  const startsRaw =
+    typeof params.starts_at === "string"
+      ? params.starts_at
+      : typeof params.activity_starts_at === "string"
+        ? params.activity_starts_at
+        : "";
+  const when = startsRaw ? formatTrainingWhen(startsRaw, language) : "";
+  const headlineParts = [teamName, activityTitle, when].filter(Boolean);
+  const headline = headlineParts.length > 0 ? headlineParts.join(" · ") : activityTitle;
+  const reason = params.reason != null ? String(params.reason).trim() : "";
+  return { teamName, activityTitle, when, headline, reason, startsRaw };
+}
+
+function cancelTrainingStepParams(
+  activityId: string,
+  params: Record<string, unknown>,
+  reason: string | null,
+): Record<string, unknown> {
+  const display = cancelTrainingDisplay(params, "en");
+  return {
+    activity_id: activityId,
+    reason,
+    team_name: display.teamName || null,
+    activity_title: display.activityTitle,
+    starts_at: display.startsRaw || null,
+  };
 }
 
 export function buildProposalFromIntent(
@@ -131,19 +253,67 @@ export function buildProposalFromIntent(
   }
 
   if (intent === "cancel_training") {
-    const activityId = String(params.activity_id ?? "");
-    const reason = params.reason != null ? String(params.reason) : "";
-    const titleHint = params.title != null ? String(params.title) : activityId;
+    const activityId = String(params.activity_id ?? "").trim();
+    if (!activityId) {
+      throw new Error(
+        de
+          ? "Keine Trainingseinheit gefunden. Bitte Team und Datum genauer angeben."
+          : "No training session matched. Please specify the team and date more clearly.",
+      );
+    }
+    const display = cancelTrainingDisplay(params, language);
+    const reason = display.reason;
     return {
       title: de ? "Training absagen" : "Cancel training",
       summary: de
-        ? `Training „${titleHint}“ entfernen.${reason ? ` Grund: ${reason}` : ""}`
-        : `Remove training "${titleHint}".${reason ? ` Reason: ${reason}` : ""}`,
+        ? `Folgende Einheit wird abgesagt: ${display.headline}.${reason ? ` Grund: ${reason}` : ""}`
+        : `The following session will be cancelled: ${display.headline}.${reason ? ` Reason: ${reason}` : ""}`,
       steps: [
         {
           tool: "cancel_training",
-          label: de ? "Training aus dem Kalender entfernen" : "Remove training from schedule",
-          params: { activity_id: activityId, reason: reason || null },
+          label: de
+            ? `Einheit absagen: ${display.headline}`
+            : `Cancel session: ${display.headline}`,
+          params: cancelTrainingStepParams(activityId, params, reason || null),
+        },
+      ],
+      warnings: [de ? "Diese Aktion kann nicht rückgängig gemacht werden." : "This action cannot be undone."],
+    };
+  }
+
+  if (intent === "cancel_training_with_parent_notice") {
+    const activityId = String(params.activity_id ?? "").trim();
+    if (!activityId) {
+      throw new Error(
+        de
+          ? "Keine Trainingseinheit gefunden. Bitte Team und Datum genauer angeben."
+          : "No training session matched. Please specify the team and date more clearly.",
+      );
+    }
+    const display = cancelTrainingDisplay(params, language);
+    const reason = display.reason;
+    const notice = buildParentNoticeCopy(params, language);
+    return {
+      title: de ? "Training absagen & Eltern informieren" : "Cancel training & notify parents",
+      summary: de
+        ? `Folgende Einheit wird abgesagt: ${display.headline}. Eltern erhalten eine Vereinsankündigung.${reason ? ` Grund: ${reason}` : ""}`
+        : `The following session will be cancelled: ${display.headline}. Parents will receive a club announcement.${reason ? ` Reason: ${reason}` : ""}`,
+      steps: [
+        {
+          tool: "cancel_training",
+          label: de
+            ? `Einheit absagen: ${display.headline}`
+            : `Cancel session: ${display.headline}`,
+          params: cancelTrainingStepParams(activityId, params, reason || null),
+        },
+        {
+          tool: "send_club_announcement",
+          label: de ? "Eltern per Vereinsankündigung informieren" : "Notify parents via club announcement",
+          params: {
+            title: params.parent_notice_title != null ? String(params.parent_notice_title) : notice.title,
+            content: params.parent_notice_content != null ? String(params.parent_notice_content) : notice.content,
+            priority: "normal",
+          },
         },
       ],
       warnings: [de ? "Diese Aktion kann nicht rückgängig gemacht werden." : "This action cannot be undone."],
@@ -194,12 +364,20 @@ export function buildProposalFromIntent(
     };
   }
 
-  if (intent === "plan_training_week") {
+  if (intent === "plan_training_week" || intent === "duplicate_training_week") {
     const teamId = params.team_id != null ? String(params.team_id) : null;
     const location = params.location != null ? String(params.location) : null;
     const sessions = parseSessions(params.sessions);
     if (sessions.length === 0) {
-      throw new Error(de ? "Mindestens eine Trainingseinheit angeben." : "Provide at least one training session.");
+      const emptyMsg =
+        intent === "duplicate_training_week"
+          ? de
+            ? "Keine Trainingseinheiten in der Vorwoche gefunden."
+            : "No training sessions found in the previous week."
+          : de
+            ? "Mindestens eine Trainingseinheit angeben."
+            : "Provide at least one training session.";
+      throw new Error(emptyMsg);
     }
 
     const steps: AgentProposalStep[] = sessions.map((s, i) => ({
@@ -227,11 +405,23 @@ export function buildProposalFromIntent(
       });
     }
 
+    const isDuplicate = intent === "duplicate_training_week";
+    const shift = params.days_shift != null ? Number(params.days_shift) : 7;
     return {
-      title: de ? "Trainingswoche planen" : "Plan training week",
-      summary: de
-        ? `${sessions.length} Training(s)${steps.length > sessions.length ? " + Ankündigung" : ""}.`
-        : `${sessions.length} training session(s)${steps.length > sessions.length ? " + announcement" : ""}.`,
+      title: isDuplicate
+        ? de
+          ? "Trainingswoche duplizieren"
+          : "Duplicate training week"
+        : de
+          ? "Trainingswoche planen"
+          : "Plan training week",
+      summary: isDuplicate
+        ? de
+          ? `${sessions.length} Training(s) aus der Vorwoche um ${shift} Tage verschoben${steps.length > sessions.length ? " + Ankündigung" : ""}.`
+          : `${sessions.length} session(s) copied from last week (+${shift} days)${steps.length > sessions.length ? " + announcement" : ""}.`
+        : de
+          ? `${sessions.length} Training(s)${steps.length > sessions.length ? " + Ankündigung" : ""}.`
+          : `${sessions.length} training session(s)${steps.length > sessions.length ? " + announcement" : ""}.`,
       steps,
     };
   }
@@ -301,29 +491,67 @@ export async function executeProposalStep(
   throw new Error(`Unknown tool: ${step.tool}`);
 }
 
+function pushUniqueLink(
+  links: { label: string; href: string }[],
+  label: string,
+  href: string,
+) {
+  if (!links.some((l) => l.href === href)) {
+    links.push({ label, href });
+  }
+}
+
 export function buildResultLinks(
   intent: AgentIntent,
   language: "en" | "de",
+  stepResults?: Record<string, unknown>[],
 ): { label: string; href: string }[] {
   const de = language === "de";
   const links: { label: string; href: string }[] = [];
 
+  for (const row of stepResults ?? []) {
+    const activityId = row.activity_id != null ? String(row.activity_id) : "";
+    if (activityId) {
+      pushUniqueLink(
+        links,
+        de ? "Neues Training öffnen" : "Open new training",
+        `/teams?highlight=${activityId}`,
+      );
+    }
+    const draftId = row.draft_id != null ? String(row.draft_id) : "";
+    if (draftId) {
+      pushUniqueLink(links, de ? "Mitgliedsentwurf" : "Member draft", `/members?draft=${draftId}`);
+    }
+    const announcementId = row.announcement_id != null ? String(row.announcement_id) : "";
+    if (announcementId) {
+      pushUniqueLink(
+        links,
+        de ? "Ankündigung öffnen" : "Open announcement",
+        `/communication?announcement=${announcementId}`,
+      );
+    }
+  }
+
   if (
     intent === "create_training" ||
     intent === "cancel_training" ||
-    intent === "plan_training_week"
+    intent === "cancel_training_with_parent_notice" ||
+    intent === "plan_training_week" ||
+    intent === "duplicate_training_week"
   ) {
-    links.push({ label: de ? "Zum Trainingsplan" : "Open schedule", href: "/teams" });
+    pushUniqueLink(links, de ? "Zum Trainingsplan" : "Open schedule", "/teams");
   }
   if (intent === "add_member_draft") {
-    links.push({ label: de ? "Mitgliederliste" : "Member list", href: "/members" });
+    pushUniqueLink(links, de ? "Mitgliederliste" : "Member list", "/members");
   }
   if (
     intent === "send_club_announcement" ||
     intent === "notify_trainers" ||
-    intent === "plan_training_week"
+    intent === "cancel_training_with_parent_notice" ||
+    intent === "plan_training_week" ||
+    intent === "duplicate_training_week"
   ) {
-    links.push({ label: de ? "Kommunikation" : "Communication", href: "/communication" });
+    pushUniqueLink(links, de ? "Kommunikation" : "Communication", "/communication");
   }
   return links;
 }

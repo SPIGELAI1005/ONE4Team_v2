@@ -7,6 +7,8 @@ export interface DashboardTopBarConfig {
   /** When set, shown as the secondary line instead of club · subtitle. */
   greeting?: string;
   showBack?: boolean;
+  /** Optional icon shown before the page title (e.g. product logo). */
+  titleIcon?: ReactNode;
   /** Lazy so the layout bar can re-read latest tree when `toolbarRevision` bumps. */
   renderRightSlot?: () => ReactNode;
 }

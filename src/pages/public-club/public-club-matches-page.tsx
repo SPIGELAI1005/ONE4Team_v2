@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Clock, Loader2, MapPin, Radio } from "lucide-react";
 import { PublicClubDraftEmptyHint } from "@/components/public-club/public-club-draft-empty-hint";
 import { PublicClubPageGate } from "@/components/public-club/public-club-page-gate";
@@ -14,6 +14,8 @@ import {
   publicMatchStatusBadge,
 } from "@/lib/public-club-match-display";
 import { getPublicScheduleRangeBounds, type PublicScheduleRangePreset } from "@/lib/public-schedule-page";
+import { PublicClubAttendanceRsvp } from "@/components/public-club/public-club-attendance-rsvp";
+import { publicClubRsvpTargetFromMatch } from "@/lib/public-club-attendance";
 import { cn } from "@/lib/utils";
 import { startOfDay } from "date-fns";
 
@@ -24,7 +26,7 @@ function filterBtn(active: boolean) {
     "rounded-full px-3 py-1.5 text-xs font-medium transition-colors border",
     active
       ? "border-[color:var(--club-primary)] bg-[color:var(--club-primary)]/15 text-[color:var(--club-foreground)]"
-      : "border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-muted)] hover:text-[color:var(--club-foreground)]"
+      : "club-glass text-[color:var(--club-muted)] hover:text-[color:var(--club-foreground)]"
   );
 }
 
@@ -35,10 +37,20 @@ function isPublicListedMatch(m: PublicMatchLite) {
 export default function PublicClubMatchesPage() {
   const { t, language } = useLanguage();
   const locale = language === "de" ? "de-DE" : "en-GB";
+  const [searchParams] = useSearchParams();
   const { club, teams, publicMatches, publicMatchesUpcoming, loadingData, basePath, searchSuffix, showAdminDraftEmptyHints } =
     usePublicClub();
   const [teamFilterId, setTeamFilterId] = useState("");
   const [rangePreset, setRangePreset] = useState<DateRangeFilter>("this_month");
+
+  useEffect(() => {
+    const param = searchParams.get("team")?.trim() ?? "";
+    if (!param) {
+      setTeamFilterId("");
+      return;
+    }
+    setTeamFilterId(teams.some((tm) => tm.id === param) ? param : "");
+  }, [searchParams, teams]);
 
   const allMatches = useMemo(() => {
     const merged = mergePublicMatchLists(publicMatches, publicMatchesUpcoming);
@@ -105,7 +117,7 @@ export default function PublicClubMatchesPage() {
     return (
       <div
         key={m.id}
-        className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] px-4 py-4 text-left shadow-sm sm:px-5"
+        className="rounded-2xl club-glass px-4 py-4 text-left shadow-sm sm:px-5"
       >
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <span className="text-[10px] font-medium uppercase tracking-wide text-[color:var(--club-muted)]">
@@ -175,6 +187,13 @@ export default function PublicClubMatchesPage() {
             </span>
           ) : null}
         </div>
+        {club && badge !== "finished" && badge !== "cancelled" ? (
+          <PublicClubAttendanceRsvp
+            compact
+            title={m.is_home ? `${club.name} vs ${m.opponent}` : `${m.opponent} vs ${club.name}`}
+            target={publicClubRsvpTargetFromMatch({ ...m, clubName: club.name })}
+          />
+        ) : null}
         {showDetailCta ? (
           <div className="mt-3">
             <Link to={detailHref} className="text-xs font-semibold text-[color:var(--club-primary)] hover:underline">
@@ -205,7 +224,7 @@ export default function PublicClubMatchesPage() {
             <Loader2 className="h-8 w-8 animate-spin text-[color:var(--club-primary)]" />
           </div>
         ) : !hasAny ? (
-          <div className="mx-auto max-w-2xl rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-8 text-center">
+          <div className="mx-auto max-w-2xl rounded-2xl club-glass p-8 text-center">
             <div className="text-sm font-medium text-[color:var(--club-foreground)]">{t.clubPage.matchesEmptyDedicated}</div>
             {showAdminDraftEmptyHints ? (
               <div className="mt-4 text-left">
@@ -225,7 +244,7 @@ export default function PublicClubMatchesPage() {
                 <select
                   value={teamFilterId}
                   onChange={(e) => setTeamFilterId(e.target.value)}
-                  className="h-10 w-full max-w-md rounded-xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] px-3 text-sm text-[color:var(--club-foreground)]"
+                  className="h-10 w-full max-w-md rounded-xl club-glass px-3 text-sm text-[color:var(--club-foreground)]"
                 >
                   <option value="">{t.clubPage.matchesTeamAll}</option>
                   {teamOptions.map((tm) => (
@@ -257,7 +276,7 @@ export default function PublicClubMatchesPage() {
             </div>
 
             {emptyAfterFilters ? (
-              <div className="rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] p-6 text-center text-sm text-[color:var(--club-muted)]">
+              <div className="rounded-2xl club-glass p-6 text-center text-sm text-[color:var(--club-muted)]">
                 {t.clubPage.matchesEmptyFilters}
               </div>
             ) : (

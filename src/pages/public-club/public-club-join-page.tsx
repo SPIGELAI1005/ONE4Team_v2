@@ -12,7 +12,11 @@ import { PublicClubHero } from "@/components/public-club/public-club-hero";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { usePublicClub } from "@/contexts/public-club-context";
 import { readableTextOnSolid } from "@/lib/hex-to-rgb";
-import { clubCtaFillHoverClass, clubCtaOutlineHoverClass } from "@/lib/public-club-cta-classes";
+import {
+  clubCtaFillHoverClass,
+  clubCtaOutlineButtonClass,
+  clubCtaOutlineHoverClass,
+} from "@/lib/public-club-cta-classes";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -275,7 +279,7 @@ export default function PublicClubJoinPage() {
                     "rounded-2xl border px-4 py-3 text-sm font-semibold transition-colors sm:px-5",
                     role === r.id
                       ? `border-transparent text-white ${clubCtaFillHoverClass}`
-                      : `border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-muted)] hover:text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`,
+                      : `club-glass text-[color:var(--club-muted)] hover:text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`,
                   ].join(" ")}
                   style={role === r.id ? { backgroundColor: "var(--club-primary)" } : undefined}
                 >
@@ -311,7 +315,7 @@ export default function PublicClubJoinPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className={`mt-6 border-[color:var(--club-border)] ${clubCtaOutlineHoverClass}`}
+                    className={`mt-6 ${clubCtaOutlineButtonClass}`}
                     onClick={() => {
                       setSent(false);
                       setMessage("");
@@ -462,9 +466,9 @@ export default function PublicClubJoinPage() {
       ) : null}
 
       {faq.length > 0 ? (
-        <PublicClubSection id="faq" title={<span className="text-[color:var(--club-primary)]">{t.clubPage.joinFaqTitle}</span>}>
+        <PublicClubSection id="club-faq" title={<span className="text-[color:var(--club-primary)]">{t.clubPage.joinFaqTitle}</span>}>
           <div className="mx-auto max-w-3xl text-left">
-            <Accordion type="single" collapsible className="w-full rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] px-2">
+            <Accordion type="single" collapsible className="w-full rounded-2xl club-glass px-2">
               {faq.map((item) => (
                 <AccordionItem key={item.id} value={item.id} className="border-[color:var(--club-border)]">
                   <AccordionTrigger className="text-left text-[color:var(--club-foreground)] hover:no-underline">
@@ -479,14 +483,14 @@ export default function PublicClubJoinPage() {
       ) : null}
 
       <PublicClubSection>
-        <div className="mx-auto flex max-w-xl flex-col items-center gap-3 rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] px-6 py-8 text-center">
+        <div className="mx-auto flex max-w-xl flex-col items-center gap-3 rounded-2xl club-glass px-6 py-8 text-center">
           <LogIn className="h-8 w-8 text-[color:var(--club-primary)]" />
           <div className="font-display text-lg font-semibold text-[color:var(--club-foreground)]">{t.clubPage.joinAlreadyInvited}</div>
           <p className="text-sm text-[color:var(--club-muted)]">{t.clubPage.joinSignInCta}</p>
           <Button
             type="button"
             variant="outline"
-            className={`border-[color:var(--club-border)] bg-[color:var(--club-card)] text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`}
+            className={clubCtaOutlineButtonClass}
             onClick={() => goToAuthWithReturn(`${basePath}${searchSuffix}`)}
           >
             {t.clubPage.joinSignInCta}

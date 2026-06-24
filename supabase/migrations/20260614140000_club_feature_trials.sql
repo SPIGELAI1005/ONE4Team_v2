@@ -1,4 +1,4 @@
--- Per-club feature trials (e.g. AI4Team pilot) without upgrading the full subscription plan.
+-- Per-club feature trials (e.g. AI 4 T pilot) without upgrading the full subscription plan.
 -- Checked by Edge `clubHasPlanFeature` and client `usePlanGuard`.
 
 create table if not exists public.club_feature_trials (
@@ -36,9 +36,9 @@ create trigger update_club_feature_trials_updated_at
 before update on public.club_feature_trials
 for each row execute function public.update_updated_at();
 
--- Founding partner: TSV Allach 09 — 90-day AI4Team pilot (idempotent).
+-- Founding partner: TSV Allach 09 — 90-day AI 4 T pilot (idempotent).
 insert into public.club_feature_trials (club_id, feature, expires_at, note)
-select c.id, 'ai', now() + interval '90 days', 'Founding partner AI4Team pilot (TSV Allach 09)'
+select c.id, 'ai', now() + interval '90 days', 'Founding partner AI 4 T pilot (TSV Allach 09)'
 from public.clubs c
 where c.name ilike '%TSV Allach%'
    or c.slug ilike '%allach%'

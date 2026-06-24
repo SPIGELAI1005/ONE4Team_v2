@@ -115,7 +115,7 @@ export default function PublicClubNewsArticlePage() {
             <Loader2 className="h-9 w-9 animate-spin text-[color:var(--club-primary)]" />
           </div>
         ) : notFound || !article ? (
-          <div className="mx-auto max-w-lg rounded-2xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] px-6 py-12 text-center">
+          <div className="mx-auto max-w-lg rounded-2xl club-glass px-6 py-12 text-center">
             <p className="text-sm font-medium text-[color:var(--club-foreground)]">{t.clubPage.newsArticleNotFound}</p>
             <Link to={listHref} className="mt-4 inline-block text-sm text-[color:var(--club-primary)] hover:underline">
               {t.clubPage.newsBackToList}

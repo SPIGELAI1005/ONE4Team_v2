@@ -8,14 +8,14 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ## NOW (top priority)
 
-### AI4Team Agent Phases 0–4 (2026-06-15) — code in repo
+### AI 4 T Agent Phases 0–4 (2026-06-15) — code in repo
 - [x] **AI-AGENT-001** Migrations **`20260615120000_ai_agent_runs.sql`**, **`20260615130000_ai_agent_tool_rpcs.sql`**, **`20260615140000_ai_agent_runs_conversation_id.sql`**, **`20260615150000_ai_agent_tool_rpcs_extended.sql`**.
 - [x] **AI-AGENT-002** Edge **`ai4team-agent`** + **`ai4team_agent_tools.ts`**, **`ai4team_agent_interpret.ts`** (propose/execute + NL interpret).
 - [x] **AI-AGENT-003** Co-Trainer **3 tabs** (Chat | Agent | History); **`AiAgentWorkspace`** + proposal confirm UX.
 - [x] **AI-AGENT-004** Workflows: create/cancel training, plan week, notify trainers, add member draft, send announcement; History workflow runs.
 - [x] **AI-AGENT-005** Contextual entry: **`AiAgentProvider`**, **`AiAgentSheet`**, **`AiAgentHeaderButton`**, page context on Teams/Members/Activities.
 - [x] **AI-AGENT-006** Voice STT/TTS (`use-ai4team-voice`, **`Ai4TeamVoiceControls`**); Chat **`/agent`** slash commands; voice-to-form patches.
-- [ ] **AI-AGENT-OPS-001** Operator: apply agent migrations **`20260615120000`**–**`20260615150000`**; **`supabase functions deploy ai4team-agent`**; smoke Agent tab + header shortcut end-to-end.
+- [x] **AI-AGENT-OPS-001** Operator: apply agent migrations **`20260615120000`**–**`20260626120000`**; **`supabase functions deploy ai4team-agent co-trainer`**; smoke Agent tab + header shortcut end-to-end. *(Signed off 2026-06-24 — migration history synced, RPC verify + manual role smoke.)*
 
 ### Admin dashboard + financial reporting (2026-06-14) — code in repo
 - [x] **DASH-001** Shared **`dashboard-page-shell.ts`** tokens; responsive layout under **`DashboardLayout`**.
@@ -31,13 +31,66 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **IMPORT-DE-001** German **Mitgliederliste** CSV import profile + tests; Option A/B fixes; pending-import KPI.
 - [ ] **FIN-OPS-001** Operator: apply **`20260614120000_club_expenses.sql`** per Supabase env; smoke financial dashboard + reports + expense add/delete.
 
-### AI4Team rebrand + trials + scope (2026-06-14) — code in repo
-- [x] **AI-REBRAND-001** ONE4AI → **AI4Team** display strings, i18n keys, public section id **`ai4team`** (legacy **`one4ai`** read).
+### AI 4 T rebrand + trials + scope (2026-06-14) — code in repo
+- [x] **AI-REBRAND-001** ONE4AI → **AI 4 T** display strings, i18n keys, public section id **`ai4team`** (legacy **`one4ai`** read).
 - [x] **AI-TRIAL-001** Migration **`20260614140000_club_feature_trials.sql`**; **`plan_entitlements.ts`** trial check; **`club-feature-trials.ts`** + **`use-subscription`** / **`use-plan-guard`**.
 - [x] **AI-SCOPE-001** **`ai4team_scope.ts`**; wired in **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`**; scope hint in **`CoTrainer.tsx`**.
-- [x] **AI-FAQ-001** Support & FAQ expanded (AI4Team, trials, imports, reports); user-facing copy without backend jargon.
-- [x] **AI-DOC-001** **`DEPLOYMENT.md`** AI4Team section; **`README.md`**, **`.env.example`** updates.
-- [ ] **AI-OPS-001** Operator: apply **`20260614140000`**; deploy **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`**; set Edge **`OPENAI_*`** secrets; smoke **`/co-trainer`** for trial/Pro clubs.
+- [x] **AI-FAQ-001** Support & FAQ expanded (AI 4 T, trials, imports, reports); user-facing copy without backend jargon.
+- [x] **AI-DOC-001** **`DEPLOYMENT.md`** AI 4 T section; **`README.md`**, **`.env.example`** updates.
+- [x] **AI-OPS-001** Operator: apply **`20260614140000`**; deploy **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`**; set Edge **`OPENAI_*`** secrets; smoke **`/co-trainer`** for trial/Pro clubs. *(Signed off 2026-06-24 — see **AI4T-P0-001**.)*
+
+### AI 4 T roadmap — pilot execution (2026-06-24)
+See [`docs/AI4T_ROADMAP.md`](docs/AI4T_ROADMAP.md) · Golden harness [`docs/AI4T_GOLDEN_QUESTIONS.md`](docs/AI4T_GOLDEN_QUESTIONS.md) · Pilot gate [`docs/AI4T_PILOT_SUCCESS_METRICS.md`](docs/AI4T_PILOT_SUCCESS_METRICS.md) · Issue templates [Phase 0 smoke](.github/ISSUE_TEMPLATE/ai4t-phase-0-smoke.md) · [Monthly review](.github/ISSUE_TEMPLATE/ai4t-pilot-monthly-review.md)
+
+#### Phase 0 — Foundation
+- [x] **AI4T-P0-001** Operator: apply AI/agent migrations (`20260614140000` through `20260626120000` incl. `20260625120000` team scope + `20260626120000` duplicate week / usage stats); run `fix_tsv_allach_ai_access.sql`; deploy `co-trainer`, `ai4team-agent`, `co-aimin`, `ai-match-analysis`; verify secrets + Test connection. *(2026-06-24 — `npm run db:push` up to date; Allach `pro`/`trialing` + `ai` trial; RPC/schema verify passed.)*
+- [x] **AI4T-P0-002** Pilot sign-off: complete Phase 0 smoke checklist (GitHub issue template); trainer/admin + player accounts; log `ai4t-pilot` issues. *(2026-06-24 — manual smoke OK (admin/trainer/player); golden context tests 10/10; coach sign-off deferred.)*
+
+#### Phase 1 — Trust & accuracy
+- [x] **AI4T-P1-001** Golden context tests (`src/lib/ai-context.test.ts`, `ai-context-golden.ts`) + manual script `docs/AI4T_GOLDEN_QUESTIONS.md`.
+- [x] **AI4T-P1-002** Citation prompt in `ai4team_scope.ts` + **Sources:** UI (`Ai4tAssistantMessage`).
+- [x] **AI4T-P1-003** `ai_message_feedback` migration (`20260624190000`) + thumbs UI in Co-Trainer.
+- [x] **AI4T-P1-004** Richer `buildClubContext()` sections (teams, matches by team, venues) + unit tests (`formatMatchesByTeam`, `formatVenueLines`).
+- [x] **AI4T-P1-005** DE-first replies: `buildCoTrainerSystemPrompt` language block + club `default_language` in context.
+
+#### Phase 2 — Agent daily-use
+- [x] **AI4T-P2-001** Teams quick-action chips (`AiAgentTeamsShortcuts`: plan week, cancel training, notify trainers).
+- [x] **AI4T-P2-002** Outcome links after agent execute (`buildResultLinks` + step IDs, `AiAgentOutcomeLinks`, History tab).
+- [x] **AI4T-P2-003** New intent: `duplicate_training_week` + RPC `agent_duplicate_training_week_sessions`.
+- [x] **AI4T-P2-004** Team-scoped training RBAC (`can_manage_team_training`, `agent_validate_training_scope`, updated `agent_cancel_training`).
+- [x] **AI4T-P2-005** Intent `cancel_training_with_parent_notice` (cancel + club announcement) with required reason + clarify flow.
+- [x] **AI4T-P2-006** Chat NL → agent workflow (`processChatForAgentWorkflow` in Co-Trainer + public embed chat).
+
+#### Phase 3 — UX & positioning
+- [x] **AI4T-P3-001** Role-based welcome + example prompts (`getAi4TRoleWelcomeMessage` on Co-Trainer + public embed).
+- [x] **AI4T-P3-002** Team access denied UX (403 `team_access_denied`, suggested coaches, notify-trainer hint).
+- [x] **AI4T-P3-003** Public club AI 4 T modal: `ClubScopedAiAgentProvider` + Agent tab (`AiAgentWorkspace` compact).
+
+#### Phase 4 — Admin control (Pro+)
+- [x] **AI4T-P4-001** Club AI instructions (`club_llm_settings.club_ai_instructions`) + usage RPC `get_club_ai_usage_stats` + Settings UI.
+
+#### Pilot gate — Phase 5 entry (8-week TSV Allach)
+
+**Gate:** Do not prioritize Phase 5 build until all five metrics pass. Track weekly/monthly per [`docs/AI4T_PILOT_SUCCESS_METRICS.md`](docs/AI4T_PILOT_SUCCESS_METRICS.md) · monthly issue template [`.github/ISSUE_TEMPLATE/ai4t-pilot-monthly-review.md`](.github/ISSUE_TEMPLATE/ai4t-pilot-monthly-review.md).
+
+| Week | Review |
+|------|--------|
+| W1–W4 | Weekly coach-usage check (**PILOT-001**); log blockers as `ai4t-pilot` issues |
+| W4, W8 | Golden manual run (**PILOT-002**); agent + feedback SQL (**PILOT-003**, **PILOT-004**) |
+| W8 | Qualitative coach interview (**PILOT-005**); Phase 5 go/no-go |
+
+- [ ] **AI4T-PILOT-001** ≥3 coaches (trainer/admin) used AI 4 T chat ≥1×/week for **4 consecutive weeks** (club: TSV Allach 09).
+- [ ] **AI4T-PILOT-002** Golden questions **≥90%** pass on monthly manual run ([`docs/AI4T_GOLDEN_QUESTIONS.md`](docs/AI4T_GOLDEN_QUESTIONS.md)).
+- [ ] **AI4T-PILOT-003** **≥10** agent runs `executed` successfully; **zero** data incidents (wrong team/time/duplicate writes).
+- [ ] **AI4T-PILOT-004** Negative feedback rate **&lt;15%** of rated messages (`ai_message_feedback`), trending down month over month.
+- [ ] **AI4T-PILOT-005** Qualitative: ≥1 coach states they use AI 4 T for **training planning** (short interview or written quote).
+
+### Training attendance + public club (2026-06-24) — code in repo
+- [x] **ATTEND-001** Dashboard **`/activities`**: RSVP confirm/decline with decline reason (`training-attendance-rsvp.tsx`, `training-attendance.ts`).
+- [x] **ATTEND-002** Trainer roster panel + summary bar (`training-attendance-trainer-panel.tsx`, team-scoped via **`team_players`**).
+- [x] **ATTEND-003** Public club RSVP on Next up, schedule, matches, home matches preview (`PublicClubAttendanceProvider`, `public-club-attendance.ts`).
+- [x] **ATTEND-004** i18n **`clubPage.attendance*`** EN/DE.
+- [x] **MICROSITE-HOME-002** Hero **team filter** on public home (`PublicClubHeroTeamFilter`, `?team=` URL param).
 
 ### Public club microsite — May 2026 wave (2026-05-03) — code in repo
 - [x] **MICROSITE-ADMIN-001** Publication status **badges** on **`ClubPageAdmin`** (live/hidden, snapshot, draft vs published).
@@ -77,12 +130,12 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **PROD-OPS-001** `k6/` scripts + `npm run k6:*`; `ops/PRODUCTION_READINESS_ARTIFACTS.md`.
 - [x] **PROD-DEPLOY-001** Repo-side production-readiness deliverables: consolidated index [`ops/PRODUCTION_READINESS_EVIDENCE_LOG.md`](ops/PRODUCTION_READINESS_EVIDENCE_LOG.md); CSP deferral record [`ops/CSP_ROLLOUT.md`](ops/CSP_ROLLOUT.md); degraded-mode UX (retry + errors) on Settings, Shop, Matches. **Operator still required:** staging/prod migrations, secrets (Phase B), Section L dashboards, Section M evidence rows, `supabase functions deploy health`, k6/realtime soak — fill the evidence log and checklists.
 
-### ONE4AI / LLM operations (2026-03-28, rebranded AI4Team 2026-06-14)
+### ONE4AI / LLM operations (2026-03-28, rebranded AI 4 T 2026-06-14)
 - [x] **AI-HEALTH-001** Settings: AI provider connection status + Test connection via `supabase.functions.invoke("co-trainer", { body: { mode: "health", club_id } })`.
 - [x] **AI-HEALTH-002** Edge: `co-trainer` health branch, `pingLlm`, `assertClubAdmin` in `_shared/llm.ts`.
 - [x] **AI-CHAT-001** `CoTrainer.tsx`: stop masking failures with demo responses when backend exists; improve SSE + error surfacing; `edge-function-auth` refreshSession fallback.
 - [x] **AI-SCOPE-002** Fair-use scope module + Edge wiring (see **AI-SCOPE-001** above).
-- [ ] **AI-OPS-002** Legacy tracker — superseded by **AI-OPS-001** above; apply `20260328200000` + related `20260328*` + **`20260614140000`**, set secrets, deploy LLM Edge functions.
+- [x] **AI-OPS-002** Legacy tracker — superseded by **AI-OPS-001** / **AI4T-P0-001** (closed 2026-06-24).
 
 ### i18n + mobile polish (2026-03-27)
 - [x] **I18N-AUTH-SETTINGS** Third i18n pass on `Auth.tsx` and `Settings.tsx` (placeholders, toasts, role UI, locale-aware club settings).

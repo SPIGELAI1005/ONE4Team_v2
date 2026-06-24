@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import { Ai4TeamAgentIcon } from "@/components/ai-agent/Ai4TeamNavIcon";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/use-language";
 import { useAiAgentOptional } from "@/contexts/ai-agent-context";
@@ -25,7 +25,7 @@ export function AiAgentHeaderButton({ intent, className }: AiAgentHeaderButtonPr
       onClick={() => agent.openAgent(intent)}
       title={t.coTrainerPage.agent.headerShortcutTitle}
     >
-      <Sparkles className="w-4 h-4" />
+      <Ai4TeamAgentIcon className="h-4 w-4" />
       <span className="hidden sm:inline">{t.coTrainerPage.tabAgent}</span>
     </Button>
   );

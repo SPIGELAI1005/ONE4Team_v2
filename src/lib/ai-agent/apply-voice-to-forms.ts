@@ -14,7 +14,7 @@ export interface CreateTrainingFormPatch extends AgentFormStatePatch {
 }
 
 export interface CancelTrainingFormPatch extends AgentFormStatePatch {
-  intent: "cancel_training";
+  intent: "cancel_training" | "cancel_training_with_parent_notice";
   activityId: string;
   reason: string;
 }
@@ -44,12 +44,18 @@ export interface PlanWeekFormPatch extends AgentFormStatePatch {
   notifyContent: string;
 }
 
+export interface DuplicateWeekFormPatch extends AgentFormStatePatch {
+  intent: "duplicate_training_week";
+  teamId: string;
+}
+
 export type VoiceFormPatch =
   | CreateTrainingFormPatch
   | CancelTrainingFormPatch
   | MemberDraftFormPatch
   | NotifyFormPatch
-  | PlanWeekFormPatch;
+  | PlanWeekFormPatch
+  | DuplicateWeekFormPatch;
 
 function isoToLocalDatetimeInput(iso: string): string {
   const d = new Date(iso);
@@ -84,9 +90,9 @@ export function buildFormPatchFromParams(
     };
   }
 
-  if (intent === "cancel_training") {
+  if (intent === "cancel_training" || intent === "cancel_training_with_parent_notice") {
     return {
-      intent: "cancel_training",
+      intent: intent === "cancel_training_with_parent_notice" ? "cancel_training_with_parent_notice" : "cancel_training",
       activityId: typeof params.activity_id === "string" ? params.activity_id : "",
       reason: params.reason != null ? String(params.reason) : "",
     };
@@ -141,6 +147,13 @@ export function buildFormPatchFromParams(
       notify: hasAnn,
       notifyTitle: hasAnn ? String(ann!.title) : "",
       notifyContent: hasAnn ? String(ann!.content) : "",
+    };
+  }
+
+  if (intent === "duplicate_training_week") {
+    return {
+      intent: "duplicate_training_week",
+      teamId: typeof params.team_id === "string" ? params.team_id : "",
     };
   }
 

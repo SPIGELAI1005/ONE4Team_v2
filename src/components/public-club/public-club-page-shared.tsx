@@ -26,7 +26,7 @@ export function PublicClubSectionSearchBar({ id, value, onChange, placeholder }:
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="h-11 min-h-[44px] rounded-full border-[color:var(--club-border)] bg-[color:var(--club-card)] pl-9 text-base text-[color:var(--club-foreground)] shadow-sm placeholder:text-[color:var(--club-muted)]"
+        className="h-11 min-h-[44px] rounded-full club-glass pl-9 text-base text-[color:var(--club-foreground)] shadow-sm placeholder:text-[color:var(--club-muted)]"
       />
     </div>
   );

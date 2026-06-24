@@ -28,6 +28,9 @@ export function clubBrandingSurfaceCssVars(branding: {
   secondary_color: string;
   tertiary_color: string;
   support_color: string;
+  foreground_color?: string | null;
+  /** When empty, muted text is derived from brand surfaces. */
+  muted_color?: string | null;
 }): React.CSSProperties {
   const primary = branding.primary_color?.trim() || "#C4A052";
   const secondary = branding.secondary_color?.trim() || "#1E293B";
@@ -37,32 +40,69 @@ export function clubBrandingSurfaceCssVars(branding: {
   const surfaceL = Math.max(relativeLuminance(tertiary), relativeLuminance(secondary));
   /** Bright brand surfaces need dark body copy; dark surfaces keep light text. */
   const lightBrand = surfaceL > 0.48;
+  const vividSecondary = relativeLuminance(secondary) > 0.28;
 
-  if (lightBrand) {
-    return {
-      "--club-primary": primary,
-      "--club-primary-rgb": hexToRgb(primary),
-      "--club-secondary": secondary,
-      "--club-tertiary": tertiary,
-      "--club-support": support,
-      "--club-foreground": mixTowardBlack(tertiary, 0.88),
-      "--club-muted": mixTowardBlack(tertiary, 0.42),
-      "--club-card": "rgba(255,255,255,0.42)",
-      "--club-border": "rgba(15,23,42,0.14)",
-    } as React.CSSProperties;
-  }
+  const autoForeground = lightBrand ? mixTowardBlack(tertiary, 0.88) : mixTowardWhite(tertiary, 0.94);
+  const autoMuted = lightBrand
+    ? mixTowardBlack(secondary, 0.58)
+    : vividSecondary
+      ? mixTowardWhite(autoForeground, 0.06)
+      : mixTowardWhite(tertiary, 0.68);
 
-  return {
+  const foreground = branding.foreground_color?.trim() || autoForeground;
+  const muted = branding.muted_color?.trim() || autoMuted;
+
+  const glassTokens = lightBrand
+    ? {
+        "--club-card": "rgba(255,255,255,0.52)",
+        "--club-border": "rgba(255,255,255,0.68)",
+        "--club-nav-glass": "rgba(255,255,255,0.62)",
+        "--club-glass-blur": "32px",
+        "--club-glass-saturate": "185%",
+        "--club-glass-shadow":
+          "0 8px 32px rgba(15,23,42,0.08), 0 0 0 1px rgba(255,255,255,0.45), inset 0 1px 0 rgba(255,255,255,0.55)",
+        "--club-glass-shadow-hover":
+          "0 12px 40px rgba(15,23,42,0.12), 0 0 0 1px rgba(255,255,255,0.62), inset 0 1px 0 rgba(255,255,255,0.65)",
+        "--club-glass-nav-shadow": "0 4px 24px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.5)",
+        "--club-glass-border-hover": "rgba(255,255,255,0.78)",
+        "--club-glass-edge-top": "rgba(255,255,255,0.85)",
+        "--club-glass-edge-mid": "rgba(255,255,255,0.35)",
+        "--club-glass-edge-bottom": "rgba(255,255,255,0.55)",
+        "--club-glass-shine-top": "rgba(255,255,255,0.35)",
+        "--club-glass-inset-top": "rgba(255,255,255,0.45)",
+      }
+    : {
+        "--club-card": "rgba(255,255,255,0.10)",
+        "--club-border": "rgba(255,255,255,0.22)",
+        "--club-nav-glass": "rgba(255,255,255,0.08)",
+        "--club-glass-blur": "32px",
+        "--club-glass-saturate": "180%",
+        "--club-glass-shadow":
+          "0 8px 32px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.10), inset 0 1px 0 rgba(255,255,255,0.16)",
+        "--club-glass-shadow-hover":
+          "0 12px 44px rgba(0,0,0,0.26), 0 0 0 1px rgba(255,255,255,0.22), inset 0 1px 0 rgba(255,255,255,0.22)",
+        "--club-glass-nav-shadow": "0 4px 24px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.12)",
+        "--club-glass-border-hover": "rgba(255,255,255,0.34)",
+        "--club-glass-edge-top": "rgba(255,255,255,0.50)",
+        "--club-glass-edge-mid": "rgba(255,255,255,0.14)",
+        "--club-glass-edge-bottom": "rgba(255,255,255,0.28)",
+        "--club-glass-shine-top": "rgba(255,255,255,0.18)",
+        "--club-glass-inset-top": "rgba(255,255,255,0.12)",
+      };
+
+  const brandTokens = {
     "--club-primary": primary,
-    /** Comma-separated `r, g, b` for `rgba(var(--club-primary-rgb), a)` (e.g. hero tint). */
     "--club-primary-rgb": hexToRgb(primary),
     "--club-secondary": secondary,
     "--club-tertiary": tertiary,
     "--club-support": support,
-    "--club-foreground": mixTowardWhite(tertiary, 0.94),
-    "--club-muted": mixTowardWhite(tertiary, 0.52),
-    "--club-card": `${mixTowardBlack(secondary, 0.25)}b3`,
-    "--club-border": mixTowardWhite(tertiary, 0.14),
+    "--club-foreground": foreground,
+    "--club-muted": muted,
+  };
+
+  return {
+    ...brandTokens,
+    ...glassTokens,
   } as React.CSSProperties;
 }
 
@@ -72,6 +112,8 @@ export function publicClubCssVars(club: PublicClubRecord | null): React.CSSPrope
     secondary_color: club?.secondary_color ?? "#1E293B",
     tertiary_color: club?.tertiary_color ?? "#0F172A",
     support_color: club?.support_color ?? "#22C55E",
+    foreground_color: club?.foreground_color,
+    muted_color: club?.muted_color,
   });
 }
 

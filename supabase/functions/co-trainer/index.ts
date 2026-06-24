@@ -156,7 +156,11 @@ serve(async (req) => {
       );
     }
 
-    const systemPrompt = buildCoTrainerSystemPrompt(context);
+    const systemPrompt = buildCoTrainerSystemPrompt(
+      context,
+      lang,
+      clubRow?.club_ai_instructions ?? null,
+    );
 
     const response = await streamChat(creds, systemPrompt, Array.isArray(messages) ? messages : []);
 

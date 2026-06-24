@@ -36,6 +36,7 @@ import ClubSwitcher from "@/components/dashboard/ClubSwitcher";
 import NotificationBell from "@/components/dashboard/NotificationBell";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/one4team-logo.png";
+import { BrandedText } from "@/components/ai/Ai4TBrand";
 
 interface NavItem {
   label: string;
@@ -191,8 +192,11 @@ export default function DashboardTopBar() {
 
               <div className="min-w-0 flex-1 overflow-hidden lg:max-w-full">
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
-                  <h1 className="font-display min-w-0 truncate text-[15px] font-bold tracking-tight text-foreground sm:text-base lg:text-lg">
-                    {titleText}
+                  {config?.titleIcon ? (
+                    <span className="shrink-0 flex items-center">{config.titleIcon}</span>
+                  ) : null}
+                  <h1 className="min-w-0 truncate text-[15px] font-bold tracking-tight text-foreground sm:text-base lg:text-lg">
+                    <BrandedText text={titleText} />
                   </h1>
                   <span className="hidden shrink-0 rounded-full border border-primary/15 bg-primary/10 px-2 py-0.5 text-[10px] text-primary sm:inline-flex">
                     {roleLabel}
@@ -200,7 +204,7 @@ export default function DashboardTopBar() {
                 </div>
                 {subtitleResolved ? (
                   <p className="mt-0.5 line-clamp-2 break-words text-[11px] text-muted-foreground sm:text-xs sm:line-clamp-none lg:line-clamp-2">
-                    {subtitleResolved}
+                    <BrandedText text={subtitleResolved} />
                   </p>
                 ) : null}
               </div>
@@ -363,7 +367,9 @@ export default function DashboardTopBar() {
                       <Icon className="w-4 h-4" />
                     </div>
                     <div className="text-left min-w-0">
-                      <div className="font-medium leading-tight truncate">{item.label}</div>
+                      <div className="font-medium leading-tight truncate">
+                        <BrandedText text={item.label} />
+                      </div>
                       <div className="text-[11px] text-muted-foreground leading-tight truncate">{item.to}</div>
                     </div>
                   </button>

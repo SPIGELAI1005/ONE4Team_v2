@@ -1,4 +1,4 @@
--- AI4Team Agent Phase 2–3: member draft + club announcement RPCs.
+-- AI 4 T Agent Phase 2–3: member draft + club announcement RPCs.
 
 create or replace function public.agent_create_member_draft(
   _club_id uuid,
