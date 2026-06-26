@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-06-24 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
+Last updated: 2026-06-27 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-27** TSV Allach Sommerfest + membership application), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
 
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 
@@ -72,6 +72,15 @@ Apply in the same Supabase project as the app (after **`20260614140000`** if usi
 5. Deploy Edge: **`ai4team-agent`** (`supabase functions deploy ai4team-agent`)
 
 Smoke: **`/co-trainer` → Agent tab** (propose → confirm create training); dashboard **Sparkles** on Teams/Members; Chat **`/agent`** command. See **`DEPLOYMENT.md` § AI 4 T Agent** and **`TASKS.md` AI-AGENT-OPS-001**.
+
+## TSV Allach public club — Sommerfest + membership application (2026-06-27)
+Apply in the same Supabase project as the app (after **`20260626120000`**):
+1. `supabase/migrations/20260627120000_club_events_camp_fields.sql`
+2. `supabase/migrations/20260628120000_club_invite_application_payload.sql`
+
+Optional seed: `supabase/scripts/seed_tsv_allach_football_camps.sql`.
+
+Smoke: **`/matches`** → publish Sommerfest 2026 → **`/club/tsv-allach-09/tournament/sommerfest-2026`**; **`/club/tsv-allach-09/join`** → submit 5-step application → verify **`application_payload`** in admin join inbox. See **`CHANGELOG.md` § 2026-06-27**, **`docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`**, **`TASKS.md` ALLACH-OPS-001**.
 
 ## Phase 7 items (need Supabase / infra)
 - Staging + prod Supabase projects (completed for Phase 12 closure)

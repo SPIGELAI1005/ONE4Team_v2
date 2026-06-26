@@ -92,6 +92,19 @@ See [`docs/AI4T_ROADMAP.md`](docs/AI4T_ROADMAP.md) · Golden harness [`docs/AI4T
 - [x] **ATTEND-004** i18n **`clubPage.attendance*`** EN/DE.
 - [x] **MICROSITE-HOME-002** Hero **team filter** on public home (`PublicClubHeroTeamFilter`, `?team=` URL param).
 
+### TSV Allach public club wave (2026-06-27) — code in repo
+- [x] **ALLACH-SOMMERFEST-001** Sommerfest 2026 cup competition + 22 match fixtures + admin publish/sync (`tsv-allach-sommerfest-competition.ts`, `tsv-allach-sommerfest-match-sync.ts`, `Matches.tsx`).
+- [x] **ALLACH-SOMMERFEST-002** Public tournament page + live board (20s poll) at **`/club/:slug/tournament/sommerfest-2026`** (`public-club-tournament-page.tsx`, `public-sommerfest-tournament-board.tsx`).
+- [x] **ALLACH-SOMMERFEST-003** Fixed header banner + pulsating live CTA from 11 Jul 2026 (`sommerfest-live-pulse.ts`, `sommerfest-live-tournament-cta.tsx`, `public-sommerfest-tournament-banner.tsx`).
+- [x] **ALLACH-JOIN-001** TSV Allach multi-step membership application form aligned with Wix onlineanmeldung (`tsv-allach-membership-application-form.tsx`, `tsv-allach-membership-application.ts`).
+- [x] **ALLACH-JOIN-002** Migration **`20260628120000_club_invite_application_payload.sql`** — `application_payload` jsonb + extended join RPCs.
+- [x] **ALLACH-JOIN-003** Join page role pills, black/red form styling, simple form fallback for non-Allach clubs (`public-club-join-page.tsx`).
+- [x] **ALLACH-CAMPS-001** Football camp event fields + admin templates (`20260627120000_club_events_camp_fields.sql`, `club-football-camp-api.ts`, `Events.tsx`).
+- [x] **ALLACH-CONTENT-001** Curated public news/events/matches helpers + news carousel (`tsv-allach-public-*`, `public-club-news-carousel.tsx`).
+- [x] **ALLACH-UX-001** Mobile hero CTA order + uniform widths; Contact removed from header nav; **AI 4 T analysis** match modal label.
+- [x] **ALLACH-FIX-001** Restore **`PublicClubContactPage`** import; **`cn`** on schedule page.
+- [ ] **ALLACH-OPS-001** Operator: apply **`20260627120000`**, **`20260628120000`**; publish Sommerfest matches; smoke tournament board + join application submit; optional run **`seed_tsv_allach_football_camps.sql`**.
+
 ### Public club microsite — May 2026 wave (2026-05-03) — code in repo
 - [x] **MICROSITE-ADMIN-001** Publication status **badges** on **`ClubPageAdmin`** (live/hidden, snapshot, draft vs published).
 - [x] **MICROSITE-ADMIN-002** Live public preview **Desktop / Tablet / Mobile** viewport framing.

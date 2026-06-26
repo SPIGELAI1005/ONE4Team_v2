@@ -12,6 +12,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type { TrainingAttendanceRow, TrainingAttendanceStatus } from "@/lib/training-attendance";
 import { cn } from "@/lib/utils";
+import {
+  clubAttendanceComingActiveClass,
+  clubAttendanceComingStandbyClass,
+} from "@/lib/public-club-cta-classes";
 
 interface TrainingAttendanceRsvpProps {
   activityTitle: string;
@@ -100,14 +104,24 @@ export function TrainingAttendanceRsvp({
           <span
             className={cn(
               "rounded-full px-2 py-0.5 text-[10px] font-semibold",
-              isComing && "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+              isComing &&
+                (variant === "club"
+                  ? "bg-white/90 text-[#3f6212] ring-1 ring-white/80"
+                  : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"),
               isDeclined && "bg-rose-500/15 text-rose-700 dark:text-rose-300",
             )}
           >
             {isComing ? labels.statusComing : labels.statusNotComing}
           </span>
         ) : (
-          <span className="rounded-full bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+          <span
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[10px] font-medium",
+              variant === "club"
+                ? "bg-white/80 text-neutral-700 ring-1 ring-white/60"
+                : "bg-muted/60 text-muted-foreground",
+            )}
+          >
             {labels.statusPending}
           </span>
         )}
@@ -125,10 +139,14 @@ export function TrainingAttendanceRsvp({
           type="button"
           size="sm"
           disabled={busy}
-          variant={isComing ? "default" : "outline"}
+          variant={variant === "club" ? (isComing ? "default" : "outline") : isComing ? "default" : "outline"}
           className={cn(
-            "h-10 rounded-xl font-semibold",
-            isComing && "bg-emerald-600 text-white hover:bg-emerald-600/90",
+            "h-10 rounded-xl font-semibold transition-colors",
+            variant === "club"
+              ? isComing
+                ? clubAttendanceComingActiveClass
+                : clubAttendanceComingStandbyClass
+              : isComing && "bg-emerald-600 text-white hover:bg-emerald-600/90",
           )}
           onClick={() => void onRespond("confirmed", null)}
         >
@@ -139,10 +157,14 @@ export function TrainingAttendanceRsvp({
           type="button"
           size="sm"
           disabled={busy}
-          variant={isDeclined ? "default" : "outline"}
+          variant={variant === "club" ? (isDeclined ? "default" : "outline") : isDeclined ? "default" : "outline"}
           className={cn(
-            "h-10 rounded-xl font-semibold",
-            isDeclined && "bg-rose-600 text-white hover:bg-rose-600/90",
+            "h-10 rounded-xl font-semibold transition-colors",
+            variant === "club"
+              ? isDeclined
+                ? "border-rose-600 bg-rose-600 text-white hover:bg-rose-600/90 hover:text-white"
+                : "!border-white/70 !bg-white/95 !text-neutral-900 shadow-sm hover:!border-rose-600 hover:!bg-rose-600 hover:!text-white [&_svg]:text-current"
+              : isDeclined && "bg-rose-600 text-white hover:bg-rose-600/90",
           )}
           onClick={openDecline}
         >

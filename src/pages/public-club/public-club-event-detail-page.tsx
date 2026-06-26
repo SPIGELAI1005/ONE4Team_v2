@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Calendar, Loader2, MapPin } from "lucide-react";
+import { SommerfestLiveTournamentCta } from "@/components/sommerfest/sommerfest-live-tournament-cta";
 import { PublicClubPageGate } from "@/components/public-club/public-club-page-gate";
 import { PublicClubSection } from "@/components/public-club/public-club-section";
 import { usePublicClub } from "@/contexts/public-club-context";
@@ -9,6 +10,9 @@ import { useLanguage } from "@/hooks/use-language";
 import { supabase } from "@/integrations/supabase/client";
 import { PUBLIC_CLUB_ROUTE_SEGMENTS } from "@/lib/public-club-routes";
 import type { EventRowLite } from "@/lib/public-club-models";
+import { findTsvAllachShowcaseEventById, isTsvAllachShowcaseEventId, isTsvAllachSommerfestShowcaseEventId } from "@/lib/tsv-allach-public-events";
+import { isTsvAllachClub } from "@/lib/is-tsv-allach-club";
+import { publicTournamentPath } from "@/lib/tsv-allach-sommerfest-competition";
 import { readableTextOnSolid } from "@/lib/hex-to-rgb";
 import { clubCtaFillHoverClass, clubCtaOutlineHoverClass } from "@/lib/public-club-cta-classes";
 
@@ -16,14 +20,22 @@ export default function PublicClubEventDetailPage() {
   const { t, language } = useLanguage();
   const locale = language === "de" ? "de-DE" : "en-GB";
   const { eventId = "" } = useParams();
-  const { club, basePath, searchSuffix } = usePublicClub();
+  const { club, basePath, searchSuffix, activePageLanguage } = usePublicClub();
   const { setExtras } = usePublicClubRouteSeo();
   const [row, setRow] = useState<EventRowLite | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const enabled = row?.public_event_detail_enabled === true;
 
   useEffect(() => {
     if (!club?.id || !eventId) {
+      setLoading(false);
+      return;
+    }
+    if (isTsvAllachShowcaseEventId(eventId)) {
+      const showcase = findTsvAllachShowcaseEventById(eventId, activePageLanguage);
+      setRow(showcase ?? null);
+      setError(null);
       setLoading(false);
       return;
     }
@@ -51,7 +63,7 @@ export default function PublicClubEventDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [club?.id, eventId]);
+  }, [activePageLanguage, club?.id, eventId]);
 
   useEffect(() => {
     if (!club || !row || !enabled) {
@@ -77,7 +89,8 @@ export default function PublicClubEventDetailPage() {
 
   const listHref = `${basePath}/${PUBLIC_CLUB_ROUTE_SEGMENTS.events}${searchSuffix}`;
   const joinHref = `${basePath}/${PUBLIC_CLUB_ROUTE_SEGMENTS.join}${searchSuffix}`;
-  const enabled = row?.public_event_detail_enabled === true;
+  const tournamentHref = publicTournamentPath(basePath, searchSuffix);
+  const showTournamentCta = Boolean(club && isTsvAllachClub(club) && isTsvAllachSommerfestShowcaseEventId(eventId));
   const regOpen = row?.public_registration_enabled === true && new Date(row.starts_at).getTime() > Date.now();
   const summary = (row?.public_summary ?? "").trim();
 
@@ -144,6 +157,9 @@ export default function PublicClubEventDetailPage() {
                   <p className="mt-4 text-sm leading-relaxed text-[color:var(--club-foreground)]">{summary}</p>
                 ) : null}
                 <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+                  {showTournamentCta ? (
+                    <SommerfestLiveTournamentCta to={tournamentHref} clubPrimaryColor={club?.primary_color} />
+                  ) : null}
                   {regOpen && row.registration_external_url?.trim() ? (
                     <a
                       href={row.registration_external_url}

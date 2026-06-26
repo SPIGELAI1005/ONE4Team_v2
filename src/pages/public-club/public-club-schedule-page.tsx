@@ -25,6 +25,7 @@ import {
 import { PublicClubAttendanceRsvp } from "@/components/public-club/public-club-attendance-rsvp";
 import { publicClubRsvpTargetFromMatch, publicClubRsvpTargetFromTraining } from "@/lib/public-club-attendance";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 type ScheduleViewMode = "list" | "calendar";
 

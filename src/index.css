@@ -626,6 +626,50 @@
     100% { background-position: 0% 50%; }
   }
 
+  /* Sommerfest live tournament CTA — red/gold pulse from festival day */
+  @keyframes sommerfest-live-cta-pulse {
+    0%, 100% {
+      box-shadow:
+        0 0 0 0 rgba(220, 38, 38, 0.7),
+        0 0 16px rgba(251, 191, 36, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+      transform: scale(1);
+    }
+    50% {
+      box-shadow:
+        0 0 0 12px rgba(220, 38, 38, 0),
+        0 0 36px rgba(251, 191, 36, 0.85),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      transform: scale(1.03);
+    }
+  }
+
+  @keyframes sommerfest-live-cta-shimmer {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .sommerfest-live-cta-pulse {
+    background: linear-gradient(
+      125deg,
+      #7f1d1d 0%,
+      #dc2626 30%,
+      #ea580c 52%,
+      #fbbf24 78%,
+      #b91c1c 100%
+    ) !important;
+    background-size: 220% 220%;
+    animation:
+      sommerfest-live-cta-pulse 2.4s ease-in-out infinite,
+      sommerfest-live-cta-shimmer 5s ease-in-out infinite;
+    border: 2px solid rgba(251, 191, 36, 0.75);
+  }
+
+  .sommerfest-live-cta-pulse .sommerfest-live-cta-icon {
+    filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.9));
+  }
+
 
   /* World cards — transparent by default, subtle fill on hover */
   .world-card-hover {

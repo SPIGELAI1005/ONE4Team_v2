@@ -6,12 +6,14 @@ import { ClubThemeProvider } from "@/components/public-club/club-theme-provider"
 import { PublicClubDocumentHead } from "@/components/public-club/public-club-document-head";
 import { PublicClubFixedHeader } from "@/components/public-club/public-club-fixed-header";
 import { PublicClubNavbar } from "@/components/public-club/public-club-navbar";
+import { PublicSommerfestTournamentBanner } from "@/components/sommerfest/public-sommerfest-tournament-banner";
 import { PublicClubFooter } from "@/components/public-club/public-club-footer";
 import { PublicClubInviteModal } from "@/components/public-club/public-club-invite-modal";
 import { PublicClubAi4tModal } from "@/components/public-club/public-club-ai4t-modal";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { PublicClubAttendanceProvider } from "@/contexts/public-club-attendance-context";
+import { useLanguage } from "@/hooks/use-language";
 
 function PublicClubLayoutInner() {
   const { t } = useLanguage();
@@ -53,6 +55,7 @@ function PublicClubLayoutInner() {
                 </div>
               ) : null}
               <PublicClubNavbar />
+              <PublicSommerfestTournamentBanner />
             </PublicClubFixedHeader>
             <main className="flex-1">
               <Outlet />

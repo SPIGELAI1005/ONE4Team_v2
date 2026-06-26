@@ -1,11 +1,16 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-06-24 (training attendance on public club; AI 4 T pilot Phases 1–4; public club team filter)
+Last updated: 2026-06-27 (TSV Allach Sommerfest tournament; membership application; public club UX polish)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **Sommerfest 2026 tournament (2026-06-27):** TSV Allach cup **`Sommerfest 2026`** — 22 fixtures synced to **`matches`** with notes **`tsv-sommerfest-2026:mXX`**. Admin **`/matches`**: publish/sync, score updates (kick-off / full time). Public **`/club/:slug/tournament/sommerfest-2026`**: live board (20s poll), category filters, fixed banner under header. Pulsating **Live tournament board** CTA from **11 Jul 2026**. Lib: **`tsv-allach-sommerfest-competition.ts`**, **`tsv-allach-sommerfest-match-sync.ts`**, **`sommerfest-live-pulse.ts`**. See **`CHANGELOG.md`** § **2026-06-27**.
+- **TSV Allach membership application (2026-06-27):** Multi-step join form mirroring [onlineanmeldung](https://www.tsvallach09.de/onlineanmeldung) — personal, address, player data, membership, SEPA/consents. **`application_payload`** on **`club_invite_requests`**; migration **`20260628120000_club_invite_application_payload.sql`**. Role pills + styled form on **`/club/:slug/join`** when **`isTsvAllachClub()`**. Components: **`tsv-allach-membership-application-form.tsx`**, **`tsv-allach-membership-application.ts`**.
+- **Football camp events (2026-06-27):** **`events`** camp metadata + **`import_key`** — migration **`20260627120000_club_events_camp_fields.sql`**; admin templates in **`Events.tsx`**; seed **`supabase/scripts/seed_tsv_allach_football_camps.sql`**.
+- **TSV Allach public content (2026-06-27):** Curated news/events/matches helpers (**`tsv-allach-public-*`**, **`youth-team-label.ts`**, **`public-club-friendly-teams.ts`**); news carousel/card components.
+- **Public club UX polish (2026-06-27):** Mobile hero CTA order (team filter → next training → AI 4 T → dashboard); uniform full-width buttons; **Contact** removed from header nav (footer only); **AI 4 T analysis** label in match analysis modal. Fixes: **`PublicClubContactPage`** import in **`App.tsx`**; **`cn`** on schedule page.
 - **Training attendance (2026-06-24):** Members RSVP to trainings/matches via **`activity_attendance`** (`confirmed` / `declined` + `notes` for absence reason). **Dashboard `/activities`:** polished RSVP UI, decline dialog with presets, trainer roster sheet (team-scoped via **`team_players`**), attendance summary bar. **Public club:** same flows on **Next up**, **schedule**, **matches**, and home **matches preview** for signed-in members (`PublicClubAttendanceRsvp`, `PublicClubAttendanceProvider`, `resolvePublicClubRsvpActivityId`). Anonymous users see sign-in prompt. See **`CHANGELOG.md`** § **2026-06-24**.
 - **Public club home team filter (2026-06-24):** Hero **View teams** dropdown sets **`?team=`** filter; home modules (Next up, stats, featured teams, matches) scope to selected team; schedule/matches links preserve param. **`PublicClubHeroTeamFilter`**, **`homeTeamFilterId`** in **`public-club-context`**.
 - **AI 4 T pilot Phases 1–4 (2026-06-24, code complete):** Golden context tests + manual harness; chat **Sources:** line; **`ai_message_feedback`**; richer club context; DE-first replies; agent shortcuts + outcome links; **`duplicate_training_week`** + team-scoped training RBAC; public club **AI 4 T modal** (Chat | Agent | Guide); club AI instructions + usage stats. Migrations **`20260624120000`**–**`20260626120000`**. Pilot success metrics **AI4T-PILOT-001**–**005** still open. Docs: **`docs/AI4T_ROADMAP.md`**, **`docs/AI4T_GOLDEN_QUESTIONS.md`**, **`docs/AI4T_PILOT_SUCCESS_METRICS.md`**. See **`TASKS.md`** AI4T-P* items.
@@ -173,9 +178,11 @@ Persistent handoff context for future agents so work can continue without re-dis
 54. `20260624190000_ai_message_feedback.sql` — AI message thumbs feedback (`CHANGELOG.md` § 2026-06-24)
 55. `20260625120000_ai_agent_team_training_scope.sql` — team-scoped agent training RBAC (`CHANGELOG.md` § 2026-06-24)
 56. `20260626120000_ai4t_duplicate_week_club_ai_stats.sql` — duplicate week RPC + AI usage stats (`CHANGELOG.md` § 2026-06-24)
-52. `20260615130000_ai_agent_tool_rpcs.sql` — `agent_create_training`, `agent_cancel_training`
-53. `20260615140000_ai_agent_runs_conversation_id.sql` — link runs to `ai_conversations`
-54. `20260615150000_ai_agent_tool_rpcs_extended.sql` — `agent_create_member_draft`, `agent_send_club_announcement`
+57. `20260627120000_club_events_camp_fields.sql` — football camp metadata + `import_key` on `events` (`CHANGELOG.md` § 2026-06-27)
+58. `20260628120000_club_invite_application_payload.sql` — structured membership `application_payload` + extended join RPCs (`CHANGELOG.md` § 2026-06-27)
+59. `20260615130000_ai_agent_tool_rpcs.sql` — `agent_create_training`, `agent_cancel_training`
+60. `20260615140000_ai_agent_runs_conversation_id.sql` — link runs to `ai_conversations`
+61. `20260615150000_ai_agent_tool_rpcs_extended.sql` — `agent_create_member_draft`, `agent_send_club_announcement`
 
 Also ensure previously listed communication migrations remain applied in the same project:
 - `20260301152000_add_chat_bridge_connectors_and_events.sql`
@@ -188,6 +195,8 @@ Also ensure previously listed communication migrations remain applied in the sam
 - If behavior mismatches local code expectations, verify app env vars point to the same Supabase project where all required migrations are applied.
 
 ## Suggested Next Implementation Steps
+- **TSV Allach Sommerfest:** Apply **`20260627120000`**, **`20260628120000`**; admin publish 22 matches; smoke public tournament board during event window (11–12 Jul 2026); verify live score updates propagate within poll interval.
+- **Membership application:** Smoke **`/club/tsv-allach-09/join`** end-to-end; confirm **`application_payload`** visible in admin join review; optional admin UI to render structured fields from JSON.
 - **AI 4 T Agent:** Apply migrations **`20260615120000`**–**`20260615150000`**; deploy **`ai4team-agent`**; smoke Agent tab (create training propose → confirm), header Sparkles on Teams/Members, Chat **`/agent`** commands; optional E2E for idempotency and permission denial paths.
 - **AI 4 T:** Apply **`20260614140000_club_feature_trials.sql`**; deploy **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`**; smoke **`/co-trainer`** for Pro/trial clubs; narrow Allach seed to single slug if only **`tsv-allach-09`** should receive pilot (migration uses **`%allach%`** pattern).
 - **Financial:** Apply **`20260614120000_club_expenses.sql`** in each Supabase env; smoke **`/dashboard/admin`**, **`/reports?section=financial`**, add expense, export CSV; optional overdue-member drill-down on Financial tab.

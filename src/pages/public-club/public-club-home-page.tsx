@@ -10,7 +10,6 @@ import {
   Loader2,
   MapPin,
   Medal,
-  Newspaper,
   Trophy,
   UserCircle,
 } from "lucide-react";
@@ -21,6 +20,7 @@ import { PublicClubAi4TButton } from "@/components/public-club/public-club-ai4t-
 import { PublicClubAi4TSection } from "@/components/public-club/public-club-ai4t-section";
 import { PublicClubSection } from "@/components/public-club/public-club-section";
 import { PublicClubPageGate } from "@/components/public-club/public-club-page-gate";
+import { PublicClubNewsCarousel } from "@/components/public-club/public-club-news-carousel";
 import { PublicClubCard } from "@/components/public-club/public-club-card";
 import { PublicClubDraftEmptyHint } from "@/components/public-club/public-club-draft-empty-hint";
 import { usePublicClub } from "@/contexts/public-club-context";
@@ -37,10 +37,11 @@ import {
 import { PUBLIC_CLUB_ROUTE_SEGMENTS } from "@/lib/public-club-routes";
 import { encodePublicTeamPathSegment } from "@/lib/public-club-team-slug";
 import type { PublicMatchLite, TrainingSessionRowLite } from "@/lib/public-club-models";
-import { normalizePublicNewsCategory, publicNewsExcerpt } from "@/lib/public-club-news";
+import { normalizePublicNewsCategory } from "@/lib/public-club-news";
 import { readableTextOnSolid } from "@/lib/hex-to-rgb";
 import { clubCtaFillHoverClass, clubCtaHeroGlassLinkClass, clubCtaOutlineButtonClass } from "@/lib/public-club-cta-classes";
-import { filterPublicClubRowsByTeamId } from "@/lib/public-club-home-team-filter";
+import { filterPublicClubEventsByTeamId, filterPublicClubRowsByTeamId } from "@/lib/public-club-home-team-filter";
+import { getFriendlyMatchPeerTeams } from "@/lib/public-club-friendly-teams";
 import { clubGlassInteractiveClass } from "@/lib/public-club-glass-classes";
 import { PublicClubAttendanceRsvp } from "@/components/public-club/public-club-attendance-rsvp";
 import {
@@ -109,6 +110,10 @@ export default function PublicClubHomePage() {
   const documentsHref = `${basePath}/${PUBLIC_CLUB_ROUTE_SEGMENTS.documents}${searchSuffix}`;
 
   const publicEvents = useMemo(() => events.filter(isPublicScheduledEvent), [events]);
+  const filteredPublicEvents = useMemo(
+    () => filterPublicClubEventsByTeamId(publicEvents, homeTeamFilterId || null),
+    [homeTeamFilterId, publicEvents],
+  );
   const publicMatchesUp = useMemo(
     () => publicMatchesUpcoming.filter(isPublicScheduledMatch),
     [publicMatchesUpcoming]
@@ -186,10 +191,10 @@ export default function PublicClubHomePage() {
     () => filteredPublicMatchesUp.filter((m) => new Date(m.match_date).getTime() >= Date.now() - 6 * 3600000).length,
     [filteredPublicMatchesUp]
   );
-  const upcomingEventsCount = useMemo(() => {
-    if (homeTeamFilterId) return 0;
-    return publicEvents.filter((e) => new Date(e.starts_at).getTime() >= Date.now() - 6 * 3600000).length;
-  }, [homeTeamFilterId, publicEvents]);
+  const upcomingEventsCount = useMemo(
+    () => filteredPublicEvents.filter((e) => new Date(e.starts_at).getTime() >= Date.now() - 6 * 3600000).length,
+    [filteredPublicEvents]
+  );
 
   const nextTraining = useMemo(() => nextTrainingFromSessions(filteredSessions), [filteredSessions]);
   const nextMatch = useMemo(() => {
@@ -198,11 +203,10 @@ export default function PublicClubHomePage() {
     return sorted.find((m) => new Date(m.match_date).getTime() >= now - 6 * 3600000) ?? null;
   }, [filteredPublicMatchesUp]);
   const nextEvent = useMemo(() => {
-    if (homeTeamFilterId) return null;
     const now = Date.now();
-    const sorted = [...publicEvents].sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
+    const sorted = [...filteredPublicEvents].sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
     return sorted.find((e) => new Date(e.starts_at).getTime() >= now - 6 * 3600000) ?? null;
-  }, [homeTeamFilterId, publicEvents]);
+  }, [filteredPublicEvents]);
 
   type NextKind = "training" | "match" | "event";
   type NextUpItem = {
@@ -264,8 +268,8 @@ export default function PublicClubHomePage() {
     : 6;
   const featuredTeams = useMemo(() => {
     if (homeTeamFilterId) {
-      const selected = teams.find((tm) => tm.id === homeTeamFilterId);
-      return selected ? [selected] : [];
+      const peers = getFriendlyMatchPeerTeams(teams, homeTeamFilterId);
+      if (peers.length > 0) return peers;
     }
     const byId = new Map(teams.map((x) => [x.id, x]));
     const ordered = club?.featured_team_ids
@@ -288,13 +292,12 @@ export default function PublicClubHomePage() {
     ? Math.min(12, effectiveHomepageMaxItems("upcoming_events", club.publicPageLayout, club.homepageModuleDefs))
     : 6;
   const homeEventsPreview = useMemo(() => {
-    if (homeTeamFilterId) return [];
     const now = Date.now() - 6 * 3600000;
-    return [...publicEvents]
+    return [...filteredPublicEvents]
       .filter((e) => new Date(e.starts_at).getTime() >= now)
       .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime())
       .slice(0, eventsPreviewMax);
-  }, [eventsPreviewMax, homeTeamFilterId, publicEvents]);
+  }, [eventsPreviewMax, filteredPublicEvents]);
 
   const matchesPreviewMax = club
     ? Math.min(12, effectiveHomepageMaxItems("matches_preview", club.publicPageLayout, club.homepageModuleDefs))
@@ -361,10 +364,8 @@ export default function PublicClubHomePage() {
             club={club}
             subtitle={club.description?.trim() || null}
             heroActions={
-              <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
-                {club.sectionVisibility.teams ? (
-                  <PublicClubHeroTeamFilter />
-                ) : null}
+              <div className="mx-auto flex w-full max-w-md flex-col gap-2 sm:max-w-3xl sm:flex-row sm:flex-wrap sm:justify-center sm:gap-3">
+                {club.sectionVisibility.teams ? <PublicClubHeroTeamFilter /> : null}
                 {club.sectionVisibility.schedule ? (
                   <Link to={scheduleHref} className={heroCtaClass}>
                     <Calendar className="h-4 w-4 shrink-0" />
@@ -376,7 +377,7 @@ export default function PublicClubHomePage() {
                   <Button
                     type="button"
                     size="lg"
-                    className={`${heroCtaClass} border-transparent ${clubCtaFillHoverClass}`}
+                    className={`${heroCtaClass} w-full border-transparent sm:w-auto ${clubCtaFillHoverClass}`}
                     style={{
                       backgroundColor: "var(--club-primary)",
                       color: readableTextOnSolid(club.primary_color || "#C4A052"),
@@ -390,7 +391,7 @@ export default function PublicClubHomePage() {
                 <Button
                   type="button"
                   size="lg"
-                  className={`${heroCtaClass} border-transparent font-semibold ${clubCtaFillHoverClass}`}
+                  className={`${heroCtaClass} w-full border-transparent font-semibold sm:w-auto ${clubCtaFillHoverClass}`}
                   style={{
                     backgroundColor: "var(--club-support)",
                     color: readableTextOnSolid(club.support_color || "#22C55E"),
@@ -531,8 +532,8 @@ export default function PublicClubHomePage() {
                   if (latestNews.length > 0)
                     return (
                       <PublicClubSection key="latest_news" title={t.clubPage.homeLatestNewsTitle}>
-                        <div className="grid gap-3 md:grid-cols-3">
-                          {latestNews.map((item) => {
+                        <PublicClubNewsCarousel
+                          slides={latestNews.map((item) => {
                             const cat = normalizePublicNewsCategory(item.public_news_category);
                             const catLabel =
                               cat === "club"
@@ -546,33 +547,17 @@ export default function PublicClubHomePage() {
                                       : cat === "seniors"
                                         ? t.clubPage.newsCatSeniors
                                         : t.clubPage.newsCatSponsors;
-                            return (
-                              <PublicClubCard key={item.id} padding="md" className="text-left">
-                                <div className="mb-2 flex items-center justify-between gap-2 text-[10px] text-[color:var(--club-muted)]">
-                                  <span className="inline-flex items-center gap-1 text-[color:var(--club-primary)]">
-                                    <Newspaper className="h-3 w-3" />
-                                    {catLabel}
-                                  </span>
-                                  <span>{new Date(item.created_at).toLocaleDateString(locale)}</span>
-                                </div>
-                                {item.image_url?.trim() ? (
-                                  <div className="mb-3 overflow-hidden rounded-xl border border-[color:var(--club-border)]">
-                                    <img src={item.image_url} alt="" className="aspect-[16/9] w-full object-cover" loading="lazy" />
-                                  </div>
-                                ) : null}
-                                <h3 className="font-display text-base font-semibold text-[color:var(--club-foreground)]">{item.title}</h3>
-                                <p className="mt-1 line-clamp-3 text-sm text-[color:var(--club-muted)]">{publicNewsExcerpt(item)}</p>
-                                <Link
-                                  to={`${basePath}/${PUBLIC_CLUB_ROUTE_SEGMENTS.news}/${item.id}${searchSuffix}`}
-                                  className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[color:var(--club-primary)]"
-                                >
-                                  {t.clubPage.homeReadMore}
-                                  <ArrowRight className="h-3 w-3" />
-                                </Link>
-                              </PublicClubCard>
-                            );
+                            return {
+                              item,
+                              categoryLabel: catLabel,
+                              href: `${basePath}/${PUBLIC_CLUB_ROUTE_SEGMENTS.news}/${item.id}${searchSuffix}`,
+                            };
                           })}
-                        </div>
+                          locale={locale}
+                          readMoreLabel={t.clubPage.homeReadMore}
+                          previousLabel={t.clubPage.homeNewsCarouselPrevious}
+                          nextLabel={t.clubPage.homeNewsCarouselNext}
+                        />
                         <div className="mt-6 text-center md:text-left">
                           <Link
                             to={newsHref}
@@ -655,29 +640,48 @@ export default function PublicClubHomePage() {
                     return (
                       <PublicClubSection key="upcoming_events" title={`${t.clubPage.homeUpcomingEventsTitle}${homeSectionTitleSuffix}`}>
                         <div className="grid gap-3 md:grid-cols-3">
-                          {homeEventsPreview.map((ev) => (
-                            <PublicClubCard key={ev.id} padding="md" className="text-left">
-                              <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--club-primary)]">{ev.event_type}</div>
-                              <h3 className="font-display text-base font-semibold text-[color:var(--club-foreground)]">{ev.title}</h3>
-                              <div className="mt-2 flex flex-wrap gap-2 text-xs text-[color:var(--club-muted)]">
-                                <span className="inline-flex items-center gap-1">
-                                  <Calendar className="h-3.5 w-3.5 shrink-0" />
-                                  {new Date(ev.starts_at).toLocaleString(locale, {
-                                    month: "short",
-                                    day: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })}
-                                </span>
-                                {ev.location ? (
-                                  <span className="inline-flex min-w-0 items-start gap-1">
-                                    <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                                    <span className="line-clamp-2">{ev.location}</span>
+                          {homeEventsPreview.map((ev) => {
+                            const detailHref = `${basePath}/${PUBLIC_CLUB_ROUTE_SEGMENTS.events}/${ev.id}${searchSuffix}`;
+                            const card = (
+                              <PublicClubCard padding="md" className="h-full text-left">
+                                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--club-primary)]">
+                                  {ev.event_type === "camp"
+                                    ? t.eventsPage.typeCamp
+                                    : ev.event_type === "festival"
+                                      ? t.clubPage.homeEventTypeFestival
+                                      : ev.event_type}
+                                </div>
+                                <h3 className="font-display text-base font-semibold text-[color:var(--club-foreground)]">{ev.title}</h3>
+                                <div className="mt-2 flex flex-wrap gap-2 text-xs text-[color:var(--club-muted)]">
+                                  <span className="inline-flex items-center gap-1">
+                                    <Calendar className="h-3.5 w-3.5 shrink-0" />
+                                    {new Date(ev.starts_at).toLocaleString(locale, {
+                                      month: "short",
+                                      day: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
                                   </span>
+                                  {ev.location ? (
+                                    <span className="inline-flex min-w-0 items-start gap-1">
+                                      <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                      <span className="line-clamp-2">{ev.location}</span>
+                                    </span>
+                                  ) : null}
+                                </div>
+                                {ev.public_summary?.trim() ? (
+                                  <p className="mt-2 line-clamp-2 text-xs text-[color:var(--club-muted)]">{ev.public_summary}</p>
                                 ) : null}
-                              </div>
-                            </PublicClubCard>
-                          ))}
+                              </PublicClubCard>
+                            );
+                            return ev.public_event_detail_enabled ? (
+                              <Link key={ev.id} to={detailHref} className="block no-underline hover:opacity-95">
+                                {card}
+                              </Link>
+                            ) : (
+                              <div key={ev.id}>{card}</div>
+                            );
+                          })}
                         </div>
                         <div className="mt-6 text-center md:text-left">
                           <Link
@@ -706,7 +710,11 @@ export default function PublicClubHomePage() {
                       <PublicClubSection key="matches_preview" title={`${t.clubPage.homeMatchesPreviewTitle}${homeSectionTitleSuffix}`}>
                         <div className="space-y-3">
                           {homeMatchesPreview.map((m) => {
-                            const title = m.is_home ? `${club.name} vs ${m.opponent}` : `${m.opponent} vs ${club.name}`;
+                            const title = m.teams?.name
+                              ? `${m.teams.name} vs ${m.opponent}`
+                              : m.is_home
+                                ? `${club.name} vs ${m.opponent}`
+                                : `${m.opponent} vs ${club.name}`;
                             const detailHref = m.public_match_detail_enabled
                               ? `${basePath}/${PUBLIC_CLUB_ROUTE_SEGMENTS.matches}/${m.id}${searchSuffix}`
                               : matchesHref;
@@ -715,7 +723,7 @@ export default function PublicClubHomePage() {
                                 <Link to={detailHref} className="block no-underline hover:opacity-95">
                                   <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--club-primary)]">
                                     <Medal className="h-3.5 w-3.5" />
-                                    {t.clubPage.matchesCardCompetitionFallback}
+                                    {m.competitions?.name ?? t.clubPage.matchesCardCompetitionFallback}
                                   </div>
                                   <div className="mt-1 font-display text-base font-semibold text-[color:var(--club-foreground)]">{title}</div>
                                   <div className="mt-2 text-xs text-[color:var(--club-muted)]">

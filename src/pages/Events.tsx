@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
@@ -15,6 +15,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 import { useLanguage } from "@/hooks/use-language";
+import { useActiveClub } from "@/hooks/use-active-club";
+import { isTsvAllachClub } from "@/lib/is-tsv-allach-club";
+import { SommerfestHero } from "@/components/sommerfest/sommerfest-hero";
+import { SommerfestEventsHub } from "@/components/sommerfest/sommerfest-events-hub";
+import { ClubFootballCampAdmin } from "@/components/events/club-football-camp-admin";
+import { isCampEvent, type ClubCampEventRow } from "@/lib/club-football-camp-api";
 // logo is rendered by AppHeader
 import type { EventRow, MembershipWithProfile, ParticipantWithMembershipProfile } from "@/types/supabase";
 
@@ -44,6 +50,8 @@ const Events = () => {
   const perms = usePermissions();
   const { toast } = useToast();
   const { t } = useLanguage();
+  const { activeClub } = useActiveClub();
+  const showSommerfest = isTsvAllachClub(activeClub);
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +60,26 @@ const Events = () => {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [members, setMembers] = useState<Membership[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
+
+  const campEvents = useMemo(
+    () => (events as ClubCampEventRow[]).filter((ev) => isCampEvent(ev)),
+    [events],
+  );
+  const regularEvents = useMemo(() => events.filter((ev) => !isCampEvent(ev)), [events]);
+  const publishedCampKeys = useMemo(
+    () => new Set(campEvents.map((ev) => ev.import_key).filter(Boolean) as string[]),
+    [campEvents],
+  );
+
+  function mergePublishedCamps(rows: ClubCampEventRow[]) {
+    setEvents((prev) => {
+      const nonCamp = prev.filter((ev) => !isCampEvent(ev));
+      const otherCamps = (prev as ClubCampEventRow[]).filter(
+        (ev) => isCampEvent(ev) && !rows.some((r) => r.import_key && r.import_key === ev.import_key),
+      );
+      return [...rows, ...otherCamps, ...nonCamp] as Event[];
+    });
+  }
 
   const [openPanels, setOpenPanels] = useState({
     participants: true,
@@ -200,22 +228,46 @@ const Events = () => {
         ) : !clubId ? (
           <div className="text-center py-20 text-muted-foreground">{t.communicationPage.noClubFound}</div>
         ) : (
-          <div className="max-w-3xl mx-auto space-y-4">
-            {events.length === 0 ? (
-              <div className="rounded-xl bg-card border border-border p-8 text-center text-muted-foreground text-sm">{t.eventsPage.emptyState}</div>
-            ) : events.map((ev, i) => (
+          <div className="mx-auto max-w-5xl space-y-6">
+            {showSommerfest ? (
+              <>
+                <SommerfestHero variant="events" />
+                {perms.isTrainer && user && clubId ? (
+                  <ClubFootballCampAdmin
+                    clubId={clubId}
+                    userId={user.id}
+                    publishedKeys={publishedCampKeys}
+                    onPublished={mergePublishedCamps}
+                  />
+                ) : null}
+                <SommerfestEventsHub campEvents={campEvents} />
+              </>
+            ) : null}
+
+            {regularEvents.length > 0 ? (
+              <div className="space-y-3 border-t border-border pt-4">
+                {showSommerfest ? (
+                  <h3 className="font-display text-base font-semibold text-foreground">{t.eventsPage.title}</h3>
+                ) : null}
+                <div className="max-w-3xl mx-auto space-y-4">
+            {regularEvents.map((ev, i) => (
               <motion.div key={ev.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                 className="rounded-xl bg-card border border-border p-5 cursor-pointer hover:border-primary/30 transition-colors"
                 onClick={() => openEventDetail(ev)}>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-display font-semibold text-foreground">{ev.title}</h3>
                   <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                    ev.event_type === "tournament" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                    ev.event_type === "tournament" ? "bg-primary/10 text-primary" : ev.event_type === "camp" ? "bg-[#00E676]/15 text-[#14532d] dark:text-[#86efac]" : "bg-muted text-muted-foreground"
                   }`}>
                     {ev.event_type === "tournament" ? (
                       <>
                         <Trophy className="w-3 h-3 shrink-0" strokeWidth={1.5} />
                         {t.eventsPage.badgeTournament}
+                      </>
+                    ) : ev.event_type === "camp" ? (
+                      <>
+                        <CalendarDays className="w-3 h-3 shrink-0" strokeWidth={1.5} />
+                        {t.eventsPage.typeCamp}
                       </>
                     ) : (
                       <>
@@ -233,6 +285,11 @@ const Events = () => {
                 </div>
               </motion.div>
             ))}
+                </div>
+              </div>
+            ) : !showSommerfest ? (
+              <div className="rounded-xl bg-card border border-border p-8 text-center text-muted-foreground text-sm">{t.eventsPage.emptyState}</div>
+            ) : null}
           </div>
         )}
       </div>
@@ -258,6 +315,7 @@ const Events = () => {
                 <SelectContent>
                   <SelectItem value="event">{t.eventsPage.typeEvent}</SelectItem>
                   <SelectItem value="tournament">{t.eventsPage.typeTournament}</SelectItem>
+                  <SelectItem value="camp">{t.eventsPage.typeCamp}</SelectItem>
                 </SelectContent>
               </Select>
               <Input placeholder="Location" value={location} onChange={e => setLocation(e.target.value)} className="bg-background" />

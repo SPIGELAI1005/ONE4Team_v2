@@ -3,6 +3,44 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-06-27 (TSV Allach public club wave — Sommerfest tournament, membership application, UX polish)
+
+### Sommerfest 2026 tournament (admin + public live board)
+- **Cup competition:** **`Sommerfest 2026`** (`competition_type: cup`) with 22 PDF-derived fixtures in **`tsv-allach-sommerfest-2026.ts`**; stable import keys **`tsv-sommerfest-2026:m01`** … **`m22`** on **`matches.notes`**.
+- **Admin `/matches`:** Publish/sync tournament button, Sommerfest schedule editing, kick-off / full-time score updates, link to public tournament page. Lib: **`tsv-allach-sommerfest-competition.ts`**, **`tsv-allach-sommerfest-match-sync.ts`**, **`match-management-access.ts`**.
+- **Public route:** **`/club/:slug/tournament/sommerfest-2026`** → **`public-club-tournament-page.tsx`**; live board (**`public-sommerfest-tournament-board.tsx`**) polls every 20s; category filters; **`in_progress`** = live.
+- **Site chrome:** Fixed header banner (**`public-sommerfest-tournament-banner.tsx`**) under navbar; pulsating **Live tournament board** CTA from **11 Jul 2026** (**`sommerfest-live-pulse.ts`**, **`sommerfest-live-tournament-cta.tsx`**, CSS in **`index.css`**). Event detail page links to live board.
+- **Tests:** **`tsv-allach-sommerfest-competition.test.ts`**, **`tsv-allach-sommerfest-match-sync.test.ts`**, **`sommerfest-live-pulse.test.ts`**.
+
+### TSV Allach online membership application (join flow)
+- **Multi-step form** aligned with [tsvallach09.de/onlineanmeldung](https://www.tsvallach09.de/onlineanmeldung): personal data, address, player history, membership type, SEPA + consents. **`tsv-allach-membership-application-form.tsx`**, **`tsv-allach-membership-application.ts`**.
+- **`/club/:slug/join`:** TSV Allach clubs use full application; other clubs keep simple invite form. Role pills (Player / Parent / Coach / …) at top with red selected state; black labels/inputs; red consent copy.
+- **Migration **`20260628120000_club_invite_application_payload.sql`:** **`club_invite_requests.application_payload`** (`jsonb`); extends **`request_club_invite`** and **`register_club_join_request`** with **`_application_payload`**.
+
+### Football camp events (admin + public)
+- **Migration **`20260627120000_club_events_camp_fields.sql`:** **`events`** columns **`team_id`**, **`target_audience`**, **`partner_name`**, **`contact_email`**, **`import_key`** (unique per club).
+- **`club-football-camp-api.ts`**, **`club-football-camp-templates.ts`**, **`Events.tsx`** camp templates; seed script **`supabase/scripts/seed_tsv_allach_football_camps.sql`**.
+
+### TSV Allach public content helpers
+- Curated public news, events, and matches for Allach slug detection (**`is-tsv-allach-club.ts`**): **`tsv-allach-public-news.ts`**, **`tsv-allach-public-events.ts`**, **`tsv-allach-public-matches.ts`**, **`youth-team-label.ts`**, **`public-club-friendly-teams.ts`**.
+- **News UX:** **`public-club-news-card.tsx`**, **`public-club-news-carousel.tsx`**; news list/article pages refreshed.
+
+### Public club UX polish
+- **Home hero (mobile):** Button order — team filter → next training → **AI 4 T** → dashboard; uniform full-width CTAs (**`public-club-home-page.tsx`**, **`public-club-cta-classes.ts`**).
+- **Navbar:** **Contact** removed from header nav (remains in footer). **`public-club-navbar.tsx`**.
+- **Matches admin modal:** Section title **AI 4 T analysis** via **`BrandedText`** + i18n **`sectionAi4TAnalysis`** / **`aiAnalysisBadge`** (**`AIMatchAnalysis.tsx`**).
+
+### Bug fixes
+- **`App.tsx`:** Restored lazy import for **`PublicClubContactPage`** (fixed runtime `PublicClubContactPage is not defined`).
+- **`public-club-schedule-page.tsx`:** Added missing **`cn`** import from **`@/lib/utils`**.
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`README.md`**, **`ROADMAP.md`**, **`MVP_PLAN.md`**, **`docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`**, **`supabase/SCHEMA_STATUS.md`**, **`HOLD.md`**, **`ops/PRODUCTION_READINESS_*.md`**.
+
+### Operator
+- Apply migrations **`20260627120000`**, **`20260628120000`** after **`20260626120000`** (note: **`20260628120000`** must not share timestamp with **`20260624120000_club_public_feature_flags_rpc.sql`**).
+- Smoke: **`/matches`** → publish Sommerfest → **`/club/tsv-allach-09/tournament/sommerfest-2026`**; **`/club/tsv-allach-09/join`** multi-step submit → pending request with **`application_payload`** in admin inbox.
+
 ## 2026-06-24 (Training attendance on club page, AI 4 T pilot Phases 1–4, public club UX)
 
 ### Training attendance (dashboard + public club)

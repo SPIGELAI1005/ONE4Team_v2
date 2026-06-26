@@ -118,8 +118,9 @@ const AIMatchAnalysis = ({ matchData, teamData, context, matchStatus, matchId, c
 
   return (
     <div className="rounded-xl bg-background border border-primary/20 p-4 mt-4">
-      <h4 className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-        <Bot className="w-3.5 h-3.5 text-primary" /> AI ANALYSIS
+      <h4 className="text-xs font-semibold text-muted-foreground mb-3 flex items-center gap-2 uppercase tracking-wide">
+        <Bot className="w-3.5 h-3.5 text-primary" />
+        <BrandedText text={t.matchesPage.aiAnalysisBadge} />
       </h4>
 
       <div className="flex flex-wrap gap-1 mb-3">

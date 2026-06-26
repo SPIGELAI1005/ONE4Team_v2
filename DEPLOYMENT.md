@@ -122,6 +122,19 @@ Club workflows use the **`ai4team-agent`** Edge Function and Postgres RPCs. Six 
    - **Chat tab** — `/agent` slash commands (e.g. `/agent plan-week`) or natural-language workflow detection
 4. Requires the same AI plan gate as chat (`clubHasPlanFeature('ai')`) and trainer/admin role per intent.
 
+### TSV Allach public club — Sommerfest + membership application (2026-06-27)
+
+1. Apply migrations (after **`20260626120000`**):
+   - `supabase/migrations/20260627120000_club_events_camp_fields.sql`
+   - `supabase/migrations/20260628120000_club_invite_application_payload.sql`
+2. Optional: run `supabase/scripts/seed_tsv_allach_football_camps.sql` for camp event templates.
+3. In the app (TSV Allach slug e.g. **`tsv-allach-09`**):
+   - **`/matches`** → **Publish tournament** (Sommerfest 2026, 22 fixtures)
+   - Public board: **`/club/tsv-allach-09/tournament/sommerfest-2026`**
+   - Join flow: **`/club/tsv-allach-09/join`** → 5-step application → admin reviews **`application_payload`**
+
+See **`docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`** and **`CHANGELOG.md` § 2026-06-27**.
+
 **Alternative (full Pro trial):** upgrade `billing_subscriptions` instead — gives all Pro limits, not AI-only:
 
 ```sql

@@ -107,7 +107,9 @@ export function PublicClubNavbar() {
 
   const desktopItems = useMemo(() => {
     if (!club) return [];
-    return getEnabledPublicPages(club.publicPageLayout).map((e) => {
+    return getEnabledPublicPages(club.publicPageLayout)
+      .filter((e) => e.id !== "contact")
+      .map((e) => {
       const seg = publicNavIdToPathSegment(e.id);
       const to = e.id === "home" ? basePath : `${basePath}/${seg}`;
       const label = e.navLabel.trim() || defaultNavLabel(e.id, t);

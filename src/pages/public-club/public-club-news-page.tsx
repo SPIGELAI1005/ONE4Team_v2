@@ -7,6 +7,7 @@ import { PublicClubSection } from "@/components/public-club/public-club-section"
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PublicClubDraftEmptyHint } from "@/components/public-club/public-club-draft-empty-hint";
+import { PublicClubNewsCard, PublicClubNewsPoster } from "@/components/public-club/public-club-news-card";
 import { usePublicClub } from "@/contexts/public-club-context";
 import { useLanguage } from "@/hooks/use-language";
 import type { NewsRowLite } from "@/lib/public-club-models";
@@ -16,12 +17,15 @@ import {
   PUBLIC_NEWS_CATEGORIES,
   type PublicNewsCategoryId,
 } from "@/lib/public-club-news";
+import { mergePublicClubNews } from "@/lib/tsv-allach-public-news";
 import { readableTextOnSolid } from "@/lib/hex-to-rgb";
 import { clubCtaFillHoverClass, clubCtaOutlineButtonClass, clubCtaOutlineHoverClass } from "@/lib/public-club-cta-classes";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 12;
 const MOCK_FLAG = import.meta.env.VITE_PUBLIC_CLUB_NEWS_MOCK === "true";
+
+type CategoryFilterId = "all" | PublicNewsCategoryId;
 
 function mockPublicNews(): NewsRowLite[] {
   const now = new Date().toISOString();
@@ -63,73 +67,10 @@ function mockPublicNews(): NewsRowLite[] {
   ];
 }
 
-type CategoryFilterId = "all" | PublicNewsCategoryId;
-
-function NewsCardImage({ imageUrl, title }: { imageUrl: string | null | undefined; title: string }) {
-  if (imageUrl?.trim()) {
-    return (
-      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-t-2xl bg-[color:var(--club-card)]">
-        <img src={imageUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
-      </div>
-    );
-  }
-  return (
-    <div
-      className="aspect-[16/10] w-full rounded-t-2xl bg-gradient-to-br from-[color:var(--club-primary)]/25 via-[color:var(--club-card)] to-[color:var(--club-border)]/40"
-      aria-hidden
-    >
-      <div className="flex h-full items-center justify-center p-4 text-center font-display text-sm font-semibold text-[color:var(--club-foreground)]/80 line-clamp-3">
-        {title}
-      </div>
-    </div>
-  );
-}
-
-function NewsGridCard({
-  item,
-  href,
-  locale,
-  categoryText,
-  readMoreLabel,
-}: {
-  item: NewsRowLite;
-  href: string;
-  locale: string;
-  categoryText: string;
-  readMoreLabel: string;
-}) {
-  const cat = normalizePublicNewsCategory(item.public_news_category);
-  return (
-    <article className="flex h-full flex-col overflow-hidden rounded-2xl club-glass shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
-      <NewsCardImage imageUrl={item.image_url} title={item.title} />
-      <div className="flex flex-1 flex-col p-4 sm:p-5">
-        <div className="mb-2 flex flex-wrap items-center gap-2 text-[10px] text-[color:var(--club-muted)]">
-          <span className="rounded-full bg-[color:var(--club-primary)]/15 px-2 py-0.5 font-medium text-[color:var(--club-primary)]">
-            {categoryText}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
-            {new Date(item.created_at).toLocaleDateString(locale)}
-          </span>
-        </div>
-        <h3 className="font-display text-base font-semibold leading-snug text-[color:var(--club-foreground)] sm:text-lg">{item.title}</h3>
-        <p className="mt-2 line-clamp-3 flex-1 text-sm leading-relaxed text-[color:var(--club-muted)]">{publicNewsExcerpt(item)}</p>
-        <Link
-          to={href}
-          className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-[color:var(--club-primary)] hover:underline"
-        >
-          {readMoreLabel}
-          <ArrowRight className="h-3 w-3" />
-        </Link>
-      </div>
-    </article>
-  );
-}
-
 export default function PublicClubNewsPage() {
   const { t, language } = useLanguage();
   const locale = language === "de" ? "de-DE" : "en-GB";
-  const { club, basePath, searchSuffix, showAdminDraftEmptyHints } = usePublicClub();
+  const { club, basePath, searchSuffix, showAdminDraftEmptyHints, activePageLanguage } = usePublicClub();
 
   const categoryText = useCallback(
     (id: PublicNewsCategoryId) => {
@@ -206,13 +147,14 @@ export default function PublicClubNewsPage() {
       setItems([]);
       setHasMore(false);
     } else {
-      const rows = (data as NewsRowLite[]) || [];
+      const dbRows = (data as NewsRowLite[]) || [];
+      const rows = mergePublicClubNews(club, dbRows, activePageLanguage);
       setItems(rows);
-      setHasMore(rows.length === PAGE_SIZE);
-      setOffset(rows.length);
+      setHasMore(dbRows.length === PAGE_SIZE);
+      setOffset(dbRows.length);
     }
     setLoading(false);
-  }, [buildQuery, club?.id]);
+  }, [activePageLanguage, buildQuery, club]);
 
   useEffect(() => {
     if (!club?.id || MOCK_FLAG) return;
@@ -229,20 +171,20 @@ export default function PublicClubNewsPage() {
     }
     const { data, error } = await q;
     if (!error && data?.length) {
-      const next = data as NewsRowLite[];
+      const dbRows = (data as NewsRowLite[]) || [];
       setItems((prev) => {
         const seen = new Set(prev.map((r) => r.id));
         const merged = [...prev];
-        for (const row of next) {
+        for (const row of dbRows) {
           if (!seen.has(row.id)) {
             seen.add(row.id);
             merged.push(row);
           }
         }
-        return merged;
+        return merged.sort((a, b) => b.created_at.localeCompare(a.created_at));
       });
-      setHasMore(next.length === PAGE_SIZE);
-      setOffset((o) => o + next.length);
+      setHasMore(dbRows.length === PAGE_SIZE);
+      setOffset((o) => o + dbRows.length);
     } else {
       setHasMore(false);
     }
@@ -336,66 +278,54 @@ export default function PublicClubNewsPage() {
         ) : (
           <>
             {featuredArticle && (category === "all" || normalizePublicNewsCategory(featuredArticle.public_news_category) === category) ? (
-              <div className="mb-10 overflow-hidden rounded-3xl club-glass text-left shadow-[0_16px_48px_rgba(0,0,0,0.18)]">
-                <div className="grid gap-0 lg:grid-cols-2">
-                  <div className="relative min-h-[200px] lg:min-h-[280px]">
-                    {featuredArticle.image_url?.trim() ? (
-                      <img
-                        src={featuredArticle.image_url}
-                        alt=""
-                        className="absolute inset-0 h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-[color:var(--club-primary)]/35 via-[color:var(--club-card)] to-[color:var(--club-border)]/50" />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent lg:bg-gradient-to-r lg:from-black/70 lg:via-black/25 lg:to-transparent" />
-                    <div className="relative flex h-full flex-col justify-end p-6 lg:p-8">
-                      <span className="mb-2 inline-flex w-fit rounded-full bg-white/15 px-2.5 py-0.5 text-[10px] font-medium text-white/95">
-                        {categoryText(normalizePublicNewsCategory(featuredArticle.public_news_category))}
-                      </span>
-                      <h2 className="font-display text-2xl font-bold leading-tight text-white sm:text-3xl">{featuredArticle.title}</h2>
-                      <p className="mt-2 line-clamp-3 text-sm text-white/85">{publicNewsExcerpt(featuredArticle)}</p>
-                      <div className="mt-4 flex flex-wrap items-center gap-3 text-[11px] text-white/75">
-                        <span className="inline-flex items-center gap-1">
-                          <Calendar className="h-3.5 w-3.5" />
-                          {new Date(featuredArticle.created_at).toLocaleDateString(locale)}
-                        </span>
-                        <Link
-                          to={`${basePath}/news/${featuredArticle.id}${searchSuffix}`}
-                          className={`inline-flex items-center gap-1 rounded-full bg-[color:var(--club-primary)] px-4 py-2 text-xs font-semibold ${clubCtaFillHoverClass}`}
-                          style={{ color: readableTextOnSolid(club?.primary_color || "#C4A052") }}
-                        >
-                          {t.clubPage.newsReadMore}
-                          <ArrowRight className="h-3.5 w-3.5" />
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="hidden flex-col justify-center border-t border-[color:var(--club-border)] p-6 lg:flex lg:border-l lg:border-t-0 lg:p-8">
-                    <p className="text-sm leading-relaxed text-[color:var(--club-muted)]">{publicNewsExcerpt(featuredArticle)}</p>
-                    <Link
-                      to={`${basePath}/news/${featuredArticle.id}${searchSuffix}`}
-                      className="mt-6 inline-flex w-fit items-center gap-2 text-sm font-semibold text-[color:var(--club-primary)] hover:underline"
+              <Link
+                to={`${basePath}/news/${featuredArticle.id}${searchSuffix}`}
+                className="group mb-10 flex min-h-[200px] overflow-hidden rounded-3xl border border-[color:var(--club-border)] bg-[color:var(--club-card)] text-left no-underline shadow-[0_16px_48px_rgba(0,0,0,0.18)] transition-colors hover:border-[color:var(--club-primary)]/45"
+              >
+                <div className="flex min-w-0 flex-1 flex-col justify-center p-6 sm:p-8 lg:p-10">
+                  <span className="mb-3 inline-flex w-fit rounded-full bg-[color:var(--club-primary)]/15 px-2.5 py-0.5 text-[10px] font-medium text-[color:var(--club-primary)]">
+                    {categoryText(normalizePublicNewsCategory(featuredArticle.public_news_category))}
+                  </span>
+                  <h2 className="font-display text-2xl font-bold leading-tight text-[color:var(--club-foreground)] transition-colors group-hover:text-[color:var(--club-primary)] sm:text-3xl">
+                    {featuredArticle.title}
+                  </h2>
+                  <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-[color:var(--club-muted)] sm:text-base">
+                    {publicNewsExcerpt(featuredArticle)}
+                  </p>
+                  <div className="mt-5 flex flex-wrap items-center gap-4 text-[11px] text-[color:var(--club-muted)]">
+                    <span className="inline-flex items-center gap-1">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {new Date(featuredArticle.created_at).toLocaleDateString(locale)}
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full bg-[color:var(--club-primary)] px-4 py-2 text-xs font-semibold ${clubCtaFillHoverClass}`}
+                      style={{ color: readableTextOnSolid(club?.primary_color || "#C4A052") }}
                     >
                       {t.clubPage.newsReadMore}
-                      <ArrowRight className="h-4 w-4" />
-                    </Link>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </span>
                   </div>
                 </div>
-              </div>
+                <PublicClubNewsPoster
+                  imageUrl={featuredArticle.image_url}
+                  title={featuredArticle.title}
+                  className="w-[34%] min-w-[120px] max-w-[240px] border-l border-[color:var(--club-border)] sm:max-w-[280px] aspect-[210/297]"
+                />
+              </Link>
             ) : null}
 
             {gridItems.length ? (
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {gridItems.map((item) => (
-                  <NewsGridCard
+                  <PublicClubNewsCard
                     key={item.id}
                     item={item}
                     href={`${basePath}/news/${item.id}${searchSuffix}`}
                     locale={locale}
-                    categoryText={categoryText(normalizePublicNewsCategory(item.public_news_category))}
+                    categoryLabel={categoryText(normalizePublicNewsCategory(item.public_news_category))}
                     readMoreLabel={t.clubPage.newsReadMore}
+                    variant="compact"
+                    className="h-full"
                   />
                 ))}
               </div>

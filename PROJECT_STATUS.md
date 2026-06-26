@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-06-24 (training attendance on public club; AI 4 T pilot Phases 1–4; public club team filter)
+Last updated: 2026-06-27 (TSV Allach Sommerfest tournament; membership application; public club UX polish)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -27,6 +27,7 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - **AI 4 T rebrand + trials + scope (2026-06-14):** ONE4AI → **AI 4 T** across i18n/UI; **`club_feature_trials`** + **`plan_entitlements`** trial gate; **`ai4team_scope.ts`** fair-use guardrails on LLM Edge functions; expanded **Support & FAQ** (user-facing copy). Deploy **`co-trainer`**, **`co-aimin`**, **`ai-match-analysis`** after apply. See **`CHANGELOG.md`** second **2026-06-14** entry and **`DEPLOYMENT.md` § AI 4 T**.
 - **AI 4 T Agent (2026-06-15):** Propose → confirm → execute workflows via **`ai4team-agent`** Edge function and Postgres RPCs (six intents: trainings, member drafts, announcements). Co-Trainer Agent tab + History; contextual **Sparkles** sheet from dashboard header on Teams/Members/Activities; voice STT/TTS; Chat **`/agent`** commands; NL intent interpret. Migrations **`20260615120000`**–**`20260615150000`**. See **`CHANGELOG.md`** § **2026-06-15** and **`docs/AI4TEAM_AGENT_IMPLEMENTATION_PLAN.md`**.
 - **Training attendance + public club (2026-06-24):** Polished RSVP on **`/activities`** (decline reasons, trainer roster panel). Same **`activity_attendance`** on public club **Next up**, **schedule**, **matches**. Hero **team filter** (`?team=`). AI 4 T pilot Phases 1–4 code complete. Migrations **`20260624120000`**–**`20260626120000`**. See **`CHANGELOG.md`** § **2026-06-24**.
+- **TSV Allach public club wave (2026-06-27):** **Sommerfest 2026** tournament — admin publish/sync of 22 cup matches, public live board at **`/club/:slug/tournament/sommerfest-2026`**, header banner + pulsating live CTA from 11 Jul 2026. **Online membership application** multi-step form on **`/join`** with **`application_payload`** JSON (migration **`20260628120000`**). Football **camp events** metadata (**`20260627120000`**). Public news carousel, mobile hero CTA reorder, Contact removed from header nav, **AI 4 T analysis** match modal label. See **`CHANGELOG.md`** § **2026-06-27** and **`docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`**.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 

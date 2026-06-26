@@ -1337,7 +1337,7 @@ const Communication = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-md rounded-2xl bg-card border border-border p-6"
+            className="w-full max-w-lg rounded-2xl bg-card border border-border p-6"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
@@ -1354,14 +1354,28 @@ const Communication = () => {
                 className="bg-background"
                 maxLength={200}
               />
-              <textarea
-                placeholder={t.communicationPage.announcementContentPlaceholder}
-                value={annContent}
-                onChange={(event) => setAnnContent(event.target.value)}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
-                rows={4}
-                maxLength={2000}
-              />
+              <div className="space-y-1">
+                <textarea
+                  placeholder={t.communicationPage.announcementExcerptPlaceholder}
+                  value={annExcerpt}
+                  onChange={(event) => setAnnExcerpt(event.target.value)}
+                  className="min-h-[52px] w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  rows={2}
+                  maxLength={400}
+                />
+                <p className="text-[10px] text-muted-foreground">{t.communicationPage.announcementExcerptHint}</p>
+              </div>
+              <div className="space-y-1">
+                <textarea
+                  placeholder={t.communicationPage.announcementContentPlaceholder}
+                  value={annContent}
+                  onChange={(event) => setAnnContent(event.target.value)}
+                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                  rows={6}
+                  maxLength={8000}
+                />
+                <p className="text-[10px] text-muted-foreground">{t.communicationPage.announcementContentHint}</p>
+              </div>
               <Select value={annPriority} onValueChange={setAnnPriority}>
                 <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background px-3 text-sm">
                   <SelectValue />
@@ -1415,14 +1429,7 @@ const Communication = () => {
                     onChange={(event) => setAnnImageUrl(event.target.value)}
                     className="bg-background"
                   />
-                  <textarea
-                    placeholder={t.communicationPage.newsExcerptOptional}
-                    value={annExcerpt}
-                    onChange={(event) => setAnnExcerpt(event.target.value)}
-                    className="min-h-[52px] w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    rows={2}
-                    maxLength={400}
-                  />
+                  <p className="text-[10px] text-muted-foreground">{t.communicationPage.newsImageUrlHint}</p>
                 </div>
               ) : null}
               <Button

@@ -172,12 +172,44 @@ Featured teams: Erste Herren, Erste Frauen, Zweite Herren, Senioren, one Jugend 
 
 | URL | Expect |
 |-----|--------|
-| `/club/tsv-allach-09` | DE content, join steps on home, footer columns |
-| `/club/tsv-allach-09/join` | 3-step guide + form |
-| `/club/tsv-allach-09/news` | Stadion Ticker posts |
+| `/club/tsv-allach-09` | DE content, join steps on home, footer columns, mobile hero CTA stack |
+| `/club/tsv-allach-09/join` | TSV Allach **5-step** membership application + role pills |
+| `/club/tsv-allach-09/tournament/sommerfest-2026` | Live tournament board (after admin publish); banner from event window |
+| `/club/tsv-allach-09/news` | Stadion Ticker posts + carousel |
 | `/club/tsv-allach-09/documents` | Satzung, FAQ anchor |
-| `/club/tsv-allach-09/contact` | Map + social |
+| `/club/tsv-allach-09/contact` | Map + social (link via footer, not header nav) |
 | Footer **Cookie-Einstellungen** | Opens preference dialog |
+
+---
+
+## Sommerfest 2026 tournament (Jul 2026)
+
+| # | Task | Where |
+|---|------|--------|
+| SF.1 | Publish/sync 22 Sommerfest matches to cup **Sommerfest 2026** | **Matches** → Publish tournament |
+| SF.2 | Set scores during event (kick-off / full time) | **Matches** admin |
+| SF.3 | Verify public live board updates | `/club/tsv-allach-09/tournament/sommerfest-2026` |
+| SF.4 | Pulsating **Live tournament board** CTA visible from **11 Jul 2026** | Home + event detail + fixed banner |
+
+Public URL slug: **`sommerfest-2026`**. Match import keys: **`tsv-sommerfest-2026:m01`** … **`m22`**.
+
+---
+
+## Online membership application (Mitgliedsantrag)
+
+Aligned with [tsvallach09.de/onlineanmeldung](https://www.tsvallach09.de/onlineanmeldung):
+
+- [ ] Migration **`20260628120000_club_invite_application_payload.sql`** applied
+- [ ] **`/join`** shows 5-step form for TSV Allach (personal → address → player → membership → SEPA/consents)
+- [ ] Submit creates pending request with **`application_payload`** JSON for admin review
+- [ ] Role pills at top (Player / Parent / Coach / …) with red selected state
+
+---
+
+## Navigation note (2026-06-27)
+
+- **Contact** removed from **header** nav; remains in **footer** and direct URL `/contact`
+- Mobile hero button order: team filter → next training → AI 4 T → dashboard
 
 ---
 

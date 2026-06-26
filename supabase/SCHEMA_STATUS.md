@@ -90,6 +90,15 @@ Apply after agent migrations above:
 
 Client-only (no new SQL beyond above): training attendance RSVP on `/activities` + public club; hero team filter (`?team=`). See `CHANGELOG.md` § 2026-06-24.
 
+## TSV Allach public club extensions (2026-06-27)
+Apply after pilot migrations above:
+- `supabase/migrations/20260627120000_club_events_camp_fields.sql` — football camp metadata + `import_key` on `events`
+- `supabase/migrations/20260628120000_club_invite_application_payload.sql` — `club_invite_requests.application_payload` + extended join RPCs
+
+Optional operator seed: `supabase/scripts/seed_tsv_allach_football_camps.sql`.
+
+Client-only: Sommerfest 2026 tournament board, membership application form, news carousel, public UX polish. See `CHANGELOG.md` § 2026-06-27 and `docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`.
+
 ## Verification artifact
 - Run `supabase/PHASE12_VERIFY.sql` after applying the migrations above.
 - Treat any `ok = false` row as a rollout blocker.

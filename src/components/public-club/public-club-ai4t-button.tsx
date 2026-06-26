@@ -19,7 +19,7 @@ const ai4tButtonHoverClass = [
 ].join(" ");
 
 const ai4tButtonClass = [
-  "inline-flex min-h-[44px] min-w-[140px] items-center justify-center gap-2 rounded-full",
+  "inline-flex min-h-[44px] w-full sm:w-auto sm:min-w-[140px] items-center justify-center gap-2 rounded-full",
   ai4tButtonBaseBorderClass,
   "bg-white px-4 py-2.5 text-sm font-semibold text-neutral-900",
   "shadow-md",
@@ -46,9 +46,8 @@ export function PublicClubAi4TButton({ variant = "hero", className }: PublicClub
       className={cn(
         ai4tButtonClass,
         "gap-2 font-semibold active:!scale-100",
-        variant === "hero" && "flex-1 sm:flex-none",
-        !active && "cursor-not-allowed opacity-55",
         className,
+        !active && "cursor-not-allowed opacity-55",
       )}
     >
       {!active ? <Lock className="h-4 w-4 shrink-0 text-neutral-600" /> : null}

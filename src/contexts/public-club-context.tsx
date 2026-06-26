@@ -29,6 +29,12 @@ import {
   redactSessionLocationForPrivacy,
   redactSessionTimesForPrivacy,
 } from "@/lib/public-club-privacy";
+import { mergePublicClubNews } from "@/lib/tsv-allach-public-news";
+import { mergePublicClubEvents } from "@/lib/tsv-allach-public-events";
+import {
+  mergePublicClubMatchesRecent,
+  mergePublicClubMatchesUpcoming,
+} from "@/lib/tsv-allach-public-matches";
 import {
   applyClubPageLanguage,
   isMissingRelationError,
@@ -135,11 +141,11 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
   const [teams, setTeams] = useState<TeamRowLite[]>([]);
   const [publicCoachCountByTeamId, setPublicCoachCountByTeamId] = useState<Record<string, number>>({});
   const [sessions, setSessions] = useState<TrainingSessionRowLite[]>([]);
-  const [events, setEvents] = useState<EventRowLite[]>([]);
-  const [news, setNews] = useState<NewsRowLite[]>([]);
+  const [dbEvents, setDbEvents] = useState<EventRowLite[]>([]);
+  const [dbNews, setDbNews] = useState<NewsRowLite[]>([]);
   const [shopProducts, setShopProducts] = useState<ShopProductLite[]>([]);
-  const [publicMatches, setPublicMatches] = useState<PublicMatchLite[]>([]);
-  const [publicMatchesUpcoming, setPublicMatchesUpcoming] = useState<PublicMatchLite[]>([]);
+  const [dbPublicMatches, setDbPublicMatches] = useState<PublicMatchLite[]>([]);
+  const [dbPublicMatchesUpcoming, setDbPublicMatchesUpcoming] = useState<PublicMatchLite[]>([]);
   const [publicPartners, setPublicPartners] = useState<PublicPartnerLite[]>([]);
   const [memberCount, setMemberCount] = useState(0);
   const [loadingData, setLoadingData] = useState(false);
@@ -187,6 +193,26 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
         : { ...club, supported_languages: effectiveSupportedLanguages };
     return applyClubPageLanguage(localizedClub, activePageLanguage);
   }, [activePageLanguage, club, effectiveSupportedLanguages]);
+
+  const news = useMemo(
+    () => mergePublicClubNews(club, dbNews, activePageLanguage),
+    [activePageLanguage, club, dbNews]
+  );
+
+  const events = useMemo(
+    () => mergePublicClubEvents(club, dbEvents, activePageLanguage),
+    [activePageLanguage, club, dbEvents]
+  );
+
+  const publicMatches = useMemo(
+    () => mergePublicClubMatchesRecent(club, dbPublicMatches, teams),
+    [club, dbPublicMatches, teams]
+  );
+
+  const publicMatchesUpcoming = useMemo(
+    () => mergePublicClubMatchesUpcoming(club, dbPublicMatchesUpcoming, teams),
+    [club, dbPublicMatchesUpcoming, teams]
+  );
 
   const setPublicLanguage = useCallback(
     (lang: ClubPageLanguage) => {
@@ -638,11 +664,11 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
           if (!retry.error) eventRows = (retry.data as EventRowLite[]) || [];
         }
       }
-      setEvents(
+      setDbEvents(
         eventRows.map((e) => redactEventForPrivacy(e, pv.showTrainingLocationsPublic, pv.showTrainingTimesPublic))
       );
       const rawNews = !newsRes.error ? ((newsRes.data as NewsRowLite[]) || []) : [];
-      setNews(
+      setDbNews(
         pv.youthHidePublicPlayerImages
           ? rawNews.map((n) => ({ ...n, image_url: null }))
           : rawNews
@@ -678,8 +704,8 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
         if (!rU.error) matchRowsUp = (rU.data as PublicMatchLite[]) || [];
       }
       const redactMatch = (m: PublicMatchLite) => redactMatchScoresForPrivacy(m, pv.showMatchResultsPublic);
-      setPublicMatches(matchRowsRecent.map(redactMatch));
-      setPublicMatchesUpcoming(matchRowsUp.map(redactMatch));
+      setDbPublicMatches(matchRowsRecent.map(redactMatch));
+      setDbPublicMatchesUpcoming(matchRowsUp.map(redactMatch));
       setPublicPartners(
         !partnersRes.error
           ? (((partnersRes.data as { id: string; name: string; partner_type: string | null; website: string | null }[]) || []).map((r) => ({

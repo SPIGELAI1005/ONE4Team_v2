@@ -15,7 +15,6 @@ import { readableTextOnSolid } from "@/lib/hex-to-rgb";
 import {
   clubCtaFillHoverClass,
   clubCtaOutlineButtonClass,
-  clubCtaOutlineHoverClass,
 } from "@/lib/public-club-cta-classes";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
@@ -23,6 +22,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { isMissingRelationError } from "@/lib/public-club-models";
 import { trackEvent } from "@/lib/telemetry";
+import { isTsvAllachClub } from "@/lib/is-tsv-allach-club";
+import { TsvAllachMembershipApplicationForm } from "@/components/public-club/tsv-allach-membership-application-form";
+import {
+  allachInterestedTeam,
+  applicationPayloadForRpc,
+  buildAllachApplicationMessage,
+  formatAllachPhone,
+  type TsvAllachMembershipApplication,
+} from "@/lib/tsv-allach-membership-application";
 
 type JoinRoleId = "player" | "parent" | "coach" | "volunteer" | "sponsor" | "partner";
 
@@ -41,6 +49,13 @@ const JOIN_ROLES: { id: JoinRoleId }[] = [
   { id: "sponsor" },
   { id: "partner" },
 ];
+
+const joinFormLabelClass = "text-neutral-900";
+const joinFormInputClass =
+  "border-neutral-300 bg-white/95 text-neutral-900 placeholder:text-neutral-500 focus-visible:ring-[color:var(--club-primary)]";
+const joinRoleSelectedClass = "border-transparent bg-red-600 text-white shadow-sm";
+const joinRoleUnselectedClass =
+  "club-glass text-neutral-900 hover:border-transparent hover:bg-red-600 hover:text-white";
 
 function joinRoleLabel(
   id: JoinRoleId,
@@ -130,6 +145,109 @@ export default function PublicClubJoinPage() {
   }, [club, t.clubPage.joinStep2DescAuto, t.clubPage.joinStep2DescAutoInvitedOnly, t.clubPage.joinStep2DescManual]);
 
   const headline = club ? t.clubPage.joinPageHeroLine.replace("{clubName}", club.name) : "";
+  const useAllachApplication = isTsvAllachClub(club);
+
+  const handleSubmitError = useCallback(
+    (err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("Unable to submit request")) {
+        toast({ title: t.clubPage.joinSpamRejectedTitle, description: t.clubPage.joinSpamRejectedDesc, variant: "destructive" });
+      } else if (msg.includes("Too many requests") || msg.includes("rate_limit") || msg.includes("429")) {
+        toast({ title: t.clubPage.rateLimitReachedTitle, description: t.clubPage.rateLimitReachedDesc, variant: "destructive" });
+      } else {
+        toast({ title: t.common.error, description: msg, variant: "destructive" });
+      }
+    },
+    [t, toast],
+  );
+
+  const submitAllachApplication = useCallback(
+    async (app: TsvAllachMembershipApplication) => {
+      if (!club) return;
+      if (!canRequestInvite) {
+        toast({ title: t.clubPage.inviteRequestsDisabled, description: t.clubPage.notAcceptingRequests });
+        return;
+      }
+      const fn = app.firstName.trim();
+      const ln = app.lastName.trim();
+      const em = (user?.email ?? app.email).trim().toLowerCase();
+      if (!user && (!em || !em.includes("@"))) {
+        toast({ title: t.clubPage.joinValidationEmail, variant: "destructive" });
+        return;
+      }
+
+      setSubmitting(true);
+      try {
+        const payload = { ...applicationPayloadForRpc(app), involvementRole: role };
+        const rpcMessage = buildAllachApplicationMessage(app);
+        const rpcPhone = formatAllachPhone(app);
+        const rpcRole = role;
+        const rpcTeam = allachInterestedTeam(app);
+
+        if (user) {
+          const { data, error } = await supabaseDynamic.rpc("register_club_join_request", {
+            _club_id: club.id,
+            _name: `${fn} ${ln}`.trim(),
+            _message: rpcMessage,
+            _phone: rpcPhone,
+            _interested_role: rpcRole,
+            _interested_team: rpcTeam,
+            _consent: true,
+            _first_name: fn,
+            _last_name: ln,
+            _website_url: companyWebsite.trim() || null,
+            _application_payload: payload,
+          });
+          if (error) throw error;
+          const row = (Array.isArray(data) ? data[0] : null) as { outcome?: string; role?: string } | null;
+          const outcome = row?.outcome || "pending";
+          const appRole = (row?.role as string) || "member";
+
+          if (outcome === "joined") {
+            trackEvent("club_join_outcome", { clubSlug: club.slug, outcome: "joined", role: appRole });
+            localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
+            localStorage.setItem("one4team.activeRole", appRole);
+            toast({ title: t.clubPage.joinApproved, description: t.clubPage.joinApprovedDesc });
+            navigate(`/dashboard/${appRole}`);
+            return;
+          }
+          if (outcome === "already_member") {
+            trackEvent("club_join_outcome", { clubSlug: club.slug, outcome: "already_member" });
+            localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
+            toast({ title: t.clubPage.alreadyMember, description: t.clubPage.alreadyMemberDesc });
+            navigate(`/dashboard/${localStorage.getItem("one4team.activeRole") || "player"}`);
+            return;
+          }
+          trackEvent("club_join_outcome", { clubSlug: club.slug, outcome: "pending_review" });
+          setSent(true);
+          toast({ title: t.clubPage.requestSent, description: t.clubPage.requestSentDesc });
+        } else {
+          const { error } = await supabaseDynamic.rpc("request_club_invite", {
+            _club_id: club.id,
+            _first_name: fn,
+            _last_name: ln,
+            _email: em,
+            _message: rpcMessage,
+            _phone: rpcPhone,
+            _interested_role: rpcRole,
+            _interested_team: rpcTeam,
+            _consent: true,
+            _website_url: companyWebsite.trim() || null,
+            _application_payload: payload,
+          });
+          if (error) throw error;
+          trackEvent("club_public_invite_request", { clubSlug: club.slug });
+          setSent(true);
+          toast({ title: t.clubPage.joinFormSuccessTitle, description: t.clubPage.joinFormSuccessBody });
+        }
+      } catch (err: unknown) {
+        handleSubmitError(err);
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [canRequestInvite, club, companyWebsite, handleSubmitError, navigate, role, t, toast, user],
+  );
 
   const submit = useCallback(async () => {
     if (!club) return;
@@ -216,14 +334,7 @@ export default function PublicClubJoinPage() {
         toast({ title: t.clubPage.joinFormSuccessTitle, description: t.clubPage.joinFormSuccessBody });
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("Unable to submit request")) {
-        toast({ title: t.clubPage.joinSpamRejectedTitle, description: t.clubPage.joinSpamRejectedDesc, variant: "destructive" });
-      } else if (msg.includes("Too many requests") || msg.includes("rate_limit") || msg.includes("429")) {
-        toast({ title: t.clubPage.rateLimitReachedTitle, description: t.clubPage.rateLimitReachedDesc, variant: "destructive" });
-      } else {
-        toast({ title: t.common.error, description: msg, variant: "destructive" });
-      }
+      handleSubmitError(err);
     } finally {
       setSubmitting(false);
     }
@@ -240,6 +351,7 @@ export default function PublicClubJoinPage() {
     phone,
     role,
     t,
+    handleSubmitError,
     team,
     toast,
     user,
@@ -253,8 +365,8 @@ export default function PublicClubJoinPage() {
     <PublicClubPageGate section="join">
       <PublicClubHero
         club={club}
-        headline={headline}
-        subtitle={t.clubPage.joinPageIntro}
+        headline={useAllachApplication ? t.tsvAllachApplication.pageTitle : headline}
+        subtitle={useAllachApplication ? t.tsvAllachApplication.pageSubtitle : t.clubPage.joinPageIntro}
         footNote={user ? <span className="text-white/80">{t.clubPage.joinSignedInHint}</span> : null}
       />
 
@@ -277,11 +389,8 @@ export default function PublicClubJoinPage() {
                   onClick={() => setRole(r.id)}
                   className={[
                     "rounded-2xl border px-4 py-3 text-sm font-semibold transition-colors sm:px-5",
-                    role === r.id
-                      ? `border-transparent text-white ${clubCtaFillHoverClass}`
-                      : `club-glass text-[color:var(--club-muted)] hover:text-[color:var(--club-foreground)] ${clubCtaOutlineHoverClass}`,
+                    role === r.id ? joinRoleSelectedClass : joinRoleUnselectedClass,
                   ].join(" ")}
-                  style={role === r.id ? { backgroundColor: "var(--club-primary)" } : undefined}
                 >
                   {joinRoleLabel(r.id, t.clubPage)}
                 </button>
@@ -305,9 +414,35 @@ export default function PublicClubJoinPage() {
             </div>
           </PublicClubSection>
 
-          <PublicClubSection title={<span className="text-[color:var(--club-primary)]">{t.clubPage.joinFormTitle}</span>}>
+          <PublicClubSection
+            title={
+              <span className="text-[color:var(--club-primary)]">
+                {useAllachApplication ? t.tsvAllachApplication.pageTitle : t.clubPage.joinFormTitle}
+              </span>
+            }
+          >
             <div className="mx-auto max-w-xl text-left">
-              {sent ? (
+              {useAllachApplication ? (
+                <>
+                  <div className="absolute -left-[9999px] top-0 h-px w-px overflow-hidden opacity-0" aria-hidden>
+                    <input
+                      tabIndex={-1}
+                      value={companyWebsite}
+                      onChange={(e) => setCompanyWebsite(e.target.value)}
+                      autoComplete="off"
+                    />
+                  </div>
+                  <TsvAllachMembershipApplicationForm
+                    clubPrimaryColor={club.primary_color}
+                    initialEmail={email}
+                    showEmailField={!user}
+                    submitting={submitting}
+                    sent={sent}
+                    onSubmit={submitAllachApplication}
+                    onReset={() => setSent(false)}
+                  />
+                </>
+              ) : sent ? (
                 <PublicClubCard className="text-center">
                   <CheckCircle2 className="mx-auto mb-3 h-12 w-12 text-[color:var(--club-primary)]" />
                   <h3 className="font-display text-lg font-semibold text-[color:var(--club-foreground)]">{t.clubPage.joinFormSuccessTitle}</h3>
@@ -328,27 +463,27 @@ export default function PublicClubJoinPage() {
                 <PublicClubCard className="relative space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="join-first" className="text-[color:var(--club-foreground)]">
+                      <Label htmlFor="join-first" className={joinFormLabelClass}>
                         {t.clubPage.joinFormFirstName}
                       </Label>
                       <Input
                         id="join-first"
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        className="border-[color:var(--club-border)] bg-white/5 text-[color:var(--club-foreground)]"
+                        className={joinFormInputClass}
                         maxLength={80}
                         autoComplete="given-name"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="join-last" className="text-[color:var(--club-foreground)]">
+                      <Label htmlFor="join-last" className={joinFormLabelClass}>
                         {t.clubPage.joinFormLastName}
                       </Label>
                       <Input
                         id="join-last"
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        className="border-[color:var(--club-border)] bg-white/5 text-[color:var(--club-foreground)]"
+                        className={joinFormInputClass}
                         maxLength={80}
                         autoComplete="family-name"
                       />
@@ -356,7 +491,7 @@ export default function PublicClubJoinPage() {
                   </div>
                   {!user ? (
                     <div className="space-y-2">
-                      <Label htmlFor="join-email" className="text-[color:var(--club-foreground)]">
+                      <Label htmlFor="join-email" className={joinFormLabelClass}>
                         {t.clubPage.joinFormEmail}
                       </Label>
                       <Input
@@ -364,14 +499,14 @@ export default function PublicClubJoinPage() {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="border-[color:var(--club-border)] bg-white/5 text-[color:var(--club-foreground)]"
+                        className={joinFormInputClass}
                         maxLength={254}
                         autoComplete="email"
                       />
                     </div>
                   ) : null}
                   <div className="space-y-2">
-                    <Label htmlFor="join-phone" className="text-[color:var(--club-foreground)]">
+                    <Label htmlFor="join-phone" className={joinFormLabelClass}>
                       {t.clubPage.joinFormPhone}
                     </Label>
                     <Input
@@ -379,29 +514,29 @@ export default function PublicClubJoinPage() {
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="border-[color:var(--club-border)] bg-white/5 text-[color:var(--club-foreground)]"
+                      className={joinFormInputClass}
                       maxLength={40}
                       autoComplete="tel"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-[color:var(--club-foreground)]">{t.clubPage.joinFormRole}</Label>
-                    <div className="text-sm text-[color:var(--club-muted)]">{joinRoleLabel(role, t.clubPage)}</div>
+                    <Label className={joinFormLabelClass}>{t.clubPage.joinFormRole}</Label>
+                    <div className="text-sm text-neutral-900">{joinRoleLabel(role, t.clubPage)}</div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="join-team" className="text-[color:var(--club-foreground)]">
+                    <Label htmlFor="join-team" className={joinFormLabelClass}>
                       {t.clubPage.joinFormTeam}
                     </Label>
                     <Input
                       id="join-team"
                       value={team}
                       onChange={(e) => setTeam(e.target.value)}
-                      className="border-[color:var(--club-border)] bg-white/5 text-[color:var(--club-foreground)]"
+                      className={joinFormInputClass}
                       maxLength={120}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="join-msg" className="text-[color:var(--club-foreground)]">
+                    <Label htmlFor="join-msg" className={joinFormLabelClass}>
                       {t.clubPage.joinFormMessage}
                     </Label>
                     <textarea
@@ -410,7 +545,7 @@ export default function PublicClubJoinPage() {
                       onChange={(e) => setMessage(e.target.value)}
                       rows={4}
                       maxLength={800}
-                      className="w-full rounded-xl border border-[color:var(--club-border)] bg-white/5 px-3 py-2 text-sm text-[color:var(--club-foreground)] placeholder:text-[color:var(--club-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--club-primary)]"
+                      className={`w-full rounded-xl border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 ${joinFormInputClass}`}
                     />
                   </div>
                   <div className="absolute -left-[9999px] top-0 h-px w-px overflow-hidden opacity-0" aria-hidden>
@@ -428,7 +563,7 @@ export default function PublicClubJoinPage() {
                       onCheckedChange={(v) => setConsent(v === true)}
                       className="mt-1 border-[color:var(--club-border)] data-[state=checked]:bg-[color:var(--club-primary)] data-[state=checked]:text-white"
                     />
-                    <Label htmlFor="join-consent" className="cursor-pointer text-sm leading-snug text-[color:var(--club-muted)]">
+                    <Label htmlFor="join-consent" className="cursor-pointer text-sm leading-snug text-red-600">
                       {t.clubPage.joinFormConsent}
                     </Label>
                   </div>

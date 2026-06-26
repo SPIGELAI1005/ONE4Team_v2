@@ -25,6 +25,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Training attendance + public club + AI 4 T pilot (2026-06-24):** RSVP with decline reasons on **`/activities`** and public club schedule surfaces; hero **team filter** (`?team=`); AI 4 T Phases 1–4 (golden context, feedback, duplicate week, team scope, public AI modal); migrations **`20260624120000`**–**`20260626120000`** — see `CHANGELOG.md` § **2026-06-24**, `MEMORY_BANK.md`, `TASKS.md` **ATTEND-*** / **AI4T-P***.
 
+**TSV Allach public club wave (2026-06-27):** Sommerfest 2026 tournament (admin publish + public live board), multi-step membership application with **`application_payload`**, football camp events, news carousel, mobile hero UX, header nav polish — migrations **`20260627120000`**, **`20260628120000`** — see `CHANGELOG.md` § **2026-06-27**, `docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`, `TASKS.md` **ALLACH-***.
+
 ---
 
 ## Phase 0 — Foundation (Week 0–1)
