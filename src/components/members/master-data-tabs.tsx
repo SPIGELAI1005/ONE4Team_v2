@@ -1,7 +1,7 @@
 import { useRef, useState, type ReactNode } from "react";
 import {
   User, MapPin, Dumbbell, Trophy, Building2, Landmark, ShieldAlert, IdCard,
-  Sparkles, Download, Loader2, UserCircle2, UploadCloud,
+  Download, Loader2, UserCircle2, UploadCloud,
   Sun, Moon, Crown,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -12,7 +12,34 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MEMBER_MASTER_FIELDS } from "@/lib/member-master-schema";
 import type { ClubMemberMasterRecord } from "@/lib/member-master-schema";
 import { cn } from "@/lib/utils";
+import { captureClubPassAsPng } from "@/lib/club-pass-capture";
+import { Ai4TLogo } from "@/components/ai/Ai4TLogo";
+import { useToast } from "@/hooks/use-toast";
 import one4teamLogo from "@/assets/one4team-logo.png";
+
+const CLUB_PASS_FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+
+function clubPassHeaderLineStyle(
+  color: string,
+  fontSize: number,
+  lineHeight: number,
+  options?: { fontWeight?: number; letterSpacing?: string },
+) {
+  return {
+    display: "block" as const,
+    margin: 0,
+    padding: "2px 0",
+    color,
+    fontSize,
+    lineHeight: `${lineHeight}px`,
+    letterSpacing: options?.letterSpacing ?? "0.04em",
+    fontWeight: options?.fontWeight ?? 500,
+    whiteSpace: "nowrap" as const,
+    textOverflow: "ellipsis" as const,
+    overflowX: "hidden" as const,
+    overflowY: "visible" as const,
+  };
+}
 
 const FIELD_TABS = [
   { key: "identity",    icon: User,        accent: "text-violet-400",  activeBg: "data-[state=active]:bg-violet-500/15 data-[state=active]:text-violet-300" },
@@ -100,10 +127,11 @@ function isLongTextField(key: string): boolean {
 
 export function MasterDataTabs({
   values, labels, readOnly, onChange, compact,
-  displayName, clubName, logoSrc, membershipRole, teamLabel, email, avatarUpload,
+  displayName, clubName, logoSrc, membershipRole, teamLabel, avatarUpload,
   safetyTabExtraEnabled = false,
   safetyTabExtra,
 }: MasterDataTabsProps) {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>("identity");
   const passRef = useRef<HTMLDivElement | null>(null);
   const [passBusy, setPassBusy] = useState(false);
@@ -171,6 +199,7 @@ export function MasterDataTabs({
     "Member";
 
   const memberSince = values.club_registration_date ? String(values.club_registration_date) : null;
+  const birthDate = values.birth_date ? String(values.birth_date) : null;
   const memberIdNo = values.internal_club_number ? String(values.internal_club_number) : null;
   const passNumber = values.player_passport_number ? String(values.player_passport_number) : null;
 
@@ -189,18 +218,35 @@ export function MasterDataTabs({
     onChange?.("internal_club_number", id);
   };
 
+  const passExportBackground =
+    cardTheme === "light" ? "#f4f5f7" : cardTheme === "gold" ? "#2a1b0b" : "#0c0c0f";
+
+  const passAccentGradient =
+    cardTheme === "gold"
+      ? "linear-gradient(90deg, #ffd870 0%, #ffb347 50%, #ffd870 100%)"
+      : cardTheme === "light"
+        ? "linear-gradient(90deg, #c4952a 0%, #f59e0b 50%, #c4952a 100%)"
+        : "linear-gradient(90deg, #c4952a 0%, #fbbf24 50%, #c4952a 100%)";
+
   const handleDownloadPass = async () => {
     if (!passRef.current) return;
     setPassBusy(true);
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(passRef.current, { scale: 2, backgroundColor: "#0c0c0f" });
-      const url = canvas.toDataURL("image/png");
+      const url = await captureClubPassAsPng(passRef.current, passExportBackground);
       const a = document.createElement("a");
       a.href = url;
       a.download = `club-pass-${values.internal_club_number || "member"}.png`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       onChange?.("club_pass_generated_at", new Date().toISOString());
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not generate pass image.";
+      toast({
+        title: "Download failed",
+        description: message,
+        variant: "destructive",
+      });
     } finally {
       setPassBusy(false);
     }
@@ -468,7 +514,7 @@ export function MasterDataTabs({
       })}
 
       <TabsContent value="clubcard" className="mt-0 w-full min-w-0 outline-none">
-        <div style={{ height: panelH }} className="flex w-full min-w-0 flex-col rounded-2xl border border-border/40 bg-muted/10 p-3">
+        <div style={{ height: panelH }} className="flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/40 bg-muted/10 p-3">
           <p className="text-sm text-muted-foreground mb-4">{labels.clubCardHint}</p>
 
           {!readOnly && (
@@ -476,7 +522,7 @@ export function MasterDataTabs({
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" size="sm" variant="outline" onClick={handleGenerateId} className="text-sm">
-                    <Sparkles className="w-4 h-4 mr-1.5" /> {labels.generateId}
+                    <Ai4TLogo size="xs" variant="bubble" className="mr-1.5" /> {labels.generateId}
                   </Button>
                   <Button
                     type="button"
@@ -523,67 +569,102 @@ export function MasterDataTabs({
             </div>
           )}
 
-          <div className="flex justify-center py-2">
+          <div className="flex flex-1 items-start justify-center overflow-y-auto py-2 min-h-0">
             <div
               ref={passRef}
+              data-club-pass-root
               className={cn(
-                "w-[380px] max-w-full",
-                "relative isolate rounded-3xl overflow-hidden shadow-xl text-left",
-                "aspect-[1.586] select-none",
+                "h-fit w-[380px] max-w-full shrink-0",
+                "relative rounded-3xl shadow-xl text-left select-none",
               )}
               style={{
                 background: cardVars.bg,
                 border: `1px solid ${cardVars.border}`,
+                fontFamily: CLUB_PASS_FONT,
               }}
             >
-              {/* Background glows + subtle pattern */}
-              <div className="pointer-events-none absolute inset-0 opacity-60">
-                <div className="absolute -top-24 -left-24 h-56 w-56 rounded-full blur-3xl" style={{ background: "rgba(196,149,42,0.25)" }} />
-                <div className="absolute -bottom-24 -right-24 h-56 w-56 rounded-full blur-3xl" style={{ background: "rgba(34,197,94,0.18)" }} />
+              {/* Decorative glows — kept away from header; hidden during PNG export */}
+              <div
+                data-club-pass-decoration
+                className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-3xl"
+                aria-hidden
+              >
+                <div
+                  className="absolute -bottom-16 -right-16 h-40 w-40 rounded-full blur-3xl"
+                  style={{ background: "rgba(34,197,94,0.16)" }}
+                />
+                <div
+                  className="absolute -bottom-20 left-8 h-32 w-32 rounded-full blur-3xl"
+                  style={{ background: "rgba(196,149,42,0.14)" }}
+                />
               </div>
-              <div className="pointer-events-none absolute inset-0 opacity-[0.05]" style={{
-                backgroundImage:
-                  "radial-gradient(circle at 20% 20%, #fff 0, transparent 35%), radial-gradient(circle at 80% 40%, #fff 0, transparent 32%), radial-gradient(circle at 50% 80%, #fff 0, transparent 34%)",
-              }} />
 
-              {/* ID header strip */}
-              <div className="relative px-5 pt-4 pb-3" style={{ borderBottom: `1px solid ${cardVars.softBorder}` }}>
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    {logoSrc ? (
-                      <img
-                        src={logoSrc}
-                        alt={clubName ? `${clubName} logo` : "Club logo"}
-                        className="h-9 w-9 rounded-xl object-contain p-1 shrink-0"
-                        style={{ background: cardVars.soft, border: `1px solid ${cardVars.softBorder}` }}
-                      />
-                    ) : (
-                      <div className="h-9 w-9 rounded-xl flex items-center justify-center text-xs font-bold shrink-0"
-                        style={{ background: cardVars.soft, border: `1px solid ${cardVars.softBorder}`, color: cardVars.muted }}
-                      >
-                        {(clubName || "C")[0]}
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <div className="text-[10px] uppercase tracking-[0.22em] truncate" style={{ color: cardVars.muted }}>{clubName || "Club"}</div>
-                      <div className="text-[11px] font-semibold tracking-wide truncate" style={{ color: cardVars.fg }}>MEMBER ID CARD</div>
-                    </div>
+              <div className="relative z-10 rounded-3xl">
+              {/* ID header — solid strip so text never competes with glows or overflow clipping */}
+              <div
+                data-club-pass-header
+                className="grid items-start gap-x-3 rounded-t-3xl px-5 py-3.5"
+                style={{
+                  gridTemplateColumns: "auto minmax(0, 1fr) auto",
+                  borderBottom: `1px solid ${cardVars.softBorder}`,
+                  background: cardTheme === "light" ? "rgba(255,255,255,0.72)" : "rgba(0,0,0,0.28)",
+                }}
+              >
+                {logoSrc ? (
+                  <img
+                    src={logoSrc}
+                    alt={clubName ? `${clubName} logo` : "Club logo"}
+                    className="mt-0.5 h-9 w-9 shrink-0 rounded-xl object-cover"
+                    style={{ background: cardVars.soft, border: `1px solid ${cardVars.softBorder}` }}
+                  />
+                ) : (
+                  <div
+                    className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold"
+                    style={{ background: cardVars.soft, border: `1px solid ${cardVars.softBorder}`, color: cardVars.muted }}
+                  >
+                    {(clubName || "C")[0]}
                   </div>
+                )}
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <img
-                      src={one4teamLogo}
-                      alt="ONE4Team"
-                      className="h-7 w-7 rounded-lg p-1"
-                      style={{ background: cardVars.soft, border: `1px solid ${cardVars.softBorder}` }}
-                    />
-                    <div className="text-[10px] uppercase tracking-[0.22em] hidden sm:block" style={{ color: cardVars.muted }}>ONE4TEAM</div>
-                  </div>
+                <div className="min-w-0">
+                  <span
+                    data-club-pass-header-line
+                    data-line-height="18"
+                    className="uppercase"
+                    style={clubPassHeaderLineStyle(cardVars.muted, 11, 18, { fontWeight: 500, letterSpacing: "0.05em" })}
+                  >
+                    {clubName || "Club"}
+                  </span>
+                  <span
+                    data-club-pass-header-line
+                    data-line-height="20"
+                    className="mt-1.5 font-semibold"
+                    style={clubPassHeaderLineStyle(cardVars.fg, 12, 20, { fontWeight: 600, letterSpacing: "0.03em" })}
+                  >
+                    MEMBER ID CARD
+                  </span>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-2 pt-0.5">
+                  <img
+                    src={one4teamLogo}
+                    alt="ONE4Team"
+                    className="h-7 w-7 rounded-lg p-1 object-contain"
+                    style={{ background: cardVars.soft, border: `1px solid ${cardVars.softBorder}` }}
+                  />
+                  <span
+                    data-club-pass-header-line
+                    data-line-height="18"
+                    className="uppercase"
+                    style={clubPassHeaderLineStyle(cardVars.muted, 11, 18, { letterSpacing: "0.05em" })}
+                  >
+                    ONE4TEAM
+                  </span>
                 </div>
               </div>
 
               {/* Main content */}
-              <div className="relative px-5 py-4">
+              <div className="relative px-5 pt-4 pb-5">
                 <div className="flex items-start gap-3">
                   {/* Photo */}
                   <div
@@ -591,7 +672,11 @@ export function MasterDataTabs({
                     style={{ background: cardVars.soft, border: `1px solid ${cardVars.softBorder}` }}
                   >
                     {typeof values.photo_url === "string" && values.photo_url.trim() ? (
-                      <img src={values.photo_url.trim()} alt="" className="h-full w-full object-cover" />
+                      <img
+                        src={values.photo_url.trim()}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
                       <UserCircle2 className="h-8 w-8" style={{ color: cardVars.muted }} />
                     )}
@@ -599,73 +684,65 @@ export function MasterDataTabs({
 
                   {/* Identity + ID number */}
                   <div className="min-w-0 flex-1">
-                    <div className="text-[14px] font-semibold truncate leading-tight" style={{ color: cardVars.fg }}>
+                    <div className="text-[14px] font-semibold leading-snug break-words" style={{ color: cardVars.fg }}>
                       {memberName}
                     </div>
-                    <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
+                    <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-[10px]">
                       <div className="min-w-0">
-                        <div style={{ color: cardVars.muted }}>Member since</div>
-                        <div className="font-medium truncate" style={{ color: cardVars.fg }}>{memberSince || "—"}</div>
+                        <div className="leading-4" style={{ color: cardVars.muted }}>Member since</div>
+                        <div className="font-medium leading-4 mt-0.5" style={{ color: cardVars.fg }}>{memberSince || "—"}</div>
                       </div>
                       <div className="min-w-0">
-                        <div style={{ color: cardVars.muted }}>Role</div>
-                        <div className="font-medium truncate" style={{ color: cardVars.fg }}>{membershipRole ? membershipRole.replace(/_/g, " ") : "—"}</div>
+                        <div className="leading-4" style={{ color: cardVars.muted }}>Date of birth</div>
+                        <div className="font-medium leading-4 mt-0.5" style={{ color: cardVars.fg }}>{birthDate || "—"}</div>
                       </div>
-                      <div className="min-w-0 col-span-2">
-                        <div style={{ color: cardVars.muted }}>Team</div>
-                        <div className="font-medium truncate" style={{ color: cardVars.fg }}>{teamLabel || "—"}</div>
+                      <div className="min-w-0">
+                        <div className="leading-4" style={{ color: cardVars.muted }}>Role</div>
+                        <div className="font-medium leading-4 mt-0.5" style={{ color: cardVars.fg }}>
+                          {membershipRole?.trim() ? membershipRole.replace(/_/g, " ") : "—"}
+                        </div>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="leading-4" style={{ color: cardVars.muted }}>Team</div>
+                        <div className="font-medium leading-4 mt-0.5 break-words" style={{ color: cardVars.fg }}>{teamLabel || "—"}</div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="shrink-0 text-right">
-                    <div className="text-[10px]" style={{ color: cardVars.muted }}>ID No.</div>
-                    <div className="font-mono text-[13px] font-semibold leading-tight" style={{ color: cardVars.accent }}>
+                  <div className="shrink-0 text-right max-w-[96px]">
+                    <div className="text-[10px] leading-4" style={{ color: cardVars.muted }}>ID No.</div>
+                    <div className="font-mono text-[12px] font-semibold leading-4 mt-0.5 break-all" style={{ color: cardVars.accent }}>
                       {memberIdNo || "—"}
                     </div>
                   </div>
                 </div>
 
-                {/* Small details row (kept minimal for an ID-card look) */}
+                {/* Membership + pass */}
                 <div className="mt-3 grid grid-cols-2 gap-2 text-[10px]">
-                  <div className="rounded-2xl px-3 py-2" style={{ background: cardVars.soft, border: `1px solid ${cardVars.softBorder}` }}>
-                    <div style={{ color: cardVars.muted }}>Membership</div>
-                    <div className="font-medium truncate" style={{ color: cardVars.fg }}>
+                  <div className="rounded-2xl px-3 py-2.5" style={{ background: cardVars.soft, border: `1px solid ${cardVars.softBorder}` }}>
+                    <div className="leading-4" style={{ color: cardVars.muted }}>Membership</div>
+                    <div className="font-medium leading-4 mt-0.5 break-words" style={{ color: cardVars.fg }}>
                       {values.membership_kind ? String(values.membership_kind).replace(/_/g, " ") : "—"}
                     </div>
                   </div>
-                  <div className="rounded-2xl px-3 py-2" style={{ background: cardVars.soft, border: `1px solid ${cardVars.softBorder}` }}>
-                    <div style={{ color: cardVars.muted }}>Pass #</div>
-                    <div className="font-medium truncate" style={{ color: cardVars.fg }}>
+                  <div className="rounded-2xl px-3 py-2.5" style={{ background: cardVars.soft, border: `1px solid ${cardVars.softBorder}` }}>
+                    <div className="leading-4" style={{ color: cardVars.muted }}>Pass #</div>
+                    <div className="font-medium leading-4 mt-0.5 break-all" style={{ color: cardVars.fg }}>
                       {passNumber || "—"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Barcode-like strip */}
-                <div className="mt-3 rounded-2xl px-3 py-2" style={{ background: cardVars.soft, border: `1px solid ${cardVars.softBorder}` }}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-[10px] truncate" style={{ color: cardVars.muted }}>{email || "—"}</div>
-                    <div className="flex items-center gap-[2px] shrink-0" aria-hidden>
-                      {Array.from({ length: 24 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className={cn(
-                            "rounded-sm",
-                            i % 5 === 0 ? "w-[2px] h-5" : "w-[1px] h-4",
-                            i % 7 === 0 ? "h-6" : "",
-                          )}
-                          style={{ background: cardVars.barcode, opacity: i % 5 === 0 ? 0.55 : i % 7 === 0 ? 0.65 : 0.35 }}
-                        />
-                      ))}
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Bottom magnetic stripe + accent */}
-              <div className="h-9 border-t" style={{ background: cardVars.stripe, borderColor: cardVars.softBorder }} />
-              <div className="h-2 bg-gradient-to-r from-primary via-amber-400 to-primary opacity-90" />
+              {/* Bottom magnetic stripe + gold accent */}
+              <div
+                className="overflow-hidden rounded-b-3xl"
+                style={{ borderTop: `1px solid ${cardVars.softBorder}` }}
+              >
+                <div className="h-5" style={{ background: cardVars.stripe }} />
+                <div className="h-1.5" style={{ background: passAccentGradient }} />
+              </div>
+              </div>
             </div>
           </div>
         </div>

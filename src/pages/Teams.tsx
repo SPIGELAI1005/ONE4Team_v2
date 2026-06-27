@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
   Plus, Trophy, Dumbbell, Loader2,
-  Calendar, MapPin, Clock, Trash2, X, LayoutGrid, AlertTriangle, CheckCircle2, ShieldCheck, Pencil, Layers3, Building2, ChevronDown, UploadCloud
+  Calendar, MapPin, Clock, Trash2, X, LayoutGrid, AlertTriangle, CheckCircle2, ShieldCheck, Pencil, Layers3, Building2, ChevronDown, UploadCloud, Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -368,6 +368,7 @@ const Teams = () => {
   const [activeTab, setActiveTab] = useState<"pitches" | "teams" | "sessions" | "history">("pitches");
 
   const [teams, setTeams] = useState<Team[]>([]);
+  const [teamListSearch, setTeamListSearch] = useState("");
   const [memberships, setMemberships] = useState<ClubMembershipOption[]>([]);
   const [teamPlayerIdsByTeamId, setTeamPlayerIdsByTeamId] = useState<Record<string, string[]>>({});
   const [teamCoachIdsByTeamId, setTeamCoachIdsByTeamId] = useState<Record<string, string[]>>({});
@@ -527,6 +528,7 @@ const Teams = () => {
     setBookings([]);
     setChangeHistory([]);
     setSupportsChangeHistory(false);
+    setTeamListSearch("");
     setLoading(true);
   }, [clubId]);
 
@@ -641,6 +643,7 @@ const Teams = () => {
       setSupportsTeamCoachesTable(!teamCoachesProbeRes.error);
 
       const membershipsRaw = (membershipsRes.data as unknown as Array<Record<string, unknown>>) || [];
+      const membershipIds = membershipsRaw.map((membership) => String(membership.id));
       const membershipUserIds = Array.from(new Set(membershipsRaw.map((membership) => String(membership.user_id)).filter(Boolean)));
       let profileByUserId = new Map<string, string>();
       if (membershipUserIds.length > 0) {
@@ -655,12 +658,28 @@ const Teams = () => {
           ]),
         );
       }
-      setMemberships(membershipsRaw.map((membership) => ({
-        id: String(membership.id),
-        user_id: String(membership.user_id),
-        role: String(membership.role),
-        display_name: profileByUserId.get(String(membership.user_id)) || String(membership.user_id),
-      })));
+      const masterNameByMembershipId = new Map<string, string>();
+      if (membershipIds.length > 0) {
+        const { data: masterRows } = await supabase
+          .from("club_member_master_records")
+          .select("membership_id, first_name, last_name")
+          .in("membership_id", membershipIds);
+        for (const row of (masterRows as Array<{ membership_id: string; first_name: string | null; last_name: string | null }> | null) ?? []) {
+          const label = [row.first_name, row.last_name].filter(Boolean).join(" ").trim();
+          if (label) masterNameByMembershipId.set(row.membership_id, label);
+        }
+      }
+      setMemberships(membershipsRaw.map((membership) => {
+        const membershipId = String(membership.id);
+        const masterName = masterNameByMembershipId.get(membershipId);
+        const profileName = profileByUserId.get(String(membership.user_id)) || "";
+        return {
+          id: membershipId,
+          user_id: String(membership.user_id),
+          role: String(membership.role),
+          display_name: masterName || profileName || String(membership.user_id),
+        };
+      }));
 
       const playerMap: Record<string, string[]> = {};
       const playerRows = (teamPlayersRes.data as unknown as Array<Record<string, unknown>>) || [];
@@ -790,6 +809,26 @@ const Teams = () => {
     return map;
   }, [membershipNameById, teamCoachIdsByTeamId, teams]);
 
+  const trimmedTeamListSearch = teamListSearch.trim();
+  const filteredTeams = useMemo(() => {
+    const query = trimmedTeamListSearch.toLowerCase();
+    if (!query) return teams;
+    return teams.filter((team) => {
+      const coachName = teamCoachById.get(team.id) || team.coach_name || "";
+      const sportLabel = resolveSportLabel(team.sport);
+      const playerCount = String(teamPlayerIdsByTeamId[team.id]?.length ?? "");
+      return (
+        team.name.toLowerCase().includes(query) ||
+        sportLabel.toLowerCase().includes(query) ||
+        team.sport.toLowerCase().includes(query) ||
+        (team.age_group || "").toLowerCase().includes(query) ||
+        (team.league || "").toLowerCase().includes(query) ||
+        coachName.toLowerCase().includes(query) ||
+        playerCount.includes(query)
+      );
+    });
+  }, [teams, trimmedTeamListSearch, teamCoachById, teamPlayerIdsByTeamId]);
+
   const clubCoachContacts = useMemo(() => {
     const fromTeamAssignments = Object.values(teamCoachIdsByTeamId)
       .flatMap((membershipIds) => membershipIds.map((membershipId) => membershipNameById.get(membershipId) || ""))
@@ -806,8 +845,13 @@ const Teams = () => {
   }, [memberships]);
 
   const playerMemberOptions = useMemo(() => {
-    return memberships.filter((membership) => membership.role === "player");
-  }, [memberships]);
+    const assignableRoles = new Set(["player", "member", "staff", "parent"]);
+    return memberships.filter(
+      (membership) =>
+        assignableRoles.has(membership.role) ||
+        selectedPlayerMembershipIds.includes(membership.id),
+    );
+  }, [memberships, selectedPlayerMembershipIds]);
 
   const normalizedTeamMemberSearch = teamMemberSearch.trim().toLowerCase();
   const filteredCoachOptions = useMemo(() => {
@@ -2909,8 +2953,25 @@ const Teams = () => {
         ) : currentTab === "teams" ? (
           <div>
             <h2 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-primary" /> {t.teamsPage.tabs.teams} ({teams.length})
+              <Trophy className="w-4 h-4 text-primary" /> {t.teamsPage.tabs.teams}{" "}
+              ({trimmedTeamListSearch ? `${filteredTeams.length}/${teams.length}` : teams.length})
             </h2>
+            {teams.length > 0 ? (
+              <div className="mb-4">
+                <div className="relative max-w-md">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder={t.teamsPage.searchTeams}
+                    value={teamListSearch}
+                    onChange={(event) => setTeamListSearch(event.target.value)}
+                    className="pl-9 bg-card border-border"
+                  />
+                </div>
+                {trimmedTeamListSearch ? (
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">{t.teamsPage.searchTeamsHint}</p>
+                ) : null}
+              </div>
+            ) : null}
             {canManage && (
               <div className="mb-4 rounded-xl border border-border/60 bg-card/40 p-3">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -2955,9 +3016,13 @@ const Teams = () => {
             )}
             {teams.length === 0 ? (
               <div className="rounded-xl bg-card border border-border p-8 text-center text-muted-foreground text-sm">{t.teamsPage.noTeams}</div>
+            ) : filteredTeams.length === 0 ? (
+              <div className="rounded-xl bg-card border border-border p-8 text-center text-muted-foreground text-sm">
+                {t.teamsPage.noTeamsFound.replace("{query}", trimmedTeamListSearch)}
+              </div>
             ) : (
               <div className="space-y-3">
-                {teams.map((team, i) => (
+                {filteredTeams.map((team, i) => (
                   <motion.div key={team.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                     onClick={() => handleEditTeam(team)}
                     onKeyDown={(event) => {

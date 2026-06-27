@@ -106,8 +106,10 @@ Apply after TSV Allach migrations above (filename order):
 - `20260724170000_fix_publish_club_page_join_default_role_cast.sql` — publish RPC enum fix
 - `20260724180000_club_tasks.sql` — `club_tasks` + task notifications
 - `20260725130000_activity_attendance_member_self_rsvp.sql` — member self-RSVP RLS on `activity_attendance`
+- `20260725140000_repair_list_club_membership_emails.sql` — repair `list_club_membership_emails` RPC
+- `20260725150000_repair_images_avatars_bucket.sql` — repair `images-avatars` storage bucket + policies
 
-Client-only: Messages hub, attendance overview UI, white decline dialog, tasks page. WhatsApp setup backlog: `docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`. Deploy **`chat-bridge`** for External Bridge. See `CHANGELOG.md` § 2026-06-25.
+Client-only: Messages hub, attendance overview UI, white decline dialog, tasks page, members team assignment, club member card PNG export. WhatsApp setup backlog: `docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`. Deploy **`chat-bridge`** for External Bridge. See `CHANGELOG.md` § 2026-06-25 and § 2026-06-28.
 
 ## Verification artifact
 - Run `supabase/PHASE12_VERIFY.sql` after applying the migrations above.

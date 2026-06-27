@@ -1,4 +1,5 @@
-import { Ai4TeamAgentIcon } from "@/components/ai-agent/Ai4TeamNavIcon";
+import { Ai4TLogo } from "@/components/ai/Ai4TLogo";
+import { BrandedText } from "@/components/ai/Ai4TBrand";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/use-language";
 import { useAiAgentOptional } from "@/contexts/ai-agent-context";
@@ -25,8 +26,10 @@ export function AiAgentHeaderButton({ intent, className }: AiAgentHeaderButtonPr
       onClick={() => agent.openAgent(intent)}
       title={t.coTrainerPage.agent.headerShortcutTitle}
     >
-      <Ai4TeamAgentIcon className="h-4 w-4" />
-      <span className="hidden sm:inline">{t.coTrainerPage.tabAgent}</span>
+      <Ai4TLogo size="xs" variant="bubble" className="h-4 w-4" />
+      <span className="hidden sm:inline font-medium">
+        <BrandedText text={t.coTrainerPage.agent.headerAgentButtonLabel} />
+      </span>
     </Button>
   );
 }

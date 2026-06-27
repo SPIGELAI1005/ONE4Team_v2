@@ -29,6 +29,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Communication hub, tasks, attendance overview (2026-06-25):** Public club Messages hub; **`/tasks`**; RSVP team stats + 1h cutoff; member self-RSVP RLS; WhatsApp setup backlog **`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`** — see `CHANGELOG.md` § **2026-06-25**, `TASKS.md` **COMM-HUB-*** / **TASKS-*** / **ATTEND-*** / **BRIDGE-WA-***.
 
+**Members ops, team assignment, club member card (2026-06-28):** Members search/save UX; **`team_players`** / **`team_coaches`** assignment from **`/members`** and **`/teams`**; Club Card PNG export (**`club-pass-capture.ts`**); repair migrations **`20260725140000`**, **`20260725150000`** — see `CHANGELOG.md` § **2026-06-28**, `TASKS.md` **MEM-OPS-***.
+
 ---
 
 ## Phase 0 — Foundation (Week 0–1)

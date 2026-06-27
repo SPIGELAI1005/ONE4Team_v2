@@ -3,6 +3,35 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-06-28 (Members ops, team assignment, club member card)
+
+### Members page (`/members`)
+- **Search UX:** Debounced roster search keeps input mounted during refetch (`hasMembersHydrated`); search icon alignment fix.
+- **Search results panel:** When search is active, saved member list shows roster + draft matches with field badges; server-side draft search beyond first 500 rows.
+- **Draft save:** `resolveDraftById` + DB fallback when editing drafts found via search; success toasts and inline “Saved just now”.
+- **Club branding on card:** Loads club `name` + `logo_url` via `loadClubMeta` (not ONE4Team asset).
+- **Team assignment:** Assign members to teams from member edit (multi-team for roster, single for drafts); syncs `team_players` / `team_coaches` via **`src/lib/member-team-assignments.ts`** and **`src/components/members/member-team-assignment-field.tsx`**.
+- **Club Card tab:** Shows **Role**, **Team**, **Date of birth**; club logo; removed email strip; PNG download via **`src/lib/club-pass-capture.ts`** (cross-origin image inlining, hides decorative blurs for html2canvas).
+- **Club Card layout:** Fixed header text clipping (solid header strip, no root `overflow-hidden` on text); fixed card stretch empty footer (`items-start` + `h-fit`); gold footer integrated with rounded bottom.
+- **Generate club ID:** **AI 4 T** bubble logo on button (`Ai4TLogo`).
+
+### Teams page (`/teams`)
+- **Team search:** Filter teams by name, sport, age group, league, coach, player count (`searchTeams` i18n).
+
+### AI 4 T Agent chrome
+- Dashboard header button label **AI 4 T Agent** with **`Ai4TLogo`** (`AiAgentHeaderButton.tsx`).
+
+### Supabase repairs
+- **`20260725140000_repair_list_club_membership_emails.sql`** — `list_club_membership_emails` RPC repair.
+- **`20260725150000_repair_images_avatars_bucket.sql`** — `images-avatars` bucket + owner RLS policies.
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`README.md`**, **`HOLD.md`**, **`supabase/SCHEMA_STATUS.md`**.
+
+### Operator
+- Apply migrations **`20260725140000`**, **`20260725150000`** after **`20260725130000`**.
+- Smoke: `/members` search + draft save; assign player to team; Club Card preview + PNG download; profile photo upload.
+
 ## 2026-06-25 (Communication hub, tasks, attendance overview, public club polish)
 
 ### Public club Messages hub

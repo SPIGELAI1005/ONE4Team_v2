@@ -24,7 +24,6 @@ import { RoleManager } from "@/components/members/role-manager";
 import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
 import { useRegisterAiAgentContext } from "@/hooks/use-register-ai-agent-context";
 import { trackEvent } from "@/lib/telemetry";
-import logo from "@/assets/one4team-logo.png";
 import type { ClubMemberMasterRecord } from "@/lib/member-master-schema";
 import {
   DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY,
@@ -52,6 +51,13 @@ import {
   DASHBOARD_TABS_ROW,
 } from "@/lib/dashboard-page-shell";
 import { supabaseErrorMessage } from "@/lib/supabase-error-message";
+import {
+  clubTeamNamesFromIds,
+  resolveClubTeamIdFromLabel,
+  syncMembershipTeamAssignments,
+  type ClubTeamOption,
+} from "@/lib/member-team-assignments";
+import { MemberTeamAssignmentField } from "@/components/members/member-team-assignment-field";
 
 type HistoryPreviewState = {
   path: string;
@@ -131,6 +137,60 @@ type MemberDraftRow = {
   created_at: string;
   master_data: Record<string, unknown> | null;
 };
+
+type MemberSearchMatchField =
+  | "display_name"
+  | "master_name"
+  | "first_name"
+  | "last_name"
+  | "phone"
+  | "email"
+  | "internal_club_number"
+  | "team"
+  | "draft_name";
+
+function memberSearchTextIncludes(haystack: string | null | undefined, query: string): boolean {
+  return (haystack ?? "").toLowerCase().includes(query);
+}
+
+function collectRosterSearchMatchFields(
+  query: string,
+  member: MemberRow,
+  master: ClubMemberMasterRecord | null | undefined,
+  email: string | undefined,
+): MemberSearchMatchField[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const fields: MemberSearchMatchField[] = [];
+  if (memberSearchTextIncludes(member.profiles?.display_name, q)) fields.push("display_name");
+  const masterName = `${master?.first_name ?? ""} ${master?.last_name ?? ""}`.trim();
+  if (memberSearchTextIncludes(masterName, q)) fields.push("master_name");
+  if (memberSearchTextIncludes(master?.first_name, q)) fields.push("first_name");
+  if (memberSearchTextIncludes(master?.last_name, q)) fields.push("last_name");
+  if (memberSearchTextIncludes(member.profiles?.phone, q)) fields.push("phone");
+  if (memberSearchTextIncludes(email, q)) fields.push("email");
+  if (memberSearchTextIncludes(master?.internal_club_number, q)) fields.push("internal_club_number");
+  return fields;
+}
+
+function collectDraftSearchMatchFields(query: string, draft: MemberDraftRow): MemberSearchMatchField[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const fields: MemberSearchMatchField[] = [];
+  if (memberSearchTextIncludes(draft.name, q)) fields.push("draft_name");
+  if (memberSearchTextIncludes(draft.email, q)) fields.push("email");
+  if (memberSearchTextIncludes(draft.team, q)) fields.push("team");
+  const master = draft.master_data as Partial<ClubMemberMasterRecord> | null;
+  if (memberSearchTextIncludes(master?.first_name, q)) fields.push("first_name");
+  if (memberSearchTextIncludes(master?.last_name, q)) fields.push("last_name");
+  if (memberSearchTextIncludes(master?.internal_club_number, q)) fields.push("internal_club_number");
+  if (memberSearchTextIncludes(typeof master?.phone === "string" ? master.phone : null, q)) fields.push("phone");
+  return fields;
+}
+
+function draftMatchesMemberSearch(query: string, draft: MemberDraftRow): boolean {
+  return collectDraftSearchMatchFields(query, draft).length > 0;
+}
 
 type BulkMemberDraft = {
   id: string;
@@ -389,7 +449,15 @@ const Members = () => {
     return () => window.clearTimeout(id);
   }, [search]);
   const [memberTeamNamesById, setMemberTeamNamesById] = useState<Record<string, string[]>>({});
+  const [memberPlayerTeamIdsById, setMemberPlayerTeamIdsById] = useState<Record<string, string[]>>({});
+  const [memberCoachTeamIdsById, setMemberCoachTeamIdsById] = useState<Record<string, string[]>>({});
+  const [clubTeams, setClubTeams] = useState<ClubTeamOption[]>([]);
+  const [supportsTeamCoachesTable, setSupportsTeamCoachesTable] = useState(true);
+  const [editMemberTeamIds, setEditMemberTeamIds] = useState<string[]>([]);
+  const [editDraftTeamIds, setEditDraftTeamIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  /** After first successful roster fetch; keeps search mounted during refetches. */
+  const [hasMembersHydrated, setHasMembersHydrated] = useState(false);
   const [selectedMember, setSelectedMember] = useState<MemberRow | null>(null);
   const [memberPanelEditModeId, setMemberPanelEditModeId] = useState<string | null>(null);
   const [memberMasterEditDraft, setMemberMasterEditDraft] = useState<Partial<ClubMemberMasterRecord>>({});
@@ -413,6 +481,8 @@ const Members = () => {
   const [abuseAlerts, setAbuseAlerts] = useState<AbuseAlertRow[]>([]);
   const [resolvingAlertId, setResolvingAlertId] = useState<string | null>(null);
   const [memberDrafts, setMemberDrafts] = useState<MemberDraftRow[]>([]);
+  const [searchMatchedDrafts, setSearchMatchedDrafts] = useState<MemberDraftRow[]>([]);
+  const [searchDraftsLoading, setSearchDraftsLoading] = useState(false);
   const [memberDraftTotalCount, setMemberDraftTotalCount] = useState(0);
   const [draftsLoading, setDraftsLoading] = useState(false);
   const [draftActionId, setDraftActionId] = useState<string | null>(null);
@@ -428,6 +498,8 @@ const Members = () => {
     masterData: Partial<ClubMemberMasterRecord>;
   }>({ firstName: "", lastName: "", email: "", role: "member", team: "", age_group: "", position: "", masterData: {} });
   const [draftSaving, setDraftSaving] = useState(false);
+  const [draftSaveConfirmedAt, setDraftSaveConfirmedAt] = useState<number | null>(null);
+  const [memberPanelSaveConfirmedId, setMemberPanelSaveConfirmedId] = useState<string | null>(null);
   const [draftAvatarUploading, setDraftAvatarUploading] = useState(false);
   const [bulkAvatarUploadingRowId, setBulkAvatarUploadingRowId] = useState<string | null>(null);
   const [draftMasterExpanded, setDraftMasterExpanded] = useState(false);
@@ -435,6 +507,7 @@ const Members = () => {
   const [joinReviewerPolicy, setJoinReviewerPolicy] = useState<"admin_only" | "admin_trainer">("admin_only");
   const [clubSlug, setClubSlug] = useState<string | null>(null);
   const [clubName, setClubName] = useState<string | null>(null);
+  const [clubLogoUrl, setClubLogoUrl] = useState<string | null>(null);
   const [clubJoinDefaults, setClubJoinDefaults] = useState<{ role: string; team: string }>({ role: "member", team: "" });
   const [joinRequestReviewById, setJoinRequestReviewById] = useState<
     Record<string, { role: string; team: string; note: string }>
@@ -545,8 +618,13 @@ const Members = () => {
   useEffect(() => {
     setMembers([]);
     setMemberTeamNamesById({});
+    setMemberPlayerTeamIdsById({});
+    setMemberCoachTeamIdsById({});
+    setEditMemberTeamIds([]);
+    setEditDraftTeamIds([]);
     setSelectedMember(null);
     setLoading(true);
+    setHasMembersHydrated(false);
 
     setInviteRequests([]);
     setInvites([]);
@@ -557,6 +635,7 @@ const Members = () => {
     setJoinReviewerPolicy("admin_only");
     setClubSlug(null);
     setClubName(null);
+    setClubLogoUrl(null);
     setMasterByMembershipId({});
     setMembershipEmails({});
     setGuardianLinks([]);
@@ -816,27 +895,33 @@ const Members = () => {
     [clubId],
   );
 
-  const fetchInvitesData = useCallback(async () => {
+  const loadClubMeta = useCallback(async () => {
     if (!clubId) return;
-    setInvitesLoading(true);
-
     const clubRes = await supabase
       .from("clubs")
-      .select("slug, name, join_reviewer_policy, join_default_role, join_default_team")
+      .select("slug, name, logo_url, join_reviewer_policy, join_default_role, join_default_team")
       .eq("id", clubId)
       .maybeSingle();
     if (clubRes.error) {
       toast({ title: "Error", description: clubRes.error.message, variant: "destructive" });
-    } else {
-      setClubSlug(clubRes.data?.slug ?? null);
-      setClubName(clubRes.data?.name ?? null);
-      const policy = (clubRes.data?.join_reviewer_policy as "admin_only" | "admin_trainer" | undefined) || "admin_only";
-      setJoinReviewerPolicy(policy);
-      setClubJoinDefaults({
-        role: (clubRes.data?.join_default_role as string | undefined) || "member",
-        team: (clubRes.data?.join_default_team as string | undefined)?.trim() || "",
-      });
+      return;
     }
+    setClubSlug(clubRes.data?.slug ?? null);
+    setClubName(clubRes.data?.name ?? null);
+    setClubLogoUrl(clubRes.data?.logo_url?.trim() || null);
+    const policy = (clubRes.data?.join_reviewer_policy as "admin_only" | "admin_trainer" | undefined) || "admin_only";
+    setJoinReviewerPolicy(policy);
+    setClubJoinDefaults({
+      role: (clubRes.data?.join_default_role as string | undefined) || "member",
+      team: (clubRes.data?.join_default_team as string | undefined)?.trim() || "",
+    });
+  }, [clubId, toast]);
+
+  const fetchInvitesData = useCallback(async () => {
+    if (!clubId) return;
+    setInvitesLoading(true);
+
+    await loadClubMeta();
     const [reqRes, invRes] = await Promise.all([
       supabase.from("club_invite_requests").select("*").eq("club_id", clubId).order("created_at", { ascending: false }).limit(100),
       supabase.from("club_invites").select("*").eq("club_id", clubId).order("created_at", { ascending: false }).limit(100),
@@ -848,7 +933,12 @@ const Members = () => {
     setInviteRequests((reqRes.data as unknown as InviteRequestRow[]) || []);
     setInvites((invRes.data as unknown as ClubInviteRow[]) || []);
     setInvitesLoading(false);
-  }, [clubId, toast]);
+  }, [clubId, toast, loadClubMeta]);
+
+  useEffect(() => {
+    if (!clubId) return;
+    void loadClubMeta();
+  }, [clubId, loadClubMeta]);
 
   useEffect(() => {
     setJoinRequestReviewById((prev) => {
@@ -915,6 +1005,45 @@ const Members = () => {
 
   const canManageMembers = perms.isAdmin;
 
+  const teamAssignmentLabels = useMemo(
+    () => ({
+      title: t.membersPage.teamAssignmentTitle,
+      hint: t.membersPage.teamAssignmentHintRoster,
+      placeholder: t.membersPage.teamAssignmentPlaceholder,
+      none: t.membersPage.teamAssignmentNone,
+      selectedCount: t.membersPage.teamAssignmentSelectedCount,
+    }),
+    [t],
+  );
+  const draftTeamAssignmentLabels = useMemo(
+    () => ({
+      ...teamAssignmentLabels,
+      hint: t.membersPage.teamAssignmentHintDraft,
+    }),
+    [teamAssignmentLabels, t],
+  );
+
+  useEffect(() => {
+    if (!clubId) {
+      setClubTeams([]);
+      return;
+    }
+    void (async () => {
+      const [teamsRes, coachesProbe] = await Promise.all([
+        supabase.from("teams").select("id, name, age_group").eq("club_id", clubId).order("name"),
+        supabase.from("team_coaches").select("id").limit(1),
+      ]);
+      setSupportsTeamCoachesTable(!coachesProbe.error);
+      setClubTeams(
+        ((teamsRes.data as Array<{ id: string; name: string; age_group: string | null }> | null) ?? []).map((team) => ({
+          id: team.id,
+          name: team.name,
+          age_group: team.age_group,
+        })),
+      );
+    })();
+  }, [clubId]);
+
   const masterTabLabels = useMemo(() => ({
     identity: t.membersPage.masterSectionIdentity,
     contact: t.membersPage.masterSectionContact,
@@ -938,6 +1067,10 @@ const Members = () => {
 
   const fetchMembers = useCallback(async () => {
     if (!clubId) return;
+    const finishMembersFetch = () => {
+      setHasMembersHydrated(true);
+      setLoading(false);
+    };
     const searchKey = debouncedSearch.trim().length >= 2 ? debouncedSearch.trim() : "";
     const pivot = `${clubId}\0${roleFilter}\0${searchKey}`;
     if (membersPivotRef.current !== pivot) {
@@ -973,6 +1106,8 @@ const Members = () => {
     const loadSidecarsForMemberships = async (membershipIds: string[]) => {
       if (membershipIds.length === 0) {
         setMemberTeamNamesById({});
+        setMemberPlayerTeamIdsById({});
+        setMemberCoachTeamIdsById({});
         setMasterByMembershipId({});
         setGuardianLinks([]);
         setMembershipEmails({});
@@ -992,24 +1127,47 @@ const Members = () => {
         teamsById.set(String(row.id), String(row.name));
       });
 
-      const map: Record<string, string[]> = {};
-      const applyRows = (rows: Array<Record<string, unknown>>) => {
+      const nameMap: Record<string, string[]> = {};
+      const playerIdMap: Record<string, string[]> = {};
+      const coachIdMap: Record<string, string[]> = {};
+      const applyNameRows = (rows: Array<Record<string, unknown>>) => {
         rows.forEach((row) => {
           const membershipId = String(row.membership_id);
           const teamId = String(row.team_id);
           const teamName = teamsById.get(teamId);
           if (!teamName) return;
-          const existing = map[membershipId] || [];
-          map[membershipId] = existing.includes(teamName) ? existing : [...existing, teamName];
+          const existing = nameMap[membershipId] || [];
+          nameMap[membershipId] = existing.includes(teamName) ? existing : [...existing, teamName];
+        });
+      };
+      const applyIdRows = (
+        rows: Array<Record<string, unknown>>,
+        target: Record<string, string[]>,
+      ) => {
+        rows.forEach((row) => {
+          const membershipId = String(row.membership_id);
+          const teamId = String(row.team_id);
+          const existing = target[membershipId] || [];
+          target[membershipId] = existing.includes(teamId) ? existing : [...existing, teamId];
         });
       };
 
-      if (!playersRes.error) applyRows(((playersRes.data as Array<Record<string, unknown>> | null) || []));
-      if (!coachesRes.error) applyRows(((coachesRes.data as Array<Record<string, unknown>> | null) || []));
+      if (!playersRes.error) {
+        const rows = (playersRes.data as Array<Record<string, unknown>> | null) || [];
+        applyNameRows(rows);
+        applyIdRows(rows, playerIdMap);
+      }
+      if (!coachesRes.error) {
+        const rows = (coachesRes.data as Array<Record<string, unknown>> | null) || [];
+        applyNameRows(rows);
+        applyIdRows(rows, coachIdMap);
+      }
       if (coachesRes.error && !isMissingRelationError(coachesRes.error)) {
         toast({ title: t.membersPage.errorLoadingMembers, description: coachesRes.error.message, variant: "destructive" });
       }
-      setMemberTeamNamesById(map);
+      setMemberTeamNamesById(nameMap);
+      setMemberPlayerTeamIdsById(playerIdMap);
+      setMemberCoachTeamIdsById(coachIdMap);
 
       if (!masterRes.error && masterRes.data) {
         const nextMaster: Record<string, ClubMemberMasterRecord | null> = {};
@@ -1064,7 +1222,7 @@ const Members = () => {
           description: supabaseErrorMessage(rpcErr),
           variant: "destructive",
         });
-        setLoading(false);
+        finishMembersFetch();
         return;
       }
       const payload = rawSearch as { total?: unknown; items?: unknown } | null;
@@ -1074,7 +1232,7 @@ const Members = () => {
       const memberships = rawItems.map((row) => mapSearchRpcRowToMember(row as Record<string, unknown>));
       setMembers(memberships);
       await loadSidecarsForMemberships(memberships.map((item) => item.id));
-      setLoading(false);
+      finishMembersFetch();
       return;
     }
 
@@ -1098,7 +1256,7 @@ const Members = () => {
 
     if (membershipError) {
       toast({ title: t.membersPage.errorLoadingMembers, description: membershipError.message, variant: "destructive" });
-      setLoading(false);
+      finishMembersFetch();
       return;
     }
 
@@ -1129,7 +1287,7 @@ const Members = () => {
     setMembers(withProfiles);
 
     await loadSidecarsForMemberships(membershipIds);
-    setLoading(false);
+    finishMembersFetch();
   }, [clubId, debouncedSearch, membersServerPage, roleFilter, toast, t]);
 
   useEffect(() => {
@@ -1169,6 +1327,43 @@ const Members = () => {
     if (!perms.isAdmin) return;
     void fetchMemberDrafts();
   }, [tab, clubId, perms.isAdmin, fetchMemberDrafts]);
+
+  useEffect(() => {
+    if (!clubId || !perms.isAdmin) {
+      setSearchMatchedDrafts([]);
+      return;
+    }
+    const q = debouncedSearch.trim();
+    if (q.length < 2) {
+      setSearchMatchedDrafts([]);
+      setSearchDraftsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setSearchDraftsLoading(true);
+    const escaped = q.replace(/[%_\\]/g, "\\$&");
+    const pattern = `%${escaped}%`;
+    void (async () => {
+      const { data, error } = await supabase
+        .from("club_member_drafts")
+        .select("*")
+        .eq("club_id", clubId)
+        .or(`name.ilike.${pattern},email.ilike.${pattern},team.ilike.${pattern}`)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (cancelled) return;
+      if (error || !data) {
+        setSearchMatchedDrafts([]);
+      } else {
+        const rows = data as unknown as MemberDraftRow[];
+        setSearchMatchedDrafts(rows.filter((draft) => draftMatchesMemberSearch(q, draft)));
+      }
+      setSearchDraftsLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [clubId, debouncedSearch, perms.isAdmin]);
 
   useEffect(() => {
     if (!clubId) return;
@@ -1291,16 +1486,93 @@ const Members = () => {
     });
   }, [members, masterByMembershipId, membershipEmails, roleFilter, search, debouncedSearch]);
 
+  const trimmedSearch = search.trim();
+  const isSearchActive = trimmedSearch.length > 0;
+  const rosterSearchQuery =
+    debouncedSearch.trim().length >= 2 ? debouncedSearch.trim() : trimmedSearch;
+
+  const rosterSearchResults = useMemo(() => {
+    if (!isSearchActive) return [];
+    return filtered.map((member) => ({
+      member,
+      fields: collectRosterSearchMatchFields(
+        rosterSearchQuery,
+        member,
+        masterByMembershipId[member.id],
+        membershipEmails[member.id],
+      ),
+    }));
+  }, [filtered, isSearchActive, rosterSearchQuery, masterByMembershipId, membershipEmails]);
+
+  const filteredDrafts = useMemo(() => {
+    if (!isSearchActive) return memberDrafts;
+    if (debouncedSearch.trim().length >= 2) return searchMatchedDrafts;
+    return memberDrafts.filter((draft) => draftMatchesMemberSearch(trimmedSearch, draft));
+  }, [memberDrafts, isSearchActive, trimmedSearch, debouncedSearch, searchMatchedDrafts]);
+
+  const visibleDrafts = isSearchActive
+    ? filteredDrafts
+    : showAllDrafts
+      ? memberDrafts
+      : memberDrafts.slice(0, 8);
+
+  const getSearchMatchFieldLabel = useCallback(
+    (field: MemberSearchMatchField) => {
+      switch (field) {
+        case "display_name":
+          return t.membersPage.searchMatchDisplayName;
+        case "master_name":
+          return t.membersPage.searchMatchMasterName;
+        case "first_name":
+          return t.membersPage.searchMatchFirstName;
+        case "last_name":
+          return t.membersPage.searchMatchLastName;
+        case "phone":
+          return t.membersPage.searchMatchPhone;
+        case "email":
+          return t.membersPage.searchMatchEmail;
+        case "internal_club_number":
+          return t.membersPage.searchMatchInternalNumber;
+        case "team":
+          return t.membersPage.searchMatchTeam;
+        case "draft_name":
+          return t.membersPage.searchMatchDraftName;
+        default:
+          return t.membersPage.searchMatchGeneric;
+      }
+    },
+    [t],
+  );
+
+  const focusRosterMember = useCallback((member: MemberRow) => {
+    setSelectedMember(member);
+    setMemberPanelEditModeId(null);
+    setMemberMasterEditDraft({});
+    window.requestAnimationFrame(() => {
+      document.getElementById(`roster-member-${member.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, []);
+
   const membersServerTotalPages = Math.max(
     1,
     Math.ceil((membersDbTotalCount ?? 0) / MEMBERS_SERVER_PAGE_SIZE) || 1,
   );
 
-  const getMemberTeamLabel = useCallback((member: MemberRow) => {
+  const getMemberAssignedTeamNames = useCallback((member: MemberRow) => {
     const assignedTeams = memberTeamNamesById[member.id] || [];
     if (assignedTeams.length > 0) return assignedTeams.join(", ");
-    return member.team || t.membersPage.noTeam;
-  }, [memberTeamNamesById, t.membersPage.noTeam]);
+    return member.team?.trim() || "";
+  }, [memberTeamNamesById]);
+
+  const getMemberTeamLabel = useCallback((member: MemberRow) => {
+    const assigned = getMemberAssignedTeamNames(member);
+    return assigned || t.membersPage.noTeam;
+  }, [getMemberAssignedTeamNames, t.membersPage.noTeam]);
+
+  const draftTeamLabelForCard = useMemo(() => {
+    const fromIds = clubTeamNamesFromIds(clubTeams, editDraftTeamIds).join(", ");
+    return fromIds || editingDraftForm.team.trim();
+  }, [clubTeams, editDraftTeamIds, editingDraftForm.team]);
 
   const getMemberRosterName = useCallback(
     (member: MemberRow) => {
@@ -1448,7 +1720,14 @@ const Members = () => {
         }));
       }
       if (!options?.suppressToast) {
-        toast({ title: t.common.updated, description: t.membersPage.registrySaved });
+        const savedName =
+          [payload.first_name, payload.last_name].filter(Boolean).join(" ").trim() ||
+          member.profiles?.display_name?.trim() ||
+          t.membersPage.unknownMember;
+        toast({
+          title: t.membersPage.masterDataSavedTitle,
+          description: t.membersPage.masterDataSavedDescRoster.replace("{name}", savedName),
+        });
       }
       const fieldKeys = Object.keys(payload).filter((k) => k !== "membership_id" && k !== "club_id");
       void appendMemberAuditEvent({
@@ -1934,6 +2213,9 @@ const Members = () => {
     setSelectedMember(member);
     setMemberPanelEditModeId(member.id);
     setMemberMasterEditDraft({ ...(masterByMembershipId[member.id] ?? {}) });
+    const playerIds = memberPlayerTeamIdsById[member.id] || [];
+    const coachIds = memberCoachTeamIdsById[member.id] || [];
+    setEditMemberTeamIds(Array.from(new Set([...playerIds, ...coachIds])));
     setEditMemberForm({
       role: member.role || "member",
       team: member.team || "",
@@ -1946,6 +2228,7 @@ const Members = () => {
   const cancelMemberPanelEdit = () => {
     setMemberPanelEditModeId(null);
     setMemberMasterEditDraft({});
+    setEditMemberTeamIds([]);
   };
 
   const uploadMemberPanelAvatar = async (membershipId: string, file: File) => {
@@ -1981,11 +2264,13 @@ const Members = () => {
     }
     setMemberPanelSaving(true);
     try {
+      const assignedTeamNames = clubTeamNamesFromIds(clubTeams, editMemberTeamIds);
+      const primaryTeamName = assignedTeamNames[0] || editMemberForm.team.trim() || null;
       const { data, error } = await supabase
         .from("club_memberships")
         .update({
           role: editMemberForm.role,
-          team: editMemberForm.team.trim() || null,
+          team: primaryTeamName,
           age_group: editMemberForm.ageGroup.trim() || null,
           position: editMemberForm.position.trim() || null,
           status: editMemberForm.status || "active",
@@ -2022,9 +2307,34 @@ const Members = () => {
 
       const mergedMaster = { ...(masterByMembershipId[member.id] ?? {}), ...memberMasterEditDraft };
       await handleSaveMasterRecord(mergedMember, mergedMaster, { suppressToast: true });
-      toast({ title: t.common.updated, description: t.membersPage.registrySaved });
+
+      const assignment = await syncMembershipTeamAssignments({
+        membershipId: member.id,
+        membershipRole: editMemberForm.role,
+        nextTeamIds: editMemberTeamIds,
+        existingPlayerTeamIds: memberPlayerTeamIdsById[member.id] || [],
+        existingCoachTeamIds: memberCoachTeamIdsById[member.id] || [],
+        supportsTeamCoachesTable,
+      });
+      setMemberPlayerTeamIdsById((previous) => ({ ...previous, [member.id]: assignment.playerTeamIds }));
+      setMemberCoachTeamIdsById((previous) => ({ ...previous, [member.id]: assignment.coachTeamIds }));
+      setMemberTeamNamesById((previous) => ({
+        ...previous,
+        [member.id]: clubTeamNamesFromIds(clubTeams, editMemberTeamIds),
+      }));
+
+      const savedName = getMemberRosterName(mergedMember);
+      toast({
+        title: t.membersPage.masterDataSavedTitle,
+        description: t.membersPage.masterDataSavedDescRoster.replace("{name}", savedName),
+      });
+      setMemberPanelSaveConfirmedId(member.id);
+      window.setTimeout(() => {
+        setMemberPanelSaveConfirmedId((current) => (current === member.id ? null : current));
+      }, 4000);
       setMemberPanelEditModeId(null);
       setMemberMasterEditDraft({});
+      setEditMemberTeamIds([]);
     } catch {
       /* handleSaveMasterRecord already toasts */
     } finally {
@@ -2475,6 +2785,8 @@ const Members = () => {
         last_name: ln || null,
       },
     });
+    const draftTeamId = resolveClubTeamIdFromLabel(clubTeams, draft.team);
+    setEditDraftTeamIds(draftTeamId ? [draftTeamId] : []);
     setDraftMasterExpanded(false);
   };
 
@@ -2531,11 +2843,35 @@ const Members = () => {
     }
   };
 
+  const resolveDraftById = useCallback(
+    (draftId: string) =>
+      memberDrafts.find((d) => d.id === draftId) ?? searchMatchedDrafts.find((d) => d.id === draftId),
+    [memberDrafts, searchMatchedDrafts],
+  );
+
   const handleSaveDraftEdit = async () => {
-    if (!clubId || !editingDraftId) return;
+    if (!clubId || !editingDraftId) {
+      toast({ title: t.common.error, description: t.membersPage.noClubSelected, variant: "destructive" });
+      return;
+    }
     setDraftSaving(true);
-    const currentDraft = memberDrafts.find((d) => d.id === editingDraftId);
+    let currentDraft = resolveDraftById(editingDraftId);
     if (!currentDraft) {
+      const { data, error: loadError } = await supabase
+        .from("club_member_drafts")
+        .select("*")
+        .eq("id", editingDraftId)
+        .eq("club_id", clubId)
+        .maybeSingle();
+      if (loadError) {
+        toast({ title: t.common.error, description: loadError.message, variant: "destructive" });
+        setDraftSaving(false);
+        return;
+      }
+      currentDraft = (data as unknown as MemberDraftRow | null) ?? undefined;
+    }
+    if (!currentDraft) {
+      toast({ title: t.common.error, description: t.membersPage.savedMemberDraftNotFound, variant: "destructive" });
       setDraftSaving(false);
       return;
     }
@@ -2559,12 +2895,16 @@ const Members = () => {
       resolvedInviteId = await resolveUnusedInviteIdForInvitedDraft(currentDraft);
     }
 
+    const assignedDraftTeamNames = clubTeamNamesFromIds(clubTeams, editDraftTeamIds);
+    const draftTeamName = assignedDraftTeamNames[0] || editingDraftForm.team.trim() || null;
+    const selectedDraftTeam = clubTeams.find((team) => editDraftTeamIds.includes(team.id));
+
     const draftRowUpdate: Record<string, unknown> = {
       name: combinedName || null,
       email: editingDraftForm.email.trim(),
       role: editingDraftForm.role,
-      team: editingDraftForm.team || null,
-      age_group: editingDraftForm.age_group || null,
+      team: draftTeamName,
+      age_group: editingDraftForm.age_group.trim() || selectedDraftTeam?.age_group || null,
       position: editingDraftForm.position || null,
       master_data: masterPayload,
     };
@@ -2640,33 +2980,45 @@ const Members = () => {
       }
     }
 
-    setMemberDrafts((prev) =>
-      prev.map((d) =>
-        d.id === editingDraftId
-          ? {
-              ...d,
-              name: combinedName,
-              email: editingDraftForm.email.trim(),
-              role: editingDraftForm.role,
-              team: editingDraftForm.team || null,
-              age_group: editingDraftForm.age_group || null,
-              position: editingDraftForm.position || null,
-              master_data: masterPayload as Record<string, unknown>,
-              invite_id: resolvedInviteId ?? d.invite_id,
-            }
-          : d,
-      ),
-    );
-    toast({
-      title: t.membersPage.draftUpdated,
-      description: inviteSyncSkippedUsed ? t.membersPage.inviteSyncSkippedAlreadyJoined : undefined,
+    const updatedDraft: MemberDraftRow = {
+      ...currentDraft,
+      name: combinedName,
+      email: editingDraftForm.email.trim(),
+      role: editingDraftForm.role,
+      team: editingDraftForm.team || null,
+      age_group: editingDraftForm.age_group || null,
+      position: editingDraftForm.position || null,
+      master_data: masterPayload as Record<string, unknown>,
+      invite_id: resolvedInviteId ?? currentDraft.invite_id,
+    };
+
+    setMemberDrafts((prev) => {
+      const exists = prev.some((d) => d.id === editingDraftId);
+      if (!exists) return [updatedDraft, ...prev];
+      return prev.map((d) => (d.id === editingDraftId ? updatedDraft : d));
     });
-    setEditingDraftId(null);
+    setSearchMatchedDrafts((prev) => {
+      if (!prev.some((d) => d.id === editingDraftId)) return prev;
+      return prev.map((d) => (d.id === editingDraftId ? updatedDraft : d));
+    });
+    const savedDisplayName = combinedName || editingDraftForm.email.trim() || t.membersPage.unknownMember;
+    toast({
+      title: t.membersPage.masterDataSavedTitle,
+      description: t.membersPage.masterDataSavedDescDraft.replace("{name}", savedDisplayName),
+    });
+    if (inviteSyncSkippedUsed) {
+      window.setTimeout(() => {
+        toast({ title: t.membersPage.draftUpdated, description: t.membersPage.inviteSyncSkippedAlreadyJoined });
+      }, 300);
+    }
+    setDraftSaveConfirmedAt(Date.now());
+    window.setTimeout(() => setDraftSaveConfirmedAt(null), 4000);
     setDraftSaving(false);
   };
 
   const handleCancelDraftEdit = () => {
     setEditingDraftId(null);
+    setEditDraftTeamIds([]);
     setDraftGuardianPickId("");
   };
 
@@ -2763,7 +3115,7 @@ const Members = () => {
       </div>
 
       <div className={DASHBOARD_PAGE_INNER}>
-        {(clubLoading || loading) ? (
+        {(clubLoading || (loading && !hasMembersHydrated)) ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
@@ -2797,19 +3149,21 @@ const Members = () => {
               <>
             {/* Search & Filter */}
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder={t.membersPage.searchMembers}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 bg-card border-border"
-                />
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder={t.membersPage.searchMembers}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9 bg-card border-border"
+                  />
+                </div>
                 {search.trim() ? (
-                  <p className="text-[11px] text-muted-foreground mt-1.5">
+                  <p className="mt-1.5 text-[11px] text-muted-foreground">
                     {debouncedSearch.trim().length >= 2
-                      ? "Search runs across the full roster (name, phone, master fields, internal club number). Use paging for more results."
-                      : "Type at least 2 characters to search the full roster; shorter text only filters the current page."}
+                      ? "Search runs across the full roster and saved list (name, phone, email, master fields, club number). Use paging for more roster results."
+                      : "Type at least 2 characters to search the full roster; shorter text filters the current page and saved list."}
                   </p>
                 ) : null}
               </div>
@@ -2830,17 +3184,26 @@ const Members = () => {
               </div>
             </div>
 
-            {/* Stats (club-wide via RPC; accurate with server-paged roster) */}
+            {/* Stats (club-wide via RPC; search-aware when filtering) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
               {[
                 {
-                  label: t.membersPage.total,
-                  value: clubMemberStats?.total ?? members.length,
+                  label:
+                    isSearchActive && debouncedSearch.trim().length >= 2
+                      ? t.membersPage.searchStatsMatches
+                      : t.membersPage.total,
+                  value:
+                    isSearchActive && debouncedSearch.trim().length >= 2
+                      ? (membersDbTotalCount ?? rosterSearchResults.length)
+                      : clubMemberStats?.total ?? members.length,
                   color: "text-foreground",
                 },
                 {
                   label: t.membersPage.active,
-                  value: clubMemberStats?.active ?? members.filter((m) => m.status === "active").length,
+                  value:
+                    isSearchActive && debouncedSearch.trim().length >= 2
+                      ? rosterSearchResults.filter(({ member }) => member.status === "active").length
+                      : clubMemberStats?.active ?? members.filter((m) => m.status === "active").length,
                   color: "text-primary",
                 },
                 {
@@ -2855,7 +3218,7 @@ const Members = () => {
                 },
                 {
                   label: t.membersPage.pendingImport,
-                  value: memberDraftTotalCount,
+                  value: isSearchActive ? filteredDrafts.length : memberDraftTotalCount,
                   color: "text-violet-400",
                 },
               ].map((s, i) => (
@@ -2898,9 +3261,19 @@ const Members = () => {
             <div className="rounded-xl bg-card border border-border p-4 mb-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                 <div>
-                  <div className="text-sm font-display font-bold text-foreground tracking-tight">{t.membersPage.savedMemberList}</div>
-                  <div className="text-xs text-muted-foreground">{t.membersPage.savedMemberListDesc}</div>
+                  <div className="text-sm font-display font-bold text-foreground tracking-tight">
+                    {isSearchActive ? t.membersPage.searchResultsTitle : t.membersPage.savedMemberList}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {isSearchActive
+                      ? t.membersPage.searchResultsSummary
+                          .replace("{rosterCount}", String(rosterSearchResults.length))
+                          .replace("{draftCount}", String(filteredDrafts.length))
+                          .replace("{query}", trimmedSearch)
+                      : t.membersPage.savedMemberListDesc}
+                  </div>
                 </div>
+                {!isSearchActive ? (
                 <div className="flex items-center gap-3">
                   <div className="text-xs text-muted-foreground">
                     {t.membersPage.savedMemberCount
@@ -2917,7 +3290,68 @@ const Members = () => {
                     </Button>
                   ) : null}
                 </div>
+                ) : null}
               </div>
+
+              {isSearchActive ? (
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                      {t.membersPage.searchResultsRosterSection} ({rosterSearchResults.length})
+                    </div>
+                    {rosterSearchResults.length === 0 ? (
+                      <p className="text-xs text-muted-foreground py-2">{t.membersPage.searchResultsRosterEmpty}</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {rosterSearchResults.map(({ member, fields }) => (
+                          <button
+                            key={member.id}
+                            type="button"
+                            onClick={() => focusRosterMember(member)}
+                            className="w-full rounded-lg border border-primary/25 bg-primary/5 p-3 text-left hover:border-primary/40 hover:bg-primary/10 transition-colors"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="text-sm font-medium text-foreground truncate">{getMemberRosterName(member)}</div>
+                                <div className="text-xs text-muted-foreground truncate">
+                                  {getMemberTeamLabel(member)}
+                                  {membershipEmails[member.id] ? ` · ${membershipEmails[member.id]}` : ""}
+                                </div>
+                                <div className="text-[11px] text-primary/80 mt-1">{t.membersPage.searchResultsTapToOpen}</div>
+                              </div>
+                              <span className={`text-xs font-medium px-2.5 py-1 rounded-full shrink-0 ${roleColors[member.role] || "bg-muted text-muted-foreground"}`}>
+                                {getRoleLabel(member.role)}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                              {(fields.length > 0 ? fields : (["master_name"] as const)).slice(0, 1).map((field) => (
+                                <Badge key={field} variant="secondary" className="text-[10px] font-normal px-2 py-0">
+                                  {fields.length > 0 ? getSearchMatchFieldLabel(field) : t.membersPage.searchMatchGeneric}
+                                </Badge>
+                              ))}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                      {t.membersPage.searchResultsSavedListSection} ({filteredDrafts.length})
+                    </div>
+                    {filteredDrafts.length === 0 ? (
+                      <p className="text-xs text-muted-foreground py-2">
+                        {searchDraftsLoading ? t.common.loading : t.membersPage.searchResultsSavedListEmpty}
+                      </p>
+                    ) : null}
+                  </div>
+                  {rosterSearchResults.length === 0 && filteredDrafts.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      {t.membersPage.searchResultsNoMatches.replace("{query}", trimmedSearch)}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
 
               {draftsLoading ? (
                 <div className="flex items-center justify-center py-6">
@@ -2925,9 +3359,11 @@ const Members = () => {
                 </div>
               ) : memberDrafts.length === 0 ? (
                 <div className="text-xs text-muted-foreground py-4">{t.membersPage.savedMemberListEmpty}</div>
+              ) : isSearchActive && filteredDrafts.length === 0 ? (
+                null
               ) : (
                 <div className="space-y-2">
-                  {(showAllDrafts ? memberDrafts : memberDrafts.slice(0, 8)).map((draft) => (
+                  {visibleDrafts.map((draft) => (
                     editingDraftId === draft.id ? (
                       <div key={draft.id} className="w-full min-w-0 space-y-4 rounded-lg border-2 border-primary/30 bg-background/60 p-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -3085,16 +3521,21 @@ const Members = () => {
                               </SelectContent>
                             </Select>
                           </div>
-                          <div>
-                            <div className="text-xs text-muted-foreground mb-1">{t.membersPage.draftEditLabelTeam}</div>
-                            <Input
-                              id={`draft-${draft.id}-team`}
-                              className="h-10 text-sm"
-                              value={editingDraftForm.team}
-                              placeholder={t.membersPage.teamPlaceholder}
-                              onChange={(e) => setEditingDraftForm((f) => ({ ...f, team: e.target.value }))}
-                            />
-                          </div>
+                          <MemberTeamAssignmentField
+                            teams={clubTeams}
+                            selectedTeamIds={editDraftTeamIds}
+                            single
+                            labels={draftTeamAssignmentLabels}
+                            onChange={(ids) => {
+                              setEditDraftTeamIds(ids);
+                              const team = clubTeams.find((entry) => entry.id === ids[0]);
+                              setEditingDraftForm((f) => ({
+                                ...f,
+                                team: team?.name || "",
+                                age_group: f.age_group.trim() || team?.age_group || "",
+                              }));
+                            }}
+                          />
                           <div>
                             <div className="text-xs text-muted-foreground mb-1">{t.membersPage.draftEditLabelAgeGroup}</div>
                             <Input
@@ -3130,6 +3571,15 @@ const Members = () => {
                               values={draftMergedMasterForTabs}
                               labels={masterTabLabels}
                               compact
+                              displayName={buildDisplayNameFromParts(
+                                editingDraftForm.firstName,
+                                editingDraftForm.lastName,
+                              )}
+                              clubName={clubName}
+                              logoSrc={clubLogoUrl ?? ""}
+                              membershipRole={getRoleLabel(editingDraftForm.role)}
+                              teamLabel={draftTeamLabelForCard}
+                              email={editingDraftForm.email.trim() || null}
                               avatarUpload={{
                                 uploading: draftAvatarUploading,
                                 onUpload: (file) => void uploadDraftMemberAvatar(file),
@@ -3169,7 +3619,13 @@ const Members = () => {
                             />
                           </div>
                         )}
-                        <div className="flex flex-wrap justify-end gap-2">
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          {draftSaveConfirmedAt && editingDraftId === draft.id ? (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 mr-auto sm:mr-0">
+                              <Check className="h-3.5 w-3.5" />
+                              {t.membersPage.masterDataSavedHint}
+                            </span>
+                          ) : null}
                           {draft.status === "invited" ? (
                             <Button
                               size="sm"
@@ -3192,7 +3648,13 @@ const Members = () => {
                           <Button size="sm" variant="ghost" onClick={handleCancelDraftEdit} className="h-9 text-sm" disabled={draftSaving}>
                             {t.common.cancel}
                           </Button>
-                          <Button size="sm" onClick={() => void handleSaveDraftEdit()} disabled={draftSaving || !editingDraftForm.email.trim()} className="h-9 text-sm">
+                          <Button
+                            size="sm"
+                            type="button"
+                            onClick={() => void handleSaveDraftEdit()}
+                            disabled={draftSaving || !editingDraftForm.email.trim()}
+                            className="h-9 bg-gradient-gold-static text-sm font-semibold text-primary-foreground hover:brightness-110"
+                          >
                             {draftSaving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
                             {t.common.save}
                           </Button>
@@ -3214,6 +3676,15 @@ const Members = () => {
                               {draft.age_group ? ` · ${draft.age_group}` : ""}
                               {draft.position ? ` · ${draft.position}` : ""}
                             </div>
+                            {isSearchActive ? (
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {collectDraftSearchMatchFields(trimmedSearch, draft).map((field) => (
+                                  <Badge key={field} variant="secondary" className="text-[10px] font-normal px-2 py-0">
+                                    {getSearchMatchFieldLabel(field)}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                         <div
@@ -3302,7 +3773,7 @@ const Members = () => {
                       </div>
                     )
                   ))}
-                  {memberDrafts.length > 8 && !showAllDrafts ? (
+                  {memberDrafts.length > 8 && !showAllDrafts && !isSearchActive ? (
                     <button className="text-[11px] text-primary hover:underline pt-1" onClick={() => setShowAllDrafts(true)}>
                       {t.membersPage.savedMemberListMore.replace("{count}", String(memberDrafts.length - 8))}
                     </button>
@@ -3319,7 +3790,8 @@ const Members = () => {
               ) : (
                 <>
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/20">
-                  <div className="text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {loading ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" aria-hidden /> : null}
                     {filtered.length} match{filtered.length === 1 ? "" : "es"} on this page ·{" "}
                     {membersDbTotalCount != null
                       ? `database page ${membersServerPage}/${membersServerTotalPages} (${membersDbTotalCount} in filter)`
@@ -3358,6 +3830,7 @@ const Members = () => {
                   return (
                     <Fragment key={member.id}>
                       <motion.div
+                        id={`roster-member-${member.id}`}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: i * 0.03 }}
@@ -3399,6 +3872,18 @@ const Members = () => {
                                 {membershipEmails[member.id] ? (
                                   <span className="text-xs opacity-80">· {membershipEmails[member.id]}</span>
                                 ) : null}
+                                {isSearchActive
+                                  ? collectRosterSearchMatchFields(
+                                      rosterSearchQuery,
+                                      member,
+                                      masterByMembershipId[member.id],
+                                      membershipEmails[member.id],
+                                    ).map((field) => (
+                                      <Badge key={field} variant="outline" className="text-[10px] font-normal px-1.5 py-0 h-5">
+                                        {getSearchMatchFieldLabel(field)}
+                                      </Badge>
+                                    ))
+                                  : null}
                               </div>
                             </div>
                           </div>
@@ -3518,11 +4003,11 @@ const Members = () => {
                                     </SelectContent>
                                   </Select>
                                 </div>
-                                <Input
-                                  value={editMemberForm.team}
-                                  onChange={(event) => setEditMemberForm((previous) => ({ ...previous, team: event.target.value }))}
-                                  placeholder={t.membersPage.teamPlaceholder}
-                                  className="h-10 bg-background/60"
+                                <MemberTeamAssignmentField
+                                  teams={clubTeams}
+                                  selectedTeamIds={editMemberTeamIds}
+                                  labels={teamAssignmentLabels}
+                                  onChange={setEditMemberTeamIds}
                                 />
                                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                   <Input
@@ -3564,14 +4049,15 @@ const Members = () => {
                                     : getMemberRosterName(member)
                                 }
                                 clubName={clubName}
-                                logoSrc={logo}
-                                membershipRole={
-                                  memberPanelEditModeId === member.id ? editMemberForm.role : member.role
-                                }
+                                logoSrc={clubLogoUrl ?? ""}
+                                membershipRole={getRoleLabel(
+                                  memberPanelEditModeId === member.id ? editMemberForm.role : member.role,
+                                )}
                                 teamLabel={
                                   memberPanelEditModeId === member.id
-                                    ? editMemberForm.team.trim() || getMemberTeamLabel(member)
-                                    : getMemberTeamLabel(member)
+                                    ? clubTeamNamesFromIds(clubTeams, editMemberTeamIds).join(", ") ||
+                                      editMemberForm.team.trim()
+                                    : getMemberAssignedTeamNames(member)
                                 }
                                 email={membershipEmails[member.id] ?? null}
                                 avatarUpload={
@@ -3615,11 +4101,18 @@ const Members = () => {
                               </div>
                             ) : null}
 
-                            <div className="flex flex-col gap-2 pt-2 sm:flex-row">
+                            <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center">
+                              {memberPanelSaveConfirmedId === member.id ? (
+                                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 sm:mr-auto">
+                                  <Check className="h-3.5 w-3.5" />
+                                  {t.membersPage.masterDataSavedHint}
+                                </span>
+                              ) : null}
                               {memberPanelEditModeId === member.id ? (
                                 <>
                                   <Button
                                     size="sm"
+                                    type="button"
                                     className="w-full bg-gradient-gold-static font-semibold text-primary-foreground hover:brightness-110 sm:flex-1"
                                     disabled={memberPanelSaving}
                                     onClick={() => void saveMemberPanelInline(member)}
@@ -4516,6 +5009,12 @@ const Members = () => {
                           <MasterDataTabs
                             values={row.masterData}
                             labels={masterTabLabels}
+                            displayName={row.name.trim() || undefined}
+                            clubName={clubName}
+                            logoSrc={clubLogoUrl ?? ""}
+                            membershipRole={row.role ? getRoleLabel(row.role) : undefined}
+                            teamLabel={row.team.trim()}
+                            email={row.email.trim() || null}
                             avatarUpload={{
                               uploading: bulkAvatarUploadingRowId === row.id,
                               onUpload: (file) => void uploadBulkRowAvatar(row.id, file),
@@ -4566,9 +5065,9 @@ const Members = () => {
           displayName={getMemberRosterName(selectedMember)}
           email={membershipEmails[selectedMember.id] ?? null}
           membershipRole={selectedMember.role}
-          teamLabel={getMemberTeamLabel(selectedMember)}
+          teamLabel={getMemberAssignedTeamNames(selectedMember)}
           clubName={clubName}
-          logoSrc={logo}
+          logoSrc={clubLogoUrl ?? ""}
           initial={masterByMembershipId[selectedMember.id] ?? null}
           profileAvatarUrl={selectedMember.profiles?.avatar_url ?? null}
           memberStatus={selectedMember.status}
@@ -4590,7 +5089,7 @@ const Members = () => {
             masterDataFields: t.membersPage.masterDataFields,
           }}
           onSave={async (payload) => {
-            await handleSaveMasterRecord(selectedMember, payload);
+            await handleSaveMasterRecord(selectedMember, payload, { suppressToast: true });
           }}
         />
       ) : null}

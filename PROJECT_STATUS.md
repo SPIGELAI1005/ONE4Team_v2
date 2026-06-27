@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-06-25 (Communication hub, tasks, attendance overview, WhatsApp setup backlog)
+Last updated: 2026-06-28 (Members ops, team assignment, club member card)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -29,6 +29,7 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - **Training attendance + public club (2026-06-24):** Polished RSVP on **`/activities`** (decline reasons, trainer roster panel). Same **`activity_attendance`** on public club **Next up**, **schedule**, **matches**. Hero **team filter** (`?team=`). AI 4 T pilot Phases 1–4 code complete. Migrations **`20260624120000`**–**`20260626120000`**. See **`CHANGELOG.md`** § **2026-06-24**.
 - **TSV Allach public club wave (2026-06-27):** **Sommerfest 2026** tournament — admin publish/sync of 22 cup matches, public live board at **`/club/:slug/tournament/sommerfest-2026`**, header banner + pulsating live CTA from 11 Jul 2026. **Online membership application** multi-step form on **`/join`** with **`application_payload`** JSON (migration **`20260628120000`**). Football **camp events** metadata (**`20260627120000`**). Public news carousel, mobile hero CTA reorder, Contact removed from header nav, **AI 4 T analysis** match modal label. See **`CHANGELOG.md`** § **2026-06-27** and **`docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`**.
 - **Communication hub + tasks + attendance (2026-06-25):** Public club **Messages hub**; embedded Communication modal; announcement moderation; **`/tasks`** module + notifications; training RSVP **team overview** + **1h cutoff** + roster gate + self-RSVP RLS (**`20260725130000`**). WhatsApp setup backlog: **`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`**. See **`CHANGELOG.md`** § **2026-06-25**.
+- **Members ops + club member card (2026-06-28):** **`/members`** search/save UX; team assignment from members + teams; Club Card with role/team/DOB/club logo + PNG export (**`club-pass-capture.ts`**); **`/teams`** search; **AI 4 T Agent** header button; repair migrations **`20260725140000`**, **`20260725150000`**. See **`CHANGELOG.md`** § **2026-06-28**.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 

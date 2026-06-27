@@ -97,10 +97,12 @@ Apply in the same Supabase project (after **`20260628120000`**):
 11. `supabase/migrations/20260724170000_fix_publish_club_page_join_default_role_cast.sql`
 12. `supabase/migrations/20260724180000_club_tasks.sql`
 13. `supabase/migrations/20260725130000_activity_attendance_member_self_rsvp.sql`
+14. `supabase/migrations/20260725140000_repair_list_club_membership_emails.sql`
+15. `supabase/migrations/20260725150000_repair_images_avatars_bucket.sql`
 
 Deploy Edge: **`chat-bridge`** (for WhatsApp/Telegram External Bridge).
 
-Smoke: public club **Messages** hub; **`/communication`** announcements + moderation; **`/tasks`**; training RSVP overview + self-RSVP. See **`CHANGELOG.md` § 2026-06-25**, **`TASKS.md` COMM-OPS-001 / ATTEND-OPS-001.
+Smoke: public club **Messages** hub; **`/communication`** announcements + moderation; **`/tasks`**; training RSVP overview + self-RSVP; **`/members`** team assignment + club card PNG; avatar upload. See **`CHANGELOG.md` § 2026-06-25** and **§ 2026-06-28**, **`TASKS.md` COMM-OPS-001 / ATTEND-OPS-001 / MEM-OPS-006.
 
 ## WhatsApp External Bridge — operator (follow-up)
 **Not** personal WhatsApp / QR login. Use **WhatsApp Business API** only.

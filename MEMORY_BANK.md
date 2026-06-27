@@ -1,11 +1,12 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-06-25 (Communication hub, tasks, attendance overview, WhatsApp setup backlog)
+Last updated: 2026-06-28 (Members ops, team assignment, club member card)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **Members ops + club member card (2026-06-28):** **`/members`** search UX hardened (no focus loss on refetch; aligned search icon); saved-list + roster search match badges; draft save resolves rows outside first 500 via **`resolveDraftById`**; success toasts. **Team assignment** from **`/members`** and **`/teams`** via **`team_players`** / **`team_coaches`** (**`member-team-assignments.ts`**, **`member-team-assignment-field.tsx`**). **Club Card** tab shows club **`logo_url`**, role, team, date of birth; **AI 4 T** logo on **Generate club ID**; PNG export via **`club-pass-capture.ts`** (image inlining + decoration hide for html2canvas). Header clipping / empty card stretch fixes in **`master-data-tabs.tsx`**. **`/teams`** team search filter. Dashboard header **AI 4 T Agent** button (**`Ai4TLogo`**). Repair migrations **`20260725140000`** (`list_club_membership_emails`), **`20260725150000`** (`images-avatars` bucket). See **`CHANGELOG.md`** § **2026-06-28**.
 - **Communication hub + public Messages (2026-06-25):** **`PublicClubMessagesHub`** on club microsite (Updates/Channels, announcement detail, Communication modal embed). Team-scoped message RLS + notification fan-out. Announcement moderation (edit/delete, orphan notification cleanup). Tasks module **`/tasks`** with **`club_tasks`** + dashboard summary. See **`CHANGELOG.md`** § **2026-06-25**.
 - **Training attendance overview (2026-06-25):** RSVP cards show team stats + who is coming/not coming; **1-hour training cutoff**; roster-only RSVP; member self-RSVP migration **`20260725130000`**. White glass **Can't make it** dialog on public club. Messages FAB moves above toasts. Lib: **`training-attendance-overview.tsx`**, **`isMemberInvitedToActivity`**, **`supabase-error.ts`**.
 - **WhatsApp bridge setup (backlog):** Operator guide **`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`** — Business API only (no personal QR); Meta webhook GET verify still TODO (**BRIDGE-WA-001**).
@@ -186,6 +187,8 @@ Persistent handoff context for future agents so work can continue without re-dis
 59. `20260615130000_ai_agent_tool_rpcs.sql` — `agent_create_training`, `agent_cancel_training`
 60. `20260615140000_ai_agent_runs_conversation_id.sql` — link runs to `ai_conversations`
 61. `20260615150000_ai_agent_tool_rpcs_extended.sql` — `agent_create_member_draft`, `agent_send_club_announcement`
+62. `20260725140000_repair_list_club_membership_emails.sql` — repair RPC for member email listing (`CHANGELOG.md` § 2026-06-28)
+63. `20260725150000_repair_images_avatars_bucket.sql` — repair `images-avatars` storage bucket + RLS (`CHANGELOG.md` § 2026-06-28)
 
 Also ensure previously listed communication migrations remain applied in the same project:
 - `20260301152000_add_chat_bridge_connectors_and_events.sql`
@@ -198,6 +201,8 @@ Also ensure previously listed communication migrations remain applied in the sam
 - If behavior mismatches local code expectations, verify app env vars point to the same Supabase project where all required migrations are applied.
 
 ## Suggested Next Implementation Steps
+- **Members club card:** Optional sequential club ID server validation; i18n for hardcoded Club Card field labels (EN/DE).
+- **Members team assignment:** Sync **`team_players`** when draft converts to active member on invite accept (if not already on redeem path).
 - **TSV Allach Sommerfest:** Apply **`20260627120000`**, **`20260628120000`**; admin publish 22 matches; smoke public tournament board during event window (11–12 Jul 2026); verify live score updates propagate within poll interval.
 - **Membership application:** Smoke **`/club/tsv-allach-09/join`** end-to-end; confirm **`application_payload`** visible in admin join review; optional admin UI to render structured fields from JSON.
 - **AI 4 T Agent:** Apply migrations **`20260615120000`**–**`20260615150000`**; deploy **`ai4team-agent`**; smoke Agent tab (create training propose → confirm), header Sparkles on Teams/Members, Chat **`/agent`** commands; optional E2E for idempotency and permission denial paths.
@@ -207,7 +212,7 @@ Also ensure previously listed communication migrations remain applied in the sam
 - **Deploy bundle (2026-03-30):** Apply migrations 24–42 above in filename order in each Supabase env; deploy Edge functions touched by Stripe/LLM/chat changes (**`stripe-checkout`**, **`stripe-webhook`**, **`co-trainer`**, **`chat-bridge`** as applicable); complete **`ops/PRODUCTION_READINESS_ARTIFACTS.md`** rows; optional policy name drift check: generate **`ops/pg_policies.snapshot.txt`** from staging then **`PG_POLICIES_SNAPSHOT_FILE=ops/pg_policies.snapshot.txt npm run policies:drift`** (see script header); **`npm run k6:smoke`** and **`k6 run k6/staged-dashboard-reads.js`** on staging if k6 installed. Include **47** when applying April–May RBAC fix.
 - **Public club:** Optional E2E for `/club/:slug` hash navigation + mobile menu; confirm **`?draft=1`** admin preview path still matches RLS expectations; SSR/meta for public routes remains a follow-up if SEO hardening is required.
 - **Members:** On member join from draft, merge `club_member_drafts.master_data` into `club_member_master_records` (server trigger or app flow); optional photo upload to storage instead of URL-only.
-- **Club card:** Persist `club_pass_generated_at` / internal ID server-side validation if clubs require sequential IDs.
+- **Club card:** Persist `club_pass_generated_at` / internal ID server-side validation if clubs require sequential IDs. *(PNG export + header layout shipped 2026-06-28 — see `CHANGELOG.md` § 2026-06-28.)*
 - **RLS audit:** Revisit policies that still key only on `club_memberships.role` where assignment-based admins need parity.
 - Add production workers/dispatch for:
   - abuse notification event delivery,

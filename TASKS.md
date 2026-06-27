@@ -8,6 +8,14 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ## NOW (top priority)
 
+### Members ops + club member card (2026-06-28) — code in repo
+- [x] **MEM-OPS-001** Members search focus + refetch UX; search match badges; draft save outside first 500
+- [x] **MEM-OPS-002** Team assignment UI + `team_players` / `team_coaches` sync (`member-team-assignments.ts`)
+- [x] **MEM-OPS-003** Club Card: role, team, DOB, club logo; PNG export (`club-pass-capture.ts`); layout fixes
+- [x] **MEM-OPS-004** Teams page search filter; AI 4 T Agent header button + Generate ID logo
+- [x] **MEM-OPS-005** Repair migrations `list_club_membership_emails` + `images-avatars` bucket
+- [ ] **MEM-OPS-006** Operator: apply **`20260725140000`**, **`20260725150000`**; smoke members search, team assign, club card download, avatar upload
+
 ### WhatsApp External Bridge — operator follow-up (2026-06-25)
 See [`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`](docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md)
 

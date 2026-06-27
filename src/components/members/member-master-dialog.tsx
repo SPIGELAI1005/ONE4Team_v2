@@ -111,6 +111,10 @@ export function MemberMasterDialog({
     setSaving(true);
     try {
       await onSave(form);
+      toast({
+        title: t.membersPage.masterDataSavedTitle,
+        description: t.membersPage.masterDataSavedDescRoster.replace("{name}", displayName),
+      });
       onOpenChange(false);
     } catch {
       /* Parent shows toast */
@@ -235,7 +239,7 @@ export function MemberMasterDialog({
                 displayName={displayName}
                 clubName={clubName}
                 logoSrc={logoSrc}
-                membershipRole={membershipRole}
+                membershipRole={roleDisplayLabel}
                 teamLabel={teamLabel}
                 email={email}
                 avatarUpload={{
