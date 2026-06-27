@@ -59,6 +59,7 @@ export function PublicClubAi4tModal() {
     user,
     showAi4tModal,
     setShowAi4tModal,
+    ai4tInitialPrompt,
     ai4teamLaunch,
     goToAuthWithReturn,
   } = usePublicClub();
@@ -86,7 +87,11 @@ export function PublicClubAi4tModal() {
     if (isSignedIn && user && club?.id) {
       localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
     }
-  }, [showAi4tModal, isSignedIn, user, club?.id]);
+    if (ai4tInitialPrompt) {
+      setChatSeed(ai4tInitialPrompt);
+      if (isSignedIn) setMainTab("chat");
+    }
+  }, [showAi4tModal, isSignedIn, user, club?.id, ai4tInitialPrompt]);
 
   useEffect(() => {
     if (!showAi4tModal || !isSignedIn || !user?.id || !club?.id) {

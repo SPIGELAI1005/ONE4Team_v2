@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-06-27 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-27** TSV Allach Sommerfest + membership application), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
+Last updated: 2026-06-25 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-25** communication/tasks/attendance, § **2026-06-27** TSV Allach Sommerfest + membership application), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
 
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 
@@ -81,6 +81,36 @@ Apply in the same Supabase project as the app (after **`20260626120000`**):
 Optional seed: `supabase/scripts/seed_tsv_allach_football_camps.sql`.
 
 Smoke: **`/matches`** → publish Sommerfest 2026 → **`/club/tsv-allach-09/tournament/sommerfest-2026`**; **`/club/tsv-allach-09/join`** → submit 5-step application → verify **`application_payload`** in admin join inbox. See **`CHANGELOG.md` § 2026-06-27**, **`docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`**, **`TASKS.md` ALLACH-OPS-001**.
+
+## Communication hub, tasks, attendance (2026-06-25)
+Apply in the same Supabase project (after **`20260628120000`**):
+1. `supabase/migrations/20260629120000_club_messages_team_scope_and_notify.sql`
+2. `supabase/migrations/20260630120000_repair_notifications_table.sql`
+3. `supabase/migrations/20260630130000_repair_events_training_and_feature_rpc.sql`
+4. `supabase/migrations/20260630140000_messages_trainers_channel.sql`
+5. `supabase/migrations/20260630150000_fix_can_access_team_message_ambiguity.sql`
+6. `supabase/migrations/20260724130000_reload_can_access_team_message_schema.sql`
+7. `supabase/migrations/20260724140000_announcement_updates_fanout_include_author.sql`
+8. `supabase/migrations/20260724150000_message_and_announcement_moderation.sql`
+9. `supabase/migrations/20260724160000_cleanup_announcement_notifications_on_delete.sql`
+10. `supabase/migrations/20260724160100_backfill_orphan_announcement_notifications.sql`
+11. `supabase/migrations/20260724170000_fix_publish_club_page_join_default_role_cast.sql`
+12. `supabase/migrations/20260724180000_club_tasks.sql`
+13. `supabase/migrations/20260725130000_activity_attendance_member_self_rsvp.sql`
+
+Deploy Edge: **`chat-bridge`** (for WhatsApp/Telegram External Bridge).
+
+Smoke: public club **Messages** hub; **`/communication`** announcements + moderation; **`/tasks`**; training RSVP overview + self-RSVP. See **`CHANGELOG.md` § 2026-06-25**, **`TASKS.md` COMM-OPS-001 / ATTEND-OPS-001.
+
+## WhatsApp External Bridge — operator (follow-up)
+**Not** personal WhatsApp / QR login. Use **WhatsApp Business API** only.
+
+Step-by-step: **`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`**
+
+Blockers:
+- **`chat-bridge`** must be deployed to the target Supabase project
+- Meta webhook URL must be **public** (not `localhost`)
+- **BRIDGE-WA-001:** Meta GET webhook verification (`hub.challenge`) may need a code change before Meta accepts the callback URL
 
 ## Phase 7 items (need Supabase / infra)
 - Staging + prod Supabase projects (completed for Phase 12 closure)

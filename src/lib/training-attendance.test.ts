@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   buildRosterAttendanceLines,
   comingCount,
+  isTrainingRsvpOpen,
   summarizeTrainingAttendance,
+  TRAINING_RSVP_CUTOFF_MS,
 } from "@/lib/training-attendance";
 
 describe("training-attendance", () => {
@@ -27,5 +29,14 @@ describe("training-attendance", () => {
       },
     });
     expect(lines[0].declineReason).toBe("School trip");
+  });
+
+  it("closes training RSVP one hour before start", () => {
+    const startsAt = new Date("2026-06-24T18:00:00.000Z").toISOString();
+    const openAt = new Date("2026-06-24T16:59:59.000Z").getTime();
+    const closedAt = new Date("2026-06-24T17:00:00.000Z").getTime();
+    expect(isTrainingRsvpOpen(startsAt, openAt)).toBe(true);
+    expect(isTrainingRsvpOpen(startsAt, closedAt)).toBe(false);
+    expect(TRAINING_RSVP_CUTOFF_MS).toBe(3_600_000);
   });
 });

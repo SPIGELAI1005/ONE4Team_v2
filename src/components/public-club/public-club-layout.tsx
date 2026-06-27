@@ -10,6 +10,8 @@ import { PublicSommerfestTournamentBanner } from "@/components/sommerfest/public
 import { PublicClubFooter } from "@/components/public-club/public-club-footer";
 import { PublicClubInviteModal } from "@/components/public-club/public-club-invite-modal";
 import { PublicClubAi4tModal } from "@/components/public-club/public-club-ai4t-modal";
+import { PublicClubCommunicationModal } from "@/components/public-club/public-club-communication-modal";
+import { PublicClubMessagesHub } from "@/components/public-club/public-club-messages-hub";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { PublicClubAttendanceProvider } from "@/contexts/public-club-attendance-context";
@@ -63,6 +65,8 @@ function PublicClubLayoutInner() {
             <PublicClubFooter club={club} />
             <PublicClubInviteModal />
             <PublicClubAi4tModal />
+            <PublicClubCommunicationModal />
+            <PublicClubMessagesHub />
           </div>
           </PublicClubAttendanceProvider>
         </ClubThemeProvider>

@@ -1,137 +1,54 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bell, Check, Loader2, X } from "lucide-react";
 import { useLanguage } from "@/hooks/use-language";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/useAuth";
-import { useClubId } from "@/hooks/use-club-id";
 import { formatDistanceToNow } from "date-fns";
+import { useClubId } from "@/hooks/use-club-id";
+import { useClubNotifications } from "@/hooks/use-club-notifications";
 import { getNotificationTypeMeta } from "@/lib/notification-type-meta";
-
-type Notification = {
-  id: string;
-  title: string;
-  body: string | null;
-  notification_type: string;
-  is_read: boolean;
-  created_at: string;
-};
+import { communicationChannelQuery } from "@/lib/club-message-access";
 
 const NotificationBell = () => {
-  const { user } = useAuth();
   const { clubId } = useClubId();
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(false);
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const {
+    notifications,
+    loading,
+    unreadCount,
+    markAsRead,
+    markAllRead,
+    dismiss,
+  } = useClubNotifications(clubId);
 
-  useEffect(() => {
-    if (!user || !clubId) {
-      setNotifications([]);
+  const openCommunication = (channelId?: string) => {
+    const suffix = channelId ? `?${communicationChannelQuery(channelId)}` : "";
+    navigate(`/communication${suffix}`);
+    setOpen(false);
+  };
+
+  const handleNotificationTap = (notification: (typeof notifications)[number]) => {
+    void markAsRead(notification.id);
+    if (notification.notification_type === "announcement") {
+      const suffix = notification.reference_id
+        ? `?${communicationChannelQuery("announcements")}&announcement=${encodeURIComponent(notification.reference_id)}`
+        : `?${communicationChannelQuery("announcements")}`;
+      navigate(`/communication${suffix}`);
+      setOpen(false);
       return;
     }
-
-    let cancelled = false;
-
-    const fetchNotifications = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("notifications")
-        .select("id, title, body, notification_type, is_read, created_at")
-        .eq("club_id", clubId)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      if (!cancelled) {
-        if (!error && data) setNotifications(data);
-        setLoading(false);
-      }
-    };
-
-    void fetchNotifications();
-
-    const channel = supabase
-      .channel(`notifications-${clubId}-${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `club_id=eq.${clubId},user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const row = payload.new as Notification;
-          setNotifications((prev) => [row, ...prev.filter((n) => n.id !== row.id)].slice(0, 20));
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "notifications",
-          filter: `club_id=eq.${clubId},user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const row = payload.new as Notification;
-          setNotifications((prev) => prev.map((n) => (n.id === row.id ? row : n)));
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "notifications",
-          filter: `club_id=eq.${clubId},user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const id = String((payload.old as { id?: string }).id ?? "");
-          if (id) setNotifications((prev) => prev.filter((n) => n.id !== id));
-        }
-      )
-      .subscribe();
-
-    return () => {
-      cancelled = true;
-      void supabase.removeChannel(channel);
-    };
-  }, [user, clubId]);
-
-  const markAsRead = async (id: string) => {
-    if (!clubId || !user) return;
-    await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("club_id", clubId)
-      .eq("user_id", user.id)
-      .eq("id", id);
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
-  };
-
-  const markAllRead = async () => {
-    if (!user || !clubId || unreadCount === 0) return;
-    await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("club_id", clubId)
-      .eq("user_id", user.id)
-      .eq("is_read", false);
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-  };
-
-  const dismissNotification = async (id: string) => {
-    if (!clubId || !user) return;
-    await supabase
-      .from("notifications")
-      .delete()
-      .eq("club_id", clubId)
-      .eq("user_id", user.id)
-      .eq("id", id);
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    if (notification.notification_type === "message") {
+      openCommunication("club-general");
+      return;
+    }
+    if (notification.notification_type === "task" && notification.reference_id) {
+      navigate(`/tasks?id=${encodeURIComponent(notification.reference_id)}`);
+      setOpen(false);
+      return;
+    }
+    openCommunication();
   };
 
   return (
@@ -196,11 +113,13 @@ const NotificationBell = () => {
                   notifications.map((n) => {
                     const { icon: Icon, color } = getNotificationTypeMeta(n.notification_type);
                     return (
-                      <motion.div
+                      <motion.button
                         key={n.id}
+                        type="button"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className={`flex gap-3 border-b border-border/40 px-4 py-3 transition-all duration-200 hover:bg-muted/20 ${
+                        onClick={() => handleNotificationTap(n)}
+                        className={`flex w-full gap-3 border-b border-border/40 px-4 py-3 text-left transition-all duration-200 hover:bg-muted/20 ${
                           !n.is_read ? "bg-primary/5" : ""
                         }`}
                       >
@@ -212,17 +131,24 @@ const NotificationBell = () => {
                             <p className={`text-sm ${!n.is_read ? "font-semibold text-foreground" : "text-foreground/80"}`}>
                               {n.title}
                             </p>
-                            <button
-                              type="button"
+                            <span
+                              role="button"
+                              tabIndex={0}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                void dismissNotification(n.id);
+                                void dismiss(n.id);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.stopPropagation();
+                                  void dismiss(n.id);
+                                }
                               }}
                               className="shrink-0 text-muted-foreground/50 hover:text-muted-foreground"
                               aria-label={t.notifications.dismiss}
                             >
                               <X className="h-3 w-3" />
-                            </button>
+                            </span>
                           </div>
                           {n.body ? <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{n.body}</p> : null}
                           <div className="mt-1 flex items-center gap-2">
@@ -230,17 +156,11 @@ const NotificationBell = () => {
                               {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
                             </span>
                             {!n.is_read ? (
-                              <button
-                                type="button"
-                                onClick={() => void markAsRead(n.id)}
-                                className="text-[10px] text-primary hover:underline"
-                              >
-                                {t.notifications.markRead}
-                              </button>
+                              <span className="text-[10px] text-primary">{t.notifications.markRead}</span>
                             ) : null}
                           </div>
                         </div>
-                      </motion.div>
+                      </motion.button>
                     );
                   })
                 )}

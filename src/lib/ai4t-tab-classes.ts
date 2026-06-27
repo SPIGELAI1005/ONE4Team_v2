@@ -1,8 +1,9 @@
-/** Club modal tab strip — light grey pills on dark glass (no theme toggle). */
-export const ai4tMainTabListClass = "grid h-10 w-full rounded-xl bg-neutral-100/90 p-1";
+/** Club modal tab strip — shared by AI 4 T and Messages hub. */
+export const ai4tMainTabListClass =
+  "grid h-10 w-full min-w-0 rounded-xl border-0 bg-neutral-100 p-1 shadow-none";
 
 export const ai4tMainTabTriggerClass =
-  "inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors shadow-none " +
+  "inline-flex h-full w-full min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors shadow-none " +
   "data-[state=inactive]:bg-neutral-200 data-[state=inactive]:text-neutral-600 " +
   "data-[state=inactive]:hover:bg-neutral-300 " +
   "data-[state=active]:bg-[#e31e24] data-[state=active]:text-white " +

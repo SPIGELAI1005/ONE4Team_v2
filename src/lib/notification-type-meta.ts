@@ -1,4 +1,4 @@
-import { Calendar, Info, Megaphone, Trophy, type LucideIcon } from "lucide-react";
+import { Calendar, ClipboardList, Info, Megaphone, MessageSquare, Trophy, type LucideIcon } from "lucide-react";
 
 export interface NotificationTypeMeta {
   value: string;
@@ -11,6 +11,8 @@ export const NOTIFICATION_TYPES: NotificationTypeMeta[] = [
   { value: "match", label: "Match", icon: Trophy, color: "text-accent" },
   { value: "event", label: "Event", icon: Calendar, color: "text-primary" },
   { value: "announcement", label: "Announcement", icon: Megaphone, color: "text-primary" },
+  { value: "message", label: "Message", icon: MessageSquare, color: "text-primary" },
+  { value: "task", label: "Task", icon: ClipboardList, color: "text-primary" },
   { value: "general", label: "General", icon: Info, color: "text-muted-foreground" },
 ];
 

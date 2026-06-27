@@ -21,6 +21,7 @@ import { BrandedText } from "@/components/ai/Ai4TBrand";
 import AnalyticsWidgets from "@/components/dashboard/AnalyticsWidgets";
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
 import LiveMatchTicker from "@/components/dashboard/LiveMatchTicker";
+import { TasksSummaryCard } from "@/components/dashboard/TasksSummaryCard";
 import AdminNotificationSender from "@/components/dashboard/AdminNotificationSender";
 import FinancialSummary from "@/components/dashboard/FinancialSummary";
 import SeasonProgressionChart from "@/components/analytics/SeasonProgressionChart";
@@ -589,6 +590,8 @@ const DashboardContent = () => {
         ) : null}
 
         {sections.liveMatchTicker ? <LiveMatchTicker /> : null}
+
+        <TasksSummaryCard />
 
         {/* KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

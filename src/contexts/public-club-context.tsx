@@ -23,6 +23,7 @@ import {
   parseClubPublicPageConfig,
 } from "@/lib/club-public-page-config";
 import { fetchClubMemberPremiumFeature, fetchClubPublicHasFeature } from "@/lib/club-public-feature-access";
+import { communicationChannelQuery } from "@/lib/club-message-access";
 import {
   redactEventForPrivacy,
   redactMatchScoresForPrivacy,
@@ -91,9 +92,18 @@ interface PublicClubContextValue {
   openDashboardOrAuth: () => void;
   goToAuthWithReturn: (path: string) => void;
   messagesCta: () => void;
+  showCommunicationModal: boolean;
+  setShowCommunicationModal: (v: boolean) => void;
+  communicationInitialChannel: string | null;
+  communicationInitialAnnouncementId: string | null;
+  communicationEditAnnouncementId: string | null;
+  openCommunicationModal: (channelId?: string, announcementId?: string, editAnnouncement?: boolean) => void;
+  closeCommunicationModal: () => void;
+  openCommunicationInApp: (channelId?: string) => void;
   showAi4tModal: boolean;
   setShowAi4tModal: (v: boolean) => void;
-  openAi4tModal: () => void;
+  ai4tInitialPrompt: string | null;
+  openAi4tModal: (prompt?: string) => void;
   ai4teamLaunch: (prompt?: string) => void;
   documentsCta: () => void;
   reportsCta: () => void;
@@ -128,7 +138,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { activeClubId, activeClub } = useActiveClub();
+  const { activeClubId, activeClub, setActiveClubId } = useActiveClub();
   const { t, language, setLanguage } = useLanguage();
 
   const isPreviewMode = searchParams.get("preview") === "1";
@@ -154,6 +164,13 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
   const [checkingMembership, setCheckingMembership] = useState(false);
   const [showRequestInvite, setShowRequestInvite] = useState(false);
   const [showAi4tModal, setShowAi4tModal] = useState(false);
+  const [ai4tInitialPrompt, setAi4tInitialPrompt] = useState<string | null>(null);
+  const [showCommunicationModal, setShowCommunicationModal] = useState(false);
+  const [communicationInitialChannel, setCommunicationInitialChannel] = useState<string | null>(null);
+  const [communicationInitialAnnouncementId, setCommunicationInitialAnnouncementId] = useState<string | null>(
+    null,
+  );
+  const [communicationEditAnnouncementId, setCommunicationEditAnnouncementId] = useState<string | null>(null);
   const [reqName, setReqName] = useState("");
   const [reqEmail, setReqEmail] = useState("");
   const [reqMessage, setReqMessage] = useState("");
@@ -746,18 +763,66 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
     }
   }, [basePath, club?.id, goToAuthWithReturn, navigate, searchSuffix, user]);
 
-  const messagesCta = useCallback(() => {
-    if (!club?.id) return;
-    if (user) {
+  const openCommunicationModal = useCallback(
+    (channelId?: string, announcementId?: string, editAnnouncement = false) => {
+      if (!club?.id) return;
+      if (!user) {
+        goToAuthWithReturn(`${basePath}${searchSuffix}`);
+        return;
+      }
+      if (!isMember) {
+        goToAuthWithReturn(`${basePath}${searchSuffix}`);
+        return;
+      }
       localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
-      navigate("/communication");
-    } else {
-      goToAuthWithReturn("/communication");
-    }
-  }, [club?.id, goToAuthWithReturn, navigate, user]);
+      setActiveClubId(club.id);
+      setCommunicationInitialChannel(
+        channelId ?? (homeTeamFilterId ? `team-${homeTeamFilterId}` : null),
+      );
+      if (editAnnouncement && announcementId) {
+        setCommunicationInitialAnnouncementId(null);
+        setCommunicationEditAnnouncementId(announcementId);
+      } else {
+        setCommunicationInitialAnnouncementId(announcementId ?? null);
+        setCommunicationEditAnnouncementId(null);
+      }
+      setShowCommunicationModal(true);
+    },
+    [basePath, club?.id, goToAuthWithReturn, homeTeamFilterId, isMember, searchSuffix, setActiveClubId, user],
+  );
 
-  const openAi4tModal = useCallback(() => {
+  const closeCommunicationModal = useCallback(() => {
+    setShowCommunicationModal(false);
+    setCommunicationInitialChannel(null);
+    setCommunicationInitialAnnouncementId(null);
+    setCommunicationEditAnnouncementId(null);
+  }, []);
+
+  const openCommunicationInApp = useCallback(
+    (channelId?: string) => {
+      if (!club?.id || !user) return;
+      localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
+      setActiveClubId(club.id);
+      const suffix = channelId ? `?${communicationChannelQuery(channelId)}` : "";
+      setShowCommunicationModal(false);
+      navigate(`/communication${suffix}`);
+    },
+    [club?.id, navigate, setActiveClubId, user],
+  );
+
+  const messagesCta = useCallback(() => {
+    openCommunicationModal();
+  }, [openCommunicationModal]);
+
+  const openAi4tModal = useCallback((prompt?: string) => {
+    const trimmed = prompt?.trim();
+    setAi4tInitialPrompt(trimmed ? trimmed : null);
     setShowAi4tModal(true);
+  }, []);
+
+  const handleSetShowAi4tModal = useCallback((open: boolean) => {
+    setShowAi4tModal(open);
+    if (!open) setAi4tInitialPrompt(null);
   }, []);
 
   const ai4teamLaunch = useCallback(
@@ -917,8 +982,17 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       openDashboardOrAuth,
       goToAuthWithReturn,
       messagesCta,
+      showCommunicationModal,
+      setShowCommunicationModal,
+      communicationInitialChannel,
+      communicationInitialAnnouncementId,
+      communicationEditAnnouncementId,
+      openCommunicationModal,
+      closeCommunicationModal,
+      openCommunicationInApp,
       showAi4tModal,
-      setShowAi4tModal,
+      setShowAi4tModal: handleSetShowAi4tModal,
+      ai4tInitialPrompt,
       openAi4tModal,
       ai4teamLaunch,
       documentsCta,
@@ -961,8 +1035,17 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       loadingData,
       memberCount,
       messagesCta,
+      showCommunicationModal,
+      setShowCommunicationModal,
+      communicationInitialChannel,
+      communicationInitialAnnouncementId,
+      communicationEditAnnouncementId,
+      openCommunicationModal,
+      closeCommunicationModal,
+      openCommunicationInApp,
       showAi4tModal,
-      setShowAi4tModal,
+      handleSetShowAi4tModal,
+      ai4tInitialPrompt,
       openAi4tModal,
       ai4teamLaunch,
       clubHasAiFeature,

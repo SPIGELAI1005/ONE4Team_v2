@@ -99,6 +99,16 @@ Optional operator seed: `supabase/scripts/seed_tsv_allach_football_camps.sql`.
 
 Client-only: Sommerfest 2026 tournament board, membership application form, news carousel, public UX polish. See `CHANGELOG.md` § 2026-06-27 and `docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`.
 
+## Communication hub, tasks, attendance (2026-06-25)
+Apply after TSV Allach migrations above (filename order):
+- `20260629120000_club_messages_team_scope_and_notify.sql` — team-scoped message access + notification fan-out
+- `20260630120000_repair_notifications_table.sql` through `20260724160100_backfill_orphan_announcement_notifications.sql` — notifications repair, trainers channel, moderation, announcement cleanup
+- `20260724170000_fix_publish_club_page_join_default_role_cast.sql` — publish RPC enum fix
+- `20260724180000_club_tasks.sql` — `club_tasks` + task notifications
+- `20260725130000_activity_attendance_member_self_rsvp.sql` — member self-RSVP RLS on `activity_attendance`
+
+Client-only: Messages hub, attendance overview UI, white decline dialog, tasks page. WhatsApp setup backlog: `docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`. Deploy **`chat-bridge`** for External Bridge. See `CHANGELOG.md` § 2026-06-25.
+
 ## Verification artifact
 - Run `supabase/PHASE12_VERIFY.sql` after applying the migrations above.
 - Treat any `ok = false` row as a rollout blocker.

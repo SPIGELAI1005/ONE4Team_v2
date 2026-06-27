@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { Check, Loader2, MessageSquareText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,12 +16,21 @@ import {
   clubAttendanceComingActiveClass,
   clubAttendanceComingStandbyClass,
 } from "@/lib/public-club-cta-classes";
+import {
+  clubAi4tModalOverlayClass,
+  clubAi4tModalPanelClass,
+  clubMessagesHubCardClass,
+} from "@/lib/public-club-glass-classes";
 
 interface TrainingAttendanceRsvpProps {
   activityTitle: string;
   myAttendance: TrainingAttendanceRow | null;
   busy?: boolean;
   variant?: "dashboard" | "club";
+  /** Club theme CSS vars for portaled decline dialog (public microsite). */
+  clubDialogStyle?: CSSProperties;
+  rsvpClosed?: boolean;
+  rsvpClosedMessage?: string;
   onRespond: (status: "confirmed" | "declined", notes?: string | null) => Promise<void>;
   labels: {
     coming: string;
@@ -46,6 +55,9 @@ export function TrainingAttendanceRsvp({
   myAttendance,
   busy = false,
   variant = "dashboard",
+  clubDialogStyle,
+  rsvpClosed = false,
+  rsvpClosedMessage,
   onRespond,
   labels,
 }: TrainingAttendanceRsvpProps) {
@@ -81,6 +93,8 @@ export function TrainingAttendanceRsvp({
     setDeclineOpen(false);
     resetDeclineForm();
   }
+
+  const isClub = variant === "club";
 
   return (
     <div
@@ -134,11 +148,22 @@ export function TrainingAttendanceRsvp({
         </div>
       ) : null}
 
+      {rsvpClosed ? (
+        <p
+          className={cn(
+            "mb-3 text-xs",
+            variant === "club" ? "text-[color:var(--club-muted)]" : "text-muted-foreground",
+          )}
+        >
+          {rsvpClosedMessage}
+        </p>
+      ) : null}
+
       <div className="grid grid-cols-2 gap-2">
         <Button
           type="button"
           size="sm"
-          disabled={busy}
+          disabled={busy || rsvpClosed}
           variant={variant === "club" ? (isComing ? "default" : "outline") : isComing ? "default" : "outline"}
           className={cn(
             "h-10 rounded-xl font-semibold transition-colors",
@@ -156,7 +181,7 @@ export function TrainingAttendanceRsvp({
         <Button
           type="button"
           size="sm"
-          disabled={busy}
+          disabled={busy || rsvpClosed}
           variant={variant === "club" ? (isDeclined ? "default" : "outline") : isDeclined ? "default" : "outline"}
           className={cn(
             "h-10 rounded-xl font-semibold transition-colors",
@@ -174,15 +199,36 @@ export function TrainingAttendanceRsvp({
       </div>
 
       <Dialog open={declineOpen} onOpenChange={setDeclineOpen}>
-        <DialogContent className="max-w-md rounded-3xl border-border/60 bg-card/95 backdrop-blur-xl">
-          <DialogHeader>
-            <DialogTitle className="font-display">{labels.declineTitle}</DialogTitle>
-            <DialogDescription>
+        <DialogContent
+          overlayClassName={isClub ? clubAi4tModalOverlayClass : undefined}
+          style={isClub ? clubDialogStyle : undefined}
+          className={cn(
+            "max-w-md",
+            isClub
+              ? cn(
+                  clubAi4tModalPanelClass,
+                  "gap-0 overflow-hidden p-0 text-neutral-900",
+                  "[&>button]:rounded-full [&>button]:text-neutral-500 [&>button]:opacity-100 [&>button]:hover:bg-neutral-100 [&>button]:hover:text-neutral-800",
+                )
+              : "rounded-3xl border-border/60 bg-card/95 p-6 backdrop-blur-xl",
+          )}
+        >
+          <DialogHeader
+            className={cn(
+              isClub && "space-y-1 border-b border-neutral-200/80 px-5 py-4 text-left sm:text-left",
+            )}
+          >
+            <DialogTitle
+              className={cn("font-display", isClub && "text-base font-semibold leading-snug text-neutral-900")}
+            >
+              {labels.declineTitle}
+            </DialogTitle>
+            <DialogDescription className={cn(isClub && "text-sm leading-relaxed text-neutral-600")}>
               {labels.declineDescription.replace("{title}", activityTitle)}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3">
+          <div className={cn("space-y-3", isClub ? "px-5 py-4" : undefined)}>
             <div className="flex flex-wrap gap-2">
               {labels.presets.map((preset) => (
                 <button
@@ -194,9 +240,13 @@ export function TrainingAttendanceRsvp({
                   }}
                   className={cn(
                     "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                    selectedPreset === preset.id
-                      ? "border-primary/40 bg-primary/10 text-primary"
-                      : "border-border/60 bg-background/50 text-foreground hover:bg-muted/40",
+                    isClub
+                      ? selectedPreset === preset.id
+                        ? "border-[color:var(--club-primary)]/40 bg-[color:var(--club-primary)]/10 text-[color:var(--club-primary)]"
+                        : cn(clubMessagesHubCardClass, "text-neutral-700")
+                      : selectedPreset === preset.id
+                        ? "border-primary/40 bg-primary/10 text-primary"
+                        : "border-border/60 bg-background/50 text-foreground hover:bg-muted/40",
                   )}
                 >
                   {preset.label}
@@ -205,7 +255,12 @@ export function TrainingAttendanceRsvp({
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              <label
+                className={cn(
+                  "mb-1.5 block text-xs font-medium",
+                  isClub ? "text-neutral-600" : "text-muted-foreground",
+                )}
+              >
                 {labels.declineReasonLabel}
               </label>
               <Textarea
@@ -216,18 +271,33 @@ export function TrainingAttendanceRsvp({
                 }}
                 placeholder={labels.declineReasonPlaceholder}
                 rows={3}
-                className="resize-none rounded-xl border-border/60 bg-background/50"
+                className={cn(
+                  "resize-none rounded-xl",
+                  isClub
+                    ? "border-neutral-200/90 bg-white text-neutral-900 placeholder:text-neutral-400 focus-visible:ring-[color:var(--club-primary)]"
+                    : "border-border/60 bg-background/50",
+                )}
               />
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="ghost" onClick={() => setDeclineOpen(false)}>
+          <DialogFooter
+            className={cn(
+              "gap-2 sm:gap-2",
+              isClub && "border-t border-neutral-200/80 bg-white/70 px-5 py-3 sm:justify-end",
+            )}
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              className={cn(isClub && "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900")}
+              onClick={() => setDeclineOpen(false)}
+            >
               {labels.declineCancel}
             </Button>
             <Button
               type="button"
-              className="bg-rose-600 text-white hover:bg-rose-600/90"
+              className="rounded-full bg-rose-600 text-white hover:bg-rose-600/90"
               disabled={busy || !(selectedPreset || declineReason.trim())}
               onClick={() => void submitDecline()}
             >

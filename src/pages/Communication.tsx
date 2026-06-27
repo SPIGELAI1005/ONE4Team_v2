@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
@@ -14,6 +15,10 @@ import {
   RotateCcw,
   Search,
   Globe,
+  Users,
+  Upload,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +37,14 @@ import { correlationHeaders } from "@/lib/observability";
 import { supabaseErrorMessage } from "@/lib/supabase-error-message";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PUBLIC_NEWS_CATEGORIES } from "@/lib/public-club-news";
+import { filterAnnouncementsForUser, filterMessageChannelsForUser, TRAINERS_CHANNEL_ID } from "@/lib/club-message-access";
+import { clubAi4tModalOverlayClass, clubAi4tModalPanelClass, clubGlassInputClass } from "@/lib/public-club-glass-classes";
+import { cn } from "@/lib/utils";
+import { useUserTeamIds } from "@/hooks/use-user-team-ids";
+import { useClubAdmin } from "@/hooks/use-club-admin";
+import { uploadClubImageAsset } from "@/lib/upload-club-image";
+import { AnnouncementDetailView } from "@/components/communication/announcement-detail-view";
+import { canDeleteMessage, canEditMessage, canManageAnnouncements } from "@/lib/club-message-moderation";
 
 type Announcement = {
   id: string;
@@ -40,6 +53,7 @@ type Announcement = {
   priority: string;
   created_at: string;
   author_id: string;
+  team_id?: string | null;
   publish_to_public_website?: boolean;
   public_news_category?: string | null;
   image_url?: string | null;
@@ -51,6 +65,7 @@ type Message = {
   content: string;
   sender_id: string;
   team_id: string | null;
+  is_trainers_channel?: boolean;
   created_at: string;
   attachments: AttachmentMeta[];
   profiles?: { display_name: string | null };
@@ -63,6 +78,7 @@ type MessageBase = {
   content: string;
   sender_id: string;
   team_id: string | null;
+  is_trainers_channel?: boolean;
   created_at: string;
   attachments?: unknown;
 };
@@ -87,6 +103,7 @@ type Channel = {
   label: string;
   kind: ChannelKind;
   teamId: string | null;
+  isTrainersChannel?: boolean;
 };
 
 type BridgeProvider = "telegram" | "whatsapp";
@@ -133,6 +150,13 @@ const priorityColors: Record<string, string> = {
   urgent: "bg-accent/10 text-accent",
 };
 
+const embeddedPriorityColors: Record<string, string> = {
+  low: "bg-neutral-100 text-neutral-600",
+  normal: "bg-[color:var(--club-primary)]/10 text-[color:var(--club-primary)]",
+  high: "bg-orange-100 text-orange-800",
+  urgent: "bg-red-100 text-red-800",
+};
+
 const connectorStatusColor: Record<BridgeConnector["status"], string> = {
   pending: "bg-muted text-muted-foreground",
   connected: "bg-emerald-500/15 text-emerald-400",
@@ -170,12 +194,63 @@ function messagesKeysetOrFilter(created_at: string, id: string) {
   return `created_at.lt.${q(created_at)},and(created_at.eq.${q(created_at)},id.lt.${id})`;
 }
 
-const Communication = () => {
+function messageMatchesChannel(message: MessageBase, channel: Channel): boolean {
+  if (channel.kind !== "chat") return false;
+  const isTrainers = Boolean(message.is_trainers_channel);
+  if (channel.isTrainersChannel) return isTrainers && message.team_id === null;
+  if (isTrainers) return false;
+  if (channel.teamId === null) return message.team_id === null;
+  return message.team_id === channel.teamId;
+}
+
+function applyChannelToMessageQuery<T extends { is: (col: string, val: null | boolean) => T; eq: (col: string, val: string | boolean) => T }>(
+  query: T,
+  channel: Channel,
+  supportsTrainersColumn: boolean,
+): T {
+  if (channel.isTrainersChannel && supportsTrainersColumn) {
+    return query.is("team_id", null).eq("is_trainers_channel", true);
+  }
+  if (channel.teamId === null) {
+    if (supportsTrainersColumn) {
+      return query.is("team_id", null).eq("is_trainers_channel", false);
+    }
+    return query.is("team_id", null);
+  }
+  if (supportsTrainersColumn) {
+    return query.eq("team_id", channel.teamId).eq("is_trainers_channel", false);
+  }
+  return query.eq("team_id", channel.teamId);
+}
+
+export interface CommunicationWorkspaceProps {
+  /** Render inside public club modal (no dashboard chrome, no external bridge). */
+  embedded?: boolean;
+  clubIdOverride?: string;
+  initialChannelId?: string;
+  initialAnnouncementId?: string;
+  editAnnouncementId?: string;
+  /** Public club hero `?team=` filter — limits visible team channels. */
+  teamFilterId?: string;
+}
+
+export function CommunicationWorkspace({
+  embedded = false,
+  clubIdOverride,
+  initialChannelId,
+  initialAnnouncementId,
+  editAnnouncementId,
+  teamFilterId,
+}: CommunicationWorkspaceProps = {}) {
   const { user } = useAuth();
-  const { clubId, loading: clubLoading } = useClubId();
+  const { clubId: hookClubId, loading: clubLoading } = useClubId();
+  const clubId = clubIdOverride ?? hookClubId;
   const { toast } = useToast();
   const perms = usePermissions();
+  const { isClubAdmin } = useClubAdmin(clubId);
   const { t } = useLanguage();
+  const [searchParams] = useSearchParams();
+  const { teamIds: userTeamIds } = useUserTeamIds(clubId);
   const attachmentPlaceholder = t.communicationPage.attachmentPlaceholder;
 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -196,6 +271,7 @@ const Communication = () => {
   const [missingAnnouncementsTable, setMissingAnnouncementsTable] = useState(false);
   const [baseDataLoadError, setBaseDataLoadError] = useState<string | null>(null);
   const [supportsAttachments, setSupportsAttachments] = useState(true);
+  const [supportsTrainersChannel, setSupportsTrainersChannel] = useState(true);
   const [connectors, setConnectors] = useState<BridgeConnector[]>([]);
   const [connectorEvents, setConnectorEvents] = useState<BridgeEvent[]>([]);
   const [showBridgeSettings, setShowBridgeSettings] = useState(false);
@@ -208,7 +284,16 @@ const Communication = () => {
   const [annPublishPublic, setAnnPublishPublic] = useState(false);
   const [annPublicCategory, setAnnPublicCategory] = useState("club");
   const [annImageUrl, setAnnImageUrl] = useState("");
+  const [annImageUploading, setAnnImageUploading] = useState(false);
+  const annImageFileRef = useRef<HTMLInputElement>(null);
   const [annExcerpt, setAnnExcerpt] = useState("");
+  const [annTeamId, setAnnTeamId] = useState<string>("all");
+  const [viewingAnnouncementId, setViewingAnnouncementId] = useState<string | null>(
+    initialAnnouncementId ?? null,
+  );
+  const [editingAnnouncementId, setEditingAnnouncementId] = useState<string | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingMessageDraft, setEditingMessageDraft] = useState("");
 
   /** Keeps realtime handler off `messagePage` dependency (avoids channel churn on pagination). */
   const messagePageRef = useRef(messagePage);
@@ -276,21 +361,102 @@ const Communication = () => {
   }, []);
 
   const channels = useMemo<Channel[]>(
-    () => [
-      { id: "announcements", label: t.communicationPage.announcementsChannel, kind: "announcements", teamId: null },
-      { id: "club-general", label: t.communicationPage.clubGeneralChannel, kind: "chat", teamId: null },
-      ...teams.map((team) => ({
-        id: `team-${team.id}`,
-        label: team.name,
-        kind: "chat" as const,
-        teamId: team.id,
-      })),
+    () =>
+      filterMessageChannelsForUser(
+        [
+          { id: "announcements", label: t.communicationPage.announcementsChannel, kind: "announcements", teamId: null },
+          { id: "club-general", label: t.communicationPage.clubGeneralChannel, kind: "chat", teamId: null },
+          ...(supportsTrainersChannel
+            ? [
+                {
+                  id: TRAINERS_CHANNEL_ID,
+                  label: t.communicationPage.trainersChannel,
+                  kind: "chat" as const,
+                  teamId: null,
+                  isTrainersChannel: true,
+                },
+              ]
+            : []),
+          ...teams.map((team) => ({
+            id: `team-${team.id}`,
+            label: team.name,
+            kind: "chat" as const,
+            teamId: team.id,
+          })),
+        ],
+        {
+          userTeamIds,
+          isAdmin: perms.isAdmin,
+          isTrainer: perms.isTrainer,
+          teamFilterId: embedded ? teamFilterId : undefined,
+        },
+      ),
+    [
+      embedded,
+      perms.isAdmin,
+      perms.isTrainer,
+      supportsTrainersChannel,
+      t.communicationPage.announcementsChannel,
+      t.communicationPage.clubGeneralChannel,
+      t.communicationPage.trainersChannel,
+      teamFilterId,
+      teams,
+      userTeamIds,
     ],
-    [t.communicationPage.announcementsChannel, t.communicationPage.clubGeneralChannel, teams]
+  );
+
+  const visibleAnnouncements = useMemo(
+    () =>
+      filterAnnouncementsForUser(announcements, {
+        userTeamIds,
+        isAdmin: perms.isAdmin,
+        teamFilterId: embedded ? teamFilterId : undefined,
+      }),
+    [announcements, embedded, perms.isAdmin, teamFilterId, userTeamIds],
+  );
+
+  const viewingAnnouncement = useMemo(
+    () => announcements.find((announcement) => announcement.id === viewingAnnouncementId) ?? null,
+    [announcements, viewingAnnouncementId],
   );
 
   const selectedChannel =
     channels.find((channel) => channel.id === selectedChannelId) ?? channels[0];
+
+  useEffect(() => {
+    const fromUrl = searchParams.get("channel");
+    if (fromUrl && channels.some((channel) => channel.id === fromUrl)) {
+      setSelectedChannelId(fromUrl);
+    }
+    const announcementFromUrl = searchParams.get("announcement");
+    if (
+      announcementFromUrl &&
+      announcements.some((announcement) => announcement.id === announcementFromUrl)
+    ) {
+      setSelectedChannelId("announcements");
+      setViewingAnnouncementId(announcementFromUrl);
+    }
+  }, [announcements, channels, searchParams]);
+
+  useEffect(() => {
+    if (!initialChannelId) return;
+    if (channels.some((channel) => channel.id === initialChannelId)) {
+      setSelectedChannelId(initialChannelId);
+    }
+  }, [channels, initialChannelId]);
+
+  useEffect(() => {
+    if (!initialAnnouncementId) return;
+    if (!announcements.some((announcement) => announcement.id === initialAnnouncementId)) return;
+    setSelectedChannelId("announcements");
+    setViewingAnnouncementId(initialAnnouncementId);
+  }, [announcements, initialAnnouncementId]);
+
+  useEffect(() => {
+    if (!channels.some((channel) => channel.id === selectedChannelId) && channels[0]) {
+      setSelectedChannelId(channels[0].id);
+    }
+  }, [channels, selectedChannelId]);
 
   const selectedChannelRef = useRef(selectedChannel);
   useEffect(() => {
@@ -423,6 +589,7 @@ const Communication = () => {
     setMissingMessagesTable(false);
     setMissingAnnouncementsTable(false);
     setSupportsAttachments(true);
+    setSupportsTrainersChannel(true);
     setMessagePage(1);
     setMessageTotalCount(0);
     setBaseDataLoadError(null);
@@ -460,19 +627,21 @@ const Communication = () => {
         }
       }
 
-      const runQuery = async (withAttachments: boolean) => {
+      const runQuery = async (withAttachments: boolean, withTrainersColumn: boolean) => {
+        const trainersSelect = withTrainersColumn ? ", is_trainers_channel" : "";
         let query = supabase
           .from("messages")
           .select(
-            withAttachments ? "id, content, sender_id, team_id, created_at, attachments" : "id, content, sender_id, team_id, created_at",
+            withAttachments
+              ? `id, content, sender_id, team_id, created_at, attachments${trainersSelect}`
+              : `id, content, sender_id, team_id, created_at${trainersSelect}`,
             { count: "exact" },
           )
           .eq("club_id", clubId)
           .order("created_at", { ascending: false })
           .order("id", { ascending: false })
           .limit(MESSAGE_PAGE_SIZE);
-        query =
-          selectedChannel.teamId === null ? query.is("team_id", null) : query.eq("team_id", selectedChannel.teamId);
+        query = applyChannelToMessageQuery(query, selectedChannel, withTrainersColumn);
         if (messagePage > 1) {
           const before = messageKeysetRef.current[messagePage - 1];
           if (before) query = query.or(messagesKeysetOrFilter(before.created_at, before.id));
@@ -480,10 +649,14 @@ const Communication = () => {
         return query;
       };
 
-      let response = await runQuery(true);
+      let response = await runQuery(true, true);
       if (response.error?.message.includes("column messages.attachments does not exist")) {
         setSupportsAttachments(false);
-        response = await runQuery(false);
+        response = await runQuery(false, true);
+      }
+      if (response.error?.message.includes("column messages.is_trainers_channel does not exist")) {
+        setSupportsTrainersChannel(false);
+        response = await runQuery(supportsAttachments, false);
       }
       const { data, error } = response;
       if (error) {
@@ -517,6 +690,8 @@ const Communication = () => {
     hydrateMessages,
     messagePage,
     selectedChannel,
+    supportsAttachments,
+    supportsTrainersChannel,
     t.common.error,
     t.communicationPage.messagesTableMissingDesc,
     t.communicationPage.messagesTableMissingTitle,
@@ -540,9 +715,7 @@ const Communication = () => {
       const batch = pendingInserts.splice(0, pendingInserts.length);
       const ch = selectedChannelRef.current;
       for (const incoming of batch) {
-        if (ch.kind !== "chat") continue;
-        if (ch.teamId === null && incoming.team_id !== null) continue;
-        if (ch.teamId !== null && incoming.team_id !== ch.teamId) continue;
+        if (!messageMatchesChannel(incoming, ch)) continue;
 
         setPendingMessages((previous) =>
           previous.filter(
@@ -650,6 +823,7 @@ const Communication = () => {
         content: finalContent,
         sender_id: user.id,
         team_id: selectedChannel.teamId,
+        is_trainers_channel: Boolean(selectedChannel.isTrainersChannel),
         created_at: new Date().toISOString(),
         attachments,
         profiles: { display_name: t.communicationPage.you },
@@ -664,6 +838,9 @@ const Communication = () => {
       team_id: selectedChannel.teamId,
       content: finalContent,
     } as Record<string, unknown>;
+    if (supportsTrainersChannel && selectedChannel.isTrainersChannel) {
+      payload.is_trainers_channel = true;
+    }
     if (supportsAttachments) {
       payload.attachments = attachments.map((attachment) => ({
         path: attachment.path,
@@ -673,9 +850,10 @@ const Communication = () => {
       }));
     }
 
+    const trainersSelect = supportsTrainersChannel ? ", is_trainers_channel" : "";
     const selectColumns = supportsAttachments
-      ? "id, content, sender_id, team_id, created_at, attachments"
-      : "id, content, sender_id, team_id, created_at";
+      ? `id, content, sender_id, team_id, created_at, attachments${trainersSelect}`
+      : `id, content, sender_id, team_id, created_at${trainersSelect}`;
 
     const { data, error } = await supabase
       .from("messages")
@@ -750,8 +928,71 @@ const Communication = () => {
     });
   };
 
-  const handleAddAnnouncement = async () => {
-    if (!perms.isAdmin) {
+  const handleAnnPosterUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !clubId) return;
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: t.communicationPage.newsImageUploadFailed,
+        description: t.communicationPage.newsImageInvalidType,
+        variant: "destructive",
+      });
+      return;
+    }
+    setAnnImageUploading(true);
+    try {
+      const url = await uploadClubImageAsset(clubId, file, "announcements");
+      setAnnImageUrl(url);
+      toast({
+        title: t.communicationPage.newsImageUploadSuccess,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t.communicationPage.newsImageUploadFailed;
+      toast({
+        title: t.communicationPage.newsImageUploadFailed,
+        description: message.includes("Bucket not found")
+          ? t.communicationPage.newsImageUploadBucketHint
+          : message,
+        variant: "destructive",
+      });
+    } finally {
+      setAnnImageUploading(false);
+    }
+  };
+
+  const resetAnnouncementForm = () => {
+    setEditingAnnouncementId(null);
+    setAnnTitle("");
+    setAnnContent("");
+    setAnnTeamId("all");
+    setAnnPriority("normal");
+    setAnnPublishPublic(false);
+    setAnnPublicCategory("club");
+    setAnnImageUrl("");
+    setAnnExcerpt("");
+  };
+
+  const closeAnnouncementModal = () => {
+    setShowAddAnnouncement(false);
+    resetAnnouncementForm();
+  };
+
+  const openEditAnnouncement = (announcement: Announcement) => {
+    setEditingAnnouncementId(announcement.id);
+    setAnnTitle(announcement.title);
+    setAnnContent(announcement.content);
+    setAnnExcerpt(announcement.excerpt ?? "");
+    setAnnPriority(announcement.priority || "normal");
+    setAnnTeamId(announcement.team_id ?? "all");
+    setAnnPublishPublic(Boolean(announcement.publish_to_public_website));
+    setAnnPublicCategory(announcement.public_news_category ?? "club");
+    setAnnImageUrl(announcement.image_url ?? "");
+    setShowAddAnnouncement(true);
+  };
+
+  const handleSaveAnnouncement = async () => {
+    if (!isClubAdmin) {
       toast({
         title: t.common.notAuthorized,
         description: t.communicationPage.onlyAdminsCanPostAnnouncements,
@@ -768,18 +1009,44 @@ const Communication = () => {
       return;
     }
     if (!annTitle.trim() || !annContent.trim() || !clubId || !user) return;
+
+    const payload = {
+      title: annTitle.trim(),
+      content: annContent.trim(),
+      priority: annPriority,
+      team_id: annTeamId === "all" ? null : annTeamId,
+      publish_to_public_website: annPublishPublic,
+      public_news_category: annPublishPublic ? annPublicCategory : "club",
+      image_url: annImageUrl.trim() || null,
+      excerpt: annExcerpt.trim() || null,
+    };
+
+    if (editingAnnouncementId) {
+      const { data, error } = await supabase
+        .from("announcements")
+        .update(payload)
+        .eq("id", editingAnnouncementId)
+        .eq("club_id", clubId)
+        .select()
+        .single();
+      if (error) {
+        toast({ title: t.common.error, description: error.message, variant: "destructive" });
+        return;
+      }
+      setAnnouncements((previous) =>
+        previous.map((row) => (row.id === editingAnnouncementId ? (data as Announcement) : row)),
+      );
+      closeAnnouncementModal();
+      toast({ title: t.communicationPage.announcementUpdated });
+      return;
+    }
+
     const { data, error } = await supabase
       .from("announcements")
       .insert({
         club_id: clubId,
-        title: annTitle.trim(),
-        content: annContent.trim(),
-        priority: annPriority,
         author_id: user.id,
-        publish_to_public_website: annPublishPublic,
-        public_news_category: annPublishPublic ? annPublicCategory : "club",
-        image_url: annImageUrl.trim() || null,
-        excerpt: annExcerpt.trim() || null,
+        ...payload,
       })
       .select()
       .single();
@@ -788,16 +1055,93 @@ const Communication = () => {
       return;
     }
     setAnnouncements((previous) => [data as Announcement, ...previous]);
-    setShowAddAnnouncement(false);
-    setAnnTitle("");
-    setAnnContent("");
-    setAnnPriority("normal");
-    setAnnPublishPublic(false);
-    setAnnPublicCategory("club");
-    setAnnImageUrl("");
-    setAnnExcerpt("");
+    closeAnnouncementModal();
     toast({ title: t.communicationPage.announcementPosted });
   };
+
+  const handleDeleteAnnouncement = async (announcementId: string) => {
+    if (!isClubAdmin || !clubId) return;
+    if (!window.confirm(t.communicationPage.confirmDeleteAnnouncement)) return;
+    const { error } = await supabase
+      .from("announcements")
+      .delete()
+      .eq("id", announcementId)
+      .eq("club_id", clubId);
+    if (error) {
+      toast({ title: t.common.error, description: error.message, variant: "destructive" });
+      return;
+    }
+    setAnnouncements((previous) => previous.filter((row) => row.id !== announcementId));
+    if (viewingAnnouncementId === announcementId) setViewingAnnouncementId(null);
+    toast({ title: t.communicationPage.announcementDeleted });
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!clubId || !user) return;
+    if (!window.confirm(t.communicationPage.confirmDeleteMessage)) return;
+    const { error } = await supabase
+      .from("messages")
+      .delete()
+      .eq("id", messageId)
+      .eq("club_id", clubId)
+      .eq("sender_id", user.id);
+    if (error) {
+      toast({ title: t.common.error, description: error.message, variant: "destructive" });
+      return;
+    }
+    setMessages((previous) => previous.filter((row) => row.id !== messageId));
+    setPendingMessages((previous) => previous.filter((row) => row.id !== messageId));
+    if (editingMessageId === messageId) {
+      setEditingMessageId(null);
+      setEditingMessageDraft("");
+    }
+    toast({ title: t.communicationPage.messageDeleted });
+  };
+
+  const handleSaveMessageEdit = async (messageId: string) => {
+    if (!clubId || !user) return;
+    const draft = editingMessageDraft.trim();
+    if (!draft) return;
+    const { data, error } = await supabase
+      .from("messages")
+      .update({ content: draft })
+      .eq("id", messageId)
+      .eq("club_id", clubId)
+      .eq("sender_id", user.id)
+      .select("id, content, sender_id, team_id, is_trainers_channel, created_at, attachments")
+      .single();
+    if (error) {
+      const description = error.message.includes("15 minutes")
+        ? t.communicationPage.messageEditExpired
+        : error.message;
+      toast({ title: t.common.error, description, variant: "destructive" });
+      return;
+    }
+    const updated = data as MessageBase;
+    setMessages((previous) =>
+      previous.map((row) =>
+        row.id === messageId
+          ? {
+              ...row,
+              content: updated.content,
+              attachments: toAttachmentList(updated.attachments),
+            }
+          : row,
+      ),
+    );
+    setEditingMessageId(null);
+    setEditingMessageDraft("");
+    toast({ title: t.communicationPage.messageUpdated });
+  };
+
+  useEffect(() => {
+    if (!editAnnouncementId) return;
+    const announcement = announcements.find((row) => row.id === editAnnouncementId);
+    if (!announcement) return;
+    setSelectedChannelId("announcements");
+    setViewingAnnouncementId(null);
+    openEditAnnouncement(announcement);
+  }, [announcements, editAnnouncementId]);
 
   const openBridgeSettings = (provider: BridgeProvider) => {
     const existing = connectors.find((connector) => connector.provider === provider);
@@ -872,33 +1216,96 @@ const Communication = () => {
     await loadBridgeData();
   };
 
-  return (
-    <div className={DASHBOARD_PAGE_ROOT}>
-      <DashboardHeaderSlot
-        title={t.communicationPage.title}
-        subtitle={t.communicationPage.subtitle}
-        toolbarRevision={`${selectedChannel.kind}-${perms.isAdmin}-${missingAnnouncementsTable}`}
-        rightSlot={
-          selectedChannel.kind === "announcements" ? (
-            <Button
-              size="sm"
-              className="bg-gradient-gold-static text-primary-foreground hover:brightness-110"
-              onClick={() => setShowAddAnnouncement(true)}
-              disabled={!perms.isAdmin || missingAnnouncementsTable}
-            >
-              <Plus className="w-4 h-4 mr-1" /> {t.communicationPage.announce}
-            </Button>
-          ) : null
-        }
-      />
+  const canPostAnnouncements = canManageAnnouncements(isClubAdmin) && !missingAnnouncementsTable;
 
-      <div className={`${DASHBOARD_PAGE_INNER} flex flex-1 flex-col min-h-0`}>
+  const announceButton =
+    selectedChannel.kind === "announcements" && canPostAnnouncements ? (
+      <Button
+        size="sm"
+        className={cn(
+          "hover:brightness-110",
+          embedded
+            ? "bg-[color:var(--club-primary)] text-white shadow-sm"
+            : "bg-gradient-gold-static text-primary-foreground",
+        )}
+        onClick={() => {
+          resetAnnouncementForm();
+          setShowAddAnnouncement(true);
+        }}
+      >
+        <Plus className="w-4 h-4 mr-1" /> {t.communicationPage.announce}
+      </Button>
+    ) : null;
+
+  const announcementComposeBar = canPostAnnouncements && selectedChannel.kind === "announcements" ? (
+    <div
+      className={cn(
+        "shrink-0 border-t p-3",
+        embedded ? "border-neutral-200/80 bg-white" : "border-border/70 bg-background/70",
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => {
+          resetAnnouncementForm();
+          setShowAddAnnouncement(true);
+        }}
+        className={cn(
+          "flex w-full items-center gap-2 rounded-full border px-4 py-2.5 text-left text-sm transition-colors",
+          embedded
+            ? cn(clubGlassInputClass, "text-neutral-600 hover:border-[color:var(--club-primary)]/40 hover:bg-neutral-50")
+            : "border-border bg-card text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+        )}
+      >
+        <span
+          className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+            embedded ? "bg-[color:var(--club-primary)] text-white" : "bg-gradient-gold-static text-primary-foreground",
+          )}
+        >
+          <Plus className="h-4 w-4" />
+        </span>
+        <span className="truncate">{t.communicationPage.announcementsComposePlaceholder}</span>
+      </button>
+    </div>
+  ) : null;
+
+  return (
+    <div className={embedded ? "flex h-full min-h-0 flex-col" : DASHBOARD_PAGE_ROOT}>
+      {!embedded ? (
+        <DashboardHeaderSlot
+          title={t.communicationPage.title}
+          subtitle={t.communicationPage.subtitle}
+          toolbarRevision={`${selectedChannel.kind}-${perms.isAdmin}-${missingAnnouncementsTable}`}
+          rightSlot={announceButton}
+        />
+      ) : null}
+
+      <div
+        className={
+          embedded
+            ? "flex flex-1 flex-col min-h-0"
+            : `${DASHBOARD_PAGE_INNER} flex flex-1 flex-col min-h-0`
+        }
+      >
         {(clubLoading || loading) ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            <Loader2
+              className={cn(
+                "w-6 h-6 animate-spin",
+                embedded ? "text-[color:var(--club-primary)]" : "text-primary",
+              )}
+            />
           </div>
         ) : !clubId ? (
-          <div className="text-center py-20 text-muted-foreground">{t.communicationPage.noClubFound}</div>
+          <div
+            className={cn(
+              "text-center py-20",
+              embedded ? "text-neutral-600" : "text-muted-foreground",
+            )}
+          >
+            {t.communicationPage.noClubFound}
+          </div>
         ) : (
           <>
             {baseDataLoadError ? (
@@ -919,145 +1326,353 @@ const Communication = () => {
                 </AlertDescription>
               </Alert>
             ) : null}
-            <div className="grid lg:grid-cols-[280px_minmax(0,1fr)] gap-4 h-[calc(100vh-180px)]">
-            <aside className="rounded-2xl border border-border/70 bg-card/50 backdrop-blur-xl p-3 overflow-y-auto">
-              <div className="text-xs font-semibold text-muted-foreground px-2 mb-2">{t.communicationPage.channels}</div>
+            <div
+              className={
+                embedded
+                  ? "grid h-full min-h-0 flex-1 gap-3 sm:grid-cols-[minmax(0,200px)_minmax(0,1fr)] lg:grid-cols-[220px_minmax(0,1fr)]"
+                  : "grid lg:grid-cols-[280px_minmax(0,1fr)] gap-4 h-[calc(100vh-180px)]"
+              }
+            >
+            <aside
+              className={
+                embedded
+                  ? "overflow-y-auto rounded-2xl border border-neutral-200/80 bg-neutral-50/80 p-2 sm:p-3"
+                  : "rounded-2xl border border-border/70 bg-card/50 backdrop-blur-xl p-3 overflow-y-auto"
+              }
+            >
+              <div
+                className={cn(
+                  "text-xs font-semibold px-2 mb-2",
+                  embedded ? "text-neutral-500" : "text-muted-foreground",
+                )}
+              >
+                {t.communicationPage.channels}
+              </div>
               <div className="space-y-1">
                 {channels.map((channel) => (
                   <button
                     key={channel.id}
                     onClick={() => setSelectedChannelId(channel.id)}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors ${
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors",
                       selectedChannel.id === channel.id
-                        ? "bg-primary/12 text-primary border border-primary/20"
-                        : "hover:bg-muted/40 text-muted-foreground"
-                    }`}
+                        ? embedded
+                          ? "border border-[color:var(--club-primary)]/30 bg-[color:var(--club-primary)]/10 font-medium text-[color:var(--club-primary)]"
+                          : "bg-primary/12 text-primary border border-primary/20"
+                        : embedded
+                          ? "text-neutral-600 hover:bg-neutral-100/90"
+                          : "hover:bg-muted/40 text-muted-foreground",
+                    )}
                   >
                     {channel.kind === "announcements" ? (
-                      <Megaphone className="w-4 h-4" />
+                      <Megaphone className="w-4 h-4 shrink-0" />
+                    ) : channel.isTrainersChannel ? (
+                      <Users className="w-4 h-4 shrink-0" />
                     ) : (
-                      <Hash className="w-4 h-4" />
+                      <Hash className="w-4 h-4 shrink-0" />
                     )}
                     <span className="truncate">{channel.label}</span>
                   </button>
                 ))}
               </div>
 
-              <div className="mt-4 rounded-xl border border-border/70 bg-background/50 p-3">
-                <div className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1.5">
-                  <BotMessageSquare className="w-3.5 h-3.5 text-primary" /> {t.communicationPage.externalBridgeBeta}
-                </div>
-                <div className="text-[11px] text-muted-foreground mb-2">
-                  {t.communicationPage.connectSelectedChannels}
-                </div>
-                <div className="flex gap-2 mb-2">
-                  <Button size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => openBridgeSettings("whatsapp")}>
-                    {t.communicationPage.whatsApp}
-                  </Button>
-                  <Button size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => openBridgeSettings("telegram")}>
-                    {t.communicationPage.telegram}
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {providerHealth.length === 0 ? (
-                    <div className="text-[11px] text-muted-foreground">{t.communicationPage.noConnectorsConfigured}</div>
-                  ) : (
-                    providerHealth.map(({ connector, processed, failed }) => (
-                      <div key={connector.id} className="rounded-lg border border-border/60 px-2 py-1.5">
-                        <div className="flex items-center justify-between">
-                          <div className="text-[11px] font-medium">{providerLabel(connector.provider)}</div>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${connectorStatusColor[connector.status]}`}>
-                            {connectorStatusLabel(connector.status)}
-                          </span>
+              {!embedded ? (
+                <div className="mt-4 rounded-xl border border-border/70 bg-background/50 p-3">
+                  <div className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1.5">
+                    <BotMessageSquare className="w-3.5 h-3.5 text-primary" /> {t.communicationPage.externalBridgeBeta}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mb-2">
+                    {t.communicationPage.connectSelectedChannels}
+                  </div>
+                  <div className="flex gap-2 mb-2">
+                    <Button size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => openBridgeSettings("whatsapp")}>
+                      {t.communicationPage.whatsApp}
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => openBridgeSettings("telegram")}>
+                      {t.communicationPage.telegram}
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {providerHealth.length === 0 ? (
+                      <div className="text-[11px] text-muted-foreground">{t.communicationPage.noConnectorsConfigured}</div>
+                    ) : (
+                      providerHealth.map(({ connector, processed, failed }) => (
+                        <div key={connector.id} className="rounded-lg border border-border/60 px-2 py-1.5">
+                          <div className="flex items-center justify-between">
+                            <div className="text-[11px] font-medium">{providerLabel(connector.provider)}</div>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${connectorStatusColor[connector.status]}`}>
+                              {connectorStatusLabel(connector.status)}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-muted-foreground mt-1">
+                            {t.communicationPage.processedCount.replace("{count}", String(processed))} · {t.communicationPage.failedCount.replace("{count}", String(failed))}
+                          </div>
                         </div>
-                        <div className="text-[10px] text-muted-foreground mt-1">
-                          {t.communicationPage.processedCount.replace("{count}", String(processed))} · {t.communicationPage.failedCount.replace("{count}", String(failed))}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </aside>
-
-            <section className="rounded-2xl border border-border/70 bg-card/50 backdrop-blur-xl overflow-hidden flex flex-col min-h-0">
-              <div className="px-4 py-3 border-b border-border/70 flex items-center justify-between">
-                <div className="flex items-center gap-2 min-w-0">
-                  {selectedChannel.kind === "announcements" ? (
-                    <Megaphone className="w-4 h-4 text-primary" />
-                  ) : (
-                    <MessageSquare className="w-4 h-4 text-primary" />
-                  )}
-                  <div className="font-medium text-foreground truncate">
-                    {selectedChannel.kind === "announcements"
-                      ? t.communicationPage.clubAnnouncements
-                      : `# ${selectedChannel.label}`}
+                      ))
+                    )}
                   </div>
                 </div>
-                {selectedChannel.kind === "chat" ? (
+              ) : null}
+            </aside>
+
+            <section
+              className={
+                embedded
+                  ? "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-neutral-200/80 bg-white/95"
+                  : "rounded-2xl border border-border/70 bg-card/50 backdrop-blur-xl overflow-hidden flex flex-col min-h-0"
+              }
+            >
+              <div
+                className={cn(
+                  "px-4 py-3 border-b flex items-center justify-between",
+                  embedded ? "border-neutral-200/80" : "border-border/70",
+                )}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  {selectedChannel.kind === "announcements" ? (
+                    <Megaphone className={cn("w-4 h-4", embedded ? "text-[color:var(--club-primary)]" : "text-primary")} />
+                  ) : selectedChannel.isTrainersChannel ? (
+                    <Users className={cn("w-4 h-4", embedded ? "text-[color:var(--club-primary)]" : "text-primary")} />
+                  ) : (
+                    <MessageSquare className={cn("w-4 h-4", embedded ? "text-[color:var(--club-primary)]" : "text-primary")} />
+                  )}
+                  <div className={cn("font-medium truncate", embedded ? "text-neutral-900" : "text-foreground")}>
+                    {selectedChannel.kind === "announcements"
+                      ? t.communicationPage.clubAnnouncements
+                      : selectedChannel.isTrainersChannel
+                        ? `# ${selectedChannel.label}`
+                        : `# ${selectedChannel.label}`}
+                  </div>
+                </div>
+                {selectedChannel.kind === "chat" && !embedded ? (
                   <div className="text-[11px] text-muted-foreground">{t.communicationPage.chatManagementPlatform}</div>
+                ) : null}
+                {selectedChannel.kind === "announcements" && canPostAnnouncements ? (
+                  <div className="shrink-0">{announceButton}</div>
                 ) : null}
               </div>
 
               {selectedChannel.kind === "announcements" ? (
-                <div className="p-4 overflow-y-auto space-y-4">
+                <>
+                {viewingAnnouncement ? (
+                  <AnnouncementDetailView
+                    announcement={viewingAnnouncement}
+                    embedded={embedded}
+                    onBack={() => setViewingAnnouncementId(null)}
+                    labels={{
+                      back: t.common.back,
+                      publicSiteBadge: t.communicationPage.publicSiteBadge,
+                      edit: t.communicationPage.editAnnouncement,
+                      delete: t.communicationPage.deleteAnnouncement,
+                    }}
+                    priorityClassName={
+                      (embedded ? embeddedPriorityColors : priorityColors)[viewingAnnouncement.priority] ||
+                      (embedded ? embeddedPriorityColors.normal : priorityColors.normal)
+                    }
+                    canManage={canPostAnnouncements}
+                    onEdit={
+                      canPostAnnouncements
+                        ? () => {
+                            openEditAnnouncement(viewingAnnouncement);
+                            setViewingAnnouncementId(null);
+                          }
+                        : undefined
+                    }
+                    onDelete={
+                      canPostAnnouncements
+                        ? () => void handleDeleteAnnouncement(viewingAnnouncement.id)
+                        : undefined
+                    }
+                  />
+                ) : (
+                <div
+                  className={cn(
+                    "min-h-0 flex-1 overflow-y-auto p-4 space-y-3",
+                    embedded ? "bg-neutral-50/80" : undefined,
+                  )}
+                >
                   {missingAnnouncementsTable ? (
-                    <div className="rounded-xl bg-background/50 border border-border p-8 text-center text-muted-foreground text-sm">
+                    <div
+                      className={cn(
+                        "rounded-2xl border p-8 text-center text-sm",
+                        embedded
+                          ? "border-neutral-200/90 bg-white text-neutral-600"
+                          : "rounded-xl bg-background/50 border-border text-muted-foreground",
+                      )}
+                    >
                       {t.communicationPage.announcementsDatabaseNotReady}
                     </div>
-                  ) : announcements.length === 0 ? (
-                    <div className="rounded-xl bg-background/50 border border-border p-8 text-center text-muted-foreground text-sm">
-                      {t.communicationPage.noAnnouncementsYet}
+                  ) : visibleAnnouncements.length === 0 ? (
+                    <div
+                      className={cn(
+                        "flex min-h-[220px] flex-col items-center justify-center rounded-2xl border px-6 py-14 text-center",
+                        embedded
+                          ? "border-dashed border-neutral-200 bg-white shadow-sm"
+                          : "border-border/70 bg-card shadow-sm",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "mb-3 flex h-12 w-12 items-center justify-center rounded-2xl",
+                          embedded
+                            ? "bg-[color:var(--club-primary)]/10 text-[color:var(--club-primary)]"
+                            : "bg-primary/10 text-primary",
+                        )}
+                      >
+                        <Megaphone className="h-6 w-6" aria-hidden />
+                      </span>
+                      <p
+                        className={cn(
+                          "text-sm font-medium",
+                          embedded ? "text-neutral-900" : "text-foreground",
+                        )}
+                      >
+                        {t.communicationPage.noAnnouncementsYet}
+                      </p>
+                      {canPostAnnouncements ? (
+                        <>
+                          <p
+                            className={cn(
+                              "mt-1 max-w-sm text-xs leading-relaxed",
+                              embedded ? "text-neutral-500" : "text-muted-foreground",
+                            )}
+                          >
+                            {t.communicationPage.announcementsAdminEmptyHint}
+                          </p>
+                          <Button
+                            type="button"
+                            size="sm"
+                            className={cn(
+                              "mt-4 hover:brightness-110",
+                              embedded
+                                ? "bg-[color:var(--club-primary)] text-white"
+                                : "bg-gradient-gold-static text-primary-foreground",
+                            )}
+                            onClick={() => {
+                              resetAnnouncementForm();
+                              setShowAddAnnouncement(true);
+                            }}
+                          >
+                            <Plus className="mr-1 h-4 w-4" />
+                            {t.communicationPage.announcementsCreateCta}
+                          </Button>
+                        </>
+                      ) : (
+                        <p
+                          className={cn(
+                            "mt-2 max-w-sm text-xs leading-relaxed",
+                            embedded ? "text-neutral-500" : "text-muted-foreground",
+                          )}
+                        >
+                          {t.communicationPage.announcementsMembersHint}
+                        </p>
+                      )}
                     </div>
                   ) : (
-                    announcements.map((announcement, index) => (
-                      <motion.div
+                    visibleAnnouncements.map((announcement, index) => (
+                      <motion.button
                         key={announcement.id}
+                        type="button"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.04 }}
-                        className="rounded-xl bg-background/50 border border-border p-5"
+                        onClick={() => setViewingAnnouncementId(announcement.id)}
+                        className={cn(
+                          "w-full rounded-2xl border p-5 text-left transition-[border-color,box-shadow] duration-200",
+                          embedded
+                            ? "border-neutral-200/90 border-l-4 border-l-[color:var(--club-primary)] bg-white shadow-sm hover:border-neutral-300 hover:shadow-md"
+                            : "rounded-xl bg-card/80 border-border/70 hover:border-border",
+                        )}
                       >
                         <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
-                          <h3 className="min-w-0 flex-1 font-display font-semibold text-foreground">{announcement.title}</h3>
+                          <h3
+                            className={cn(
+                              "min-w-0 flex-1 font-display font-semibold",
+                              embedded ? "text-neutral-900" : "text-foreground",
+                            )}
+                          >
+                            {announcement.title}
+                          </h3>
                           <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
                             {announcement.publish_to_public_website ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium text-emerald-800 dark:text-emerald-200">
+                              <span
+                                className={cn(
+                                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                                  embedded
+                                    ? "bg-[color:var(--club-primary)]/10 text-[color:var(--club-primary)]"
+                                    : "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200",
+                                )}
+                              >
                                 <Globe className="h-3 w-3" />
                                 {t.communicationPage.publicSiteBadge}
                               </span>
                             ) : null}
                             <span
-                              className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                                priorityColors[announcement.priority] || priorityColors.normal
-                              }`}
+                              className={cn(
+                                "rounded-full px-2 py-0.5 text-[10px] font-medium capitalize",
+                                (embedded ? embeddedPriorityColors : priorityColors)[announcement.priority] ||
+                                  (embedded ? embeddedPriorityColors.normal : priorityColors.normal),
+                              )}
                             >
                               {announcement.priority}
                             </span>
                           </div>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2">{announcement.content}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p
+                          className={cn(
+                            "mb-2 text-sm leading-relaxed whitespace-pre-wrap",
+                            embedded ? "text-neutral-700" : "text-muted-foreground",
+                            announcement.excerpt?.trim() ? "line-clamp-2" : "line-clamp-4",
+                          )}
+                        >
+                          {announcement.excerpt?.trim() || announcement.content}
+                        </p>
+                        {announcement.excerpt?.trim() ? (
+                          <p
+                            className={cn(
+                              "mb-2 text-xs font-medium",
+                              embedded ? "text-[color:var(--club-primary)]" : "text-primary",
+                            )}
+                          >
+                            {t.communicationPage.announcementTapToRead}
+                          </p>
+                        ) : null}
+                        <p className={cn("text-xs", embedded ? "text-neutral-500" : "text-muted-foreground")}>
                           {new Date(announcement.created_at).toLocaleString()}
                         </p>
-                      </motion.div>
+                      </motion.button>
                     ))
                   )}
                 </div>
+                )}
+                {announcementComposeBar}
+                </>
               ) : (
                 <>
-                  <div className="px-4 pt-3 border-b border-border/70 pb-3">
-                    <div className="flex items-center gap-2 rounded-xl border border-border bg-background/70 px-3">
-                      <Search className="w-4 h-4 text-muted-foreground" />
+                  <div
+                    className={cn(
+                      "px-4 pt-3 border-b pb-3",
+                      embedded ? "border-neutral-200/80" : "border-border/70",
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "flex items-center gap-2 rounded-xl px-3",
+                        embedded
+                          ? cn(clubGlassInputClass, "py-2")
+                          : "border border-border bg-background/70",
+                      )}
+                    >
+                      <Search className={cn("w-4 h-4", embedded ? "text-neutral-500" : "text-muted-foreground")} />
                       <Input
                         value={messageSearch}
                         onChange={(event) => setMessageSearch(event.target.value)}
                         placeholder={t.communicationPage.searchMessagesPlaceholder}
-                        className="border-0 bg-transparent focus-visible:ring-0"
+                        className="border-0 bg-transparent shadow-none focus-visible:ring-0"
                       />
                     </div>
                     <div className="mt-2 flex items-center justify-between">
-                      <div className="text-[11px] text-muted-foreground">
+                      <div className={cn("text-[11px]", embedded ? "text-neutral-500" : "text-muted-foreground")}>
                         {messageTotalCount === 0
                           ? "Showing 0 messages"
                           : `Showing ${(messagePage - 1) * MESSAGE_PAGE_SIZE + 1}-${Math.min(messagePage * MESSAGE_PAGE_SIZE, messageTotalCount)} of ${messageTotalCount}`}
@@ -1089,7 +1704,14 @@ const Communication = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[radial-gradient(circle_at_10%_20%,hsl(var(--primary)/0.08),transparent_35%),radial-gradient(circle_at_90%_80%,hsl(var(--accent)/0.08),transparent_35%)]">
+                  <div
+                    className={cn(
+                      "flex-1 overflow-y-auto p-4 space-y-2",
+                      embedded
+                        ? "bg-neutral-50/80"
+                        : "bg-[radial-gradient(circle_at_10%_20%,hsl(var(--primary)/0.08),transparent_35%),radial-gradient(circle_at_90%_80%,hsl(var(--accent)/0.08),transparent_35%)]",
+                    )}
+                  >
                     {loadingMessages ? (
                       <div className="flex justify-center py-8">
                         <Loader2 className="w-5 h-5 animate-spin text-primary" />
@@ -1107,29 +1729,106 @@ const Communication = () => {
                         const previous = filteredMessages[index - 1];
                         const showDateSeparator = !previous || !isSameDay(previous.created_at, message.created_at);
                         const isMe = message.sender_id === user?.id;
+                        const isLocalMessage = message.id.startsWith("local-");
+                        const canEditOwnMessage =
+                          isMe &&
+                          !isLocalMessage &&
+                          message.send_state !== "sending" &&
+                          message.send_state !== "failed" &&
+                          canEditMessage(message, user?.id);
+                        const canDeleteOwnMessage =
+                          isMe &&
+                          !isLocalMessage &&
+                          message.send_state !== "sending" &&
+                          canDeleteMessage(message, user?.id);
                         return (
                           <div key={message.id}>
                             {showDateSeparator ? (
                               <div className="flex justify-center py-2">
-                                <span className="text-[10px] px-2 py-1 rounded-full bg-background/80 border border-border text-muted-foreground">
+                                <span
+                                  className={cn(
+                                    "text-[10px] px-2 py-1 rounded-full border",
+                                    embedded
+                                      ? "border-neutral-200 bg-white text-neutral-500"
+                                      : "bg-background/80 border-border text-muted-foreground",
+                                  )}
+                                >
                                   {new Date(message.created_at).toLocaleDateString()}
                                 </span>
                               </div>
                             ) : null}
                             <div className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
                               <div
-                                className={`max-w-[78%] px-3.5 py-2.5 rounded-2xl text-sm shadow-sm ${
+                                className={cn(
+                                  "max-w-[78%] px-3.5 py-2.5 rounded-2xl text-sm shadow-sm",
                                   isMe
-                                    ? "bg-emerald-500/85 text-emerald-950 rounded-br-md"
-                                    : "bg-background/90 border border-border text-foreground rounded-bl-md"
-                                }`}
+                                    ? embedded
+                                      ? "rounded-br-md bg-[color:var(--club-primary)] text-white"
+                                      : "bg-emerald-500/85 text-emerald-950 rounded-br-md"
+                                    : embedded
+                                      ? "rounded-bl-md border border-neutral-200 bg-white text-neutral-900"
+                                      : "bg-background/90 border border-border text-foreground rounded-bl-md",
+                                )}
                               >
                                 {!isMe ? (
-                                  <div className="text-[10px] font-medium text-primary mb-1">
+                                  <div
+                                    className={cn(
+                                      "text-[10px] font-medium mb-1",
+                                      embedded ? "text-[color:var(--club-primary)]" : "text-primary",
+                                    )}
+                                  >
                                     {message.profiles?.display_name || t.common.unknown}
                                   </div>
                                 ) : null}
-                                <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                {editingMessageId === message.id ? (
+                                  <div className="space-y-2">
+                                    <textarea
+                                      value={editingMessageDraft}
+                                      onChange={(event) => setEditingMessageDraft(event.target.value)}
+                                      className={cn(
+                                        "min-h-[72px] w-full resize-none rounded-lg border px-2.5 py-2 text-sm focus-visible:outline-none focus-visible:ring-2",
+                                        isMe
+                                          ? embedded
+                                            ? "border-white/30 bg-white/10 text-white placeholder:text-white/60 focus-visible:ring-white/40"
+                                            : "border-emerald-900/20 bg-white/80 text-emerald-950 focus-visible:ring-emerald-700/30"
+                                          : embedded
+                                            ? cn(clubGlassInputClass, "focus-visible:ring-[color:var(--club-primary)]")
+                                            : "border-border bg-background focus-visible:ring-ring",
+                                      )}
+                                      rows={3}
+                                    />
+                                    <div className="flex flex-wrap gap-2">
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        className={cn(
+                                          "h-7 px-2 text-xs",
+                                          isMe && embedded && "bg-white text-[color:var(--club-primary)] hover:bg-white/90",
+                                        )}
+                                        onClick={() => void handleSaveMessageEdit(message.id)}
+                                      >
+                                        {t.communicationPage.saveMessage}
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        className={cn(
+                                          "h-7 px-2 text-xs",
+                                          isMe && embedded && "text-white hover:bg-white/10 hover:text-white",
+                                        )}
+                                        onClick={() => {
+                                          setEditingMessageId(null);
+                                          setEditingMessageDraft("");
+                                        }}
+                                      >
+                                        {t.communicationPage.cancelEdit}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                )}
                                 {message.attachments.length ? (
                                   <div className="mt-2 space-y-1">
                                     {message.attachments.map((attachment) => (
@@ -1146,9 +1845,16 @@ const Communication = () => {
                                   </div>
                                 ) : null}
                                 <div
-                                  className={`text-[10px] mt-1 flex items-center gap-1.5 ${
-                                    isMe ? "text-emerald-900/70" : "text-muted-foreground"
-                                  }`}
+                                  className={cn(
+                                    "text-[10px] mt-1 flex items-center gap-1.5",
+                                    isMe
+                                      ? embedded
+                                        ? "text-white/80"
+                                        : "text-emerald-900/70"
+                                      : embedded
+                                        ? "text-neutral-500"
+                                        : "text-muted-foreground",
+                                  )}
                                 >
                                   <span>
                                     {new Date(message.created_at).toLocaleTimeString([], {
@@ -1169,6 +1875,35 @@ const Communication = () => {
                                       </button>
                                     </>
                                   ) : null}
+                                  {canEditOwnMessage && editingMessageId !== message.id ? (
+                                    <button
+                                      type="button"
+                                      className={cn(
+                                        "inline-flex items-center gap-1 hover:underline",
+                                        isMe && embedded ? "text-white/90" : "text-primary",
+                                      )}
+                                      onClick={() => {
+                                        setEditingMessageId(message.id);
+                                        setEditingMessageDraft(message.content);
+                                      }}
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                      {t.communicationPage.editMessage}
+                                    </button>
+                                  ) : null}
+                                  {canDeleteOwnMessage ? (
+                                    <button
+                                      type="button"
+                                      className={cn(
+                                        "inline-flex items-center gap-1 hover:underline",
+                                        isMe && embedded ? "text-white/90" : "text-destructive",
+                                      )}
+                                      onClick={() => void handleDeleteMessage(message.id)}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                      {t.communicationPage.deleteMessage}
+                                    </button>
+                                  ) : null}
                                 </div>
                               </div>
                             </div>
@@ -1179,7 +1914,12 @@ const Communication = () => {
                     <div ref={messagesEndRef} />
                   </div>
 
-                  <div className="border-t border-border/70 p-3 bg-background/70 space-y-2">
+                  <div
+                    className={cn(
+                      "border-t p-3 space-y-2",
+                      embedded ? "border-neutral-200/80 bg-white" : "border-border/70 bg-background/70",
+                    )}
+                  >
                     {selectedFiles.length ? (
                       <div className="flex flex-wrap gap-1.5">
                         {selectedFiles.map((file, index) => (
@@ -1198,8 +1938,20 @@ const Communication = () => {
                         ))}
                       </div>
                     ) : null}
-                    <div className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2">
-                      <label className="inline-flex items-center cursor-pointer text-muted-foreground hover:text-foreground">
+                    <div
+                      className={cn(
+                        "flex items-center gap-2 rounded-full px-3 py-2",
+                        embedded
+                          ? cn(clubGlassInputClass, "border-neutral-200/90")
+                          : "border border-border bg-card",
+                      )}
+                    >
+                      <label
+                        className={cn(
+                          "inline-flex items-center cursor-pointer",
+                          embedded ? "text-neutral-500 hover:text-neutral-800" : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
                         <input
                           type="file"
                           multiple
@@ -1224,7 +1976,10 @@ const Communication = () => {
                         size="icon"
                         onClick={() => void handleSendMessage()}
                         disabled={!newMessage.trim() && selectedFiles.length === 0}
-                        className="w-8 h-8 rounded-full bg-gradient-gold-static text-primary-foreground hover:brightness-110"
+                        className={cn(
+                          "w-8 h-8 rounded-full text-primary-foreground hover:brightness-110",
+                          embedded ? "bg-[color:var(--club-primary)]" : "bg-gradient-gold-static",
+                        )}
                       >
                         <Send className="w-4 h-4" />
                       </Button>
@@ -1329,20 +2084,42 @@ const Communication = () => {
         </div>
       ) : null}
 
-      {showAddAnnouncement && perms.isAdmin ? (
+      {showAddAnnouncement && isClubAdmin ? (
         <div
-          className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setShowAddAnnouncement(false)}
+          className={cn(
+            "fixed inset-0 flex items-center justify-center p-4",
+            embedded ? cn("z-[70]", clubAi4tModalOverlayClass) : "z-50 bg-background/80 backdrop-blur-sm",
+          )}
+          onClick={closeAnnouncementModal}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-lg rounded-2xl bg-card border border-border p-6"
+            className={cn(
+              "w-full max-w-lg rounded-2xl p-6",
+              embedded
+                ? clubAi4tModalPanelClass
+                : "bg-card border border-border",
+            )}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display font-bold text-foreground">{t.communicationPage.newAnnouncement}</h3>
-              <Button variant="ghost" size="icon" onClick={() => setShowAddAnnouncement(false)}>
+              <h3
+                className={cn(
+                  "font-display font-bold",
+                  embedded ? "text-neutral-900" : "text-foreground",
+                )}
+              >
+                {editingAnnouncementId
+                  ? t.communicationPage.editAnnouncement
+                  : t.communicationPage.newAnnouncement}
+              </h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={embedded ? "text-neutral-700 hover:bg-neutral-100" : undefined}
+                onClick={closeAnnouncementModal}
+              >
                 <X className="w-4 h-4" />
               </Button>
             </div>
@@ -1351,7 +2128,7 @@ const Communication = () => {
                 placeholder={t.communicationPage.announcementTitlePlaceholder}
                 value={annTitle}
                 onChange={(event) => setAnnTitle(event.target.value)}
-                className="bg-background"
+                className={embedded ? clubGlassInputClass : "bg-background"}
                 maxLength={200}
               />
               <div className="space-y-1">
@@ -1359,25 +2136,44 @@ const Communication = () => {
                   placeholder={t.communicationPage.announcementExcerptPlaceholder}
                   value={annExcerpt}
                   onChange={(event) => setAnnExcerpt(event.target.value)}
-                  className="min-h-[52px] w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className={cn(
+                    "min-h-[52px] w-full resize-none rounded-xl border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2",
+                    embedded
+                      ? cn(clubGlassInputClass, "focus-visible:ring-[color:var(--club-primary)]")
+                      : "border-border bg-background placeholder:text-muted-foreground focus-visible:ring-ring",
+                  )}
                   rows={2}
                   maxLength={400}
                 />
-                <p className="text-[10px] text-muted-foreground">{t.communicationPage.announcementExcerptHint}</p>
+                <p className={cn("text-[10px]", embedded ? "text-neutral-500" : "text-muted-foreground")}>
+                  {t.communicationPage.announcementExcerptHint}
+                </p>
               </div>
               <div className="space-y-1">
                 <textarea
                   placeholder={t.communicationPage.announcementContentPlaceholder}
                   value={annContent}
                   onChange={(event) => setAnnContent(event.target.value)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                  className={cn(
+                    "w-full resize-none rounded-xl border px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2",
+                    embedded
+                      ? cn(clubGlassInputClass, "focus-visible:ring-[color:var(--club-primary)]")
+                      : "border-border bg-background placeholder:text-muted-foreground focus-visible:ring-ring",
+                  )}
                   rows={6}
                   maxLength={8000}
                 />
-                <p className="text-[10px] text-muted-foreground">{t.communicationPage.announcementContentHint}</p>
+                <p className={cn("text-[10px]", embedded ? "text-neutral-500" : "text-muted-foreground")}>
+                  {t.communicationPage.announcementContentHint}
+                </p>
               </div>
               <Select value={annPriority} onValueChange={setAnnPriority}>
-                <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background px-3 text-sm">
+                <SelectTrigger
+                  className={cn(
+                    "w-full h-10 rounded-xl px-3 text-sm",
+                    embedded ? clubGlassInputClass : "border-border bg-background",
+                  )}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1387,22 +2183,65 @@ const Communication = () => {
                   <SelectItem value="urgent">{t.communicationPage.urgentPriority}</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="rounded-lg border border-border px-3 py-2">
+              <div className="space-y-1">
+                <Label className={cn("text-xs", embedded && "text-neutral-800")}>
+                  {t.communicationPage.announcementAudience}
+                </Label>
+                <Select value={annTeamId} onValueChange={setAnnTeamId}>
+                  <SelectTrigger
+                    className={cn(
+                      "w-full h-10 rounded-xl px-3 text-sm",
+                      embedded ? clubGlassInputClass : "border-border bg-background",
+                    )}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t.communicationPage.announcementAudienceAll}</SelectItem>
+                    {teams.map((team) => (
+                      <SelectItem key={team.id} value={team.id}>
+                        {team.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className={cn("text-[10px]", embedded ? "text-neutral-500" : "text-muted-foreground")}>
+                  {t.communicationPage.announcementAudienceHint}
+                </p>
+              </div>
+              <div
+                className={cn(
+                  "rounded-xl border px-3 py-2",
+                  embedded ? "border-neutral-200 bg-neutral-50/80" : "border-border",
+                )}
+              >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0 space-y-0.5">
-                    <Label htmlFor="ann-publish-public" className="text-xs font-medium">
+                    <Label
+                      htmlFor="ann-publish-public"
+                      className={cn("text-xs font-medium", embedded && "text-neutral-900")}
+                    >
                       {t.communicationPage.publishOnPublicWebsite}
                     </Label>
-                    <p className="text-[10px] text-muted-foreground">{t.communicationPage.publishOnPublicWebsiteHint}</p>
+                    <p className={cn("text-[10px]", embedded ? "text-neutral-500" : "text-muted-foreground")}>
+                      {t.communicationPage.publishOnPublicWebsiteHint}
+                    </p>
                   </div>
                   <Switch id="ann-publish-public" checked={annPublishPublic} onCheckedChange={setAnnPublishPublic} />
                 </div>
               </div>
               {annPublishPublic ? (
                 <div className="space-y-2">
-                  <Label className="text-xs">{t.communicationPage.publicNewsCategory}</Label>
+                  <Label className={cn("text-xs", embedded && "text-neutral-800")}>
+                    {t.communicationPage.publicNewsCategory}
+                  </Label>
                   <Select value={annPublicCategory} onValueChange={setAnnPublicCategory}>
-                    <SelectTrigger className="h-10 w-full rounded-xl border-border bg-background px-3 text-sm">
+                    <SelectTrigger
+                      className={cn(
+                        "h-10 w-full rounded-xl px-3 text-sm",
+                        embedded ? clubGlassInputClass : "border-border bg-background",
+                      )}
+                    >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1423,21 +2262,91 @@ const Communication = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Input
-                    placeholder={t.communicationPage.newsImageUrlOptional}
-                    value={annImageUrl}
-                    onChange={(event) => setAnnImageUrl(event.target.value)}
-                    className="bg-background"
-                  />
-                  <p className="text-[10px] text-muted-foreground">{t.communicationPage.newsImageUrlHint}</p>
+                  <div className="space-y-2">
+                    <Label className={cn("text-xs", embedded && "text-neutral-800")}>
+                      {t.communicationPage.newsImageUrlOptional}
+                    </Label>
+                    {annImageUrl ? (
+                      <div
+                        className={cn(
+                          "flex items-start gap-3 rounded-xl border p-2",
+                          embedded ? "border-neutral-200 bg-white/80" : "border-border bg-muted/30",
+                        )}
+                      >
+                        <img
+                          src={annImageUrl}
+                          alt={t.communicationPage.newsImagePreviewAlt}
+                          className="h-28 w-20 shrink-0 rounded-lg border object-cover object-center"
+                        />
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <p className={cn("truncate text-[10px]", embedded ? "text-neutral-500" : "text-muted-foreground")}>
+                            {annImageUrl}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8"
+                            onClick={() => setAnnImageUrl("")}
+                          >
+                            {t.communicationPage.newsImageRemove}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder={t.communicationPage.newsImageUrlPlaceholder}
+                        value={annImageUrl}
+                        onChange={(event) => setAnnImageUrl(event.target.value)}
+                        className={cn("min-w-0 flex-1", embedded ? clubGlassInputClass : "bg-background")}
+                      />
+                      <input
+                        ref={annImageFileRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        className="hidden"
+                        onChange={handleAnnPosterUpload}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={annImageUploading || !clubId}
+                        className={cn(
+                          "shrink-0 gap-1.5",
+                          embedded && "border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-50",
+                        )}
+                        onClick={() => annImageFileRef.current?.click()}
+                      >
+                        {annImageUploading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                        {annImageUploading
+                          ? t.communicationPage.newsImageUploading
+                          : t.communicationPage.newsImageUpload}
+                      </Button>
+                    </div>
+                    <p className={cn("text-[10px]", embedded ? "text-neutral-500" : "text-muted-foreground")}>
+                      {t.communicationPage.newsImageUrlHint}
+                    </p>
+                  </div>
                 </div>
               ) : null}
               <Button
-                onClick={handleAddAnnouncement}
+                onClick={handleSaveAnnouncement}
                 disabled={!annTitle.trim() || !annContent.trim()}
-                className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110"
+                className={cn(
+                  "w-full hover:brightness-110",
+                  embedded
+                    ? "bg-[color:var(--club-primary)] text-white"
+                    : "bg-gradient-gold-static text-primary-foreground",
+                )}
               >
-                {t.communicationPage.postAnnouncement}
+                {editingAnnouncementId
+                  ? t.communicationPage.saveAnnouncement
+                  : t.communicationPage.postAnnouncement}
               </Button>
             </div>
           </motion.div>
@@ -1445,6 +2354,8 @@ const Communication = () => {
       ) : null}
     </div>
   );
-};
+}
 
-export default Communication;
+export default function Communication() {
+  return <CommunicationWorkspace />;
+}

@@ -3,7 +3,7 @@ import { useLanguage } from "@/hooks/use-language";
 import {
   LayoutDashboard, Users, Calendar, Trophy, CreditCard,
   MessageSquare, Briefcase, ShoppingBag, Globe, Bot,
-  Settings, LogOut, ChevronLeft, ChevronRight, CalendarDays, BarChart3, Layers3, HelpCircle,
+  Settings, LogOut, ChevronLeft, ChevronRight, CalendarDays, BarChart3, Layers3, HelpCircle, ClipboardList,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -39,6 +39,7 @@ export default function DashboardSidebar() {
     "/player-stats": "stats",
     "/payments": "payments",
     "/communication": "messages",
+    "/tasks": "tasks",
     "/partners": "partners",
     "/co-trainer": "ai",
     "/ai": "ai",
@@ -65,6 +66,7 @@ export default function DashboardSidebar() {
       { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/reports" },
       { icon: CreditCard, label: t.sidebar.payments, id: "payments", route: "/payments" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+      { icon: ClipboardList, label: t.sidebar.tasks, id: "tasks", route: "/tasks" },
       { icon: Briefcase, label: t.sidebar.partners, id: "partners", route: "/partners" },
       { icon: Bot, label: t.sidebar.ai4Team, id: "ai", route: "/co-trainer" },
       { icon: Globe, label: t.sidebar.clubPage, id: "clubpage", route: "/club-page-admin" },
@@ -81,6 +83,7 @@ export default function DashboardSidebar() {
       { icon: CalendarDays, label: t.sidebar.events, id: "events", route: "/events" },
       { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/reports" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+      { icon: ClipboardList, label: t.sidebar.tasks, id: "tasks", route: "/tasks" },
       { icon: Bot, label: t.sidebar.ai4Team, id: "ai", route: "/co-trainer" },
       { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
     ],
@@ -91,6 +94,7 @@ export default function DashboardSidebar() {
       { icon: CalendarDays, label: t.sidebar.events, id: "events", route: "/events" },
       { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/reports" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+      { icon: ClipboardList, label: t.sidebar.tasks, id: "tasks", route: "/tasks" },
       { icon: ShoppingBag, label: t.sidebar.shop, id: "shop", route: "/shop" },
       { icon: Bot, label: t.sidebar.ai4Team, id: "ai", route: "/co-trainer" },
       { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
@@ -100,24 +104,28 @@ export default function DashboardSidebar() {
       { icon: Briefcase, label: t.sidebar.contracts, id: "contracts" },
       { icon: CreditCard, label: t.sidebar.invoices, id: "invoices" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+      { icon: ClipboardList, label: t.sidebar.tasks, id: "tasks", route: "/tasks" },
       { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
     ],
     supplier: [
       { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
       { icon: Briefcase, label: t.sidebar.orders, id: "orders" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+      { icon: ClipboardList, label: t.sidebar.tasks, id: "tasks", route: "/tasks" },
       { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
     ],
     service: [
       { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
       { icon: Briefcase, label: t.sidebar.contracts, id: "contracts" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+      { icon: ClipboardList, label: t.sidebar.tasks, id: "tasks", route: "/tasks" },
       { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
     ],
     consultant: [
       { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
       { icon: Briefcase, label: t.sidebar.engagements, id: "engagements" },
       { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
+      { icon: ClipboardList, label: t.sidebar.tasks, id: "tasks", route: "/tasks" },
       { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
     ],
   };

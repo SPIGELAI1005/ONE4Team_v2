@@ -172,7 +172,7 @@ export default function SupportFaq() {
                       <AccordionTrigger className="text-left text-sm hover:no-underline">
                         <BrandedText text={faq.q} />
                       </AccordionTrigger>
-                      <AccordionContent className="text-muted-foreground text-sm leading-relaxed">
+                      <AccordionContent className="text-muted-foreground text-sm leading-relaxed whitespace-pre-line">
                         <BrandedText text={faq.a} />
                       </AccordionContent>
                     </AccordionItem>

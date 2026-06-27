@@ -8,6 +8,27 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ## NOW (top priority)
 
+### WhatsApp External Bridge — operator follow-up (2026-06-25)
+See [`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`](docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md)
+
+- [ ] **BRIDGE-WA-001** Implement Meta webhook GET verification (`hub.challenge`) in `chat-bridge/webhook/whatsapp`
+- [ ] **BRIDGE-WA-002** Operator: deploy `chat-bridge`; save WhatsApp connector on `/communication`; Meta webhook + inbound smoke test
+- [ ] **BRIDGE-WA-003** Confirm outbound ONE4Team → WhatsApp for pilot club (optional Phase 2)
+
+### Communication hub + tasks (2026-06-25) — code in repo
+- [x] **COMM-HUB-001** Public club Messages hub + Updates feed + Communication modal embed
+- [x] **COMM-HUB-002** Team-scoped messages RLS + announcement fan-out/cleanup migrations
+- [x] **COMM-HUB-003** Announcement edit/delete moderation; fixed modal height; orphan notification fix
+- [x] **TASKS-001** **`club_tasks`** migration + **`/tasks`** page + sidebar + notifications + dashboard card
+- [ ] **COMM-OPS-001** Operator: apply migrations **`20260629120000`**–**`20260725130000`**; smoke Messages hub + tasks assign flow
+
+### Training attendance overview (2026-06-25) — code in repo
+- [x] **ATTEND-005** Team response overview (counts + names) on public club + `/activities`
+- [x] **ATTEND-006** Training RSVP **1-hour cutoff**; roster-only gate; clearer error messages
+- [x] **ATTEND-007** Migration **`20260725130000_activity_attendance_member_self_rsvp.sql`**
+- [x] **ATTEND-008** White glass decline dialog on public club; Messages FAB lifts above toasts
+- [ ] **ATTEND-OPS-001** Operator: apply **`20260725130000`**; smoke RSVP on U12-I roster member vs non-roster admin
+
 ### AI 4 T Agent Phases 0–4 (2026-06-15) — code in repo
 - [x] **AI-AGENT-001** Migrations **`20260615120000_ai_agent_runs.sql`**, **`20260615130000_ai_agent_tool_rpcs.sql`**, **`20260615140000_ai_agent_runs_conversation_id.sql`**, **`20260615150000_ai_agent_tool_rpcs_extended.sql`**.
 - [x] **AI-AGENT-002** Edge **`ai4team-agent`** + **`ai4team_agent_tools.ts`**, **`ai4team_agent_interpret.ts`** (propose/execute + NL interpret).

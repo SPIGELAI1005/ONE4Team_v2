@@ -26,13 +26,17 @@ import { useLanguage } from "@/hooks/use-language";
 import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
 import { useRegisterAiAgentContext } from "@/hooks/use-register-ai-agent-context";
 import { TrainingAttendanceRsvp } from "@/components/activities/training-attendance-rsvp";
-import { TrainingAttendanceSummaryBar } from "@/components/activities/training-attendance-summary-bar";
+import { TrainingAttendanceOverview } from "@/components/activities/training-attendance-overview";
 import { TrainingAttendanceTrainerPanel } from "@/components/activities/training-attendance-trainer-panel";
 import {
+  buildActivityAttendanceOverview,
+  buildActivityRoster,
   buildRosterAttendanceLines,
+  isTrainingRsvpOpen,
   summarizeTrainingAttendance,
   type TrainingAttendanceRow,
 } from "@/lib/training-attendance";
+import { formatSupabaseError, isRlsOrPermissionError } from "@/lib/supabase-error";
 
 type ActivityType = "training" | "match" | "event";
 
@@ -58,13 +62,6 @@ type TeamPlayerRow = {
   team_id: string;
   membership_id: string;
   jersey_number: number | null;
-};
-
-type RosterMember = {
-  membershipId: string;
-  name: string;
-  role: string;
-  jerseyNumber: number | null;
 };
 
 type MembershipRow = {
@@ -94,33 +91,25 @@ function nextDowAt(hour: number, minute: number, dow0Sun: number): Date {
   return d;
 }
 
-function rosterMemberFromMembership(m: MembershipRow, jerseyNumber: number | null = null): RosterMember {
-  return {
-    membershipId: m.id,
-    name: m.profiles?.display_name || m.id.slice(0, 8),
+function rosterMembershipsFromRows(memberships: MembershipRow[]) {
+  return memberships.map((m) => ({
+    id: m.id,
     role: m.role,
-    jerseyNumber,
-  };
+    status: m.status,
+    displayName: m.profiles?.display_name?.trim() || m.id.slice(0, 8),
+  }));
 }
 
-function buildActivityRoster(
+function buildActivityRosterFromRows(
   activity: ActivityRow,
   memberships: MembershipRow[],
   teamPlayers: TeamPlayerRow[],
-): RosterMember[] {
-  if (activity.team_id) {
-    const jerseyByMember = new Map(
-      teamPlayers.filter((tp) => tp.team_id === activity.team_id).map((tp) => [tp.membership_id, tp.jersey_number]),
-    );
-    const memberIds = new Set(jerseyByMember.keys());
-    return memberships
-      .filter((m) => m.status === "active" && memberIds.has(m.id))
-      .map((m) => rosterMemberFromMembership(m, jerseyByMember.get(m.id) ?? null));
-  }
-
-  return memberships
-    .filter((m) => m.status === "active" && (m.role === "player" || m.role === "member"))
-    .map((m) => rosterMemberFromMembership(m));
+) {
+  return buildActivityRoster({
+    teamId: activity.team_id,
+    memberships: rosterMembershipsFromRows(memberships),
+    teamPlayers,
+  });
 }
 
 export default function Activities() {
@@ -188,8 +177,8 @@ export default function Activities() {
       const actIds = actRows.map((a) => a.id);
       const teamIds = ((teamData as unknown as TeamRow[]) ?? []).map((team) => team.id);
 
-      // trainer: overview needs membership roster (for drawer)
-      if (perms.isTrainer) {
+      // Load roster + full attendance for member RSVP overview
+      if (membershipId) {
         const [{ data: att, error: attErr }, { data: ms, error: msErr }, { data: tp, error: tpErr }] = await Promise.all([
           actIds.length
             ? supabase
@@ -217,20 +206,6 @@ export default function Activities() {
         setAttendance((att as unknown as AttendanceRow[]) ?? []);
         setMemberships((ms as unknown as MembershipRow[]) ?? []);
         setTeamPlayers((tp as unknown as TeamPlayerRow[]) ?? []);
-      } else if (membershipId) {
-        const { data: att, error: attErr } = actIds.length
-          ? await supabase
-              .from("activity_attendance")
-              .select("id, club_id, activity_id, membership_id, status, notes")
-              .eq("club_id", clubId)
-              .eq("membership_id", membershipId)
-              .in("activity_id", actIds)
-          : { data: [], error: null };
-
-        if (attErr) throw attErr;
-        setAttendance((att as unknown as AttendanceRow[]) ?? []);
-        setMemberships([]);
-        setTeamPlayers([]);
       } else {
         setAttendance([]);
         setMemberships([]);
@@ -242,7 +217,7 @@ export default function Activities() {
     } finally {
       setLoading(false);
     }
-  }, [clubId, membershipId, perms.isTrainer, toast, t.common.error, t.activitiesPage.loadFailed]);
+  }, [clubId, membershipId, toast, t.common.error, t.activitiesPage.loadFailed]);
 
   useEffect(() => {
     void fetchData();
@@ -258,27 +233,16 @@ export default function Activities() {
   }, [attendance, membershipId]);
 
   const attendanceByActivity = useMemo(() => {
-    const map: Record<string, ReturnType<typeof summarizeTrainingAttendance>> = {};
-    if (!perms.isTrainer) return map;
+    const map: Record<string, ReturnType<typeof buildActivityAttendanceOverview>> = {};
+    if (!membershipId) return map;
     for (const activity of activities) {
-      const roster = buildActivityRoster(activity, memberships, teamPlayers);
-      const byMember: Record<string, AttendanceRow> = {};
-      for (const row of attendance) {
-        if (row.activity_id === activity.id) byMember[row.membership_id] = row;
-      }
-      const lines = buildRosterAttendanceLines({ roster, attendanceByMember: byMember });
-      map[activity.id] = summarizeTrainingAttendance(
-        lines.map((line) => ({
-          id: byMember[line.membershipId]?.id ?? line.membershipId,
-          activity_id: activity.id,
-          membership_id: line.membershipId,
-          status: line.status,
-          notes: byMember[line.membershipId]?.notes ?? null,
-        })),
-      );
+      if (activity.type !== "training" && activity.type !== "match") continue;
+      const roster = buildActivityRosterFromRows(activity, memberships, teamPlayers);
+      const rows = attendance.filter((row) => row.activity_id === activity.id);
+      map[activity.id] = buildActivityAttendanceOverview({ roster, attendanceRows: rows });
     }
     return map;
-  }, [activities, attendance, memberships, perms.isTrainer, teamPlayers]);
+  }, [activities, attendance, membershipId, memberships, teamPlayers]);
 
   const drawerActivity = useMemo(() => {
     if (!drawerActivityId) return null;
@@ -287,7 +251,7 @@ export default function Activities() {
 
   const drawerRoster = useMemo(() => {
     if (!drawerActivity) return [];
-    return buildActivityRoster(drawerActivity, memberships, teamPlayers);
+    return buildActivityRosterFromRows(drawerActivity, memberships, teamPlayers);
   }, [drawerActivity, memberships, teamPlayers]);
 
   const visibleActivities = useMemo(() => {
@@ -420,6 +384,30 @@ export default function Activities() {
   const rsvp = async (activityId: string, status: "confirmed" | "declined", notes?: string | null) => {
     if (!user || !clubId || !membershipId) return;
 
+    const activity = activities.find((a) => a.id === activityId);
+    if (activity?.type === "training" && !isTrainingRsvpOpen(activity.starts_at)) {
+      toast({
+        title: t.common.error,
+        description: t.activitiesPage.attendanceRsvpClosedTraining,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const overview = attendanceByActivity[activityId];
+    const invited =
+      !overview?.lines.length ||
+      Boolean(myAttendanceByActivity[activityId]) ||
+      overview.lines.some((line) => line.membershipId === membershipId);
+    if (!invited) {
+      toast({
+        title: t.common.error,
+        description: t.activitiesPage.attendanceNotInvited,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setRsvpBusyId(activityId);
     try {
       const existing = myAttendanceByActivity[activityId];
@@ -453,7 +441,9 @@ export default function Activities() {
       });
       await fetchData();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : t.common.error;
+      const msg = isRlsOrPermissionError(err)
+        ? t.activitiesPage.attendanceRsvpPermissionDenied
+        : formatSupabaseError(err) || t.activitiesPage.attendanceRsvpFailed;
       toast({ title: t.common.error, description: msg, variant: "destructive" });
     } finally {
       setRsvpBusyId(null);
@@ -632,6 +622,10 @@ export default function Activities() {
                       const sum = attendanceByActivity[a.id] ?? null;
                       const teamName = a.team_id ? teams.find((tm) => tm.id === a.team_id)?.name ?? null : null;
                       const showAttendance = a.type === "training" || a.type === "match";
+                      const invited =
+                        !sum?.lines.length ||
+                        Boolean(my) ||
+                        (membershipId ? sum.lines.some((line) => line.membershipId === membershipId) : false);
 
                       return (
                         <motion.div
@@ -672,26 +666,36 @@ export default function Activities() {
                             ) : null}
                           </div>
 
-                          {perms.isTrainer && sum && showAttendance ? (
-                            <TrainingAttendanceSummaryBar
-                              summary={sum}
-                              headline={t.activitiesPage.attendanceSummaryHeadline
-                                .replace("{count}", String(sum.confirmed + sum.attended))
-                                .replace("{total}", String(sum.total))}
-                              statComing={t.activitiesPage.attendanceStatComing}
-                              statDeclined={t.activitiesPage.attendanceStatDeclined}
-                              statPending={t.activitiesPage.attendanceStatPending}
+                          {sum && showAttendance ? (
+                            <TrainingAttendanceOverview
+                              overview={sum}
+                              labels={{
+                                sectionTitle: t.activitiesPage.attendanceTeamOverview,
+                                summaryHeadline: t.activitiesPage.attendanceSummaryHeadline,
+                                statComing: t.activitiesPage.attendanceStatComing,
+                                statDeclined: t.activitiesPage.attendanceStatDeclined,
+                                statPending: t.activitiesPage.attendanceStatPending,
+                                comingList: t.activitiesPage.attendanceComingList,
+                                declinedList: t.activitiesPage.attendanceDeclinedList,
+                                noResponsesYet: t.activitiesPage.attendanceNoRosterYet,
+                              }}
                             />
                           ) : null}
 
-                          {membershipId && showAttendance ? (
+                          {membershipId && showAttendance && invited ? (
                             <TrainingAttendanceRsvp
                               activityTitle={a.title}
                               myAttendance={my}
                               busy={rsvpBusyId === a.id}
+                              rsvpClosed={a.type === "training" && !isTrainingRsvpOpen(a.starts_at)}
+                              rsvpClosedMessage={t.activitiesPage.attendanceRsvpClosedTraining}
                               onRespond={(status, notes) => rsvp(a.id, status, notes)}
                               labels={rsvpLabels}
                             />
+                          ) : null}
+
+                          {membershipId && showAttendance && !invited ? (
+                            <p className="mt-3 text-xs text-muted-foreground">{t.activitiesPage.attendanceNotInvited}</p>
                           ) : null}
                         </motion.div>
                       );

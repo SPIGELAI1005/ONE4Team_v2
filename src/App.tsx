@@ -41,6 +41,7 @@ const Members = lazy(() => import("./pages/Members"));
 const MemberHistory = lazy(() => import("./pages/MemberHistory"));
 const Teams = lazy(() => import("./pages/Teams"));
 const Communication = lazy(() => import("./pages/Communication"));
+const Tasks = lazy(() => import("./pages/Tasks"));
 const Payments = lazy(() => import("./pages/Payments"));
 const Events = lazy(() => import("./pages/Events"));
 const Matches = lazy(() => import("./pages/Matches"));
@@ -282,6 +283,7 @@ const AnimatedRoutes = () => {
           <Route path="/teams" element={<RequireTrainer><Suspense fallback={<RouteFallback />}><Teams /></Suspense></RequireTrainer>} />
           {/* All authenticated users */}
           <Route path="/communication" element={<Suspense fallback={<RouteFallback />}><Communication /></Suspense>} />
+          <Route path="/tasks" element={<Suspense fallback={<RouteFallback />}><Tasks /></Suspense>} />
           <Route path="/events" element={<Suspense fallback={<RouteFallback />}><Events /></Suspense>} />
           <Route path="/activities" element={<Suspense fallback={<RouteFallback />}><Activities /></Suspense>} />
           <Route path="/matches" element={<Suspense fallback={<RouteFallback />}><Matches /></Suspense>} />

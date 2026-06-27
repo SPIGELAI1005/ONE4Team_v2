@@ -37,6 +37,13 @@ export const clubAi4tModalPanelClass = [
 
 export const clubAi4tModalOverlayClass = "bg-white/40 backdrop-blur-md";
 
+/** Messages hub modal — same readable white glass as AI 4 T. */
+export const clubMessagesHubPanelClass = clubAi4tModalPanelClass;
+
+/** List rows inside the messages hub (light surface). */
+export const clubMessagesHubCardClass =
+  "rounded-2xl border border-neutral-200/90 bg-neutral-50 transition-[background-color,border-color,box-shadow] duration-200 hover:border-neutral-300 hover:bg-white hover:shadow-sm";
+
 /** Compact chips and filter pills on glass surfaces. */
 export const clubGlassChipClass =
   "club-glass club-glass-interactive rounded-full border border-[color:var(--club-border)]";

@@ -23,6 +23,8 @@ export type Permission =
   | "payments:write"
   | "partners:read"
   | "partners:write"
+  | "tasks:read"
+  | "tasks:write"
   | "settings:write";
 
 const ROLE_PERMISSIONS: Record<AppRole, Permission[]> = {
@@ -37,6 +39,8 @@ const ROLE_PERMISSIONS: Record<AppRole, Permission[]> = {
     "payments:write",
     "partners:read",
     "partners:write",
+    "tasks:read",
+    "tasks:write",
     "settings:write",
   ],
   trainer: [
@@ -45,15 +49,17 @@ const ROLE_PERMISSIONS: Record<AppRole, Permission[]> = {
     "schedule:write",
     "matches:read",
     "matches:write",
+    "tasks:read",
+    "tasks:write",
   ],
-  staff: ["members:read", "schedule:read", "matches:read"],
-  player: ["members:read", "schedule:read", "matches:read"],
-  member: ["members:read", "schedule:read", "matches:read"],
-  parent: ["schedule:read", "matches:read"],
-  sponsor: ["partners:read"],
-  supplier: ["partners:read"],
-  service_provider: ["partners:read"],
-  consultant: ["partners:read"],
+  staff: ["members:read", "schedule:read", "matches:read", "tasks:read"],
+  player: ["members:read", "schedule:read", "matches:read", "tasks:read"],
+  member: ["members:read", "schedule:read", "matches:read", "tasks:read"],
+  parent: ["schedule:read", "matches:read", "tasks:read"],
+  sponsor: ["partners:read", "tasks:read"],
+  supplier: ["partners:read", "tasks:read"],
+  service_provider: ["partners:read", "tasks:read"],
+  consultant: ["partners:read", "tasks:read"],
 };
 
 /** Permissions granted by a single assignment row (role_kind + scope). */
@@ -66,6 +72,8 @@ const KIND_PERMISSIONS: Record<ClubRoleKind, Permission[]> = {
     "schedule:write",
     "matches:read",
     "matches:write",
+    "tasks:read",
+    "tasks:write",
   ],
   trainer: ROLE_PERMISSIONS.trainer,
   player: ROLE_PERMISSIONS.player,

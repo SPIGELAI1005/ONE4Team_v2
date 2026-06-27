@@ -1,11 +1,14 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-06-27 (TSV Allach Sommerfest tournament; membership application; public club UX polish)
+Last updated: 2026-06-25 (Communication hub, tasks, attendance overview, WhatsApp setup backlog)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **Communication hub + public Messages (2026-06-25):** **`PublicClubMessagesHub`** on club microsite (Updates/Channels, announcement detail, Communication modal embed). Team-scoped message RLS + notification fan-out. Announcement moderation (edit/delete, orphan notification cleanup). Tasks module **`/tasks`** with **`club_tasks`** + dashboard summary. See **`CHANGELOG.md`** § **2026-06-25**.
+- **Training attendance overview (2026-06-25):** RSVP cards show team stats + who is coming/not coming; **1-hour training cutoff**; roster-only RSVP; member self-RSVP migration **`20260725130000`**. White glass **Can't make it** dialog on public club. Messages FAB moves above toasts. Lib: **`training-attendance-overview.tsx`**, **`isMemberInvitedToActivity`**, **`supabase-error.ts`**.
+- **WhatsApp bridge setup (backlog):** Operator guide **`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`** — Business API only (no personal QR); Meta webhook GET verify still TODO (**BRIDGE-WA-001**).
 - **Sommerfest 2026 tournament (2026-06-27):** TSV Allach cup **`Sommerfest 2026`** — 22 fixtures synced to **`matches`** with notes **`tsv-sommerfest-2026:mXX`**. Admin **`/matches`**: publish/sync, score updates (kick-off / full time). Public **`/club/:slug/tournament/sommerfest-2026`**: live board (20s poll), category filters, fixed banner under header. Pulsating **Live tournament board** CTA from **11 Jul 2026**. Lib: **`tsv-allach-sommerfest-competition.ts`**, **`tsv-allach-sommerfest-match-sync.ts`**, **`sommerfest-live-pulse.ts`**. See **`CHANGELOG.md`** § **2026-06-27**.
 - **TSV Allach membership application (2026-06-27):** Multi-step join form mirroring [onlineanmeldung](https://www.tsvallach09.de/onlineanmeldung) — personal, address, player data, membership, SEPA/consents. **`application_payload`** on **`club_invite_requests`**; migration **`20260628120000_club_invite_application_payload.sql`**. Role pills + styled form on **`/club/:slug/join`** when **`isTsvAllachClub()`**. Components: **`tsv-allach-membership-application-form.tsx`**, **`tsv-allach-membership-application.ts`**.
 - **Football camp events (2026-06-27):** **`events`** camp metadata + **`import_key`** — migration **`20260627120000_club_events_camp_fields.sql`**; admin templates in **`Events.tsx`**; seed **`supabase/scripts/seed_tsv_allach_football_camps.sql`**.

@@ -107,6 +107,12 @@ export function buildAi4TRoleQuickPrompts(role: Ai4TRoleKey, language: "en" | "d
           ? "Erstelle eine Operations-Checkliste für Spieltag, Training und Kommunikation."
           : "Generate an operations checklist for matchday, training and communication tasks.",
       },
+      {
+        label: isGerman ? "Aufgaben entwerfen" : "Draft club tasks",
+        prompt: isGerman
+          ? "Formuliere 5 konkrete Aufgaben für Trainer und Partner mit Priorität, Fälligkeit und Verantwortlichen. Ich trage sie danach unter Aufgaben ein."
+          : "Draft 5 concrete tasks for trainers and partners with priority, due date, and owners. I will add them on the Tasks page.",
+      },
     ];
   }
 

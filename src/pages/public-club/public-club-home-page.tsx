@@ -18,6 +18,7 @@ import { PublicClubHero } from "@/components/public-club/public-club-hero";
 import { PublicClubHeroTeamFilter } from "@/components/public-club/public-club-hero-team-filter";
 import { PublicClubAi4TButton } from "@/components/public-club/public-club-ai4t-button";
 import { PublicClubAi4TSection } from "@/components/public-club/public-club-ai4t-section";
+import { PublicClubMessagesSection } from "@/components/public-club/public-club-messages-section";
 import { PublicClubSection } from "@/components/public-club/public-club-section";
 import { PublicClubPageGate } from "@/components/public-club/public-club-page-gate";
 import { PublicClubNewsCarousel } from "@/components/public-club/public-club-news-carousel";
@@ -907,6 +908,7 @@ export default function PublicClubHomePage() {
             </PublicClubSection>
           ) : null}
 
+          {!loadingData ? <PublicClubMessagesSection /> : null}
           {!loadingData ? <PublicClubAi4TSection /> : null}
         </>
       ) : null}

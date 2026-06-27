@@ -68,6 +68,7 @@ const MobileBottomNav = ({ active, onNavigate }: MobileBottomNavProps) => {
     if (path.includes("/events")) return "events";
     if (path.includes("/reports") || path.includes("/player-stats")) return "stats";
     if (path.includes("/communication")) return "messages";
+    if (path.includes("/tasks")) return "tasks";
     if (path.includes("/shop")) return "shop";
     return "overview";
   })();

@@ -27,6 +27,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **TSV Allach public club wave (2026-06-27):** Sommerfest 2026 tournament (admin publish + public live board), multi-step membership application with **`application_payload`**, football camp events, news carousel, mobile hero UX, header nav polish — migrations **`20260627120000`**, **`20260628120000`** — see `CHANGELOG.md` § **2026-06-27**, `docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`, `TASKS.md` **ALLACH-***.
 
+**Communication hub, tasks, attendance overview (2026-06-25):** Public club Messages hub; **`/tasks`**; RSVP team stats + 1h cutoff; member self-RSVP RLS; WhatsApp setup backlog **`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`** — see `CHANGELOG.md` § **2026-06-25**, `TASKS.md` **COMM-HUB-*** / **TASKS-*** / **ATTEND-*** / **BRIDGE-WA-***.
+
 ---
 
 ## Phase 0 — Foundation (Week 0–1)

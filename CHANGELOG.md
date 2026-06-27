@@ -3,6 +3,43 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-06-25 (Communication hub, tasks, attendance overview, public club polish)
+
+### Public club Messages hub
+- **`PublicClubMessagesHub`:** Floating Messages FAB (AI 4 T bubble styling); Updates + Channels tabs; announcement detail; deep links to Communication modal; FAB lifts above toast notifications when alerts show.
+- **`PublicClubMessagesSection`** on club home; **`PublicClubCommunicationModal`** embedded **`CommunicationWorkspace`**.
+- **`use-club-updates-feed`**, **`club-updates-feed.ts`**, **`club-message-access.ts`**, team-scoped message RLS migrations.
+
+### Communication & announcements
+- Team-scoped channels; trainers channel; announcement poster upload; edit/delete moderation (admin announcements; message edit 15 min).
+- Updates feed excludes orphan announcement notifications; click routing to detail vs modal.
+- Fixed-height Messages modal; inline hub banners; club-scoped admin checks (`use-club-admin.ts`).
+
+### Tasks module (Phase 0 + 1)
+- **`/tasks`** route, sidebar + mobile nav; **`club_tasks`** table + RLS + notification fan-out (**`20260724180000_club_tasks.sql`**).
+- **`Tasks.tsx`**, **`use-club-tasks.ts`**, **`TasksSummaryCard`** on dashboard; task notification type in **`NotificationBell`**.
+
+### Training attendance — overview & RSVP hardening
+- **Team response overview** on RSVP cards (counts + name lists): public club Next up / schedule / matches + dashboard **`/activities`**.
+- **Training cutoff:** trainings accept RSVP until **1 hour before start** (`isTrainingRsvpOpen`).
+- **Roster gate:** RSVP only for team roster members (or existing attendance row); clear “not on roster” copy.
+- **Migration **`20260725130000_activity_attendance_member_self_rsvp.sql`:** member self-RSVP RLS policies.
+- **White glass decline dialog** on public club (matches AI 4 T / Messages modal); **`DialogContent`** optional **`overlayClassName`**.
+
+### Club page & publish fixes
+- **`20260724170000_fix_publish_club_page_join_default_role_cast.sql`** — publish RPC enum cast.
+- Announcement notification cleanup migrations (**`20260724160000`**, **`20260724160100`**).
+
+### Documentation & backlog
+- **`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`** — operator walkthrough for External Bridge → WhatsApp (Business API; not QR/personal WhatsApp); notes Meta GET verify gap (**BRIDGE-WA-001**).
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`README.md`**, **`ROADMAP.md`**, **`MVP_PLAN.md`**, **`HOLD.md`**, **`supabase/SCHEMA_STATUS.md`**.
+
+### Operator
+- Apply migrations **`20260629120000`** through **`20260725130000`** in filename order (see **`HOLD.md`**).
+- Deploy **`chat-bridge`** before WhatsApp bridge testing; follow **`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`**.
+
 ## 2026-06-27 (TSV Allach public club wave — Sommerfest tournament, membership application, UX polish)
 
 ### Sommerfest 2026 tournament (admin + public live board)
