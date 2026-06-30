@@ -167,6 +167,9 @@ After the 2026-03-29 wave, apply in filename order from **`20260329103000_platfo
 Deploy **`supabase/functions/health`** alongside other functions (`supabase functions deploy health`). It performs a minimal `clubs` select with the service role. The in-app **Health** page (`/health`) calls **`/functions/v1/health`** when a publishable key is set; if the function is not deployed, the check shows `edgeDatabase: skipped`.
 
 ## Release checklist
+
+See **[docs/PRODUCTION_RELEASE_CHECKLIST.md](../docs/PRODUCTION_RELEASE_CHECKLIST.md)** for the full Vercel + Supabase + Resend + Edge Functions go-live checklist.
+
 - CI green: lint / test / build / audit:phase0 / e2e
 - Manual smoke in deployed URL
   - Create club

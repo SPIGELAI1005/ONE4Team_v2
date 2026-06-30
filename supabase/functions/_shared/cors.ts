@@ -2,6 +2,15 @@
  * CORS for browser-invoked Edge Functions.
  * Production should always set EDGE_ALLOWED_ORIGINS as a comma-separated allowlist.
  */
+function isLocalDevOrigin(origin: string): boolean {
+  return (
+    origin.startsWith("http://localhost:") ||
+    origin.startsWith("https://localhost:") ||
+    origin.startsWith("http://127.0.0.1:") ||
+    origin.startsWith("https://127.0.0.1:")
+  );
+}
+
 export function edgeCorsHeaders(req: Request): Record<string, string> {
   const allow = Deno.env.get("EDGE_ALLOWED_ORIGINS")?.trim();
   const origin = req.headers.get("origin");
@@ -11,7 +20,8 @@ export function edgeCorsHeaders(req: Request): Record<string, string> {
 
   if (allow && origin) {
     const allowed = allow.split(",").map((o) => o.trim()).filter(Boolean);
-    if (allowed.includes(origin)) {
+    // Always permit localhost during local dev even when a production allowlist is configured.
+    if (allowed.includes(origin) || isLocalDevOrigin(origin)) {
       return {
         "Access-Control-Allow-Origin": origin,
         ...baseHeaders,
@@ -28,12 +38,7 @@ export function edgeCorsHeaders(req: Request): Record<string, string> {
 
   if (!allow && origin) {
     // Fail closed when allowlist is missing. Keep local development ergonomic.
-    const isLocalhost =
-      origin.startsWith("http://localhost:") ||
-      origin.startsWith("https://localhost:") ||
-      origin.startsWith("http://127.0.0.1:") ||
-      origin.startsWith("https://127.0.0.1:");
-    if (isLocalhost) {
+    if (isLocalDevOrigin(origin)) {
       return {
         "Access-Control-Allow-Origin": origin,
         ...baseHeaders,

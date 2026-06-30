@@ -12,6 +12,15 @@ export default defineConfig({
     },
   },
   plugins: [react()],
+  optimizeDeps: {
+    include: [
+      "@radix-ui/react-popover",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-dropdown-menu",
+      "@radix-ui/react-tabs",
+      "@radix-ui/react-tooltip",
+    ],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

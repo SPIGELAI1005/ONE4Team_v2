@@ -8,6 +8,15 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ## NOW (top priority)
 
+### Member payments + fee packages (2026-06-30) — code in repo
+- [x] **PAY-001** Repair migrations `membership_fee_types` + `payments` + package fields (`20260728120000`–`20260728140000`)
+- [x] **PAY-002** **`/payments`** admin UI: fee packages overview, annual summary, rich add/edit dialog
+- [x] **PAY-003** Record payment (multi-package), bulk assign, filters, in-tab actions
+- [x] **PAY-004** Lib + tests: **`membership-fee-packages.ts`**, **`member-payments.ts`**
+- [x] **PAY-005** Club invite email Edge **`send-club-invite-email`** + **`Members.tsx`** delivery
+- [x] **PAY-DOC-001** **`docs/PRODUCTION_RELEASE_CHECKLIST.md`**, **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**
+- [ ] **PAY-OPS-001** Operator: apply **`20260728120000`**–**`20260728140000`** per env; deploy **`send-club-invite-email`**; Resend domain + secrets; smoke `/payments` + invite email
+
 ### Members ops + club member card (2026-06-28) — code in repo
 - [x] **MEM-OPS-001** Members search focus + refetch UX; search match badges; draft save outside first 500
 - [x] **MEM-OPS-002** Team assignment UI + `team_players` / `team_coaches` sync (`member-team-assignments.ts`)

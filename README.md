@@ -11,6 +11,7 @@ Club/team management SaaS with an iOS-style glass UI, full internationalization 
 - **Cookie consent**: Bottom banner plus **privacy preference centre** (categories + toggles), Accept all / Reject non-essential, EN/DE copy; choices stored in **`localStorage`** (`one4team.cookieConsent` v2); **Cookie settings** in the marketing **`Footer`** (duplicate signed-out bar removed)
 - **Dashboard**: Role-based views (Admin, Trainer, Player, Sponsor) with personalized greeting; **admin** dashboard shows live KPIs, **club finances** summary, and **club setup** from database; **trainer/player** retain sports analytics widgets
 - **Financial reporting**: Admin **`FinancialSummary`** on dashboard; full report at **`/reports?section=financial`** (revenue from Payments/Dues/Shop, costs from **`club_expenses`**, monthly P&L charts, CSV export)
+- **Payments (`/payments`)**: Admin fee **packages** (currency, categories, price components, notes); **payment lines** per member; multi-package record + bulk assign; annual summary by member type (membership + shared levy). Separate from legacy **`/dues`** manual dues tracking.
 - **Reports** (`/reports`): Club KPI snapshot for admins (Operations | **Financial** | Performance tabs; **Recharts** charts)
 - **Members**: Server-paged roster with debounced **full-club search** (RPC `search_club_members_page`, ≥2 characters); **German Mitgliederliste** CSV import profile for club exports; **team assignment** to `team_players` / `team_coaches`; **Club Card** tab (role, team, date of birth, club logo, PNG download)
 - **Teams**: Team list with **search** (name, sport, age group, league, coach, player count)
@@ -78,6 +79,8 @@ npm run k6:edge-co-trainer  # low-rate edge LLM smoke (use sparingly)
 
 ## Deployment (Vercel)
 - `vercel.json` is configured with SPA rewrite rules
+- **Production go-live:** [`docs/PRODUCTION_RELEASE_CHECKLIST.md`](docs/PRODUCTION_RELEASE_CHECKLIST.md)
+- **Project audit (code, UX, market):** [`docs/PROJECT_COMPREHENSIVE_AUDIT.md`](docs/PROJECT_COMPREHENSIVE_AUDIT.md) · technical readiness: [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](ops/PRODUCTION_READINESS_ARTIFACTS.md)
 - See `DEPLOYMENT.md` for full deployment guide
 - Set environment variables in Vercel dashboard
 

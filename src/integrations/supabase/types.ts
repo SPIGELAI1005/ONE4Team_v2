@@ -1943,6 +1943,85 @@ export type Database = {
           },
         ]
       }
+      club_tasks: {
+        Row: {
+          assignee_user_id: string | null
+          club_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_at: string | null
+          id: string
+          partner_id: string | null
+          priority: string
+          source_id: string | null
+          source_type: string
+          status: string
+          team_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_user_id?: string | null
+          club_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          partner_id?: string | null
+          priority?: string
+          source_id?: string | null
+          source_type?: string
+          status?: string
+          team_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_user_id?: string | null
+          club_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          partner_id?: string | null
+          priority?: string
+          source_id?: string | null
+          source_type?: string
+          status?: string
+          team_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_tasks_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_tasks_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_tasks_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_training_change_history: {
         Row: {
           action: string
@@ -2619,14 +2698,58 @@ export type Database = {
           },
         ]
       }
+      membership_fee_types: {
+        Row: {
+          amount: number
+          club_id: string
+          created_at: string
+          currency: string | null
+          description: string | null
+          id: string
+          interval: string | null
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          amount: number
+          club_id: string
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          id?: string
+          interval?: string | null
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          amount?: number
+          club_id?: string
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          id?: string
+          interval?: string | null
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "membership_fee_types_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
-          is_trainers_channel: boolean
           attachments: Json
           club_id: string
           content: string
           created_at: string
           id: string
+          is_trainers_channel: boolean
           sender_id: string
           team_id: string | null
         }
@@ -2969,6 +3092,76 @@ export type Database = {
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          club_id: string
+          created_at: string
+          currency: string | null
+          due_date: string
+          fee_type_id: string | null
+          id: string
+          membership_id: string
+          notes: string | null
+          paid_at: string | null
+          payment_method: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          club_id: string
+          created_at?: string
+          currency?: string | null
+          due_date: string
+          fee_type_id?: string | null
+          id?: string
+          membership_id: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          club_id?: string
+          created_at?: string
+          currency?: string | null
+          due_date?: string
+          fee_type_id?: string | null
+          id?: string
+          membership_id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_fee_type_id_fkey"
+            columns: ["fee_type_id"]
+            isOneToOne: false
+            referencedRelation: "membership_fee_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "club_memberships"
             referencedColumns: ["id"]
           },
         ]
@@ -3831,7 +4024,12 @@ export type Database = {
         }[]
       }
       can_access_team_message: {
-        Args: { _club_id: string; _team_id: string; _user_id: string }
+        Args: {
+          _club_id: string
+          _is_trainers_channel: boolean
+          _team_id: string
+          _user_id: string
+        }
         Returns: boolean
       }
       can_manage_team_training: {
@@ -4077,6 +4275,13 @@ export type Database = {
       is_user_assigned_team_trainer: {
         Args: { _team_id: string; _user_id: string }
         Returns: boolean
+      }
+      list_club_membership_emails: {
+        Args: { _club_id: string }
+        Returns: {
+          email: string
+          membership_id: string
+        }[]
       }
       log_platform_admin_action: {
         Args: { _action: string; _payload?: Json }

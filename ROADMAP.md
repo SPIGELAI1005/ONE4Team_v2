@@ -109,6 +109,7 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Exit criteria**
 - Clubs can run dues operations without external payments
+- **2026-06-30:** Admin **`/payments`** adds **fee packages** + per-member **payment lines** (multi-package assign, TSV Allach-style Sonderumlage); complements Phase 4 **`/dues`** — see **`CHANGELOG.md`** § **2026-06-30**
 
 ---
 

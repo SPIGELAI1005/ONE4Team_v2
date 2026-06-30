@@ -111,6 +111,16 @@ Apply after TSV Allach migrations above (filename order):
 
 Client-only: Messages hub, attendance overview UI, white decline dialog, tasks page, members team assignment, club member card PNG export. WhatsApp setup backlog: `docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`. Deploy **`chat-bridge`** for External Bridge. See `CHANGELOG.md` § 2026-06-25 and § 2026-06-28.
 
+## Member payments + fee packages (2026-06-30)
+For admin **`/payments`** (packages + per-member payment lines), apply after communication/attendance repairs above:
+- `supabase/migrations/20260728120000_repair_membership_fee_types_and_payments.sql` — `membership_fee_types`, `payments`
+- `supabase/migrations/20260728130000_repair_club_memberships_profile_fk.sql` — profile FK for roster embeds
+- `supabase/migrations/20260728140000_membership_fee_types_package_fields.sql` — `price_components`, `member_category`, `fee_kind`, `sort_order`
+
+Deploy **`send-club-invite-email`** for Resend invite delivery. Regenerate **`src/integrations/supabase/types.ts`** after apply.
+
+Client-only: fee package form/overview, record payment UX, annual levy split in summary (`membership-fee-packages.ts`). See `CHANGELOG.md` § 2026-06-30 and `docs/PRODUCTION_RELEASE_CHECKLIST.md`.
+
 ## Verification artifact
 - Run `supabase/PHASE12_VERIFY.sql` after applying the migrations above.
 - Treat any `ok = false` row as a rollout blocker.

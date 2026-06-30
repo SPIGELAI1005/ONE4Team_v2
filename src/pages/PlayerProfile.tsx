@@ -16,6 +16,7 @@ import PlayerRadarChart from "@/components/analytics/PlayerRadarChart";
 import AttendanceHeatmap from "@/components/analytics/AttendanceHeatmap";
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
 import FormStreak from "@/components/matches/FormStreak";
+import { effectivePaymentStatus, todayIsoDate } from "@/lib/member-payments";
 // logo is rendered by AppHeader
 import type {
   ClubMembershipProfileRow,
@@ -73,6 +74,8 @@ const PlayerProfile = () => {
   const [attendance, setAttendance] = useState<EventAttendance[]>([]);
   const [duesDueCount, setDuesDueCount] = useState(0);
   const [duesPaidCount, setDuesPaidCount] = useState(0);
+  const [paymentsOpenCount, setPaymentsOpenCount] = useState(0);
+  const [paymentsPaidCount, setPaymentsPaidCount] = useState(0);
 
   useEffect(() => {
     if (!clubId || !membershipId) return;
@@ -218,6 +221,27 @@ const PlayerProfile = () => {
       setDuesDueCount(due);
       setDuesPaidCount(paid);
 
+      const { data: paymentsRaw } = await supabase
+        .from("payments")
+        .select("status, due_date")
+        .eq("membership_id", membershipId)
+        .eq("club_id", clubId)
+        .neq("status", "cancelled")
+        .limit(1000);
+
+      const today = todayIsoDate();
+      let openPayments = 0;
+      let paidPayments = 0;
+      for (const row of paymentsRaw ?? []) {
+        const status = String((row as { status?: string }).status ?? "pending");
+        const dueDate = String((row as { due_date?: string }).due_date ?? today);
+        const effective = effectivePaymentStatus(status, dueDate, today);
+        if (effective === "paid") paidPayments += 1;
+        else if (effective === "pending" || effective === "overdue") openPayments += 1;
+      }
+      setPaymentsOpenCount(openPayments);
+      setPaymentsPaidCount(paidPayments);
+
       setLoading(false);
     };
     fetchAll();
@@ -303,18 +327,27 @@ const PlayerProfile = () => {
               <div className="space-y-4">
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div className="rounded-lg bg-card border border-border p-4">
-                    <div className="text-xs text-muted-foreground">Dues</div>
+                    <div className="text-xs text-muted-foreground">{t.payments.paymentsTab}</div>
                     <div className="mt-1 text-sm text-foreground">
-                      <span className="font-semibold">{duesDueCount}</span> due • <span className="font-semibold">{duesPaidCount}</span> paid
+                      <span className="font-semibold">{paymentsOpenCount}</span> {t.common.pending.toLowerCase()} ·{" "}
+                      <span className="font-semibold">{paymentsPaidCount}</span> {t.payments.paidStatus.toLowerCase()}
+                    </div>
+                    <div className="mt-2 text-[11px] text-muted-foreground">{t.payments.multiPackageHint.split(".")[0]}.</div>
+                  </div>
+                  <div className="rounded-lg bg-card border border-border p-4">
+                    <div className="text-xs text-muted-foreground">{t.sidebar.dues}</div>
+                    <div className="mt-1 text-sm text-foreground">
+                      <span className="font-semibold">{duesDueCount}</span> due · <span className="font-semibold">{duesPaidCount}</span> paid
                     </div>
                     <div className="mt-2 text-[11px] text-muted-foreground">(Shown for this member only)</div>
                   </div>
-                  <div className="rounded-lg bg-card border border-border p-4">
+                  <div className="rounded-lg bg-card border border-border p-4 sm:col-span-2">
                     <div className="text-xs text-muted-foreground">Quick links</div>
                     <div className="mt-2 grid gap-1 text-[13px]">
                       <a className="text-primary hover:underline" href="/activities">Schedule</a>
                       <a className="text-primary hover:underline" href="/matches">Matches</a>
-                      <a className="text-primary hover:underline" href="/dues">Dues</a>
+                      <a className="text-primary hover:underline" href="/dues">{t.sidebar.dues}</a>
+                      <a className="text-primary hover:underline" href="/payments">{t.sidebar.payments}</a>
                     </div>
                   </div>
                 </div>

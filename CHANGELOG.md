@@ -3,6 +3,36 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-06-30 (Member payments, fee packages, invite email)
+
+### Payments & fee packages (`/payments`)
+- **Admin route **`/payments`** (PlanGate `payments`):** membership **packages** (`membership_fee_types`) + per-member **payment lines** (`payments`). One member can have multiple packages (e.g. annual fee + registration fee + Sonderumlage).
+- **Fee Types tab:** overview table (package, amount, billing type, notes); **annual total by member type** (youth / adult / senior) with **membership** vs **shared levy** columns; levy detected from standalone packages (`fee_kind=levy`, `member_category=shared`) or **price components** labelled Sonderumlage/Umlage/levy.
+- **Add / edit package dialog:** currency, billing interval, fee category (membership / levy / joining / other), member type, notes, optional **price components** with live total. Lib: **`membership-fee-packages.ts`**, components **`membership-fee-package-form.tsx`**, **`membership-fee-packages-overview.tsx`**.
+- **Record payment:** multi-select packages per member (checkboxes); **bulk assign** one package to many members; filters (member, multi-select packages, status); in-tab **Record payment** / **Bulk assign** actions (not header-only).
+- **Member profile:** payment count + link to **`/payments`**. Lib: **`member-payments.ts`** + tests.
+
+### Supabase schema repairs
+- **`20260728120000_repair_membership_fee_types_and_payments.sql`** — create `membership_fee_types` + `payments` if missing (PostgREST schema cache).
+- **`20260728130000_repair_club_memberships_profile_fk.sql`** — FK `club_memberships_profile_fk` for profile embeds.
+- **`20260728140000_membership_fee_types_package_fields.sql`** — `price_components` (jsonb), `member_category`, `fee_kind`, `sort_order`.
+
+### Club invite email delivery
+- Edge **`send-club-invite-email`** (Resend) + shared **`club_invite_email.ts`**; client **`send-club-invite-email.ts`**; **`Members.tsx`** delivers email on send/resend/create invite (link modal as backup).
+- **`cors.ts`:** localhost allowed when prod `EDGE_ALLOWED_ORIGINS` is set. Secrets: **`RESEND_API_KEY`**, **`RESEND_FROM_EMAIL`**, **`PUBLIC_SITE_URL`**, **`EDGE_ALLOWED_ORIGINS`**.
+
+### Tooling & docs
+- **`vite.config.ts`:** `optimizeDeps.include` for `@radix-ui/react-popover` (fixes dev **504 Outdated Optimize Dep** on `/payments`).
+- **`docs/PRODUCTION_RELEASE_CHECKLIST.md`**, **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**; links in **`README.md`**, **`PROJECT_STATUS.md`**, **`DEPLOYMENT.md`**.
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`README.md`**, **`HOLD.md`**, **`supabase/SCHEMA_STATUS.md`**, **`ops/PRODUCTION_READINESS_*.md`**.
+
+### Operator
+- Apply migrations **`20260728120000`** → **`20260728140000`** after **`20260725150000`**; regenerate **`src/integrations/supabase/types.ts`** if needed.
+- Deploy **`send-club-invite-email`**; set Resend + Edge secrets; verify Resend domain for production From address.
+- Smoke: **`/payments`** → Fee Types (TSV Allach-style packages) → Record payment (multi-package) → mark paid; **`/members`** send invite → email received.
+
 ## 2026-06-28 (Members ops, team assignment, club member card)
 
 ### Members page (`/members`)

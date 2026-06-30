@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-06-25 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-25** communication/tasks/attendance, § **2026-06-27** TSV Allach Sommerfest + membership application), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
+Last updated: 2026-06-30 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-25** communication/tasks/attendance, § **2026-06-27** TSV Allach Sommerfest + membership application, § **2026-06-30** member payments + invite email), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
 
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 
@@ -103,6 +103,18 @@ Apply in the same Supabase project (after **`20260628120000`**):
 Deploy Edge: **`chat-bridge`** (for WhatsApp/Telegram External Bridge).
 
 Smoke: public club **Messages** hub; **`/communication`** announcements + moderation; **`/tasks`**; training RSVP overview + self-RSVP; **`/members`** team assignment + club card PNG; avatar upload. See **`CHANGELOG.md` § 2026-06-25** and **§ 2026-06-28**, **`TASKS.md` COMM-OPS-001 / ATTEND-OPS-001 / MEM-OPS-006.
+
+## Member payments + invite email (2026-06-30)
+Apply in the same Supabase project (after **`20260725150000`**):
+1. `supabase/migrations/20260728120000_repair_membership_fee_types_and_payments.sql`
+2. `supabase/migrations/20260728130000_repair_club_memberships_profile_fk.sql`
+3. `supabase/migrations/20260728140000_membership_fee_types_package_fields.sql`
+
+Deploy Edge: **`send-club-invite-email`**.
+
+Secrets (Supabase Edge): **`RESEND_API_KEY`**, **`RESEND_FROM_EMAIL`**, **`PUBLIC_SITE_URL`**, **`EDGE_ALLOWED_ORIGINS`** (comma-separated origins, no trailing slashes).
+
+Smoke: **`/payments`** Fee Types + Record payment (multi-package); **`/members`** send invite → email in inbox. Resend **domain must be verified** for production From address. See **`CHANGELOG.md` § 2026-06-30**, **`docs/PRODUCTION_RELEASE_CHECKLIST.md`**, **`TASKS.md` PAY-OPS-001**.
 
 ## WhatsApp External Bridge — operator (follow-up)
 **Not** personal WhatsApp / QR login. Use **WhatsApp Business API** only.

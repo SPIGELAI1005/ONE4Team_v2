@@ -43,6 +43,7 @@ import { MemberMasterDialog } from "@/components/members/member-master-dialog";
 import { MasterDataTabs } from "@/components/members/master-data-tabs";
 import { Badge } from "@/components/ui/badge";
 import { appendMemberAuditEvent } from "@/lib/member-audit";
+import { sendClubInviteEmail, type SendClubInviteEmailResult } from "@/lib/send-club-invite-email";
 import { cn } from "@/lib/utils";
 import {
   DASHBOARD_PAGE_INNER,
@@ -424,7 +425,7 @@ const Members = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { clubId, loading: clubLoading } = useClubId();
   const perms = usePermissions();
   const agentPageContext = useMemo(() => ({ source: "members" as const }), []);
@@ -543,6 +544,7 @@ const Members = () => {
   const [createdInviteToken, setCreatedInviteToken] = useState<string | null>(null);
   const [draftResendTokenModalOpen, setDraftResendTokenModalOpen] = useState(false);
   const [draftResendInviteToken, setDraftResendInviteToken] = useState<string | null>(null);
+  const [draftInviteLinkModalVariant, setDraftInviteLinkModalVariant] = useState<"send" | "resend">("send");
   const [historyPreview, setHistoryPreview] = useState<HistoryPreviewState | null>(null);
   const [copied, setCopied] = useState(false);
   const [bulkRows, setBulkRows] = useState<BulkMemberDraft[]>([
@@ -645,6 +647,7 @@ const Members = () => {
     setHistoryPreview(null);
     setDraftResendTokenModalOpen(false);
     setDraftResendInviteToken(null);
+    setDraftInviteLinkModalVariant("send");
 
     setSearch("");
     setDebouncedSearch("");
@@ -837,6 +840,61 @@ const Members = () => {
     if (!data?.id) return { ok: false as const, error: t.membersPage.noClubSelected };
     return { ok: true as const, token, inviteId: data.id };
   };
+
+  const deliverClubInviteEmail = useCallback(
+    async (input: {
+      inviteId: string;
+      toEmail: string;
+      inviteToken: string;
+      recipientName?: string | null;
+    }): Promise<SendClubInviteEmailResult> => {
+      if (!clubId) return { ok: false, error: t.membersPage.noClubSelected, code: "unknown" };
+      return sendClubInviteEmail({
+        clubId,
+        inviteId: input.inviteId,
+        toEmail: input.toEmail,
+        inviteToken: input.inviteToken,
+        recipientName: input.recipientName,
+        language,
+      });
+    },
+    [clubId, language, t.membersPage.noClubSelected],
+  );
+
+  const notifyInviteEmailDelivery = useCallback(
+    (email: string, emailResult: SendClubInviteEmailResult) => {
+      if (emailResult.ok) {
+        toast({
+          title: t.membersPage.inviteEmailSentTitle,
+          description: t.membersPage.inviteEmailSentDesc.replace("{email}", email),
+        });
+        return;
+      }
+      if (emailResult.code === "email_not_configured") {
+        toast({
+          title: t.membersPage.inviteCreated,
+          description: t.membersPage.inviteEmailNotConfiguredDesc,
+          variant: "destructive",
+        });
+        return;
+      }
+      if (emailResult.error.startsWith("edge_unreachable:")) {
+        const origin = emailResult.error.slice("edge_unreachable:".length) || window.location.origin;
+        toast({
+          title: t.membersPage.inviteEmailFailedTitle,
+          description: t.membersPage.inviteEmailEdgeUnreachableDesc.replace("{origin}", origin),
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: t.membersPage.inviteEmailFailedTitle,
+        description: t.membersPage.inviteEmailFailedDesc.replace("{error}", emailResult.error),
+        variant: "destructive",
+      });
+    },
+    [toast, t.membersPage.inviteCreated, t.membersPage.inviteEmailFailedDesc, t.membersPage.inviteEmailFailedTitle, t.membersPage.inviteEmailNotConfiguredDesc, t.membersPage.inviteEmailSentDesc, t.membersPage.inviteEmailSentTitle],
+  );
 
   const fetchMemberDrafts = useCallback(async () => {
     if (!clubId || !perms.isAdmin) return;
@@ -2406,7 +2464,18 @@ const Members = () => {
       hasPrefillEmail: Boolean((prefillEmail ?? inviteEmail).trim()),
       inviteDays: Number(inviteDays),
     });
-    toast({ title: t.membersPage.inviteCreated, description: t.membersPage.inviteCreatedDesc });
+    const emailValue = (prefillEmail ?? inviteEmail).trim();
+    const normalizedInviteEmail = normalizeEmail(emailValue);
+    if (normalizedInviteEmail) {
+      const emailResult = await deliverClubInviteEmail({
+        inviteId: response.inviteId,
+        toEmail: normalizedInviteEmail,
+        inviteToken: response.token,
+      });
+      notifyInviteEmailDelivery(normalizedInviteEmail, emailResult);
+    } else {
+      toast({ title: t.membersPage.inviteCreated, description: t.membersPage.inviteCreatedDesc });
+    }
     await fetchInvitesData();
   };
 
@@ -2603,17 +2672,31 @@ const Members = () => {
       return;
     }
 
+    const normalizedInviteEmail = normalizeEmail(emailForInvite);
+    const emailResult = await deliverClubInviteEmail({
+      inviteId: result.inviteId,
+      toEmail: normalizedInviteEmail,
+      inviteToken: result.token,
+      recipientName: displayNameForInvite || null,
+    });
+
     void appendMemberAuditEvent({
       clubId,
       draftId: draft.id,
-      correlationEmail: normalizeEmail(emailForInvite),
+      correlationEmail: normalizedInviteEmail,
       eventType: "invite_sent",
       summary: "Invite sent",
-      detail: { invite_id: result.inviteId },
+      detail: { invite_id: result.inviteId, email_sent: emailResult.ok },
     });
 
-    toast({ title: t.membersPage.inviteCreated, description: t.membersPage.inviteSentForDraft });
     await fetchMemberDrafts();
+    const slugRes = await supabase.from("clubs").select("slug").eq("id", clubId).maybeSingle();
+    if (!slugRes.error && slugRes.data?.slug) setClubSlug(slugRes.data.slug);
+    void fetchInvitesData();
+    setDraftInviteLinkModalVariant("send");
+    setDraftResendInviteToken(result.token);
+    setDraftResendTokenModalOpen(true);
+    notifyInviteEmailDelivery(normalizedInviteEmail, emailResult);
     setDraftActionId(null);
   };
 
@@ -2700,13 +2783,25 @@ const Members = () => {
       return;
     }
 
+    const normalizedInviteEmail = normalizeEmail(emailForInvite);
+    const emailResult = await deliverClubInviteEmail({
+      inviteId: result.inviteId,
+      toEmail: normalizedInviteEmail,
+      inviteToken: result.token,
+      recipientName: displayNameForInvite || null,
+    });
+
     void appendMemberAuditEvent({
       clubId,
       draftId: draft.id,
-      correlationEmail: normalizeEmail(emailForInvite),
+      correlationEmail: normalizedInviteEmail,
       eventType: "invite_resent",
       summary: "Invite resent (new link)",
-      detail: { invite_id: result.inviteId, previous_invite_id: previousInviteId ?? null },
+      detail: {
+        invite_id: result.inviteId,
+        previous_invite_id: previousInviteId ?? null,
+        email_sent: emailResult.ok,
+      },
     });
 
     if (previousInviteId) {
@@ -2730,9 +2825,10 @@ const Members = () => {
     const slugRes = await supabase.from("clubs").select("slug").eq("id", clubId).maybeSingle();
     if (!slugRes.error && slugRes.data?.slug) setClubSlug(slugRes.data.slug);
     void fetchInvitesData();
+    setDraftInviteLinkModalVariant("resend");
     setDraftResendInviteToken(result.token);
     setDraftResendTokenModalOpen(true);
-    toast({ title: t.membersPage.resendInviteSuccessTitle, description: t.membersPage.resendInviteSuccessDesc });
+    notifyInviteEmailDelivery(normalizedInviteEmail, emailResult);
     setDraftActionId(null);
   };
 
@@ -4696,8 +4792,16 @@ const Members = () => {
           >
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="font-display font-bold text-foreground tracking-tight">{t.membersPage.resendInviteModalTitle}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{t.membersPage.resendInviteModalDesc}</p>
+                <h3 className="font-display font-bold text-foreground tracking-tight">
+                  {draftInviteLinkModalVariant === "resend"
+                    ? t.membersPage.resendInviteModalTitle
+                    : t.membersPage.sendInviteModalTitle}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {draftInviteLinkModalVariant === "resend"
+                    ? t.membersPage.resendInviteModalDesc
+                    : t.membersPage.sendInviteModalDesc}
+                </p>
               </div>
               <Button
                 variant="ghost"
