@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/hooks/use-language";
 import { motion } from "framer-motion";
 import {
@@ -22,6 +22,7 @@ import AnalyticsWidgets from "@/components/dashboard/AnalyticsWidgets";
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
 import LiveMatchTicker from "@/components/dashboard/LiveMatchTicker";
 import { TasksSummaryCard } from "@/components/dashboard/TasksSummaryCard";
+import { MarketplaceDashboardCards } from "@/components/dashboard/MarketplaceDashboardCards";
 import AdminNotificationSender from "@/components/dashboard/AdminNotificationSender";
 import FinancialSummary from "@/components/dashboard/FinancialSummary";
 import SeasonProgressionChart from "@/components/analytics/SeasonProgressionChart";
@@ -40,6 +41,12 @@ import {
 } from "@/lib/club-dashboard-snapshot";
 import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 import { getDashboardSections } from "@/lib/dashboard-section-visibility";
+import {
+  defaultDashboardPersonaSlug,
+  isDashboardPersonaAllowed,
+} from "@/lib/dashboard-persona";
+import { isExternalRole, normalizeDashboardRole } from "@/lib/rbac-config";
+import { usePermissions } from "@/hooks/use-permissions";
 import {
   fetchClubFinancialSnapshot,
   formatMoneyFromCents,
@@ -91,6 +98,8 @@ function formatClubTypeLabel(
 
 const DashboardContent = () => {
   const { role } = useParams();
+  const navigate = useNavigate();
+  const perms = usePermissions();
   const { t } = useLanguage();
   const { user } = useAuth();
   const { activeClubId, activeClub } = useActiveClub();
@@ -124,6 +133,16 @@ const DashboardContent = () => {
   const roleConfig: Record<string, RoleConfig> = useMemo(
     () => ({
       admin: {
+        title: t.dashboard.clubAdminDashboard,
+        greeting: t.dashboard.welcomeBackAdmin,
+        kpis: [
+          { id: "totalMembers", label: t.dashboard.totalMembers, value: "—", change: "", icon: Users },
+          { id: "activeTeams", label: t.dashboard.activeTeams, value: "—", change: "", icon: Trophy },
+          { id: "upcoming", label: t.dashboard.upcoming, value: "—", change: "", icon: Calendar },
+          { id: "unpaidDues", label: t.financial.outstanding, value: "—", change: "", icon: TrendingUp },
+        ],
+      },
+      club_admin: {
         title: t.dashboard.clubAdminDashboard,
         greeting: t.dashboard.welcomeBackAdmin,
         kpis: [
@@ -189,6 +208,12 @@ const DashboardContent = () => {
   const [aiInsights, setAiInsights] = useState<string[]>([]);
 
   const sections = useMemo(() => getDashboardSections(role), [role]);
+  const normalizedRole = useMemo(() => normalizeDashboardRole(role), [role]);
+  const isClubAdminPersona = normalizedRole === "club_admin";
+  const externalPersona = useMemo(
+    () => isExternalRole(normalizedRole),
+    [normalizedRole],
+  );
 
   // Route-driven profile (A): persist selected role so the unified top bar reflects it on every page.
   useEffect(() => {
@@ -197,7 +222,27 @@ const DashboardContent = () => {
   }, [role]);
 
   useEffect(() => {
-    // reset on role change
+    if (!role || perms.activeClubLoading || perms.assignmentsLoading) return;
+    const personaCtx = { treatAsClubAdmin: perms.isAdmin };
+    if (!isDashboardPersonaAllowed(role, perms.role, perms.assignments, personaCtx)) {
+      const fallback = defaultDashboardPersonaSlug(perms.role, perms.assignments, personaCtx);
+      const normCurrent = normalizeDashboardRole(role);
+      const normFallback = normalizeDashboardRole(fallback);
+      if (normCurrent === normFallback) return;
+      localStorage.setItem("one4team.activeRole", fallback);
+      navigate(`/dashboard/${fallback}`, { replace: true });
+    }
+  }, [
+    role,
+    perms.role,
+    perms.assignments,
+    perms.isAdmin,
+    perms.activeClubLoading,
+    perms.assignmentsLoading,
+    navigate,
+  ]);
+
+  useEffect(() => {
     setKpis(config.kpis);
   }, [config.kpis]);
 
@@ -216,9 +261,24 @@ const DashboardContent = () => {
     const run = async () => {
       setDashboardLoading(true);
       try {
+        if (externalPersona) {
+          setClubSetupProfile(null);
+          setAdminSnapshot(null);
+          setUpcoming([]);
+          setAiInsights([t.dashboard.aiTip1, t.dashboard.aiTip2, t.dashboard.aiTip3]);
+          setKpis((prev) =>
+            prev.map((k) => ({
+              ...k,
+              value: "—",
+              change: "",
+            })),
+          );
+          return;
+        }
+
         const profilePromise = fetchClubSetupProfile(activeClubId);
 
-        if (role === "admin") {
+        if (isClubAdminPersona) {
           const [snapshot, schedule, profile, financial] = await Promise.all([
             fetchAdminDashboardSnapshot(activeClubId),
             fetchDashboardUpcoming(activeClubId, 7),
@@ -382,11 +442,11 @@ const DashboardContent = () => {
     return () => {
       cancelled = true;
     };
-  }, [activeClubId, config.kpis, role, t]);
+  }, [activeClubId, config.kpis, role, t, externalPersona]);
 
   const showGettingStarted = useMemo(() => {
     if (!activeClubId) return true;
-    if (role === "admin" && adminSnapshot) {
+    if (isClubAdminPersona && adminSnapshot) {
       const hasPeople = adminSnapshot.membersActive > 0 || adminSnapshot.pendingDrafts > 0;
       const hasSchedule =
         adminSnapshot.upcomingCount7d > 0 || adminSnapshot.upcomingMatches > 0;
@@ -396,7 +456,7 @@ const DashboardContent = () => {
       return upcoming.length === 0;
     }
     return false;
-  }, [activeClubId, adminSnapshot, role, upcoming.length]);
+  }, [activeClubId, adminSnapshot, isClubAdminPersona, role, upcoming.length]);
 
   const registrationSummary = useMemo(() => {
     const fromMetadata = parseRegistrationSummary((user?.user_metadata as Record<string, unknown> | undefined) ?? null);
@@ -414,9 +474,12 @@ const DashboardContent = () => {
   }, [user?.user_metadata]);
 
   const showClubSetup = useMemo(() => {
-    if (role === "admin" && activeClubId) return true;
+    if (externalPersona) {
+      return registrationSummary?.registration_track === "partner";
+    }
+    if (isClubAdminPersona && activeClubId) return true;
     return Boolean(registrationSummary?.registration_track);
-  }, [activeClubId, registrationSummary, role]);
+  }, [activeClubId, externalPersona, registrationSummary, role]);
 
   const clubSetupDisplay = useMemo(() => {
     const isClubAdmin =
@@ -458,7 +521,7 @@ const DashboardContent = () => {
     }
 
     const teamsMembers =
-      adminSnapshot && role === "admin"
+      adminSnapshot && isClubAdminPersona
         ? `${adminSnapshot.teamsCount} · ${adminSnapshot.membersActive + adminSnapshot.pendingDrafts}`
         : null;
 
@@ -482,11 +545,11 @@ const DashboardContent = () => {
       <DashboardHeaderSlot title={config.title} greeting={dashboardGreeting} showBack={false} />
 
       <div className={`${DASHBOARD_PAGE_INNER} space-y-5`}>
-        {showGettingStarted && (role === "trainer" || role === "admin") && (
+        {showGettingStarted && (role === "trainer" || isClubAdminPersona) && (
           <div className="rounded-2xl glass-card p-5">
             <div className="font-display font-semibold text-foreground text-[15px] flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-primary" />{" "}
-              {role === "admin" ? t.dashboard.gettingStartedAdmin : t.dashboard.gettingStarted}
+              {isClubAdminPersona ? t.dashboard.gettingStartedAdmin : t.dashboard.gettingStarted}
             </div>
             <div className="mt-3 grid gap-2 text-[13px] text-muted-foreground">
               <div>
@@ -570,7 +633,7 @@ const DashboardContent = () => {
                       <ExternalLink className="w-3 h-3" />
                       {t.dashboard.clubSetupViewPage}
                     </a>
-                    {role === "admin" ? (
+                    {isClubAdminPersona ? (
                       <Link
                         to="/club-page-admin"
                         className="inline-flex items-center gap-1 text-primary hover:underline"
@@ -591,9 +654,12 @@ const DashboardContent = () => {
 
         {sections.liveMatchTicker ? <LiveMatchTicker /> : null}
 
-        <TasksSummaryCard />
+        {sections.tasksSummary ? <TasksSummaryCard /> : null}
 
-        {/* KPIs */}
+        {sections.marketplaceCards ? <MarketplaceDashboardCards /> : null}
+
+        {/* KPIs — hidden for external provider personas (marketplace cards only) */}
+        {!externalPersona ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {kpis.map((kpi, i) => (
             <motion.div
@@ -621,8 +687,9 @@ const DashboardContent = () => {
             </motion.div>
           ))}
         </div>
+        ) : null}
 
-        {sections.financialSummary && role === "admin" ? <FinancialSummary compact /> : null}
+        {sections.financialSummary && isClubAdminPersona ? <FinancialSummary compact /> : null}
 
         {sections.analyticsWidgets ? <AnalyticsWidgets /> : null}
         {sections.seasonProgression ? <SeasonProgressionChart /> : null}

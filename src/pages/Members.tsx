@@ -20,6 +20,7 @@ import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { useToast } from "@/hooks/use-toast";
 import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useModuleDataScope } from "@/hooks/use-module-data-scope";
 import { RoleManager } from "@/components/members/role-manager";
 import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
 import { useRegisterAiAgentContext } from "@/hooks/use-register-ai-agent-context";
@@ -259,6 +260,20 @@ const SUPPORTED_ROLES = [
   "consultant",
 ] as const;
 
+/** Display order for membership / invite role pickers (club roles, then partners, admin last). */
+const MEMBERSHIP_ROLE_SELECT_ORDER = [
+  "member",
+  "player",
+  "trainer",
+  "staff",
+  "parent",
+  "sponsor",
+  "supplier",
+  "service_provider",
+  "consultant",
+  "admin",
+] as const;
+
 const roleIcons: Record<string, React.ElementType> = {
   admin: Crown,
   trainer: Dumbbell,
@@ -428,6 +443,7 @@ const Members = () => {
   const { t, language } = useLanguage();
   const { clubId, loading: clubLoading } = useClubId();
   const perms = usePermissions();
+  const memberDataScope = useModuleDataScope("members");
   const agentPageContext = useMemo(() => ({ source: "members" as const }), []);
   useRegisterAiAgentContext(agentPageContext);
   const [tab, setTab] = useState<"members" | "invites" | "roles">("members");
@@ -1093,14 +1109,18 @@ const Members = () => {
       ]);
       setSupportsTeamCoachesTable(!coachesProbe.error);
       setClubTeams(
-        ((teamsRes.data as Array<{ id: string; name: string; age_group: string | null }> | null) ?? []).map((team) => ({
-          id: team.id,
-          name: team.name,
-          age_group: team.age_group,
-        })),
+        ((teamsRes.data as Array<{ id: string; name: string; age_group: string | null }> | null) ?? [])
+          .filter((team) =>
+            memberDataScope.teamIds === "all" || memberDataScope.teamIds.includes(team.id),
+          )
+          .map((team) => ({
+            id: team.id,
+            name: team.name,
+            age_group: team.age_group,
+          })),
       );
     })();
-  }, [clubId]);
+  }, [clubId, memberDataScope.teamIds]);
 
   const masterTabLabels = useMemo(() => ({
     identity: t.membersPage.masterSectionIdentity,
@@ -1128,6 +1148,32 @@ const Members = () => {
     const finishMembersFetch = () => {
       setHasMembersHydrated(true);
       setLoading(false);
+    };
+    const teamScope = memberDataScope.teamIds;
+    let scopedMembershipIds: Set<string> | null = null;
+    if (teamScope !== "all") {
+      if (teamScope.length === 0) {
+        setMembers([]);
+        setMembersDbTotalCount(0);
+        setClubMemberStats(null);
+        finishMembersFetch();
+        return;
+      }
+      const [playersRes, coachesRes] = await Promise.all([
+        supabase.from("team_players").select("membership_id").in("team_id", teamScope),
+        supabase.from("team_coaches").select("membership_id").in("team_id", teamScope),
+      ]);
+      scopedMembershipIds = new Set<string>();
+      for (const row of (playersRes.data ?? []) as { membership_id: string }[]) {
+        scopedMembershipIds.add(String(row.membership_id));
+      }
+      for (const row of (coachesRes.data ?? []) as { membership_id: string }[]) {
+        scopedMembershipIds.add(String(row.membership_id));
+      }
+    }
+    const applyTeamScope = <T extends { id: string }>(rows: T[]): T[] => {
+      if (!scopedMembershipIds) return rows;
+      return rows.filter((row) => scopedMembershipIds!.has(row.id));
     };
     const searchKey = debouncedSearch.trim().length >= 2 ? debouncedSearch.trim() : "";
     const pivot = `${clubId}\0${roleFilter}\0${searchKey}`;
@@ -1172,7 +1218,13 @@ const Members = () => {
         return;
       }
       const [teamRowsRes, playersRes, coachesRes, masterRes, guardianRes, emailRes] = await Promise.all([
-        supabase.from("teams").select("id, name").eq("club_id", clubId),
+        (() => {
+          let q = supabase.from("teams").select("id, name").eq("club_id", clubId);
+          if (teamScope !== "all" && teamScope.length > 0) {
+            q = q.in("id", teamScope);
+          }
+          return q;
+        })(),
         supabase.from("team_players").select("team_id, membership_id").in("membership_id", membershipIds),
         supabase.from("team_coaches").select("team_id, membership_id").in("membership_id", membershipIds),
         supabase.from("club_member_master_records").select("*").in("membership_id", membershipIds),
@@ -1286,8 +1338,10 @@ const Members = () => {
       const payload = rawSearch as { total?: unknown; items?: unknown } | null;
       const total = typeof payload?.total === "number" ? payload.total : 0;
       const rawItems = Array.isArray(payload?.items) ? payload.items : [];
-      setMembersDbTotalCount(total);
-      const memberships = rawItems.map((row) => mapSearchRpcRowToMember(row as Record<string, unknown>));
+      const memberships = applyTeamScope(
+        rawItems.map((row) => mapSearchRpcRowToMember(row as Record<string, unknown>)),
+      );
+      setMembersDbTotalCount(scopedMembershipIds ? memberships.length : total);
       setMembers(memberships);
       await loadSidecarsForMemberships(memberships.map((item) => item.id));
       finishMembersFetch();
@@ -1309,7 +1363,9 @@ const Members = () => {
     ]);
 
     const { data: membershipData, error: membershipError, count } = memRes;
-    setMembersDbTotalCount(typeof count === "number" ? count : null);
+    setMembersDbTotalCount(
+      scopedMembershipIds ? memberships.length : typeof count === "number" ? count : null,
+    );
     applyStats(statsRes);
 
     if (membershipError) {
@@ -1318,7 +1374,7 @@ const Members = () => {
       return;
     }
 
-    const memberships = (membershipData as unknown as MemberRow[]) || [];
+    const memberships = applyTeamScope((membershipData as unknown as MemberRow[]) || []);
     const userIds = Array.from(new Set(memberships.map((item) => item.user_id))).filter(Boolean);
     const membershipIds = memberships.map((item) => item.id);
 
@@ -1346,7 +1402,7 @@ const Members = () => {
 
     await loadSidecarsForMemberships(membershipIds);
     finishMembersFetch();
-  }, [clubId, debouncedSearch, membersServerPage, roleFilter, toast, t]);
+  }, [clubId, debouncedSearch, membersServerPage, roleFilter, toast, t, memberDataScope.teamIds]);
 
   useEffect(() => {
     void fetchMembers();
@@ -4074,16 +4130,11 @@ const Members = () => {
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="member">{t.onboarding.member}</SelectItem>
-                                      <SelectItem value="player">{t.onboarding.player}</SelectItem>
-                                      <SelectItem value="trainer">{t.onboarding.trainer}</SelectItem>
-                                      <SelectItem value="staff">{t.onboarding.teamStaff}</SelectItem>
-                                      <SelectItem value="parent">{t.onboarding.parentSupporter}</SelectItem>
-                                      <SelectItem value="sponsor">{t.onboarding.sponsor}</SelectItem>
-                                      <SelectItem value="supplier">{t.onboarding.supplier}</SelectItem>
-                                      <SelectItem value="service_provider">{t.onboarding.serviceProvider}</SelectItem>
-                                      <SelectItem value="consultant">{t.onboarding.consultant}</SelectItem>
-                                      <SelectItem value="admin">{t.onboarding.clubAdmin}</SelectItem>
+                                      {MEMBERSHIP_ROLE_SELECT_ORDER.map((role) => (
+                                        <SelectItem key={role} value={role}>
+                                          {getRoleLabel(role)}
+                                        </SelectItem>
+                                      ))}
                                     </SelectContent>
                                   </Select>
                                   <Select
@@ -4710,10 +4761,11 @@ const Members = () => {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-border/70 bg-card/95 backdrop-blur-2xl">
-                              <SelectItem value="member" className="rounded-lg">{t.onboarding.member}</SelectItem>
-                              <SelectItem value="player" className="rounded-lg">{t.onboarding.player}</SelectItem>
-                              <SelectItem value="trainer" className="rounded-lg">{t.onboarding.trainer}</SelectItem>
-                              <SelectItem value="admin" className="rounded-lg">{t.onboarding.clubAdmin}</SelectItem>
+                              {MEMBERSHIP_ROLE_SELECT_ORDER.map((role) => (
+                                <SelectItem key={role} value={role} className="rounded-lg">
+                                  {getRoleLabel(role)}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                           <Select value={inviteDays} onValueChange={setInviteDays}>
@@ -5055,16 +5107,11 @@ const Members = () => {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="member">{t.onboarding.member}</SelectItem>
-                            <SelectItem value="player">{t.onboarding.player}</SelectItem>
-                            <SelectItem value="trainer">{t.onboarding.trainer}</SelectItem>
-                            <SelectItem value="staff">{t.onboarding.teamStaff}</SelectItem>
-                            <SelectItem value="parent">{t.onboarding.parentSupporter}</SelectItem>
-                            <SelectItem value="sponsor">{t.onboarding.sponsor}</SelectItem>
-                            <SelectItem value="supplier">{t.onboarding.supplier}</SelectItem>
-                            <SelectItem value="service_provider">{t.onboarding.serviceProvider}</SelectItem>
-                            <SelectItem value="consultant">{t.onboarding.consultant}</SelectItem>
-                            <SelectItem value="admin">{t.onboarding.clubAdmin}</SelectItem>
+                            {MEMBERSHIP_ROLE_SELECT_ORDER.map((role) => (
+                              <SelectItem key={role} value={role}>
+                                {getRoleLabel(role)}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </td>

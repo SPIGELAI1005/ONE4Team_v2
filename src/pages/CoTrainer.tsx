@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
@@ -24,6 +24,8 @@ import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useModuleGateRole } from "@/hooks/use-module-gate-role";
+import { isExternalRole } from "@/lib/rbac-config";
 import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
 import { DASHBOARD_PAGE_MAX_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
@@ -38,10 +40,12 @@ import {
   buildAi4TRoleQuickPrompts,
   getAi4TRoleWelcomeMessage,
   getAi4TAssistantRoleName,
+  isPartnerAiRole,
   type Ai4TRoleKey,
 } from "@/lib/ai-4-t-role-prompts";
 import { getEdgeFunctionAuthHeaders } from "@/lib/edge-function-auth";
 import { AiAgentWorkspace } from "@/components/ai-agent/AiAgentWorkspace";
+import { PartnerAiAgentWorkspace } from "@/components/ai-agent/PartnerAiAgentWorkspace";
 import { Ai4TIntroModal } from "@/components/ai/Ai4TIntroModal";
 import { Ai4TLogo } from "@/components/ai/Ai4TLogo";
 import { Ai4tChatWatermark } from "@/components/ai/Ai4tChatWatermark";
@@ -64,6 +68,7 @@ import type { AgentRunRow } from "@/lib/ai-agent/types";
 import { Ai4tAssistantMessage } from "@/components/ai/Ai4tAssistantMessage";
 import { fetchAiMessageFeedbackMap, type AiMessageFeedbackRating } from "@/lib/ai-message-feedback";
 import { ai4tDashboardTabListClass, ai4tDashboardTabTriggerClass } from "@/lib/ai4t-tab-classes";
+import { isPartnerPortalPath } from "@/lib/partner-portal-routes";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -264,6 +269,8 @@ ${demo.note}`;
 
 const CoTrainer = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const isPartnerPortal = isPartnerPortalPath(location.pathname);
   const { clubId } = useClubId();
   const { activeClub } = useActiveClub();
   const perms = usePermissions();
@@ -304,11 +311,18 @@ const CoTrainer = () => {
   const [chatOutcomeLinks, setChatOutcomeLinks] = useState<{ label: string; href: string }[]>([]);
   const [agentRuns, setAgentRuns] = useState<AgentRunRow[]>([]);
 
-  const roleKey = (perms.role || "trainer") as RoleKey;
+  const gateRole = useModuleGateRole();
+  const roleKey = (
+    gateRole && isExternalRole(gateRole) ? gateRole : perms.role || "trainer"
+  ) as RoleKey;
   const assistantRoleName = useMemo(() => getAssistantRoleName(roleKey), [roleKey]);
   const fallbackPrompts = useMemo(() => buildQuickPrompts(roleKey, language), [roleKey, language]);
   const quickPrompts = useMemo(() => mergeQuickPrompts(smartPrompts, fallbackPrompts, 8), [smartPrompts, fallbackPrompts]);
   const clubName = activeClub?.name || "your club";
+  const headerSubtitle = isPartnerPortal
+    ? t.coTrainerPage.subtitleForPartner.replace("{role}", assistantRoleName)
+    : t.coTrainerPage.subtitleForClub.replace("{role}", assistantRoleName).replace("{club}", clubName);
+  const isPartnerPersona = isPartnerPortal || isPartnerAiRole(roleKey);
   const roleWelcome = useMemo(
     () => getAi4TRoleWelcomeMessage(roleKey, language, clubName),
     [roleKey, language, clubName],
@@ -361,7 +375,7 @@ const CoTrainer = () => {
   }, [searchParams, setSearchParams]);
 
   useEffect(() => {
-    if (!clubId) {
+    if (!clubId || isPartnerPortal) {
       setClubContextText("");
       setSmartPrompts([]);
       setToolActivities([]);
@@ -397,7 +411,7 @@ const CoTrainer = () => {
     return () => {
       cancelled = true;
     };
-  }, [clubId, clubName, language, perms.isAdmin, toast]);
+  }, [clubId, clubName, language, perms.isAdmin, toast, isPartnerPortal]);
 
   const loadHistoryData = useCallback(async () => {
     if (!user || !clubId) return;
@@ -903,10 +917,15 @@ const CoTrainer = () => {
     aiVoice.stopSpeaking();
 
     const agentCmd = parseChatAgentCommand(msg);
-    if (agentCmd) {
+    if (agentCmd && !isPartnerPortal) {
       setInput("");
       setMainTab("agent");
       if (agentCmd !== "open_agent") focusAgentIntent(agentCmd.intent);
+      return;
+    }
+    if (agentCmd && isPartnerPortal) {
+      setInput("");
+      setMainTab("agent");
       return;
     }
 
@@ -916,7 +935,7 @@ const CoTrainer = () => {
     setInput("");
     setIsLoading(true);
 
-    if (clubId && canManageSchedule) {
+    if (clubId && canManageSchedule && !isPartnerPortal) {
       const workflow = await runAgentWorkflowFromUtterance({
         clubId,
         message: msg,
@@ -982,7 +1001,7 @@ const CoTrainer = () => {
     <div className={`${DASHBOARD_PAGE_ROOT} min-h-0`}>
       <DashboardHeaderSlot
         title={t.coTrainerPage.headerTitle}
-        subtitle={t.coTrainerPage.subtitleForClub.replace("{role}", assistantRoleName).replace("{club}", clubName)}
+        subtitle={headerSubtitle}
         toolbarRevision={messages.length + mainTab.length}
         rightSlot={
           mainTab === "chat" ? (
@@ -1036,11 +1055,11 @@ const CoTrainer = () => {
                         <BrandedText text={t.coTrainerPage.workspaceTitle} />
                       </div>
                       <div className="text-[11px] text-muted-foreground flex items-center gap-2">
-                        {t.coTrainerPage.workspaceSubtitle}
-                        {contextLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                        {isPartnerPersona ? t.coTrainerPage.workspaceSubtitlePartner : t.coTrainerPage.workspaceSubtitle}
+                        {!isPartnerPortal && contextLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
                       </div>
                       <p className="text-[10px] text-muted-foreground/90 mt-0.5 max-w-md leading-snug">
-                        {t.coTrainerPage.scopeHint}
+                        {isPartnerPersona ? t.coTrainerPage.scopeHintPartner : t.coTrainerPage.scopeHint}
                       </p>
                     </div>
                   </div>
@@ -1049,18 +1068,31 @@ const CoTrainer = () => {
                       {assistantRoleName}
                     </span>
                     <span className="text-[10px] px-2 py-1 rounded-full border border-border/60 bg-background/50 text-foreground/80">
-                      <Building2 className="w-3 h-3 inline mr-1" />
-                      {clubName}
+                      {isPartnerPersona ? (
+                        <>
+                          <Briefcase className="w-3 h-3 inline mr-1" />
+                          {t.coTrainerPage.partnerPortalBadge}
+                        </>
+                      ) : (
+                        <>
+                          <Building2 className="w-3 h-3 inline mr-1" />
+                          {clubName}
+                        </>
+                      )}
                     </span>
                     <span className="text-[10px] px-2 py-1 rounded-full border border-border/60 bg-background/50 text-foreground/80">
                       <ShieldCheck className="w-3 h-3 inline mr-1" />
-                      {clubId
+                      {isPartnerPersona
                         ? language === "de"
-                          ? "Verbunden"
-                          : "Connected"
-                        : language === "de"
-                          ? "Kein Verein ausgewahlt"
-                          : "No club selected"}
+                          ? "Partner-Portal"
+                          : "Partner portal"
+                        : clubId
+                          ? language === "de"
+                            ? "Verbunden"
+                            : "Connected"
+                          : language === "de"
+                            ? "Kein Verein ausgewahlt"
+                            : "No club selected"}
                     </span>
                     <div className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background/50 p-1">
                       <button
@@ -1203,7 +1235,7 @@ const CoTrainer = () => {
                   <AiAgentOutcomeLinks links={chatOutcomeLinks} />
                 </div>
               ) : null}
-              {pendingProposal ? (
+              {pendingProposal && !isPartnerPortal ? (
                 <div className="mt-4">
                   <AiAgentProposalCard
                     proposal={pendingProposal}
@@ -1237,7 +1269,7 @@ const CoTrainer = () => {
                       handleSend();
                     }
                   }}
-                  placeholder={t.coTrainerPage.inputPlaceholder}
+                  placeholder={isPartnerPersona ? t.coTrainerPage.inputPlaceholderPartner : t.coTrainerPage.inputPlaceholder}
                   rows={1}
                   className="flex-1 resize-none rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 />
@@ -1262,7 +1294,15 @@ const CoTrainer = () => {
 
         <TabsContent value="agent" className="flex-1 overflow-y-auto mt-0 px-4 pb-20 data-[state=inactive]:hidden">
           <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl py-6`}>
-            {!clubId ? (
+            {isPartnerPortal ? (
+              <PartnerAiAgentWorkspace
+                roleKey={roleKey}
+                onSendToChat={(text) => {
+                  setMainTab("chat");
+                  void handleSend(text);
+                }}
+              />
+            ) : !clubId ? (
               <p className="text-sm text-muted-foreground text-center py-12">{t.ai.selectClub}</p>
             ) : (
               <AiAgentWorkspace
@@ -1314,7 +1354,7 @@ const CoTrainer = () => {
                   </div>
                 </div>
 
-                {canManageSchedule ? (
+                {canManageSchedule && !isPartnerPortal ? (
                   <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
                     <div className="font-display font-bold">{t.coTrainerPage.agent.workflowRunsTitle}</div>
                     <p className="text-xs text-muted-foreground mt-1">{t.coTrainerPage.agent.workflowRunsHint}</p>

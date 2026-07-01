@@ -3,6 +3,47 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-01 (Partner portal, Partner Page, AI 4 T partner, persona RBAC)
+
+### Partner / supplier portal (dual-world routing)
+- **Dedicated partner routes:** `/partner-marketplace`, `/partner-messages`, `/partner-tasks`, `/partner-reports`, `/partner-ai`, `/supplier-page` — separate from club-internal URLs (`/marketplace`, `/communication`, `/tasks`, `/reports`, `/co-trainer`, `/club-page-admin`).
+- **`PersonaPortalGate`:** `ClubOnlyRoute` / `PartnerOnlyRoute` / `PersonaAwareAiRedirect` block cross-portal navigation for dual-role users.
+- **`useModuleGateRole`:** Active dashboard persona (`one4team.activeRole`) drives sidebar, `RequireModule`, and data scope when allowed.
+- **`switch-dashboard-persona.ts`:** Settings role switch sets persona, aligns active club for internal roles, navigates to correct portal home; reactive hook **`use-active-dashboard-persona-slug.ts`**.
+
+### Partner Page admin (`/supplier-page`)
+- **`SupplierPageAdmin.tsx`:** Club-page-admin parity — Basics, Branding, Services, Contact, Publish tabs; live preview viewports; **`ProviderListingEditor`** with section visibility.
+- **Branding uploads:** `upload-provider-image.ts` + **`images-marketplace-providers`** storage bucket migrations **`20260731210000`**, **`20260731220000`**.
+- **UI label:** Sidebar and page chrome renamed **Supplier Page → Partner Page** (EN/DE); module remains `supplier_page`; route unchanged `/supplier-page`.
+- **RBAC:** `supplier_page` removed from club admin sidebar profile; access **`none`** for `club_admin` / `admin`; visible only for external partner roles (`supplier`, `sponsor`, `service_provider`, `consultant`).
+
+### Marketplace provider portal
+- **Schema + RLS:** `marketplace_provider_profiles`, requests, offers, saved providers — migrations **`20260731150000`** through **`20260731200000`** (see **`supabase/SCHEMA_STATUS.md`**).
+- **Club hub vs provider portal:** `Marketplace.tsx` routes by role; **`club-marketplace-hub`** / **`provider-marketplace-portal`**; RBAC in **`marketplace-access.ts`**, **`rbac-config.ts`**.
+- **Partner collaboration:** `/partner-messages`, `/partner-tasks`, `/partner-reports` pages + hooks; **`20260731120000_partner_task_engagements.sql`**, **`20260731215000_supplier_portal_scope.sql`**.
+
+### AI 4 T — partner persona (`/partner-ai`)
+- **`PartnerAiAgentWorkspace`:** Partner quick actions (copilot, Partner Page) and portal shortcuts (marketplace, messages, tasks, reports) — no club training/agent workflows on partner route.
+- **`CoTrainer.tsx`:** Shared with `/co-trainer`; partner portal skips club context, welcome/prompts from **`ai-4-t-role-prompts.ts`** (`isPartnerAiRole`); Agent tab switches workspace by `isPartnerPortalPath`.
+- **i18n:** `coTrainerPage.partnerAgent.*`, partner scope hints, EN + DE.
+
+### RBAC & navigation
+- **`rbac-config.ts`:** Central matrix, `SIDEBAR_MENU_PROFILES`, `RequireModule` route guards, **`useDashboardNav`** for sidebar + mobile nav.
+- **Tests:** `rbac-config.test.ts`, `marketplace-rbac-matrix.test.ts`, `partner-portal-routes.test.ts`, `dashboard-persona.test.ts`, `use-module-gate-role.test.ts`, `e2e/marketplace-rbac.spec.ts`.
+
+### Supabase (operator)
+- Apply **`20260731120000`** → **`20260731220000`** in filename order after **`20260730140000`**.
+- **QA script:** `supabase/scripts/grant_all_roles_spigelai.sql` — all dashboard personas for operator test account (idempotent).
+- **Repair migrations:** redeem invite (`20260731130000`, `20260731140000`, `20260731160000`).
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`HOLD.md`**, **`README.md`**, **`supabase/SCHEMA_STATUS.md`**, **`docs/rbac-dashboard-plan.md`**, **`docs/marketplace-implementation-plan.md`**, **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**.
+
+### Operator smoke
+- Dual-role user: Settings → **Club Admin** → club dashboard + club sidebar (no Partner Page); → **Supplier** → partner marketplace + **Partner Page** in nav.
+- **`/partner-ai` → Agent:** Partner actions, not club training workflows.
+- **`/supplier-page`:** Edit listing, logo/cover upload after bucket migration apply.
+
 ## 2026-07-01 (Marketing refresh, AI Features hero video, public club polish)
 
 ### Marketing site (EN/DE)

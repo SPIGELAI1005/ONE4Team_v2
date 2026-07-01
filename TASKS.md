@@ -8,6 +8,23 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ## NOW (top priority)
 
+### Partner portal + Partner Page + AI 4 T partner (2026-07-01) — code in repo
+- [x] **PARTNER-001** Dual-world routes (`partner-portal-routes.ts`, `PersonaPortalGate`, `RequireModule`)
+- [x] **PARTNER-002** Marketplace provider portal + club hub (`Marketplace.tsx`, schema **`20260731150000`**–**`20260731200000`**)
+- [x] **PARTNER-003** Partner Page admin (`/supplier-page`) — listing editor, publish panel, image uploads
+- [x] **PARTNER-004** Partner collaboration pages (`/partner-messages`, `/partner-tasks`, `/partner-reports`)
+- [x] **PARTNER-005** **`/partner-ai`** — `PartnerAiAgentWorkspace`; partner prompts/welcome; no club agent workflows on partner route
+- [x] **PARTNER-006** Settings persona switch (`switch-dashboard-persona.ts`); club vs partner navigation
+- [x] **PARTNER-007** RBAC: Partner Page in sidebar for external roles only; renamed **Partner Page** (EN/DE)
+- [x] **PARTNER-008** Tests: rbac-config, marketplace RBAC, partner-portal-routes, dashboard-persona, e2e marketplace-rbac
+- [x] **PARTNER-DOC-001** **`CHANGELOG.md`**, **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`HOLD.md`**, **`docs/rbac-dashboard-plan.md`**
+- [ ] **PARTNER-OPS-001** Operator: apply **`20260731120000`** → **`20260731220000`**; smoke dual-role persona switch, `/partner-ai` Agent, `/supplier-page` upload
+- [ ] **PARTNER-OPS-002** Marketplace Phase 2: offer create/accept end-to-end (see **`docs/marketplace-implementation-plan.md`** §10)
+
+### Deploy follow-ups (defer until production — operator)
+
+- [ ] **DEPLOY-EMAIL-001** **Resend domain + invite email** — verify `one4team.com` at Resend; set Supabase secrets (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `PUBLIC_SITE_URL`, `EDGE_ALLOWED_ORIGINS`); deploy `send-club-invite-email`; smoke member/partner invite → email delivered (not only “Copy invite link”). Until then, manual invite links are fine for local/pilot testing. See **`HOLD.md` → Resend domain verification**, **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** § F–G.
+
 ### Marketing + public club polish (2026-07-01) — code in repo
 - [x] **MKT-001** Marketing i18n refresh (home, features, about, clubs & partners, pricing Early Bird 13 Dec 2026)
 - [x] **MKT-002** Features AI-Powered Innovation hero — intro video, glass assets, light/dark glass-card, responsive split layout

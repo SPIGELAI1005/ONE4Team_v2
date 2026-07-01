@@ -15,7 +15,8 @@ export function edgeCorsHeaders(req: Request): Record<string, string> {
   const allow = Deno.env.get("EDGE_ALLOWED_ORIGINS")?.trim();
   const origin = req.headers.get("origin");
   const baseHeaders = {
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, x-correlation-id",
   };
 
   if (allow && origin) {

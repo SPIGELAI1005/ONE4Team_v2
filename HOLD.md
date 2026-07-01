@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-07-01 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-25** communication/tasks/attendance, § **2026-06-27** TSV Allach Sommerfest + membership application, § **2026-06-30** member payments + invite email, § **2026-07-01** marketing + public club polish), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
+Last updated: 2026-07-01 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-25** communication/tasks/attendance, § **2026-06-27** TSV Allach Sommerfest + membership application, § **2026-06-30** member payments + invite email, § **2026-07-01** marketing + public club polish, § **2026-07-01** partner portal + Partner Page + AI 4 T partner), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
 
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 
@@ -115,6 +115,57 @@ Deploy Edge: **`send-club-invite-email`**.
 Secrets (Supabase Edge): **`RESEND_API_KEY`**, **`RESEND_FROM_EMAIL`**, **`PUBLIC_SITE_URL`**, **`EDGE_ALLOWED_ORIGINS`** (comma-separated origins, no trailing slashes).
 
 Smoke: **`/payments`** Fee Types + Record payment (multi-package); **`/members`** send invite → email in inbox. Resend **domain must be verified** for production From address. See **`CHANGELOG.md` § 2026-06-30**, **`docs/PRODUCTION_RELEASE_CHECKLIST.md`**, **`TASKS.md` PAY-OPS-001**.
+
+## Resend domain verification — follow up before production deploy
+
+**Status:** Deferred (local dev OK). Invites are created in the database; only automatic email delivery is blocked.
+
+**What you may see now:** toast *“Invite created, email not sent”* with Resend error *“The one4team.com domain is not verified…”*. Use **Copy invite link** in the invite dialog and share manually (works for member and partner roles, e.g. Supplier).
+
+**Before go-live, complete:**
+
+- [ ] Add and verify **`one4team.com`** (or your sending domain) at [resend.com/domains](https://resend.com/domains) (SPF, DKIM; optional DMARC at DNS host)
+- [ ] Supabase Edge secrets: **`RESEND_API_KEY`**, **`RESEND_FROM_EMAIL`** = `ONE4Team <invites@one4team.com>` (must match verified domain), **`PUBLIC_SITE_URL`**, **`EDGE_ALLOWED_ORIGINS`**
+- [ ] Deploy Edge: **`send-club-invite-email`**
+- [ ] Smoke: Members → create invite → toast **“Invite email sent”**; email arrives at an external inbox (Gmail, GMX, etc.)
+
+**Note:** Resend test sender `onboarding@resend.dev` only delivers to the email on your Resend account — not suitable for real club/partner invites.
+
+See **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** sections **F**, **G**, **H** (Members & invites) and **`TASKS.md` DEPLOY-EMAIL-001**.
+
+## Invite redemption — pgcrypto repair (2026-07-31)
+If redeem shows **`function digest(text, unknown) does not exist`**, apply:
+
+`supabase/migrations/20260731130000_repair_redeem_invite_pgcrypto.sql`
+
+Enables **`pgcrypto`** in the **`extensions`** schema and updates **`redeem_club_invite`** to use **`extensions.digest`**. Smoke: open invite link → **Verein beitreten** succeeds (same signed-in email as invite).
+
+If redeem shows **`column reference "club_id" is ambiguous`**, also apply:
+
+`supabase/migrations/20260731140000_repair_redeem_invite_ambiguous_club_id.sql`
+
+If redeem shows **`no unique or exclusion constraint matching the ON CONFLICT specification`**, apply:
+
+`supabase/migrations/20260731150000_repair_redeem_invite_membership_upsert.sql`
+
+## Partner portal + Partner Page + marketplace provider (2026-07-01)
+Apply in **strict filename order** after **`20260730140000`** (and redeem repairs above if needed):
+1. `supabase/migrations/20260731120000_partner_task_engagements.sql`
+2. `supabase/migrations/20260731150000_marketplace_provider_portal.sql` (superseded by apply file — skip if **`20260731170000`** applied)
+3. `supabase/migrations/20260731160000_repair_redeem_invite_membership_upsert.sql` (if not already applied)
+4. `supabase/migrations/20260731170000_marketplace_provider_portal_apply.sql`
+5. `supabase/migrations/20260731180000_marketplace_requests_enhance.sql`
+6. `supabase/migrations/20260731190000_marketplace_offers_enhance.sql`
+7. `supabase/migrations/20260731200000_marketplace_partners_bridge.sql`
+8. `supabase/migrations/20260731210000_marketplace_provider_images_bucket.sql`
+9. `supabase/migrations/20260731215000_supplier_portal_scope.sql`
+10. `supabase/migrations/20260731220000_repair_marketplace_provider_images_bucket.sql`
+
+Optional QA: **`supabase/scripts/grant_all_roles_spigelai.sql`** (operator test account — all personas).
+
+Regenerate **`src/integrations/supabase/types.ts`** after apply.
+
+Smoke: dual-role user — Settings **Club Admin** → club dashboard (no **Partner Page** in sidebar); **Supplier** → **`/partner-marketplace`**, **`/supplier-page`** (Partner Page), **`/partner-ai`** Agent (partner actions, not club training workflows). Logo/cover upload on Partner Page after bucket migration. See **`CHANGELOG.md` § 2026-07-01 (Partner portal…)**, **`TASKS.md` PARTNER-OPS-001**, **`docs/rbac-dashboard-plan.md`** §10.
 
 ## Marketing + public club polish (2026-07-01)
 Apply in the same Supabase project (after **`20260728140000`**):

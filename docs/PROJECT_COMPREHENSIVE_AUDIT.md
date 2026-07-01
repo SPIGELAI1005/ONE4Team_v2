@@ -1,6 +1,6 @@
 # ONE4Team — Comprehensive project audit
 
-**Audit date:** 2026-07-01 (updated for marketing refresh + public club shop/reports/live scores)  
+**Audit date:** 2026-07-01 (updated for partner portal, Partner Page, marketplace provider portal, AI 4 T partner persona)  
 **Scope:** Codebase, architecture, UX/design, production readiness, competitive positioning, market value, and value-growth levers  
 **Primary reference (existing):** [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) — strict production-readiness review with risk register, readiness scores, and remediation sprints  
 
@@ -10,7 +10,7 @@
 
 ## 1. Executive summary
 
-ONE4Team is a **mature-in-code, early-in-market** multi-tenant club management SaaS: Vite + React + TypeScript SPA on Supabase (Postgres RLS, Auth, Storage, Edge Functions), deployed via Vercel. The product spans **internal club ops** (members, teams, schedule, matches, finances, communication, tasks) and **external club presence** (configurable public microsites, join flows, tournaments, RSVP).
+ONE4Team is a **mature-in-code, early-in-market** multi-tenant club management SaaS: Vite + React + TypeScript SPA on Supabase (Postgres RLS, Auth, Storage, Edge Functions), deployed via Vercel. The product spans **internal club ops** (members, teams, schedule, matches, finances, communication, tasks), **external club presence** (configurable public microsites, join flows, tournaments, RSVP), and **partner/supplier portal** (marketplace listings, Partner Page, partner messages/tasks/reports, AI 4 T at `/partner-ai`).
 
 | Dimension | Assessment | Score (1–100) |
 |-----------|------------|:-------------:|
@@ -33,6 +33,8 @@ ONE4Team is a **mature-in-code, early-in-market** multi-tenant club management S
 | [`ops/SECTION_M_GO_LIVE_CHECKLIST.md`](../ops/SECTION_M_GO_LIVE_CHECKLIST.md) | Go-live evidence rows |
 | [`ops/PHASE_B_SECRETS_CHECKLIST.md`](../ops/PHASE_B_SECRETS_CHECKLIST.md) | Client vs Edge secrets |
 | [`docs/PRODUCTION_RELEASE_CHECKLIST.md`](PRODUCTION_RELEASE_CHECKLIST.md) | Vercel + Supabase + Resend release steps |
+| [`HOLD.md`](../HOLD.md) → **Resend domain verification** | Deferred deploy follow-up: verify domain before automatic invite emails |
+| [`TASKS.md`](../TASKS.md) → **DEPLOY-EMAIL-001** | Operator checkbox for Resend + invite email smoke before go-live |
 | [`PHASE0_RBAC_CHECKLIST.md`](../PHASE0_RBAC_CHECKLIST.md) | RBAC baseline |
 | [`COMPLIANCE_PRIVACY_BY_DESIGN_CHECKLIST.md`](../COMPLIANCE_PRIVACY_BY_DESIGN_CHECKLIST.md) | Privacy/cookie compliance |
 | [`ops/MONTHLY_COST_PERF_REVIEW.md`](../ops/MONTHLY_COST_PERF_REVIEW.md) | Cost/perf review template |

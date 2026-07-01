@@ -15,6 +15,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/one4team-logo.png";
 import { isErrorWithMessage } from "@/types/dashboard";
+import { getRedeemInviteErrorMessage } from "@/lib/redeem-invite-errors";
+import { notifyMembershipsUpdated } from "@/hooks/use-active-club";
 
 type World = "club" | "partner" | null;
 type Step = "world" | "role" | "create-club" | "redeem-invite";
@@ -186,6 +188,7 @@ const Onboarding = () => {
 
       localStorage.setItem(ACTIVE_ROLE_KEY, role);
       if (clubId && user) localStorage.setItem(`${ACTIVE_CLUB_KEY_PREFIX}:${user.id}`, clubId);
+      notifyMembershipsUpdated();
 
       // UX polish: show success glass card briefly before routing.
       setRedeemSuccess({ role, clubId });
@@ -195,9 +198,19 @@ const Onboarding = () => {
         navigate(`/dashboard/${role}`);
       }, 1200);
     } catch (err: unknown) {
+      const description = getRedeemInviteErrorMessage(err, {
+        unknown: t.onboarding.inviteRedeemUnknown,
+        notAuthenticated: t.onboarding.inviteRedeemNotAuthenticated,
+        invalidToken: t.onboarding.inviteRedeemInvalidToken,
+        notFound: t.onboarding.inviteRedeemNotFound,
+        alreadyUsed: t.onboarding.inviteRedeemAlreadyUsed,
+        expired: t.onboarding.inviteRedeemExpired,
+        emailMismatch: t.onboarding.inviteRedeemEmailMismatch,
+        serverMisconfigured: t.onboarding.inviteRedeemServerMisconfigured,
+      });
       toast({
         title: t.onboarding.inviteFailed,
-        description: err instanceof Error ? err.message : "Unknown error",
+        description,
         variant: "destructive",
       });
     } finally {
@@ -284,7 +297,8 @@ const Onboarding = () => {
                   <Link2 className="w-6 h-6 text-primary" />
                 </div>
                 <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">
-                  Redeem your <span className="text-gradient-gold">invite</span>
+                  {t.onboarding.redeemInvite}{" "}
+                  <span className="text-gradient-gold">{t.onboarding.redeemInviteHighlight}</span>
                 </h1>
                 <p className="text-muted-foreground">{t.onboarding.inviteOnlyDesc}</p>
                 {redeemClubName && (
@@ -312,7 +326,7 @@ const Onboarding = () => {
                         <CheckCircle2 className="w-5 h-5" />
                       </div>
                       <div className="min-w-0">
-                        <div className="font-display font-bold text-foreground tracking-tight">You’re in.</div>
+                        <div className="font-display font-bold text-foreground tracking-tight">{t.onboarding.youreIn}</div>
                         <div className="text-xs text-muted-foreground">
                           {t.onboarding.settingUpDashboard}
                         </div>

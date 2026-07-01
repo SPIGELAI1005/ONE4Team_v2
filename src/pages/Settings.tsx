@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { BrandedText } from "@/components/ai/Ai4TBrand";
@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Settings2, User, Building2, Bell, Shield,
+  Settings2, User, Building2, Bell, Shield, Store,
   Save, Loader2, LogOut, KeyRound, Trash2, AlertTriangle, Mail, UploadCloud, UserCircle2, Sparkles,
-  CheckCircle2, XCircle, AlertCircle, RefreshCw,
+  CheckCircle2, XCircle, AlertCircle, RefreshCw, ExternalLink,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
@@ -19,16 +19,29 @@ import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { correlationHeaders } from "@/lib/observability";
 import { supabaseErrorMessage, isTransientSupabaseMessage } from "@/lib/supabase-error-message";
+import { useModuleGateRole } from "@/hooks/use-module-gate-role";
+import {
+  formatDashboardRoleLabel,
+  getEffectiveDashboardPersonas,
+  isExternalRole,
+  normalizeDashboardRole,
+  type DashboardRole,
+} from "@/lib/rbac-config";
+import { PARTNER_PORTAL_ROUTES } from "@/lib/partner-portal-routes";
 import {
   DASHBOARD_PAGE_MAX_INNER,
   DASHBOARD_PAGE_ROOT,
   DASHBOARD_TABS_INNER_SCROLL,
   DASHBOARD_TABS_ROW,
 } from "@/lib/dashboard-page-shell";
+import { switchDashboardPersona as applyDashboardPersonaSwitch } from "@/lib/switch-dashboard-persona";
+import { useActiveDashboardPersonaSlug } from "@/hooks/use-active-dashboard-persona-slug";
 
 const LS_NOTIF_KEY = "one4team.notifications";
 const PROFILE_AVATAR_BUCKET = "images-avatars";
 const CLUB_ROLE_LADDER = ["admin", "trainer", "player", "member"];
+
+type SettingsTab = "profile" | "club" | "partner" | "notifications" | "account";
 
 type ClubLlmProvider = "openai" | "anthropic" | "google_gemini" | "azure_openai" | "github_models";
 
@@ -92,13 +105,15 @@ function formatRoleLabel(role: string): string {
 
 export default function Settings() {
   const { user, changeEmail, signOut } = useAuth();
-  const { activeClubId, activeClub, clubs, loading: activeClubLoading, refetchMemberships } = useActiveClub();
+  const { activeClubId, activeClub, clubs, loading: activeClubLoading, refetchMemberships, setActiveClubId } = useActiveClub();
   const perms = usePermissions();
   const { t, setLanguage, language } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const gateRole = useModuleGateRole();
+  const isPartnerPersona = isExternalRole(gateRole);
 
-  const [tab, setTab] = useState<"profile" | "club" | "notifications" | "account">("profile");
+  const [tab, setTab] = useState<SettingsTab>("profile");
 
   // Profile
   const [displayName, setDisplayName] = useState("");
@@ -159,6 +174,44 @@ export default function Settings() {
   const activeClubRoleSummary = useMemo(
     () => roleMemberships.find((membership) => membership.isActiveClub) ?? null,
     [roleMemberships],
+  );
+
+  const dashboardPersonaOptions = useMemo(
+    () =>
+      getEffectiveDashboardPersonas(perms.role, perms.assignments, {
+        treatAsClubAdmin: perms.isAdmin,
+      }),
+    [perms.role, perms.assignments, perms.isAdmin],
+  );
+
+  useEffect(() => {
+    if (isPartnerPersona && tab === "club") {
+      setTab("profile");
+    }
+    if (!isPartnerPersona && tab === "partner") {
+      setTab("profile");
+    }
+  }, [isPartnerPersona, tab]);
+
+  const activePersonaSlug = useActiveDashboardPersonaSlug();
+
+  const switchDashboardPersona = useCallback(
+    (role: DashboardRole) => {
+      const switched = applyDashboardPersonaSwitch(role, navigate, {
+        clubs,
+        setActiveClub: setActiveClubId,
+        notifyMemberships: () => void refetchMemberships(),
+      });
+      if (!switched) return;
+      toast({
+        title: t.settingsPage.roleSwitchToastTitle,
+        description: t.settingsPage.roleSwitchToastDesc.replace(
+          "{role}",
+          formatDashboardRoleLabel(switched),
+        ),
+      });
+    },
+    [clubs, navigate, refetchMemberships, setActiveClubId, t.settingsPage.roleSwitchToastDesc, t.settingsPage.roleSwitchToastTitle, toast],
   );
 
   useEffect(() => {
@@ -541,12 +594,17 @@ export default function Settings() {
     navigate("/");
   };
 
-  const tabs = [
-    { id: "profile" as const, label: t.settingsPage.tabs.profile, icon: User },
-    { id: "club" as const, label: t.settingsPage.tabs.club, icon: Building2 },
-    { id: "notifications" as const, label: t.settingsPage.tabs.notifications, icon: Bell },
-    { id: "account" as const, label: t.settingsPage.tabs.account, icon: Shield },
-  ];
+  const tabs = useMemo(() => {
+    const all = [
+      { id: "profile" as const, label: t.settingsPage.tabs.profile, icon: User },
+      ...(isPartnerPersona
+        ? [{ id: "partner" as const, label: t.settingsPage.tabs.partner, icon: Store }]
+        : [{ id: "club" as const, label: t.settingsPage.tabs.club, icon: Building2 }]),
+      { id: "notifications" as const, label: t.settingsPage.tabs.notifications, icon: Bell },
+      { id: "account" as const, label: t.settingsPage.tabs.account, icon: Shield },
+    ];
+    return all;
+  }, [isPartnerPersona, t.settingsPage.tabs]);
 
   const Toggle = ({ checked, onChange, label, description }: { checked: boolean; onChange: () => void; label: string; description: string }) => (
     <div className="flex items-center justify-between py-3">
@@ -565,7 +623,10 @@ export default function Settings() {
 
   return (
     <div className={DASHBOARD_PAGE_ROOT}>
-      <DashboardHeaderSlot title={t.settingsPage.title} subtitle={t.settingsPage.subtitle} />
+      <DashboardHeaderSlot
+        title={t.settingsPage.title}
+        subtitle={isPartnerPersona ? t.settingsPage.subtitlePartner : t.settingsPage.subtitle}
+      />
 
       {/* Tabs */}
       <div className={DASHBOARD_TABS_ROW}>
@@ -655,11 +716,49 @@ export default function Settings() {
                   </div>
                   <div className="rounded-2xl border border-border/60 bg-background/30 p-4 space-y-3">
                     <div>
-                      <div className="text-sm font-semibold text-foreground">{t.settingsPage.roleAccessTitle}</div>
-                      <p className="text-[11px] text-muted-foreground">{t.settingsPage.roleAccessDesc}</p>
+                      <div className="text-sm font-semibold text-foreground">
+                        {isPartnerPersona ? t.settingsPage.partnerRoleTitle : t.settingsPage.roleAccessTitle}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        {isPartnerPersona ? t.settingsPage.partnerRoleDesc : t.settingsPage.roleAccessDesc}
+                      </p>
                     </div>
 
-                    {activeClubRoleSummary ? (
+                    {isPartnerPersona ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs px-2 py-1 rounded-full border border-primary/25 bg-primary/10 text-primary">
+                            {formatDashboardRoleLabel(gateRole)}
+                          </span>
+                        </div>
+                        <div className="rounded-xl border border-border/60 bg-background/30 p-3 space-y-2">
+                          <div className="text-[11px] text-muted-foreground">{t.settingsPage.roleSwitchDashboardTitle}</div>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {dashboardPersonaOptions.map((role) => {
+                              const currentActive =
+                                activePersonaSlug || gateRole || "supplier";
+                              const isSelected =
+                                normalizeDashboardRole(currentActive) === normalizeDashboardRole(role);
+                              return (
+                                <button
+                                  key={role}
+                                  type="button"
+                                  onClick={() => switchDashboardPersona(role)}
+                                  className={`min-h-11 rounded-xl border px-2.5 py-2 text-center transition-all ${
+                                    isSelected
+                                      ? "border-primary bg-gradient-gold-static text-primary-foreground shadow-gold"
+                                      : "border-border/60 bg-card/30 text-foreground hover:border-primary/30 hover:bg-primary/5"
+                                  }`}
+                                >
+                                  <div className="text-[11px] font-semibold">{formatDashboardRoleLabel(role)}</div>
+                                  {isSelected && <div className="text-[9px] mt-0.5 opacity-90">{t.common.active}</div>}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    ) : activeClubRoleSummary ? (
                       <div className="space-y-3">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-[11px] text-muted-foreground">{t.settingsPage.roleActiveClub}</span>
@@ -676,23 +775,15 @@ export default function Settings() {
                           <div className="text-[11px] text-muted-foreground">{t.settingsPage.roleSwitchDashboardTitle}</div>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                             {activeClubRoleSummary.effectiveRoles.map((role) => {
-                              const currentActive = localStorage.getItem("one4team.activeRole") || activeClubRoleSummary.baseRole;
-                              const isSelected = currentActive === role;
+                              const currentActive =
+                                activePersonaSlug || activeClubRoleSummary.baseRole;
+                              const isSelected =
+                                normalizeDashboardRole(currentActive) === normalizeDashboardRole(role);
                               return (
                                 <button
                                   key={role}
                                   type="button"
-                                  onClick={() => {
-                                    void (async () => {
-                                      localStorage.setItem("one4team.activeRole", role);
-                                      await refetchMemberships();
-                                      toast({
-                                        title: "Dashboard role switched",
-                                        description: `Now viewing as ${formatRoleLabel(role)}.`,
-                                      });
-                                      navigate(`/dashboard/${role}`);
-                                    })();
-                                  }}
+                                  onClick={() => switchDashboardPersona(role as DashboardRole)}
                                   className={`min-h-11 rounded-xl border px-2.5 py-2 text-center transition-all ${
                                     isSelected
                                       ? "border-primary bg-gradient-gold-static text-primary-foreground shadow-gold"
@@ -819,8 +910,46 @@ export default function Settings() {
           </div>
         )}
 
+        {/* ── Partner (supplier / external) ── */}
+        {tab === "partner" && isPartnerPersona && (
+          <div className="space-y-4">
+            <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-5 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Store className="w-4.5 h-4.5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="font-display font-bold text-foreground">{t.settingsPage.partnerSettingsTitle}</h2>
+                  <p className="text-[11px] text-muted-foreground">{t.settingsPage.partnerSettingsDesc}</p>
+                </div>
+              </div>
+              <Button asChild variant="outline" className="w-full sm:w-auto">
+                <Link to={PARTNER_PORTAL_ROUTES.supplier_page}>
+                  <ExternalLink className="w-4 h-4 mr-1" />
+                  {t.settingsPage.openSupplierPage}
+                </Link>
+              </Button>
+            </div>
+
+            <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-5 space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">{t.settingsPage.partnerPortalTitle}</h3>
+                <p className="text-[11px] text-muted-foreground mt-1">{t.settingsPage.partnerPortalDesc}</p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Button asChild variant="secondary" size="sm">
+                  <Link to={PARTNER_PORTAL_ROUTES.marketplace}>{t.settingsPage.openPartnerMarketplace}</Link>
+                </Button>
+                <Button asChild variant="secondary" size="sm">
+                  <Link to={PARTNER_PORTAL_ROUTES.supplier_page}>{t.settingsPage.manageSupplierPage}</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Club ── */}
-        {tab === "club" && (
+        {tab === "club" && !isPartnerPersona && (
           <div className="space-y-4">
             <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-5">
               <div className="flex items-center gap-3 mb-4">
@@ -1151,15 +1280,28 @@ export default function Settings() {
                 </div>
                 <div>
                   <h2 className="font-display font-bold text-foreground">{t.settingsPage.notificationPrefs}</h2>
-                  <p className="text-[11px] text-muted-foreground">{t.settingsPage.notificationPrefsDesc}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {isPartnerPersona ? t.settingsPage.notificationPrefsDescPartner : t.settingsPage.notificationPrefsDesc}
+                  </p>
                 </div>
               </div>
               <div className="divide-y divide-border/60">
                 <Toggle checked={notifs.email} onChange={() => toggleNotif("email")} label={t.settingsPage.emailNotifications} description={t.settingsPage.emailNotificationsDesc} />
                 <Toggle checked={notifs.push} onChange={() => toggleNotif("push")} label={t.settingsPage.pushNotifications} description={t.settingsPage.pushNotificationsDesc} />
-                <Toggle checked={notifs.matchReminders} onChange={() => toggleNotif("matchReminders")} label={t.settingsPage.matchReminders} description={t.settingsPage.matchRemindersDesc} />
-                <Toggle checked={notifs.trainingReminders} onChange={() => toggleNotif("trainingReminders")} label={t.settingsPage.trainingReminders} description={t.settingsPage.trainingRemindersDesc} />
-                <Toggle checked={notifs.paymentReminders} onChange={() => toggleNotif("paymentReminders")} label={t.settingsPage.paymentReminders} description={t.settingsPage.paymentRemindersDesc} />
+                {!isPartnerPersona ? (
+                  <>
+                    <Toggle checked={notifs.matchReminders} onChange={() => toggleNotif("matchReminders")} label={t.settingsPage.matchReminders} description={t.settingsPage.matchRemindersDesc} />
+                    <Toggle checked={notifs.trainingReminders} onChange={() => toggleNotif("trainingReminders")} label={t.settingsPage.trainingReminders} description={t.settingsPage.trainingRemindersDesc} />
+                    <Toggle checked={notifs.paymentReminders} onChange={() => toggleNotif("paymentReminders")} label={t.settingsPage.paymentReminders} description={t.settingsPage.paymentRemindersDesc} />
+                  </>
+                ) : (
+                  <Toggle
+                    checked={notifs.paymentReminders}
+                    onChange={() => toggleNotif("paymentReminders")}
+                    label={t.settingsPage.partnerCollabReminders}
+                    description={t.settingsPage.partnerCollabRemindersDesc}
+                  />
+                )}
               </div>
             </div>
           </div>

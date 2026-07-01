@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-07-01 (Marketing refresh, AI Features hero, public club polish)
+Last updated: 2026-07-01 (Partner portal, Partner Page, AI 4 T partner, persona RBAC)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -32,6 +32,7 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - **Members ops + club member card (2026-06-28):** **`/members`** search/save UX; team assignment from members + teams; Club Card with role/team/DOB/club logo + PNG export (**`club-pass-capture.ts`**); **`/teams`** search; **AI 4 T Agent** header button; repair migrations **`20260725140000`**, **`20260725150000`**. See **`CHANGELOG.md`** § **2026-06-28**.
 - **Member payments + fee packages (2026-06-30):** Admin **`/payments`** — package definitions (TSV Allach-style: membership + Sonderumlage components), multi-package **record payment**, bulk assign, fee overview + annual member-type summary. Invite **email delivery** (Resend Edge). Migrations **`20260728120000`**–**`20260728140000`**. See **`CHANGELOG.md`** § **2026-06-30** and **`docs/PRODUCTION_RELEASE_CHECKLIST.md`**.
 - **Marketing + public club wave (2026-07-01):** Refreshed marketing pages (home, features, about, clubs & partners, pricing Early Bird **13 Dec 2026**). **Features** AI hero with intro video + light/dark glass styling. Public club favicon fix, match opponent logos, **Shop / Reports / Live scores** microsite routes; TSV Allach JAKO shop + contact migrations **`20260730120000`**–**`20260730140000`**. See **`CHANGELOG.md`** § **2026-07-01**.
+- **Partner portal + Partner Page (2026-07-01):** Dual-world club vs partner routes (`/partner-*`, `/supplier-page`); **`PersonaPortalGate`**; **Partner Page** admin; marketplace provider portal; partner messages/tasks/reports; **`/partner-ai`** with partner-specific Agent workspace; Settings persona switch; **Partner Page** hidden from club admin sidebar. Migrations **`20260731120000`**–**`20260731220000`**. See **`CHANGELOG.md`** § **2026-07-01 (Partner portal…)** and **`docs/rbac-dashboard-plan.md`** §10.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 

@@ -121,6 +121,21 @@ Deploy **`send-club-invite-email`** for Resend invite delivery. Regenerate **`sr
 
 Client-only: fee package form/overview, record payment UX, annual levy split in summary (`membership-fee-packages.ts`). See `CHANGELOG.md` § 2026-06-30 and `docs/PRODUCTION_RELEASE_CHECKLIST.md`.
 
+## Partner portal + marketplace provider (2026-07-01)
+Apply after member payments migrations above (strict filename order):
+- `20260731120000_partner_task_engagements.sql`
+- `20260731170000_marketplace_provider_portal_apply.sql` (canonical provider portal schema; supersedes duplicate-version `20260731150000` if not applied)
+- `20260731180000_marketplace_requests_enhance.sql`
+- `20260731190000_marketplace_offers_enhance.sql`
+- `20260731200000_marketplace_partners_bridge.sql`
+- `20260731210000_marketplace_provider_images_bucket.sql`
+- `20260731215000_supplier_portal_scope.sql`
+- `20260731220000_repair_marketplace_provider_images_bucket.sql`
+
+Repair (apply if redeem fails): `20260731130000_repair_redeem_invite_pgcrypto.sql`, `20260731140000_repair_redeem_invite_ambiguous_club_id.sql`, `20260731160000_repair_redeem_invite_membership_upsert.sql`.
+
+Client: partner routes (`/partner-*`, `/supplier-page`), PersonaPortalGate, Partner Page admin, `/partner-ai`, persona switch, RBAC sidebar. See `CHANGELOG.md` § 2026-07-01 (Partner portal) and `docs/rbac-dashboard-plan.md` §10.
+
 ## Verification artifact
 - Run `supabase/PHASE12_VERIFY.sql` after applying the migrations above.
 - Treat any `ok = false` row as a rollout blocker.

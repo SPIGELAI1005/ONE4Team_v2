@@ -6,6 +6,13 @@ Use this checklist before and after publishing on **Vercel**. It covers Vercel c
 
 Work through sections **A → K** in order. Check each box and note date/evidence in section **K** if you want an audit trail.
 
+### Deferred until production deploy (OK to skip locally)
+
+These can wait until you publish on Vercel; track them in **`TASKS.md` → DEPLOY-EMAIL-001** and **`HOLD.md` → Resend domain verification**.
+
+- [ ] **Resend: verify sending domain** (`one4team.com`) — required for automatic member/partner invite emails (sections **F** + **G** below)
+- Until verified: invites **still work**; use **Copy invite link** in Members. Toast may show *“Invite created, email not sent”* with *“domain is not verified”* from Resend — that is expected in dev.
+
 ---
 
 ## A. Code & CI (before deploy)

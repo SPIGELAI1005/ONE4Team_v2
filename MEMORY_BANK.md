@@ -1,11 +1,12 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-07-01 (Marketing refresh, AI Features hero, public club polish)
+Last updated: 2026-07-01 (Partner portal, Partner Page, AI 4 T partner, persona RBAC)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **Partner / supplier portal (2026-07-01):** Dual-world routing — club URLs vs **`/partner-*`** + **`/supplier-page`**. **`PersonaPortalGate`** + **`useModuleGateRole`** enforce portal side. **Partner Page** admin at **`/supplier-page`** (parity with **`/club-page-admin`**); sidebar label **Partner Page**; hidden for **club_admin** persona. Partner AI at **`/partner-ai`** with **`PartnerAiAgentWorkspace`** (no club training workflows). Settings persona switch via **`switch-dashboard-persona.ts`**. Marketplace provider portal + club hub; migrations **`20260731120000`**–**`20260731220000`**. Docs: **`docs/rbac-dashboard-plan.md`**, **`docs/marketplace-implementation-plan.md`**. See **`CHANGELOG.md`** § **2026-07-01 (Partner portal…)**.
 - **Marketing site refresh (2026-07-01):** Home, **Features**, **About**, **Clubs & Partners**, **Pricing** EN/DE copy updated (public microsites, Sommerfest, tasks, integrated AI, TSV Allach pilot). **Features** **AI-Powered Innovation** hero: portrait intro video (`Ai4TIntroLogoVideo`), glass logo assets, viewport play + last-frame hold, side-by-side layout all breakpoints, **`glass-card`** light/dark theming, **`max-w-6xl`** aligned with AI feature cards. **`BrandedText ai4tOnly`:** plain ONE4Team, red **4** only in **AI 4 T**. Early Bird pricing deadline **13 Dec 2026**. See **`CHANGELOG.md`** § **2026-07-01**.
 - **Public club polish (2026-07-01):** Club **favicon** upsert in `PublicClubDocumentHead`. **Match opponent logos** — Berlin-day fixture link, lookup map, dedupe, UI shared helpers. Public **Shop**, **Reports**, **Live scores** routes + sections. **TSV Allach JAKO shop** catalog + migrations **`20260730120000`**–**`20260730140000`**. Admin **`OpponentLogoField`** on **`/matches`**. See **`CHANGELOG.md`** § **2026-07-01**.
 - **Member payments + fee packages (2026-06-30):** Admin **`/payments`** — define **membership packages** (`membership_fee_types`: currency, categories, price components, notes) and **payment lines** per member (`payments`). **Fee Types** tab: packages table + **annual summary** (membership vs shared levy; Sonderumlage from components or standalone levy package). **Record payment** supports **multiple packages** per member; **bulk assign**; multi-select package filter; in-page Record/Bulk buttons. Migrations **`20260728120000`**–**`20260728140000`**. Lib: **`membership-fee-packages.ts`**, **`member-payments.ts`**. **`PlayerProfile`** links to payments. See **`CHANGELOG.md`** § **2026-06-30**.
@@ -197,6 +198,7 @@ Persistent handoff context for future agents so work can continue without re-dis
 65. `20260730120000_shop_products_import_key.sql` — shop product import keys (`CHANGELOG.md` § 2026-07-01)
 66. `20260730130000_tsv_allach_jako_shop_images.sql` — TSV Allach JAKO shop images (`CHANGELOG.md` § 2026-07-01)
 67. `20260730140000_tsv_allach_club_contact_address.sql` — TSV Allach club contact address (`CHANGELOG.md` § 2026-07-01)
+68. `20260731120000_partner_task_engagements.sql` through `20260731220000_repair_marketplace_provider_images_bucket.sql` — partner portal, marketplace provider profiles, supplier scope, image bucket (`CHANGELOG.md` § 2026-07-01 Partner portal)
 
 Also ensure previously listed communication migrations remain applied in the same project:
 - `20260301152000_add_chat_bridge_connectors_and_events.sql`

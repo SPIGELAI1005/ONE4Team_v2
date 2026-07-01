@@ -12,7 +12,10 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { useLanguage } from "@/hooks/use-language";
 import PageTransition from "@/components/layout/PageTransition";
 import { CookieConsent } from "@/components/ui/cookie-consent";
-import { RequireAdmin, RequireTrainer } from "@/components/auth/require-role";
+import { RequireAdmin } from "@/components/auth/require-role";
+import { RequireModule } from "@/components/auth/require-module";
+import { RequireAnyModule } from "@/components/auth/require-any-module";
+import { ClubOnlyRoute, PartnerOnlyRoute, PersonaAwareAiRedirect } from "@/components/routing/PersonaPortalGate";
 import { PlanGate } from "@/components/plan-gate";
 
 // Route-level code splitting (reduces initial bundle size)
@@ -45,12 +48,19 @@ const MemberHistory = lazy(() => import("./pages/MemberHistory"));
 const Teams = lazy(() => import("./pages/Teams"));
 const Communication = lazy(() => import("./pages/Communication"));
 const Tasks = lazy(() => import("./pages/Tasks"));
+const SupplierMessages = lazy(() => import("./pages/supplier/SupplierMessages"));
+const SupplierTasks = lazy(() => import("./pages/supplier/SupplierTasks"));
+const SupplierReports = lazy(() => import("./pages/supplier/SupplierReports"));
+const SupplierPageAdmin = lazy(() => import("./pages/supplier/SupplierPageAdmin"));
+const PublicSupplierPage = lazy(() => import("./pages/public-supplier/PublicSupplierPage"));
 const Payments = lazy(() => import("./pages/Payments"));
 const Events = lazy(() => import("./pages/Events"));
 const Matches = lazy(() => import("./pages/Matches"));
 const Activities = lazy(() => import("./pages/Activities"));
 const Dues = lazy(() => import("./pages/Dues"));
 const Partners = lazy(() => import("./pages/Partners"));
+const Marketplace = lazy(() => import("./pages/Marketplace"));
+const PartnerMarketplace = lazy(() => import("./pages/partner/PartnerMarketplace"));
 const PlayerStats = lazy(() => import("./pages/PlayerStats"));
 const PlayerProfile = lazy(() => import("./pages/PlayerProfile"));
 const CoTrainer = lazy(() => import("./pages/CoTrainer"));
@@ -213,6 +223,16 @@ const AnimatedRoutes = () => {
           }
         />
         <Route
+          path="/supplier/:supplierSlug"
+          element={
+            <PageTransition>
+              <Suspense fallback={<RouteFallback />}>
+                <PublicSupplierPage />
+              </Suspense>
+            </PageTransition>
+          }
+        />
+        <Route
           path="/club/:clubSlug/team/:teamId"
           element={
             <PageTransition>
@@ -254,61 +274,325 @@ const AnimatedRoutes = () => {
 
         {/* Dashboard layout: sidebar persists across all these pages */}
         <Route element={<RequireAuth><Suspense fallback={<RouteFallback />}><DashboardLayout /></Suspense></RequireAuth>}>
-          <Route path="/dashboard/:role" element={<Suspense fallback={<RouteFallback />}><DashboardContent /></Suspense>} />
-          {/* Admin-only routes */}
+          <Route
+            path="/dashboard/:role"
+            element={
+              <RequireModule module="dashboard" deniedMode="lock">
+                <Suspense fallback={<RouteFallback />}>
+                  <DashboardContent />
+                </Suspense>
+              </RequireModule>
+            }
+          />
           <Route
             path="/members/history/draft/:draftId"
             element={
-              <RequireTrainer>
+              <RequireModule module="members">
                 <Suspense fallback={<RouteFallback />}>
                   <MemberHistory />
                 </Suspense>
-              </RequireTrainer>
+              </RequireModule>
             }
           />
           <Route
             path="/members/history/:membershipId"
             element={
-              <RequireTrainer>
+              <RequireModule module="members">
                 <Suspense fallback={<RouteFallback />}>
                   <MemberHistory />
                 </Suspense>
-              </RequireTrainer>
+              </RequireModule>
             }
           />
-          <Route path="/members" element={<RequireTrainer><Suspense fallback={<RouteFallback />}><Members /></Suspense></RequireTrainer>} />
-          <Route path="/payments" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><PlanGate feature="payments"><Payments /></PlanGate></Suspense></RequireAdmin>} />
-          <Route path="/dues" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><Dues /></Suspense></RequireAdmin>} />
-          <Route path="/partners" element={<RequireTrainer><Suspense fallback={<RouteFallback />}><PlanGate feature="partners"><Partners /></PlanGate></Suspense></RequireTrainer>} />
-          <Route path="/club-page-admin" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><ClubPageAdmin /></Suspense></RequireAdmin>} />
+          <Route
+            path="/members"
+            element={
+              <RequireModule module="members">
+                <Suspense fallback={<RouteFallback />}>
+                  <Members />
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/payments"
+            element={
+              <RequireModule module="payments">
+                <Suspense fallback={<RouteFallback />}>
+                  <PlanGate feature="payments">
+                    <Payments />
+                  </PlanGate>
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/dues"
+            element={
+              <RequireModule module="payments">
+                <Suspense fallback={<RouteFallback />}>
+                  <Dues />
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route path="/marketplace" element={<RequireModule module="marketplace" deniedMode="lock"><Suspense fallback={<RouteFallback />}><PlanGate feature="partners"><Marketplace /></PlanGate></Suspense></RequireModule>} />
+          <Route path="/partnermarketplace" element={<Navigate to="/partner-marketplace" replace />} />
+          <Route
+            path="/partner-marketplace"
+            element={
+              <RequireModule module="marketplace" deniedMode="lock">
+                <Suspense fallback={<RouteFallback />}>
+                  <PlanGate feature="partners">
+                    <PartnerOnlyRoute partnerPath="/partner-marketplace">
+                      <PartnerMarketplace />
+                    </PartnerOnlyRoute>
+                  </PlanGate>
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route path="/partners" element={<RequireModule module="partners" deniedMode="lock"><Suspense fallback={<RouteFallback />}><PlanGate feature="partners"><Partners /></PlanGate></Suspense></RequireModule>} />
+          <Route
+            path="/club-page-admin"
+            element={
+              <RequireModule module="club_page">
+                <Suspense fallback={<RouteFallback />}>
+                  <ClubOnlyRoute clubPath="/club-page-admin">
+                    <ClubPageAdmin />
+                  </ClubOnlyRoute>
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/supplier-page"
+            element={
+              <RequireModule module="supplier_page">
+                <Suspense fallback={<RouteFallback />}>
+                  <PartnerOnlyRoute partnerPath="/supplier-page">
+                    <SupplierPageAdmin />
+                  </PartnerOnlyRoute>
+                </Suspense>
+              </RequireModule>
+            }
+          />
           <Route path="/training-plan-import" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><TrainingPlanImport /></Suspense></RequireAdmin>} />
           <Route path="/coach-placeholders" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><CoachPlaceholderResolution /></Suspense></RequireAdmin>} />
           <Route path="/property-layers" element={<Navigate to="/asset-layers" replace />} />
-          <Route path="/asset-layers" element={<RequireAdmin><Suspense fallback={<RouteFallback />}><Teams /></Suspense></RequireAdmin>} />
-          {/* Trainer+ routes */}
-          <Route path="/teams" element={<RequireTrainer><Suspense fallback={<RouteFallback />}><Teams /></Suspense></RequireTrainer>} />
-          {/* All authenticated users */}
-          <Route path="/communication" element={<Suspense fallback={<RouteFallback />}><Communication /></Suspense>} />
-          <Route path="/tasks" element={<Suspense fallback={<RouteFallback />}><Tasks /></Suspense>} />
-          <Route path="/events" element={<Suspense fallback={<RouteFallback />}><Events /></Suspense>} />
-          <Route path="/activities" element={<Suspense fallback={<RouteFallback />}><Activities /></Suspense>} />
-          <Route path="/matches" element={<Suspense fallback={<RouteFallback />}><Matches /></Suspense>} />
+          <Route
+            path="/asset-layers"
+            element={
+              <RequireModule module="assets">
+                <Suspense fallback={<RouteFallback />}>
+                  <Teams />
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/teams"
+            element={
+              <RequireModule module="trainings">
+                <Suspense fallback={<RouteFallback />}>
+                  <Teams />
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/communication"
+            element={
+              <RequireModule module="messages">
+                <Suspense fallback={<RouteFallback />}>
+                  <ClubOnlyRoute clubPath="/communication">
+                    <Communication />
+                  </ClubOnlyRoute>
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/partner-messages"
+            element={
+              <RequireModule module="messages">
+                <Suspense fallback={<RouteFallback />}>
+                  <PartnerOnlyRoute partnerPath="/partner-messages">
+                    <SupplierMessages />
+                  </PartnerOnlyRoute>
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/tasks"
+            element={
+              <RequireModule module="tasks">
+                <Suspense fallback={<RouteFallback />}>
+                  <ClubOnlyRoute clubPath="/tasks">
+                    <Tasks />
+                  </ClubOnlyRoute>
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/partner-tasks"
+            element={
+              <RequireModule module="tasks">
+                <Suspense fallback={<RouteFallback />}>
+                  <PartnerOnlyRoute partnerPath="/partner-tasks">
+                    <SupplierTasks />
+                  </PartnerOnlyRoute>
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/events"
+            element={
+              <RequireModule module="events">
+                <Suspense fallback={<RouteFallback />}>
+                  <Events />
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/activities"
+            element={
+              <RequireAnyModule modules={["trainings", "events"]}>
+                <Suspense fallback={<RouteFallback />}>
+                  <Activities />
+                </Suspense>
+              </RequireAnyModule>
+            }
+          />
+          <Route
+            path="/matches"
+            element={
+              <RequireModule module="matches">
+                <Suspense fallback={<RouteFallback />}>
+                  <Matches />
+                </Suspense>
+              </RequireModule>
+            }
+          />
           <Route
             path="/ai"
             element={
-              <PlanGate feature="ai">
-                <Navigate to="/co-trainer?tab=agent" replace />
-              </PlanGate>
+              <RequireModule module="ai4t">
+                <PlanGate feature="ai">
+                  <PersonaAwareAiRedirect />
+                </PlanGate>
+              </RequireModule>
             }
           />
-          <Route path="/reports" element={<Suspense fallback={<RouteFallback />}><PlayerStats /></Suspense>} />
+          <Route
+            path="/reports"
+            element={
+              <RequireModule module="reports">
+                <Suspense fallback={<RouteFallback />}>
+                  <ClubOnlyRoute clubPath="/reports">
+                    <PlayerStats />
+                  </ClubOnlyRoute>
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/partner-reports"
+            element={
+              <RequireModule module="reports">
+                <Suspense fallback={<RouteFallback />}>
+                  <PartnerOnlyRoute partnerPath="/partner-reports">
+                    <SupplierReports />
+                  </PartnerOnlyRoute>
+                </Suspense>
+              </RequireModule>
+            }
+          />
           <Route path="/player-stats" element={<Navigate to="/reports" replace />} />
-          <Route path="/player/:membershipId" element={<Suspense fallback={<RouteFallback />}><PlayerProfile /></Suspense>} />
-          <Route path="/co-trainer" element={<Suspense fallback={<RouteFallback />}><PlanGate feature="ai"><CoTrainer /></PlanGate></Suspense>} />
-          <Route path="/live-scores" element={<Suspense fallback={<RouteFallback />}><LiveScores /></Suspense>} />
-          <Route path="/shop" element={<Suspense fallback={<RouteFallback />}><PlanGate feature="shop"><Shop /></PlanGate></Suspense>} />
-          <Route path="/settings" element={<Suspense fallback={<RouteFallback />}><SettingsPage /></Suspense>} />
-          <Route path="/support" element={<Suspense fallback={<RouteFallback />}><SupportFaq /></Suspense>} />
+          <Route
+            path="/player/:membershipId"
+            element={
+              <RequireModule module="members">
+                <Suspense fallback={<RouteFallback />}>
+                  <PlayerProfile />
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/co-trainer"
+            element={
+              <RequireModule module="ai4t">
+                <Suspense fallback={<RouteFallback />}>
+                  <PlanGate feature="ai">
+                    <ClubOnlyRoute clubPath="/co-trainer">
+                      <CoTrainer />
+                    </ClubOnlyRoute>
+                  </PlanGate>
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/partner-ai"
+            element={
+              <RequireModule module="ai4t">
+                <Suspense fallback={<RouteFallback />}>
+                  <PlanGate feature="ai">
+                    <PartnerOnlyRoute partnerPath="/partner-ai">
+                      <CoTrainer />
+                    </PartnerOnlyRoute>
+                  </PlanGate>
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/live-scores"
+            element={
+              <RequireModule module="matches">
+                <Suspense fallback={<RouteFallback />}>
+                  <LiveScores />
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/shop"
+            element={
+              <RequireModule module="club_shop">
+                <Suspense fallback={<RouteFallback />}>
+                  <PlanGate feature="shop">
+                    <Shop />
+                  </PlanGate>
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <RequireModule module="settings">
+                <Suspense fallback={<RouteFallback />}>
+                  <SettingsPage />
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/support"
+            element={
+              <RequireModule module="support">
+                <Suspense fallback={<RouteFallback />}>
+                  <SupportFaq />
+                </Suspense>
+              </RequireModule>
+            }
+          />
         </Route>
 
         <Route

@@ -3,16 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   Menu,
   X,
-  Home,
-  Users,
-  Trophy,
-  Megaphone,
-  CreditCard,
-  Calendar,
-  Swords,
   Building2,
-  ClipboardList,
-  Sparkles,
   LogOut,
   Settings,
 } from "lucide-react";
@@ -31,19 +22,15 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useActiveClub, notifyMembershipsUpdated } from "@/hooks/use-active-club";
 import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/hooks/use-language";
+import { useDashboardNav } from "@/hooks/use-dashboard-nav";
+import { useDashboardNavLabels } from "@/hooks/use-dashboard-nav-labels";
+import { pathnameToNavId } from "@/lib/dashboard-nav";
 import { DashboardTopBarContext } from "@/contexts/dashboard-top-bar-context";
 import ClubSwitcher from "@/components/dashboard/ClubSwitcher";
 import NotificationBell from "@/components/dashboard/NotificationBell";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/one4team-logo.png";
 import { BrandedText } from "@/components/ai/Ai4TBrand";
-
-interface NavItem {
-  label: string;
-  to: string;
-  icon: React.ElementType;
-  gate?: (p: ReturnType<typeof usePermissions>) => boolean;
-}
 
 export default function DashboardTopBar() {
   const ctx = useContext(DashboardTopBarContext);
@@ -55,6 +42,8 @@ export default function DashboardTopBar() {
   const { activeClub } = useActiveClub();
   const { user, signOut } = useAuth();
   const { t } = useLanguage();
+  const navLabels = useDashboardNavLabels();
+  const { sidebarItems, roleLabel, personaSlug } = useDashboardNav(navLabels);
 
   const [open, setOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -62,8 +51,6 @@ export default function DashboardTopBar() {
   const [avatarUrl, setAvatarUrl] = useState("");
 
   const activeRole = (typeof window !== "undefined" ? localStorage.getItem("one4team.activeRole") : null) || null;
-  const effectiveRole = activeRole || (perms.isAdmin ? "admin" : perms.isTrainer ? "trainer" : "player");
-  const roleLabel = effectiveRole.charAt(0).toUpperCase() + effectiveRole.slice(1);
 
   const subtitleResolved = useMemo(() => {
     if (config?.greeting) return config.greeting;
@@ -74,7 +61,7 @@ export default function DashboardTopBar() {
     return subtitle;
   }, [activeClub?.name, config?.greeting, config?.subtitle]);
 
-  const dashboardTo = useMemo(() => `/dashboard/${effectiveRole}`, [effectiveRole]);
+  const activeNavId = pathnameToNavId(location.pathname);
 
   const debugEnabled =
     (typeof window !== "undefined" && localStorage.getItem("one4team.debug") === "1") ||
@@ -83,23 +70,6 @@ export default function DashboardTopBar() {
   const debugClubId = activeClub?.id || null;
   const debugMembershipRole = perms.role;
   const debugRouteRole = activeRole;
-
-  const items = useMemo(() => {
-    const navItems: NavItem[] = [
-      { label: t.sidebar.members, to: "/members", icon: Users, gate: (p) => p.isAdmin },
-      { label: t.teamsPage.tabs.teams, to: "/teams", icon: Trophy, gate: (p) => p.isTrainer },
-      { label: t.sidebar.communication, to: "/communication", icon: Megaphone, gate: () => true },
-      { label: t.sidebar.payments, to: "/payments", icon: CreditCard, gate: (p) => p.isAdmin },
-      { label: t.sidebar.dues, to: "/dues", icon: CreditCard, gate: (p) => p.isTrainer },
-      { label: t.sidebar.events, to: "/events", icon: Calendar, gate: () => true },
-      { label: t.sidebar.schedule, to: "/activities", icon: ClipboardList, gate: () => true },
-      { label: t.sidebar.matches, to: "/matches", icon: Swords, gate: () => true },
-      { label: t.sidebar.partners, to: "/partners", icon: Building2, gate: (p) => p.has("partners:read") },
-      { label: t.sidebar.ai4Team, to: "/co-trainer", icon: Sparkles, gate: () => true },
-    ];
-    const base = navItems.filter((i) => (i.gate ? i.gate(perms) : true));
-    return [{ label: t.sidebar.dashboard, to: dashboardTo, icon: Home }, ...base];
-  }, [perms, dashboardTo, t]);
 
   useEffect(() => {
     if (!user) {
@@ -344,20 +314,23 @@ export default function DashboardTopBar() {
             </div>
 
             <div className="grid gap-1">
-              {items.map((item) => {
-                const active = location.pathname === item.to;
+              {sidebarItems.map((item) => {
+                const active = item.id === activeNavId;
                 const Icon = item.icon;
+                const isMarketplace = item.module === "marketplace";
                 return (
                   <button
-                    key={`${item.label}-${item.to}`}
+                    key={`${item.module}-${item.route}`}
                     type="button"
                     onClick={() => {
                       setOpen(false);
-                      navigate(item.to);
+                      navigate(item.route);
                     }}
                     className={`w-full flex items-center gap-3 px-3 py-2 rounded-2xl text-sm border transition-colors ${
                       active
-                        ? "bg-primary/10 text-primary border-primary/20"
+                        ? isMarketplace
+                          ? "bg-primary/10 text-violet-600 dark:text-violet-400 border-primary/20"
+                          : "bg-primary/10 text-primary border-primary/20"
                         : "bg-card/40 text-foreground border-border/60 hover:bg-muted/30"
                     }`}
                   >
@@ -370,7 +343,7 @@ export default function DashboardTopBar() {
                       <div className="font-medium leading-tight truncate">
                         <BrandedText text={item.label} />
                       </div>
-                      <div className="text-[11px] text-muted-foreground leading-tight truncate">{item.to}</div>
+                      <div className="text-[11px] text-muted-foreground leading-tight truncate">{item.route}</div>
                     </div>
                   </button>
                 );

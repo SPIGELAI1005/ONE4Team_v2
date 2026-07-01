@@ -1,142 +1,25 @@
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useLanguage } from "@/hooks/use-language";
-import {
-  LayoutDashboard, Users, Calendar, Trophy, CreditCard,
-  MessageSquare, Briefcase, ShoppingBag, Globe, Bot,
-  Settings, LogOut, ChevronLeft, ChevronRight, CalendarDays, BarChart3, Layers3, HelpCircle, ClipboardList,
-} from "lucide-react";
-import { useState, useEffect } from "react";
+import { LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import logo from "@/assets/one4team-logo.png";
 import { BrandedText } from "@/components/ai/Ai4TBrand";
-
-type NavItem = { icon: React.ElementType; label: string; id: string; route?: string };
+import { useDashboardNav } from "@/hooks/use-dashboard-nav";
+import { useDashboardNavLabels } from "@/hooks/use-dashboard-nav-labels";
+import { pathnameToNavId } from "@/lib/dashboard-nav";
 
 export default function DashboardSidebar() {
-  const { role: urlRole } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
+
+  const navLabels = useDashboardNavLabels();
+  const { sidebarItems, roleLabel } = useDashboardNav(navLabels);
+
   const { t } = useLanguage();
 
-  // Persist role: URL param takes priority, then localStorage
-  const role = urlRole || localStorage.getItem("one4team.activeRole") || localStorage.getItem("one4team_role") || "admin";
-  useEffect(() => {
-    if (!urlRole) return;
-    localStorage.setItem("one4team.activeRole", urlRole);
-    localStorage.removeItem("one4team_role");
-  }, [urlRole]);
-
-  // Derive active section from current pathname
-  const pathToId: Record<string, string> = {
-    "/members": "members",
-    "/teams": "training",
-    "/asset-layers": "asset-layers",
-    "/property-layers": "asset-layers",
-    "/matches": "matches",
-    "/events": "events",
-    "/reports": "stats",
-    "/player-stats": "stats",
-    "/payments": "payments",
-    "/communication": "messages",
-    "/tasks": "tasks",
-    "/partners": "partners",
-    "/co-trainer": "ai",
-    "/ai": "ai",
-    "/activities": "schedule",
-    "/live-scores": "live",
-    "/dues": "dues",
-    "/shop": "shop",
-    "/club-page-admin": "clubpage",
-    "/settings": "settings",
-    "/support": "support",
-  };
-  const active = pathToId[location.pathname] || (location.pathname.startsWith("/dashboard") ? "overview" : "overview");
-
-  const dashRoute = `/dashboard/${role}`;
-
-  const roleMenus: Record<string, NavItem[]> = {
-    admin: [
-      { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
-      { icon: Layers3, label: t.sidebar.assetLayers, id: "asset-layers", route: "/asset-layers" },
-      { icon: Users, label: t.sidebar.members, id: "members", route: "/members" },
-      { icon: Calendar, label: t.sidebar.training, id: "training", route: "/teams" },
-      { icon: Trophy, label: t.sidebar.matches, id: "matches", route: "/matches" },
-      { icon: CalendarDays, label: t.sidebar.events, id: "events", route: "/events" },
-      { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/reports" },
-      { icon: CreditCard, label: t.sidebar.payments, id: "payments", route: "/payments" },
-      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
-      { icon: ClipboardList, label: t.sidebar.tasks, id: "tasks", route: "/tasks" },
-      { icon: Briefcase, label: t.sidebar.partners, id: "partners", route: "/partners" },
-      { icon: Bot, label: t.sidebar.ai4Team, id: "ai", route: "/co-trainer" },
-      { icon: Globe, label: t.sidebar.clubPage, id: "clubpage", route: "/club-page-admin" },
-      { icon: ShoppingBag, label: t.sidebar.shop, id: "shop", route: "/shop" },
-      { icon: Settings, label: t.sidebar.settings, id: "settings", route: "/settings" },
-      { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
-    ],
-    trainer: [
-      { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
-      { icon: Layers3, label: t.sidebar.assetLayers, id: "asset-layers", route: "/asset-layers" },
-      { icon: Calendar, label: t.sidebar.schedule, id: "schedule", route: "/activities" },
-      { icon: Users, label: t.sidebar.myTeams, id: "teams", route: "/teams" },
-      { icon: Trophy, label: t.sidebar.matches, id: "matches", route: "/matches" },
-      { icon: CalendarDays, label: t.sidebar.events, id: "events", route: "/events" },
-      { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/reports" },
-      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
-      { icon: ClipboardList, label: t.sidebar.tasks, id: "tasks", route: "/tasks" },
-      { icon: Bot, label: t.sidebar.ai4Team, id: "ai", route: "/co-trainer" },
-      { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
-    ],
-    player: [
-      { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
-      { icon: Calendar, label: t.sidebar.schedule, id: "schedule", route: "/activities" },
-      { icon: Trophy, label: t.sidebar.matches, id: "matches", route: "/matches" },
-      { icon: CalendarDays, label: t.sidebar.events, id: "events", route: "/events" },
-      { icon: BarChart3, label: t.sidebar.playerStats, id: "stats", route: "/reports" },
-      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
-      { icon: ClipboardList, label: t.sidebar.tasks, id: "tasks", route: "/tasks" },
-      { icon: ShoppingBag, label: t.sidebar.shop, id: "shop", route: "/shop" },
-      { icon: Bot, label: t.sidebar.ai4Team, id: "ai", route: "/co-trainer" },
-      { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
-    ],
-    sponsor: [
-      { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
-      { icon: Briefcase, label: t.sidebar.contracts, id: "contracts" },
-      { icon: CreditCard, label: t.sidebar.invoices, id: "invoices" },
-      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
-      { icon: ClipboardList, label: t.sidebar.tasks, id: "tasks", route: "/tasks" },
-      { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
-    ],
-    supplier: [
-      { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
-      { icon: Briefcase, label: t.sidebar.orders, id: "orders" },
-      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
-      { icon: ClipboardList, label: t.sidebar.tasks, id: "tasks", route: "/tasks" },
-      { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
-    ],
-    service: [
-      { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
-      { icon: Briefcase, label: t.sidebar.contracts, id: "contracts" },
-      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
-      { icon: ClipboardList, label: t.sidebar.tasks, id: "tasks", route: "/tasks" },
-      { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
-    ],
-    consultant: [
-      { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
-      { icon: Briefcase, label: t.sidebar.engagements, id: "engagements" },
-      { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
-      { icon: ClipboardList, label: t.sidebar.tasks, id: "tasks", route: "/tasks" },
-      { icon: HelpCircle, label: t.sidebar.supportFaq, id: "support", route: "/support" },
-    ],
-  };
-
-  const defaultMenu: NavItem[] = [
-    { icon: LayoutDashboard, label: t.sidebar.dashboard, id: "overview", route: dashRoute },
-    { icon: MessageSquare, label: t.sidebar.messages, id: "messages", route: "/communication" },
-  ];
-
-  const items = roleMenus[role || ""] || defaultMenu;
-  const roleName = role ? role.charAt(0).toUpperCase() + role.slice(1) : "User";
+  const active = pathnameToNavId(location.pathname);
 
   return (
     <aside className={`h-screen glass-sidebar flex flex-col transition-all duration-300 ease-in-out ${collapsed ? "w-[68px]" : "w-60"}`}>
@@ -160,31 +43,37 @@ export default function DashboardSidebar() {
       {!collapsed && (
         <div className="px-4 py-3 border-b border-border/60">
           <span className="ios-pill text-primary bg-primary/8">
-            {roleName}
+            {roleLabel}
           </span>
         </div>
       )}
 
       {/* Nav items */}
       <nav className="flex-1 py-2 overflow-y-auto px-2">
-        {items.map((item) => (
+        {sidebarItems.map((item) => {
+          const isActive = active === item.id;
+          const isMarketplace = item.module === "marketplace";
+          const itemClass = isActive
+            ? isMarketplace
+              ? "bg-primary/10 text-violet-600 dark:text-violet-400"
+              : "bg-primary/10 text-primary"
+            : isMarketplace
+              ? "text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 hover:bg-violet-500/8"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/40";
+
+          return (
           <motion.button
-            key={item.id}
+            key={`${item.module}-${item.id}`}
             whileTap={{ scale: 0.97 }}
-            onClick={() => {
-              if (item.route) navigate(item.route);
-            }}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-medium rounded-xl transition-all duration-200 mb-0.5 ${
-              active === item.id
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-            } ${collapsed ? "justify-center px-2" : ""}`}
+            onClick={() => navigate(item.route)}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-medium rounded-xl transition-all duration-200 mb-0.5 ${itemClass} ${collapsed ? "justify-center px-2" : ""}`}
             title={collapsed ? item.label : undefined}
           >
             <item.icon className="w-[18px] h-[18px] shrink-0" strokeWidth={1.5} />
             {!collapsed && <span><BrandedText text={item.label} /></span>}
           </motion.button>
-        ))}
+          );
+        })}
       </nav>
 
       {/* Footer */}

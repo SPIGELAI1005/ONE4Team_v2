@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { usePersistPortalPersonaFromPath } from "@/hooks/use-module-gate-role";
 import { DashboardTopBarProvider } from "@/contexts/dashboard-top-bar-context";
 import { AiAgentProvider } from "@/contexts/ai-agent-context";
 import { AiAgentSheet } from "@/components/ai-agent/AiAgentSheet";
@@ -9,6 +10,7 @@ import MobileBottomNav from "./MobileBottomNav";
 
 const DashboardLayout = () => {
   const isMobile = useIsMobile();
+  usePersistPortalPersonaFromPath();
 
   return (
     <AiAgentProvider>

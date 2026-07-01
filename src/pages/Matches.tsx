@@ -20,6 +20,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/hooks/use-language";
 import { useActiveClub } from "@/hooks/use-active-club";
 import { useMembershipId } from "@/hooks/use-membership-id";
+import { useModuleDataScope } from "@/hooks/use-module-data-scope";
 import {
   canCreateMatches,
   canManageMatch,
@@ -112,6 +113,7 @@ const Matches = () => {
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
   const perms = usePermissions();
+  const matchDataScope = useModuleDataScope("matches");
   const { membershipId } = useMembershipId();
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -318,6 +320,9 @@ const Matches = () => {
         const before = matchPageKeysetRef.current[matchesPage - 1];
         if (before) matchQuery = matchQuery.or(matchesKeysetOrFilter(before.match_date, before.id));
       }
+      if (matchDataScope.teamIds !== "all" && matchDataScope.teamIds.length > 0) {
+        matchQuery = matchQuery.in("team_id", matchDataScope.teamIds);
+      }
 
       const [matchRes, compRes, teamRes] = await Promise.all([
         matchQuery,
@@ -344,11 +349,16 @@ const Matches = () => {
       setMatches(matchRows);
       setMatchesTotalCount(matchRes.count ?? 0);
       setCompetitions((compRes.data as Competition[]) || []);
-      setTeams((teamRes.data as Team[]) || []);
+      const allTeams = (teamRes.data as Team[]) || [];
+      setTeams(
+        matchDataScope.teamIds === "all"
+          ? allTeams
+          : allTeams.filter((team) => matchDataScope.teamIds.includes(team.id)),
+      );
       setLoading(false);
     };
     void fetchAll();
-  }, [clubId, matchesPage, matchesRetryTick]);
+  }, [clubId, matchesPage, matchesRetryTick, matchDataScope.teamIds]);
 
   useEffect(() => {
     if (!clubId || !showSommerfest) {

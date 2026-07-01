@@ -29,6 +29,10 @@ export const AI4T_INTRO_ROLES: Ai4TRoleKey[] = [
   "consultant",
 ];
 
+export function isPartnerAiRole(role: Ai4TRoleKey): boolean {
+  return role === "supplier" || role === "service_provider" || role === "consultant" || role === "sponsor";
+}
+
 export function getAi4TRoleWelcomeMessage(
   role: Ai4TRoleKey,
   language: "en" | "de",
@@ -36,6 +40,12 @@ export function getAi4TRoleWelcomeMessage(
 ): string {
   const de = language === "de";
   const persona = getAi4TAssistantRoleName(role);
+
+  if (isPartnerAiRole(role)) {
+    return de
+      ? `Willkommen bei AI 4 T. Als ${persona} unterstützt dich der Assistent bei Marketplace-Listing, Club-Kooperationen, Nachrichten und Aufgaben — ohne Vereins-Trainingsplanung.`
+      : `Welcome to AI 4 T. As ${persona}, get help with your marketplace listing, club collaborations, messages, and tasks — not club training schedules.`;
+  }
 
   if (role === "admin") {
     return de
@@ -232,60 +242,31 @@ export function buildAi4TRoleQuickPrompts(role: Ai4TRoleKey, language: "en" | "d
     ];
   }
 
-  if (role === "sponsor") {
-    return [
-      {
-        label: isGerman ? "Sichtbarkeit" : "Visibility ideas",
-        prompt: isGerman
-          ? "Welche sinnvollen Sponsoring-Aktivitäten passen zu einem lokalen Sportverein?"
-          : "What sponsorship activations make sense for a local sports club partnership?",
-      },
-      {
-        label: isGerman ? "Saison-Review" : "Season partnership review",
-        prompt: isGerman
-          ? "Erstelle eine kurze Zusammenfassung unserer Sponsoring-Ziele für diese Saison."
-          : "Summarize our sponsorship goals and deliverables for this season.",
-      },
-      {
-        label: isGerman ? "Event-Idee" : "Event collaboration",
-        prompt: isGerman
-          ? "Schlage 3 Ideen für ein gemeinsames Event zwischen Sponsor und Verein vor."
-          : "Suggest 3 co-branded event ideas between our company and the club.",
-      },
-      {
-        label: isGerman ? "Kommunikationsentwurf" : "Partnership message",
-        prompt: isGerman
-          ? "Schreibe einen kurzen Social-Media-Post über unsere Partnerschaft mit dem Verein."
-          : "Write a short social post celebrating our partnership with the club.",
-      },
-    ];
-  }
-
   if (role === "supplier") {
     return [
       {
-        label: isGerman ? "Lieferplan Saison" : "Season supply plan",
+        label: isGerman ? "Listing-Text" : "Listing copy",
         prompt: isGerman
-          ? "Hilf mir, Material- und Ausrüstungsbedarf für die Saison zu strukturieren."
-          : "Help me structure equipment and supply needs for the club season.",
+          ? "Hilf mir, eine überzeugende Kurz- und Langbeschreibung für mein Lieferanten-Listing im Partner-Marketplace zu schreiben."
+          : "Help me write a compelling short and detailed description for my supplier listing on the partner marketplace.",
       },
       {
-        label: isGerman ? "Bestellübersicht" : "Order summary draft",
+        label: isGerman ? "Nachricht an Verein" : "Message to a club",
         prompt: isGerman
-          ? "Erstelle eine übersichtliche Bestellliste für Trikots, Bälle und Trainingsmaterial."
-          : "Draft an organized order list for kits, balls and training gear.",
+          ? "Formuliere eine professionelle erste Nachricht an einen Verein, mit dem ich zusammenarbeiten möchte."
+          : "Draft a professional first message to a club I want to collaborate with.",
       },
       {
-        label: isGerman ? "Lieferfenster" : "Delivery windows",
+        label: isGerman ? "Aufgaben-Update" : "Task status update",
         prompt: isGerman
-          ? "Welche Lieferfenster sollten wir vor Turnieren und Saisonstart einplanen?"
-          : "What delivery windows should we plan before tournaments and season kickoff?",
+          ? "Fasse meine offenen Partner-Aufgaben in einem kurzen Status-Update für einen Verein zusammen."
+          : "Summarize my open partner tasks in a short status update for a club contact.",
       },
       {
-        label: isGerman ? "Qualitäts-Check" : "Quality checklist",
+        label: isGerman ? "Angebotsstruktur" : "Package structure",
         prompt: isGerman
-          ? "Gib mir eine Checkliste zur Abnahme gelieferter Vereinsausrüstung."
-          : "Provide a checklist for accepting and inspecting delivered club equipment.",
+          ? "Schlage 3 klar benannte Service-Pakete mit Preishinweisen für mein Lieferantenprofil vor."
+          : "Suggest 3 clearly named service packages with price indications for my supplier profile.",
       },
     ];
   }
@@ -293,28 +274,28 @@ export function buildAi4TRoleQuickPrompts(role: Ai4TRoleKey, language: "en" | "d
   if (role === "service_provider") {
     return [
       {
-        label: isGerman ? "Service-Umfang" : "Scope of services",
+        label: isGerman ? "Leistungsübersicht" : "Services overview",
         prompt: isGerman
-          ? "Fasse unsere Leistungen für den Verein (Wartung, Reinigung, IT) in einem Überblick zusammen."
-          : "Summarize our services for the club (maintenance, cleaning, IT) in one overview.",
+          ? "Fasse unsere Leistungen für Vereinskunden in einer klaren Marketplace-Beschreibung zusammen."
+          : "Summarize our services for club customers in a clear marketplace description.",
       },
       {
-        label: isGerman ? "Wartungsplan" : "Maintenance schedule",
+        label: isGerman ? "Status an Verein" : "Status to club",
         prompt: isGerman
-          ? "Erstelle einen monatlichen Wartungsplan für Vereinsanlagen und Geräte."
-          : "Create a monthly maintenance schedule for club facilities and equipment.",
+          ? "Formuliere ein professionelles Status-Update zu laufenden Service-Aufträgen für einen Verein."
+          : "Draft a professional status update on ongoing service work for a club.",
       },
       {
-        label: isGerman ? "Status-Update" : "Status update draft",
+        label: isGerman ? "Angebotsentwurf" : "Proposal draft",
         prompt: isGerman
-          ? "Formuliere ein professionelles Status-Update an die Vereinsleitung."
-          : "Draft a professional status update email to club leadership.",
+          ? "Erstelle einen strukturierten Angebotsentwurf für eine Vereinsanfrage aus dem Marketplace."
+          : "Create a structured proposal draft for a club request from the marketplace.",
       },
       {
-        label: isGerman ? "Eskalation" : "Issue escalation",
+        label: isGerman ? "Lieferfenster" : "Delivery planning",
         prompt: isGerman
-          ? "Wie sollten wir ein dringendes Anlagenproblem klar und lösungsorientiert kommunizieren?"
-          : "How should we communicate an urgent facility issue clearly and with next steps?",
+          ? "Welche Liefer- oder Einsatzfenster sollten wir vor Saisonstart mit Vereinen abstimmen?"
+          : "What delivery or on-site windows should we align with clubs before season start?",
       },
     ];
   }
@@ -322,28 +303,57 @@ export function buildAi4TRoleQuickPrompts(role: Ai4TRoleKey, language: "en" | "d
   if (role === "consultant") {
     return [
       {
-        label: isGerman ? "Strategie-Snapshot" : "Strategy snapshot",
+        label: isGerman ? "Kooperations-Pitch" : "Partnership pitch",
         prompt: isGerman
-          ? "Erstelle eine kompakte SWOT-Analyse für die Vereinsentwicklung der nächsten 12 Monate."
-          : "Create a compact SWOT snapshot for club development over the next 12 months.",
+          ? "Hilf mir, einen kurzen Wertevorschlag für eine Beratungskooperation mit einem Sportverein zu formulieren."
+          : "Help me draft a short value proposition for a consulting collaboration with a sports club.",
       },
       {
         label: isGerman ? "Workshop-Agenda" : "Workshop agenda",
         prompt: isGerman
-          ? "Entwirf eine 90-Minuten-Agenda für einen Strategie-Workshop mit Vorstand und Trainern."
-          : "Draft a 90-minute agenda for a strategy workshop with board and coaches.",
+          ? "Entwirf eine 60-Minuten-Agenda für einen Strategie-Workshop mit Vereinsvorstand und Partnern."
+          : "Draft a 60-minute agenda for a strategy workshop with club leadership and partners.",
       },
       {
-        label: isGerman ? "KPI-Vorschläge" : "KPI recommendations",
+        label: isGerman ? "KPI-Empfehlung" : "KPI recommendations",
         prompt: isGerman
-          ? "Welche KPIs sollte ein Amateurverein für Mitglieder, Finanzen und Sport tracken?"
-          : "Which KPIs should an amateur club track for membership, finance and sport?",
+          ? "Welche KPIs sollte ein Verein in einer Partner-Zusammenarbeit mit uns tracken?"
+          : "Which KPIs should a club track in a partnership engagement with us?",
       },
       {
-        label: isGerman ? "Change-Kommunikation" : "Change comms",
+        label: isGerman ? "Follow-up Mail" : "Follow-up email",
         prompt: isGerman
-          ? "Schreibe eine transparente Vereinsmitteilung zu einer geplanten Organisationsänderung."
-          : "Write a transparent club message about a planned organizational change.",
+          ? "Schreibe eine knappe Follow-up-Nachricht nach einem Marketplace-Gespräch mit einem Verein."
+          : "Write a concise follow-up message after a marketplace conversation with a club.",
+      },
+    ];
+  }
+
+  if (role === "sponsor") {
+    return [
+      {
+        label: isGerman ? "Sponsoring-Pitch" : "Sponsorship pitch",
+        prompt: isGerman
+          ? "Formuliere einen kurzen Sponsoring-Vorschlag für einen lokalen Sportverein über den Partner-Marketplace."
+          : "Draft a short sponsorship proposal for a local sports club via the partner marketplace.",
+      },
+      {
+        label: isGerman ? "Sichtbarkeitsplan" : "Visibility plan",
+        prompt: isGerman
+          ? "Schlage sinnvolle Sponsoring-Aktivierungen für die laufende Saison vor."
+          : "Suggest meaningful sponsorship activations for the current season.",
+      },
+      {
+        label: isGerman ? "Partnerschafts-Update" : "Partnership update",
+        prompt: isGerman
+          ? "Erstelle ein kurzes Update an einen Verein über erbrachte Sponsoring-Leistungen."
+          : "Create a brief update to a club about sponsorship deliverables completed.",
+      },
+      {
+        label: isGerman ? "Social-Post" : "Social post",
+        prompt: isGerman
+          ? "Schreibe einen kurzen Social-Media-Post über unsere Partnerschaft mit einem Verein."
+          : "Write a short social post celebrating our partnership with a club.",
       },
     ];
   }
