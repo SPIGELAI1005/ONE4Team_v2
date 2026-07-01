@@ -1,5 +1,5 @@
 /**
- * Fine-grained marketplace permissions — extends `rbac-config` module access.
+ * Fine-grained marketplace permissions - extends `rbac-config` module access.
  *
  * Module-level `marketplace` (`full` | `own` | `none`) controls menu + route entry.
  * These permissions gate tabs and actions inside `/marketplace`.

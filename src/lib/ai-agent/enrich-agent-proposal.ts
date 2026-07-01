@@ -178,8 +178,8 @@ export function buildProposalUnderstandingMessage(
         : `I recognized **${headline}**, but could not find a unique session in the calendar. Please be more specific (e.g. “U12-1 today 6pm”) or pick the session under **Cancel training**.`;
     }
     const base = de
-      ? `Verstanden — ich schlage vor, diese Einheit abzusagen:\n\n**${headline}**`
-      : `Understood — I propose cancelling this session:\n\n**${headline}**`;
+      ? `Verstanden - ich schlage vor, diese Einheit abzusagen:\n\n**${headline}**`
+      : `Understood - I propose cancelling this session:\n\n**${headline}**`;
     if (cancelTarget.reason) {
       return de
         ? `${base}\n\nGrund: ${cancelTarget.reason}\n\nBitte prüfe die Details unten und tippe auf **Bestätigen & ausführen**.`
@@ -193,8 +193,8 @@ export function buildProposalUnderstandingMessage(
   const summary = proposal.summary?.trim() || body?.summary?.trim();
   if (summary) {
     return de
-      ? `Verstanden — ${summary}\n\nBitte prüfe die Schritte unten und bestätige.`
-      : `Understood — ${summary}\n\nPlease review the steps below and confirm.`;
+      ? `Verstanden - ${summary}\n\nBitte prüfe die Schritte unten und bestätige.`
+      : `Understood - ${summary}\n\nPlease review the steps below and confirm.`;
   }
 
   return de

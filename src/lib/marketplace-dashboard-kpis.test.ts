@@ -124,7 +124,7 @@ describe("filterVisibleMarketplaceDashboardCards", () => {
     const cards = [
       { id: "a", label: "A", value: 0, href: "/" },
       { id: "b", label: "B", value: 2, href: "/" },
-      { id: "c", label: "C", value: "—", href: "/", alwaysShow: true },
+      { id: "c", label: "C", value: "-", href: "/", alwaysShow: true },
     ];
 
     const visible = filterVisibleMarketplaceDashboardCards(cards);

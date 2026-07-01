@@ -86,9 +86,10 @@ export async function upsertSommerfestMatchRecord(
   if (findErr) throw findErr;
 
   if (existing?.id) {
+    const { status: _status, ...payloadWithoutStatus } = payload;
     const { data, error } = await supabase
       .from("matches")
-      .update(payload)
+      .update(payloadWithoutStatus)
       .eq("id", existing.id)
       .eq("club_id", clubId)
       .select(MATCH_SELECT)

@@ -954,7 +954,7 @@ const Teams = () => {
     }
     return Array.from(byPitch.entries()).map(([key, events]) => {
       const pitchId = key === "pitch:none" ? null : key.replace("pitch:", "");
-      const pitchName = pitchId ? (pitchNameById.get(pitchId) || "—") : "No pitch";
+      const pitchName = pitchId ? (pitchNameById.get(pitchId) || "-") : "No pitch";
       return { pitchId, pitchName, events };
     });
   }, [pitchNameById, selectedDayKey, trainingEventsByDay]);
@@ -1233,7 +1233,7 @@ const Teams = () => {
       totalBookings: activeBookings.length,
       freeNow,
       conflictCount,
-      topPitchName: topPitchId ? (pitchNameById.get(topPitchId) || t.teamsPage.unknownElement) : "—",
+      topPitchName: topPitchId ? (pitchNameById.get(topPitchId) || t.teamsPage.unknownElement) : "-",
       topPitchCount,
     };
   }, [enrichedBookings, filteredPitches.length, matchesActiveLayerFilter, pitchById, pitchNameById, t.teamsPage.unknownElement]);
@@ -3433,7 +3433,7 @@ const Teams = () => {
 
                         {/* Header row 2: pitches */}
                         <div className="sticky top-[34px] z-20 bg-card/90 backdrop-blur border-b border-border/60 p-2 text-[10px] text-muted-foreground">
-                          —
+                          -
                         </div>
                         {weekGridModel.days.flatMap((day) =>
                           trainingCalendarGridPitches.map((pitch) => (
@@ -4743,7 +4743,7 @@ const Teams = () => {
               <span className="text-foreground font-medium">
                 {pendingScheduleDelete?.title || "this item"}
               </span>{" "}
-              ({pendingScheduleDelete ? format(pendingScheduleDelete.startsAt, "yyyy-MM-dd HH:mm") : "—"}) from the database.
+              ({pendingScheduleDelete ? format(pendingScheduleDelete.startsAt, "yyyy-MM-dd HH:mm") : "-"}) from the database.
               This can’t be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -4786,7 +4786,7 @@ const Teams = () => {
             <p className="text-sm text-muted-foreground">
               {t.teamsPage.elementModal.deleteConfirmPrefix}{" "}
               <span className="text-foreground font-medium">
-                {pitchById.get(pendingPitchDeleteId)?.name || "—"}
+                {pitchById.get(pendingPitchDeleteId)?.name || "-"}
               </span>
               {t.teamsPage.elementModal.deleteConfirmSuffix}
             </p>

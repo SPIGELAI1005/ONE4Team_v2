@@ -160,7 +160,7 @@ export function TrainingAttendanceTrainerPanel({
             className="rounded-xl"
             onClick={() => {
               const msg = [
-                `${activityTitle} — ${labels.tabComing}: ${comingCount(summary)}`,
+                `${activityTitle} - ${labels.tabComing}: ${comingCount(summary)}`,
                 ...coming.map((l) => `✅ ${l.name}`),
                 ...declined.map((l) => `❌ ${l.name}${l.declineReason ? ` (${l.declineReason})` : ""}`),
               ].join("\n");

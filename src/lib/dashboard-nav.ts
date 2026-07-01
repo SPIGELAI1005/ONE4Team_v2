@@ -1,5 +1,5 @@
 /**
- * Dashboard navigation — maps RBAC modules to sidebar/mobile nav items.
+ * Dashboard navigation - maps RBAC modules to sidebar/mobile nav items.
  * Visual metadata only; access is driven by `rbac-config.ts`.
  */
 

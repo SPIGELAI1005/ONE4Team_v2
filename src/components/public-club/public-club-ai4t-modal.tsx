@@ -62,6 +62,7 @@ export function PublicClubAi4tModal() {
     ai4tInitialPrompt,
     ai4teamLaunch,
     goToAuthWithReturn,
+    homeTeamFilterId,
   } = usePublicClub();
 
   const isSignedIn = Boolean(user);
@@ -203,6 +204,7 @@ export function PublicClubAi4tModal() {
               roleKey={memberRole}
               isSignedIn={isSignedIn}
               primaryColor={club.primary_color}
+              publicTeamId={homeTeamFilterId || null}
               seedPrompt={chatSeed}
               onSeedConsumed={() => setChatSeed(null)}
               onRequestSignIn={() => goToAuthWithReturn(returnPath)}
@@ -226,6 +228,34 @@ export function PublicClubAi4tModal() {
                 <p className="text-sm leading-relaxed text-neutral-600">
                   <BrandedText text={intro.overview} />
                 </p>
+
+                {intro.guideRoleLimits[guideRole] ? (
+                  <div className="mt-4 rounded-2xl border border-neutral-200/80 bg-neutral-50/80 p-4">
+                    <h3 className="text-sm font-semibold text-neutral-900">{intro.guideRoleLimitsTitle}</h3>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <div className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                          {intro.guideCan}
+                        </div>
+                        <ul className="mt-1.5 space-y-1 text-xs text-neutral-700">
+                          {intro.guideRoleLimits[guideRole].can.map((line) => (
+                            <li key={line}>• {line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <div className="text-[11px] font-semibold uppercase tracking-wide text-amber-800">
+                          {intro.guideCannot}
+                        </div>
+                        <ul className="mt-1.5 space-y-1 text-xs text-neutral-700">
+                          {intro.guideRoleLimits[guideRole].cannot.map((line) => (
+                            <li key={line}>• {line}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {FEATURE_IDS.map((id) => {

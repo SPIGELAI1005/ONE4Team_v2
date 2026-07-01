@@ -310,6 +310,8 @@ Add to `buildClubContext()` **only when data exists** (never fabricate):
 
 **Implementation:** RPC `get_club_ai_usage_stats(club_id, from, to)` — security definer + `is_club_admin`.
 
+**Shipped (2026-07-01, AI4T-P4-002):** Settings usage block + **`Ai4tAdminUsageCard`** on club admin dashboard (7-day window); persona-scoped context; player/member Agent tab hidden; follow-up chips; mapped errors; history filters; **`docs/AI4T_RELEASE_REVIEW.md`**.
+
 ### 4.3 Optional caps
 
 - Soft limit per club/month (plan tier)

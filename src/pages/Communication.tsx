@@ -231,7 +231,7 @@ export interface CommunicationWorkspaceProps {
   initialChannelId?: string;
   initialAnnouncementId?: string;
   editAnnouncementId?: string;
-  /** Public club hero `?team=` filter — limits visible team channels. */
+  /** Public club hero `?team=` filter - limits visible team channels. */
   teamFilterId?: string;
 }
 
@@ -776,7 +776,7 @@ export function CommunicationWorkspace({
       )
       .subscribe((status) => {
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          console.warn(`[realtime] messages channel ${status} (club ${clubId}) — client will retry on next navigation/remount`);
+          console.warn(`[realtime] messages channel ${status} (club ${clubId}) - client will retry on next navigation/remount`);
         }
       });
 

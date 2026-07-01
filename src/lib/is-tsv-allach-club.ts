@@ -1,7 +1,7 @@
 /** Canonical public slug for TSV Allach 09 (pilot club). */
 export const TSV_ALLACH_09_CLUB_SLUG = "tsv-allach-09";
 
-/** Strict match — use for club-specific data (address, catalog, etc.) that must not leak to other clubs. */
+/** Strict match - use for club-specific data (address, catalog, etc.) that must not leak to other clubs. */
 export function isTsvAllach09Club(club?: { slug?: string | null } | null): boolean {
   return (club?.slug ?? "").toLowerCase() === TSV_ALLACH_09_CLUB_SLUG;
 }

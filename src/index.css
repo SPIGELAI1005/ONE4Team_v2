@@ -213,7 +213,7 @@
 }
 
 @layer components {
-  /* AI 4 T wordmark — wins over base h1–h6 Outfit + parent font-display */
+  /* AI 4 T wordmark: wins over base h1-h6 Outfit + parent font-display */
   .ai-4-t-wordmark {
     display: inline;
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif !important;
@@ -523,7 +523,7 @@
     background-clip: text;
   }
 
-  /* Animated gold shimmer — ultra-smooth infinite loop */
+  /* Animated gold shimmer: ultra-smooth infinite loop */
   .text-gradient-gold-animated {
     background: linear-gradient(
       90deg,
@@ -636,7 +636,7 @@
     100% { background-position: 0% 50%; }
   }
 
-  /* Sommerfest live tournament CTA — red/gold pulse from festival day */
+  /* Sommerfest live tournament CTA: red/gold pulse from festival day */
   @keyframes sommerfest-live-cta-pulse {
     0%, 100% {
       box-shadow:
@@ -681,7 +681,7 @@
   }
 
 
-  /* World cards — transparent by default, subtle fill on hover */
+  /* World cards: transparent by default, subtle fill on hover */
   .world-card-hover {
     background-color: transparent;
     transition: background-color 0.4s ease;

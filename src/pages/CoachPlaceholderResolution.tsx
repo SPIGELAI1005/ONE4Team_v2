@@ -156,7 +156,7 @@ export default function CoachPlaceholderResolution() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="text-sm text-muted-foreground">
-            {cp.clubPrefix} {clubId || "—"}
+            {cp.clubPrefix} {clubId || "-"}
           </div>
 
           {placeholders.length === 0 ? (

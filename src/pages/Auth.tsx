@@ -1397,10 +1397,10 @@ const Auth = () => {
                                       ? t.onboarding.clubTypeOptions[
                                           clubForm.clubType as keyof typeof t.onboarding.clubTypeOptions
                                         ]
-                                      : "—"}
+                                      : "-"}
                                   </div>
                                   <div>
-                                    <span className="text-foreground">{t.onboarding.country}:</span> {clubForm.country || "—"}
+                                    <span className="text-foreground">{t.onboarding.country}:</span> {clubForm.country || "-"}
                                   </div>
                                 </>
                               ) : (
@@ -1414,10 +1414,10 @@ const Auth = () => {
                                       ? t.onboarding.partnerTypeOptions[
                                           partnerForm.partnerType as keyof typeof t.onboarding.partnerTypeOptions
                                         ]
-                                      : "—"}
+                                      : "-"}
                                   </div>
                                   <div>
-                                    <span className="text-foreground">{t.onboarding.country}:</span> {partnerForm.country || "—"}
+                                    <span className="text-foreground">{t.onboarding.country}:</span> {partnerForm.country || "-"}
                                   </div>
                                 </>
                               )}

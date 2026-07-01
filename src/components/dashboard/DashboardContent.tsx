@@ -24,6 +24,7 @@ import LiveMatchTicker from "@/components/dashboard/LiveMatchTicker";
 import { TasksSummaryCard } from "@/components/dashboard/TasksSummaryCard";
 import { MarketplaceDashboardCards } from "@/components/dashboard/MarketplaceDashboardCards";
 import AdminNotificationSender from "@/components/dashboard/AdminNotificationSender";
+import { Ai4tAdminUsageCard } from "@/components/dashboard/Ai4tAdminUsageCard";
 import FinancialSummary from "@/components/dashboard/FinancialSummary";
 import SeasonProgressionChart from "@/components/analytics/SeasonProgressionChart";
 import TeamChemistry from "@/components/analytics/TeamChemistry";
@@ -137,59 +138,59 @@ const DashboardContent = () => {
         title: t.dashboard.clubAdminDashboard,
         greeting: t.dashboard.welcomeBackAdmin,
         kpis: [
-          { id: "totalMembers", label: t.dashboard.totalMembers, value: "—", change: "", icon: Users },
-          { id: "activeTeams", label: t.dashboard.activeTeams, value: "—", change: "", icon: Trophy },
-          { id: "upcoming", label: t.dashboard.upcoming, value: "—", change: "", icon: Calendar },
-          { id: "unpaidDues", label: t.financial.outstanding, value: "—", change: "", icon: TrendingUp },
+          { id: "totalMembers", label: t.dashboard.totalMembers, value: "-", change: "", icon: Users },
+          { id: "activeTeams", label: t.dashboard.activeTeams, value: "-", change: "", icon: Trophy },
+          { id: "upcoming", label: t.dashboard.upcoming, value: "-", change: "", icon: Calendar },
+          { id: "unpaidDues", label: t.financial.outstanding, value: "-", change: "", icon: TrendingUp },
         ],
       },
       club_admin: {
         title: t.dashboard.clubAdminDashboard,
         greeting: t.dashboard.welcomeBackAdmin,
         kpis: [
-          { id: "totalMembers", label: t.dashboard.totalMembers, value: "—", change: "", icon: Users },
-          { id: "activeTeams", label: t.dashboard.activeTeams, value: "—", change: "", icon: Trophy },
-          { id: "upcoming", label: t.dashboard.upcoming, value: "—", change: "", icon: Calendar },
-          { id: "unpaidDues", label: t.financial.outstanding, value: "—", change: "", icon: TrendingUp },
+          { id: "totalMembers", label: t.dashboard.totalMembers, value: "-", change: "", icon: Users },
+          { id: "activeTeams", label: t.dashboard.activeTeams, value: "-", change: "", icon: Trophy },
+          { id: "upcoming", label: t.dashboard.upcoming, value: "-", change: "", icon: Calendar },
+          { id: "unpaidDues", label: t.financial.outstanding, value: "-", change: "", icon: TrendingUp },
         ],
       },
       trainer: {
         title: t.dashboard.trainerDashboard,
         greeting: t.dashboard.welcomeBackCoach,
         kpis: [
-          { id: "myPlayers", label: t.dashboard.myPlayers, value: "—", change: "", icon: Users },
-          { id: "sessionsThisWeek", label: t.dashboard.sessionsThisWeek, value: "—", change: "", icon: Calendar },
-          { id: "attendanceRate", label: t.dashboard.attendanceRate, value: "—", change: "", icon: Activity },
-          { id: "nextMatch", label: t.dashboard.nextMatch, value: "—", change: "", icon: Trophy },
+          { id: "myPlayers", label: t.dashboard.myPlayers, value: "-", change: "", icon: Users },
+          { id: "sessionsThisWeek", label: t.dashboard.sessionsThisWeek, value: "-", change: "", icon: Calendar },
+          { id: "attendanceRate", label: t.dashboard.attendanceRate, value: "-", change: "", icon: Activity },
+          { id: "nextMatch", label: t.dashboard.nextMatch, value: "-", change: "", icon: Trophy },
         ],
       },
       player: {
         title: t.dashboard.playerDashboard,
         greeting: t.dashboard.welcomeBack,
         kpis: [
-          { id: "nextTraining", label: t.dashboard.nextTraining, value: "—", change: "", icon: Calendar },
-          { id: "matchesPlayed", label: t.dashboard.matchesPlayed, value: "—", change: "", icon: Trophy },
-          { id: "attendance", label: t.dashboard.attendance, value: "—", change: "", icon: Activity },
-          { id: "teamRank", label: t.dashboard.teamRank, value: "—", change: "", icon: TrendingUp },
+          { id: "nextTraining", label: t.dashboard.nextTraining, value: "-", change: "", icon: Calendar },
+          { id: "matchesPlayed", label: t.dashboard.matchesPlayed, value: "-", change: "", icon: Trophy },
+          { id: "attendance", label: t.dashboard.attendance, value: "-", change: "", icon: Activity },
+          { id: "teamRank", label: t.dashboard.teamRank, value: "-", change: "", icon: TrendingUp },
         ],
       },
       member: {
         title: t.dashboard.dashboardTitle,
         greeting: t.dashboard.welcomeBack,
         kpis: [
-          { id: "clubEvents", label: t.dashboard.clubEvents, value: "—", change: "", icon: Calendar },
-          { id: "upcoming", label: t.dashboard.upcoming, value: "—", change: "", icon: Clock },
-          { id: "messages", label: t.dashboard.messages, value: "—", change: "", icon: Users },
+          { id: "clubEvents", label: t.dashboard.clubEvents, value: "-", change: "", icon: Calendar },
+          { id: "upcoming", label: t.dashboard.upcoming, value: "-", change: "", icon: Clock },
+          { id: "messages", label: t.dashboard.messages, value: "-", change: "", icon: Users },
         ],
       },
       sponsor: {
         title: t.dashboard.partnerDashboard,
         greeting: t.dashboard.welcome,
         kpis: [
-          { id: "clubEvents", label: t.dashboard.clubEvents, value: "—", change: "", icon: Calendar },
-          { id: "contacts", label: t.dashboard.contacts, value: "—", change: "", icon: Users },
-          { id: "messages", label: t.dashboard.messages, value: "—", change: "", icon: Clock },
-          { id: "insights", label: t.dashboard.insights, value: "—", change: "", icon: Bot },
+          { id: "clubEvents", label: t.dashboard.clubEvents, value: "-", change: "", icon: Calendar },
+          { id: "contacts", label: t.dashboard.contacts, value: "-", change: "", icon: Users },
+          { id: "messages", label: t.dashboard.messages, value: "-", change: "", icon: Clock },
+          { id: "insights", label: t.dashboard.insights, value: "-", change: "", icon: Bot },
         ],
       },
     }),
@@ -201,8 +202,8 @@ const DashboardContent = () => {
       title: t.dashboard.dashboardTitle,
       greeting: t.dashboard.welcome,
       kpis: [
-        { id: "upcoming", label: t.dashboard.upcoming, value: "—", change: "", icon: Calendar },
-        { id: "totalMembers", label: t.dashboard.totalMembers, value: "—", change: "", icon: Users },
+        { id: "upcoming", label: t.dashboard.upcoming, value: "-", change: "", icon: Calendar },
+        { id: "totalMembers", label: t.dashboard.totalMembers, value: "-", change: "", icon: Users },
       ],
     }),
     [t]
@@ -279,7 +280,7 @@ const DashboardContent = () => {
           setKpis((prev) =>
             prev.map((k) => ({
               ...k,
-              value: "—",
+              value: "-",
               change: "",
             })),
           );
@@ -310,7 +311,7 @@ const DashboardContent = () => {
               if (k.id === "clubEvents" || k.id === "upcoming") {
                 return { ...k, value: String(schedule.length) };
               }
-              return { ...k, value: "—", change: "" };
+              return { ...k, value: "-", change: "" };
             }),
           );
           return;
@@ -526,13 +527,13 @@ const DashboardContent = () => {
     if (!isClubAdmin) {
       return {
         track: "partner" as const,
-        companyName: registrationSummary?.partner_setup?.companyName || "—",
+        companyName: registrationSummary?.partner_setup?.companyName || "-",
         partnerType:
           formatClubTypeLabel(
             registrationSummary?.partner_setup?.partnerType,
             t.onboarding.partnerTypeOptions,
-          ) || "—",
-        country: registrationSummary?.partner_setup?.country || "—",
+          ) || "-",
+        country: registrationSummary?.partner_setup?.country || "-",
       };
     }
 
@@ -540,15 +541,15 @@ const DashboardContent = () => {
       clubSetupProfile?.name ||
       activeClub?.name ||
       registrationSummary?.club_setup?.clubName ||
-      "—";
+      "-";
     const clubType =
       formatClubTypeLabel(clubSetupProfile?.clubCategory, t.onboarding.clubTypeOptions) ||
       formatClubTypeLabel(registrationSummary?.club_setup?.clubType, t.onboarding.clubTypeOptions) ||
-      "—";
+      "-";
     const location =
       clubSetupProfile?.address ||
       registrationSummary?.club_setup?.country ||
-      "—";
+      "-";
     const website = clubSetupProfile?.website || registrationSummary?.club_setup?.website || null;
 
     let publicPageStatus = t.dashboard.clubSetupStatusPrivate;
@@ -696,7 +697,7 @@ const DashboardContent = () => {
 
         {sections.marketplaceCards ? <MarketplaceDashboardCards /> : null}
 
-        {/* KPIs — hidden for external provider personas (marketplace cards only) */}
+        {/* KPIs - hidden for external provider personas (marketplace cards only) */}
         {!externalPersona ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {kpis.map((kpi, i) => (
@@ -719,7 +720,7 @@ const DashboardContent = () => {
                 )}
               </div>
               <div className="text-2xl font-display font-bold text-foreground tracking-tight">
-                {dashboardLoading && kpi.value === "—" ? "…" : kpi.value}
+                {dashboardLoading && kpi.value === "-" ? "…" : kpi.value}
               </div>
               <div className="text-[11px] text-muted-foreground mt-0.5">{kpi.label}</div>
             </motion.div>
@@ -757,6 +758,8 @@ const DashboardContent = () => {
         {sections.seasonAwards ? <SeasonAwards /> : null}
 
         {sections.adminNotificationSender ? <AdminNotificationSender /> : null}
+
+        {isClubAdminPersona && activeClubId ? <Ai4tAdminUsageCard /> : null}
 
         {sections.upcomingAndAi ? (
         <div className="grid lg:grid-cols-3 gap-5">

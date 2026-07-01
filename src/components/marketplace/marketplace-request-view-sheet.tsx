@@ -91,7 +91,7 @@ export function MarketplaceRequestViewSheet({
               <div className={cn(PARTNER_PANEL_CLASS, "p-3")}>
                 <dt className="text-xs text-muted-foreground">{r.budget}</dt>
                 <dd>
-                  €{request.budget_min ?? "—"} – €{request.budget_max ?? "—"}
+                  €{request.budget_min ?? "-"} – €{request.budget_max ?? "-"}
                 </dd>
               </div>
             )}

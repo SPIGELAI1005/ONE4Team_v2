@@ -198,7 +198,7 @@ const About = () => {
         </div>
       </section>
 
-      {/* Platform Features — detailed */}
+      {/* Platform Features - detailed */}
       <section className="py-16 sm:py-20 md:py-24">
         <div className="container mx-auto px-4">
           <FadeInSection className="text-center mb-12 sm:mb-16 px-2">

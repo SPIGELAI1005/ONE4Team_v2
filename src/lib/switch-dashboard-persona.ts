@@ -112,7 +112,7 @@ export function switchDashboardPersona(
   return normalized;
 }
 
-/** Slug used in `/dashboard/:role` — external personas use their own slug. */
+/** Slug used in `/dashboard/:role` - external personas use their own slug. */
 export function dashboardPathForPersona(role: DashboardRole | string | null | undefined): string {
   const normalized = normalizeDashboardRole(role);
   if (!normalized) return "/dashboard/member";

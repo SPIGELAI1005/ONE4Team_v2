@@ -371,7 +371,7 @@ export default function ClubTeamPage() {
                         </div>
                       </div>
                       <div className="text-sm tabular-nums font-semibold">
-                        {m.home_score != null && m.away_score != null ? `${m.home_score} : ${m.away_score}` : "—"}
+                        {m.home_score != null && m.away_score != null ? `${m.home_score} : ${m.away_score}` : "-"}
                       </div>
                     </li>
                   ))}

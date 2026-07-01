@@ -712,12 +712,12 @@ const PlayerStats = () => {
                 </div>
               ) : (
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  <Kpi label={t.reportsPage.kpiActiveMembers} value={snapshot?.membersActive ?? "—"} />
-                  <Kpi label={t.reportsPage.kpiTeams} value={snapshot?.teamsCount ?? "—"} />
-                  <Kpi label={t.reportsPage.kpiUpcomingMatches} value={snapshot?.upcomingMatches ?? "—"} />
-                  <Kpi label={t.reportsPage.kpiBookings7d} value={snapshot?.bookingsNext7d ?? "—"} />
-                  <Kpi label={t.reportsPage.kpiTrainings14d} value={snapshot?.trainingsNext14d ?? "—"} />
-                  <Kpi label={t.reportsPage.kpiUnresolvedPlaceholders} value={snapshot?.unresolvedPlaceholders ?? "—"} />
+                  <Kpi label={t.reportsPage.kpiActiveMembers} value={snapshot?.membersActive ?? "-"} />
+                  <Kpi label={t.reportsPage.kpiTeams} value={snapshot?.teamsCount ?? "-"} />
+                  <Kpi label={t.reportsPage.kpiUpcomingMatches} value={snapshot?.upcomingMatches ?? "-"} />
+                  <Kpi label={t.reportsPage.kpiBookings7d} value={snapshot?.bookingsNext7d ?? "-"} />
+                  <Kpi label={t.reportsPage.kpiTrainings14d} value={snapshot?.trainingsNext14d ?? "-"} />
+                  <Kpi label={t.reportsPage.kpiUnresolvedPlaceholders} value={snapshot?.unresolvedPlaceholders ?? "-"} />
                 </div>
               )}
 
@@ -756,8 +756,8 @@ const PlayerStats = () => {
                   </CardHeader>
                   <CardContent className="h-[260px] flex flex-col gap-3">
                     <div className="grid grid-cols-2 gap-2">
-                      <Kpi label={t.reportsPage.kpiTeams} value={snapshot?.teamsCount ?? "—"} />
-                      <Kpi label={t.reportsPage.kpiActiveMembers} value={snapshot?.membersActive ?? "—"} />
+                      <Kpi label={t.reportsPage.kpiTeams} value={snapshot?.teamsCount ?? "-"} />
+                      <Kpi label={t.reportsPage.kpiActiveMembers} value={snapshot?.membersActive ?? "-"} />
                     </div>
                     <div className="flex-1 min-h-0">
                       <ResponsiveContainer width="100%" height="100%">
@@ -902,7 +902,7 @@ const PlayerStats = () => {
               ) : (
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Kpi label={t.reportsPage.kpiCoachedTeams} value={snapshot?.coachTeamIds.length ?? 0} />
-                  <Kpi label={t.reportsPage.kpiTeamTrainings14d} value={snapshot?.coachTrainings14d ?? "—"} />
+                  <Kpi label={t.reportsPage.kpiTeamTrainings14d} value={snapshot?.coachTrainings14d ?? "-"} />
                 </div>
               )}
               <div className="flex flex-wrap gap-2 pt-1">
@@ -936,7 +936,7 @@ const PlayerStats = () => {
               ) : (
                 <div className="grid gap-2 sm:grid-cols-2">
                   <Kpi label={t.reportsPage.kpiYourTeams} value={snapshot?.playerTeamIds.length ?? 0} />
-                  <Kpi label={t.reportsPage.kpiYourUpcomingSessions} value={snapshot?.playerSessions14d ?? "—"} />
+                  <Kpi label={t.reportsPage.kpiYourUpcomingSessions} value={snapshot?.playerSessions14d ?? "-"} />
                 </div>
               )}
               {!snapshotLoading && snapshot && snapshot.playerTeamIds.length === 0 ? (

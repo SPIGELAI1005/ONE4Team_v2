@@ -5,7 +5,7 @@ import { canAccessPartnersModule } from "@/lib/marketplace-access";
 import ClubPartnersWorkflow from "@/pages/club-partners-workflow";
 import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 
-/** Club-internal partner CRM — contracts, engagements, directory. */
+/** Club-internal partner CRM - contracts, engagements, directory. */
 export default function Partners() {
   const perms = usePermissions();
 

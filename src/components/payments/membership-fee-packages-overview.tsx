@@ -33,7 +33,7 @@ export function MembershipFeePackagesOverview({
     quarterly: t.payments.intervalPerQuarter,
     yearly: t.payments.intervalPerYear,
     oneTime: t.payments.intervalOneTime,
-    unknown: t.common.unknown ?? "—",
+    unknown: t.common.unknown ?? "-",
   };
 
   const annualSummary = buildAnnualMemberSummary(activePackages, {
@@ -108,7 +108,7 @@ export function MembershipFeePackagesOverview({
                       {intervalLabel(pkg.interval, intervalLabels)}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground text-xs max-w-xs">
-                      {pkg.description?.trim() || "—"}
+                      {pkg.description?.trim() || "-"}
                     </td>
                     {canEdit && (
                       <td className="px-2 py-3">
@@ -148,12 +148,12 @@ export function MembershipFeePackagesOverview({
                     <td className="px-4 py-3 text-right text-muted-foreground">
                       {row.membershipTotal > 0
                         ? formatPackageMoney(row.membershipTotal, defaultCurrency, language)
-                        : "—"}
+                        : "-"}
                     </td>
                     <td className="px-4 py-3 text-right text-muted-foreground">
                       {row.levyTotal > 0
                         ? formatPackageMoney(row.levyTotal, defaultCurrency, language)
-                        : "—"}
+                        : "-"}
                     </td>
                     <td className="px-4 py-3 text-right font-display font-bold text-primary">
                       {formatPackageMoney(row.grandTotal, defaultCurrency, language)}{" "}

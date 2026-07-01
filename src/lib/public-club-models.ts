@@ -21,7 +21,7 @@ export type PublicClubRecord = {
   id: string;
   name: string;
   slug: string;
-  /** e.g. "Abteilung Fußball" — shown in public footer subtitle when set. */
+  /** e.g. "Abteilung Fußball" - shown in public footer subtitle when set. */
   club_category: string | null;
   description: string | null;
   is_public: boolean;
@@ -167,7 +167,7 @@ export type PublicMatchLite = {
   competitions?: { name: string } | null;
   opponent_logo_url?: string | null;
   public_match_detail_enabled?: boolean;
-  /** Sommerfest import key / internal notes — used to link persisted dashboard rows to showcase templates. */
+  /** Sommerfest import key / internal notes - used to link persisted dashboard rows to showcase templates. */
   notes?: string | null;
 };
 

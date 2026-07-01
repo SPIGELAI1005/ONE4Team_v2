@@ -29,7 +29,7 @@ export interface MessageChannelFilterOptions {
   isAdmin: boolean;
   /** Training / coaching staff (trainers, team admins, club admins). */
   isTrainer?: boolean;
-  /** Public club hero filter — limits team channels to one team (clubs page). */
+  /** Public club hero filter - limits team channels to one team (clubs page). */
   teamFilterId?: string | null;
   /**
    * Team-scoped roles (player, parent, trainer team view): hide club-wide chat
@@ -37,7 +37,7 @@ export interface MessageChannelFilterOptions {
    */
   teamScopedOnly?: boolean;
   /**
-   * Generic club member (no team link): club-wide channels only — announcements,
+   * Generic club member (no team link): club-wide channels only - announcements,
    * Club General, no team channels or trainers channel.
    */
   clubWideOnly?: boolean;
@@ -45,7 +45,7 @@ export interface MessageChannelFilterOptions {
 
 /**
  * Derive message channel filter flags from the active dashboard persona (gate role),
- * not legacy membership admin elevation — dual-role users viewing as player stay team-scoped.
+ * not legacy membership admin elevation - dual-role users viewing as player stay team-scoped.
  */
 export function buildMessageAccessFromGateRole(
   gateRole: DashboardRole | string | null | undefined,

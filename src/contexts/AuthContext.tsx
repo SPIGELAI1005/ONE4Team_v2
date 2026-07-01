@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               console.error("[DEV] Sign-up also failed:", signUpErr.message);
               console.info("[DEV] → Go to your Supabase Dashboard > Authentication > Users and verify the account exists and email is confirmed.");
             } else {
-              console.info("[DEV] Account created. Check Supabase Dashboard > Authentication > Users — you may need to confirm the email, then refresh this page.");
+              console.info("[DEV] Account created. Check Supabase Dashboard > Authentication > Users - you may need to confirm the email, then refresh this page.");
             }
           } else if (signInData?.user) {
             const { data: memberships } = await supabase

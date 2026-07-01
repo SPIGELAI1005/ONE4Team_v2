@@ -7,13 +7,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/hooks/use-language";
 import logo from "@/assets/one4team-logo.png";
 
-/** Branded hamburger icon inspired by O·4·T — morphs to X when open */
+/** Branded hamburger icon inspired by O·4·T - morphs to X when open */
 function BrandedMenuIcon({ isOpen }: { isOpen: boolean }) {
   const transition = { duration: 0.3, ease: [0.4, 0, 0.2, 1] };
 
   return (
     <svg width="22" height="18" viewBox="0 0 22 18" className="overflow-visible">
-      {/* Top bar — rounded ends hint at the "O" curve */}
+      {/* Top bar - rounded ends hint at the "O" curve */}
       <motion.path
         d="M2 2 L20 2"
         stroke="currentColor"
@@ -26,7 +26,7 @@ function BrandedMenuIcon({ isOpen }: { isOpen: boolean }) {
         }
         transition={transition}
       />
-      {/* Middle bar — gold accent for the "4", shorter width */}
+      {/* Middle bar - gold accent for the "4", shorter width */}
       <motion.path
         d="M5 9 L17 9"
         strokeWidth="2"
@@ -38,7 +38,7 @@ function BrandedMenuIcon({ isOpen }: { isOpen: boolean }) {
         }
         transition={transition}
       />
-      {/* Bottom bar — straight like the "T" crossbar */}
+      {/* Bottom bar - straight like the "T" crossbar */}
       <motion.path
         d="M2 16 L20 16"
         stroke="currentColor"

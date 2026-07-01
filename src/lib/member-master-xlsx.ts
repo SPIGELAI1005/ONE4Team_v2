@@ -43,7 +43,7 @@ export async function buildMemberRegistryWorkbook(options: {
   ];
 
   const instructions: (string | number)[][] = [
-    ["ONE4Team — Member registry export"],
+    ["ONE4Team - Member registry export"],
     [options.clubName],
     [],
     ["How to read this file"],
@@ -54,10 +54,10 @@ export async function buildMemberRegistryWorkbook(options: {
     ["• Recommended: birth_date (required for players), internal_club_number, club_registration_date, emergency contacts."],
     ["• membership_kind: active_participant | supporting_member"],
     ["• sex: male | female | other | prefer_not_to_say"],
-    ["• Guardian columns: optional — use guardian_email + ward_email on the child's row to express a link in imports."],
+    ["• Guardian columns: optional - use guardian_email + ward_email on the child's row to express a link in imports."],
     [],
     ["Data protection"],
-    ["• Bank and passport fields are sensitive — share this file only through secure channels."],
+    ["• Bank and passport fields are sensitive - share this file only through secure channels."],
   ];
 
   const dataRows = options.membersSnapshot.map((m) => {

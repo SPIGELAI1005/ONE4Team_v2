@@ -1,5 +1,5 @@
 /**
- * Pure marketplace access rules — mirrors Supabase RLS and product policy.
+ * Pure marketplace access rules - mirrors Supabase RLS and product policy.
  * Used for UI guards and regression tests (no network).
  */
 
@@ -92,7 +92,7 @@ export function canProviderViewMarketplaceRequest(
   );
 }
 
-/** Mirrors `marketplace_offers_select` — owner provider or club admin for the request's club. */
+/** Mirrors `marketplace_offers_select` - owner provider or club admin for the request's club. */
 export function canViewMarketplaceOffer(
   ctx: MarketplaceAccessContext,
   offer: MarketplaceOfferRow,
@@ -141,7 +141,7 @@ export function showsMarketplaceInSidebar(
   return hasMarketplacePermission(legacyRole, "marketplace:view", assignments);
 }
 
-/** Route `/marketplace` — module gate + marketplace experience (used by RequireModule + page). */
+/** Route `/marketplace` - module gate + marketplace experience (used by RequireModule + page). */
 export function canAccessMarketplaceRoute(
   legacyRole: string | null | undefined,
   assignments?: ClubRoleAssignmentRow[] | null,

@@ -24,7 +24,7 @@ describe("formatContextDateTime", () => {
     expect(formatted).toMatch(/18:00/);
   });
 
-  it("formats UTC instants in Europe/Berlin for LLM context (de) — GQ-05", () => {
+  it("formats UTC instants in Europe/Berlin for LLM context (de) - GQ-05", () => {
     const formatted = formatContextDateTime("2026-06-24T16:00:00.000Z", BERLIN, "de");
     expect(formatted).toMatch(/18:00/);
     expect(formatted).toMatch(/2026/);
@@ -46,7 +46,7 @@ describe("formatActivityScheduleLine", () => {
     teams: { name: "U12-I" },
   };
 
-  it("includes local start time, end time, type, title, and team — GQ-01 / GQ-04", () => {
+  it("includes local start time, end time, type, title, and team - GQ-01 / GQ-04", () => {
     const line = formatActivityScheduleLine(u12Activity, BERLIN, "en");
     expect(line).toMatch(/18:00/);
     expect(line).toMatch(/\[training\]/);

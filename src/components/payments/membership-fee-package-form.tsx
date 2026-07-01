@@ -371,7 +371,7 @@ export function MembershipFeePackageFormDialog({
               <span className="text-lg font-display font-bold text-primary">
                 {Number.isFinite(totalAmount) && totalAmount > 0
                   ? formatPackageMoney(totalAmount, form.currency, language)
-                  : "—"}
+                  : "-"}
               </span>
             </div>
             {form.useComponents && parsedComponents.length > 0 && (

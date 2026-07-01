@@ -5,7 +5,7 @@ import { PublicClubButton } from "@/components/public-club/public-club-button";
 import { usePublicClub } from "@/contexts/public-club-context";
 import { useLanguage } from "@/hooks/use-language";
 
-/** Homepage teaser for match reports — full reports live in the member app. */
+/** Homepage teaser for match reports - full reports live in the member app. */
 export function PublicClubReportsSection() {
   const { t } = useLanguage();
   const { club, user, reportsCta } = usePublicClub();

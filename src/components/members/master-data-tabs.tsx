@@ -96,7 +96,7 @@ interface MasterDataTabsProps {
   teamLabel?: string;
   email?: string | null;
   avatarUpload?: MasterDataTabsAvatarUpload;
-  /** When false (default), `safetyTabExtra` is ignored — use only on the live roster member detail panel. */
+  /** When false (default), `safetyTabExtra` is ignored - use only on the live roster member detail panel. */
   safetyTabExtraEnabled?: boolean;
   /** Rendered below Safety & Emergencies fields (e.g. linked guardians). */
   safetyTabExtra?: ReactNode;
@@ -107,7 +107,7 @@ function formatFieldLabel(column: string) {
 }
 
 function formatDisplayValue(raw: unknown): string {
-  if (raw === null || raw === undefined || raw === "") return "—";
+  if (raw === null || raw === undefined || raw === "") return "-";
   return String(raw).replace(/_/g, " ");
 }
 
@@ -273,7 +273,7 @@ export function MasterDataTabs({
           className={cn(
             "w-full bg-transparent p-0",
             // No horizontal scroll: wrap into rows on small screens.
-            // TabsList base component has `inline-flex h-10` — override both.
+            // TabsList base component has `inline-flex h-10` - override both.
             "flex flex-wrap h-auto items-stretch justify-start gap-1.5",
           )}
         >
@@ -334,7 +334,7 @@ export function MasterDataTabs({
                             <div className="text-sm font-medium break-all min-w-0 text-foreground">{photoUrl}</div>
                           </div>
                         ) : (
-                          <div className="text-sm font-medium text-muted-foreground/40">—</div>
+                          <div className="text-sm font-medium text-muted-foreground/40">-</div>
                         )}
                       </div>
                     );
@@ -367,7 +367,7 @@ export function MasterDataTabs({
                     <div key={field.key} className="rounded-xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3 space-y-2">
                       <label className={cn("text-xs font-medium", accent)}>{formatFieldLabel(field.column)}</label>
                       <Select value={String(val ?? "")} onValueChange={(v) => onChange?.(field.key, v || null)}>
-                        <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="—" /></SelectTrigger>
+                        <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="-" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="male">Male</SelectItem>
                           <SelectItem value="female">Female</SelectItem>
@@ -384,7 +384,7 @@ export function MasterDataTabs({
                     <div key={field.key} className="rounded-xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3 space-y-2">
                       <label className={cn("text-xs font-medium", accent)}>{formatFieldLabel(field.column)}</label>
                       <Select value={String(val ?? "")} onValueChange={(v) => onChange?.(field.key, v || null)}>
-                        <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="—" /></SelectTrigger>
+                        <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="-" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="active_participant">Active participant</SelectItem>
                           <SelectItem value="supporting_member">Supporting member</SelectItem>
@@ -399,7 +399,7 @@ export function MasterDataTabs({
                     <div key={field.key} className="rounded-xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3 space-y-2">
                       <label className={cn("text-xs font-medium", accent)}>{formatFieldLabel(field.column)}</label>
                       <Select value={String(val ?? "")} onValueChange={(v) => onChange?.(field.key, v || null)}>
-                        <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="—" /></SelectTrigger>
+                        <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="-" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="left">Left</SelectItem>
                           <SelectItem value="right">Right</SelectItem>
@@ -483,7 +483,7 @@ export function MasterDataTabs({
                       <Textarea
                         className="text-sm min-h-[96px] rounded-xl bg-background/50"
                         value={val != null ? String(val) : ""}
-                        placeholder="—"
+                        placeholder="-"
                         onChange={(e) => onChange?.(field.key, e.target.value || null)}
                       />
                     ) : (
@@ -491,7 +491,7 @@ export function MasterDataTabs({
                         className="h-10 text-sm rounded-xl bg-background/50"
                         type={isDate ? "date" : isNumber ? "number" : "text"}
                         value={val != null ? String(val) : ""}
-                        placeholder="—"
+                        placeholder="-"
                         onChange={(e) => {
                           if (isNumber) {
                             onChange?.(field.key, e.target.value === "" ? null : Number(e.target.value));
@@ -583,7 +583,7 @@ export function MasterDataTabs({
                 fontFamily: CLUB_PASS_FONT,
               }}
             >
-              {/* Decorative glows — kept away from header; hidden during PNG export */}
+              {/* Decorative glows - kept away from header; hidden during PNG export */}
               <div
                 data-club-pass-decoration
                 className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-3xl"
@@ -600,7 +600,7 @@ export function MasterDataTabs({
               </div>
 
               <div className="relative z-10 rounded-3xl">
-              {/* ID header — solid strip so text never competes with glows or overflow clipping */}
+              {/* ID header - solid strip so text never competes with glows or overflow clipping */}
               <div
                 data-club-pass-header
                 className="grid items-start gap-x-3 rounded-t-3xl px-5 py-3.5"
@@ -690,21 +690,21 @@ export function MasterDataTabs({
                     <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-[10px]">
                       <div className="min-w-0">
                         <div className="leading-4" style={{ color: cardVars.muted }}>Member since</div>
-                        <div className="font-medium leading-4 mt-0.5" style={{ color: cardVars.fg }}>{memberSince || "—"}</div>
+                        <div className="font-medium leading-4 mt-0.5" style={{ color: cardVars.fg }}>{memberSince || "-"}</div>
                       </div>
                       <div className="min-w-0">
                         <div className="leading-4" style={{ color: cardVars.muted }}>Date of birth</div>
-                        <div className="font-medium leading-4 mt-0.5" style={{ color: cardVars.fg }}>{birthDate || "—"}</div>
+                        <div className="font-medium leading-4 mt-0.5" style={{ color: cardVars.fg }}>{birthDate || "-"}</div>
                       </div>
                       <div className="min-w-0">
                         <div className="leading-4" style={{ color: cardVars.muted }}>Role</div>
                         <div className="font-medium leading-4 mt-0.5" style={{ color: cardVars.fg }}>
-                          {membershipRole?.trim() ? membershipRole.replace(/_/g, " ") : "—"}
+                          {membershipRole?.trim() ? membershipRole.replace(/_/g, " ") : "-"}
                         </div>
                       </div>
                       <div className="min-w-0">
                         <div className="leading-4" style={{ color: cardVars.muted }}>Team</div>
-                        <div className="font-medium leading-4 mt-0.5 break-words" style={{ color: cardVars.fg }}>{teamLabel || "—"}</div>
+                        <div className="font-medium leading-4 mt-0.5 break-words" style={{ color: cardVars.fg }}>{teamLabel || "-"}</div>
                       </div>
                     </div>
                   </div>
@@ -712,7 +712,7 @@ export function MasterDataTabs({
                   <div className="shrink-0 text-right max-w-[96px]">
                     <div className="text-[10px] leading-4" style={{ color: cardVars.muted }}>ID No.</div>
                     <div className="font-mono text-[12px] font-semibold leading-4 mt-0.5 break-all" style={{ color: cardVars.accent }}>
-                      {memberIdNo || "—"}
+                      {memberIdNo || "-"}
                     </div>
                   </div>
                 </div>
@@ -722,13 +722,13 @@ export function MasterDataTabs({
                   <div className="rounded-2xl px-3 py-2.5" style={{ background: cardVars.soft, border: `1px solid ${cardVars.softBorder}` }}>
                     <div className="leading-4" style={{ color: cardVars.muted }}>Membership</div>
                     <div className="font-medium leading-4 mt-0.5 break-words" style={{ color: cardVars.fg }}>
-                      {values.membership_kind ? String(values.membership_kind).replace(/_/g, " ") : "—"}
+                      {values.membership_kind ? String(values.membership_kind).replace(/_/g, " ") : "-"}
                     </div>
                   </div>
                   <div className="rounded-2xl px-3 py-2.5" style={{ background: cardVars.soft, border: `1px solid ${cardVars.softBorder}` }}>
                     <div className="leading-4" style={{ color: cardVars.muted }}>Pass #</div>
                     <div className="font-medium leading-4 mt-0.5 break-all" style={{ color: cardVars.fg }}>
-                      {passNumber || "—"}
+                      {passNumber || "-"}
                     </div>
                   </div>
                 </div>

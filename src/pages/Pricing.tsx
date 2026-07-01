@@ -47,7 +47,7 @@ function calculatePrice(plan: PlanConfig, memberCount: number, billing: "yearly"
   return { total, base, memberCost, discount, discountPct };
 }
 
-/* ─── Comparison Table Features (boolean grid — names come from translations) ─── */
+/* ─── Comparison Table Features (boolean grid - names come from translations) ─── */
 const comparisonGrid: { kickoff: boolean; squad: boolean; pro: boolean; champions: boolean; bespoke: boolean }[] = [
   { kickoff: true, squad: true, pro: true, champions: true, bespoke: true },
   { kickoff: true, squad: true, pro: true, champions: true, bespoke: true },
@@ -251,7 +251,7 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
         </div>
       )}
 
-      {/* Header — icon + name + description */}
+      {/* Header - icon + name + description */}
       <div className="mb-4 min-h-[4.25rem]">
         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-gold-subtle flex items-center justify-center mb-3">
           <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" strokeWidth={1.5} />
@@ -279,7 +279,7 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
           <>
             <div className="flex items-baseline gap-1 flex-wrap">
               <span className="text-2xl sm:text-3xl font-display font-bold text-foreground">
-                EUR {total < 0 ? "—" : total.toFixed(2)}
+                EUR {total < 0 ? "-" : total.toFixed(2)}
               </span>
               <span className="relative inline-flex items-baseline text-muted-foreground text-[10px] sm:text-xs leading-none">
                 <span className="leading-none">/{billing === "yearly" ? "yr" : "mo"}</span>
@@ -304,7 +304,7 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
       {/* Divider */}
       <div className="border-t border-border/40 my-3" />
 
-      {/* Features — flex-1 pushes button to bottom */}
+      {/* Features - flex-1 pushes button to bottom */}
       <div className="flex-1 mb-4">
         <ul className="space-y-1.5">
           {plan.features.map((feature, i) => (

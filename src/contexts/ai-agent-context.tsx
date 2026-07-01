@@ -9,7 +9,9 @@ import {
 import { useLanguage } from "@/hooks/use-language";
 import { getBrowserTimezone } from "@/lib/ai-agent/voice-text";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useModuleGateRole } from "@/hooks/use-module-gate-role";
 import { useClubId } from "@/hooks/use-club-id";
+import { canUseClubAgentWorkflows } from "@/lib/ai-agent-access";
 import { proposeAgentRun, executeAgentRun } from "@/lib/ai-agent/api";
 import { enrichAgentProposalDisplay, getCancelStepActivityId } from "@/lib/ai-agent/enrich-agent-proposal";
 import type { AgentIntent, AgentPageContext, AgentProposeResponse, AgentExecuteResponse } from "@/lib/ai-agent/types";
@@ -186,11 +188,15 @@ function AiAgentProviderInner({
 export function AiAgentProvider({ children }: { children: ReactNode }) {
   const { clubId } = useClubId();
   const perms = usePermissions();
+  const gateRole = useModuleGateRole();
+  const canManageSchedule = gateRole
+    ? canUseClubAgentWorkflows(gateRole)
+    : perms.has("schedule:write");
 
   return (
     <AiAgentProviderInner
       clubId={clubId}
-      canManageSchedule={perms.has("schedule:write")}
+      canManageSchedule={canManageSchedule}
       canManageMembers={perms.has("members:write")}
     >
       {children}

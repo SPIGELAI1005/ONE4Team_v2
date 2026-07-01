@@ -214,6 +214,7 @@ See [`docs/AI4T_ROADMAP.md`](docs/AI4T_ROADMAP.md) · Golden harness [`docs/AI4T
 
 #### Phase 4 — Admin control (Pro+)
 - [x] **AI4T-P4-001** Club AI instructions (`club_llm_settings.club_ai_instructions`) + usage RPC `get_club_ai_usage_stats` + Settings UI.
+- [x] **AI4T-P4-002** Pilot UX batch: persona-scoped context, hide Agent for player/member, follow-up chips, error mapping, public guide limits, history filters, admin usage widget, partner marketplace context, ops SQL + [`docs/AI4T_RELEASE_REVIEW.md`](docs/AI4T_RELEASE_REVIEW.md).
 
 #### Pilot gate — Phase 5 entry (8-week TSV Allach)
 

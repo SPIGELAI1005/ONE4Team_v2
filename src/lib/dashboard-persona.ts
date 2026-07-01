@@ -46,7 +46,7 @@ export function defaultDashboardPersonaSlug(
 /**
  * Role used for route guards and page data scope.
  * When the user is viewing as an allowed persona (e.g. supplier), that persona wins
- * over club-admin elevation — dual-role users see supplier-only data on /dashboard/supplier.
+ * over club-admin elevation - dual-role users see supplier-only data on /dashboard/supplier.
  */
 export function resolveModuleGateRole(
   legacyRole: string | null | undefined,

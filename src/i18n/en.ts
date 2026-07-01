@@ -611,9 +611,9 @@ export const en = {
     attendanceComingList: "Coming",
     attendanceDeclinedList: "Not coming",
     attendanceNoRosterYet: "No players on this roster yet.",
-    attendanceRsvpClosedTraining: "RSVP closed — training starts in less than one hour.",
+    attendanceRsvpClosedTraining: "RSVP closed. Training starts in less than one hour.",
     attendanceNotInvited: "You're not on the roster for this session, so attendance isn't required.",
-    attendanceRsvpPermissionDenied: "Couldn't save your response — your club may need to enable member RSVP.",
+    attendanceRsvpPermissionDenied: "Couldn't save your response. Your club may need to enable member RSVP.",
     attendanceRsvpFailed: "Couldn't save your attendance response. Please try again.",
     homeNextTraining: "Next training",
     homeJoinOrInvite: "Join / request invite",
@@ -783,7 +783,7 @@ export const en = {
     draftEmptyHintShop:
       "Shop is enabled but no products are published yet. Add products in the Club Shop admin or import the JAKO catalog for TSV Allach.",
     shopExternalOrder: "Order externally",
-    shopJakoPartnerNote: "Official teamwear via Sportecke München — personalized items via",
+    shopJakoPartnerNote: "Official teamwear via Sportecke München. Personalized items via",
     shopViewAllProducts: "View all products",
     shopBackToHome: "Back to club home",
     liveScoresViewMatches: "View all matches",
@@ -1025,7 +1025,7 @@ export const en = {
     reportsDesc: "Members can access match history, reports and stats inside the app.",
     reportsCtaSignedIn: "Open reports",
     reportsCtaSignedOut: "Sign in to view reports",
-    reportsPublicPageSubtitle: "Club reports scoped to your role — teams, training and matches on this page.",
+    reportsPublicPageSubtitle: "Club reports scoped to your role: teams, training and matches on this page.",
     reportsPersonaAdmin: "Club admin view",
     reportsPersonaTrainer: "Coach view",
     reportsPersonaPlayer: "Player view",
@@ -1132,7 +1132,7 @@ export const en = {
     goBack: "Go Back",
     searchMembers: "Search members...",
     searchResultsTitle: "Search results",
-    searchResultsSummary: "\"{query}\" — {rosterCount} in active roster · {draftCount} in saved list",
+    searchResultsSummary: "\"{query}\": {rosterCount} in active roster · {draftCount} in saved list",
     searchResultsRosterSection: "Active roster",
     searchResultsSavedListSection: "Saved list",
     searchResultsRosterEmpty: "No matches in the active roster.",
@@ -1417,7 +1417,7 @@ export const en = {
     registryMatchRoster: "Roster",
     registryMatchDraft: "Saved draft",
     registryMissingNotInClub: "No roster or saved-list match",
-    registryMissingMatchedDraft: "Matched saved draft — review fields",
+    registryMissingMatchedDraft: "Matched saved draft. Review fields",
 
     roles: {
       tabLabel: "Roles",
@@ -1666,7 +1666,7 @@ export const en = {
     filterMember: "Member",
     filterPackage: "Package",
     filterPackageView: "Show packages",
-    filterPackageViewHint: "Filter the list only — does not assign packages to members.",
+    filterPackageViewHint: "Filter the list only. Does not assign packages to members.",
     filterPackagesCount: "{count} packages",
     filterClearPackages: "Show all packages",
     assignPackagesHint: "To assign membership + registration fee (or several packages), use Record payment and check each package.",
@@ -2324,14 +2324,21 @@ export const en = {
     aiTip3: "Try AI → Weekly plan for a structured session outline.",
     ai4teamWeeklySummary: "Get weekly summary in AI 4 T",
     ai4teamWeeklySummaryDesc: "Open chat with a pre-filled admin digest request.",
+    ai4tUsageTitle: "AI 4 T this week",
+    ai4tUsageSubtitle: "Agent workflow runs and active chats (last 7 days).",
+    ai4tUsageAgentRuns: "Agent runs",
+    ai4tUsageExecuted: "Executed",
+    ai4tUsageSuccessRate: "Success rate",
+    ai4tUsageChats: "Chats updated",
+    ai4tUsageViewHistory: "View history",
     bestEffort: "Best-effort data: if Supabase isn't applied yet, this dashboard shows placeholders.",
     liveClubData: "Live club data from your database.",
     noUpcoming: "No trainings, matches, or events in the next 7 days.",
     pendingDraftsKpiNote: "{count} pending import",
-    aiInsightPendingDrafts: "{count} members are on your saved list — send invites when ready.",
+    aiInsightPendingDrafts: "{count} members are on your saved list. Send invites when ready.",
     aiInsightTeamsMatches: "{teams} teams configured · {matches} upcoming matches.",
     aiInsightUnpaidDues: "{count} unpaid dues need follow-up in Payments.",
-    aiInsightLogMatches: "{count} completed matches — keep logging events for richer reports.",
+    aiInsightLogMatches: "{count} completed matches. Keep logging events for richer reports.",
     registrationSummaryTitle: "Your club setup",
     registrationSummaryDesc: "Live overview from your maintained club profile and public page settings.",
     clubSetupPublicPage: "Public page",
@@ -2701,7 +2708,7 @@ export const en = {
 
   supplierPortal: {
     messagesTitle: "Partner messages",
-    messagesSubtitle: "Direct threads with clubs you collaborate with — not internal club chat.",
+    messagesSubtitle: "Direct threads with clubs you collaborate with, not internal club chat.",
     messagesThreadsHint: "Club collaborations",
     messagesSelectThread: "Select a club to view your partner thread.",
     messagesWithClub: "Partner thread with this club",
@@ -2726,7 +2733,7 @@ export const en = {
     reportsNoInvoices: "No invoices recorded yet for your collaborations.",
     reportsByClub: "Collaborations by club",
     supplierPageTitle: "Partner Page",
-    supplierPageSubtitle: "Edit and publish your public partner profile — separate from any club website.",
+    supplierPageSubtitle: "Edit and publish your public partner profile, separate from any club website.",
     supplierPageHeroTitle: "Your public partner page",
     supplierPageHeroDesc: "Clubs discover you through the partner marketplace. Set visibility to Public and activate your listing to share /supplier/your-slug.",
     viewPublicPage: "View live page",
@@ -2739,7 +2746,7 @@ export const en = {
     publicUrlLabel: "Public URL",
     slugHint: "Add a slug in your profile to get a shareable public URL after activation.",
     livePreviewTitle: "Live preview",
-    livePreviewDesc: "How clubs see your supplier page — not a club website.",
+    livePreviewDesc: "How clubs see your supplier page, not a club website.",
     publicPageBadge: "Partner Page",
     previewSheetTitle: "Partner page preview",
     previewSheetDesc: "This is your public supplier profile, not a club page.",
@@ -3458,7 +3465,7 @@ export const en = {
     partnerSettingsDesc: "Manage your public supplier page and how clubs discover you on the partner marketplace.",
     openSupplierPage: "Open supplier page editor",
     partnerPortalTitle: "Partner portal shortcuts",
-    partnerPortalDesc: "Jump to your partner marketplace and supplier page — separate from club administration.",
+    partnerPortalDesc: "Jump to your partner marketplace and supplier page, separate from club administration.",
     openPartnerMarketplace: "Partner marketplace",
     manageSupplierPage: "Partner page",
     roleActiveClub: "Active club",
@@ -4023,9 +4030,9 @@ export const en = {
     attendanceComingList: "Coming",
     attendanceDeclinedList: "Not coming",
     attendanceNoRosterYet: "No players on this roster yet.",
-    attendanceRsvpClosedTraining: "RSVP closed — training starts in less than one hour.",
+    attendanceRsvpClosedTraining: "RSVP closed. Training starts in less than one hour.",
     attendanceNotInvited: "You're not on the roster for this session, so attendance isn't required.",
-    attendanceRsvpPermissionDenied: "Couldn't save your response — your club may need to enable member RSVP.",
+    attendanceRsvpPermissionDenied: "Couldn't save your response. Your club may need to enable member RSVP.",
     attendanceRsvpFailed: "Couldn't save your attendance response. Please try again.",
   },
 
@@ -4511,7 +4518,7 @@ export const en = {
       hero: {
         title: "Where clubs and partners meet",
         subtitle:
-          "Discover verified providers, publish procurement requests, and manage offers — the shared hub for sponsorships, supplies, and services across ONE4Team.",
+          "Discover verified providers, publish procurement requests, and manage offers: the shared hub for sponsorships, supplies, and services across ONE4Team.",
         cards: {
           discover: {
             title: "Discover providers",
@@ -4519,7 +4526,7 @@ export const en = {
           },
           requests: {
             title: "Publish requests",
-            description: "Tell the market what your club needs — kit, events, consulting, or maintenance.",
+            description: "Tell the market what your club needs: kit, events, consulting, or maintenance.",
           },
           offers: {
             title: "Compare offers",
@@ -4617,9 +4624,9 @@ export const en = {
           quantity: "e.g. 20 jerseys, size M–L",
         },
         visibilityOptions: {
-          private: "Private — club admins only",
+          private: "Private (club admins only)",
           invited_providers_only: "Invited providers only",
-          marketplace: "Marketplace — visible to all providers",
+          marketplace: "Marketplace (visible to all providers)",
         },
       },
       requests: {
@@ -4718,7 +4725,7 @@ export const en = {
     },
     provider: {
       title: "Partner marketplace",
-      subtitle: "Discover club requests, send offers, and grow partnerships — not other suppliers.",
+      subtitle: "Discover club requests, send offers, and grow partnerships, not other suppliers.",
       saveProfile: "Save profile",
       submitListing: "Submit for review",
       profileSaved: "Profile saved",
@@ -4761,7 +4768,7 @@ export const en = {
       hero: {
         title: "Your club marketplace presence",
         subtitle:
-          "Keep your listing up to date, respond to club requests, and track offers — all in one place.",
+          "Keep your listing up to date, respond to club requests, and track offers, all in one place.",
         cards: {
           listing: {
             title: "Update your listing",
@@ -4857,9 +4864,9 @@ export const en = {
           hybrid: "Hybrid",
         },
         visibility: {
-          private: "Private — only you",
-          marketplace_only: "Marketplace — visible to clubs",
-          public: "Public — marketplace and your supplier page",
+          private: "Private (only you)",
+          marketplace_only: "Marketplace (visible to clubs)",
+          public: "Public (marketplace and your supplier page)",
         },
         preview: {
           packages: "Packages",
@@ -4889,7 +4896,7 @@ export const en = {
         noReviewsDesc: "After clubs work with you through the marketplace, their feedback will appear here.",
         settingsTitle: "Supplier page",
         settingsDesc:
-          "Manage your public supplier profile, branding, and visibility on /supplier-page — separate from club websites.",
+          "Manage your public supplier profile, branding, and visibility on /supplier-page, separate from club websites.",
       },
       requests: {
         filterCategory: "Filter by category",
@@ -4987,6 +4994,31 @@ export const en = {
     adminContextNote: "Admin finance signals are included when your role allows it.",
     footerSignedIn: "Your role determines which data and workflows AI 4 T can use.",
     footerSignedOut: "Sign in with your club account to chat with AI 4 T using real club context.",
+    guideRoleLimitsTitle: "What AI 4 T can and cannot do in this role",
+    guideCan: "Can",
+    guideCannot: "Cannot",
+    guideRoleLimits: {
+      trainer: {
+        can: ["Answer about your teams, schedule and matches", "Propose trainings and announcements (with confirmation)", "Draft weekly plans and tactical notes"],
+        cannot: ["Change data without your confirm step", "See other clubs or private parent contact details"],
+      },
+      player: {
+        can: ["Ask about your team schedule and next match", "Get training and match preparation tips"],
+        cannot: ["Manage club calendar or member records", "See other teams' private admin data"],
+      },
+      member: {
+        can: ["Club events, announcements and general club info", "Ask when and where club activities happen"],
+        cannot: ["Team training admin or roster management", "Finance or member admin workflows"],
+      },
+      parent: {
+        can: ["Club announcements and your child's team schedule (when linked)", "Practical questions about events and logistics"],
+        cannot: ["Edit trainings or club records", "Access admin finance or full roster exports"],
+      },
+      admin: {
+        can: ["Full club context within your permissions", "Agent workflows with confirm-before-save", "Admin signals such as dues when configured"],
+        cannot: ["Bypass your review on agent proposals", "Access data outside this club"],
+      },
+    },
     roles: {
       admin: "Admin",
       trainer: "Trainer",
@@ -5037,6 +5069,14 @@ export const en = {
     tabChat: "Chat",
     tabAgent: "Agent",
     tabHistory: "History",
+    personaHint:
+      "You have multiple roles. Answers follow your active persona ({role}). Switch persona in Settings for team-scoped replies.",
+    historyFilterIntent: "Intent",
+    historyFilterStatus: "Status",
+    historyFilterAll: "All",
+    historyStatusExecuted: "Executed",
+    historyStatusFailed: "Failed",
+    historyStatusProposed: "Proposed",
     agent: {
       sectionQuickTitle: "Quick actions",
       sectionQuickDesc: "Generate plans and digests (text output). Club changes use workflows below with confirmation.",
@@ -5104,7 +5144,7 @@ export const en = {
       proposalReviewHint: "Check the session below, then confirm or dismiss.",
       proposalLoadingSession: "Loading session details…",
       proposalActivityUnresolved:
-        "No matching session found in the calendar — please be more specific or pick the session under Cancel training.",
+        "No matching session found in the calendar. Please be more specific or pick the session under Cancel training.",
       proposalConfirmBlocked:
         "Confirm is disabled until a calendar session is matched. Reply with team and date, or use the Cancel training form.",
       validationRequired: "Fill in title, start and end time.",
@@ -5125,11 +5165,11 @@ export const en = {
       noWorkflowRuns: "No workflow runs yet. Use the Agent tab or header shortcut to run a workflow.",
       agentComposerTitle: "Tell the Agent what to do",
       agentComposerHint:
-        "Type or speak a club action — e.g. “Cancel U12-1 training today”, “Schedule U17 Tuesday 6pm”, “Notify trainers about hall change”.",
+        "Type or speak a club action, e.g. “Cancel U12-1 training today”, “Schedule U17 Tuesday 6pm”, “Notify trainers about hall change”.",
       agentUtteranceNotAction: "Not a club action",
       agentUtteranceUseChatHint: "For coaching questions, use the Chat tab. Here, describe a club action to run.",
       agentWorkflowExamples:
-        "Try: “Cancel U12-1 training today — pitch flooded”, “Schedule U17 training Tuesday 6pm pitch 1”, or “Notify trainers about hall booking”.",
+        "Try: “Cancel U12-1 training today, pitch flooded”, “Schedule U17 training Tuesday 6pm pitch 1”, or “Notify trainers about hall booking”.",
       nlProposalReady:
         "I've prepared a club workflow from your message. Review the steps below and tap **Confirm & run** to save it.",
       nlInterpretFailed: "Could not interpret as a workflow",
@@ -5155,7 +5195,7 @@ export const en = {
       openPage: "Open",
       sectionWorkflowsTitle: "Partner actions",
       sectionWorkflowsDesc:
-        "Shortcuts for your supplier portal — listing, marketplace, messages, tasks, and reports. AI drafts open in Chat.",
+        "Shortcuts for your supplier portal: listing, marketplace, messages, tasks, and reports. AI drafts open in Chat.",
       actionListingTitle: "Polish supplier listing",
       actionListingDesc: "Improve your public supplier page and marketplace profile copy.",
       actionListingPrompt:
@@ -5178,7 +5218,7 @@ export const en = {
         "Help me interpret my partner collaboration reports and highlight trends I should discuss with clubs.",
       composerTitle: "Ask the partner assistant",
       composerHint:
-        "Describe what you need — listing copy, a club message, task update, or marketplace outreach. Answers appear in Chat.",
+        "Describe what you need: listing copy, a club message, task update, or marketplace outreach. Answers appear in Chat.",
       composerPlaceholder: "e.g. Draft a follow-up message to a club about our equipment quote…",
       composerSend: "Send to Chat",
       footerNote: "Club training schedules and calendar workflows are not available in the partner portal.",
@@ -5217,7 +5257,7 @@ export const en = {
     scopeHint:
       "Club-scoped only: training, matches, members and club operations, not general news, shopping, or off-topic chat.",
     scopeHintPartner:
-      "Partner-scoped: marketplace listing, club collaborations, messages and tasks — not club training calendars or member admin.",
+      "Partner-scoped: marketplace listing, club collaborations, messages and tasks, not club training calendars or member admin.",
     welcomeTitle: "Welcome to AI 4 T",
     welcomeTitlePrefix: "Welcome to",
     introLearnMore: "What can AI 4 T do?",
@@ -5237,6 +5277,10 @@ export const en = {
     chatErrorDetailPrefix: "Details:",
     chatErrorSerialize: "Could not build the request (invalid chat data). Try clearing the chat or reloading the page.",
     chatErrorInvalidSupabaseUrl: "VITE_SUPABASE_URL is not a valid URL. Remove spaces and check your .env file.",
+    chatErrorRateLimit: "Too many AI requests right now. Wait a minute and try again.",
+    chatErrorPlanGate: "AI 4 T is not enabled on your current plan. Ask a club admin to upgrade or enable the feature.",
+    chatErrorNoApiKey: "No AI provider is configured for this club. Add an API key under Settings → AI provider.",
+    chatErrorSettingsLink: "Open Settings → AI provider",
     feedback: {
       helpful: "Helpful",
       notHelpful: "Not helpful",
@@ -5248,7 +5292,7 @@ export const en = {
 
   financial: {
     sectionTitle: "Club finances",
-    sectionDesc: "Revenue, outstanding amounts, and costs — synced from Payments, Dues, and expense entries.",
+    sectionDesc: "Revenue, outstanding amounts, and costs, synced from Payments, Dues, and expense entries.",
     reportTitle: "Financial report",
     reportDesc: "Collected revenue, open amounts, club costs, and net position for the last 12 months.",
     collected: "Collected",
@@ -5259,7 +5303,7 @@ export const en = {
     overdueItemsCount: "{count} overdue",
     overdueFollowUp: "Follow up in Payments or Dues",
     loading: "Loading financial data…",
-    emptyHint: "No payment or expense data yet — configure fee types in Payments or add dues.",
+    emptyHint: "No payment or expense data yet. Configure fee types in Payments or add dues.",
     viewFullReport: "Full financial report",
     linkPayments: "Payments",
     linkDues: "Dues",
@@ -5279,12 +5323,12 @@ export const en = {
     feeTypeBreakdown: "Collected by fee type",
     recentExpenses: "Recent expenses",
     emptyRevenue: "No collected revenue recorded yet.",
-    emptyCosts: "No costs recorded yet — add expenses to track P&L.",
+    emptyCosts: "No costs recorded yet. Add expenses to track P&L.",
     sourcePayments: "Payments",
     sourceDues: "Dues",
     sourceShop: "Shop",
     pnlNote: "Net = collected revenue minus recorded club expenses. Outstanding amounts are not included in net until paid.",
-    aiInsightOutstanding: "{amount} outstanding — review Payments and Dues.",
+    aiInsightOutstanding: "{amount} outstanding. Review Payments and Dues.",
     expenseCategories: {
       facility: "Facility & pitch",
       equipment: "Equipment",

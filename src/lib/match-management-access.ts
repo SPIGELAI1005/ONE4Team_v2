@@ -72,7 +72,7 @@ export function isSommerfestLinkedMatch(
   return Boolean(extractSommerfestMatchIdFromNotes(match.notes));
 }
 
-/** Sommerfest fixtures are club-coordinated — any trainer/admin with match write may adjust all of them. */
+/** Sommerfest fixtures are club-coordinated - any trainer/admin with match write may adjust all of them. */
 export function canManageSommerfestSchedule(input: MatchManagementAccessInput): boolean {
   if (!input.hasMatchesWrite) return false;
   return isClubWideMatchManager(input) || canCreateMatches(input);

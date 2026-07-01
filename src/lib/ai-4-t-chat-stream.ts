@@ -1,5 +1,7 @@
 import { getEdgeFunctionAuthHeaders } from "@/lib/edge-function-auth";
 import { formatClubContextForPrompt } from "@/lib/ai-context";
+import { prepareChatMessagesForApi } from "@/lib/ai-chat-memory";
+import { mapCoTrainerEdgeError } from "@/lib/ai-4-t-error-messages";
 import { AI_4_T_BRAND } from "@/components/ai/Ai4TBrand";
 
 export interface Ai4TChatMessage {
@@ -71,7 +73,7 @@ export interface StreamCoTrainerChatInput {
   language: "en" | "de";
   assistantRoleName: string;
   demoCopy: { intro: string; note: string };
-  errorCopy: {
+    errorCopy: {
     invalidSupabaseUrl: string;
     noClub: string;
     signIn: string;
@@ -82,6 +84,10 @@ export interface StreamCoTrainerChatInput {
     detailPrefix: string;
     heading: string;
     hint: string;
+    rateLimit?: string;
+    planGate?: string;
+    noApiKey?: string;
+    settingsLink?: string;
   };
   onChunk: (assistantSoFar: string) => void;
   onError: (markdownBody: string, toastDescription: string) => void;
@@ -148,7 +154,7 @@ export async function streamCoTrainerChat(input: StreamCoTrainerChatInput): Prom
     try {
       bodyStr = JSON.stringify({
         club_id: input.clubId,
-        messages: input.messages,
+        messages: prepareChatMessagesForApi(input.messages),
         context: contextPayload,
         language: input.language,
       });
@@ -164,7 +170,19 @@ export async function streamCoTrainerChat(input: StreamCoTrainerChatInput): Prom
     });
 
     if (!resp.ok) {
-      showError(await parseCoTrainerEdgeError(resp), true);
+      const raw = await parseCoTrainerEdgeError(resp);
+      const mapped = mapCoTrainerEdgeError(raw, {
+        rateLimit: input.errorCopy.rateLimit ?? raw,
+        planGate: input.errorCopy.planGate ?? raw,
+        noApiKey: input.errorCopy.noApiKey ?? raw,
+        settingsLinkLabel: input.errorCopy.settingsLink ?? "Settings",
+        generic: raw,
+      });
+      let description = mapped.description;
+      if (mapped.settingsHref && input.errorCopy.settingsLink) {
+        description += `\n\n[${input.errorCopy.settingsLink}](${mapped.settingsHref})`;
+      }
+      showError(description, mapped.includeHint);
       return assistantSoFar;
     }
 

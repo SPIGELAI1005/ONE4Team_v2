@@ -24,7 +24,7 @@ function isMissingRelationError(error: unknown): boolean {
   return message.includes("Could not find the table") || /\brelation\b.*\bdoes not exist\b/i.test(message);
 }
 
-/** Admin KPI snapshot — same sources as Reports admin overview. */
+/** Admin KPI snapshot - same sources as Reports admin overview. */
 export async function fetchAdminDashboardSnapshot(clubId: string): Promise<AdminDashboardSnapshot> {
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
@@ -198,7 +198,7 @@ export async function fetchDashboardUpcoming(clubId: string, days = 7): Promise<
     .slice(0, 8);
 }
 
-/** Club-wide schedule for generic members — club events only (no team trainings or matches). */
+/** Club-wide schedule for generic members - club events only (no team trainings or matches). */
 export async function fetchClubWideDashboardUpcoming(
   clubId: string,
   days = 7,

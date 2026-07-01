@@ -196,10 +196,10 @@ export function PublicClubReportsPanel({
         <PublicClubCard className="space-y-4">
           <SectionHeader icon={BarChart3} title={t.reportsPage.sectionOverview} />
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiTile label={t.reportsPage.kpiActiveMembers} value={snapshot?.membersActive ?? "—"} />
-            <KpiTile label={t.reportsPage.kpiTeams} value={snapshot?.teamsCount ?? "—"} />
-            <KpiTile label={t.reportsPage.kpiUpcomingMatches} value={snapshot?.upcomingMatches ?? "—"} />
-            <KpiTile label={t.reportsPage.kpiTrainings14d} value={snapshot?.trainingsNext14d ?? "—"} />
+            <KpiTile label={t.reportsPage.kpiActiveMembers} value={snapshot?.membersActive ?? "-"} />
+            <KpiTile label={t.reportsPage.kpiTeams} value={snapshot?.teamsCount ?? "-"} />
+            <KpiTile label={t.reportsPage.kpiUpcomingMatches} value={snapshot?.upcomingMatches ?? "-"} />
+            <KpiTile label={t.reportsPage.kpiTrainings14d} value={snapshot?.trainingsNext14d ?? "-"} />
           </div>
         </PublicClubCard>
       ) : null}
@@ -212,7 +212,7 @@ export function PublicClubReportsPanel({
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               <KpiTile label={t.reportsPage.kpiCoachedTeams} value={snapshot?.coachTeamIds.length ?? 0} />
-              <KpiTile label={t.reportsPage.kpiTeamTrainings14d} value={snapshot?.coachTrainings14d ?? "—"} />
+              <KpiTile label={t.reportsPage.kpiTeamTrainings14d} value={snapshot?.coachTrainings14d ?? "-"} />
             </div>
           )}
         </PublicClubCard>
@@ -223,7 +223,7 @@ export function PublicClubReportsPanel({
           <SectionHeader icon={Users} title={t.reportsPage.sectionPlayer} />
           <div className="grid gap-3 sm:grid-cols-2">
             <KpiTile label={t.reportsPage.kpiYourTeams} value={snapshot?.playerTeamIds.length ?? 0} />
-            <KpiTile label={t.reportsPage.kpiYourUpcomingSessions} value={snapshot?.playerSessions14d ?? "—"} />
+            <KpiTile label={t.reportsPage.kpiYourUpcomingSessions} value={snapshot?.playerSessions14d ?? "-"} />
           </div>
         </PublicClubCard>
       ) : null}

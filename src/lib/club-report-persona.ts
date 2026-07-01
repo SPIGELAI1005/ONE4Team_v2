@@ -21,7 +21,7 @@ export function resolveClubReportPersona(input: {
   return "member";
 }
 
-/** Financial reports are dashboard-only — never on the public club microsite. */
+/** Financial reports are dashboard-only - never on the public club microsite. */
 export function canAccessFinancialReports(persona: ClubReportPersona, surface: "public" | "dashboard"): boolean {
   return surface === "dashboard" && persona === "admin";
 }

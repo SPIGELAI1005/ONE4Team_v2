@@ -30,7 +30,7 @@ import { effectivePermissions } from "@/lib/permissions";
 const INTERNAL_DENIED_ROLES = ["trainer", "team_staff", "player", "parent", "parent_supporter", "member"] as const;
 const PROVIDER_ROLES = ["sponsor", "supplier", "service_provider", "consultant"] as const;
 
-describe("marketplace RBAC matrix — sidebar & route", () => {
+describe("marketplace RBAC matrix - sidebar & route", () => {
   it.each([
     ["admin", true],
     ["club_admin", true],
@@ -60,7 +60,7 @@ describe("marketplace RBAC matrix — sidebar & route", () => {
   });
 });
 
-describe("marketplace RBAC matrix — admin", () => {
+describe("marketplace RBAC matrix - admin", () => {
   it("can access marketplace with full club tabs including moderation", () => {
     expect(marketplacePageExperience("admin", [])).toBe("club_marketplace");
     expect(canManageClubMarketplace("admin", [])).toBe(true);
@@ -71,7 +71,7 @@ describe("marketplace RBAC matrix — admin", () => {
   });
 });
 
-describe("marketplace RBAC matrix — club admin", () => {
+describe("marketplace RBAC matrix - club admin", () => {
   it("can browse, create requests, and review offers without moderation", () => {
     expect(marketplacePageExperience("club_admin", [])).toBe("club_marketplace");
     expect(canManageClubMarketplace("club_admin", [])).toBe(true);
@@ -87,7 +87,7 @@ describe("marketplace RBAC matrix — club admin", () => {
   });
 });
 
-describe.each(PROVIDER_ROLES)("marketplace RBAC matrix — provider %s", (role) => {
+describe.each(PROVIDER_ROLES)("marketplace RBAC matrix - provider %s", (role) => {
   it("can access provider portal and manage own listing without club admin powers", () => {
     expect(marketplacePageExperience(role, [])).toBe("provider_portal");
     expect(getProviderPortalTabs(role, [])).toEqual([...PROVIDER_PORTAL_TAB_ORDER]);
@@ -120,7 +120,7 @@ describe.each(PROVIDER_ROLES)("marketplace RBAC matrix — provider %s", (role) 
   });
 });
 
-describe.each(INTERNAL_DENIED_ROLES)("marketplace RBAC matrix — denied internal role %s", (role) => {
+describe.each(INTERNAL_DENIED_ROLES)("marketplace RBAC matrix - denied internal role %s", (role) => {
   it("has no marketplace permissions and denied experience", () => {
     expect(marketplacePermissionsFor(role, [])).toEqual([]);
     expect(marketplacePageExperience(role, [])).toBe("denied");
@@ -129,7 +129,7 @@ describe.each(INTERNAL_DENIED_ROLES)("marketplace RBAC matrix — denied interna
   });
 });
 
-describe("marketplace RBAC matrix — parent alias", () => {
+describe("marketplace RBAC matrix - parent alias", () => {
   it("normalizes parent to parent_supporter and denies marketplace", () => {
     expect(showsMarketplaceInSidebar("parent", [])).toBe(false);
     expect(canAccessMarketplaceRoute("Parent / Supporter", [])).toBe(false);

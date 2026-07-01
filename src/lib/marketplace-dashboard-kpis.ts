@@ -109,7 +109,7 @@ export function buildProviderMarketplaceDashboardCards(input: {
 
   const statusLabel = input.profile
     ? input.listingStatusLabel
-    : "—";
+    : "-";
 
   const partnerMarketplace = PARTNER_PORTAL_ROUTES.marketplace;
 
@@ -151,7 +151,7 @@ export function filterVisibleMarketplaceDashboardCards(
     if (card.alwaysShow) return true;
     if (typeof card.value === "number") return card.value > 0;
     const text = String(card.value).trim();
-    return text !== "" && text !== "—" && text !== "0";
+    return text !== "" && text !== "-" && text !== "0";
   });
 }
 

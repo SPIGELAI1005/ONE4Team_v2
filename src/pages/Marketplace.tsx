@@ -6,7 +6,7 @@ import ClubMarketplacePage from "@/pages/partner/ClubMarketplace";
 import { ClubOnlyRoute } from "@/components/routing/PersonaPortalGate";
 import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 
-/** Club procurement marketplace only — external personas use `/partner-marketplace`. */
+/** Club procurement marketplace only - external personas use `/partner-marketplace`. */
 export default function Marketplace() {
   const perms = usePermissions();
 

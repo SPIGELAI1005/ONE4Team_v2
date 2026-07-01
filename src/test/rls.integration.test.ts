@@ -53,7 +53,7 @@ describe.skipIf(!enabled)("RLS tenant isolation (JWT against staging)", () => {
   });
 
   /**
-   * Staging-only: if RLS is wrong, this could update club B — use a disposable club B UUID.
+   * Staging-only: if RLS is wrong, this could update club B - use a disposable club B UUID.
    * Expect zero rows updated when policies isolate tenants.
    */
   it("user A cannot update club B row (mutation probe)", async () => {

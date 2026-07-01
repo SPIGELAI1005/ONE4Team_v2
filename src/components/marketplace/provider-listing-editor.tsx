@@ -75,12 +75,12 @@ interface ProviderListingEditorProps {
   onSubmitForReview: () => Promise<{ error: Error | null }>;
   onPause: () => Promise<{ error: Error | null }>;
   onReactivate: () => Promise<{ error: Error | null }>;
-  /** `publicPage` shows your `/supplier/:slug` layout — not the club marketplace discover sheet. */
+  /** `publicPage` shows your `/supplier/:slug` layout - not the club marketplace discover sheet. */
   previewVariant?: "discover" | "publicPage";
   onDraftPreviewChange?: (profile: MarketplaceProviderProfileRow) => void;
   /** When set, only render these sections (plus preview sheet). */
   visibleSections?: ProviderListingSection[];
-  /** Hide status banner and action bar — parent supplies header actions. */
+  /** Hide status banner and action bar - parent supplies header actions. */
   hideChrome?: boolean;
   slugHelper?: string;
 }

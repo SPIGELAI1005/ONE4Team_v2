@@ -1,5 +1,5 @@
 /**
- * Marketplace & provider portal access — extends central RBAC (`rbac-config.ts`).
+ * Marketplace & provider portal access - extends central RBAC (`rbac-config.ts`).
  *
  * Public club listings (`/club/:slug`) remain separate from dashboard marketplace access.
  */
@@ -101,7 +101,7 @@ function clubTabRequiresPermission(tab: ClubMarketplaceTab): MarketplacePermissi
   }
 }
 
-/** Club admin tabs — discovery, requests, offers, saved providers, moderation. */
+/** Club admin tabs - discovery, requests, offers, saved providers, moderation. */
 export function getClubMarketplaceTabs(
   legacyRole: string | null | undefined,
   assignments?: ClubRoleAssignmentRow[] | null,

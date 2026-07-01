@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Ai4TeamAgentIcon } from "@/components/ai-agent/Ai4TeamNavIcon";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
@@ -44,9 +45,17 @@ import {
   type Ai4TRoleKey,
 } from "@/lib/ai-4-t-role-prompts";
 import { getEdgeFunctionAuthHeaders } from "@/lib/edge-function-auth";
+import { prepareChatMessagesForApi } from "@/lib/ai-chat-memory";
+import { mapCoTrainerEdgeError } from "@/lib/ai-4-t-error-messages";
+import { buildFollowUpPrompts } from "@/lib/ai-follow-up-prompts";
+import { canUseClubAgentWorkflows, resolveAiContextScope } from "@/lib/ai-agent-access";
+import { buildPartnerAiContext } from "@/lib/partner-ai-context";
+import { useUserTeamIds } from "@/hooks/use-user-team-ids";
 import { AiAgentWorkspace } from "@/components/ai-agent/AiAgentWorkspace";
 import { PartnerAiAgentWorkspace } from "@/components/ai-agent/PartnerAiAgentWorkspace";
 import { Ai4TIntroModal } from "@/components/ai/Ai4TIntroModal";
+import { Ai4tPersonaHint } from "@/components/ai/Ai4tPersonaHint";
+import { Ai4tFollowUpChips } from "@/components/ai/Ai4tFollowUpChips";
 import { Ai4TLogo } from "@/components/ai/Ai4TLogo";
 import { Ai4tChatWatermark } from "@/components/ai/Ai4tChatWatermark";
 import { Ai4TSendButton } from "@/components/ai/Ai4TSendButton";
@@ -310,8 +319,13 @@ const CoTrainer = () => {
   const [pendingWorkflow, setPendingWorkflow] = useState<PendingWorkflowState | null>(null);
   const [chatOutcomeLinks, setChatOutcomeLinks] = useState<{ label: string; href: string }[]>([]);
   const [agentRuns, setAgentRuns] = useState<AgentRunRow[]>([]);
+  const [followUpPrompts, setFollowUpPrompts] = useState<ClubQuickPrompt[]>([]);
+  const [historyIntentFilter, setHistoryIntentFilter] = useState("all");
+  const [historyStatusFilter, setHistoryStatusFilter] = useState("all");
 
   const gateRole = useModuleGateRole();
+  const { teamIds: userTeamIds } = useUserTeamIds(clubId);
+  const showAgentTab = isPartnerPortal || canUseClubAgentWorkflows(gateRole);
   const roleKey = (
     gateRole && isExternalRole(gateRole) ? gateRole : perms.role || "trainer"
   ) as RoleKey;
@@ -330,6 +344,17 @@ const CoTrainer = () => {
   const canSeeAiLog = perms.isTrainer;
   const dashboardRolePath = perms.role || "player";
   const aiVoice = useAi4TeamVoice(language);
+  const filteredAgentRuns = useMemo(() => {
+    return agentRuns.filter((run) => {
+      if (historyIntentFilter !== "all" && run.intent !== historyIntentFilter) return false;
+      if (historyStatusFilter !== "all" && run.status !== historyStatusFilter) return false;
+      return true;
+    });
+  }, [agentRuns, historyIntentFilter, historyStatusFilter]);
+  const historyIntentOptions = useMemo(() => {
+    const intents = new Set(agentRuns.map((r) => r.intent).filter(Boolean));
+    return Array.from(intents).sort();
+  }, [agentRuns]);
 
   useEffect(() => {
     conversationIdRef.current = conversationId;
@@ -356,6 +381,10 @@ const CoTrainer = () => {
   } = useAiAgent();
 
   useEffect(() => {
+    if (!showAgentTab && mainTab === "agent") setMainTab("chat");
+  }, [showAgentTab, mainTab]);
+
+  useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
@@ -376,6 +405,20 @@ const CoTrainer = () => {
 
   useEffect(() => {
     if (!clubId || isPartnerPortal) {
+      if (isPartnerPortal && user) {
+        let cancelled = false;
+        setContextLoading(true);
+        void buildPartnerAiContext(supabase, user.id, language)
+          .then((data) => {
+            if (!cancelled) setClubContextText(data.contextText);
+          })
+          .finally(() => {
+            if (!cancelled) setContextLoading(false);
+          });
+        return () => {
+          cancelled = true;
+        };
+      }
       setClubContextText("");
       setSmartPrompts([]);
       setToolActivities([]);
@@ -384,11 +427,14 @@ const CoTrainer = () => {
     }
     let cancelled = false;
     setContextLoading(true);
+    const contextScope = resolveAiContextScope(gateRole);
     void buildClubContext(supabase, {
       clubId,
       clubName,
       language,
       isAdmin: perms.isAdmin,
+      scope: contextScope,
+      teamIds: userTeamIds,
     })
       .then((data) => {
         if (cancelled) return;
@@ -411,7 +457,7 @@ const CoTrainer = () => {
     return () => {
       cancelled = true;
     };
-  }, [clubId, clubName, language, perms.isAdmin, toast, isPartnerPortal]);
+  }, [clubId, clubName, language, perms.isAdmin, toast, isPartnerPortal, gateRole, userTeamIds, user]);
 
   const loadHistoryData = useCallback(async () => {
     if (!user || !clubId) return;
@@ -591,7 +637,7 @@ const CoTrainer = () => {
         try {
           bodyStr = JSON.stringify({
             club_id: clubId,
-            messages: allMessages,
+            messages: prepareChatMessagesForApi(allMessages),
             context: contextPayload,
             language,
           });
@@ -609,7 +655,18 @@ const CoTrainer = () => {
 
         if (!resp.ok) {
           const errMsg = await parseEdgeError(resp);
-          showChatError(errMsg, true);
+          const mapped = mapCoTrainerEdgeError(errMsg, {
+            rateLimit: t.coTrainerPage.chatErrorRateLimit,
+            planGate: t.coTrainerPage.chatErrorPlanGate,
+            noApiKey: t.coTrainerPage.chatErrorNoApiKey,
+            settingsLinkLabel: t.coTrainerPage.chatErrorSettingsLink,
+            generic: t.coTrainerPage.chatErrorHeading,
+          });
+          let description = mapped.description;
+          if (mapped.settingsHref) {
+            description += `\n\n[${t.coTrainerPage.chatErrorSettingsLink}](${mapped.settingsHref})`;
+          }
+          showChatError(description, mapped.includeHint);
           return;
         }
 
@@ -719,6 +776,12 @@ const CoTrainer = () => {
         if (tail) {
           schedulePersistMessages([...allMessages, { role: "assistant", content: tail }]);
           aiVoice.speak(tail);
+          setFollowUpPrompts(
+            buildFollowUpPrompts(language, {
+              hasUpcomingMatch: clubContextText.includes("vs "),
+              hasTrainingThisWeek: toolActivities.some((a) => a.type === "training"),
+            }),
+          );
         }
       }
     },
@@ -743,6 +806,11 @@ const CoTrainer = () => {
       t.coTrainerPage.demoNote,
       clubContextText,
       schedulePersistMessages,
+      toolActivities,
+      t.coTrainerPage.chatErrorRateLimit,
+      t.coTrainerPage.chatErrorPlanGate,
+      t.coTrainerPage.chatErrorNoApiKey,
+      t.coTrainerPage.chatErrorSettingsLink,
     ],
   );
 
@@ -876,6 +944,7 @@ const CoTrainer = () => {
     setPendingWorkflow(null);
     dismissProposal();
     setChatOutcomeLinks([]);
+    setFollowUpPrompts([]);
   };
 
   const resumeConversation = (row: AiConversationRow) => {
@@ -917,7 +986,7 @@ const CoTrainer = () => {
     aiVoice.stopSpeaking();
 
     const agentCmd = parseChatAgentCommand(msg);
-    if (agentCmd && !isPartnerPortal) {
+    if (agentCmd && !isPartnerPortal && showAgentTab) {
       setInput("");
       setMainTab("agent");
       if (agentCmd !== "open_agent") focusAgentIntent(agentCmd.intent);
@@ -1029,10 +1098,12 @@ const CoTrainer = () => {
               <MessageSquare className="w-3.5 h-3.5" />
               {t.coTrainerPage.tabChat}
             </TabsTrigger>
-            <TabsTrigger value="agent" className={ai4tDashboardTabTriggerClass}>
-              <Ai4TeamAgentIcon />
-              {t.coTrainerPage.tabAgent}
-            </TabsTrigger>
+            {showAgentTab ? (
+              <TabsTrigger value="agent" className={ai4tDashboardTabTriggerClass}>
+                <Ai4TeamAgentIcon />
+                {t.coTrainerPage.tabAgent}
+              </TabsTrigger>
+            ) : null}
             <TabsTrigger value="history" className={ai4tDashboardTabTriggerClass}>
               <History className="w-3.5 h-3.5" />
               {t.coTrainerPage.tabHistory}
@@ -1044,6 +1115,7 @@ const CoTrainer = () => {
           <div ref={scrollRef} className="relative flex-1 overflow-y-auto">
             {resolvedTheme === "light" ? <Ai4tChatWatermark /> : null}
             <div className={`relative z-[1] ${DASHBOARD_PAGE_MAX_INNER} max-w-3xl space-y-4 py-6`}>
+              <Ai4tPersonaHint />
               <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-2">
@@ -1235,6 +1307,13 @@ const CoTrainer = () => {
                   <AiAgentOutcomeLinks links={chatOutcomeLinks} />
                 </div>
               ) : null}
+              {!isLoading && followUpPrompts.length > 0 && messages.length > 0 ? (
+                <Ai4tFollowUpChips
+                  prompts={followUpPrompts}
+                  disabled={isLoading}
+                  onSelect={(prompt) => void handleSend(prompt)}
+                />
+              ) : null}
               {pendingProposal && !isPartnerPortal ? (
                 <div className="mt-4">
                   <AiAgentProposalCard
@@ -1292,6 +1371,7 @@ const CoTrainer = () => {
           </div>
         </TabsContent>
 
+        {showAgentTab ? (
         <TabsContent value="agent" className="flex-1 overflow-y-auto mt-0 px-4 pb-20 data-[state=inactive]:hidden">
           <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl py-6`}>
             {isPartnerPortal ? (
@@ -1318,6 +1398,7 @@ const CoTrainer = () => {
             )}
           </div>
         </TabsContent>
+        ) : null}
 
         <TabsContent value="history" className="flex-1 overflow-y-auto mt-0 px-4 pb-20 data-[state=inactive]:hidden">
           <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl space-y-6 py-6`}>
@@ -1358,11 +1439,37 @@ const CoTrainer = () => {
                   <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
                     <div className="font-display font-bold">{t.coTrainerPage.agent.workflowRunsTitle}</div>
                     <p className="text-xs text-muted-foreground mt-1">{t.coTrainerPage.agent.workflowRunsHint}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Select value={historyIntentFilter} onValueChange={setHistoryIntentFilter}>
+                        <SelectTrigger className="h-8 w-[140px] text-xs rounded-xl">
+                          <SelectValue placeholder={t.coTrainerPage.historyFilterIntent} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t.coTrainerPage.historyFilterAll}</SelectItem>
+                          {historyIntentOptions.map((intent) => (
+                            <SelectItem key={intent} value={intent}>
+                              {intent}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select value={historyStatusFilter} onValueChange={setHistoryStatusFilter}>
+                        <SelectTrigger className="h-8 w-[120px] text-xs rounded-xl">
+                          <SelectValue placeholder={t.coTrainerPage.historyFilterStatus} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t.coTrainerPage.historyFilterAll}</SelectItem>
+                          <SelectItem value="executed">{t.coTrainerPage.historyStatusExecuted}</SelectItem>
+                          <SelectItem value="failed">{t.coTrainerPage.historyStatusFailed}</SelectItem>
+                          <SelectItem value="proposed">{t.coTrainerPage.historyStatusProposed}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="mt-3 grid gap-2">
-                      {agentRuns.length === 0 ? (
+                      {filteredAgentRuns.length === 0 ? (
                         <div className="text-xs text-muted-foreground">{t.coTrainerPage.agent.noWorkflowRuns}</div>
                       ) : (
-                        agentRuns.map((run) => {
+                        filteredAgentRuns.map((run) => {
                           const links = (run.execution_result as { links?: { label: string; href: string }[] } | null)
                             ?.links;
                           return (

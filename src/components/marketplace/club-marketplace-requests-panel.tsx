@@ -147,7 +147,7 @@ export function ClubMarketplaceRequestsPanel({
 
                 <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
                   <span>{r.offers}: {offerCount}</span>
-                  <span>{r.deadline}: {req.deadline ?? "—"}</span>
+                  <span>{r.deadline}: {req.deadline ?? "-"}</span>
                   <span>{r.visibility}: {r.visibilityLabels[req.visibility]}</span>
                   <span>{r.created}: {new Date(req.created_at).toLocaleDateString()}</span>
                 </div>

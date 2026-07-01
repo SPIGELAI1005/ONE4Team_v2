@@ -4,7 +4,7 @@ import logo from "@/assets/one4team-logo.png";
 import { useLanguage } from "@/hooks/use-language";
 import { requestOpenCookieSettings } from "@/lib/cookie-consent";
 
-/** X.com (Twitter) icon — inline SVG since lucide doesn't include it */
+/** X.com (Twitter) icon - inline SVG since lucide doesn't include it */
 function XIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">

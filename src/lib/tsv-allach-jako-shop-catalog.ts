@@ -1,4 +1,4 @@
-/** JAKO teamshop catalog for TSV Allach 09 — source: https://team.jako.com/de-de/team/tsv_allach_09/ */
+/** JAKO teamshop catalog for TSV Allach 09 - source: https://team.jako.com/de-de/team/tsv_allach_09/ */
 
 export const TSV_ALLACH_JAKO_TEAMSHOP_URL = "https://team.jako.com/de-de/team/tsv_allach_09/";
 
@@ -363,7 +363,7 @@ export function buildJakoProductDescription(item: JakoShopCatalogItem, locale: "
     lines.push(`${colorsLabel}: ${item.colors.join(", ")}`);
   }
   for (const group of item.sizeGroups) {
-    lines.push(`${group.label} (${group.priceEur.toFixed(2)} €) — ${sizeLabel}: ${group.sizes}`);
+    lines.push(`${group.label} (${group.priceEur.toFixed(2)} €) - ${sizeLabel}: ${group.sizes}`);
   }
   if (item.notes) lines.push(item.notes);
   lines.push(

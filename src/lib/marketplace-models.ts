@@ -1,4 +1,4 @@
-/** Marketplace & external provider portal — shared types and constants. */
+/** Marketplace & external provider portal - shared types and constants. */
 
 import type { DashboardRole } from "@/lib/rbac-config";
 

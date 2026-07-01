@@ -194,7 +194,7 @@ export default function SupplierPageAdmin() {
 
     ? (mp.provider.listing.visibility as Record<string, string>)[profile.visibility] ?? profile.visibility
 
-    : "—";
+    : "-";
 
 
 

@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useLanguage } from "@/hooks/use-language";
 import type { DashboardNavLabels } from "@/lib/dashboard-nav";
 
-/** Shared i18n labels for `useDashboardNav()` — sidebar, top bar, mobile drawer. */
+/** Shared i18n labels for `useDashboardNav()` - sidebar, top bar, mobile drawer. */
 export function useDashboardNavLabels(): DashboardNavLabels {
   const { t } = useLanguage();
   return useMemo(

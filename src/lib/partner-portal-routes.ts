@@ -7,7 +7,7 @@ import {
 } from "@/lib/rbac-config";
 
 /**
- * Partner / external provider portal URLs — separate from club-internal routes.
+ * Partner / external provider portal URLs - separate from club-internal routes.
  * Suppliers discover clubs and manage collaborations here, not other suppliers.
  */
 export const PARTNER_PORTAL_ROUTES = {
@@ -33,7 +33,7 @@ const PARTNER_ROUTED_MODULES: DashboardModule[] = [
 /** Club-only portal URLs (not generic internal modules). */
 export const CLUB_ONLY_PORTAL_PATHS = ["/club-page-admin"] as const;
 
-/** Partner-only portal URLs (includes `/supplier-page` — not `/partner-*`). */
+/** Partner-only portal URLs (includes `/supplier-page` - not `/partner-*`). */
 export const PARTNER_ONLY_PORTAL_PATHS = [
   PARTNER_PORTAL_ROUTES.marketplace,
   PARTNER_PORTAL_ROUTES.messages,
@@ -44,7 +44,7 @@ export const PARTNER_ONLY_PORTAL_PATHS = [
   "/partnermarketplace",
 ] as const;
 
-/** Club-side marketplace (procurement — find providers). */
+/** Club-side marketplace (procurement - find providers). */
 export const CLUB_MARKETPLACE_ROUTE = MODULE_ROUTES.marketplace;
 
 export function isClubOnlyPortalPath(pathname: string): boolean {

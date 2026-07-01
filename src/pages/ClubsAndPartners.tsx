@@ -147,10 +147,10 @@ const ClubsAndPartners = () => {
           </FadeInSection>
 
           <div className="space-y-8 sm:space-y-10 max-w-4xl mx-auto">
-            {/* TSV Allach 09 — Custom Rich Card */}
+            {/* TSV Allach 09 - Custom Rich Card */}
             <FadeInSection>
               <div className="glass-card rounded-2xl overflow-hidden hover:border-green-500/30 transition-all duration-300">
-                {/* Hero Banner — Stadium image */}
+                {/* Hero Banner - Stadium image */}
                 <div className="relative h-48 sm:h-64 md:h-72 overflow-hidden">
                   <img
                     src={tsvStadium}
@@ -226,10 +226,10 @@ const ClubsAndPartners = () => {
               </div>
             </FadeInSection>
 
-            {/* Sportecke München — Custom Rich Card */}
+            {/* Sportecke München - Custom Rich Card */}
             <FadeInSection>
               <div className="glass-card rounded-2xl overflow-hidden hover:border-blue-500/30 transition-all duration-300">
-                {/* Hero Banner — Store image */}
+                {/* Hero Banner - Store image */}
                 <div className="relative h-48 sm:h-64 md:h-72 overflow-hidden">
                   <img
                     src={sporteckeStore}

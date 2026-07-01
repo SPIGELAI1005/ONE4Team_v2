@@ -1,11 +1,15 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-07-01 (Persona data scoping player/member, public Live Scores UI, sprint doc sync)
+Last updated: 2026-07-01 (AI 4 T pilot UX P4-002, dark-mode Agent composer, Sommerfest banner fix, copy polish)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **AI 4 T pilot UX — Phase 4.2 (2026-07-01):** Persona-scoped **`buildClubContext()`** (`staff` / `player` / `member` / `public` + team IDs + `?team=`). **Agent tab hidden** for player/member (`canUseClubAgentWorkflows` + gate role in **`AiAgentProvider`**). **`Ai4tPersonaHint`**, follow-up chips, thread trim (`prepareChatMessagesForApi`), mapped Edge errors (DE/EN + Settings link). Public modal: guide role can/cannot, team filter in embed. History: intent/status filters. **`Ai4tAdminUsageCard`** on club admin dashboard (`get_club_ai_usage_stats`, 7d). Partner **`buildPartnerAiContext()`**. Ops SQL + **`docs/AI4T_RELEASE_REVIEW.md`**; **`e2e/ai4t-smoke.spec.ts`** (skipped until auth fixtures). **`TASKS.md` AI4T-P4-002**. Pilot metrics **AI4T-PILOT-001**–**005** still open.
+- **AI 4 T Agent composer — dark mode (2026-07-01):** **`Ai4tChatComposer`** `variant="dashboard"` + `frameless` in **`AiAgentWorkspace`** — theme tokens (`bg-card`, `border-border`) instead of public-embed white styling; compact public modal footer uses `bg-background/90`.
+- **Sommerfest banner fix (2026-07-01):** **`sommerfestBannerMatchStats()`** only counts completed/in-progress after kickoff; generic subtitle before tournament day; republish no longer overwrites **`status`** on existing rows (**`tsv-allach-sommerfest-competition.ts`**). Tests: **`sommerfest-live-pulse.test.ts`**.
+- **Copy polish — em dash removal (2026-07-01):** UI strings reformulated EN/DE (`i18n`), marketplace/supplier copy, **`ai-4-t-role-prompts.ts`**; placeholder `"—"` → `"-"` in components; marketing pages aligned.
 - **Persona data scoping — player / member (2026-07-01):** **`useModuleGateRole`** drives message and task visibility in **`Communication.tsx`**, **`Tasks.tsx`**, **`public-club-messages-hub.tsx`** (not raw **`isAdmin`**). **Player:** team-scoped messages + own tasks only. **Member:** club-wide messages (Announcements + Club General, no team channels); club-wide dashboard upcoming (events only via **`fetchClubWideDashboardUpcoming`**); no payments in sidebar. Lib: **`club-message-access.ts`**, **`club-task-access.ts`**, **`use-club-tasks.ts`**, **`use-user-team-ids.ts`** (players + coaches). Dual-role users must switch persona in Settings. See **`CHANGELOG.md`** § **2026-07-01 (Persona data scoping…)**.
 - **Public club Live Scores UI (2026-07-01):** Home section card matches **Reports** typography — **`liveScoresTitle`** + description; CTA right on desktop. **`public-club-live-scores-section.tsx`**. See **`CHANGELOG.md`** same section.
 - **Partner / supplier portal (2026-07-01):** Dual-world routing — club URLs vs **`/partner-*`** + **`/supplier-page`**. **`PersonaPortalGate`** + **`useModuleGateRole`** enforce portal side. **Partner Page** admin at **`/supplier-page`** (parity with **`/club-page-admin`**); sidebar label **Partner Page**; hidden for **club_admin** persona. Partner AI at **`/partner-ai`** with **`PartnerAiAgentWorkspace`** (no club training workflows). Settings persona switch via **`switch-dashboard-persona.ts`**. Marketplace provider portal + club hub; migrations **`20260731120000`**–**`20260731220000`**. Docs: **`docs/rbac-dashboard-plan.md`**, **`docs/marketplace-implementation-plan.md`**. See **`CHANGELOG.md`** § **2026-07-01 (Partner portal…)**.
@@ -213,6 +217,7 @@ Also ensure previously listed communication migrations remain applied in the sam
 - If behavior mismatches local code expectations, verify app env vars point to the same Supabase project where all required migrations are applied.
 
 ## Suggested Next Implementation Steps
+- **AI 4 T pilot (manual):** Golden questions on TSV Allach trainer account; negative-feedback SQL weekly; agent smoke (plan week / cancel / notify); one coach interview for weekly AI habit — see **`docs/AI4T_RELEASE_REVIEW.md`** and **`docs/AI4T_GOLDEN_QUESTIONS.md`**.
 - **Persona RBAC smoke:** Complete **`RBAC-PERSONA-SMOKE`** — dual-role account switches Player vs Member; verify messages, tasks, dashboard upcoming (`TASKS.md`).
 - **Sprint exit:** Complete **\*-SMOKE** rows in **`TASKS.md` → SPRINT 2026-07-01**; **`DEPLOY-EMAIL-001-PROD`** (Resend domain).
 - **Members club card:** Optional sequential club ID server validation; i18n for hardcoded Club Card field labels (EN/DE).

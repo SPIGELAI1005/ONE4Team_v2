@@ -36,7 +36,7 @@ export function MarketplaceOfferCompareDialog({
     {
       key: "provider",
       label: c.provider,
-      render: (row) => row.provider?.provider_name ?? "—",
+      render: (row) => row.provider?.provider_name ?? "-",
     },
     {
       key: "type",
@@ -56,18 +56,18 @@ export function MarketplaceOfferCompareDialog({
     {
       key: "timeline",
       label: c.timeline,
-      render: (row) => row.offer.delivery_timeline ?? "—",
+      render: (row) => row.offer.delivery_timeline ?? "-",
     },
     {
       key: "services",
       label: c.includedServices,
       render: (row) =>
-        row.offer.included_services.length ? row.offer.included_services.join(", ") : "—",
+        row.offer.included_services.length ? row.offer.included_services.join(", ") : "-",
     },
     {
       key: "notes",
       label: c.notes,
-      render: (row) => row.offer.notes ?? "—",
+      render: (row) => row.offer.notes ?? "-",
     },
     {
       key: "documents",

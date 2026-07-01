@@ -73,12 +73,12 @@ const MatchTimeline = ({ events, getMemberName }: MatchTimelineProps) => {
               transition={{ delay: i * 0.03 }}
               className="flex items-center gap-2 text-xs">
               <span className="w-8 text-right text-muted-foreground font-mono">
-                {e.minute != null ? `${e.minute}'` : "—"}
+                {e.minute != null ? `${e.minute}'` : "-"}
               </span>
               <span className="text-sm">{cfg.icon}</span>
               <span className="text-foreground font-medium">{cfg.label}</span>
               {e.membership_id && (
-                <span className="text-muted-foreground">— {getMemberName(e.membership_id)}</span>
+                <span className="text-muted-foreground">- {getMemberName(e.membership_id)}</span>
               )}
             </motion.div>
           );

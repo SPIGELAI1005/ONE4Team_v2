@@ -20,7 +20,7 @@ export interface ModuleDataScope {
 }
 
 /**
- * Recommended query scope for a dashboard module — derived from RBAC matrix + assignments.
+ * Recommended query scope for a dashboard module - derived from RBAC matrix + assignments.
  */
 export function useModuleDataScope(module: DashboardModule): ModuleDataScope {
   const perms = usePermissions();

@@ -30,7 +30,7 @@ function renderFieldToCache(w: number, h: number, f: FieldRect, dpr: number, isD
   const standColor = isDark ? "rgba(80,80,100,0.08)" : "rgba(60,70,90,0.12)";
   const poleColor = isDark ? "rgba(200,200,200,0.3)" : "rgba(120,120,120,0.5)";
 
-  // Grass stripes — vivid green in light mode
+  // Grass stripes - vivid green in light mode
   const stripeCount = 12, stripeW = f.w / stripeCount;
   for (let i = 0; i < stripeCount; i++) {
     ctx.fillStyle = i % 2 === 0

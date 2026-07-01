@@ -1037,6 +1037,8 @@ export function AiAgentWorkspace({
             </p>
           ) : null}
           <Ai4tChatComposer
+            variant="dashboard"
+            frameless
             value={nlInput}
             onChange={setNlInput}
             onSend={() => void handleNlSend()}
@@ -1045,7 +1047,6 @@ export function AiAgentWorkspace({
             voice={aiVoice}
             onVoiceCommand={(transcript) => void handleNlSend(transcript)}
             sendAriaLabel={t.coTrainerPage.tabAgent}
-            className="rounded-xl border border-border/60 bg-background/50"
           />
         </div>
       ) : null}
@@ -1088,7 +1089,7 @@ export function AiAgentWorkspace({
       </div>
 
       {compact ? (
-        <div className="relative z-10 shrink-0 space-y-2 border-t border-neutral-200/80 bg-white/95 px-1 pt-2">
+        <div className="relative z-10 shrink-0 space-y-2 border-t border-border bg-background/90 px-1 pt-2 backdrop-blur-xl">
           {pendingProposal ? (
             <AiAgentProposalCard
               proposal={pendingProposal}
@@ -1105,11 +1106,13 @@ export function AiAgentWorkspace({
             />
           ) : null}
           {nlClarifyQuestion ? (
-            <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs leading-snug text-amber-950">
+            <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-snug text-amber-100">
               {nlClarifyQuestion}
             </p>
           ) : null}
           <Ai4tChatComposer
+            variant="dashboard"
+            frameless
             value={nlInput}
             onChange={setNlInput}
             onSend={() => void handleNlSend()}
@@ -1118,7 +1121,6 @@ export function AiAgentWorkspace({
             voice={aiVoice}
             onVoiceCommand={(transcript) => void handleNlSend(transcript)}
             sendAriaLabel={t.coTrainerPage.tabAgent}
-            className="rounded-b-2xl border-t border-neutral-200/80 bg-white/90"
           />
         </div>
       ) : null}

@@ -617,9 +617,9 @@ export const de: Translations = {
     attendanceComingList: "Dabei",
     attendanceDeclinedList: "Abgesagt",
     attendanceNoRosterYet: "Noch keine Spieler auf diesem Kader.",
-    attendanceRsvpClosedTraining: "Rückmeldung geschlossen — Training beginnt in weniger als einer Stunde.",
-    attendanceNotInvited: "Du bist nicht im Kader für diese Einheit — keine Rückmeldung nötig.",
-    attendanceRsvpPermissionDenied: "Rückmeldung konnte nicht gespeichert werden — ggf. fehlt die Berechtigung für Mitglieder-RSVP.",
+    attendanceRsvpClosedTraining: "Rückmeldung geschlossen. Training beginnt in weniger als einer Stunde.",
+    attendanceNotInvited: "Du bist nicht im Kader für diese Einheit, keine Rückmeldung nötig.",
+    attendanceRsvpPermissionDenied: "Rückmeldung konnte nicht gespeichert werden. Ggf. fehlt die Berechtigung für Mitglieder-RSVP.",
     attendanceRsvpFailed: "Deine Rückmeldung konnte nicht gespeichert werden. Bitte erneut versuchen.",
     homeNextTraining: "Nächstes Training",
     homeJoinOrInvite: "Mitglied werden / Einladung",
@@ -789,7 +789,7 @@ export const de: Translations = {
     draftEmptyHintShop:
       "Shop ist aktiviert, aber noch keine Produkte veröffentlicht. Produkte im Vereins-Shop anlegen oder JAKO-Katalog für TSV Allach importieren.",
     shopExternalOrder: "Extern bestellen",
-    shopJakoPartnerNote: "Offizielle Teamwear über Sportecke München — veredelte Artikel über",
+    shopJakoPartnerNote: "Offizielle Teamwear über Sportecke München. Veredelte Artikel über",
     shopViewAllProducts: "Alle Produkte anzeigen",
     shopBackToHome: "Zurück zur Vereinsseite",
     liveScoresViewMatches: "Alle Spiele anzeigen",
@@ -1037,7 +1037,7 @@ export const de: Translations = {
     reportsDesc: "Mitglieder sehen Spielhistorie, Berichte und Statistiken in der App.",
     reportsCtaSignedIn: "Berichte öffnen",
     reportsCtaSignedOut: "Für Berichte anmelden",
-    reportsPublicPageSubtitle: "Vereinsberichte passend zu deiner Rolle — hier Teams, Training und Spiele.",
+    reportsPublicPageSubtitle: "Vereinsberichte passend zu deiner Rolle: Teams, Training und Spiele.",
     reportsPersonaAdmin: "Admin-Ansicht",
     reportsPersonaTrainer: "Trainer-Ansicht",
     reportsPersonaPlayer: "Spieler-Ansicht",
@@ -1145,7 +1145,7 @@ export const de: Translations = {
     goBack: "Zurück",
     searchMembers: "Mitglieder suchen...",
     searchResultsTitle: "Suchergebnisse",
-    searchResultsSummary: "\"{query}\" — {rosterCount} im aktiven Kader · {draftCount} in gespeicherter Liste",
+    searchResultsSummary: "\"{query}\": {rosterCount} im aktiven Kader · {draftCount} in gespeicherter Liste",
     searchResultsRosterSection: "Aktiver Kader",
     searchResultsSavedListSection: "Gespeicherte Liste",
     searchResultsRosterEmpty: "Keine Treffer im aktiven Kader.",
@@ -1435,7 +1435,7 @@ export const de: Translations = {
     registryMatchRoster: "Kader",
     registryMatchDraft: "Gespeicherter Entwurf",
     registryMissingNotInClub: "Kein Kader- oder Listen-Treffer",
-    registryMissingMatchedDraft: "Gespeicherter Entwurf — Felder prüfen",
+    registryMissingMatchedDraft: "Gespeicherter Entwurf. Felder prüfen",
 
     roles: {
       tabLabel: "Rollen",
@@ -1685,7 +1685,7 @@ export const de: Translations = {
     filterMember: "Mitglied",
     filterPackage: "Paket",
     filterPackageView: "Pakete anzeigen",
-    filterPackageViewHint: "Nur die Liste filtern — weist Mitgliedern keine Pakete zu.",
+    filterPackageViewHint: "Nur die Liste filtern. Weist Mitgliedern keine Pakete zu.",
     filterPackagesCount: "{count} Pakete",
     filterClearPackages: "Alle Pakete anzeigen",
     assignPackagesHint: "Um Mitgliedschaft + Aufnahmegebühr (oder mehrere Pakete) zuzuweisen, Zahlung erfassen nutzen und jedes Paket ankreuzen.",
@@ -2339,14 +2339,21 @@ export const de: Translations = {
     aiTip3: "Probiere KI → Wochenplan für einen strukturierten Trainingsüberblick.",
     ai4teamWeeklySummary: "Wochenübersicht in AI 4 T",
     ai4teamWeeklySummaryDesc: "Chat mit vorausgefüllter Admin-Digest-Anfrage öffnen.",
+    ai4tUsageTitle: "AI 4 T diese Woche",
+    ai4tUsageSubtitle: "Agent-Workflows und aktive Chats (letzte 7 Tage).",
+    ai4tUsageAgentRuns: "Agent-Läufe",
+    ai4tUsageExecuted: "Ausgeführt",
+    ai4tUsageSuccessRate: "Erfolgsquote",
+    ai4tUsageChats: "Chats aktualisiert",
+    ai4tUsageViewHistory: "Verlauf öffnen",
     bestEffort: "Best-Effort-Daten: Wenn Supabase noch nicht eingerichtet ist, zeigt dieses Dashboard Platzhalter.",
     liveClubData: "Live-Vereinsdaten aus deiner Datenbank.",
     noUpcoming: "Keine Trainings, Spiele oder Events in den nächsten 7 Tagen.",
     pendingDraftsKpiNote: "{count} ausstehend",
-    aiInsightPendingDrafts: "{count} Mitglieder auf der gespeicherten Liste — Einladungen senden, wenn bereit.",
+    aiInsightPendingDrafts: "{count} Mitglieder auf der gespeicherten Liste. Einladungen senden, wenn bereit.",
     aiInsightTeamsMatches: "{teams} Teams angelegt · {matches} anstehende Spiele.",
     aiInsightUnpaidDues: "{count} offene Beiträge in Zahlungen nachverfolgen.",
-    aiInsightLogMatches: "{count} abgeschlossene Spiele — Events protokollieren für bessere Reports.",
+    aiInsightLogMatches: "{count} abgeschlossene Spiele. Events protokollieren für bessere Reports.",
     registrationSummaryTitle: "Deine Vereinskonfiguration",
     registrationSummaryDesc: "Live-Übersicht aus deinem gepflegten Vereinsprofil und den öffentlichen Seiteneinstellungen.",
     clubSetupPublicPage: "Öffentliche Seite",
@@ -2718,7 +2725,7 @@ export const de: Translations = {
 
   supplierPortal: {
     messagesTitle: "Partner-Nachrichten",
-    messagesSubtitle: "Direkte Threads mit Vereinen, mit denen Sie zusammenarbeiten — kein interner Vereinschat.",
+    messagesSubtitle: "Direkte Threads mit Vereinen, mit denen Sie zusammenarbeiten, kein interner Vereinschat.",
     messagesThreadsHint: "Vereins-Kooperationen",
     messagesSelectThread: "Wählen Sie einen Verein für den Partner-Thread.",
     messagesWithClub: "Partner-Thread mit diesem Verein",
@@ -2743,7 +2750,7 @@ export const de: Translations = {
     reportsNoInvoices: "Noch keine Rechnungen für Ihre Kooperationen.",
     reportsByClub: "Kooperationen nach Verein",
     supplierPageTitle: "Partner-Seite",
-    supplierPageSubtitle: "Öffentliches Partner-Profil bearbeiten — getrennt von Vereinswebsites.",
+    supplierPageSubtitle: "Öffentliches Partner-Profil bearbeiten, getrennt von Vereinswebsites.",
     supplierPageHeroTitle: "Ihre öffentliche Partner-Seite",
     supplierPageHeroDesc: "Vereine finden Sie über den Partner-Marktplatz. Sichtbarkeit „Öffentlich“ und aktives Listing für /supplier/ihr-slug.",
     viewPublicPage: "Live-Seite ansehen",
@@ -2752,12 +2759,12 @@ export const de: Translations = {
     publishStatusHint: "Ihre Lieferanten-Seite ist unabhängig von Vereinswebsites. Nur Ihre Listing-Daten erscheinen unter der öffentlichen URL.",
     completenessLabel: "Vollständigkeit",
     publicUrlLabel: "Öffentliche URL",
-    slugHint: "Slug im Profil hinterlegen — nach Aktivierung erhalten Sie eine teilbare URL.",
+    slugHint: "Slug im Profil hinterlegen. Nach Aktivierung erhalten Sie eine teilbare URL.",
     livePreviewTitle: "Live-Vorschau",
-    livePreviewDesc: "So sehen Vereine Ihre Lieferanten-Seite — keine Vereinswebsite.",
+    livePreviewDesc: "So sehen Vereine Ihre Lieferanten-Seite, keine Vereinswebsite.",
     publicPageBadge: "Partner-Seite",
     previewSheetTitle: "Vorschau Partner-Seite",
-    previewSheetDesc: "Ihr öffentliches Lieferantenprofil — keine Vereinsseite.",
+    previewSheetDesc: "Ihr öffentliches Lieferantenprofil, keine Vereinsseite.",
     viewportDesktop: "Desktop-Vorschau",
     viewportTablet: "Tablet-Vorschau",
     viewportMobile: "Mobil-Vorschau",
@@ -3480,7 +3487,7 @@ export const de: Translations = {
     partnerSettingsDesc: "Öffentliche Lieferanten-Seite und Sichtbarkeit auf dem Partner-Marktplatz verwalten.",
     openSupplierPage: "Lieferanten-Seite bearbeiten",
     partnerPortalTitle: "Partner-Portal",
-    partnerPortalDesc: "Zum Partner-Marktplatz und zur Lieferanten-Seite — getrennt von der Vereinsverwaltung.",
+    partnerPortalDesc: "Zum Partner-Marktplatz und zur Lieferanten-Seite, getrennt von der Vereinsverwaltung.",
     openPartnerMarketplace: "Partner-Marktplatz",
     manageSupplierPage: "Partner-Seite",
     roleActiveClub: "Aktiver Verein",
@@ -4040,9 +4047,9 @@ export const de: Translations = {
     attendanceComingList: "Dabei",
     attendanceDeclinedList: "Abgesagt",
     attendanceNoRosterYet: "Noch keine Spieler auf diesem Kader.",
-    attendanceRsvpClosedTraining: "Rückmeldung geschlossen — Training beginnt in weniger als einer Stunde.",
-    attendanceNotInvited: "Du bist nicht im Kader für diese Einheit — keine Rückmeldung nötig.",
-    attendanceRsvpPermissionDenied: "Rückmeldung konnte nicht gespeichert werden — ggf. fehlt die Berechtigung für Mitglieder-RSVP.",
+    attendanceRsvpClosedTraining: "Rückmeldung geschlossen. Training beginnt in weniger als einer Stunde.",
+    attendanceNotInvited: "Du bist nicht im Kader für diese Einheit, keine Rückmeldung nötig.",
+    attendanceRsvpPermissionDenied: "Rückmeldung konnte nicht gespeichert werden. Ggf. fehlt die Berechtigung für Mitglieder-RSVP.",
     attendanceRsvpFailed: "Deine Rückmeldung konnte nicht gespeichert werden. Bitte erneut versuchen.",
   },
 
@@ -4526,7 +4533,7 @@ export const de: Translations = {
       hero: {
         title: "Wo Vereine und Partner zusammenkommen",
         subtitle:
-          "Verifizierte Anbieter finden, Beschaffungsanfragen veröffentlichen und Angebote vergleichen — der gemeinsame Hub für Sponsoring, Lieferungen und Dienstleistungen auf ONE4Team.",
+          "Verifizierte Anbieter finden, Beschaffungsanfragen veröffentlichen und Angebote vergleichen: der gemeinsame Hub für Sponsoring, Lieferungen und Dienstleistungen auf ONE4Team.",
         cards: {
           discover: {
             title: "Anbieter entdecken",
@@ -4534,7 +4541,7 @@ export const de: Translations = {
           },
           requests: {
             title: "Anfragen veröffentlichen",
-            description: "Teile dem Markt mit, was dein Verein braucht — Trikots, Events, Beratung oder Wartung.",
+            description: "Teile dem Markt mit, was dein Verein braucht: Trikots, Events, Beratung oder Wartung.",
           },
           offers: {
             title: "Angebote vergleichen",
@@ -4632,9 +4639,9 @@ export const de: Translations = {
           quantity: "z. B. 20 Trikots, Größe M–L",
         },
         visibilityOptions: {
-          private: "Privat — nur Vereins-Admins",
+          private: "Privat (nur Vereins-Admins)",
           invited_providers_only: "Nur eingeladene Anbieter",
-          marketplace: "Marktplatz — für alle Anbieter sichtbar",
+          marketplace: "Marktplatz (für alle Anbieter sichtbar)",
         },
       },
       requests: {
@@ -4733,7 +4740,7 @@ export const de: Translations = {
     },
     provider: {
       title: "Partner-Marktplatz",
-      subtitle: "Vereinsanfragen entdecken, Angebote senden und Partnerschaften aufbauen — nicht andere Anbieter.",
+      subtitle: "Vereinsanfragen entdecken, Angebote senden und Partnerschaften aufbauen, nicht andere Anbieter.",
       saveProfile: "Profil speichern",
       submitListing: "Zur Prüfung einreichen",
       profileSaved: "Profil gespeichert",
@@ -4776,7 +4783,7 @@ export const de: Translations = {
       hero: {
         title: "Deine Präsenz auf dem Vereinsmarktplatz",
         subtitle:
-          "Listing pflegen, auf Vereinsanfragen reagieren und Angebote verfolgen — alles an einem Ort.",
+          "Listing pflegen, auf Vereinsanfragen reagieren und Angebote verfolgen, alles an einem Ort.",
         cards: {
           listing: {
             title: "Listing aktualisieren",
@@ -4872,9 +4879,9 @@ export const de: Translations = {
           hybrid: "Hybrid",
         },
         visibility: {
-          private: "Privat — nur für dich",
-          marketplace_only: "Marktplatz — für Vereine sichtbar",
-          public: "Öffentlich — Marktplatz und Ihre Lieferanten-Seite",
+          private: "Privat (nur für dich)",
+          marketplace_only: "Marktplatz (für Vereine sichtbar)",
+          public: "Öffentlich (Marktplatz und Ihre Lieferanten-Seite)",
         },
         preview: {
           packages: "Pakete",
@@ -4904,7 +4911,7 @@ export const de: Translations = {
         noReviewsDesc: "Nach Zusammenarbeit über den Marktplatz erscheint hier das Feedback der Vereine.",
         settingsTitle: "Lieferanten-Seite",
         settingsDesc:
-          "Öffentliches Lieferantenprofil, Branding und Sichtbarkeit unter /supplier-page — getrennt von Vereinswebsites.",
+          "Öffentliches Lieferantenprofil, Branding und Sichtbarkeit unter /supplier-page, getrennt von Vereinswebsites.",
       },
       requests: {
         filterCategory: "Nach Kategorie filtern",
@@ -5002,6 +5009,31 @@ export const de: Translations = {
     adminContextNote: "Admin-Finanzsignale werden einbezogen, wenn deine Rolle es erlaubt.",
     footerSignedIn: "Deine Rolle bestimmt, welche Daten und Workflows AI 4 T nutzen darf.",
     footerSignedOut: "Melde dich mit deinem Vereinskonto an, um AI 4 T mit echtem Vereinskontext zu nutzen.",
+    guideRoleLimitsTitle: "Was AI 4 T in dieser Rolle kann und nicht kann",
+    guideCan: "Kann",
+    guideCannot: "Kann nicht",
+    guideRoleLimits: {
+      trainer: {
+        can: ["Fragen zu Teams, Terminplan und Spielen beantworten", "Trainings und Ankündigungen vorschlagen (mit Bestätigung)", "Wochenpläne und Taktik-Notizen entwerfen"],
+        cannot: ["Daten ohne deinen Bestätigungsschritt ändern", "Andere Vereine oder private Eltern-Kontaktdaten sehen"],
+      },
+      player: {
+        can: ["Nach Team-Terminplan und nächstem Spiel fragen", "Tipps zu Training und Spielvorbereitung erhalten"],
+        cannot: ["Vereinskalender oder Mitgliederdaten verwalten", "Admin-Daten anderer Teams sehen"],
+      },
+      member: {
+        can: ["Vereins-Events, Ankündigungen und allgemeine Infos", "Fragen zu Terminen und Abläufen stellen"],
+        cannot: ["Team-Trainingsverwaltung oder Kaderpflege", "Finanz- oder Mitglieder-Admin-Workflows"],
+      },
+      parent: {
+        can: ["Vereinsankündigungen und Team-Termine (wenn verknüpft)", "Praktische Fragen zu Events und Logistik"],
+        cannot: ["Trainings oder Vereinsdaten bearbeiten", "Admin-Finanzen oder volle Kaderexporte"],
+      },
+      admin: {
+        can: ["Vollen Vereinskontext innerhalb deiner Rechte", "Agent-Workflows mit Bestätigung vor dem Speichern", "Admin-Signale z. B. Beiträge (wenn konfiguriert)"],
+        cannot: ["Deine Prüfung bei Agent-Vorschlägen umgehen", "Daten außerhalb dieses Vereins abrufen"],
+      },
+    },
     roles: {
       admin: "Admin",
       trainer: "Trainer",
@@ -5052,6 +5084,14 @@ export const de: Translations = {
     tabChat: "Chat",
     tabAgent: "Agent",
     tabHistory: "Verlauf",
+    personaHint:
+      "Du hast mehrere Rollen. Antworten folgen deiner aktiven Persona ({role}). Wechsle die Persona in den Einstellungen für teambezogene Antworten.",
+    historyFilterIntent: "Intent",
+    historyFilterStatus: "Status",
+    historyFilterAll: "Alle",
+    historyStatusExecuted: "Ausgeführt",
+    historyStatusFailed: "Fehlgeschlagen",
+    historyStatusProposed: "Vorgeschlagen",
     agent: {
       sectionQuickTitle: "Schnellaktionen",
       sectionQuickDesc: "Pläne und Digests erzeugen (Textausgabe). Vereinsänderungen laufen über Workflows unten mit Bestätigung.",
@@ -5119,7 +5159,7 @@ export const de: Translations = {
       proposalReviewHint: "Prüfe die Einheit unten, dann bestätigen oder verwerfen.",
       proposalLoadingSession: "Lade Einheitsdetails…",
       proposalActivityUnresolved:
-        "Keine passende Einheit im Kalender gefunden — bitte genauer angeben oder unter Training absagen auswählen.",
+        "Keine passende Einheit im Kalender gefunden. Bitte genauer angeben oder unter Training absagen auswählen.",
       proposalConfirmBlocked:
         "Bestätigen ist deaktiviert, bis eine Kalendereinheit erkannt wurde. Antworte mit Team und Datum oder nutze das Formular Training absagen.",
       validationRequired: "Titel, Start und Ende ausfüllen.",
@@ -5140,11 +5180,11 @@ export const de: Translations = {
       noWorkflowRuns: "Noch keine Workflow-Läufe. Nutze den Agent-Tab oder die Kopfzeilen-Verknüpfung.",
       agentComposerTitle: "Sag dem Agenten, was er tun soll",
       agentComposerHint:
-        "Tippe oder sprich eine Vereinsaktion — z. B. „Sag U12-1 Training heute ab“, „Plane U17 Dienstag 18 Uhr“, „Informiere Trainer über Hallenänderung“.",
+        "Tippe oder sprich eine Vereinsaktion, z. B. „Sag U12-1 Training heute ab“, „Plane U17 Dienstag 18 Uhr“, „Informiere Trainer über Hallenänderung“.",
       agentUtteranceNotAction: "Keine Vereinsaktion",
       agentUtteranceUseChatHint: "Für Trainingsfragen nutze den Chat-Tab. Hier beschreibst du eine auszuführende Vereinsaktion.",
       agentWorkflowExamples:
-        "Versuche: „Sag U12-1 Training heute ab — Platz überflutet“, „Plane U17 Training Dienstag 18 Uhr Platz 1“ oder „Informiere Trainer über Hallenbelegung“.",
+        "Versuche: „Sag U12-1 Training heute ab, Platz überflutet“, „Plane U17 Training Dienstag 18 Uhr Platz 1“ oder „Informiere Trainer über Hallenbelegung“.",
       nlProposalReady:
         "Ich habe aus deiner Nachricht einen Vereins-Workflow vorbereitet. Prüfe die Schritte unten und tippe auf **Bestätigen & ausführen**, um zu speichern.",
       nlInterpretFailed: "Konnte nicht als Workflow erkannt werden",
@@ -5170,7 +5210,7 @@ export const de: Translations = {
       openPage: "Öffnen",
       sectionWorkflowsTitle: "Partner-Aktionen",
       sectionWorkflowsDesc:
-        "Shortcuts für dein Partner-Portal — Listing, Marketplace, Nachrichten, Aufgaben und Reports. KI-Entwürfe öffnen im Chat.",
+        "Shortcuts für dein Partner-Portal: Listing, Marketplace, Nachrichten, Aufgaben und Reports. KI-Entwürfe öffnen im Chat.",
       actionListingTitle: "Lieferanten-Listing verbessern",
       actionListingDesc: "Texte für öffentliche Lieferanten-Seite und Marketplace-Profil optimieren.",
       actionListingPrompt:
@@ -5193,7 +5233,7 @@ export const de: Translations = {
         "Hilf mir, meine Partner-Kooperations-Reports zu interpretieren und Trends für Gespräche mit Vereinen hervorzuheben.",
       composerTitle: "Partner-Assistent fragen",
       composerHint:
-        "Beschreibe, was du brauchst — Listing-Text, Vereinsnachricht, Aufgaben-Update oder Marketplace-Ansprache. Antworten erscheinen im Chat.",
+        "Beschreibe, was du brauchst: Listing-Text, Vereinsnachricht, Aufgaben-Update oder Marketplace-Ansprache. Antworten erscheinen im Chat.",
       composerPlaceholder: "z. B. Follow-up-Nachricht an einen Verein zu unserem Angebot für Ausrüstung…",
       composerSend: "An Chat senden",
       footerNote: "Vereins-Trainingspläne und Kalender-Workflows sind im Partner-Portal nicht verfügbar.",
@@ -5234,7 +5274,7 @@ export const de: Translations = {
     scopeHint:
       "Nur Vereinsbezug: Training, Spiele, Mitglieder und Vereinsbetrieb, keine allgemeinen Nachrichten, kein Shopping oder Off-Topic.",
     scopeHintPartner:
-      "Nur Partner-Portal: Marketplace-Listing, Vereinskooperationen, Nachrichten, Aufgaben und Reports — keine Vereins-Trainings- oder Kalender-Workflows.",
+      "Nur Partner-Portal: Marketplace-Listing, Vereinskooperationen, Nachrichten, Aufgaben und Reports, keine Vereins-Trainings- oder Kalender-Workflows.",
     welcomeTitle: "Willkommen bei AI 4 T",
     welcomeTitlePrefix: "Willkommen bei",
     introLearnMore: "Was kann AI 4 T?",
@@ -5256,6 +5296,10 @@ export const de: Translations = {
       "Anfrage konnte nicht erstellt werden (ungültige Chat-Daten). Chat leeren oder Seite neu laden.",
     chatErrorInvalidSupabaseUrl:
       "VITE_SUPABASE_URL ist keine gültige URL. Leerzeichen entfernen und .env prüfen.",
+    chatErrorRateLimit: "Zu viele KI-Anfragen gerade. Kurz warten und erneut versuchen.",
+    chatErrorPlanGate: "AI 4 T ist in eurem aktuellen Paket nicht freigeschaltet. Bitte einen Vereins-Admin um Freischaltung.",
+    chatErrorNoApiKey: "Kein KI-Anbieter für diesen Verein konfiguriert. API-Key unter Einstellungen → KI-Anbieter hinterlegen.",
+    chatErrorSettingsLink: "Einstellungen → KI-Anbieter öffnen",
     feedback: {
       helpful: "Hilfreich",
       notHelpful: "Nicht hilfreich",
@@ -5267,7 +5311,7 @@ export const de: Translations = {
 
   financial: {
     sectionTitle: "Vereinsfinanzen",
-    sectionDesc: "Einnahmen, offene Beträge und Kosten — synchronisiert aus Zahlungen, Beiträgen und Ausgaben.",
+    sectionDesc: "Einnahmen, offene Beträge und Kosten, synchronisiert aus Zahlungen, Beiträgen und Ausgaben.",
     reportTitle: "Finanzbericht",
     reportDesc: "Einnahmen, offene Beträge, Vereinskosten und Netto-Position der letzten 12 Monate.",
     collected: "Einnahmen",
@@ -5278,7 +5322,7 @@ export const de: Translations = {
     overdueItemsCount: "{count} überfällig",
     overdueFollowUp: "In Zahlungen oder Beiträgen nachverfolgen",
     loading: "Finanzdaten werden geladen…",
-    emptyHint: "Noch keine Zahlungs- oder Ausgabendaten — Gebührenarten unter Zahlungen anlegen oder Beiträge erfassen.",
+    emptyHint: "Noch keine Zahlungs- oder Ausgabendaten. Gebührenarten unter Zahlungen anlegen oder Beiträge erfassen.",
     viewFullReport: "Vollständiger Finanzbericht",
     linkPayments: "Zahlungen",
     linkDues: "Beiträge",
@@ -5298,12 +5342,12 @@ export const de: Translations = {
     feeTypeBreakdown: "Einnahmen nach Gebührenart",
     recentExpenses: "Letzte Ausgaben",
     emptyRevenue: "Noch keine Einnahmen erfasst.",
-    emptyCosts: "Noch keine Kosten erfasst — Ausgaben hinzufügen für P&L.",
+    emptyCosts: "Noch keine Kosten erfasst. Ausgaben hinzufügen für P&L.",
     sourcePayments: "Zahlungen",
     sourceDues: "Beiträge",
     sourceShop: "Shop",
     pnlNote: "Netto = Einnahmen minus erfasste Vereinskosten. Offene Beträge fließen erst bei Zahlung ins Netto ein.",
-    aiInsightOutstanding: "{amount} offen — Zahlungen und Beiträge prüfen.",
+    aiInsightOutstanding: "{amount} offen. Zahlungen und Beiträge prüfen.",
     expenseCategories: {
       facility: "Anlage & Platz",
       equipment: "Equipment",

@@ -248,7 +248,7 @@ export function ClubMarketplaceOffersPanel({
                         <span>{o.price}: {formatOfferPrice(row.offer)}</span>
                         <span>
                           {o.includedServices}:{" "}
-                          {row.offer.included_services.length || "—"}
+                          {row.offer.included_services.length || "-"}
                         </span>
                         <span>{o.documents}: {docCount}</span>
                         <span>{o.offerTitle}: {row.offer.title}</span>

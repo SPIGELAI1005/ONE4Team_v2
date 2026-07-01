@@ -1,5 +1,5 @@
 /**
- * ONE4Team — central dashboard RBAC configuration.
+ * ONE4Team - central dashboard RBAC configuration.
  *
  * **Single source of truth** for private-dashboard module access (menu, routes, data scope).
  *
@@ -8,7 +8,7 @@
  * access to the corresponding internal modules.
  *
  * Legacy API permission strings (`members:read`, …) are derived from this matrix in
- * `permissions.ts` — do not define independent role matrices in pages or components.
+ * `permissions.ts` - do not define independent role matrices in pages or components.
  */
 
 import type { ClubRoleAssignmentRow, ClubRoleKind } from "@/lib/club-role-assignments";
@@ -78,7 +78,7 @@ export const SPORTS_ROLES: readonly DashboardRole[] = [
 // Modules
 // ---------------------------------------------------------------------------
 
-/** Dashboard modules/pages — maps to sidebar items and route guards. */
+/** Dashboard modules/pages - maps to sidebar items and route guards. */
 export type DashboardModule =
   | "dashboard"
   | "assets"
@@ -125,7 +125,7 @@ export const DASHBOARD_MODULES: readonly DashboardModule[] = [
 
 /**
  * Default sidebar order for roles with broad access.
- * @deprecated Prefer {@link getSidebarMenuItems} — role-specific profiles with RBAC gate.
+ * @deprecated Prefer {@link getSidebarMenuItems} - role-specific profiles with RBAC gate.
  */
 export const MENU_MODULE_ORDER: readonly DashboardModule[] = [
   "dashboard",
@@ -337,15 +337,15 @@ export const MODULE_ROUTES: Record<DashboardModule, string> = {
 // ---------------------------------------------------------------------------
 
 /**
- * Module access level — used for menu visibility, route gates, and data scoping hints.
+ * Module access level - used for menu visibility, route gates, and data scoping hints.
  *
- * - `none` — hidden; route blocked
- * - `read` — view-only club or public-preview content
- * - `limited` — restricted subset (e.g. anonymized roster, sponsor exposure stats)
- * - `own` — user's own records (profile, tasks, invoices)
- * - `team` — scoped to assigned team(s)
- * - `assigned` — explicitly assigned items only
- * - `full` — club-wide manage access for the module
+ * - `none` - hidden; route blocked
+ * - `read` - view-only club or public-preview content
+ * - `limited` - restricted subset (e.g. anonymized roster, sponsor exposure stats)
+ * - `own` - user's own records (profile, tasks, invoices)
+ * - `team` - scoped to assigned team(s)
+ * - `assigned` - explicitly assigned items only
+ * - `full` - club-wide manage access for the module
  */
 export type ModuleAccessLevel =
   | "none"
@@ -381,7 +381,7 @@ const FULL_ACCESS = Object.fromEntries(
   DASHBOARD_MODULES.map((m) => [m, "full"]),
 ) as Record<DashboardModule, ModuleAccessLevel>;
 
-/** Safe fallback when role string cannot be normalized — lowest privilege, never admin. */
+/** Safe fallback when role string cannot be normalized - lowest privilege, never admin. */
 const UNKNOWN_ROLE_ACCESS: Record<DashboardModule, ModuleAccessLevel> = {
   dashboard: "own",
   assets: "none",
@@ -695,7 +695,7 @@ function pickHigherRole(a: DashboardRole, b: DashboardRole): DashboardRole {
 
 /**
  * Normalize any role string (DB `app_role`, UI label, localStorage persona) to a dashboard role.
- * Returns `null` when unrecognized — callers must use {@link UNKNOWN_ROLE_ACCESS}, not admin.
+ * Returns `null` when unrecognized - callers must use {@link UNKNOWN_ROLE_ACCESS}, not admin.
  */
 export function normalizeDashboardRole(
   raw: string | null | undefined,
@@ -711,7 +711,7 @@ export const normalizeRole = normalizeDashboardRole;
 
 /**
  * Resolve the effective dashboard role from legacy membership + optional scoped assignments.
- * Platform-admin context is out of scope — legacy `admin` maps to `club_admin`.
+ * Platform-admin context is out of scope - legacy `admin` maps to `club_admin`.
  */
 export function resolveDashboardRole(
   legacyRole: string | null | undefined,
@@ -769,7 +769,7 @@ export function canWriteModule(
   return level === "full" || level === "team";
 }
 
-/** Modules with any RBAC access (legacy helper — prefer {@link getSidebarMenuItems}). */
+/** Modules with any RBAC access (legacy helper - prefer {@link getSidebarMenuItems}). */
 export function getVisibleMenuItems(
   role: DashboardRole | string | null | undefined,
 ): DashboardModule[] {
@@ -897,7 +897,7 @@ export function getModuleRoute(
   return MODULE_ROUTES[module];
 }
 
-/** Dashboard persona roles a user may switch to (UI preview) — subset of internal roles. */
+/** Dashboard persona roles a user may switch to (UI preview) - subset of internal roles. */
 export function getDashboardPersonaOptions(
   role: DashboardRole | string | null | undefined,
 ): DashboardRole[] {
@@ -918,7 +918,7 @@ export function getDashboardPersonaOptions(
 }
 
 /**
- * All dashboard personas the user may open — union of legacy role, assignments,
+ * All dashboard personas the user may open - union of legacy role, assignments,
  * preview options, and optional club-admin elevation (RPC / general admin).
  */
 export function getEffectiveDashboardPersonas(

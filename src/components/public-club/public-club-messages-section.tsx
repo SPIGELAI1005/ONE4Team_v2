@@ -5,7 +5,7 @@ import { usePublicClub } from "@/contexts/public-club-context";
 import { useLanguage } from "@/hooks/use-language";
 import { PublicClubButton } from "@/components/public-club/public-club-button";
 
-/** Homepage teaser for club messaging — members use the floating hub for live updates. */
+/** Homepage teaser for club messaging - members use the floating hub for live updates. */
 export function PublicClubMessagesSection() {
   const { t } = useLanguage();
   const { club, user, isMember, messagesCta } = usePublicClub();

@@ -15,6 +15,10 @@ interface Ai4tChatComposerProps {
   voice: ReturnType<typeof useAi4TeamVoice>;
   onVoiceCommand: (transcript: string) => void;
   sendAriaLabel?: string;
+  /** `club` = light public embed; `dashboard` = app dark/light theme tokens */
+  variant?: "club" | "dashboard";
+  /** Omit outer frame when nested inside a card (Agent tab). */
+  frameless?: boolean;
   className?: string;
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
 }
@@ -30,6 +34,8 @@ export function Ai4tChatComposer({
   voice,
   onVoiceCommand,
   sendAriaLabel,
+  variant = "club",
+  frameless = false,
   className,
   textareaRef,
 }: Ai4tChatComposerProps) {
@@ -53,11 +59,18 @@ export function Ai4tChatComposer({
   }, [value, syncTextareaHeight, fieldRef]);
 
   const busy = disabled || isLoading;
+  const isDashboard = variant === "dashboard";
+  const controlVariant = isDashboard ? "default" : "club";
 
   return (
     <div
       className={cn(
-        "shrink-0 border-t border-neutral-200/80 bg-white/80 px-1 py-3 backdrop-blur-sm",
+        "shrink-0",
+        !frameless &&
+          (isDashboard
+            ? "border-t border-border bg-background/80 px-1 py-3 backdrop-blur-xl"
+            : "border-t border-neutral-200/80 bg-white/80 px-1 py-3 backdrop-blur-sm"),
+        frameless && "py-0",
         className,
       )}
     >
@@ -75,15 +88,21 @@ export function Ai4tChatComposer({
           placeholder={placeholder ?? t.coTrainerPage.inputPlaceholder}
           rows={1}
           disabled={busy}
-          className="ai4t-subtle-scroll box-border min-h-[56px] max-h-[min(28vh,240px)] flex-1 resize-none overflow-y-hidden rounded-xl border border-neutral-200 bg-white px-3 py-3 text-sm leading-relaxed text-neutral-900 placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--club-primary)]/40"
+          className={cn(
+            "ai4t-subtle-scroll box-border min-h-[56px] max-h-[min(28vh,240px)] flex-1 resize-none overflow-y-hidden rounded-xl border px-3 py-3 text-sm leading-relaxed focus-visible:outline-none",
+            isDashboard
+              ? "border-border bg-card text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
+              : "border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-400 focus-visible:ring-2 focus-visible:ring-[color:var(--club-primary)]/40",
+          )}
         />
         <Ai4TSendButton
           disabled={!value.trim() || busy}
           onClick={onSend}
+          variant={controlVariant}
           aria-label={sendAriaLabel ?? t.coTrainerPage.tabChat}
         />
         <Ai4TeamVoiceControls
-          variant="club"
+          variant={controlVariant}
           showWhenUnsupported
           disabled={busy}
           voice={voice}
@@ -91,7 +110,14 @@ export function Ai4tChatComposer({
         />
       </div>
       {voice.speechSupported || voice.ttsSupported ? (
-        <p className="mt-1.5 text-[10px] text-neutral-500">{t.coTrainerPage.voice.hint}</p>
+        <p
+          className={cn(
+            "mt-1.5 text-[10px]",
+            isDashboard ? "text-muted-foreground" : "text-neutral-500",
+          )}
+        >
+          {t.coTrainerPage.voice.hint}
+        </p>
       ) : null}
     </div>
   );

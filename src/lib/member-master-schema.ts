@@ -1,4 +1,4 @@
-/** Club member registry — field definitions, Excel aliases, and completeness rules. */
+/** Club member registry - field definitions, Excel aliases, and completeness rules. */
 
 export interface ClubMemberMasterRecord {
   membership_id: string;
@@ -249,7 +249,7 @@ export const MEMBER_MASTER_FIELDS: MemberMasterFieldMeta[] = [
   },
 ];
 
-/** Linked members import — not stored on master row */
+/** Linked members import - not stored on master row */
 export const GUARDIAN_IMPORT_COLUMNS = {
   guardian_email: ["guardian_email", "parent_email", "betreuer_email", "sorgeberechtigter_email"],
   ward_email: ["ward_email", "child_email", "player_email", "kind_email"],

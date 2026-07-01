@@ -31,7 +31,7 @@ async function stampPartnerMarketplaceLink(
 
 /**
  * Creates or reuses a Partners directory entry and an active engagement from an accepted offer.
- * Idempotent per offer — safe to call once per acceptance.
+ * Idempotent per offer - safe to call once per acceptance.
  */
 export async function graduateAcceptedOfferToPartners(input: {
   clubId: string;

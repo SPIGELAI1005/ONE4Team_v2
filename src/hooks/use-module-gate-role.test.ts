@@ -12,7 +12,7 @@ describe("resolvePortalSide", () => {
     ).toBe("loading");
   });
 
-  it("uses gate role when resolved — supplier is partner portal", () => {
+  it("uses gate role when resolved - supplier is partner portal", () => {
     expect(
       resolvePortalSide({
         gateRole: "supplier",
@@ -22,7 +22,7 @@ describe("resolvePortalSide", () => {
     ).toBe("partner");
   });
 
-  it("uses gate role when resolved — club admin is club portal", () => {
+  it("uses gate role when resolved - club admin is club portal", () => {
     expect(
       resolvePortalSide({
         gateRole: "club_admin",

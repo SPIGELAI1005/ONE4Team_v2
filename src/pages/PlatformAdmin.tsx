@@ -221,7 +221,7 @@ export default function PlatformAdmin() {
                 <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {[
                     { icon: Building2, label: t.platformAdminPage.statTotalClubs, value: stats.totalClubs, color: "text-blue-500" },
-                    { icon: Users, label: t.platformAdminPage.statTotalMembers, value: stats.totalMembers || "—", color: "text-green-500" },
+                    { icon: Users, label: t.platformAdminPage.statTotalMembers, value: stats.totalMembers || "-", color: "text-green-500" },
                     { icon: TrendingUp, label: t.platformAdminPage.statActiveSubscriptions, value: stats.activeSubscriptions, color: "text-emerald-500" },
                     { icon: Globe, label: t.platformAdminPage.statTrialingClubs, value: stats.trialingSubscriptions, color: "text-amber-500" },
                   ].map((stat) => (

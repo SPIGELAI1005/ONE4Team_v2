@@ -435,7 +435,7 @@ export default function PublicClubTeamDetailPage() {
                         </div>
                       </div>
                       <div className="text-sm font-semibold tabular-nums text-[color:var(--club-foreground)]">
-                        {m.home_score != null && m.away_score != null ? `${m.home_score} : ${m.away_score}` : "—"}
+                        {m.home_score != null && m.away_score != null ? `${m.home_score} : ${m.away_score}` : "-"}
                       </div>
                     </li>
                   ))}

@@ -61,7 +61,7 @@ export function resolvePortalSide(input: {
 
   const normalized = normalizePartnerPortalPath(input.pathname);
 
-  // Dedicated public-page admins — URL is authoritative (no club↔supplier ping-pong).
+  // Dedicated public-page admins - URL is authoritative (no club↔supplier ping-pong).
   if (isClubOnlyPortalPath(normalized)) return "club";
   if (normalized === PARTNER_PORTAL_ROUTES.supplier_page) return "partner";
 

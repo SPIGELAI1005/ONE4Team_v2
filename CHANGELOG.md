@@ -3,6 +3,41 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-01 (AI 4 T pilot UX P4-002, dark-mode composer, Sommerfest fix, copy polish)
+
+### AI 4 T — pilot UX batch (**AI4T-P4-002**)
+- **Persona safety:** Agent tab hidden for player/member personas; **`canUseClubAgentWorkflows`** + gate role in **`ai-agent-context.tsx`** / **`CoTrainer.tsx`**.
+- **Scoped context — `ai-context.ts`:** `staff` / `player` / `member` / `public` scopes; team ID filter; member = events + announcements only; public embed respects `?team=`.
+- **Chat UX:** `prepareChatMessagesForApi` thread trim; **`Ai4tFollowUpChips`** after replies; **`mapCoTrainerEdgeError`** (rate limit, plan gate, API key) with DE/EN + Settings link in **`CoTrainer.tsx`** and **`ai-4-t-chat-stream.ts`**.
+- **Persona hint:** **`Ai4tPersonaHint`** when user has multiple dashboard personas.
+- **Public modal:** Guide tab role can/cannot lists; **`homeTeamFilterId`** passed to **`Ai4tEmbedChat`**.
+- **History:** Agent run filters by intent and status in Co-Trainer History tab.
+- **Admin dashboard:** **`Ai4tAdminUsageCard`** surfaces **`get_club_ai_usage_stats`** (7-day window).
+- **Partner portal:** **`buildPartnerAiContext()`** injects listing, open requests, offers into partner chat context.
+- **Ops / release:** `supabase/scripts/ai4t_review_negative_feedback.sql`, `ai4t_agent_smoke_checklist.sql`; **`docs/AI4T_RELEASE_REVIEW.md`** (shipped vs deferred); **`e2e/ai4t-smoke.spec.ts`** (skipped pending auth fixtures); tests **`ai4t-pilot-ux.test.ts`**.
+
+### AI 4 T — Agent composer dark mode
+- **`Ai4tChatComposer`:** `variant="dashboard"` uses theme tokens (`bg-card`, `border-border`, `text-muted-foreground`); `frameless` when nested in Agent card.
+- **`AiAgentWorkspace`:** Full and compact Agent footers use dashboard variant; no white input/mic/speaker buttons on dark dashboard.
+
+### Sommerfest live banner
+- **`sommerfest-live-pulse.ts`:** `sommerfestBannerMatchStats()` counts completed/in-progress only after match kickoff time (fixes premature “2 of 22” before tournament day).
+- **`public-sommerfest-tournament-banner.tsx`:** Generic subtitle before event day; uses stats helper.
+- **`tsv-allach-sommerfest-competition.ts`:** Republish preserves existing row **`status`**.
+- **Tests:** **`sommerfest-live-pulse.test.ts`**.
+
+### Copy polish (em dash removal)
+- Bulk EN/DE i18n reformulation; marketplace/supplier/AI prompt strings; UI placeholders `"—"` → `"-"` across components; **`index.css`** comment cleanup.
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`** (**AI4T-P4-002**), **`HOLD.md`**, **`README.md`**.
+
+### Operator smoke
+- Dark mode **AI 4 T → Agent:** composer matches Chat tab styling (no white bar).
+- **Player persona:** Agent tab absent; chat context team-scoped.
+- **Sommerfest banner** before 11 Jul 2026: no false “matches completed” count.
+- Club admin dashboard: **AI 4 T this week** usage card visible.
+
 ## 2026-07-01 (Persona data scoping — player/member + public Live Scores UI)
 
 ### Persona-gated messages and tasks (client)

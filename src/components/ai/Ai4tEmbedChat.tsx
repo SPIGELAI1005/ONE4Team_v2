@@ -13,6 +13,10 @@ import { useAi4TeamVoice } from "@/hooks/use-ai4team-voice";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { buildClubContext, mergeQuickPrompts, type ClubQuickPrompt } from "@/lib/ai-context";
+import type { AiContextScope } from "@/lib/ai-agent-access";
+import { buildFollowUpPrompts } from "@/lib/ai-follow-up-prompts";
+import { Ai4tFollowUpChips } from "@/components/ai/Ai4tFollowUpChips";
+import { useUserTeamIds } from "@/hooks/use-user-team-ids";
 import { streamCoTrainerChat, type Ai4TChatMessage } from "@/lib/ai-4-t-chat-stream";
 import {
   buildAi4TRoleQuickPrompts,
@@ -38,6 +42,7 @@ interface Ai4tEmbedChatProps {
   isSignedIn: boolean;
   primaryColor?: string | null;
   seedPrompt?: string | null;
+  publicTeamId?: string | null;
   onSeedConsumed?: () => void;
   onRequestSignIn: () => void;
   onWorkflowProposal?: () => void;
@@ -70,6 +75,7 @@ export function Ai4tEmbedChat({
   isSignedIn,
   primaryColor,
   seedPrompt,
+  publicTeamId,
   onSeedConsumed,
   onRequestSignIn,
   onWorkflowProposal,
@@ -85,6 +91,8 @@ export function Ai4tEmbedChat({
   const [clubContextText, setClubContextText] = useState("");
   const [smartPrompts, setSmartPrompts] = useState<ClubQuickPrompt[]>([]);
   const [contextLoading, setContextLoading] = useState(false);
+  const [followUpPrompts, setFollowUpPrompts] = useState<ClubQuickPrompt[]>([]);
+  const { teamIds: userTeamIds } = useUserTeamIds(isSignedIn ? clubId : null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const assistantContentRef = useRef("");
@@ -115,6 +123,13 @@ export function Ai4tEmbedChat({
         .eq("status", "active")
         .maybeSingle();
       const isAdmin = membershipRes.data?.role === "admin" || membershipRes.data?.role === "club_admin";
+      const embedScope: AiContextScope = publicTeamId
+        ? "public"
+        : roleKey === "player"
+          ? "player"
+          : roleKey === "trainer" || roleKey === "admin"
+            ? "staff"
+            : "member";
 
       try {
         const data = await buildClubContext(supabase, {
@@ -122,6 +137,9 @@ export function Ai4tEmbedChat({
           clubName,
           language,
           isAdmin,
+          scope: embedScope,
+          teamIds: userTeamIds,
+          publicTeamId,
         });
         if (!cancelled) {
           setClubContextText(data.contextText);
@@ -139,7 +157,7 @@ export function Ai4tEmbedChat({
     return () => {
       cancelled = true;
     };
-  }, [clubId, clubName, isSignedIn, language, user?.id]);
+  }, [clubId, clubName, isSignedIn, language, user?.id, roleKey, publicTeamId, userTeamIds]);
 
   useEffect(() => {
     if (!seedPrompt) return;
@@ -248,6 +266,10 @@ export function Ai4tEmbedChat({
           detailPrefix: t.coTrainerPage.chatErrorDetailPrefix,
           heading: t.coTrainerPage.chatErrorHeading,
           hint: t.coTrainerPage.chatErrorHint,
+          rateLimit: t.coTrainerPage.chatErrorRateLimit,
+          planGate: t.coTrainerPage.chatErrorPlanGate,
+          noApiKey: t.coTrainerPage.chatErrorNoApiKey,
+          settingsLink: t.coTrainerPage.chatErrorSettingsLink,
         },
         onChunk: upsertAssistant,
         onError: (markdownBody, toastDescription) => {
@@ -263,7 +285,15 @@ export function Ai4tEmbedChat({
 
       setIsLoading(false);
       const finalReply = assistantContentRef.current.trim();
-      if (finalReply) aiVoice.speak(finalReply);
+      if (finalReply) {
+        aiVoice.speak(finalReply);
+        setFollowUpPrompts(
+          buildFollowUpPrompts(language, {
+            hasUpcomingMatch: clubContextText.includes("vs "),
+            hasTrainingThisWeek: clubContextText.includes("[training]") || clubContextText.includes("training"),
+          }),
+        );
+      }
     },
     [
       agent,
@@ -419,6 +449,16 @@ export function Ai4tEmbedChat({
         )}
         </div>
       </div>
+
+      {!isLoading && followUpPrompts.length > 0 && messages.length > 0 ? (
+        <div className="shrink-0 px-3 pb-1">
+          <Ai4tFollowUpChips
+            prompts={followUpPrompts}
+            disabled={isLoading}
+            onSelect={(prompt) => void handleSend(prompt)}
+          />
+        </div>
+      ) : null}
 
       {agent?.pendingProposal ? (
         <div className="shrink-0 border-t border-neutral-200/80 bg-white/95 px-1 py-2">

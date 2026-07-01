@@ -173,7 +173,7 @@ const HeroSection = () => {
 
       {/* Content */}
       <motion.div className="relative z-10 container mx-auto px-4 py-12 sm:py-16 md:py-20 text-center" style={{ y: contentY, opacity }}>
-        {/* Logo — no tile, transparent background */}
+        {/* Logo - no tile, transparent background */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -238,7 +238,7 @@ const HeroSection = () => {
           </Button>
         </motion.div>
 
-        {/* Stats — iOS liquid glass cards with animated counters */}
+        {/* Stats - iOS liquid glass cards with animated counters */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}

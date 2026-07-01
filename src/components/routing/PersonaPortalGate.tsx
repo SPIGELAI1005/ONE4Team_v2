@@ -39,7 +39,7 @@ const PARTNER_TO_CLUB: Record<string, string> = {
   [PARTNER_PORTAL_ROUTES.supplier_page]: CLUB_ONLY_PORTAL_PATHS[0],
 };
 
-/** `/ai` shortcut — club users → co-trainer, partner users → partner-ai. */
+/** `/ai` shortcut - club users → co-trainer, partner users → partner-ai. */
 export function PersonaAwareAiRedirect() {
   const location = useLocation();
   const portalSide = useResolvedPortalSide(location.pathname);
@@ -58,7 +58,7 @@ interface ClubOnlyRouteProps {
   clubPath?: string;
 }
 
-/** Blocks external personas — sends them to the partner portal equivalent. */
+/** Blocks external personas - sends them to the partner portal equivalent. */
 export function ClubOnlyRoute({ children, clubPath }: ClubOnlyRouteProps) {
   const location = useLocation();
   const portalSide = useResolvedPortalSide(location.pathname);
@@ -81,7 +81,7 @@ interface PartnerOnlyRouteProps {
   partnerPath: string;
 }
 
-/** Blocks club-internal personas — sends them to the club portal equivalent. */
+/** Blocks club-internal personas - sends them to the club portal equivalent. */
 export function PartnerOnlyRoute({ children, partnerPath }: PartnerOnlyRouteProps) {
   const location = useLocation();
   const portalSide = useResolvedPortalSide(location.pathname);

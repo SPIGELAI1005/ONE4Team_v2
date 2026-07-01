@@ -314,7 +314,7 @@ export default function Dues() {
                     <div className="text-xs text-muted-foreground">Due date</div>
                     <div className="font-display font-bold text-foreground">{d.due_date}</div>
                     <div className="mt-1 text-sm text-muted-foreground">
-                      {d.amount_cents !== null ? `${(d.amount_cents / 100).toFixed(2)} ${d.currency ?? "EUR"}` : "—"}
+                      {d.amount_cents !== null ? `${(d.amount_cents / 100).toFixed(2)} ${d.currency ?? "EUR"}` : "-"}
                       {canManage ? ` • ${memberNameById[d.membership_id] ?? d.membership_id.slice(0, 8)}` : ""}
                     </div>
                     {d.note && <div className="mt-2 text-xs text-muted-foreground">{d.note}</div>}

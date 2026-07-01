@@ -11,6 +11,7 @@ import {
 } from "@/lib/tsv-allach-sommerfest-competition";
 import { SOMMERFEST_MATCH_IMPORT_KEY_PREFIX } from "@/lib/tsv-allach-sommerfest-match-sync";
 import { SOMMERFEST_MATCHES } from "@/lib/tsv-allach-sommerfest-2026";
+import { isSommerfestLivePulsateActive, sommerfestBannerMatchStats } from "@/lib/sommerfest-live-pulse";
 import { cn } from "@/lib/utils";
 
 const REFRESH_MS = 20_000;
@@ -42,16 +43,17 @@ export function PublicSommerfestTournamentBanner() {
     if (!club?.id || !showBanner) return;
     const { data, error } = await supabase
       .from("matches")
-      .select("status")
+      .select("status, match_date")
       .eq("club_id", club.id)
       .like("notes", `${SOMMERFEST_MATCH_IMPORT_KEY_PREFIX}%`);
 
     if (error) return;
 
     const rows = data ?? [];
+    const { liveCount, finishedCount } = sommerfestBannerMatchStats(rows);
     setStats({
-      liveCount: rows.filter((row) => row.status === "in_progress").length,
-      finishedCount: rows.filter((row) => row.status === "completed").length,
+      liveCount,
+      finishedCount,
       publishedCount: rows.length,
     });
   }, [club?.id, showBanner]);
@@ -77,12 +79,14 @@ export function PublicSommerfestTournamentBanner() {
   const copy = t.sommerfest2026;
   const totalFixtures = SOMMERFEST_MATCHES.length;
   const hasLive = stats.liveCount > 0;
-  const progressLabel =
-    stats.publishedCount > 0
-      ? copy.tournamentBannerProgress
-          .replace("{finished}", String(stats.finishedCount))
-          .replace("{total}", String(totalFixtures))
-      : copy.tournamentBannerSubtitle;
+  const showProgress =
+    stats.publishedCount > 0 &&
+    (hasLive || stats.finishedCount > 0 || isSommerfestLivePulsateActive());
+  const progressLabel = showProgress
+    ? copy.tournamentBannerProgress
+        .replace("{finished}", String(stats.finishedCount))
+        .replace("{total}", String(totalFixtures))
+    : copy.tournamentBannerSubtitle;
 
   return (
     <Link

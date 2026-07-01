@@ -299,7 +299,7 @@ export default function TrainingPlanImport() {
                   <CardTitle className="text-base">{ti.cardPitchCodes}</CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm text-muted-foreground">
-                  {(pdfExtraction.pitchCodes.length ? pdfExtraction.pitchCodes : ["—"]).join(", ")}
+                  {(pdfExtraction.pitchCodes.length ? pdfExtraction.pitchCodes : ["-"]).join(", ")}
                 </CardContent>
               </Card>
               <Card className="border-border/60">
@@ -307,7 +307,7 @@ export default function TrainingPlanImport() {
                   <CardTitle className="text-base">{ti.cardTeams}</CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm text-muted-foreground">
-                  {(pdfExtraction.teamLabels.length ? pdfExtraction.teamLabels : ["—"]).join(", ")}
+                  {(pdfExtraction.teamLabels.length ? pdfExtraction.teamLabels : ["-"]).join(", ")}
                 </CardContent>
               </Card>
               <Card className="border-border/60">
@@ -315,7 +315,7 @@ export default function TrainingPlanImport() {
                   <CardTitle className="text-base">{ti.cardCoachNames}</CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm text-muted-foreground">
-                  {(pdfExtraction.coachLabels.length ? pdfExtraction.coachLabels : ["—"]).join(", ")}
+                  {(pdfExtraction.coachLabels.length ? pdfExtraction.coachLabels : ["-"]).join(", ")}
                 </CardContent>
               </Card>
             </div>
@@ -466,7 +466,7 @@ export default function TrainingPlanImport() {
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-sm text-muted-foreground">
-              {ti.clubPrefix} {clubId || "—"}
+              {ti.clubPrefix} {clubId || "-"}
               {activeClub?.name ? ` · ${activeClub.name}` : ""}
             </div>
             <Button

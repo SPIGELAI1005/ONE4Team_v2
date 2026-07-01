@@ -34,7 +34,8 @@ export function Ai4TSendButton({
         isClub
           ? clubButtonClass
           : "h-11 w-11 shrink-0 rounded-xl border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground [&_svg]:text-foreground",
-        "transition-[box-shadow,opacity,transform] active:scale-[0.97] disabled:opacity-40 disabled:hover:bg-white disabled:hover:shadow-sm",
+        "transition-[box-shadow,opacity,transform] active:scale-[0.97] disabled:opacity-40",
+        isClub && "disabled:hover:bg-white disabled:hover:shadow-sm",
         !isClub && "disabled:hover:bg-background",
         className,
       )}

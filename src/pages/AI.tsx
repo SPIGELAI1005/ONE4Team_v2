@@ -330,7 +330,7 @@ export default function AI() {
                     aiLog.map((r) => (
                       <div key={r.id} className="rounded-2xl border border-border/60 bg-background/40 p-3">
                         <div className="text-xs text-muted-foreground">
-                          {new Date(r.created_at).toLocaleString()} • {r.kind} • {r.model ?? "—"}
+                          {new Date(r.created_at).toLocaleString()} • {r.kind} • {r.model ?? "-"}
                         </div>
                         <div className="mt-1 text-[11px] text-foreground/80">user: {r.user_id.slice(0, 8)}…</div>
                       </div>

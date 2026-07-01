@@ -82,12 +82,12 @@ const NONE = "__none__";
 const TABS: PartnersTab[] = ["overview", "directory", "engagements", "contracts", "invoices"];
 
 interface ClubPartnersWorkflowProps {
-  /** Render inside Marketplace hub — keeps parent tab bar, shows partner sub-tabs only. */
+  /** Render inside Marketplace hub - keeps parent tab bar, shows partner sub-tabs only. */
   embedded?: boolean;
 }
 
 function formatDate(value: string | null): string {
-  if (!value) return "—";
+  if (!value) return "-";
   try {
     return format(parseISO(value.length > 10 ? value : `${value}T12:00:00`), "dd MMM yyyy");
   } catch {

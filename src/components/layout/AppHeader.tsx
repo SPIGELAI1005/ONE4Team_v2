@@ -165,13 +165,13 @@ export default function AppHeader({
         {debugEnabled && (
           <div className="hidden lg:flex items-center gap-2 text-[10px] text-muted-foreground">
             <span className="px-2 py-1 rounded-full border border-border/60 bg-card/40 backdrop-blur-xl">
-              club: <span className="text-foreground/80">{debugClubId ? debugClubId.slice(0, 8) : "—"}</span>
+              club: <span className="text-foreground/80">{debugClubId ? debugClubId.slice(0, 8) : "-"}</span>
             </span>
             <span className="px-2 py-1 rounded-full border border-border/60 bg-card/40 backdrop-blur-xl">
-              memberRole: <span className="text-foreground/80">{debugMembershipRole ?? "—"}</span>
+              memberRole: <span className="text-foreground/80">{debugMembershipRole ?? "-"}</span>
             </span>
             <span className="px-2 py-1 rounded-full border border-border/60 bg-card/40 backdrop-blur-xl">
-              routeRole: <span className="text-foreground/80">{debugRouteRole ?? "—"}</span>
+              routeRole: <span className="text-foreground/80">{debugRouteRole ?? "-"}</span>
             </span>
           </div>
         )}

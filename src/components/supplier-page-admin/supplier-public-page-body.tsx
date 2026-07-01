@@ -22,7 +22,7 @@ export interface SupplierPublicPageBodyProps {
 
 
 
-/** Public supplier page body — used on `/supplier/:slug` and the admin live preview. */
+/** Public supplier page body - used on `/supplier/:slug` and the admin live preview. */
 
 export function SupplierPublicPageBody({
 
@@ -199,7 +199,7 @@ export function SupplierPublicPageBody({
 
             >
 
-              {profile.provider_name || "—"}
+              {profile.provider_name || "-"}
 
             </h1>
 

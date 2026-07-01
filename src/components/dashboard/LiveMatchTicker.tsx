@@ -88,7 +88,7 @@ const LiveMatchTicker = () => {
     };
   }, [user]);
 
-  // Demo data when no live matches — hide ticker instead of showing placeholders.
+  // Demo data when no live matches - hide ticker instead of showing placeholders.
   if (matches.length === 0) return null;
 
   const displayMatches = matches;

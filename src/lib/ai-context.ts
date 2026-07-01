@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import type { AiContextScope } from "@/lib/ai-agent-access";
 import { isMissingRelationError } from "@/lib/public-club-models";
 
 export interface ClubQuickPrompt {
@@ -13,6 +14,12 @@ export interface BuildClubContextOptions {
   language: "en" | "de";
   /** When true, unpaid dues count is fetched; RLS may still hide rows for non-admins. */
   isAdmin: boolean;
+  /** Limits which schedule/roster sections are included (persona / public embed). */
+  scope?: AiContextScope;
+  /** Player/coach team UUIDs for team-scoped context. */
+  teamIds?: string[];
+  /** Public site ?team= filter. */
+  publicTeamId?: string | null;
 }
 
 interface MembershipRow {
@@ -33,6 +40,7 @@ export interface ActivitySummaryRow {
   starts_at: string;
   ends_at?: string | null;
   location?: string | null;
+  team_id?: string | null;
   teams?: { name: string | null } | null;
 }
 
@@ -154,7 +162,7 @@ async function fetchTrainingActivities(
 ): Promise<ActivitySummaryRow[]> {
   const activitiesRes = await client
     .from("activities")
-    .select("id, type, title, starts_at, ends_at, location, teams(name)")
+    .select("id, type, title, starts_at, ends_at, location, team_id, teams(name)")
     .eq("club_id", clubId)
     .gte("starts_at", fromIso)
     .lt("starts_at", toIso)
@@ -275,6 +283,44 @@ export function mergeQuickPrompts(smart: ClubQuickPrompt[], fallback: ClubQuickP
   return merged;
 }
 
+function teamNameSet(teamIds: string[], teams: TeamRow[]): Set<string> {
+  const names = new Set<string>();
+  for (const id of teamIds) {
+    const t = teams.find((row) => row.id === id);
+    if (t?.name) names.add(t.name.trim());
+  }
+  return names;
+}
+
+function activityMatchesTeamScope(
+  activity: ActivitySummaryRow,
+  teamIds: string[],
+  teamNames: Set<string>,
+): boolean {
+  if (activity.team_id && teamIds.includes(activity.team_id)) return true;
+  const name = activity.teams?.name?.trim();
+  return Boolean(name && teamNames.has(name));
+}
+
+function matchMatchesTeamScope(match: MatchRow, teamIds: string[], filterTeamId: string | null): boolean {
+  if (filterTeamId) return match.team_id === filterTeamId;
+  if (!teamIds.length) return true;
+  return Boolean(match.team_id && teamIds.includes(match.team_id));
+}
+
+function scopeDescription(scope: AiContextScope, language: "en" | "de"): string {
+  if (language === "de") {
+    if (scope === "player") return "Spieler: nur eigene Mannschaft (Training, Spiele, Kader).";
+    if (scope === "member") return "Mitglied: Vereins-Events und Ankündigungen, keine Team-Trainingsverwaltung.";
+    if (scope === "public") return "Öffentliche Club-Seite: sichtbare Mannschaft und Termine gemäß Filter.";
+    return "Trainer/Admin: voller Vereinskontext gemäß Berechtigung.";
+  }
+  if (scope === "player") return "Player: own team only (training, matches, roster).";
+  if (scope === "member") return "Member: club events and announcements; no team training admin data.";
+  if (scope === "public") return "Public club site: team and schedule limited to what visitors can see.";
+  return "Staff: full club context within your permissions.";
+}
+
 /**
  * Loads club-scoped data the current user can see (RLS) and returns an LLM-ready text block plus smart quick prompts.
  */
@@ -288,6 +334,13 @@ export async function buildClubContext(
   unpaidDues: number | null;
 }> {
   const { clubId, clubName, language, isAdmin } = opts;
+  const scope = opts.scope ?? "staff";
+  const teamIds = opts.teamIds ?? [];
+  const publicTeamId = opts.publicTeamId ?? null;
+  const isMemberScope = scope === "member";
+  const isPlayerScope = scope === "player";
+  const isPublicScope = scope === "public";
+  const restrictTeams = isPlayerScope || isPublicScope;
   const from = startOfDay(new Date());
   const to = addDays(from, 7);
   const fromIso = from.toISOString();
@@ -331,28 +384,53 @@ export async function buildClubContext(
     .order("match_date", { ascending: false })
     .limit(5);
 
-  const duesQ = isAdmin
+  const duesQ = isAdmin && !isMemberScope
     ? client.from("membership_dues").select("id", { count: "exact", head: true }).eq("club_id", clubId).eq("status", "due")
     : Promise.resolve({ count: null as number | null, error: null as null });
 
-  const [memRes, clubTzRes, teamsRes, evRes, upMatchRes, recMatchRes, duesRes, activities] = await Promise.all([
-    membershipsQ,
+  const announcementsQ = isMemberScope
+    ? client
+        .from("announcements")
+        .select("title, content, created_at, team_id")
+        .eq("club_id", clubId)
+        .order("created_at", { ascending: false })
+        .limit(10)
+    : Promise.resolve({ data: [] as Array<{ title: string; content: string; created_at: string; team_id: string | null }>, error: null as null });
+
+  const [memRes, clubTzRes, teamsRes, evRes, upMatchRes, recMatchRes, duesRes, activities, annRes] = await Promise.all([
+    isMemberScope ? Promise.resolve({ data: [], error: null as null }) : membershipsQ,
     clubTzQ,
     teamsQ,
     eventsQ,
-    upcomingMatchesQ,
-    recentMatchesQ,
+    isMemberScope ? Promise.resolve({ data: [], error: null as null }) : upcomingMatchesQ,
+    isMemberScope ? Promise.resolve({ data: [], error: null as null }) : recentMatchesQ,
     duesQ,
-    fetchTrainingActivities(client, clubId, fromIso, toIso),
+    isMemberScope ? Promise.resolve([] as ActivitySummaryRow[]) : fetchTrainingActivities(client, clubId, fromIso, toIso),
+    announcementsQ,
   ]);
 
   const clubTimeZone = clubTzRes.data?.timezone?.trim() || DEFAULT_CLUB_TIMEZONE;
   const clubDefaultLanguage = (clubTzRes.data?.default_language === "de" ? "de" : "en") as "en" | "de";
-  const teams = (teamsRes.data ?? []) as TeamRow[];
+  let teams = (teamsRes.data ?? []) as TeamRow[];
   const memberships = (memRes.data ?? []) as unknown as MembershipRow[];
   const events = (evRes.data ?? []) as unknown as EventRow[];
-  const upcomingMatchesRaw = (upMatchRes.data ?? []) as unknown as MatchRow[];
-  const recentCompleted = (recMatchRes.data ?? []) as unknown as MatchRow[];
+  let upcomingMatchesRaw = (upMatchRes.data ?? []) as unknown as MatchRow[];
+  let recentCompleted = (recMatchRes.data ?? []) as unknown as MatchRow[];
+  let scopedActivities = activities as ActivitySummaryRow[];
+
+  if (publicTeamId) {
+    teams = teams.filter((t) => t.id === publicTeamId);
+  }
+
+  const scopedTeamNames = teamNameSet(teamIds, teams);
+  if (restrictTeams && (publicTeamId || teamIds.length)) {
+    const filterId = publicTeamId ?? teamIds[0] ?? null;
+    scopedActivities = scopedActivities.filter((a) =>
+      activityMatchesTeamScope(a, teamIds, scopedTeamNames) || (filterId ? a.team_id === filterId : false),
+    );
+    upcomingMatchesRaw = upcomingMatchesRaw.filter((m) => matchMatchesTeamScope(m, teamIds, publicTeamId));
+    recentCompleted = recentCompleted.filter((m) => matchMatchesTeamScope(m, teamIds, publicTeamId));
+  }
 
   const upcomingMatches = upcomingMatchesRaw.filter((m) => m.status !== "completed");
   let unpaidDues: number | null = null;
@@ -370,14 +448,16 @@ export async function buildClubContext(
   const recentJoins = activeMembers.filter((m) => new Date(m.created_at) >= thirtyDaysAgo).length;
   const inactiveCount = memberships.filter((m) => m.status !== "active").length;
 
-  const rosterLines = activeMembers.slice(0, 45).map((m) => {
-    const name = m.profiles?.display_name || "Member";
-    const pos = m.position ? `, ${m.position}` : "";
-    const tm = m.team ? `, team ${m.team}` : "";
-    return `- ${name} (${m.role}${pos}${tm})`;
-  });
+  const rosterLines = isMemberScope
+    ? []
+    : activeMembers.slice(0, 45).map((m) => {
+        const name = m.profiles?.display_name || "Member";
+        const pos = m.position ? `, ${m.position}` : "";
+        const tm = m.team ? `, team ${m.team}` : "";
+        return `- ${name} (${m.role}${pos}${tm})`;
+      });
 
-  const activityLines = activities.map((a) => formatActivityScheduleLine(a, clubTimeZone, language));
+  const activityLines = scopedActivities.map((a) => formatActivityScheduleLine(a, clubTimeZone, language));
   const eventLines = events.map(
     (e) => `- ${formatContextDateTime(e.starts_at, clubTimeZone, language)} [${e.event_type}] ${e.title}`,
   );
@@ -394,7 +474,12 @@ export async function buildClubContext(
     return `- ${m.match_date.slice(0, 10)} vs ${m.opponent} (${loc})${scoreStr}`;
   });
 
-  const trainingsThisWeek = activities.filter((a) => a.type === "training").length;
+  const trainingsThisWeek = scopedActivities.filter((a) => a.type === "training").length;
+
+  const announcementLines = (annRes.data ?? []).map((a) => {
+    const excerpt = a.content.replace(/\s+/g, " ").trim().slice(0, 120);
+    return `- ${a.created_at.slice(0, 10)}: ${a.title}${excerpt ? ` - ${excerpt}` : ""}`;
+  });
 
   let upcomingWithin48h: MatchRow | null = null;
   for (const m of upcomingMatches) {
@@ -407,27 +492,30 @@ export async function buildClubContext(
 
   const upcomingMatchByTeamLines = formatMatchesByTeam(upcomingMatches, language);
   const venueLines = formatVenueLines(
-    activities.map((a) => a.location ?? ""),
+    scopedActivities.map((a) => a.location ?? ""),
     language,
   );
 
-  const suggestedPrompts = buildSuggestedPrompts({
-    language,
-    isAdmin,
-    upcomingWithin48h,
-    trainingsThisWeek,
-    unpaidDues,
-    lastCompleted: recentCompleted[0] ?? null,
-    clubName,
-  });
+  const suggestedPrompts = isMemberScope
+    ? []
+    : buildSuggestedPrompts({
+        language,
+        isAdmin,
+        upcomingWithin48h,
+        trainingsThisWeek,
+        unpaidDues,
+        lastCompleted: recentCompleted[0] ?? null,
+        clubName,
+      });
 
   const lines: string[] = [];
   lines.push(`Club: ${clubName}`);
   lines.push(`Club ID: ${clubId}`);
   lines.push(`UI language: ${language}`);
+  lines.push(`Context scope: ${scopeDescription(scope, language)}`);
   lines.push(`Club default language: ${clubDefaultLanguage}`);
   if (clubDefaultLanguage === "de" && language === "de") {
-    lines.push("Preferred reply language: de (German club — reply in German unless user writes English).");
+    lines.push("Preferred reply language: de (German club - reply in German unless user writes English).");
   }
   lines.push(`Club timezone: ${clubTimeZone}`);
   lines.push(`Today (club local): ${formatTodayInClubTimeZone(clubTimeZone, language)}`);
@@ -443,31 +531,41 @@ export async function buildClubContext(
     lines.push(language === "de" ? "- (keine Mannschaften geladen)" : "- (no teams loaded)");
   }
   lines.push("");
-  lines.push("## Members");
-  lines.push(`- Active members: ${activeMembers.length} (total rows: ${memberships.length})`);
-  lines.push(`- Role distribution (active): ${JSON.stringify(roleCounts)}`);
-  lines.push(`- New active members (approx. last 30 days): ${recentJoins}`);
-  lines.push(`- Non-active memberships: ${inactiveCount}`);
-  lines.push("- Roster snapshot (active, capped):");
-  lines.push(...(rosterLines.length ? rosterLines : ["- (none listed)"]));
-  lines.push("");
+  if (!isMemberScope) {
+    lines.push("## Members");
+    lines.push(`- Active members: ${activeMembers.length} (total rows: ${memberships.length})`);
+    lines.push(`- Role distribution (active): ${JSON.stringify(roleCounts)}`);
+    lines.push(`- New active members (approx. last 30 days): ${recentJoins}`);
+    lines.push(`- Non-active memberships: ${inactiveCount}`);
+    lines.push("- Roster snapshot (active, capped):");
+    lines.push(...(rosterLines.length ? rosterLines : ["- (none listed)"]));
+    lines.push("");
+  }
   lines.push("## Schedule (next 7 days)");
-  lines.push("### Activities (trainings / calendar)");
-  lines.push(...(activityLines.length ? activityLines : ["- (none in range)"]));
+  if (!isMemberScope) {
+    lines.push("### Activities (trainings / calendar)");
+    lines.push(...(activityLines.length ? activityLines : ["- (none in range)"]));
+  }
   lines.push("### Club events");
   lines.push(...(eventLines.length ? eventLines : ["- (none in range)"]));
-  lines.push("### Upcoming matches");
-  lines.push(...(upcomingMatchLines.length ? upcomingMatchLines : ["- (none in range)"]));
-  lines.push("### Upcoming matches by team");
-  lines.push(...(upcomingMatchByTeamLines.length ? upcomingMatchByTeamLines : ["- (none in range)"]));
-  lines.push("### Training venues (next 7 days)");
-  lines.push(...venueLines);
-  lines.push("");
-  lines.push("## Recent match results (last 5 completed)");
-  lines.push(...(recentResultLines.length ? recentResultLines : ["- (none)"]));
+  if (isMemberScope) {
+    lines.push("### Club announcements (recent)");
+    lines.push(...(announcementLines.length ? announcementLines : ["- (none listed)"]));
+  }
+  if (!isMemberScope) {
+    lines.push("### Upcoming matches");
+    lines.push(...(upcomingMatchLines.length ? upcomingMatchLines : ["- (none in range)"]));
+    lines.push("### Upcoming matches by team");
+    lines.push(...(upcomingMatchByTeamLines.length ? upcomingMatchByTeamLines : ["- (none in range)"]));
+    lines.push("### Training venues (next 7 days)");
+    lines.push(...venueLines);
+    lines.push("");
+    lines.push("## Recent match results (last 5 completed)");
+    lines.push(...(recentResultLines.length ? recentResultLines : ["- (none)"]));
+  }
   lines.push("");
   lines.push("## Finance (admin-only summary)");
-  if (isAdmin) {
+  if (isAdmin && !isMemberScope) {
     lines.push(
       unpaidDues !== null
         ? `- Unpaid dues records (status=due): ${unpaidDues}`
@@ -480,7 +578,7 @@ export async function buildClubContext(
   return {
     contextText: lines.join("\n"),
     suggestedPrompts,
-    activities: activities.map((a) => ({
+    activities: scopedActivities.map((a) => ({
       id: (a as ActivitySummaryRow).id ?? "",
       type: a.type,
       title: a.title,

@@ -1,5 +1,5 @@
 /**
- * Marketplace product structure — tab profiles and role-aware labels.
+ * Marketplace product structure - tab profiles and role-aware labels.
  * Single source for `/marketplace` information architecture (not Partners CRM).
  */
 
@@ -18,7 +18,7 @@ export const CLUB_MARKETPLACE_TAB_ORDER = [
 
 export type ClubMarketplaceTab = (typeof CLUB_MARKETPLACE_TAB_ORDER)[number];
 
-/** External provider portal tabs — same structure for all provider types. */
+/** External provider portal tabs - same structure for all provider types. */
 export const PROVIDER_PORTAL_TAB_ORDER = [
   "overview",
   "listing",

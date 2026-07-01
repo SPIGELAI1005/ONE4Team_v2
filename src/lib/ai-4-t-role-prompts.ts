@@ -43,8 +43,8 @@ export function getAi4TRoleWelcomeMessage(
 
   if (isPartnerAiRole(role)) {
     return de
-      ? `Willkommen bei AI 4 T. Als ${persona} unterstützt dich der Assistent bei Marketplace-Listing, Club-Kooperationen, Nachrichten und Aufgaben — ohne Vereins-Trainingsplanung.`
-      : `Welcome to AI 4 T. As ${persona}, get help with your marketplace listing, club collaborations, messages, and tasks — not club training schedules.`;
+      ? `Willkommen bei AI 4 T. Als ${persona} unterstützt dich der Assistent bei Marketplace-Listing, Club-Kooperationen, Nachrichten und Aufgaben, ohne Vereins-Trainingsplanung.`
+      : `Welcome to AI 4 T. As ${persona}, get help with your marketplace listing, club collaborations, messages, and tasks, not club training schedules.`;
   }
 
   if (role === "admin") {
@@ -68,8 +68,8 @@ export function getAi4TRoleWelcomeMessage(
       : `Welcome to AI 4 T. As ${persona} for ${clubName}, plan sessions, review matches, and run agent workflows from chat.`;
   }
   return de
-    ? `Willkommen bei AI 4 T. Als ${persona} für ${clubName} — frag alles rund um den Verein.`
-    : `Welcome to AI 4 T. As ${persona} for ${clubName} — ask anything about your club.`;
+    ? `Willkommen bei AI 4 T. Als ${persona} für ${clubName}. Frag alles rund um den Verein.`
+    : `Welcome to AI 4 T. As ${persona} for ${clubName}. Ask anything about your club.`;
 }
 
 export function getAi4TAssistantRoleName(role: Ai4TRoleKey): string {

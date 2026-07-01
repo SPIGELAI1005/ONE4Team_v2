@@ -50,7 +50,7 @@ export function parseIncludedServices(raw: string): string[] {
 }
 
 export function formatOfferPrice(offer: Pick<MarketplaceOfferRow, "price_indication" | "currency">): string {
-  if (!offer.price_indication?.trim()) return "—";
+  if (!offer.price_indication?.trim()) return "-";
   const currency = offer.currency?.trim() || "EUR";
   const price = offer.price_indication.trim();
   if (/^[€$£]|eur|usd|gbp|chf/i.test(price)) return price;

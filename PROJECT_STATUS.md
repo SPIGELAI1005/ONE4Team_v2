@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-07-01 (Persona data scoping player/member, public Live Scores UI)
+Last updated: 2026-07-01 (AI 4 T pilot UX P4-002, dark-mode Agent composer, Sommerfest banner fix)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -35,6 +35,10 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - **Partner portal + Partner Page (2026-07-01):** Dual-world club vs partner routes (`/partner-*`, `/supplier-page`); **`PersonaPortalGate`**; **Partner Page** admin; marketplace provider portal; partner messages/tasks/reports; **`/partner-ai`** with partner-specific Agent workspace; Settings persona switch; **Partner Page** hidden from club admin sidebar. Migrations **`20260731120000`**–**`20260731220000`**. See **`CHANGELOG.md`** § **2026-07-01 (Partner portal…)** and **`docs/rbac-dashboard-plan.md`** §10.
 - **Persona data scoping — player / member (2026-07-01):** Active dashboard persona gates **messages** and **tasks** data scope. Player: team channels + own tasks. Member: club-wide announcements/general chat; events-only dashboard upcoming; payments removed from member nav. **`club-message-access.ts`**, **`club-task-access.ts`**, tests. See **`CHANGELOG.md`** § **2026-07-01 (Persona data scoping…)**.
 - **Public club Live Scores UI (2026-07-01):** Home teaser section title + description aligned with Reports card layout; **`liveScoresTitle`** i18n. See **`CHANGELOG.md`** same section.
+- **AI 4 T pilot UX P4-002 (2026-07-01):** Persona-scoped context, Agent tab gated for player/member, follow-up chips, error mapping, history filters, admin usage widget, partner marketplace context, release review doc. Pilot metrics **AI4T-PILOT-001**–**005** still open. See **`CHANGELOG.md`** § **2026-07-01 (AI 4 T pilot UX…)** and **`docs/AI4T_RELEASE_REVIEW.md`**.
+- **AI 4 T Agent composer dark mode (2026-07-01):** Dashboard Agent tab composer uses theme tokens, not public-embed white styling.
+- **Sommerfest banner fix (2026-07-01):** Live tournament banner no longer shows completed match count before kickoff; republish preserves match status.
+- **Copy polish (2026-07-01):** Em-dash removal pass across EN/DE UI strings.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 

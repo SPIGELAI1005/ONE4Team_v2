@@ -9,7 +9,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { PUBLIC_CLUB_ROUTE_SEGMENTS } from "@/lib/public-club-routes";
 import { mergePublicMatchLists, publicMatchHeadline } from "@/lib/public-club-match-display";
 
-/** Homepage teaser for live scores — links to matches when games are in progress. */
+/** Homepage teaser for live scores - links to matches when games are in progress. */
 export function PublicClubLiveScoresSection() {
   const { t } = useLanguage();
   const { club, user, teams, publicMatches, publicMatchesUpcoming, liveScoresCta, basePath, searchSuffix } = usePublicClub();

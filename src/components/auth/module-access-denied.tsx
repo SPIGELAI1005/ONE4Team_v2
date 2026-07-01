@@ -7,7 +7,7 @@ interface ModuleAccessDeniedProps {
   module?: DashboardModule;
 }
 
-/** Safe in-page denied state — user stays on the route without seeing protected content. */
+/** Safe in-page denied state - user stays on the route without seeing protected content. */
 export function ModuleAccessDenied({ module }: ModuleAccessDeniedProps) {
   const { t } = useLanguage();
   const message =

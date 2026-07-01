@@ -1,7 +1,7 @@
 import { isTsvAllach09Club } from "@/lib/is-tsv-allach-club";
 import type { PublicClubRecord } from "@/lib/public-club-models";
 
-/** Sportanlage TSV Allach 09 only — not used for any other ONE4Team club. */
+/** Sportanlage TSV Allach 09 only - not used for any other ONE4Team club. */
 export const TSV_ALLACH_CLUB_ADDRESS = "Enterstraße 55, 80999 München";
 
 /** WGS84 for Enterstraße 55 (Sportanlage TSV Allach 09). */

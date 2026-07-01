@@ -432,7 +432,7 @@ function joinVisitorInterestLabel(
     case "partner":
       return labels.joinRolePartner;
     default:
-      return id?.trim() ? id : "—";
+      return id?.trim() ? id : "-";
   }
 }
 
@@ -5301,10 +5301,10 @@ const Members = () => {
                           {row.matchLabel ? (
                             <span className="text-emerald-500 font-medium">{row.matchLabel}</span>
                           ) : (
-                            "—"
+                            "-"
                           )}
                         </td>
-                        <td className="px-2 py-2 font-mono truncate max-w-[220px]">{row.email || "—"}</td>
+                        <td className="px-2 py-2 font-mono truncate max-w-[220px]">{row.email || "-"}</td>
                         <td className="px-2 py-2 text-amber-600">
                           {row.missing.map((code) => getRegistryMissingLabel(code)).join(", ")}
                         </td>
