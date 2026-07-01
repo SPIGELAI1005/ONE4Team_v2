@@ -1,6 +1,6 @@
 # RBAC & dashboard access — audit and implementation plan
 
-**Date:** 2026-07-01  
+**Date:** 2026-07-01 (persona data scoping for messages/tasks)  
 **Status:** Phase B partial — sidebar RBAC + marketplace portal + partner portal routes; Partner Page admin; persona switching — route guards largely done via `RequireModule`  
 **Related:** [`PHASE0_RBAC_CHECKLIST.md`](../PHASE0_RBAC_CHECKLIST.md) · [`ops/TENANT_ACCESS_MATRIX.md`](../ops/TENANT_ACCESS_MATRIX.md) · [`src/lib/rbac-config.ts`](../src/lib/rbac-config.ts) · [`src/lib/marketplace-models.ts`](../src/lib/marketplace-models.ts) · [`src/lib/marketplace-access.ts`](../src/lib/marketplace-access.ts)
 
@@ -453,5 +453,25 @@ See [`marketplace-implementation-plan.md`](./marketplace-implementation-plan.md)
 - [x] Partner Page admin (`/supplier-page`) — external roles only in sidebar; label **Partner Page**
 - [x] Settings persona switch (`switch-dashboard-persona.ts`) + reactive persona hook
 - [x] `/partner-ai` partner Agent workspace (no club workflows on partner route)
-- [ ] Marketplace offer create/accept end-to-end
+- [ ] Marketplace offer create/accept end-to-end *(code shipped 2026-07-01 — manual smoke **PARTNER-OPS-002-SMOKE** open)*
 - [ ] `DashboardTopBar` / `AppHeader` nav unified with `useDashboardNav`
+
+---
+
+## 12. Persona data scoping — messages & tasks (2026-07-01)
+
+Active **dashboard persona** (`one4team.activeRole` via **`useModuleGateRole`**) now gates **client-side** message and task visibility. Underlying membership admin flag no longer bypasses persona scope in Communication/Tasks.
+
+| Persona | Messages | Tasks | Dashboard upcoming |
+|---------|----------|-------|-------------------|
+| **Player** | Assigned **team channels** only; no Club General | **Own** assignments only (`scope: "own"`) | Team-scoped sports widgets (unchanged) |
+| **Member** | **Announcements** + **Club General**; no team channels/trainers; no team announcements | Same as player if tasks module enabled for member | **Club events** only via **`fetchClubWideDashboardUpcoming`** |
+| **Trainer / Admin** | Full staff access per matrix | **All** + manage | Role-aware dashboard (unchanged) |
+
+**Key files:** `club-message-access.ts`, `club-task-access.ts`, `use-club-tasks.ts`, `Communication.tsx`, `Tasks.tsx`, `public-club-messages-hub.tsx`, `rbac-config.ts` (member matrix: `messages: read`, payments hidden).
+
+**Dual-role users:** Must switch persona in **Settings** (`switch-dashboard-persona.ts`) to see player vs member scope.
+
+**Tests:** `club-message-access.test.ts`, `club-task-access.test.ts`, `rbac-config.test.ts`.
+
+**Operator smoke:** **`TASKS.md` → RBAC-PERSONA-SMOKE**.

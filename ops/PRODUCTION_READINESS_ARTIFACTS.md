@@ -1,6 +1,6 @@
 # ONE4Team Production Readiness Audit + Roadmap
 
-Last updated: 2026-06-30 (doc sync: `CHANGELOG.md` § 2026-06-30 member payments + invite email migrations `20260728120000`–`20260728140000`; § 2026-06-27 TSV Allach Sommerfest + membership application migrations `20260627120000`–`20260628120000`; § 2026-06-24 attendance + AI 4 T pilot migrations `20260624120000`–`20260626120000`; § 2026-06-15 AI 4 T Agent; § 2026-06-14 admin financial P&L + AI 4 T trials/scope)
+Last updated: 2026-07-01 (doc sync: `CHANGELOG.md` § 2026-07-01 persona data scoping + Live Scores UI + partner portal migrations `20260731120000`–`20260731220000`; § 2026-06-30 member payments + invite email migrations `20260728120000`–`20260728140000`; § 2026-06-27 TSV Allach Sommerfest + membership application migrations `20260627120000`–`20260628120000`; § 2026-06-24 attendance + AI 4 T pilot migrations `20260624120000`–`20260626120000`; § 2026-06-15 AI 4 T Agent; § 2026-06-14 admin financial P&L + AI 4 T trials/scope)
 
 This document captures the strict production-readiness review and a comprehensive remediation roadmap for scaling ONE4Team from early usage to multi-tenant SaaS operation.
 

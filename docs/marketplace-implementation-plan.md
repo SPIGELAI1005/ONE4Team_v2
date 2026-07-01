@@ -1,7 +1,7 @@
 # Marketplace — implementation plan
 
 **Date:** 2026-07-01  
-**Status:** Phase 1 shipped (separate nav, routes, RBAC, tab IA); Phase 2–4 pending  
+**Status:** Phase 1–2 shipped (separate nav, routes, RBAC, offer loop code); Phase 3–4 pending  
 **Related:** [`marketplace-product-structure.md`](./marketplace-product-structure.md) · [`rbac-dashboard-plan.md`](./rbac-dashboard-plan.md) · [`src/lib/marketplace-product-structure.ts`](../src/lib/marketplace-product-structure.ts)
 
 ---
@@ -349,7 +349,7 @@ No new tables required for **P0 offer flow** — `marketplace_offers` is suffici
 - [x] Partners remains available for active relationships (club admins)
 - [x] Clear implementation plan with phases, gaps, and reuse map
 - [x] Phase 1 partner portal shipped in repo (routes, Partner Page, `/partner-ai`, persona switch) — see **`TASKS.md` PARTNER-***
-- [ ] Phase 2+ marketplace loop items tracked in **`TASKS.md`** PARTNER-OPS-002
+- [x] Phase 2 marketplace loop tracked in **`TASKS.md`** **SPRINT 2026-07-01** Track B / **PARTNER-OPS-002** *(code shipped; manual smoke **PARTNER-OPS-002-SMOKE** open)*
 
 ---
 

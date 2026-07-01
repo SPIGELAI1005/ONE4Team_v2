@@ -198,6 +198,37 @@ export async function fetchDashboardUpcoming(clubId: string, days = 7): Promise<
     .slice(0, 8);
 }
 
+/** Club-wide schedule for generic members — club events only (no team trainings or matches). */
+export async function fetchClubWideDashboardUpcoming(
+  clubId: string,
+  days = 7,
+): Promise<DashboardUpcomingItem[]> {
+  const now = new Date();
+  const toIso = new Date(now.getTime() + days * 86400000).toISOString();
+  const nowIso = now.toISOString();
+
+  const eventRes = await supabase
+    .from("events")
+    .select("title, event_type, starts_at")
+    .eq("club_id", clubId)
+    .gte("starts_at", nowIso)
+    .lte("starts_at", toIso)
+    .order("starts_at", { ascending: true })
+    .limit(12);
+
+  if (eventRes.error) return [];
+
+  return (eventRes.data ?? []).map((e) => {
+    const startsAt = String((e as { starts_at: string }).starts_at);
+    return {
+      title: String((e as { title: string }).title || "Event"),
+      type: String((e as { event_type: string }).event_type || "event"),
+      startsAt,
+      time: formatUpcomingTime(startsAt),
+    };
+  });
+}
+
 export interface ClubSetupProfile {
   name: string;
   slug: string;

@@ -1,11 +1,13 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-07-01 (Partner portal, Partner Page, AI 4 T partner, persona RBAC)
+Last updated: 2026-07-01 (Persona data scoping player/member, public Live Scores UI, sprint doc sync)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **Persona data scoping — player / member (2026-07-01):** **`useModuleGateRole`** drives message and task visibility in **`Communication.tsx`**, **`Tasks.tsx`**, **`public-club-messages-hub.tsx`** (not raw **`isAdmin`**). **Player:** team-scoped messages + own tasks only. **Member:** club-wide messages (Announcements + Club General, no team channels); club-wide dashboard upcoming (events only via **`fetchClubWideDashboardUpcoming`**); no payments in sidebar. Lib: **`club-message-access.ts`**, **`club-task-access.ts`**, **`use-club-tasks.ts`**, **`use-user-team-ids.ts`** (players + coaches). Dual-role users must switch persona in Settings. See **`CHANGELOG.md`** § **2026-07-01 (Persona data scoping…)**.
+- **Public club Live Scores UI (2026-07-01):** Home section card matches **Reports** typography — **`liveScoresTitle`** + description; CTA right on desktop. **`public-club-live-scores-section.tsx`**. See **`CHANGELOG.md`** same section.
 - **Partner / supplier portal (2026-07-01):** Dual-world routing — club URLs vs **`/partner-*`** + **`/supplier-page`**. **`PersonaPortalGate`** + **`useModuleGateRole`** enforce portal side. **Partner Page** admin at **`/supplier-page`** (parity with **`/club-page-admin`**); sidebar label **Partner Page**; hidden for **club_admin** persona. Partner AI at **`/partner-ai`** with **`PartnerAiAgentWorkspace`** (no club training workflows). Settings persona switch via **`switch-dashboard-persona.ts`**. Marketplace provider portal + club hub; migrations **`20260731120000`**–**`20260731220000`**. Docs: **`docs/rbac-dashboard-plan.md`**, **`docs/marketplace-implementation-plan.md`**. See **`CHANGELOG.md`** § **2026-07-01 (Partner portal…)**.
 - **Marketing site refresh (2026-07-01):** Home, **Features**, **About**, **Clubs & Partners**, **Pricing** EN/DE copy updated (public microsites, Sommerfest, tasks, integrated AI, TSV Allach pilot). **Features** **AI-Powered Innovation** hero: portrait intro video (`Ai4TIntroLogoVideo`), glass logo assets, viewport play + last-frame hold, side-by-side layout all breakpoints, **`glass-card`** light/dark theming, **`max-w-6xl`** aligned with AI feature cards. **`BrandedText ai4tOnly`:** plain ONE4Team, red **4** only in **AI 4 T**. Early Bird pricing deadline **13 Dec 2026**. See **`CHANGELOG.md`** § **2026-07-01**.
 - **Public club polish (2026-07-01):** Club **favicon** upsert in `PublicClubDocumentHead`. **Match opponent logos** — Berlin-day fixture link, lookup map, dedupe, UI shared helpers. Public **Shop**, **Reports**, **Live scores** routes + sections. **TSV Allach JAKO shop** catalog + migrations **`20260730120000`**–**`20260730140000`**. Admin **`OpponentLogoField`** on **`/matches`**. See **`CHANGELOG.md`** § **2026-07-01**.
@@ -211,6 +213,8 @@ Also ensure previously listed communication migrations remain applied in the sam
 - If behavior mismatches local code expectations, verify app env vars point to the same Supabase project where all required migrations are applied.
 
 ## Suggested Next Implementation Steps
+- **Persona RBAC smoke:** Complete **`RBAC-PERSONA-SMOKE`** — dual-role account switches Player vs Member; verify messages, tasks, dashboard upcoming (`TASKS.md`).
+- **Sprint exit:** Complete **\*-SMOKE** rows in **`TASKS.md` → SPRINT 2026-07-01**; **`DEPLOY-EMAIL-001-PROD`** (Resend domain).
 - **Members club card:** Optional sequential club ID server validation; i18n for hardcoded Club Card field labels (EN/DE).
 - **Members team assignment:** Sync **`team_players`** when draft converts to active member on invite accept (if not already on redeem path).
 - **TSV Allach Sommerfest:** Apply **`20260627120000`**, **`20260628120000`**; admin publish 22 matches; smoke public tournament board during event window (11–12 Jul 2026); verify live score updates propagate within poll interval.

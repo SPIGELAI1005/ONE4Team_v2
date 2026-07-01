@@ -35,6 +35,7 @@ import { useActiveClub } from "@/hooks/use-active-club";
 import {
   fetchAdminDashboardSnapshot,
   fetchClubSetupProfile,
+  fetchClubWideDashboardUpcoming,
   fetchDashboardUpcoming,
   type AdminDashboardSnapshot,
   type ClubSetupProfile,
@@ -172,6 +173,15 @@ const DashboardContent = () => {
           { id: "teamRank", label: t.dashboard.teamRank, value: "—", change: "", icon: TrendingUp },
         ],
       },
+      member: {
+        title: t.dashboard.dashboardTitle,
+        greeting: t.dashboard.welcomeBack,
+        kpis: [
+          { id: "clubEvents", label: t.dashboard.clubEvents, value: "—", change: "", icon: Calendar },
+          { id: "upcoming", label: t.dashboard.upcoming, value: "—", change: "", icon: Clock },
+          { id: "messages", label: t.dashboard.messages, value: "—", change: "", icon: Users },
+        ],
+      },
       sponsor: {
         title: t.dashboard.partnerDashboard,
         greeting: t.dashboard.welcome,
@@ -277,6 +287,34 @@ const DashboardContent = () => {
         }
 
         const profilePromise = fetchClubSetupProfile(activeClubId);
+
+        if (normalizedRole === "member") {
+          const [schedule, profile] = await Promise.all([
+            fetchClubWideDashboardUpcoming(activeClubId, 7),
+            profilePromise,
+          ]);
+          if (cancelled) return;
+
+          setClubSetupProfile(profile);
+          setAdminSnapshot(null);
+          setUpcoming(
+            schedule.map((item) => ({
+              title: item.title,
+              time: item.time,
+              type: item.type,
+            })),
+          );
+          setAiInsights([t.dashboard.aiTip1, t.dashboard.aiTip2, t.dashboard.aiTip3]);
+          setKpis((prev) =>
+            prev.map((k) => {
+              if (k.id === "clubEvents" || k.id === "upcoming") {
+                return { ...k, value: String(schedule.length) };
+              }
+              return { ...k, value: "—", change: "" };
+            }),
+          );
+          return;
+        }
 
         if (isClubAdminPersona) {
           const [snapshot, schedule, profile, financial] = await Promise.all([
@@ -442,7 +480,7 @@ const DashboardContent = () => {
     return () => {
       cancelled = true;
     };
-  }, [activeClubId, config.kpis, role, t, externalPersona]);
+  }, [activeClubId, config.kpis, externalPersona, isClubAdminPersona, normalizedRole, role, t]);
 
   const showGettingStarted = useMemo(() => {
     if (!activeClubId) return true;

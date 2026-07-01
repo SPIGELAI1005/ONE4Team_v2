@@ -28,23 +28,18 @@ export function useUserTeamIds(clubId: string | null) {
       return;
     }
 
-    const { data: rows, error } = await supabase
-      .from("team_players")
-      .select("team_id")
-      .eq("membership_id", membership.id);
+    const [playerRes, coachRes] = await Promise.all([
+      supabase.from("team_players").select("team_id").eq("membership_id", membership.id),
+      supabase.from("team_coaches").select("team_id").eq("membership_id", membership.id),
+    ]);
 
-    if (error) {
+    if (playerRes.error && coachRes.error) {
       setTeamIds([]);
     } else {
-      setTeamIds(
-        Array.from(
-          new Set(
-            (rows ?? [])
-              .map((row) => String((row as { team_id: string }).team_id))
-              .filter(Boolean),
-          ),
-        ),
-      );
+      const ids = [...(playerRes.data ?? []), ...(coachRes.data ?? [])]
+        .map((row) => String((row as { team_id: string }).team_id))
+        .filter(Boolean);
+      setTeamIds(Array.from(new Set(ids)));
     }
     setLoading(false);
   }, [clubId, user]);

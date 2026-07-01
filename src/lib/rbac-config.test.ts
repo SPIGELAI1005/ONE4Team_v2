@@ -76,6 +76,20 @@ describe("module access baseline", () => {
     expect(getModuleAccess("member", "trainings")).toBe("none");
     expect(getModuleAccess("member", "matches")).toBe("none");
     expect(getModuleAccess("member", "events")).toBe("read");
+    expect(getModuleAccess("member", "members")).toBe("none");
+    expect(getModuleAccess("member", "payments")).toBe("none");
+    expect(getModuleAccess("member", "messages")).toBe("read");
+    expect(getModuleAccess("member", "tasks")).toBe("own");
+  });
+
+  it("member sidebar is club-wide only (no trainings, matches, payments, members)", () => {
+    const menu = getSidebarMenuItems("member");
+    expect(menu).toContain("events");
+    expect(menu).toContain("messages");
+    expect(menu).not.toContain("trainings");
+    expect(menu).not.toContain("matches");
+    expect(menu).not.toContain("payments");
+    expect(menu).not.toContain("members");
   });
 });
 

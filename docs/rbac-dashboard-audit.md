@@ -1,6 +1,6 @@
 # RBAC & dashboard — architecture audit
 
-**Date:** 2026-07-01  
+**Date:** 2026-07-01 (persona data scoping for messages/tasks added)  
 **Status:** Audit snapshot — no functional changes in this pass  
 **Principle:** One intelligent dashboard shell; menu, routes, data scope, and widgets adapt via RBAC — not separate apps per role.
 
@@ -25,6 +25,8 @@ ONE4Team already follows a **single dashboard shell** pattern:
 | **Partners** | `/partners` | **Mature CRM shell** — club-admin gated; engagements bridge from accepted marketplace offers |
 
 **Marketplace and Partners remain separate sidebar items** — do not merge them.
+
+**Persona data scoping (2026-07-01):** Messages and tasks visibility in **`Communication.tsx`**, **`Tasks.tsx`**, and public **Messages** hub now follow **`useModuleGateRole`** — player = team channels + own tasks; member = club-wide announcements/general (no team channels). See **`docs/rbac-dashboard-plan.md`** §12 and **`CHANGELOG.md`** § 2026-07-01 (Persona data scoping…).
 
 ---
 

@@ -33,6 +33,7 @@ export function buildClubUpdatesFeed(
     userTeamIds: readonly string[];
     isAdmin: boolean;
     teamFilterId?: string | null;
+    clubWideOnly?: boolean;
   },
 ): ClubUpdateFeedItem[] {
   const visibleAnnouncements = filterAnnouncementsForUser(announcements, options);

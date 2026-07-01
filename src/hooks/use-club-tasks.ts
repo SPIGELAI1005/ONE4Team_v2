@@ -8,13 +8,23 @@ import type {
   ClubTaskStatus,
 } from "@/lib/club-task-models";
 import { clubTaskStatusOnComplete, isClubTaskOpen } from "@/lib/club-task-models";
+import {
+  filterClubTasksForUser,
+  type ClubTaskAccessOptions,
+} from "@/lib/club-task-access";
+
+export type { ClubTaskAccessOptions } from "@/lib/club-task-access";
 
 export type ClubTaskFilter = "all" | "mine" | "overdue";
 
 const TASK_SELECT =
   "id, club_id, title, description, status, priority, due_at, team_id, assignee_user_id, partner_id, source_type, source_id, created_by, completed_at, created_at, updated_at";
 
-export function useClubTasks(clubId: string | null, filter: ClubTaskFilter = "all") {
+export function useClubTasks(
+  clubId: string | null,
+  filter: ClubTaskFilter = "all",
+  access?: ClubTaskAccessOptions,
+) {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<ClubTaskRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,7 +43,9 @@ export function useClubTasks(clubId: string | null, filter: ClubTaskFilter = "al
       .order("created_at", { ascending: false })
       .limit(200);
 
-    if (filter === "mine") {
+    if (filter === "mine" && user) {
+      query = query.eq("assignee_user_id", user.id);
+    } else if (access && !access.canManageTasks && access.scope === "own" && user) {
       query = query.eq("assignee_user_id", user.id);
     }
 
@@ -42,6 +54,12 @@ export function useClubTasks(clubId: string | null, filter: ClubTaskFilter = "al
       setTasks([]);
     } else {
       let rows = (data ?? []) as ClubTaskRow[];
+      if (access) {
+        rows = filterClubTasksForUser(rows, access);
+      }
+      if (filter === "mine" && user) {
+        rows = rows.filter((row) => row.assignee_user_id === user.id);
+      }
       if (filter === "overdue") {
         const now = Date.now();
         rows = rows.filter((row) => {
@@ -52,7 +70,7 @@ export function useClubTasks(clubId: string | null, filter: ClubTaskFilter = "al
       setTasks(rows);
     }
     setLoading(false);
-  }, [clubId, filter, user]);
+  }, [access, clubId, filter, user]);
 
   useEffect(() => {
     void reload();

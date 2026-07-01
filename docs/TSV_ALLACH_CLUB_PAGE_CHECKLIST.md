@@ -219,7 +219,7 @@ Aligned with [tsvallach09.de/onlineanmeldung](https://www.tsvallach09.de/onlinea
 |-------|--------------|-------|
 | `/club/tsv-allach-09/shop` | **Pages** → Shop enabled | JAKO products visible after seed/migration |
 | `/club/tsv-allach-09/reports` | **Pages** → Reports enabled | Role-scoped report persona |
-| `/club/tsv-allach-09/live-scores` | **Pages** → Live scores enabled | Live board when matches published |
+| `/club/tsv-allach-09/live-scores` | **Pages** → Live scores enabled | Live board when matches published; **home section** title + description matches Reports card |
 
 Additional checks:
 

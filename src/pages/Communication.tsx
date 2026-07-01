@@ -37,10 +37,11 @@ import { correlationHeaders } from "@/lib/observability";
 import { supabaseErrorMessage } from "@/lib/supabase-error-message";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PUBLIC_NEWS_CATEGORIES } from "@/lib/public-club-news";
-import { filterAnnouncementsForUser, filterMessageChannelsForUser, TRAINERS_CHANNEL_ID } from "@/lib/club-message-access";
+import { filterAnnouncementsForUser, filterMessageChannelsForUser, buildMessageAccessFromGateRole, TRAINERS_CHANNEL_ID } from "@/lib/club-message-access";
 import { clubAi4tModalOverlayClass, clubAi4tModalPanelClass, clubGlassInputClass } from "@/lib/public-club-glass-classes";
 import { cn } from "@/lib/utils";
 import { useUserTeamIds } from "@/hooks/use-user-team-ids";
+import { useModuleGateRole } from "@/hooks/use-module-gate-role";
 import { useClubAdmin } from "@/hooks/use-club-admin";
 import { uploadClubImageAsset } from "@/lib/upload-club-image";
 import { AnnouncementDetailView } from "@/components/communication/announcement-detail-view";
@@ -247,10 +248,20 @@ export function CommunicationWorkspace({
   const clubId = clubIdOverride ?? hookClubId;
   const { toast } = useToast();
   const perms = usePermissions();
+  const gateRole = useModuleGateRole();
   const { isClubAdmin } = useClubAdmin(clubId);
   const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const { teamIds: userTeamIds } = useUserTeamIds(clubId);
+  const messageAccess = useMemo(
+    () =>
+      buildMessageAccessFromGateRole(
+        gateRole,
+        userTeamIds,
+        embedded ? teamFilterId : undefined,
+      ),
+    [embedded, gateRole, teamFilterId, userTeamIds],
+  );
   const attachmentPlaceholder = t.communicationPage.attachmentPlaceholder;
 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -384,35 +395,28 @@ export function CommunicationWorkspace({
             teamId: team.id,
           })),
         ],
-        {
-          userTeamIds,
-          isAdmin: perms.isAdmin,
-          isTrainer: perms.isTrainer,
-          teamFilterId: embedded ? teamFilterId : undefined,
-        },
+        messageAccess,
       ),
     [
       embedded,
-      perms.isAdmin,
-      perms.isTrainer,
+      messageAccess,
       supportsTrainersChannel,
       t.communicationPage.announcementsChannel,
       t.communicationPage.clubGeneralChannel,
       t.communicationPage.trainersChannel,
-      teamFilterId,
       teams,
-      userTeamIds,
     ],
   );
 
   const visibleAnnouncements = useMemo(
     () =>
       filterAnnouncementsForUser(announcements, {
-        userTeamIds,
-        isAdmin: perms.isAdmin,
+        userTeamIds: messageAccess.userTeamIds,
+        isAdmin: messageAccess.isAdmin,
         teamFilterId: embedded ? teamFilterId : undefined,
+        clubWideOnly: messageAccess.clubWideOnly,
       }),
-    [announcements, embedded, perms.isAdmin, teamFilterId, userTeamIds],
+    [announcements, embedded, messageAccess.clubWideOnly, messageAccess.isAdmin, messageAccess.userTeamIds, teamFilterId],
   );
 
   const viewingAnnouncement = useMemo(

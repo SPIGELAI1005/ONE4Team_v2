@@ -6,6 +6,68 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ---
 
+## SPRINT 2026-07-01 — DB parity · Marketplace Phase 2 · Invite email
+
+**Goal:** Linked Supabase project matches repo schema; marketplace offer create → club accept works; invite email Edge deployable for pilots.
+
+**Exit criteria:** `supabase db push --linked` clean; marketplace unit tests green; `send-club-invite-email` deployed; manual smoke checklist below signed off.
+
+| Track | Focus | Task IDs |
+|-------|--------|----------|
+| **A** | DB parity (apply + verify) | PARTNER-OPS-001, MEM-OPS-006, COMM-OPS-001, ATTEND-OPS-001, PAY-OPS-001, PUB-OPS-001, FIN-OPS-001 |
+| **B** | Marketplace Phase 2 loop | PARTNER-OPS-002 |
+| **C** | Invite email deploy | DEPLOY-EMAIL-001 |
+
+### Track A — DB parity (operator)
+
+Apply order: see **`HOLD.md`** (communication → members → payments → public shop → partner/marketplace).
+
+- [x] **SPRINT-A-001** `supabase db push --linked` — remote up to date through **`20260731220000`** *(verified 2026-07-01)*
+- [x] **SPRINT-A-002** Schema spot-check: `marketplace_*`, `membership_fee_types`, `club_expenses`, `images-avatars`, `images-marketplace-providers` *(verified 2026-07-01)*
+- [x] **PARTNER-OPS-001** Migrations **`20260731120000`** → **`20260731220000`** applied on linked project
+- [ ] **PARTNER-OPS-001-SMOKE** Manual: Settings persona switch (club admin ↔ supplier); **`/partner-ai`** Agent (partner actions); **`/supplier-page`** logo upload
+- [x] **MEM-OPS-006** Migrations **`20260725140000`**, **`20260725150000`** applied
+- [ ] **MEM-OPS-006-SMOKE** Manual: members search, team assign, club card PNG, avatar upload
+- [x] **COMM-OPS-001** Migrations **`20260629120000`** → **`20260725130000`** applied (incl. **`20260724180000`** tasks)
+- [ ] **COMM-OPS-001-SMOKE** Manual: Messages hub + **`/tasks`** assign flow
+- [x] **ATTEND-OPS-001** Migration **`20260725130000`** applied
+- [ ] **ATTEND-OPS-001-SMOKE** Manual: roster member RSVP vs non-roster admin
+- [x] **PAY-OPS-001** Migrations **`20260728120000`** → **`20260728140000`** applied
+- [ ] **PAY-OPS-001-SMOKE** Manual: **`/payments`** fee packages + record payment
+- [x] **PUB-OPS-001** Migrations **`20260730120000`** → **`20260730140000`** applied
+- [ ] **PUB-OPS-001-SMOKE** Manual: **`/club/tsv-allach-09`** favicon, shop, reports, live scores
+- [x] **FIN-OPS-001** Migration **`20260614120000_club_expenses.sql`** applied
+- [ ] **FIN-OPS-001-SMOKE** Manual: financial dashboard + **`/reports?section=financial`**
+
+### Track B — Marketplace Phase 2 (offer loop)
+
+Reference: **`docs/marketplace-implementation-plan.md`** §10.
+
+- [x] **PARTNER-OPS-002a** Provider offer create — `MarketplaceSendOfferDialog` + `createMarketplaceOffer()` in **`use-marketplace.ts`**
+- [x] **PARTNER-OPS-002b** Club offer inbox — `ClubMarketplaceOffersPanel` (view, compare, accept/reject, Partners bridge)
+- [x] **PARTNER-OPS-002c** Save provider — `toggleMarketplaceSavedProvider()` + discover panel
+- [x] **PARTNER-OPS-002d** Provider card / profile sheet — discover panel + request quote prefill
+- [x] **PARTNER-OPS-002e** Unit tests — `src/lib/marketplace-*.test.ts` (92 tests, 2026-07-01)
+- [x] **PARTNER-OPS-002f** Smoke seed — `supabase/scripts/sprint_20260701_marketplace_smoke_seed.sql` (open request on TSV Allach, 2026-07-01)
+- [ ] **PARTNER-OPS-002-SMOKE** Manual E2E: club admin publishes request → supplier sends offer → club accepts → **`/partners`** engagement appears
+
+### Track C — Invite email (production onboarding)
+
+- [x] **DEPLOY-EMAIL-001a** Edge secrets present: **`RESEND_API_KEY`**, **`RESEND_FROM_EMAIL`**, **`PUBLIC_SITE_URL`**, **`EDGE_ALLOWED_ORIGINS`** *(verified 2026-07-01)*
+- [x] **DEPLOY-EMAIL-001b** Deploy **`send-club-invite-email`** *(redeployed 2026-07-01, v11+)*
+- [ ] **DEPLOY-EMAIL-001c** Resend: verify **`one4team.com`** (or production From domain) at [resend.com/domains](https://resend.com/domains)
+- [ ] **DEPLOY-EMAIL-001d** Smoke: Members → create invite → toast **Invite email sent** → external inbox delivery (Gmail/GMX)
+
+**Blocked on C until domain verified:** Resend test sender `onboarding@resend.dev` only delivers to the Resend account email. Use **Copy invite link** for pilot until **DEPLOY-EMAIL-001c** is done.
+
+### Sprint — next after exit
+
+1. Complete **\*-SMOKE** rows above (TSV Allach / QA dual-role account).
+2. **PARTNER-OPS-003** — Marketplace Phase 3 (moderation, reviews) per **`docs/marketplace-implementation-plan.md`** §10 Phase 4.
+3. **ALLACH-OPS-001**, **MICROSITE-OPS-001** — remaining public-club operator smokes if not already signed off in staging.
+
+---
+
 ## NOW (top priority)
 
 ### Partner portal + Partner Page + AI 4 T partner (2026-07-01) — code in repo
@@ -18,12 +80,15 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **PARTNER-007** RBAC: Partner Page in sidebar for external roles only; renamed **Partner Page** (EN/DE)
 - [x] **PARTNER-008** Tests: rbac-config, marketplace RBAC, partner-portal-routes, dashboard-persona, e2e marketplace-rbac
 - [x] **PARTNER-DOC-001** **`CHANGELOG.md`**, **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`HOLD.md`**, **`docs/rbac-dashboard-plan.md`**
-- [ ] **PARTNER-OPS-001** Operator: apply **`20260731120000`** → **`20260731220000`**; smoke dual-role persona switch, `/partner-ai` Agent, `/supplier-page` upload
-- [ ] **PARTNER-OPS-002** Marketplace Phase 2: offer create/accept end-to-end (see **`docs/marketplace-implementation-plan.md`** §10)
+- [x] **PARTNER-OPS-001** Operator: apply **`20260731120000`** → **`20260731220000`** on linked project *(2026-07-01 — see **SPRINT-A-001**)*
+- [ ] **PARTNER-OPS-001-SMOKE** Smoke dual-role persona switch, `/partner-ai` Agent, `/supplier-page` upload *(see **SPRINT 2026-07-01** Track A)*
+- [x] **PARTNER-OPS-002** Marketplace Phase 2 code: offer create/accept, save provider, Partners bridge *(2026-07-01 — see **SPRINT Track B**)*
+- [ ] **PARTNER-OPS-002-SMOKE** Manual E2E offer loop *(see **SPRINT Track B**)*
 
 ### Deploy follow-ups (defer until production — operator)
 
-- [ ] **DEPLOY-EMAIL-001** **Resend domain + invite email** — verify `one4team.com` at Resend; set Supabase secrets (`RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `PUBLIC_SITE_URL`, `EDGE_ALLOWED_ORIGINS`); deploy `send-club-invite-email`; smoke member/partner invite → email delivered (not only “Copy invite link”). Until then, manual invite links are fine for local/pilot testing. See **`HOLD.md` → Resend domain verification**, **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** § F–G.
+- [x] **DEPLOY-EMAIL-001** Secrets + deploy **`send-club-invite-email`** *(2026-07-01 — see **SPRINT Track C** **DEPLOY-EMAIL-001a/b**)*
+- [ ] **DEPLOY-EMAIL-001-PROD** Resend domain verify + external inbox smoke — verify `one4team.com` at Resend; confirm **`RESEND_FROM_EMAIL`** matches verified domain; smoke member/partner invite → email delivered. Until then, manual invite links are fine for pilot. See **`HOLD.md` → Resend domain verification**, **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** § F–G.
 
 ### Marketing + public club polish (2026-07-01) — code in repo
 - [x] **MKT-001** Marketing i18n refresh (home, features, about, clubs & partners, pricing Early Bird 13 Dec 2026)
@@ -32,8 +97,19 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **PUB-001** Public club favicon upsert; match opponent logo fixes + tests
 - [x] **PUB-002** Public Shop / Reports / Live scores routes + TSV Allach JAKO shop catalog
 - [x] **PUB-003** Migrations **`20260730120000`**–**`20260730140000`** + JAKO seed script
+- [x] **PUB-004** Live Scores home section — title + description typography matches Reports; CTA right on desktop
 - [x] **MKT-DOC-001** **`CHANGELOG.md`**, **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`README.md`**, audit + checklist sync
-- [ ] **PUB-OPS-001** Operator: apply **`20260730120000`**–**`20260730140000`**; optional **`seed_tsv_allach_jako_shop.sql`**; smoke `/features`, `/club/tsv-allach-09` (favicon, matches logos, shop, reports, live scores)
+- [x] **PUB-OPS-001** Migrations **`20260730120000`**–**`20260730140000`** applied on linked project *(2026-07-01)*
+- [ ] **PUB-OPS-001-SMOKE** Optional **`seed_tsv_allach_jako_shop.sql`**; smoke `/features`, `/club/tsv-allach-09` (favicon, matches logos, shop, reports, live scores)
+
+### Persona data scoping — player / member (2026-07-01) — code in repo
+- [x] **RBAC-PERSONA-001** **`buildMessageAccessFromGateRole`** — player team-scoped, member club-wide (`club-message-access.ts`)
+- [x] **RBAC-PERSONA-002** **`buildTaskAccessFromGateRole`** — player own tasks (`club-task-access.ts`, `use-club-tasks.ts`)
+- [x] **RBAC-PERSONA-003** **`Communication.tsx`**, **`Tasks.tsx`**, **`public-club-messages-hub.tsx`** use **`useModuleGateRole`**
+- [x] **RBAC-PERSONA-004** Member matrix + sidebar — no payments; messages read; club-wide dashboard upcoming (`rbac-config.ts`, `DashboardContent.tsx`)
+- [x] **RBAC-PERSONA-005** Tests — `club-message-access.test.ts`, `club-task-access.test.ts`, `rbac-config.test.ts`
+- [x] **RBAC-PERSONA-DOC-001** Doc sync — **`CHANGELOG.md`**, **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`HOLD.md`**, **`docs/rbac-dashboard-plan.md`**
+- [ ] **RBAC-PERSONA-SMOKE** Manual: Settings → Player vs Member persona; verify messages/tasks/dashboard scope (dual-role account)
 
 ### Member payments + fee packages (2026-06-30) — code in repo
 - [x] **PAY-001** Repair migrations `membership_fee_types` + `payments` + package fields (`20260728120000`–`20260728140000`)
@@ -42,7 +118,8 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **PAY-004** Lib + tests: **`membership-fee-packages.ts`**, **`member-payments.ts`**
 - [x] **PAY-005** Club invite email Edge **`send-club-invite-email`** + **`Members.tsx`** delivery
 - [x] **PAY-DOC-001** **`docs/PRODUCTION_RELEASE_CHECKLIST.md`**, **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**
-- [ ] **PAY-OPS-001** Operator: apply **`20260728120000`**–**`20260728140000`** per env; deploy **`send-club-invite-email`**; Resend domain + secrets; smoke `/payments` + invite email
+- [x] **PAY-OPS-001** Migrations **`20260728120000`**–**`20260728140000`** applied; **`send-club-invite-email`** deployed *(2026-07-01)*
+- [ ] **PAY-OPS-001-SMOKE** Smoke `/payments` + invite email delivery *(blocked on **DEPLOY-EMAIL-001-PROD** for external inbox)*
 
 ### Members ops + club member card (2026-06-28) — code in repo
 - [x] **MEM-OPS-001** Members search focus + refetch UX; search match badges; draft save outside first 500
@@ -50,7 +127,8 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **MEM-OPS-003** Club Card: role, team, DOB, club logo; PNG export (`club-pass-capture.ts`); layout fixes
 - [x] **MEM-OPS-004** Teams page search filter; AI 4 T Agent header button + Generate ID logo
 - [x] **MEM-OPS-005** Repair migrations `list_club_membership_emails` + `images-avatars` bucket
-- [ ] **MEM-OPS-006** Operator: apply **`20260725140000`**, **`20260725150000`**; smoke members search, team assign, club card download, avatar upload
+- [x] **MEM-OPS-006** Migrations **`20260725140000`**, **`20260725150000`** applied *(2026-07-01)*
+- [ ] **MEM-OPS-006-SMOKE** Smoke members search, team assign, club card download, avatar upload
 
 ### WhatsApp External Bridge — operator follow-up (2026-06-25)
 See [`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`](docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md)
@@ -64,14 +142,16 @@ See [`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`](docs/backlog/WHATSAPP_EXT
 - [x] **COMM-HUB-002** Team-scoped messages RLS + announcement fan-out/cleanup migrations
 - [x] **COMM-HUB-003** Announcement edit/delete moderation; fixed modal height; orphan notification fix
 - [x] **TASKS-001** **`club_tasks`** migration + **`/tasks`** page + sidebar + notifications + dashboard card
-- [ ] **COMM-OPS-001** Operator: apply migrations **`20260629120000`**–**`20260725130000`**; smoke Messages hub + tasks assign flow
+- [x] **COMM-OPS-001** Migrations **`20260629120000`**–**`20260725130000`** applied *(2026-07-01)*
+- [ ] **COMM-OPS-001-SMOKE** Smoke Messages hub + tasks assign flow
 
 ### Training attendance overview (2026-06-25) — code in repo
 - [x] **ATTEND-005** Team response overview (counts + names) on public club + `/activities`
 - [x] **ATTEND-006** Training RSVP **1-hour cutoff**; roster-only gate; clearer error messages
 - [x] **ATTEND-007** Migration **`20260725130000_activity_attendance_member_self_rsvp.sql`**
 - [x] **ATTEND-008** White glass decline dialog on public club; Messages FAB lifts above toasts
-- [ ] **ATTEND-OPS-001** Operator: apply **`20260725130000`**; smoke RSVP on U12-I roster member vs non-roster admin
+- [x] **ATTEND-OPS-001** Migration **`20260725130000`** applied *(2026-07-01)*
+- [ ] **ATTEND-OPS-001-SMOKE** Smoke RSVP on U12-I roster member vs non-roster admin
 
 ### AI 4 T Agent Phases 0–4 (2026-06-15) — code in repo
 - [x] **AI-AGENT-001** Migrations **`20260615120000_ai_agent_runs.sql`**, **`20260615130000_ai_agent_tool_rpcs.sql`**, **`20260615140000_ai_agent_runs_conversation_id.sql`**, **`20260615150000_ai_agent_tool_rpcs_extended.sql`**.
@@ -94,7 +174,8 @@ See [`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`](docs/backlog/WHATSAPP_EXT
 - [x] **FIN-004** Migration **`20260614120000_club_expenses.sql`** + expense CRUD + P&L net line.
 - [x] **FIN-005** Lucide icons for notifications, badges, events (replace emoji chrome).
 - [x] **IMPORT-DE-001** German **Mitgliederliste** CSV import profile + tests; Option A/B fixes; pending-import KPI.
-- [ ] **FIN-OPS-001** Operator: apply **`20260614120000_club_expenses.sql`** per Supabase env; smoke financial dashboard + reports + expense add/delete.
+- [x] **FIN-OPS-001** Migration **`20260614120000_club_expenses.sql`** applied on linked project *(2026-07-01)*
+- [ ] **FIN-OPS-001-SMOKE** Smoke financial dashboard + reports + expense add/delete
 
 ### AI 4 T rebrand + trials + scope (2026-06-14) — code in repo
 - [x] **AI-REBRAND-001** ONE4AI → **AI 4 T** display strings, i18n keys, public section id **`ai4team`** (legacy **`one4ai`** read).

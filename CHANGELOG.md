@@ -3,6 +3,33 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-01 (Persona data scoping — player/member + public Live Scores UI)
+
+### Persona-gated messages and tasks (client)
+- **`useModuleGateRole`:** **`Communication.tsx`**, **`Tasks.tsx`**, and **`public-club-messages-hub.tsx`** use active dashboard persona (Settings role switch), not raw membership admin flag — dual-role users must pick **Player** or **Member** persona for scoped views.
+- **Messages — `club-message-access.ts`:** **`buildMessageAccessFromGateRole()`** + **`canViewChatMessageRow()`**. **Player:** team channels only (`teamScopedOnly`); no Club General. **Member:** club-wide only (`clubWideOnly`) — Announcements + Club General; no team channels, trainers channel, or team-scoped announcements.
+- **Tasks — `club-task-access.ts`:** **`buildTaskAccessFromGateRole()`** + **`filterClubTasksForUser()`**. **Player:** own assigned tasks only (`scope: "own"`). **`use-club-tasks.ts`** applies filter; **`Tasks.tsx`** hides **All** tab for non-staff, defaults to **Mine**.
+- **Member RBAC matrix — `rbac-config.ts`:** Member aligned with player for sports modules; **`messages: "read"`**; removed **`members: "own"`** and **`payments: "own"`**; payments hidden from member sidebar.
+- **Member dashboard — `DashboardContent.tsx`:** Club-wide upcoming via **`fetchClubWideDashboardUpcoming()`** in **`club-dashboard-snapshot.ts`** (events only — no team trainings).
+- **Team IDs — `use-user-team-ids.ts`:** Merges **`team_players`** + **`team_coaches`** for scoping.
+- **Tests:** **`club-message-access.test.ts`**, **`club-task-access.test.ts`**, **`rbac-config.test.ts`**.
+
+### Public club — Live Scores section UI
+- **`public-club-live-scores-section.tsx`:** Card text hierarchy matches **Reports** — bold **`h3`** title + muted description; **Open Live Scores** button right-aligned on desktop (`sm:flex-row sm:items-center`).
+- **i18n:** **`clubPage.liveScoresTitle`** (EN: “Live match updates”; DE: “Live-Spielstände”).
+
+### Sprint / operator (no new migrations)
+- **SPRINT 2026-07-01** Track A/B/C progress unchanged — DB parity verified; marketplace Phase 2 code + smoke seed in repo; invite email Edge deployed (domain verify still **`DEPLOY-EMAIL-001-PROD`**).
+- **QA note:** Users with multiple roles (e.g. admin + player) must switch persona in **Settings** for player/member scoping to apply.
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`HOLD.md`**, **`README.md`**, **`docs/rbac-dashboard-plan.md`**, **`docs/rbac-dashboard-audit.md`**, **`docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`**, **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**, **`docs/AI_INVESTIGATION_BRIEF_ROLES_AND_PLATFORM.md`**, **`ops/PRODUCTION_READINESS_*.md`**.
+
+### Operator smoke
+- Settings → **Player** → **`/communication`**: only assigned team channels; **`/tasks`**: only own tasks.
+- Settings → **Member** → **`/communication`**: Announcements + Club General only; dashboard upcoming = club events (no team trainings).
+- **`/club/tsv-allach-09`**: Live Scores home section shows title + description like Reports; **Open Live Scores** CTA on the right.
+
 ## 2026-07-01 (Partner portal, Partner Page, AI 4 T partner, persona RBAC)
 
 ### Partner / supplier portal (dual-world routing)

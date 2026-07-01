@@ -36,7 +36,8 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
-import { usePermissions } from "@/hooks/use-permissions";
+import { useModuleGateRole } from "@/hooks/use-module-gate-role";
+import { useUserTeamIds } from "@/hooks/use-user-team-ids";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/use-language";
 import {
@@ -57,6 +58,10 @@ import {
   isClubTaskOverdue,
 } from "@/lib/club-task-models";
 import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
+import {
+  buildTaskAccessFromGateRole,
+  canBrowseAllClubTasks,
+} from "@/lib/club-task-access";
 import { cn } from "@/lib/utils";
 
 const UNASSIGNED = "__none__";
@@ -93,19 +98,29 @@ function statusBadgeClass(status: ClubTaskStatus): string {
 export default function Tasks() {
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
-  const perms = usePermissions();
+  const gateRole = useModuleGateRole();
+  const { teamIds: userTeamIds } = useUserTeamIds(clubId);
+  const taskAccess = useMemo(
+    () => buildTaskAccessFromGateRole(gateRole, user?.id ?? null, userTeamIds),
+    [gateRole, user?.id, userTeamIds],
+  );
   const { toast } = useToast();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const filterParam = (searchParams.get("filter") as ClubTaskFilter | null) ?? "all";
+  const canSeeAllTasks = canBrowseAllClubTasks(taskAccess);
+  const filterParam = (searchParams.get("filter") as ClubTaskFilter | null) ?? (canSeeAllTasks ? "all" : "mine");
   const filter: ClubTaskFilter =
-    filterParam === "mine" || filterParam === "overdue" ? filterParam : "all";
+    filterParam === "mine" || filterParam === "overdue"
+      ? filterParam
+      : canSeeAllTasks
+        ? "all"
+        : "mine";
   const selectedId = searchParams.get("id");
 
-  const canManage = perms.isTrainer || perms.isAdmin;
-  const { tasks, loading, reload } = useClubTasks(clubId, filter);
+  const canManage = taskAccess.canManageTasks;
+  const { tasks, loading, reload } = useClubTasks(clubId, filter, taskAccess);
   const { assignees, partners, teams } = useClubTaskOptions(clubId);
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -251,7 +266,7 @@ export default function Tasks() {
   };
 
   const handleDelete = async (task: ClubTaskRow) => {
-    if (!clubId || !perms.isAdmin) return;
+    if (!clubId || !taskAccess.canDeleteTasks) return;
     if (!window.confirm(t.tasksPage.confirmDelete)) return;
     const { error } = await deleteClubTask(task.id, clubId);
     if (error) {
@@ -269,7 +284,7 @@ export default function Tasks() {
     t.tasksPage.statuses[value as keyof typeof t.tasksPage.statuses] ?? value;
 
   const tabs: { id: ClubTaskFilter; label: string }[] = [
-    { id: "all", label: t.tasksPage.tabAll },
+    ...(canSeeAllTasks ? [{ id: "all" as const, label: t.tasksPage.tabAll }] : []),
     { id: "mine", label: t.tasksPage.tabMine },
     { id: "overdue", label: t.tasksPage.tabOverdue },
   ];
@@ -538,7 +553,7 @@ export default function Tasks() {
                           {t.common.edit}
                         </Button>
                       ) : null}
-                      {perms.isAdmin ? (
+                      {taskAccess.canDeleteTasks ? (
                         <Button
                           size="sm"
                           variant="outline"

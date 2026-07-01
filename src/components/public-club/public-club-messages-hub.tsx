@@ -17,13 +17,13 @@ import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { useClubUpdatesFeed } from "@/hooks/use-club-updates-feed";
 import { useUserTeamIds } from "@/hooks/use-user-team-ids";
-import { usePermissions } from "@/hooks/use-permissions";
 import { useClubAdmin } from "@/hooks/use-club-admin";
 import { canManageAnnouncements } from "@/lib/club-message-moderation";
-import { channelIdForMessage } from "@/lib/club-message-access";
+import { channelIdForMessage, buildMessageAccessFromGateRole, canViewChatMessageRow } from "@/lib/club-message-access";
 import { getNotificationTypeMeta } from "@/lib/notification-type-meta";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
+import { useModuleGateRole } from "@/hooks/use-module-gate-role";
 import { BrandedText } from "@/components/ai/Ai4TBrand";
 import { publicClubCssVars } from "@/components/public-club/club-theme-provider";
 import {
@@ -96,7 +96,11 @@ export function PublicClubMessagesHub() {
 
   const clubId = club?.id ?? null;
   const { teamIds } = useUserTeamIds(clubId);
-  const { isTrainer, isAdmin } = usePermissions();
+  const gateRole = useModuleGateRole();
+  const messageAccess = useMemo(
+    () => buildMessageAccessFromGateRole(gateRole, teamIds, homeTeamFilterId),
+    [gateRole, homeTeamFilterId, teamIds],
+  );
   const { isClubAdmin } = useClubAdmin(clubId);
 
   const visible = Boolean(
@@ -118,7 +122,7 @@ export function PublicClubMessagesHub() {
   } = useClubUpdatesFeed({
     clubId,
     userTeamIds: teamIds,
-    isAdmin,
+    isAdmin: messageAccess.isAdmin,
     teamFilterId: homeTeamFilterId,
     enabled: visible,
   });
@@ -227,13 +231,7 @@ export function PublicClubMessagesHub() {
       rows = (data ?? []) as typeof rows;
     }
 
-    const filtered = rows.filter((row) => {
-      if (row.is_trainers_channel) return isTrainer || isAdmin;
-      if (row.team_id === null) return true;
-      if (!teamIds.includes(row.team_id) && !isAdmin) return false;
-      if (homeTeamFilterId) return row.team_id === homeTeamFilterId;
-      return true;
-    });
+    const filtered = rows.filter((row) => canViewChatMessageRow(row, messageAccess));
 
     setPreviews(
       filtered.slice(0, 5).map((row) => ({
@@ -249,10 +247,7 @@ export function PublicClubMessagesHub() {
     setPreviewLoading(false);
   }, [
     clubId,
-    homeTeamFilterId,
-    isAdmin,
-    isTrainer,
-    teamIds,
+    messageAccess,
     teamNameById,
     t.clubPage.messagesHubClubGeneral,
     t.clubPage.messagesHubTeamChannel,

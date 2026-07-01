@@ -1053,6 +1053,7 @@ export const de: Translations = {
     openDashboardReports: "Vollständige Berichte im Dashboard öffnen",
     reportsBackToHome: "Zurück zur Vereinsseite",
     liveScoresSection: "Live-Ergebnisse",
+    liveScoresTitle: "Live-Spielstände",
     liveScoresPublicTitle: "Live-Ergebnisse",
     liveScoresPublicDesc: "Wenn Spiele laufen, können Mitglieder Live-Updates in der App verfolgen.",
     liveScoresPublicPageSubtitle: "Live-Spielstände für diesen Verein. Tippe ein Spiel für Details.",

@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-07-01 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-25** communication/tasks/attendance, § **2026-06-27** TSV Allach Sommerfest + membership application, § **2026-06-30** member payments + invite email, § **2026-07-01** marketing + public club polish, § **2026-07-01** partner portal + Partner Page + AI 4 T partner), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
+Last updated: 2026-07-01 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-25** communication/tasks/attendance, § **2026-06-27** TSV Allach Sommerfest + membership application, § **2026-06-30** member payments + invite email, § **2026-07-01** marketing + public club polish, § **2026-07-01** partner portal + Partner Page + AI 4 T partner, § **2026-07-01** persona data scoping + Live Scores UI), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
 
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 
@@ -122,6 +122,8 @@ Smoke: **`/payments`** Fee Types + Record payment (multi-package); **`/members`*
 
 **What you may see now:** toast *“Invite created, email not sent”* with Resend error *“The one4team.com domain is not verified…”*. Use **Copy invite link** in the invite dialog and share manually (works for member and partner roles, e.g. Supplier).
 
+**Status (2026-07-01):** Edge secrets set; **`send-club-invite-email`** redeployed. **Still required:** verify sending domain at Resend (**`DEPLOY-EMAIL-001-PROD`** in **`TASKS.md`**).
+
 **Before go-live, complete:**
 
 - [ ] Add and verify **`one4team.com`** (or your sending domain) at [resend.com/domains](https://resend.com/domains) (SPF, DKIM; optional DMARC at DNS host)
@@ -165,6 +167,8 @@ Optional QA: **`supabase/scripts/grant_all_roles_spigelai.sql`** (operator test 
 
 Regenerate **`src/integrations/supabase/types.ts`** after apply.
 
+**Status (2026-07-01):** Migrations **`20260731120000`** → **`20260731220000`** applied on linked project (`supabase db push --linked` clean). Storage buckets **`images-marketplace-providers`**, **`images-avatars`** present. Manual UI smoke still required — **`TASKS.md` → SPRINT 2026-07-01 → PARTNER-OPS-001-SMOKE**.
+
 Smoke: dual-role user — Settings **Club Admin** → club dashboard (no **Partner Page** in sidebar); **Supplier** → **`/partner-marketplace`**, **`/supplier-page`** (Partner Page), **`/partner-ai`** Agent (partner actions, not club training workflows). Logo/cover upload on Partner Page after bucket migration. See **`CHANGELOG.md` § 2026-07-01 (Partner portal…)**, **`TASKS.md` PARTNER-OPS-001**, **`docs/rbac-dashboard-plan.md`** §10.
 
 ## Marketing + public club polish (2026-07-01)
@@ -178,6 +182,16 @@ Optional seed: **`supabase/scripts/seed_tsv_allach_jako_shop.sql`** (TSV Allach 
 No new Edge deploy required for this wave (client + SQL only).
 
 Smoke: **`/features`** AI hero video + light/dark theme; **`/pricing`** Early Bird countdown to **13 Dec 2026**; **`/club/tsv-allach-09`** club favicon, **`/matches`** opponent logos, **`/shop`**, **`/reports`**, **`/live-scores`** when sections enabled in Club Page Admin. See **`CHANGELOG.md` § 2026-07-01**, **`TASKS.md` PUB-OPS-001 / MKT-DOC-001.
+
+## Persona data scoping — player / member (2026-07-01, client-only)
+No new migrations. Deploy is a **frontend release** only.
+
+Smoke (dual-role QA account — switch persona in **Settings**):
+1. **Player** → **`/communication`**: team channels only; **`/tasks`**: **Mine** only.
+2. **Member** → **`/communication`**: Announcements + Club General; dashboard upcoming = club **events**; no **Payments** in sidebar.
+3. Public club **Messages** hub uses same gate-role filters when signed in.
+
+See **`CHANGELOG.md` § 2026-07-01 (Persona data scoping…)**, **`docs/rbac-dashboard-plan.md`** §12, **`TASKS.md` RBAC-PERSONA-*.
 
 ## WhatsApp External Bridge — operator (follow-up)
 **Not** personal WhatsApp / QR login. Use **WhatsApp Business API** only.

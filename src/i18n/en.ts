@@ -1041,6 +1041,7 @@ export const en = {
     openDashboardReports: "Open full reports in dashboard",
     reportsBackToHome: "Back to club home",
     liveScoresSection: "Live scores",
+    liveScoresTitle: "Live match updates",
     liveScoresPublicTitle: "Live scores",
     liveScoresPublicDesc: "When matches are in progress, members can follow live updates in the app.",
     liveScoresPublicPageSubtitle: "Live match scores for this club. Open a match for details.",
