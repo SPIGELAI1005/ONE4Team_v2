@@ -36,6 +36,9 @@ const PublicClubDocumentsPage = lazy(() => import("./pages/public-club/public-cl
 const PublicClubJoinPage = lazy(() => import("./pages/public-club/public-club-join-page"));
 const PublicClubContactPage = lazy(() => import("./pages/public-club/public-club-contact-page"));
 const PublicClubTournamentPage = lazy(() => import("./pages/public-club/public-club-tournament-page"));
+const PublicClubShopPage = lazy(() => import("./pages/public-club/public-club-shop-page"));
+const PublicClubReportsPage = lazy(() => import("./pages/public-club/public-club-reports-page"));
+const PublicClubLiveScoresPage = lazy(() => import("./pages/public-club/public-club-live-scores-page"));
 const PublicClubLegacyTeamRedirect = lazy(() => import("./pages/public-club/public-club-legacy-team-redirect"));
 const Members = lazy(() => import("./pages/Members"));
 const MemberHistory = lazy(() => import("./pages/MemberHistory"));
@@ -244,6 +247,9 @@ const AnimatedRoutes = () => {
           <Route path="documents" element={<Suspense fallback={<RouteFallback />}><PublicClubDocumentsPage /></Suspense>} />
           <Route path="join" element={<Suspense fallback={<RouteFallback />}><PublicClubJoinPage /></Suspense>} />
           <Route path="contact" element={<Suspense fallback={<RouteFallback />}><PublicClubContactPage /></Suspense>} />
+          <Route path="shop" element={<Suspense fallback={<RouteFallback />}><PublicClubShopPage /></Suspense>} />
+          <Route path="reports" element={<Suspense fallback={<RouteFallback />}><PublicClubReportsPage /></Suspense>} />
+          <Route path="live-scores" element={<Suspense fallback={<RouteFallback />}><PublicClubLiveScoresPage /></Suspense>} />
         </Route>
 
         {/* Dashboard layout: sidebar persists across all these pages */}

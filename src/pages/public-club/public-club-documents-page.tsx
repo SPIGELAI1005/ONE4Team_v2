@@ -273,7 +273,7 @@ export default function PublicClubDocumentsPage() {
           )}
         </div>
 
-        {faqPreview.length > 0 ? (
+        {club.sectionVisibility.faq && faqPreview.length > 0 ? (
           <div className="mx-auto mt-14 max-w-3xl text-left" id="club-faq">
             <h3 className="mb-4 flex items-center gap-2 font-display text-lg font-semibold text-[color:var(--club-foreground)]">
               <HelpCircle className="h-5 w-5 text-[color:var(--club-primary)]" />

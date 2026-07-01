@@ -3,7 +3,7 @@ import { useRef, useState, useEffect } from "react";
 import {
   ArrowRight, Check, Users, Dumbbell, Trophy, CreditCard,
   MessageSquare, Globe, ShoppingBag, Handshake, Bot, BarChart3,
-  Shield, UserCheck, Heart, Briefcase, Star, Zap,
+  Shield, UserCheck, Heart, Briefcase, Star, Zap, ListTodo, Radio, Sparkles,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import FootballFieldAnimation from "@/components/landing/FootballFieldAnimation";
 import logo from "@/assets/one4team-logo.png";
+import { Ai4TIntroLogoVideo } from "@/components/ai/Ai4TIntroLogoVideo";
+import { BrandedText } from "@/components/ai/Ai4TBrand";
 
 /* ─── Animated Counter ─── */
 function AnimatedCounter({ target, suffix = "", duration = 2000, prefix = "" }: { target: number; suffix?: string; duration?: number; prefix?: string }) {
@@ -51,14 +53,15 @@ function FadeInSection({ children, className = "", delay = 0 }: { children: Reac
 }
 
 /* ─── Feature icons mapping ─── */
-const clubFeatureIcons = [Users, Dumbbell, Trophy, CreditCard, MessageSquare, Globe];
+const clubFeatureIcons = [Users, Dumbbell, Trophy, CreditCard, MessageSquare, Globe, ListTodo, Radio];
 const partnerFeatureIcons = [Handshake, ShoppingBag];
-const aiFeatureIcons = [Bot, BarChart3];
+const aiFeatureIcons = [Bot, Sparkles, BarChart3];
 const benefitIcons = [Shield, UserCheck, Star, Heart, Briefcase, Zap];
 const useCaseColors = [
   "from-green-600 to-green-500",
   "from-blue-600 to-blue-400",
   "from-amber-600 to-amber-400",
+  "from-teal-600 to-teal-400",
   "from-purple-600 to-purple-400",
 ];
 
@@ -122,8 +125,8 @@ const Features = () => {
             className="flex flex-wrap justify-center gap-6 sm:gap-10 mt-8 sm:mt-10"
           >
             {[
-              { target: 10, suffix: "+", label: t.featuresPage.coreModules },
-              { target: 6, suffix: "+", label: t.featuresPage.rolesSupported },
+              { target: 14, suffix: "+", label: t.featuresPage.coreModules },
+              { target: 8, suffix: "+", label: t.featuresPage.rolesSupported },
               { target: 2, suffix: "", label: t.featuresPage.languagesAvailable },
             ].map((stat, i) => (
               <div key={i} className="text-center">
@@ -227,19 +230,43 @@ const Features = () => {
       </section>
 
       {/* ─── AI & Intelligence ─── */}
-      <section className="py-16 sm:py-20 md:py-24">
-        <div className="container mx-auto px-4">
-          <FadeInSection className="text-center mb-10 sm:mb-14 px-2">
-            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4">
-              {t.featuresPage.aiTitle}{" "}
-              <span className="text-gradient-gold">{t.featuresPage.aiHighlight}</span>
-            </h2>
-            <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl mx-auto">
-              {t.featuresPage.aiDesc}
-            </p>
+      <section className="py-16 sm:py-20 md:py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent dark:via-[#e31e24]/[0.05]" />
+        <div
+          className="pointer-events-none absolute left-1/2 top-24 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/5 blur-3xl dark:bg-[#e31e24]/10 sm:h-96 sm:w-96"
+          aria-hidden
+        />
+
+        <div className="container relative z-10 mx-auto px-4">
+          <FadeInSection className="mx-auto mb-10 max-w-6xl sm:mb-14">
+            <div className="glass-card relative overflow-hidden rounded-3xl border border-border/60 shadow-gold transition-all hover:border-primary/20 dark:border-white/10 dark:bg-gradient-to-br dark:from-zinc-950 dark:via-zinc-900 dark:to-black dark:shadow-[0_24px_80px_-24px_rgba(227,30,36,0.35)]">
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/[0.05] via-transparent to-[#e31e24]/[0.04] dark:from-[rgba(227,30,36,0.18)] dark:via-transparent dark:to-[rgba(255,255,255,0.06)]" />
+
+              <div className="relative grid min-h-0 grid-cols-[auto_minmax(0,1fr)] items-stretch">
+                <motion.div
+                  initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{ duration: 0.7, ease: "easeOut" }}
+                  className="relative h-full w-auto shrink-0 overflow-hidden rounded-l-3xl bg-black aspect-[683/1024] min-w-[9rem] max-w-[46vw] sm:min-w-[10.5rem] sm:max-w-[12.5rem] md:max-w-[14.5rem] lg:max-w-[16.5rem]"
+                >
+                  <Ai4TIntroLogoVideo className="h-full w-full" />
+                </motion.div>
+
+                <div className="flex flex-col justify-center p-4 text-left sm:p-6 md:p-12">
+                  <h2 className="font-display text-xl font-bold leading-tight tracking-tight text-foreground sm:text-3xl md:text-5xl">
+                    {t.featuresPage.aiTitle}{" "}
+                    <span className="text-gradient-gold">{t.featuresPage.aiHighlight}</span>
+                  </h2>
+                  <p className="mt-3 text-xs leading-relaxed text-muted-foreground sm:mt-4 sm:text-sm md:text-lg">
+                    <BrandedText text={t.featuresPage.aiDesc} ai4tOnly />
+                  </p>
+                </div>
+              </div>
+            </div>
           </FadeInSection>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
             {t.featuresPage.aiFeatures.map((feature, i) => {
               const Icon = aiFeatureIcons[i] ?? Star;
               return (

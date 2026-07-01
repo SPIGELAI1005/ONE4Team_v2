@@ -246,9 +246,9 @@ const HeroSection = () => {
           className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6 max-w-xl mx-auto px-2 sm:px-0"
         >
           {[
-            { icon: Users, label: t.hero.membersManaged, target: 50, suffix: "K+" },
-            { icon: Shield, label: t.hero.activeClubs, target: 500, suffix: "+" },
-            { icon: Trophy, label: t.hero.sportsSupported, target: 20, suffix: "+" },
+            { icon: Users, label: t.hero.membersManaged, target: 500, suffix: "+" },
+            { icon: Shield, label: t.hero.teamsManaged, target: 20, suffix: "+" },
+            { icon: Trophy, label: t.hero.platformModules, target: 14, suffix: "+" },
           ].map((stat, i) => (
             <ReflectiveGlassCard key={i} className="text-center p-3 sm:p-4 md:p-5">
               <div className="relative z-10">

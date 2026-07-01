@@ -82,9 +82,9 @@ const About = () => {
   ];
 
   const stats = [
-    { target: 50, suffix: "K+", label: t.hero.membersManaged },
-    { target: 500, suffix: "+", label: t.hero.activeClubs },
-    { target: 20, suffix: "+", label: t.hero.sportsSupported },
+    { target: 500, suffix: "+", label: t.hero.membersManaged },
+    { target: 20, suffix: "+", label: t.hero.teamsManaged },
+    { target: 14, suffix: "+", label: t.hero.platformModules },
     { target: 99.9, suffix: "%", label: t.aboutPage.uptime, decimals: 1 },
   ];
 

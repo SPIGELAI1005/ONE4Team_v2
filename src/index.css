@@ -223,7 +223,17 @@
     letter-spacing: normal !important;
   }
 
-  .ai-4-t-wordmark-digit,
+  .ai-4-t-wordmark-digit {
+    color: #e31e24 !important;
+  }
+
+  .one-4-team-wordmark-digit {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
   .brand-digit-four {
     color: #e31e24 !important;
   }

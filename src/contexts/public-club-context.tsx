@@ -72,6 +72,7 @@ interface PublicClubContextValue {
   user: ReturnType<typeof useAuth>["user"];
   isMember: boolean;
   membershipId: string | null;
+  membershipRole: string | null;
   checkingMembership: boolean;
   isPreviewMode: boolean;
   isDraftPreviewMode: boolean;
@@ -108,6 +109,8 @@ interface PublicClubContextValue {
   documentsCta: () => void;
   reportsCta: () => void;
   liveScoresCta: () => void;
+  openDashboardReports: () => void;
+  openDashboardLiveScores: () => void;
   /** Club pays for AI (Pro plan, trialing sub, or active AI trial). */
   clubHasAiFeature: boolean;
   clubHasAiFeatureLoading: boolean;
@@ -161,6 +164,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
   const [loadingData, setLoadingData] = useState(false);
   const [isMember, setIsMember] = useState(false);
   const [membershipId, setMembershipId] = useState<string | null>(null);
+  const [membershipRole, setMembershipRole] = useState<string | null>(null);
   const [checkingMembership, setCheckingMembership] = useState(false);
   const [showRequestInvite, setShowRequestInvite] = useState(false);
   const [showAi4tModal, setShowAi4tModal] = useState(false);
@@ -425,17 +429,19 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
         setCheckingMembership(true);
         const { data: membership, error: membershipError } = await supabase
           .from("club_memberships")
-          .select("id")
+          .select("id, role")
           .eq("club_id", club.id)
           .eq("user_id", user.id)
           .eq("status", "active")
           .maybeSingle();
         setIsMember(!membershipError && Boolean(membership?.id));
         setMembershipId(!membershipError && membership?.id ? String(membership.id) : null);
+        setMembershipRole(!membershipError && membership?.role ? String(membership.role) : null);
         setCheckingMembership(false);
       } else {
         setIsMember(false);
         setMembershipId(null);
+        setMembershipRole(null);
       }
 
       setLoadingData(true);
@@ -514,7 +520,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
           .eq("status", "active"),
         supabaseDynamic
           .from("shop_products")
-          .select("id, name, description, price_eur, image_url, image_urls, stock, is_active")
+          .select("id, name, description, price_eur, price_max_eur, image_url, image_urls, external_url, product_meta, stock, is_active")
           .eq("club_id", club.id)
           .eq("is_active", true)
           .order("created_at", { ascending: false })
@@ -522,7 +528,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
         supabase
           .from("matches")
           .select(
-            "id, opponent, is_home, match_date, location, status, home_score, away_score, team_id, publish_to_public_schedule, opponent_logo_url, public_match_detail_enabled, competitions(name)"
+            "id, opponent, is_home, match_date, location, status, home_score, away_score, team_id, notes, publish_to_public_schedule, opponent_logo_url, public_match_detail_enabled, competitions(name)"
           )
           .eq("club_id", club.id)
           .gte("match_date", catalogPastIso)
@@ -532,7 +538,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
         supabase
           .from("matches")
           .select(
-            "id, opponent, is_home, match_date, location, status, home_score, away_score, team_id, publish_to_public_schedule, opponent_logo_url, public_match_detail_enabled, competitions(name)"
+            "id, opponent, is_home, match_date, location, status, home_score, away_score, team_id, notes, publish_to_public_schedule, opponent_logo_url, public_match_detail_enabled, competitions(name)"
           )
           .eq("club_id", club.id)
           .gte("match_date", catalogPastIso)
@@ -701,7 +707,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       if (matchesRes.error && matchColMissing(String(matchesRes.error.message ?? ""))) {
         const rM = await supabase
           .from("matches")
-          .select("id, opponent, is_home, match_date, location, status, home_score, away_score, team_id, competitions(name)")
+          .select("id, opponent, is_home, match_date, location, status, home_score, away_score, team_id, notes, competitions(name)")
           .eq("club_id", club.id)
           .gte("match_date", catalogPastIso)
           .lte("match_date", futureIso)
@@ -712,7 +718,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       if (matchesUpRes.error && matchColMissing(String(matchesUpRes.error.message ?? ""))) {
         const rU = await supabase
           .from("matches")
-          .select("id, opponent, is_home, match_date, location, status, home_score, away_score, team_id, competitions(name)")
+          .select("id, opponent, is_home, match_date, location, status, home_score, away_score, team_id, notes, competitions(name)")
           .eq("club_id", club.id)
           .gte("match_date", catalogPastIso)
           .lte("match_date", futureIso)
@@ -854,6 +860,20 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
 
   const reportsCta = useCallback(() => {
     if (!club?.id) return;
+    const path = `${basePath}/reports${searchSuffix}`;
+    if (user) navigate(path);
+    else goToAuthWithReturn(path);
+  }, [basePath, club?.id, goToAuthWithReturn, navigate, searchSuffix, user]);
+
+  const liveScoresCta = useCallback(() => {
+    if (!club?.id) return;
+    const path = `${basePath}/live-scores${searchSuffix}`;
+    if (user) navigate(path);
+    else goToAuthWithReturn(path);
+  }, [basePath, club?.id, goToAuthWithReturn, navigate, searchSuffix, user]);
+
+  const openDashboardReports = useCallback(() => {
+    if (!club?.id) return;
     if (user) {
       localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
       navigate("/reports");
@@ -862,7 +882,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
     }
   }, [club?.id, goToAuthWithReturn, navigate, user]);
 
-  const liveScoresCta = useCallback(() => {
+  const openDashboardLiveScores = useCallback(() => {
     if (!club?.id) return;
     if (user) {
       localStorage.setItem(`one4team.activeClubId:${user.id}`, club.id);
@@ -963,6 +983,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       user,
       isMember,
       membershipId,
+      membershipRole,
       checkingMembership,
       isPreviewMode,
       isDraftPreviewMode,
@@ -998,6 +1019,8 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       documentsCta,
       reportsCta,
       liveScoresCta,
+      openDashboardReports,
+      openDashboardLiveScores,
       clubHasAiFeature,
       clubHasAiFeatureLoading,
       reloadClub: loadClub,
@@ -1028,8 +1051,11 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       showAdminDraftEmptyHints,
       isMember,
       membershipId,
+      membershipRole,
       isPreviewMode,
       liveScoresCta,
+      openDashboardLiveScores,
+      openDashboardReports,
       loadClub,
       loading,
       loadingData,

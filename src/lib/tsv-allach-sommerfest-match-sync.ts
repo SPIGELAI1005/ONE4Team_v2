@@ -12,10 +12,17 @@ export function sommerfestMatchImportKey(templateId: string): string {
   return `${SOMMERFEST_MATCH_IMPORT_KEY_PREFIX}${templateId}`;
 }
 
+export function normalizeSommerfestTemplateId(id: string): string {
+  const match = id.trim().match(/^m(\d+)$/i);
+  if (!match) return id.trim().toLowerCase();
+  return `m${String(Number(match[1])).padStart(2, "0")}`;
+}
+
 export function extractSommerfestMatchIdFromNotes(notes: string | null | undefined): string | null {
   if (!notes) return null;
   const match = notes.match(/tsv-sommerfest-2026:(m\d+)/i);
-  return match?.[1] ?? null;
+  if (!match?.[1]) return null;
+  return normalizeSommerfestTemplateId(match[1]);
 }
 
 export function sommerfestMatchDateIso(time: string): string {
@@ -87,6 +94,7 @@ export function sommerfestTemplateToDashboardMatch(
     competition_id: string | null;
     team_id: string | null;
     notes: string | null;
+    opponent_logo_url?: string | null;
     teams?: { name: string } | null;
     competitions?: { name: string } | null;
   },
@@ -109,6 +117,7 @@ export function sommerfestTemplateToDashboardMatch(
     competition_id: dbMatch?.competition_id ?? null,
     team_id: teamId,
     notes: dbMatch?.notes ?? sommerfestMatchImportKey(template.id),
+    opponent_logo_url: dbMatch?.opponent_logo_url ?? null,
     teams: teamName ? { name: teamName } : null,
     competitions: dbMatch?.competitions ?? { name: "Sommerfest 2026" },
     sommerfestTemplateId: template.id,

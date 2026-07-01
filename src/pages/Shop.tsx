@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShoppingBag, Plus, Search, Package, Tag, Truck, Edit2, Trash2, X, Info, Loader2, ImagePlus, AlertTriangle } from "lucide-react";
+import { ShoppingBag, Plus, Search, Package, Tag, Truck, X, Info, Loader2, ImagePlus, AlertTriangle, ExternalLink, Download } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { useClubId } from "@/hooks/use-club-id";
+import { useActiveClub } from "@/hooks/use-active-club";
+import { ShopProductCard } from "@/components/shop/shop-product-card";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
+import { isTsvAllachClub } from "@/lib/is-tsv-allach-club";
+import { countJakoCatalogProducts, importTsvAllachJakoShopCatalog } from "@/lib/import-tsv-allach-jako-shop";
+import { TSV_ALLACH_JAKO_TEAMSHOP_URL } from "@/lib/tsv-allach-jako-shop-catalog";
 import {
   MAX_SHOP_PRODUCT_IMAGES,
   parseProductImageUrls,
@@ -31,11 +35,17 @@ interface Product {
   name: string;
   description: string;
   price_eur: number;
+  price_max_eur?: number | null;
   stock: number;
   image_url: string | null;
   image_urls?: unknown;
+  external_url?: string | null;
+  product_meta?: unknown;
+  import_key?: string | null;
   is_active: boolean;
 }
+
+type ProductSort = "recommended" | "price-asc" | "price-desc" | "name";
 
 interface Order {
   id: string;
@@ -58,10 +68,13 @@ const FALLBACK_CATEGORIES = ["Jerseys", "Training Gear", "Fan Articles", "Access
 
 export default function Shop() {
   const perms = usePermissions();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { toast } = useToast();
   const { clubId, loading: clubLoading } = useClubId();
+  const { activeClub } = useActiveClub();
   const canManage = perms.isAdmin;
+  const isTsvAllach = isTsvAllachClub(activeClub);
+  const priceLocale = language === "de" ? "de-DE" : "en-US";
 
   const [tab, setTab] = useState<"products" | "orders" | "categories">("products");
   const [loading, setLoading] = useState(true);
@@ -74,6 +87,8 @@ export default function Shop() {
 
   const [q, setQ] = useState("");
   const [filterCat, setFilterCat] = useState("");
+  const [sortBy, setSortBy] = useState<ProductSort>("recommended");
+  const [jakoImportBusy, setJakoImportBusy] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showCatForm, setShowCatForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -158,7 +173,7 @@ export default function Shop() {
       type DynRow = { data: unknown; error: { message?: string } | null };
       const [catRes, prodRes, ordRes] = await Promise.all([
         supabaseDynamic.from("shop_categories").select("id, club_id, name, is_active").eq("club_id", clubId).eq("is_active", true).order("name") as unknown as Promise<DynRow>,
-        supabaseDynamic.from("shop_products").select("id, club_id, category_id, name, description, price_eur, stock, image_url, image_urls, is_active").eq("club_id", clubId).order("created_at", { ascending: false }) as unknown as Promise<DynRow>,
+        supabaseDynamic.from("shop_products").select("id, club_id, category_id, name, description, price_eur, price_max_eur, stock, image_url, image_urls, external_url, product_meta, import_key, is_active").eq("club_id", clubId).order("created_at", { ascending: false }) as unknown as Promise<DynRow>,
         supabaseDynamic.from("shop_orders").select("id, club_id, product_id, quantity, total_eur, status, ordered_at").eq("club_id", clubId).order("ordered_at", { ascending: false }) as unknown as Promise<DynRow>,
       ]);
       if (catRes.error || prodRes.error || ordRes.error) {
@@ -205,6 +220,44 @@ export default function Shop() {
       return hitSearch && hitCategory;
     });
   }, [products, q, filterCat, categoryMap, t.common.unknown]);
+
+  const sortedProducts = useMemo(() => {
+    const list = [...filtered];
+    switch (sortBy) {
+      case "price-asc":
+        return list.sort((a, b) => Number(a.price_eur) - Number(b.price_eur));
+      case "price-desc":
+        return list.sort((a, b) => Number(b.price_eur) - Number(a.price_eur));
+      case "name":
+        return list.sort((a, b) => a.name.localeCompare(b.name, priceLocale));
+      default:
+        return list;
+    }
+  }, [filtered, sortBy, priceLocale]);
+
+  const handleImportJakoCatalog = async () => {
+    if (!clubId || !canManage || jakoImportBusy) return;
+    setJakoImportBusy(true);
+    try {
+      const result = await importTsvAllachJakoShopCatalog(clubId, language);
+      if (result.error) {
+        toast({ title: t.common.error, description: result.error, variant: "destructive" });
+        return;
+      }
+      toast({
+        title: t.shopPage.importJakoCatalog,
+        description: t.shopPage.importJakoSuccess
+          .replace("{products}", String(result.productsUpserted))
+          .replace("{categories}", String(result.categoriesUpserted)),
+      });
+      await loadData();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast({ title: t.shopPage.importJakoFailed, description: msg, variant: "destructive" });
+    } finally {
+      setJakoImportBusy(false);
+    }
+  };
 
   const openAdd = () => {
     setEditId(null);
@@ -322,9 +375,23 @@ export default function Shop() {
         toolbarRevision={`${tab}-${canManage}-${schemaReady}`}
         rightSlot={
           canManage && tab === "products" ? (
-            <Button size="sm" className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110" onClick={openAdd} disabled={!clubId}>
-              <Plus className="w-4 h-4 mr-1" /> {t.shopPage.addProduct}
-            </Button>
+            <div className="flex items-center gap-2">
+              {isTsvAllach ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="font-semibold"
+                  disabled={!clubId || jakoImportBusy || !schemaReady}
+                  onClick={() => void handleImportJakoCatalog()}
+                >
+                  {jakoImportBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Download className="w-4 h-4 mr-1" />}
+                  {t.shopPage.importJakoCatalog}
+                </Button>
+              ) : null}
+              <Button size="sm" className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110" onClick={openAdd} disabled={!clubId}>
+                <Plus className="w-4 h-4 mr-1" /> {t.shopPage.addProduct}
+              </Button>
+            </div>
           ) : canManage && tab === "categories" ? (
             <Button size="sm" className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110" onClick={() => setShowCatForm(true)} disabled={!clubId}>
               <Plus className="w-4 h-4 mr-1" /> {t.shopPage.addCategory}
@@ -397,12 +464,54 @@ export default function Shop() {
           <>
             {tab === "products" && (
               <div className="space-y-4">
+                {isTsvAllach ? (
+                  <div className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card/50 to-card/40 p-4 sm:p-5">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-primary">{t.shopPage.brandJako}</div>
+                        <h2 className="font-display text-lg font-bold text-foreground mt-1">{t.shopPage.jakoBannerTitle}</h2>
+                        <p className="text-xs text-muted-foreground mt-1.5 max-w-2xl leading-relaxed">{t.shopPage.jakoBannerDesc}</p>
+                      </div>
+                      <a
+                        href={TSV_ALLACH_JAKO_TEAMSHOP_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:brightness-110"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        {t.shopPage.jakoBannerCta}
+                      </a>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="rounded-2xl border border-border/60 bg-card/40 px-4 py-3">
+                    <div className="text-[11px] text-muted-foreground">{t.shopPage.tabs.products}</div>
+                    <div className="font-display font-bold text-foreground text-lg mt-0.5">
+                      {t.shopPage.overviewProducts.replace("{count}", String(products.filter((p) => p.is_active).length))}
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-border/60 bg-card/40 px-4 py-3">
+                    <div className="text-[11px] text-muted-foreground">{t.shopPage.tabs.categories}</div>
+                    <div className="font-display font-bold text-foreground text-lg mt-0.5">
+                      {t.shopPage.overviewCategories.replace("{count}", String(categories.length))}
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-border/60 bg-card/40 px-4 py-3">
+                    <div className="text-[11px] text-muted-foreground">{t.shopPage.brandJako}</div>
+                    <div className="text-sm font-medium text-foreground mt-0.5 leading-snug">
+                      {isTsvAllach ? t.shopPage.overviewPartner : t.shopPage.subtitle}
+                    </div>
+                  </div>
+                </div>
+
                 <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3">
                   <div className="flex items-center gap-2 flex-wrap">
                     <Search className="w-4 h-4 text-muted-foreground shrink-0" />
                     <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.shopPage.search} className="flex-1 min-w-[140px]" />
                     <Select value={filterCat || "__all"} onValueChange={(value) => setFilterCat(value === "__all" ? "" : value)}>
-                    <SelectTrigger className="h-10 w-full sm:w-[180px] rounded-xl border-border/60 bg-background/50 px-3 text-sm">
+                      <SelectTrigger className="h-10 w-full sm:w-[180px] rounded-xl border-border/60 bg-background/50 px-3 text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -410,63 +519,81 @@ export default function Shop() {
                         {categoryNames.map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
                       </SelectContent>
                     </Select>
+                    <Select value={sortBy} onValueChange={(value) => setSortBy(value as ProductSort)}>
+                      <SelectTrigger className="h-10 w-full sm:w-[180px] rounded-xl border-border/60 bg-background/50 px-3 text-sm">
+                        <SelectValue placeholder={t.shopPage.sortLabel} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="recommended">{t.shopPage.sortRecommended}</SelectItem>
+                        <SelectItem value="price-asc">{t.shopPage.sortPriceAsc}</SelectItem>
+                        <SelectItem value="price-desc">{t.shopPage.sortPriceDesc}</SelectItem>
+                        <SelectItem value="name">{t.shopPage.sortName}</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
-                {filtered.length === 0 ? (
+                {canManage && isTsvAllach && products.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed border-primary/30 bg-primary/5 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <div className="font-display font-bold text-foreground text-sm">{t.shopPage.importJakoCatalog}</div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t.shopPage.importJakoCatalogDesc.replace("{count}", String(countJakoCatalogProducts()))}
+                      </p>
+                    </div>
+                    <Button
+                      className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110 shrink-0"
+                      disabled={jakoImportBusy || !schemaReady}
+                      onClick={() => void handleImportJakoCatalog()}
+                    >
+                      {jakoImportBusy ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Download className="w-4 h-4 mr-1" />}
+                      {t.shopPage.importJakoCatalog}
+                    </Button>
+                  </div>
+                ) : null}
+
+                {sortedProducts.length === 0 ? (
                   <div className="text-center py-20">
                     <ShoppingBag className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                     <h2 className="font-display text-xl font-bold text-foreground mb-2">{t.shopPage.noProducts}</h2>
                     <p className="text-muted-foreground">{t.shopPage.noProductsDesc}</p>
+                    {canManage && isTsvAllach ? (
+                      <Button
+                        className="mt-4 bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
+                        disabled={jakoImportBusy || !schemaReady}
+                        onClick={() => void handleImportJakoCatalog()}
+                      >
+                        {jakoImportBusy ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Download className="w-4 h-4 mr-1" />}
+                        {t.shopPage.importJakoCatalog}
+                      </Button>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <AnimatePresence>
-                      {filtered.map((p, i) => {
-                        const categoryName = p.category_id ? (categoryMap.get(p.category_id) || t.common.unknown) : t.common.unknown;
-                        const thumb = p.image_url || parseProductImageUrls(p)[0];
-                        return (
-                          <motion.div key={p.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }} className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl overflow-hidden">
-                            <div className="relative w-full aspect-[4/3] overflow-hidden bg-gradient-to-br from-primary/5 to-muted/25">
-                              {thumb ? (
-                                <img
-                                  src={thumb}
-                                  alt={p.name}
-                                  className="h-full w-full object-cover object-center"
-                                  loading="lazy"
-                                  decoding="async"
-                                />
-                              ) : (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <ShoppingBag className="w-10 h-10 text-primary/30" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="p-4">
-                              <span className="text-[10px] px-2 py-0.5 rounded-full border border-border/60 bg-background/40 text-muted-foreground">{categoryName}</span>
-                              <h3 className="mt-1.5 font-display font-bold text-foreground text-sm">{p.name}</h3>
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{p.description}</p>
-                              <div className="flex items-center justify-between mt-3">
-                                <span className="font-display font-bold text-foreground text-lg">{Number(p.price_eur).toFixed(2)} &euro;</span>
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${p.stock > 0 ? "text-green-600 bg-green-500/10 border-green-500/20" : "text-red-500 bg-red-500/10 border-red-500/20"}`}>
-                                  {p.stock > 0 ? `${t.shopPage.inStock} (${p.stock})` : t.shopPage.outOfStock}
-                                </span>
-                              </div>
-                              {canManage && (
-                                <div className="flex gap-2 mt-3 pt-3 border-t border-border/60">
-                                  <Button variant="ghost" size="sm" className="min-h-11 flex-1 text-xs touch-manipulation" onClick={() => openEdit(p)}>
-                                    <Edit2 className="w-3.5 h-3.5 mr-1" /> {t.shopPage.editProduct}
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="min-h-11 min-w-11 shrink-0 text-xs text-destructive touch-manipulation" onClick={() => void deleteProduct(p.id)}>
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </AnimatePresence>
+                    {sortedProducts.map((p, i) => {
+                      const categoryName = p.category_id ? (categoryMap.get(p.category_id) || t.common.unknown) : t.common.unknown;
+                      return (
+                        <ShopProductCard
+                          key={p.id}
+                          product={p}
+                          categoryName={categoryName}
+                          index={i}
+                          locale={priceLocale}
+                          canManage={canManage}
+                          labels={{
+                            brand: t.shopPage.brandJako,
+                            inStock: t.shopPage.inStock,
+                            outOfStock: t.shopPage.outOfStock,
+                            sustainable: t.shopPage.sustainable,
+                            priceFrom: t.shopPage.priceFrom,
+                            orderAtJako: t.shopPage.orderAtJako,
+                            editProduct: t.shopPage.editProduct,
+                          }}
+                          onEdit={() => openEdit(p)}
+                          onDelete={() => void deleteProduct(p.id)}
+                        />
+                      );
+                    })}
                   </div>
                 )}
               </div>

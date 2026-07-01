@@ -79,7 +79,7 @@ const comparisonGrid: { kickoff: boolean; squad: boolean; pro: boolean; champion
 /* ─── Promo Banner ─── */
 function PromoBanner() {
   const { t } = useLanguage();
-  const deadline = useMemo(() => new Date("2026-04-10T23:59:59").getTime(), []);
+  const deadline = useMemo(() => new Date("2026-12-13T23:59:59").getTime(), []);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
@@ -605,7 +605,7 @@ const Pricing = () => {
             className="flex flex-wrap justify-center gap-6 sm:gap-10 mt-8 sm:mt-10"
           >
             {[
-              { target: 500, suffix: "+", label: t.hero.activeClubs },
+              { target: 14, suffix: "+", label: t.hero.platformModules },
               { target: 14, suffix: " days", label: t.pricingPage.freeTrial },
               { target: 0, suffix: "", label: t.pricingPage.setupFee, display: "EUR 0" },
             ].map((stat, i) => (

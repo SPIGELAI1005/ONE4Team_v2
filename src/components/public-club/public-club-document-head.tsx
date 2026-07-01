@@ -26,7 +26,48 @@ interface HeadRestore {
   createdLinks: HTMLLinkElement[];
   createdScripts: HTMLScriptElement[];
   touchedMeta: Map<HTMLMetaElement, string | null>;
-  touchedLinks: Map<HTMLLinkElement, string | null>;
+  touchedLinks: Map<HTMLLinkElement, { href: string | null; type: string | null }>;
+}
+
+function faviconMimeType(url: string): string | null {
+  const path = url.split("?")[0]?.toLowerCase() ?? "";
+  if (path.endsWith(".svg")) return "image/svg+xml";
+  if (path.endsWith(".ico")) return "image/x-icon";
+  if (path.endsWith(".webp")) return "image/webp";
+  if (path.endsWith(".jpg") || path.endsWith(".jpeg")) return "image/jpeg";
+  if (path.endsWith(".png")) return "image/png";
+  return null;
+}
+
+function upsertFavicon(href: string, state: HeadRestore) {
+  const type = faviconMimeType(href);
+  const existing = [
+    ...document.head.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]'),
+  ] as HTMLLinkElement[];
+
+  if (existing.length > 0) {
+    for (const el of existing) {
+      if (!state.touchedLinks.has(el)) {
+        state.touchedLinks.set(el, {
+          href: el.getAttribute("href"),
+          type: el.getAttribute("type"),
+        });
+      }
+      el.setAttribute(SEO_MARK, "borrowed");
+      el.setAttribute("href", href);
+      if (type) el.setAttribute("type", type);
+      else el.removeAttribute("type");
+    }
+    return;
+  }
+
+  const l = document.createElement("link");
+  l.setAttribute("rel", "icon");
+  l.setAttribute("href", href);
+  if (type) l.setAttribute("type", type);
+  l.setAttribute(FAV_MARK, "created");
+  document.head.insertBefore(l, document.head.firstChild);
+  state.createdLinks.push(l);
 }
 
 function getMetaBy(attr: "name" | "property", value: string): HTMLMetaElement | null {
@@ -52,7 +93,9 @@ function upsertMeta(attr: "name" | "property", key: string, content: string, sta
 function upsertCanonical(href: string, state: HeadRestore) {
   const el = document.head.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
   if (el) {
-    if (!state.touchedLinks.has(el)) state.touchedLinks.set(el, el.getAttribute("href"));
+    if (!state.touchedLinks.has(el)) {
+      state.touchedLinks.set(el, { href: el.getAttribute("href"), type: el.getAttribute("type") });
+    }
     el.setAttribute(SEO_MARK, "borrowed");
     el.setAttribute("href", href);
   } else {
@@ -119,8 +162,10 @@ function restoreHead(state: HeadRestore) {
   for (const l of state.createdLinks) l.remove();
   for (const [l, prev] of state.touchedLinks) {
     if (l.getAttribute(SEO_MARK) === "borrowed") {
-      if (prev == null) l.removeAttribute("href");
-      else l.setAttribute("href", prev);
+      if (prev.href == null) l.removeAttribute("href");
+      else l.setAttribute("href", prev.href);
+      if (prev.type == null) l.removeAttribute("type");
+      else l.setAttribute("type", prev.type);
     }
     l.removeAttribute(SEO_MARK);
   }
@@ -248,17 +293,10 @@ export function PublicClubDocumentHead() {
 
     upsertCanonical(canonicalUrl, state);
 
-    const fav = club.favicon_url?.trim();
+    const fav = club.favicon_url?.trim() || club.logo_url?.trim();
     if (fav) {
       const abs = toAbsoluteUrl(fav, origin);
-      if (abs) {
-        const l = document.createElement("link");
-        l.setAttribute("rel", "icon");
-        l.setAttribute(FAV_MARK, "1");
-        l.setAttribute("href", abs);
-        document.head.appendChild(l);
-        state.createdLinks.push(l);
-      }
+      if (abs) upsertFavicon(abs, state);
     }
 
     const allowJsonLd = !noindex && club.seoStructuredDataEnabled;

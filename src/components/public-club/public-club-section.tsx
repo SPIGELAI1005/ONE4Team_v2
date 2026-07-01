@@ -20,7 +20,11 @@ export function PublicClubSection({ id, title, subtitle, children, className = "
             {title}
           </h2>
         ) : null}
-        {subtitle ? <div className="text-sm text-[color:var(--club-muted)] max-w-2xl mx-auto md:mx-0 mb-6">{subtitle}</div> : null}
+        {subtitle ? (
+          <div className="public-club-section-body text-sm text-[color:var(--club-muted)] max-w-2xl mx-auto md:mx-0 mb-8 leading-relaxed">
+            {subtitle}
+          </div>
+        ) : null}
         {children}
       </div>
     </section>

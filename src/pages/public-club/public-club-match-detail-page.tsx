@@ -9,14 +9,21 @@ import { useLanguage } from "@/hooks/use-language";
 import { supabase } from "@/integrations/supabase/client";
 import { PUBLIC_CLUB_ROUTE_SEGMENTS } from "@/lib/public-club-routes";
 import type { PublicMatchLite } from "@/lib/public-club-models";
-import { publicMatchStatusBadge } from "@/lib/public-club-match-display";
+import {
+  buildPublicMatchOpponentLogoLookup,
+  mergePublicMatchLists,
+  publicMatchFixtureSides,
+  publicMatchHeadline,
+  publicMatchSideLogos,
+  publicMatchStatusBadge,
+} from "@/lib/public-club-match-display";
 import { redactMatchScoresForPrivacy } from "@/lib/public-club-privacy";
 
 export default function PublicClubMatchDetailPage() {
   const { t, language } = useLanguage();
   const locale = language === "de" ? "de-DE" : "en-GB";
   const { matchId = "" } = useParams();
-  const { club, basePath, searchSuffix } = usePublicClub();
+  const { club, teams, publicMatches, publicMatchesUpcoming, basePath, searchSuffix } = usePublicClub();
   const { setExtras } = usePublicClubRouteSeo();
   const [row, setRow] = useState<PublicMatchLite | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,7 +46,7 @@ export default function PublicClubMatchDetailPage() {
       const { data, error: qErr } = await supabase
         .from("matches")
         .select(
-          "id, opponent, is_home, match_date, location, status, home_score, away_score, team_id, opponent_logo_url, public_match_detail_enabled, competitions(name)"
+          "id, opponent, is_home, match_date, location, status, home_score, away_score, team_id, opponent_logo_url, public_match_detail_enabled, competitions(name), teams(name)"
         )
         .eq("club_id", club.id)
         .eq("id", matchId)
@@ -68,20 +75,31 @@ export default function PublicClubMatchDetailPage() {
       dateStyle: "long",
       timeStyle: "short",
     });
-    const title = `${club.name} vs ${row.opponent}`;
+    const title = row ? publicMatchHeadline(row, teams, club.name) : club.name;
     const desc = [dateLine, comp, row.location?.trim()].filter(Boolean).join(" · ");
     setExtras({ title, description: desc.slice(0, 320) });
     return () => setExtras(null);
-  }, [club, enabled, locale, row, setExtras]);
+  }, [club, enabled, locale, row, setExtras, teams]);
 
   const listHref = `${basePath}/${PUBLIC_CLUB_ROUTE_SEGMENTS.matches}${searchSuffix}`;
   const enabled = row?.public_match_detail_enabled === true;
   const badge = row ? publicMatchStatusBadge(row.status) : "upcoming";
 
-  const fixtureHomeName = club && displayRow ? (displayRow.is_home ? club.name : displayRow.opponent) : "";
-  const fixtureAwayName = club && displayRow ? (displayRow.is_home ? displayRow.opponent : club.name) : "";
-  const fixtureHomeLogo = displayRow?.is_home ? club?.logo_url ?? null : displayRow?.opponent_logo_url ?? null;
-  const fixtureAwayLogo = displayRow?.is_home ? displayRow?.opponent_logo_url ?? null : club?.logo_url ?? null;
+  const opponentLogoLookup = useMemo(() => {
+    const merged = mergePublicMatchLists(publicMatches, publicMatchesUpcoming);
+    return buildPublicMatchOpponentLogoLookup(merged, teams);
+  }, [publicMatches, publicMatchesUpcoming, teams]);
+
+  const fixtureSides =
+    club && displayRow ? publicMatchFixtureSides(displayRow, teams, club.name) : null;
+  const fixtureHomeName = fixtureSides?.homeName ?? "";
+  const fixtureAwayName = fixtureSides?.awayName ?? "";
+  const sideLogos =
+    displayRow && club
+      ? publicMatchSideLogos(displayRow, teams, club.logo_url, opponentLogoLookup)
+      : { homeLogo: null, awayLogo: null };
+  const fixtureHomeLogo = sideLogos.homeLogo;
+  const fixtureAwayLogo = sideLogos.awayLogo;
 
   return (
     <PublicClubPageGate section="matches">

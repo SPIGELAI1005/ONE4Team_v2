@@ -213,6 +213,24 @@ Aligned with [tsvallach09.de/onlineanmeldung](https://www.tsvallach09.de/onlinea
 
 ---
 
+## Public shop, reports, live scores (2026-07-01)
+
+| Route | Admin toggle | Smoke |
+|-------|--------------|-------|
+| `/club/tsv-allach-09/shop` | **Pages** → Shop enabled | JAKO products visible after seed/migration |
+| `/club/tsv-allach-09/reports` | **Pages** → Reports enabled | Role-scoped report persona |
+| `/club/tsv-allach-09/live-scores` | **Pages** → Live scores enabled | Live board when matches published |
+
+Additional checks:
+
+- [ ] Migration **`20260730120000`**–**`20260730140000`** applied
+- [ ] Optional **`seed_tsv_allach_jako_shop.sql`** run for pilot retail
+- [ ] **Basics** → favicon uploaded; live page shows club icon (not default ONE4Team)
+- [ ] **`/matches`** on public site shows opponent logos where uploaded in admin **`/matches`**
+- [ ] Marketing **`/features`** — AI intro video plays when section centered; hero width matches 3 AI cards below
+
+---
+
 ## Still manual / not in product yet
 
 | Wix feature | Workaround |

@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-06-30 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-25** communication/tasks/attendance, § **2026-06-27** TSV Allach Sommerfest + membership application, § **2026-06-30** member payments + invite email), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
+Last updated: 2026-07-01 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-25** communication/tasks/attendance, § **2026-06-27** TSV Allach Sommerfest + membership application, § **2026-06-30** member payments + invite email, § **2026-07-01** marketing + public club polish), `MEMORY_BANK.md`, `DEPLOYMENT.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
 
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 
@@ -115,6 +115,18 @@ Deploy Edge: **`send-club-invite-email`**.
 Secrets (Supabase Edge): **`RESEND_API_KEY`**, **`RESEND_FROM_EMAIL`**, **`PUBLIC_SITE_URL`**, **`EDGE_ALLOWED_ORIGINS`** (comma-separated origins, no trailing slashes).
 
 Smoke: **`/payments`** Fee Types + Record payment (multi-package); **`/members`** send invite → email in inbox. Resend **domain must be verified** for production From address. See **`CHANGELOG.md` § 2026-06-30**, **`docs/PRODUCTION_RELEASE_CHECKLIST.md`**, **`TASKS.md` PAY-OPS-001**.
+
+## Marketing + public club polish (2026-07-01)
+Apply in the same Supabase project (after **`20260728140000`**):
+1. `supabase/migrations/20260730120000_shop_products_import_key.sql`
+2. `supabase/migrations/20260730130000_tsv_allach_jako_shop_images.sql`
+3. `supabase/migrations/20260730140000_tsv_allach_club_contact_address.sql`
+
+Optional seed: **`supabase/scripts/seed_tsv_allach_jako_shop.sql`** (TSV Allach JAKO pilot products).
+
+No new Edge deploy required for this wave (client + SQL only).
+
+Smoke: **`/features`** AI hero video + light/dark theme; **`/pricing`** Early Bird countdown to **13 Dec 2026**; **`/club/tsv-allach-09`** club favicon, **`/matches`** opponent logos, **`/shop`**, **`/reports`**, **`/live-scores`** when sections enabled in Club Page Admin. See **`CHANGELOG.md` § 2026-07-01**, **`TASKS.md` PUB-OPS-001 / MKT-DOC-001.
 
 ## WhatsApp External Bridge — operator (follow-up)
 **Not** personal WhatsApp / QR login. Use **WhatsApp Business API** only.

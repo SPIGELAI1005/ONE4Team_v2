@@ -3,6 +3,41 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-01 (Marketing refresh, AI Features hero video, public club polish)
+
+### Marketing site (EN/DE)
+- **Home (`/`):** Hero subtitle, stats (500+ members, 20+ teams, 14+ modules), and feature cards refreshed — public microsites, Sommerfest, tasks, integrated AI, TSV Allach pilot. Copy polish: no em dashes in marketing strings; **AI 4 T** used sparingly (general AI language elsewhere).
+- **`/features`:** Expanded to 8 club modules, 3 AI cards, 5 use cases; **AI-Powered Innovation** hero with portrait intro video (`ai-4-t-intro-logo.mp4`), glass logo assets, viewport-triggered play (holds last frame), side-by-side layout at all breakpoints, light/dark **`glass-card`** styling aligned with feature cards below (`max-w-6xl`).
+- **`/about`**, **`/clubs-and-partners`:** Updated mission, platform, AI, and TSV Allach / Sportecke partner copy.
+- **`/pricing`:** Early Bird deadline **13 December 2026** (`2026-12-13T23:59:59`); EN/DE countdown copy aligned.
+- **Components:** `HeroSection.tsx`, `Features.tsx`, `About.tsx`, `Pricing.tsx`; i18n `hero`, `features`, `dualWorld`, `aboutPage`, `featuresPage`, `clubsAndPartnersPage`, `pricingPage`.
+
+### AI 4 T branding (marketing + shared)
+- **`Ai4TIntroLogoVideo.tsx`:** Scroll-center play once; `object-cover` fill; poster `ai-4-t-glass-logo.png`; respects `prefers-reduced-motion`.
+- **`Ai4TWordmark`:** `variant="glass"` for full 3D wordmark asset.
+- **`Ai4TBrand`:** `BrandedText` **`ai4tOnly`** — plain **ONE4Team** in body copy; red **4** only in **AI 4 T**; **`one-4-team-wordmark-digit`** (gold) for branded ONE 4 Team elsewhere.
+
+### Public club microsite
+- **Favicon:** `PublicClubDocumentHead` upserts club favicon in place (fixes default ONE4Team icon winning in `<head>`).
+- **Match logos:** Berlin-day fixture linking, opponent logo lookup map, club-logo guard on opponent side, improved dedupe — `tsv-allach-public-matches.ts`, `public-club-match-display.ts`, matches + match-detail pages; tests updated.
+- **New public routes:** Shop (`/shop`), Reports (`/reports`), Live scores (`/live-scores`) — pages, sections, context wiring, flex config.
+- **TSV Allach JAKO shop:** Catalog import, product grid, admin **`/shop`** opponent-logo-style product images; migrations **`20260730120000`**–**`20260730130000`**; seed **`seed_tsv_allach_jako_shop.sql`**.
+- **Club contact:** TSV Allach address helper + migration **`20260730140000_tsv_allach_club_contact_address.sql`**.
+- **Matches admin:** Opponent logo upload field (`OpponentLogoField.tsx`); Sommerfest sync test updates.
+
+### Supabase (operator)
+- **`20260730120000_shop_products_import_key.sql`**
+- **`20260730130000_tsv_allach_jako_shop_images.sql`**
+- **`20260730140000_tsv_allach_club_contact_address.sql`**
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`README.md`**, **`HOLD.md`**, **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**, **`docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`**.
+
+### Operator smoke
+- **`/features`:** AI hero video plays centered in viewport; light + dark theme; width aligns with 3 AI cards.
+- **`/club/tsv-allach-09`:** favicon, **`/matches`** opponent logos, **`/shop`**, **`/reports`**, **`/live-scores`** when sections enabled.
+- Apply migrations **`20260730120000`** → **`20260730140000`** after **`20260728140000`**; run JAKO shop seed if pilot retail desired.
+
 ## 2026-06-30 (Member payments, fee packages, invite email)
 
 ### Payments & fee packages (`/payments`)

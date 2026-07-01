@@ -321,6 +321,7 @@ export function shouldRenderHomepageModule(
 
   switch (moduleId) {
     case "stats":
+      if (!data.club.sectionVisibility.about) return false;
       if (data.showStats) return true;
       return isAdminPreview;
     case "next_up":

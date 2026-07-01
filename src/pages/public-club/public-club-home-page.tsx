@@ -19,6 +19,9 @@ import { PublicClubHeroTeamFilter } from "@/components/public-club/public-club-h
 import { PublicClubAi4TButton } from "@/components/public-club/public-club-ai4t-button";
 import { PublicClubAi4TSection } from "@/components/public-club/public-club-ai4t-section";
 import { PublicClubMessagesSection } from "@/components/public-club/public-club-messages-section";
+import { PublicClubShopSection } from "@/components/public-club/public-club-shop-section";
+import { PublicClubReportsSection } from "@/components/public-club/public-club-reports-section";
+import { PublicClubLiveScoresSection } from "@/components/public-club/public-club-live-scores-section";
 import { PublicClubSection } from "@/components/public-club/public-club-section";
 import { PublicClubPageGate } from "@/components/public-club/public-club-page-gate";
 import { PublicClubNewsCarousel } from "@/components/public-club/public-club-news-carousel";
@@ -42,6 +45,7 @@ import { normalizePublicNewsCategory } from "@/lib/public-club-news";
 import { readableTextOnSolid } from "@/lib/hex-to-rgb";
 import { clubCtaFillHoverClass, clubCtaHeroGlassLinkClass, clubCtaOutlineButtonClass } from "@/lib/public-club-cta-classes";
 import { filterPublicClubEventsByTeamId, filterPublicClubRowsByTeamId } from "@/lib/public-club-home-team-filter";
+import { publicMatchHeadline } from "@/lib/public-club-match-display";
 import { getFriendlyMatchPeerTeams } from "@/lib/public-club-friendly-teams";
 import { clubGlassInteractiveClass } from "@/lib/public-club-glass-classes";
 import { PublicClubAttendanceRsvp } from "@/components/public-club/public-club-attendance-rsvp";
@@ -235,7 +239,7 @@ export default function PublicClubHomePage() {
     }
     if (nextMatch && club.sectionVisibility.matches) {
       const at = new Date(nextMatch.match_date).getTime();
-      const title = nextMatch.is_home ? `${club.name} vs ${nextMatch.opponent}` : `${nextMatch.opponent} vs ${club.name}`;
+      const title = publicMatchHeadline(nextMatch, teams, club.name);
       items.push({
         kind: "match",
         at,
@@ -257,7 +261,7 @@ export default function PublicClubHomePage() {
       });
     }
     return items.sort((a, b) => a.at - b.at).slice(0, 3);
-  }, [club, eventsHref, matchesHref, nextEvent, nextMatch, nextTraining, scheduleHref, t.clubPage]);
+  }, [club, eventsHref, matchesHref, nextEvent, nextMatch, nextTraining, scheduleHref, t.clubPage, teams]);
 
   const latestNewsMax = club
     ? Math.min(12, effectiveHomepageMaxItems("latest_news", club.publicPageLayout, club.homepageModuleDefs))
@@ -282,6 +286,7 @@ export default function PublicClubHomePage() {
 
   const showStats = Boolean(
     club &&
+      club.sectionVisibility.about &&
       ((club.sectionVisibility.teams && filteredTeams.length > 0) ||
         (club.sectionVisibility.teams && coachStatCount > 0) ||
         (club.sectionVisibility.schedule && upcomingTrainingsCount > 0) ||
@@ -711,11 +716,7 @@ export default function PublicClubHomePage() {
                       <PublicClubSection key="matches_preview" title={`${t.clubPage.homeMatchesPreviewTitle}${homeSectionTitleSuffix}`}>
                         <div className="space-y-3">
                           {homeMatchesPreview.map((m) => {
-                            const title = m.teams?.name
-                              ? `${m.teams.name} vs ${m.opponent}`
-                              : m.is_home
-                                ? `${club.name} vs ${m.opponent}`
-                                : `${m.opponent} vs ${club.name}`;
+                            const title = publicMatchHeadline(m, teams, club.name);
                             const detailHref = m.public_match_detail_enabled
                               ? `${basePath}/${PUBLIC_CLUB_ROUTE_SEGMENTS.matches}/${m.id}${searchSuffix}`
                               : matchesHref;
@@ -908,6 +909,9 @@ export default function PublicClubHomePage() {
             </PublicClubSection>
           ) : null}
 
+          {!loadingData ? <PublicClubShopSection showAdminDraftEmptyHints={showAdminDraftEmptyHints} /> : null}
+          {!loadingData ? <PublicClubReportsSection /> : null}
+          {!loadingData ? <PublicClubLiveScoresSection /> : null}
           {!loadingData ? <PublicClubMessagesSection /> : null}
           {!loadingData ? <PublicClubAi4TSection /> : null}
         </>

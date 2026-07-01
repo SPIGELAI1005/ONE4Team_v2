@@ -1,11 +1,13 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-06-30 (Member payments, fee packages, invite email)
+Last updated: 2026-07-01 (Marketing refresh, AI Features hero, public club polish)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **Marketing site refresh (2026-07-01):** Home, **Features**, **About**, **Clubs & Partners**, **Pricing** EN/DE copy updated (public microsites, Sommerfest, tasks, integrated AI, TSV Allach pilot). **Features** **AI-Powered Innovation** hero: portrait intro video (`Ai4TIntroLogoVideo`), glass logo assets, viewport play + last-frame hold, side-by-side layout all breakpoints, **`glass-card`** light/dark theming, **`max-w-6xl`** aligned with AI feature cards. **`BrandedText ai4tOnly`:** plain ONE4Team, red **4** only in **AI 4 T**. Early Bird pricing deadline **13 Dec 2026**. See **`CHANGELOG.md`** § **2026-07-01**.
+- **Public club polish (2026-07-01):** Club **favicon** upsert in `PublicClubDocumentHead`. **Match opponent logos** — Berlin-day fixture link, lookup map, dedupe, UI shared helpers. Public **Shop**, **Reports**, **Live scores** routes + sections. **TSV Allach JAKO shop** catalog + migrations **`20260730120000`**–**`20260730140000`**. Admin **`OpponentLogoField`** on **`/matches`**. See **`CHANGELOG.md`** § **2026-07-01**.
 - **Member payments + fee packages (2026-06-30):** Admin **`/payments`** — define **membership packages** (`membership_fee_types`: currency, categories, price components, notes) and **payment lines** per member (`payments`). **Fee Types** tab: packages table + **annual summary** (membership vs shared levy; Sonderumlage from components or standalone levy package). **Record payment** supports **multiple packages** per member; **bulk assign**; multi-select package filter; in-page Record/Bulk buttons. Migrations **`20260728120000`**–**`20260728140000`**. Lib: **`membership-fee-packages.ts`**, **`member-payments.ts`**. **`PlayerProfile`** links to payments. See **`CHANGELOG.md`** § **2026-06-30**.
 - **Club invite email (2026-06-30):** Resend delivery via Edge **`send-club-invite-email`**; **`Members.tsx`** send/resend/create invite; secrets **`RESEND_*`**, **`PUBLIC_SITE_URL`**, **`EDGE_ALLOWED_ORIGINS`**. Operator checklist: **`docs/PRODUCTION_RELEASE_CHECKLIST.md`**. See **`CHANGELOG.md`** § **2026-06-30**.
 - **Members ops + club member card (2026-06-28):** **`/members`** search UX hardened (no focus loss on refetch; aligned search icon); saved-list + roster search match badges; draft save resolves rows outside first 500 via **`resolveDraftById`**; success toasts. **Team assignment** from **`/members`** and **`/teams`** via **`team_players`** / **`team_coaches`** (**`member-team-assignments.ts`**, **`member-team-assignment-field.tsx`**). **Club Card** tab shows club **`logo_url`**, role, team, date of birth; **AI 4 T** logo on **Generate club ID**; PNG export via **`club-pass-capture.ts`** (image inlining + decoration hide for html2canvas). Header clipping / empty card stretch fixes in **`master-data-tabs.tsx`**. **`/teams`** team search filter. Dashboard header **AI 4 T Agent** button (**`Ai4TLogo`**). Repair migrations **`20260725140000`** (`list_club_membership_emails`), **`20260725150000`** (`images-avatars` bucket). See **`CHANGELOG.md`** § **2026-06-28**.
@@ -191,6 +193,10 @@ Persistent handoff context for future agents so work can continue without re-dis
 61. `20260615150000_ai_agent_tool_rpcs_extended.sql` — `agent_create_member_draft`, `agent_send_club_announcement`
 62. `20260725140000_repair_list_club_membership_emails.sql` — repair RPC for member email listing (`CHANGELOG.md` § 2026-06-28)
 63. `20260725150000_repair_images_avatars_bucket.sql` — repair `images-avatars` storage bucket + RLS (`CHANGELOG.md` § 2026-06-28)
+64. `20260728120000_repair_membership_fee_types_and_payments.sql` through `20260728140000_membership_fee_types_package_fields.sql` — payments packages (`CHANGELOG.md` § 2026-06-30)
+65. `20260730120000_shop_products_import_key.sql` — shop product import keys (`CHANGELOG.md` § 2026-07-01)
+66. `20260730130000_tsv_allach_jako_shop_images.sql` — TSV Allach JAKO shop images (`CHANGELOG.md` § 2026-07-01)
+67. `20260730140000_tsv_allach_club_contact_address.sql` — TSV Allach club contact address (`CHANGELOG.md` § 2026-07-01)
 
 Also ensure previously listed communication migrations remain applied in the same project:
 - `20260301152000_add_chat_bridge_connectors_and_events.sql`

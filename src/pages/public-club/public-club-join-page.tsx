@@ -600,7 +600,7 @@ export default function PublicClubJoinPage() {
         </>
       ) : null}
 
-      {faq.length > 0 ? (
+      {club.sectionVisibility.faq && faq.length > 0 ? (
         <PublicClubSection id="club-faq" title={<span className="text-[color:var(--club-primary)]">{t.clubPage.joinFaqTitle}</span>}>
           <div className="mx-auto max-w-3xl text-left">
             <Accordion type="single" collapsible className="w-full rounded-2xl club-glass px-2">

@@ -10,7 +10,8 @@ export type PublicClubMicroRoute =
   | "events"
   | "documents"
   | "join"
-  | "contact";
+  | "contact"
+  | "shop";
 
 /** URL segment (no leading slash) for each micro page. */
 export const PUBLIC_CLUB_ROUTE_SEGMENTS: Record<Exclude<PublicClubMicroRoute, "home" | "teamDetail">, string> = {
@@ -22,7 +23,17 @@ export const PUBLIC_CLUB_ROUTE_SEGMENTS: Record<Exclude<PublicClubMicroRoute, "h
   documents: "documents",
   join: "join",
   contact: "contact",
+  shop: "shop",
 };
+
+/** Visibility-only homepage sections with dedicated routes (not main micro-page nav). */
+export const PUBLIC_CLUB_VISIBILITY_ROUTE_SEGMENTS = {
+  shop: "shop",
+  reports: "reports",
+  livescores: "live-scores",
+} as const;
+
+export type PublicClubVisibilityRoute = keyof typeof PUBLIC_CLUB_VISIBILITY_ROUTE_SEGMENTS;
 
 /** Which published `public_page_sections` key gates this route (`join` → `nextsteps`). */
 export function microRouteRequiredSection(route: PublicClubMicroRoute): PublicPageSectionId | null {
@@ -46,6 +57,8 @@ export function microRouteRequiredSection(route: PublicClubMicroRoute): PublicPa
       return "nextsteps";
     case "contact":
       return "contact";
+    case "shop":
+      return "shop";
     default:
       return null;
   }

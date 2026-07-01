@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-06-30 (Member payments, fee packages, invite email)
+Last updated: 2026-07-01 (Marketing refresh, AI Features hero, public club polish)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -31,10 +31,11 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - **Communication hub + tasks + attendance (2026-06-25):** Public club **Messages hub**; embedded Communication modal; announcement moderation; **`/tasks`** module + notifications; training RSVP **team overview** + **1h cutoff** + roster gate + self-RSVP RLS (**`20260725130000`**). WhatsApp setup backlog: **`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`**. See **`CHANGELOG.md`** § **2026-06-25**.
 - **Members ops + club member card (2026-06-28):** **`/members`** search/save UX; team assignment from members + teams; Club Card with role/team/DOB/club logo + PNG export (**`club-pass-capture.ts`**); **`/teams`** search; **AI 4 T Agent** header button; repair migrations **`20260725140000`**, **`20260725150000`**. See **`CHANGELOG.md`** § **2026-06-28**.
 - **Member payments + fee packages (2026-06-30):** Admin **`/payments`** — package definitions (TSV Allach-style: membership + Sonderumlage components), multi-package **record payment**, bulk assign, fee overview + annual member-type summary. Invite **email delivery** (Resend Edge). Migrations **`20260728120000`**–**`20260728140000`**. See **`CHANGELOG.md`** § **2026-06-30** and **`docs/PRODUCTION_RELEASE_CHECKLIST.md`**.
+- **Marketing + public club wave (2026-07-01):** Refreshed marketing pages (home, features, about, clubs & partners, pricing Early Bird **13 Dec 2026**). **Features** AI hero with intro video + light/dark glass styling. Public club favicon fix, match opponent logos, **Shop / Reports / Live scores** microsite routes; TSV Allach JAKO shop + contact migrations **`20260730120000`**–**`20260730140000`**. See **`CHANGELOG.md`** § **2026-07-01**.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 
-**Comprehensive audit (2026-06-28):** [`docs/PROJECT_COMPREHENSIVE_AUDIT.md`](docs/PROJECT_COMPREHENSIVE_AUDIT.md) — code structure, UX, competitive positioning, market value, value-growth levers. Technical readiness baseline: [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](ops/PRODUCTION_READINESS_ARTIFACTS.md).
+**Comprehensive audit (2026-07-01):** [`docs/PROJECT_COMPREHENSIVE_AUDIT.md`](docs/PROJECT_COMPREHENSIVE_AUDIT.md) — code structure, UX, competitive positioning, market value, value-growth levers. Technical readiness baseline: [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](ops/PRODUCTION_READINESS_ARTIFACTS.md).
 
 ## Current Release Snapshot
 Go-live readiness checklist (one-screen):

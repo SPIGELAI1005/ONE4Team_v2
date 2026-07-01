@@ -8,6 +8,16 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ## NOW (top priority)
 
+### Marketing + public club polish (2026-07-01) — code in repo
+- [x] **MKT-001** Marketing i18n refresh (home, features, about, clubs & partners, pricing Early Bird 13 Dec 2026)
+- [x] **MKT-002** Features AI-Powered Innovation hero — intro video, glass assets, light/dark glass-card, responsive split layout
+- [x] **MKT-003** `Ai4TIntroLogoVideo`, `BrandedText ai4tOnly`, `Ai4TWordmark` glass variant
+- [x] **PUB-001** Public club favicon upsert; match opponent logo fixes + tests
+- [x] **PUB-002** Public Shop / Reports / Live scores routes + TSV Allach JAKO shop catalog
+- [x] **PUB-003** Migrations **`20260730120000`**–**`20260730140000`** + JAKO seed script
+- [x] **MKT-DOC-001** **`CHANGELOG.md`**, **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`README.md`**, audit + checklist sync
+- [ ] **PUB-OPS-001** Operator: apply **`20260730120000`**–**`20260730140000`**; optional **`seed_tsv_allach_jako_shop.sql`**; smoke `/features`, `/club/tsv-allach-09` (favicon, matches logos, shop, reports, live scores)
+
 ### Member payments + fee packages (2026-06-30) — code in repo
 - [x] **PAY-001** Repair migrations `membership_fee_types` + `payments` + package fields (`20260728120000`–`20260728140000`)
 - [x] **PAY-002** **`/payments`** admin UI: fee packages overview, annual summary, rich add/edit dialog

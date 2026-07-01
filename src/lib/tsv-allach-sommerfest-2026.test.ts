@@ -6,6 +6,7 @@ describe("tsv-allach-sommerfest-2026", () => {
   it("detects TSV Allach club by slug or name", () => {
     expect(isTsvAllachClub({ slug: "tsv-allach-09", name: "TSV Allach 09" })).toBe(true);
     expect(isTsvAllachClub({ slug: "other-club", name: "Other FC" })).toBe(false);
+    expect(isTsvAllachClub({ slug: "fc-allach-united", name: "FC Allach United" })).toBe(false);
   });
 
   it("includes full Sommerfest match plan from PDF", () => {

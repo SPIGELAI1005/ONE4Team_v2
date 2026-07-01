@@ -9,8 +9,12 @@ import { useLanguage } from "@/hooks/use-language";
 import { PUBLIC_CLUB_ROUTE_SEGMENTS } from "@/lib/public-club-routes";
 import type { PublicMatchLite } from "@/lib/public-club-models";
 import {
+  buildPublicMatchOpponentLogoLookup,
   mergePublicMatchLists,
+  publicMatchFixtureSides,
+  publicMatchHeadline,
   publicMatchInDateRange,
+  publicMatchSideLogos,
   publicMatchStatusBadge,
 } from "@/lib/public-club-match-display";
 import { getPublicScheduleRangeBounds, type PublicScheduleRangePreset } from "@/lib/public-schedule-page";
@@ -105,12 +109,25 @@ export default function PublicClubMatchesPage() {
 
   const teamOptions = useMemo(() => [...teams].sort((a, b) => a.name.localeCompare(b.name)), [teams]);
 
+  const opponentLogoLookup = useMemo(
+    () => buildPublicMatchOpponentLogoLookup(allMatches, teams),
+    [allMatches, teams],
+  );
+
   const renderCard = (m: PublicMatchLite) => {
     const badge = publicMatchStatusBadge(m.status);
-    const fixtureHomeName = club ? (m.is_home ? club.name : m.opponent) : m.opponent;
-    const fixtureAwayName = club ? (m.is_home ? m.opponent : club.name) : "";
-    const fixtureHomeLogo = m.is_home ? club?.logo_url ?? null : m.opponent_logo_url ?? null;
-    const fixtureAwayLogo = m.is_home ? m.opponent_logo_url ?? null : club?.logo_url ?? null;
+    const { homeName: fixtureHomeName, awayName: fixtureAwayName } = publicMatchFixtureSides(
+      m,
+      teams,
+      club?.name ?? "",
+    );
+    const matchTitle = club ? publicMatchHeadline(m, teams, club.name) : m.opponent;
+    const { homeLogo: fixtureHomeLogo, awayLogo: fixtureAwayLogo } = publicMatchSideLogos(
+      m,
+      teams,
+      club?.logo_url,
+      opponentLogoLookup,
+    );
     const detailHref = `${basePath}/${PUBLIC_CLUB_ROUTE_SEGMENTS.matches}/${m.id}${searchSuffix}`;
     const showDetailCta = m.public_match_detail_enabled === true;
 
@@ -190,7 +207,7 @@ export default function PublicClubMatchesPage() {
         {club && badge !== "finished" && badge !== "cancelled" ? (
           <PublicClubAttendanceRsvp
             compact
-            title={m.is_home ? `${club.name} vs ${m.opponent}` : `${m.opponent} vs ${club.name}`}
+            title={matchTitle}
             target={publicClubRsvpTargetFromMatch({ ...m, clubName: club.name })}
           />
         ) : null}

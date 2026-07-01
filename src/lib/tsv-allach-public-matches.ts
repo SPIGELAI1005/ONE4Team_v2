@@ -7,7 +7,16 @@ import {
   SOMMERFEST_MATCHES,
   type SommerfestMatch,
 } from "@/lib/tsv-allach-sommerfest-2026";
-import { resolveTeamByYouthLabel } from "@/lib/youth-team-label";
+import { resolveTeamByYouthLabel, resolveCanonicalYouthTeamName } from "@/lib/youth-team-label";
+import {
+  extractSommerfestMatchIdFromNotes,
+  normalizeSommerfestTemplateId,
+} from "@/lib/tsv-allach-sommerfest-match-sync";
+import {
+  buildPublicMatchOpponentLogoLookup,
+  publicMatchOpponentLogoKey,
+  resolvePublicMatchOpponentLogo,
+} from "@/lib/public-club-match-display";
 
 const SHOWCASE_MATCH_PREFIX = "tsv-showcase-match-";
 
@@ -93,9 +102,84 @@ function sommerfestToPublicMatch(match: SommerfestMatch, teams: PublicClubTeamLi
   };
 }
 
+function sommerfestExpectedOpponent(template: SommerfestMatch, teams: PublicClubTeamLite[]): string {
+  if (template.awayTeam.toLowerCase() === "eltern") {
+    return `Eltern (${resolveCanonicalYouthTeamName(teams, template.homeTeam)})`;
+  }
+  return resolveCanonicalYouthTeamName(teams, template.awayTeam);
+}
+
+function enrichMatchWithOpponentLogo(
+  match: PublicMatchLite,
+  teams: PublicClubTeamLite[],
+  logoLookup: Map<string, string>,
+): PublicMatchLite {
+  const logo = resolvePublicMatchOpponentLogo(match, teams, logoLookup);
+  if (!logo || match.opponent_logo_url === logo) return match;
+  return { ...match, opponent_logo_url: logo };
+}
+
+function berlinDayKey(iso: string): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin" }).format(new Date(iso));
+}
+
+function buildDbSommerfestMaps(dbRows: PublicMatchLite[], teams: PublicClubTeamLite[]) {
+  const dbBySommerfestId = new Map<string, PublicMatchLite>();
+  const dbByFixture = new Map<string, PublicMatchLite>();
+
+  for (const row of dbRows) {
+    const templateId = extractSommerfestMatchIdFromNotes(row.notes ?? null);
+    if (templateId) dbBySommerfestId.set(templateId, row);
+
+    if (row.team_id) {
+      const fixtureKey = sommerfestFixtureLinkKey(row.match_date, row.team_id, row.opponent, teams);
+      dbByFixture.set(fixtureKey, row);
+    }
+  }
+
+  return { dbBySommerfestId, dbByFixture };
+}
+
+function sommerfestFixtureLinkKey(
+  matchDate: string,
+  teamId: string,
+  opponent: string,
+  teams: PublicClubTeamLite[],
+): string {
+  return `${berlinDayKey(matchDate)}|${teamId}|${publicMatchOpponentLogoKey(opponent, teams)}`;
+}
+
+function resolvePersistedSommerfestMatch(
+  template: SommerfestMatch,
+  teams: PublicClubTeamLite[],
+  dbBySommerfestId: Map<string, PublicMatchLite>,
+  dbByFixture: Map<string, PublicMatchLite>,
+): PublicMatchLite | null {
+  const normalizedId = normalizeSommerfestTemplateId(template.id);
+  const fromNotes = dbBySommerfestId.get(normalizedId) ?? dbBySommerfestId.get(template.id);
+  if (fromNotes) return fromNotes;
+
+  const teamId = resolveShowcaseTeamId(teams, template.homeTeam);
+  if (!teamId) return null;
+  const opponent = sommerfestExpectedOpponent(template, teams);
+  const fixtureKey = sommerfestFixtureLinkKey(sommerfestMatchDate(template.time), teamId, opponent, teams);
+  return dbByFixture.get(fixtureKey) ?? null;
+}
+
 /** Pilot showcase fixtures for TSV Allach 09 (Sommerfest + camp week markers). */
-export function getTsvAllachShowcaseMatches(teams: PublicClubTeamLite[]): PublicMatchLite[] {
-  const sommerfest = SOMMERFEST_MATCHES.map((m) => sommerfestToPublicMatch(m, teams));
+export function getTsvAllachShowcaseMatches(
+  teams: PublicClubTeamLite[],
+  dbRows: PublicMatchLite[] = [],
+): PublicMatchLite[] {
+  const logoLookup = buildPublicMatchOpponentLogoLookup(dbRows, teams);
+  const { dbBySommerfestId, dbByFixture } = buildDbSommerfestMaps(dbRows, teams);
+
+  const sommerfest = SOMMERFEST_MATCHES.map((template) => {
+    const persisted = resolvePersistedSommerfestMatch(template, teams, dbBySommerfestId, dbByFixture);
+    if (persisted) return enrichMatchWithOpponentLogo(persisted, teams, logoLookup);
+    const fallback = sommerfestToPublicMatch(template, teams);
+    return enrichMatchWithOpponentLogo(fallback, teams, logoLookup);
+  });
 
   const campMarkers: PublicMatchLite[] = CLUB_FOOTBALL_CAMP_TEMPLATES.map((camp) => ({
     id: showcaseMatchId(`camp-${camp.importKey}`),
@@ -117,21 +201,29 @@ export function getTsvAllachShowcaseMatches(teams: PublicClubTeamLite[]): Public
   return [...sommerfest, ...campMarkers].sort((a, b) => a.match_date.localeCompare(b.match_date));
 }
 
-function matchDedupeKey(match: Pick<PublicMatchLite, "match_date" | "opponent" | "team_id">): string {
-  const day = match.match_date.slice(0, 10);
-  return `${day}|${match.opponent.trim().toLowerCase()}|${match.team_id ?? ""}`;
+function matchDedupeKey(
+  match: Pick<PublicMatchLite, "match_date" | "opponent" | "team_id">,
+  teams: PublicClubTeamLite[],
+): string {
+  const day = berlinDayKey(match.match_date);
+  return `${day}|${match.team_id ?? ""}|${publicMatchOpponentLogoKey(match.opponent, teams)}`;
 }
 
-function mergeMatchLists(dbRows: PublicMatchLite[], showcase: PublicMatchLite[]): PublicMatchLite[] {
-  const dbKeys = new Set(dbRows.map(matchDedupeKey));
-  const extra = showcase.filter((m) => !dbKeys.has(matchDedupeKey(m)));
-  const seen = new Set<string>();
+function mergeMatchLists(
+  dbRows: PublicMatchLite[],
+  showcase: PublicMatchLite[],
+  teams: PublicClubTeamLite[],
+): PublicMatchLite[] {
+  const seenIds = new Set<string>();
+  const seenKeys = new Set<string>();
   const merged: PublicMatchLite[] = [];
 
-  for (const row of [...dbRows, ...extra]) {
-    const key = matchDedupeKey(row);
-    if (seen.has(key)) continue;
-    seen.add(key);
+  for (const row of [...dbRows, ...showcase]) {
+    if (seenIds.has(row.id)) continue;
+    const key = matchDedupeKey(row, teams);
+    if (seenKeys.has(key)) continue;
+    seenIds.add(row.id);
+    seenKeys.add(key);
     merged.push(row);
   }
 
@@ -144,8 +236,8 @@ export function mergePublicClubMatchesUpcoming(
   teams: PublicClubTeamLite[]
 ): PublicMatchLite[] {
   if (!isTsvAllachClub(club)) return dbRows;
-  const showcase = getTsvAllachShowcaseMatches(teams);
-  return mergeMatchLists(dbRows, showcase).sort((a, b) => a.match_date.localeCompare(b.match_date));
+  const showcase = getTsvAllachShowcaseMatches(teams, dbRows);
+  return mergeMatchLists(dbRows, showcase, teams).sort((a, b) => a.match_date.localeCompare(b.match_date));
 }
 
 export function mergePublicClubMatchesRecent(
@@ -154,6 +246,6 @@ export function mergePublicClubMatchesRecent(
   teams: PublicClubTeamLite[]
 ): PublicMatchLite[] {
   if (!isTsvAllachClub(club)) return dbRows;
-  const showcase = getTsvAllachShowcaseMatches(teams);
-  return mergeMatchLists(dbRows, showcase).sort((a, b) => b.match_date.localeCompare(a.match_date));
+  const showcase = getTsvAllachShowcaseMatches(teams, dbRows);
+  return mergeMatchLists(dbRows, showcase, teams).sort((a, b) => b.match_date.localeCompare(a.match_date));
 }

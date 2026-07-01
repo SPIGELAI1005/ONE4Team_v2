@@ -7,6 +7,9 @@ import { useLanguage } from "@/hooks/use-language";
 import { EmptyPublicState } from "@/components/public-club/empty-public-state";
 import { Loader2 } from "lucide-react";
 
+/** Sections with public routes that are not main micro pages (no nav/layout page entry). */
+const VISIBILITY_ONLY_SECTIONS = new Set<PublicPageSectionId>(["shop", "reports", "livescores"]);
+
 interface PublicClubPageGateProps {
   /** Section from `public_page_sections` that must be enabled (`join` uses `nextsteps`). */
   section: PublicPageSectionId | "home" | "join";
@@ -46,15 +49,17 @@ export function PublicClubPageGate({ section, children }: PublicClubPageGateProp
         />
       );
     }
-    const navId: PublicMicroPageId = section === "join" ? "join" : (section as PublicMicroPageId);
-    if (!isPublicMicroRouteEnabled(club.publicPageLayout, club.sectionVisibility, navId)) {
-      return (
-        <EmptyPublicState
-          title={t.clubPage.microPageUnavailableTitle}
-          description={t.clubPage.microPageUnavailableDesc}
-          homeTo={clubHomeHref}
-        />
-      );
+    if (!VISIBILITY_ONLY_SECTIONS.has(key)) {
+      const navId: PublicMicroPageId = section === "join" ? "join" : (section as PublicMicroPageId);
+      if (!isPublicMicroRouteEnabled(club.publicPageLayout, club.sectionVisibility, navId)) {
+        return (
+          <EmptyPublicState
+            title={t.clubPage.microPageUnavailableTitle}
+            description={t.clubPage.microPageUnavailableDesc}
+            homeTo={clubHomeHref}
+          />
+        );
+      }
     }
   }
 

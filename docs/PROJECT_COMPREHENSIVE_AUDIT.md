@@ -1,6 +1,6 @@
 # ONE4Team — Comprehensive project audit
 
-**Audit date:** 2026-06-30 (updated for member payments + invite email)  
+**Audit date:** 2026-07-01 (updated for marketing refresh + public club shop/reports/live scores)  
 **Scope:** Codebase, architecture, UX/design, production readiness, competitive positioning, market value, and value-growth levers  
 **Primary reference (existing):** [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) — strict production-readiness review with risk register, readiness scores, and remediation sprints  
 

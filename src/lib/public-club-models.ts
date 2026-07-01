@@ -15,6 +15,7 @@ import {
 import { normalizeDefaultHeroAssetId } from "@/lib/club-hero-default-assets";
 import type { PublicMicrositePrivacy } from "@/lib/public-club-privacy";
 import { publicMicrositePrivacyFromConfig } from "@/lib/public-club-privacy";
+import { applyTsvAllachClubContactDefaults } from "@/lib/tsv-allach-club-contact";
 
 export type PublicClubRecord = {
   id: string;
@@ -166,6 +167,8 @@ export type PublicMatchLite = {
   competitions?: { name: string } | null;
   opponent_logo_url?: string | null;
   public_match_detail_enabled?: boolean;
+  /** Sommerfest import key / internal notes — used to link persisted dashboard rows to showcase templates. */
+  notes?: string | null;
 };
 
 export type ShopProductLite = {
@@ -173,8 +176,11 @@ export type ShopProductLite = {
   name: string;
   description: string | null;
   price_eur: number;
+  price_max_eur?: number | null;
   image_url: string | null;
   image_urls?: unknown;
+  external_url?: string | null;
+  product_meta?: unknown;
   stock: number;
   is_active: boolean;
 };
@@ -302,7 +308,7 @@ export function mapClubRow(
     ? general.supported_languages
     : [defaultLang];
   const pageLocalized = general.localized ?? {};
-  return {
+  return applyTsvAllachClubContactDefaults({
     id: String(record.id),
     name: String(record.name),
     slug: String(record.slug),
@@ -359,7 +365,7 @@ export function mapClubRow(
     pageLocalized,
     publicPageLayout: resolvePublicPageConfigFromClub(layoutCfg),
     ...home,
-  };
+  });
 }
 
 export function normalizeSectionSearch(q: string) {

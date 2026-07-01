@@ -50,6 +50,7 @@ import {
 } from "@/lib/tsv-allach-sommerfest-competition";
 // logo is rendered by AppHeader
 import LineupExport from "@/components/matches/LineupExport";
+import { OpponentLogoField } from "@/components/matches/OpponentLogoField";
 import MatchVoting from "@/components/matches/MatchVoting";
 import MatchTimeline from "@/components/matches/MatchTimeline";
 import FormStreak from "@/components/matches/FormStreak";
@@ -63,6 +64,7 @@ type Match = {
   id: string; opponent: string; is_home: boolean; match_date: string;
   location: string | null; status: string; home_score: number | null; away_score: number | null;
   competition_id: string | null; team_id: string | null; notes: string | null;
+  opponent_logo_url?: string | null;
   competitions?: { name: string } | null; teams?: { name: string } | null;
   sommerfestTemplateId?: string;
   isSommerfestTemplateOnly?: boolean;
@@ -177,6 +179,7 @@ const Matches = () => {
   const [matchLocation, setMatchLocation] = useState("");
   const [matchTeamId, setMatchTeamId] = useState("");
   const [matchCompId, setMatchCompId] = useState("");
+  const [opponentLogoUrl, setOpponentLogoUrl] = useState<string | null>(null);
 
   // Competition form
   const [compName, setCompName] = useState("");
@@ -196,6 +199,8 @@ const Matches = () => {
   const [editTeamId, setEditTeamId] = useState("");
   const [editCompId, setEditCompId] = useState("");
   const [editStatus, setEditStatus] = useState("scheduled");
+  const [editOpponentLogoUrl, setEditOpponentLogoUrl] = useState<string | null>(null);
+  const [savingMatch, setSavingMatch] = useState(false);
 
   // Match event form
   const [evType, setEvType] = useState("goal");
@@ -302,7 +307,7 @@ const Matches = () => {
       let matchQuery = supabase
         .from("matches")
         .select(
-          "id, opponent, is_home, match_date, location, status, home_score, away_score, competition_id, team_id, notes, competitions(name), teams(name)",
+          "id, opponent, is_home, match_date, location, status, home_score, away_score, competition_id, team_id, notes, opponent_logo_url, competitions(name), teams(name)",
           { count: "exact" },
         )
         .eq("club_id", clubId)
@@ -355,7 +360,7 @@ const Matches = () => {
       const { data, error } = await supabase
         .from("matches")
         .select(
-          "id, opponent, is_home, match_date, location, status, home_score, away_score, competition_id, team_id, notes, competitions(name), teams(name)",
+          "id, opponent, is_home, match_date, location, status, home_score, away_score, competition_id, team_id, notes, opponent_logo_url, competitions(name), teams(name)",
         )
         .eq("club_id", clubId)
         .like("notes", `${SOMMERFEST_MATCH_IMPORT_KEY_PREFIX}%`);
@@ -376,12 +381,10 @@ const Matches = () => {
     if (!clubId) return null;
 
     const importKey = sommerfestMatchImportKey(template.id);
-    const cached = sommerfestDbMatches.get(template.id);
-    if (cached) return cached;
 
     const { data: existing } = await supabase
       .from("matches")
-      .select("id, opponent, is_home, match_date, location, status, home_score, away_score, competition_id, team_id, notes, competitions(name), teams(name)")
+      .select("id, opponent, is_home, match_date, location, status, home_score, away_score, competition_id, team_id, notes, opponent_logo_url, competitions(name), teams(name)")
       .eq("club_id", clubId)
       .eq("notes", importKey)
       .maybeSingle();
@@ -401,7 +404,7 @@ const Matches = () => {
           publishPublic: Boolean(sommerfestCompetitionId),
         }),
       )
-      .select("id, opponent, is_home, match_date, location, status, home_score, away_score, competition_id, team_id, notes, competitions(name), teams(name)")
+      .select("id, opponent, is_home, match_date, location, status, home_score, away_score, competition_id, team_id, notes, opponent_logo_url, competitions(name), teams(name)")
       .single();
 
     if (error || !data) {
@@ -500,6 +503,7 @@ const Matches = () => {
     setEditTeamId(match.team_id ?? "");
     setEditCompId(match.competition_id ?? "");
     setEditStatus(match.status);
+    setEditOpponentLogoUrl(match.opponent_logo_url ?? null);
     setLoadingDetail(true);
     setLineupTab("events");
     setOpenPanels({ details: true, score: true, timeline: false, voting: false, ai: true });
@@ -528,6 +532,69 @@ const Matches = () => {
     setLoadingDetail(false);
   };
 
+  const applyPersistedMatchUpdate = (updated: Match) => {
+    const templateId = extractSommerfestMatchIdFromNotes(updated.notes);
+    if (templateId) {
+      setSommerfestDbMatches((prev) => new Map(prev).set(templateId, updated));
+    }
+    setMatches((prev) => {
+      const exists = prev.some((match) => match.id === updated.id);
+      if (!exists) return prev;
+      return prev.map((match) => (match.id === updated.id ? updated : match));
+    });
+    setSelectedMatch((current) => {
+      if (!current) return current;
+      if (current.id !== updated.id && current.sommerfestTemplateId !== templateId) return current;
+      return {
+        ...updated,
+        sommerfestTemplateId: current.sommerfestTemplateId ?? templateId ?? undefined,
+        isSommerfestTemplateOnly: false,
+      };
+    });
+    setEditOpponentLogoUrl(updated.opponent_logo_url ?? null);
+  };
+
+  const resolveSelectedMatchId = async (): Promise<string | null> => {
+    if (!selectedMatch || !clubId) return null;
+    if (!isSommerfestTemplateOnlyMatch(selectedMatch)) return selectedMatch.id;
+    const templateId =
+      selectedMatch.sommerfestTemplateId ?? extractSommerfestMatchIdFromNotes(selectedMatch.notes);
+    const template = SOMMERFEST_MATCHES.find((row) => row.id === templateId);
+    if (!template) return null;
+    const persisted = await upsertSommerfestDbMatch(template);
+    return persisted?.id ?? null;
+  };
+
+  const persistOpponentLogoForSelectedMatch = async (url: string | null): Promise<boolean> => {
+    if (!selectedMatch || !clubId || !canManageSelectedMatch) return false;
+    const matchId = await resolveSelectedMatchId();
+    if (!matchId) return false;
+
+    const { data, error } = await supabase
+      .from("matches")
+      .update({ opponent_logo_url: url })
+      .eq("club_id", clubId)
+      .eq("id", matchId)
+      .select("*, competitions(name), teams(name)")
+      .single();
+
+    if (error) {
+      toast({ title: t.common.error, description: error.message, variant: "destructive" });
+      return false;
+    }
+
+    applyPersistedMatchUpdate(data as unknown as Match);
+    return true;
+  };
+
+  const handleEditOpponentLogoChange = async (url: string | null) => {
+    setEditOpponentLogoUrl(url);
+    const saved = await persistOpponentLogoForSelectedMatch(url);
+    if (saved) {
+      toast({ title: t.matchesPage.opponentLogoSaved });
+    }
+  };
+
   const handleCreateMatch = async () => {
     const teamId = matchTeamId || null;
     if (!denyUnlessCanManageTeam(teamId, t.matchesPage.toastTrainerOnlyMatches)) return;
@@ -535,6 +602,7 @@ const Matches = () => {
     const { data, error } = await supabase.from("matches").insert({
       club_id: clubId, opponent: opponent.trim(), is_home: isHome, match_date: matchDate,
       location: matchLocation || null, team_id: teamId, competition_id: matchCompId || null,
+      opponent_logo_url: opponentLogoUrl,
     }).select("*, competitions(name), teams(name)").single();
     if (error) { toast({ title: t.common.error, description: error.message, variant: "destructive" }); return; }
     setMatchesTotalCount((previous) => previous + 1);
@@ -542,7 +610,7 @@ const Matches = () => {
       setMatches(prev => [data as unknown as Match, ...prev].slice(0, MATCHES_PAGE_SIZE));
     }
     setShowAddMatch(false);
-    setOpponent(""); setMatchDate(""); setMatchLocation(""); setMatchTeamId(""); setMatchCompId("");
+    setOpponent(""); setMatchDate(""); setMatchLocation(""); setMatchTeamId(""); setMatchCompId(""); setOpponentLogoUrl(null);
     toast({ title: t.matchesPage.toastMatchScheduled });
   };
 
@@ -605,7 +673,7 @@ const Matches = () => {
   };
 
   const handleUpdateMatch = async () => {
-    if (!selectedMatch) return;
+    if (!selectedMatch || savingMatch) return;
     if (!denyUnlessCanManageMatch(selectedMatch, t.matchesPage.toastTrainerOnlyEdit)) return;
     const nextTeamId = editTeamId || null;
     if (
@@ -616,50 +684,39 @@ const Matches = () => {
     }
     if (!editOpponent.trim() || !editMatchDate || !clubId) return;
 
-    let matchId = selectedMatch.id;
-    if (isSommerfestTemplateOnlyMatch(selectedMatch)) {
-      const templateId =
-        selectedMatch.sommerfestTemplateId ?? extractSommerfestMatchIdFromNotes(selectedMatch.notes);
-      const template = SOMMERFEST_MATCHES.find((row) => row.id === templateId);
-      if (!template) return;
-      const persisted = await upsertSommerfestDbMatch(template);
-      if (!persisted) return;
-      matchId = persisted.id;
-    }
+    setSavingMatch(true);
+    try {
+      const matchId = await resolveSelectedMatchId();
+      if (!matchId) return;
 
-    const { data, error } = await supabase
-      .from("matches")
-      .update({
-        opponent: editOpponent.trim(),
-        is_home: editIsHome,
-        match_date: editMatchDate,
-        location: editLocation.trim() || null,
-        team_id: nextTeamId,
-        competition_id: editCompId || null,
-        status: editStatus,
-      })
-      .eq("club_id", clubId)
-      .eq("id", matchId)
-      .select("*, competitions(name), teams(name)")
-      .single();
+      const { data, error } = await supabase
+        .from("matches")
+        .update({
+          opponent: editOpponent.trim(),
+          is_home: editIsHome,
+          match_date: editMatchDate,
+          location: editLocation.trim() || null,
+          team_id: nextTeamId,
+          competition_id: editCompId || null,
+          status: editStatus,
+          opponent_logo_url: editOpponentLogoUrl,
+        })
+        .eq("club_id", clubId)
+        .eq("id", matchId)
+        .select("*, competitions(name), teams(name)")
+        .single();
 
-    if (error) {
-      toast({ title: t.common.error, description: error.message, variant: "destructive" });
-      return;
-    }
+      if (error) {
+        toast({ title: t.common.error, description: error.message, variant: "destructive" });
+        return;
+      }
 
-    const updated = data as unknown as Match;
-    const templateId = extractSommerfestMatchIdFromNotes(updated.notes);
-    if (templateId) {
-      setSommerfestDbMatches((prev) => new Map(prev).set(templateId, updated));
+      applyPersistedMatchUpdate(data as unknown as Match);
+      toast({ title: t.matchesPage.toastMatchUpdated });
+      setSelectedMatch(null);
+    } finally {
+      setSavingMatch(false);
     }
-    setMatches((prev) => {
-      const exists = prev.some((match) => match.id === updated.id);
-      if (!exists) return prev;
-      return prev.map((match) => (match.id === updated.id ? updated : match));
-    });
-    setSelectedMatch(updated);
-    toast({ title: t.matchesPage.toastMatchUpdated });
   };
 
   const handleAddMatchEvent = async () => {
@@ -747,7 +804,7 @@ const Matches = () => {
               <Button size="sm" variant="outline" onClick={() => setShowAddComp(true)} className="rounded-xl glass-card text-[11px] sm:text-[12px] haptic-press shrink-0">
                 <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> {t.matchesPage.btnCompetition}
               </Button>
-              <Button size="sm" className="bg-gradient-gold-static text-primary-foreground hover:brightness-110 rounded-xl text-[11px] sm:text-[12px] shadow-gold haptic-press shrink-0" onClick={() => setShowAddMatch(true)}>
+              <Button size="sm" className="bg-gradient-gold-static text-primary-foreground hover:brightness-110 rounded-xl text-[11px] sm:text-[12px] shadow-gold haptic-press shrink-0" onClick={() => { setOpponentLogoUrl(null); setShowAddMatch(true); }}>
                 <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> {t.matchesPage.btnMatch}
               </Button>
             </div>
@@ -1006,6 +1063,9 @@ const Matches = () => {
             </div>
             <div className="space-y-3">
               <Input placeholder={t.matchesPage.phOpponent} value={opponent} onChange={e => setOpponent(e.target.value)} className="bg-background" maxLength={200} />
+              {clubId ? (
+                <OpponentLogoField clubId={clubId} value={opponentLogoUrl} onChange={setOpponentLogoUrl} />
+              ) : null}
               <div className="flex gap-2">
                 <Button size="sm" variant={isHome ? "default" : "outline"} onClick={() => setIsHome(true)} className={isHome ? "bg-gradient-gold-static text-primary-foreground" : ""}>Home</Button>
                 <Button size="sm" variant={!isHome ? "default" : "outline"} onClick={() => setIsHome(false)} className={!isHome ? "bg-gradient-gold-static text-primary-foreground" : ""}>Away</Button>
@@ -1082,49 +1142,53 @@ const Matches = () => {
       {selectedMatch && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedMatch(null)}>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-[95vw] sm:max-w-lg rounded-2xl bg-card border border-border p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 z-10 -mx-6 px-6 pt-4 pb-3 bg-card/70 backdrop-blur-2xl border-b border-border">
-              <div className="flex items-center justify-between">
+            className="flex w-full max-w-[95vw] flex-col overflow-hidden rounded-2xl border border-border bg-card sm:max-w-lg max-h-[90vh]"
+            onClick={e => e.stopPropagation()}>
+            <div className="shrink-0 border-b border-border px-6 pb-4 pt-6">
+              <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h3 className="font-display font-bold text-foreground truncate">
+                  <h3 className="font-display font-bold text-foreground">
                     {formatMatchHeadline(selectedMatch, teams)}
                   </h3>
-                  <div className="text-[11px] text-muted-foreground truncate">
+                  <div className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                     {new Date(selectedMatch.match_date).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                     {selectedMatch.location ? ` · ${selectedMatch.location}` : ""}
                   </div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setSelectedMatch(null)}><X className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setSelectedMatch(null)}>
+                  <X className="w-4 h-4" />
+                </Button>
               </div>
+
+              {canManageSelectedMatch && isSommerfestLinkedMatch(selectedMatch) ? (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {selectedMatch.status !== "in_progress" && selectedMatch.status !== "completed" ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="border-red-500/40 text-red-700 dark:text-red-300"
+                      onClick={() => void handleSommerfestQuickStatus("in_progress")}
+                    >
+                      <Radio className="mr-2 h-4 w-4" />
+                      {t.sommerfest2026.btnKickOff}
+                    </Button>
+                  ) : null}
+                  {selectedMatch.status === "in_progress" ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void handleSommerfestQuickStatus("completed")}
+                    >
+                      {t.sommerfest2026.btnFullTime}
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
 
-            {canManageSelectedMatch && isSommerfestLinkedMatch(selectedMatch) ? (
-              <div className="mb-4 flex flex-wrap gap-2">
-                {selectedMatch.status !== "in_progress" && selectedMatch.status !== "completed" ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="border-red-500/40 text-red-700 dark:text-red-300"
-                    onClick={() => void handleSommerfestQuickStatus("in_progress")}
-                  >
-                    <Radio className="mr-2 h-4 w-4" />
-                    {t.sommerfest2026.btnKickOff}
-                  </Button>
-                ) : null}
-                {selectedMatch.status === "in_progress" ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => void handleSommerfestQuickStatus("completed")}
-                  >
-                    {t.sommerfest2026.btnFullTime}
-                  </Button>
-                ) : null}
-              </div>
-            ) : null}
-
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
             {canManageSelectedMatch ? (
               <div className="rounded-2xl glass-card p-4 mb-4">
                 <button
@@ -1145,6 +1209,13 @@ const Matches = () => {
                       className="bg-card"
                       maxLength={200}
                     />
+                    {clubId ? (
+                      <OpponentLogoField
+                        clubId={clubId}
+                        value={editOpponentLogoUrl}
+                        onChange={(url) => void handleEditOpponentLogoChange(url)}
+                      />
+                    ) : null}
                     <div className="flex gap-2">
                       <Button
                         size="sm"
@@ -1218,9 +1289,10 @@ const Matches = () => {
                     <Button
                       size="sm"
                       className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110"
-                      onClick={handleUpdateMatch}
-                      disabled={!editOpponent.trim() || !editMatchDate}
+                      onClick={() => void handleUpdateMatch()}
+                      disabled={!editOpponent.trim() || !editMatchDate || savingMatch}
                     >
+                      {savingMatch ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                       {t.matchesPage.btnSaveMatch}
                     </Button>
                   </div>
@@ -1508,6 +1580,7 @@ const Matches = () => {
                 </div>
               </>
             )}
+            </div>
           </motion.div>
         </div>
       )}
