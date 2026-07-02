@@ -4313,6 +4313,26 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
         }[]
       }
+      preview_club_invite: {
+        Args: { _token: string; _club_slug?: string | null }
+        Returns: {
+          ok: boolean
+          error_code: string | null
+          club_id: string | null
+          club_name: string | null
+          club_slug: string | null
+          email: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
+          member_name: string | null
+          first_name: string | null
+          last_name: string | null
+          team: string | null
+          age_group: string | null
+          member_position: string | null
+          expires_at: string | null
+          used_at: string | null
+        }[]
+      }
       register_club_join_request: {
         Args: {
           _application_payload?: Json

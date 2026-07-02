@@ -386,7 +386,10 @@ function buildInvitePayloadFromDraftFields(
   const ag = (age_group ?? "").trim();
   const pos = (position ?? "").trim();
   const nm = (combinedName ?? "").trim();
+  const split = splitStoredNameToFirstLast(nm, masterData);
   return {
+    ...(split.firstName ? { first_name: split.firstName } : {}),
+    ...(split.lastName ? { last_name: split.lastName } : {}),
     ...(nm ? { name: nm } : {}),
     ...(tn ? { team: tn } : {}),
     ...(ag ? { age_group: ag } : {}),
