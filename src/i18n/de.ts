@@ -611,6 +611,13 @@ export const de: Translations = {
     memberInviteModalLoading: "Einladung wird geladen…",
     memberInviteModalUnknownError:
       "Etwas ist schiefgelaufen. Bitte erneut versuchen oder deinen Verein kontaktieren.",
+    memberInviteModalShowPassword: "Passwort anzeigen",
+    memberInviteModalHidePassword: "Passwort verbergen",
+    memberInviteModalWelcomeEmailTitle: "Willkommens-E-Mail gesendet",
+    memberInviteModalWelcomeEmailDesc:
+      "Wir haben eine Willkommensnachricht an {email} mit Links zur Vereinsseite und zum Dashboard gesendet.",
+    memberInviteModalSignInAfterSetupFailed:
+      "Dein Konto wurde vorbereitet, aber die Anmeldung ist fehlgeschlagen. Melde dich unten an oder nutze erneut „Konto erstellen & beitreten“.",
     requestInvite: "Einladung anfragen",
     aboutSection: "Über uns",
     teamsSection: "Teams",

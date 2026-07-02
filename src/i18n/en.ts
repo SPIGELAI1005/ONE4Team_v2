@@ -603,6 +603,12 @@ export const en = {
     memberInviteModalOpenInvitation: "Open invitation",
     memberInviteModalLoading: "Loading your invitation…",
     memberInviteModalUnknownError: "Something went wrong. Please try again or contact your club admin.",
+    memberInviteModalShowPassword: "Show password",
+    memberInviteModalHidePassword: "Hide password",
+    memberInviteModalWelcomeEmailTitle: "Welcome email sent",
+    memberInviteModalWelcomeEmailDesc: "We sent a welcome message to {email} with links to your club page and dashboard.",
+    memberInviteModalSignInAfterSetupFailed:
+      "Your account was prepared, but sign-in did not complete. Try signing in below or use Create account & join again.",
     requestInvite: "Request Invite",
     aboutSection: "About",
     teamsSection: "Teams",

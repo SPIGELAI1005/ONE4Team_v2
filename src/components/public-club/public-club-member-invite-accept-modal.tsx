@@ -3,6 +3,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
   CheckCircle2,
+  Eye,
+  EyeOff,
   Loader2,
   LogIn,
   Mail,
@@ -19,6 +21,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { redeemClubInviteToken, storeActiveClubMembership } from "@/lib/club-invite-accept";
+import { completeClubInviteSignup } from "@/lib/complete-club-invite-signup";
 import {
   type ClubInvitePreview,
   type ClubInvitePreviewErrorCode,
@@ -63,14 +66,57 @@ function ReadOnlyField({ label, value }: { label: string; value: string | null |
   );
 }
 
+function ModalPasswordField({
+  id,
+  label,
+  value,
+  onChange,
+  autoComplete,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  autoComplete: "new-password" | "current-password";
+}) {
+  const { t } = useLanguage();
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className={clubModalFormLabelClass}>
+        {label}
+      </Label>
+      <div className="relative">
+        <Input
+          id={id}
+          type={visible ? "text" : "password"}
+          autoComplete={autoComplete}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={cn(clubModalFormInputClass, "pr-11")}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((current) => !current)}
+          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-neutral-500 transition-colors hover:text-neutral-800"
+          aria-label={visible ? t.clubPage.memberInviteModalHidePassword : t.clubPage.memberInviteModalShowPassword}
+        >
+          {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Auto-opens on public club pages when `?invite=` is present; pre-fills admin data and completes sign-up + redeem. */
 export function PublicClubMemberInviteAcceptModal() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { club } = usePublicClub();
-  const { user, signUp, signIn, signOut } = useAuth();
+  const { user, signIn, signOut } = useAuth();
 
   const inviteToken = searchParams.get("invite")?.trim() ?? "";
 
@@ -179,19 +225,16 @@ export function PublicClubMemberInviteAcceptModal() {
     setSubmitting(true);
     try {
       const displayName = invitePreviewDisplayName(preview);
-      const { error, user: newUser, session } = await signUp(
-        inviteEmail,
+      const setupResult = await completeClubInviteSignup({
+        inviteToken,
+        clubSlug: preview.clubSlug,
         password,
         displayName,
-        {
-          invite_club_slug: preview.clubSlug,
-          registration_path: "club_member_invite",
-        },
-      );
+        language: language === "de" ? "de" : "en",
+      });
 
-      if (error) {
-        const message = error.message.toLowerCase();
-        if (message.includes("already") || message.includes("registered")) {
+      if (!setupResult.ok) {
+        if (setupResult.code === "already_registered") {
           setShowSignIn(true);
           toast({
             title: t.clubPage.memberInviteModalSignInInstead,
@@ -199,15 +242,28 @@ export function PublicClubMemberInviteAcceptModal() {
           });
           return;
         }
-        throw error;
+        throw new Error(setupResult.error);
       }
 
-      if (session || newUser?.email_confirmed_at) {
-        await finishRedeem(inviteToken, newUser?.id ?? session?.user?.id ?? null);
+      const { error: signInError } = await signIn(inviteEmail, password);
+      if (signInError) {
+        setStep("confirm-email");
+        toast({
+          title: t.common.error,
+          description: t.clubPage.memberInviteModalSignInAfterSetupFailed,
+          variant: "destructive",
+        });
         return;
       }
 
-      setStep("confirm-email");
+      if (setupResult.welcomeEmailSent) {
+        toast({
+          title: t.clubPage.memberInviteModalWelcomeEmailTitle,
+          description: t.clubPage.memberInviteModalWelcomeEmailDesc.replace("{email}", inviteEmail),
+        });
+      }
+
+      await finishRedeem(inviteToken);
     } catch (err: unknown) {
       toast({
         title: t.common.error,
@@ -487,32 +543,20 @@ export function PublicClubMemberInviteAcceptModal() {
                           void handleCreateAccountAndJoin();
                         }}
                       >
-                        <div className="space-y-1.5">
-                          <Label htmlFor="club-invite-password" className={clubModalFormLabelClass}>
-                            {t.clubPage.memberInviteModalSetPassword}
-                          </Label>
-                          <Input
-                            id="club-invite-password"
-                            type="password"
-                            autoComplete="new-password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className={clubModalFormInputClass}
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="club-invite-confirm-password" className={clubModalFormLabelClass}>
-                            {t.clubPage.memberInviteModalConfirmPassword}
-                          </Label>
-                          <Input
-                            id="club-invite-confirm-password"
-                            type="password"
-                            autoComplete="new-password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            className={clubModalFormInputClass}
-                          />
-                        </div>
+                        <ModalPasswordField
+                          id="club-invite-password"
+                          label={t.clubPage.memberInviteModalSetPassword}
+                          value={password}
+                          onChange={setPassword}
+                          autoComplete="new-password"
+                        />
+                        <ModalPasswordField
+                          id="club-invite-confirm-password"
+                          label={t.clubPage.memberInviteModalConfirmPassword}
+                          value={confirmPassword}
+                          onChange={setConfirmPassword}
+                          autoComplete="new-password"
+                        />
                         <ul className="grid gap-1 text-xs text-neutral-600 sm:grid-cols-2">
                           <li className={passwordChecks.minLength ? "text-emerald-700" : undefined}>
                             {t.onboarding.passwordRuleMinLength}
@@ -563,19 +607,13 @@ export function PublicClubMemberInviteAcceptModal() {
                         }}
                       >
                         <ReadOnlyField label={t.clubPage.memberInviteModalEmail} value={inviteEmail} />
-                        <div className="space-y-1.5">
-                          <Label htmlFor="club-invite-signin-password" className={clubModalFormLabelClass}>
-                            {t.auth.password}
-                          </Label>
-                          <Input
-                            id="club-invite-signin-password"
-                            type="password"
-                            autoComplete="current-password"
-                            value={signInPassword}
-                            onChange={(e) => setSignInPassword(e.target.value)}
-                            className={clubModalFormInputClass}
-                          />
-                        </div>
+                        <ModalPasswordField
+                          id="club-invite-signin-password"
+                          label={t.auth.password}
+                          value={signInPassword}
+                          onChange={setSignInPassword}
+                          autoComplete="current-password"
+                        />
                         <Button
                           type="submit"
                           className={`w-full font-semibold ${clubCtaFillHoverClass}`}
