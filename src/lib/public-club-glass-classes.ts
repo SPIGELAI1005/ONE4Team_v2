@@ -40,6 +40,23 @@ export const clubAi4tModalOverlayClass = "bg-white/40 backdrop-blur-md";
 /** Messages hub modal - same readable white glass as AI 4 T. */
 export const clubMessagesHubPanelClass = clubAi4tModalPanelClass;
 
+/** Compact modals (request invite, etc.) - readable white glass on any club theme. */
+export const clubReadableModalPanelClass = clubAi4tModalPanelClass;
+
+export const clubReadableModalOverlayClass = clubAi4tModalOverlayClass;
+
+/** Form fields on white-glass modals — high contrast on busy club backgrounds. */
+export const clubModalFormLabelClass = "text-sm font-medium text-neutral-900";
+
+export const clubModalFormInputClass =
+  "border-neutral-300 bg-white text-neutral-900 shadow-sm placeholder:text-neutral-500 focus-visible:ring-2 focus-visible:ring-[color:var(--club-primary)] focus-visible:ring-offset-0";
+
+export const clubModalFormTextareaClass = [
+  "w-full rounded-xl border px-3 py-2 text-sm",
+  clubModalFormInputClass,
+  "resize-y min-h-[100px]",
+].join(" ");
+
 /** List rows inside the messages hub (light surface). */
 export const clubMessagesHubCardClass =
   "rounded-2xl border border-neutral-200/90 bg-neutral-50 transition-[background-color,border-color,box-shadow] duration-200 hover:border-neutral-300 hover:bg-white hover:shadow-sm";
