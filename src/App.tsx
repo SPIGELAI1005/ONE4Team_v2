@@ -17,6 +17,7 @@ import { RequireModule } from "@/components/auth/require-module";
 import { RequireAnyModule } from "@/components/auth/require-any-module";
 import { ClubOnlyRoute, PartnerOnlyRoute, PersonaAwareAiRedirect } from "@/components/routing/PersonaPortalGate";
 import { PlanGate } from "@/components/plan-gate";
+import { dashboardRouteTransitionKey } from "@/lib/dashboard-nav";
 
 // Route-level code splitting (reduces initial bundle size)
 const Index = lazy(() => import("./pages/Index"));
@@ -117,9 +118,10 @@ function RouteFallback() {
 
 const AnimatedRoutes = () => {
   const location = useLocation();
+  const routeTransitionKey = dashboardRouteTransitionKey(location.pathname);
   return (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+      <Routes location={location} key={routeTransitionKey}>
         <Route
           path="/"
           element={

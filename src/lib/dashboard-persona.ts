@@ -66,5 +66,5 @@ export function resolveModuleGateRole(
   if (ctx?.treatAsClubAdmin) {
     return "club_admin";
   }
-  return authorized;
+  return authorized ?? "member";
 }

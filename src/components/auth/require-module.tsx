@@ -44,12 +44,18 @@ export function RequireModule({
 
   if (DEV_BYPASS_GUARDS) return <>{children}</>;
 
-  if (!gateRole || !canAccessModule(gateRole, module)) {
+  const roleForGate =
+    gateRole ??
+    (perms.isAdmin && !perms.assignmentsLoading
+      ? ("club_admin" as const)
+      : null);
+
+  if (!roleForGate || !canAccessModule(roleForGate, module)) {
     if (deniedMode === "lock") {
       return <ModuleAccessDenied module={module} />;
     }
     const persona = readActiveDashboardPersonaRaw() ?? perms.role ?? "member";
-    const fallback = defaultPartnerPortalPath(gateRole, persona);
+    const fallback = defaultPartnerPortalPath(roleForGate ?? gateRole, persona);
     return <Navigate to={fallbackPath || fallback} replace />;
   }
 

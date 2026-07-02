@@ -46,4 +46,8 @@ describe("dashboard-persona", () => {
       "club_admin",
     );
   });
+
+  it("never returns null when membership role is unknown", () => {
+    expect(resolveModuleGateRole(null, [], null)).toBe("member");
+  });
 });

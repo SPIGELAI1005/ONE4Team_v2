@@ -178,6 +178,55 @@ export function buildDashboardNavItems(
   }));
 }
 
+/** Paths rendered inside {@link DashboardLayout} (sidebar shell). */
+const DASHBOARD_SHELL_PATH_PREFIXES = [
+  "/dashboard",
+  "/members",
+  "/teams",
+  "/asset-layers",
+  "/property-layers",
+  "/matches",
+  "/events",
+  "/payments",
+  "/dues",
+  "/communication",
+  "/partner-messages",
+  "/tasks",
+  "/partner-tasks",
+  "/marketplace",
+  "/partner-marketplace",
+  "/partnermarketplace",
+  "/partners",
+  "/club-page-admin",
+  "/supplier-page",
+  "/reports",
+  "/partner-reports",
+  "/player-stats",
+  "/co-trainer",
+  "/partner-ai",
+  "/ai",
+  "/activities",
+  "/live-scores",
+  "/shop",
+  "/settings",
+  "/support",
+  "/player/",
+  "/training-plan-import",
+  "/coach-placeholders",
+] as const;
+
+/** Whether the pathname belongs to the authenticated dashboard shell. */
+export function isDashboardShellPath(pathname: string): boolean {
+  return DASHBOARD_SHELL_PATH_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(prefix),
+  );
+}
+
+/** Stable React key so dashboard navigations do not remount the layout/guards. */
+export function dashboardRouteTransitionKey(pathname: string): string {
+  return isDashboardShellPath(pathname) ? "__dashboard_shell__" : pathname;
+}
+
 /** Map current pathname → nav item id for active highlighting. */
 export function pathnameToNavId(pathname: string): string {
   const pathToId: Record<string, string> = {

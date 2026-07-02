@@ -23,27 +23,41 @@ export function usePermissions() {
   const { user } = useAuth();
   const legacyRole = activeClub?.role ?? null;
 
+  const membershipScopeKey =
+    user && activeClub?.membershipId && activeClub.id
+      ? `${activeClub.id}:${activeClub.membershipId}`
+      : null;
+
   const [assignments, setAssignments] = useState<ClubRoleAssignmentRow[]>([]);
-  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
   const [adminRpcAllowed, setAdminRpcAllowed] = useState<boolean | null>(null);
+  /** Last membership scope we finished hydrating (assignments + is_club_admin RPC). */
+  const [hydratedScopeKey, setHydratedScopeKey] = useState<string | null>(null);
+
+  // True on the first render after club resolve until fetch completes — avoids a one-frame
+  // window where guards see empty assignments and redirect club admins to /dashboard/*.
+  const assignmentsLoading = Boolean(
+    membershipScopeKey && !activeClubLoading && hydratedScopeKey !== membershipScopeKey,
+  );
 
   useEffect(() => {
     if (!user) {
       setAssignments([]);
       setAdminRpcAllowed(null);
-      setAssignmentsLoading(false);
+      setHydratedScopeKey(null);
       return;
     }
 
-    if (!activeClub?.membershipId) {
+    if (!activeClub?.membershipId || !activeClub.id) {
       setAssignments([]);
       setAdminRpcAllowed(null);
-      setAssignmentsLoading(false);
+      setHydratedScopeKey(null);
       return;
     }
 
+    if (activeClubLoading) return;
+
+    const scopeKey = `${activeClub.id}:${activeClub.membershipId}`;
     let cancelled = false;
-    setAssignmentsLoading(true);
 
     void (async () => {
       const { data, error } = await supabase
@@ -87,14 +101,14 @@ export function usePermissions() {
 
       if (!cancelled) {
         setAdminRpcAllowed(rpcAllowed);
-        setAssignmentsLoading(false);
+        setHydratedScopeKey(scopeKey);
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [user, activeClub?.membershipId, activeClub?.id]);
+  }, [user, activeClub?.membershipId, activeClub?.id, activeClubLoading]);
 
   const permissions = useMemo(
     () => effectivePermissions(legacyRole, assignments),
