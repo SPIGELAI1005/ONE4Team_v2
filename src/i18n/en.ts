@@ -563,6 +563,12 @@ export const en = {
     previewNavMenuHint:
       "On phones and tablets the real site uses this menu to list every public page without crowding the header.",
     openDashboard: "Open Dashboard",
+    memberInviteBannerTitle: "You're invited to join {clubName}",
+    memberInviteBannerDesc:
+      "Explore the club page, then sign in or create an account to accept your invitation.",
+    memberInviteSignInCta: "Sign in / Create account",
+    memberInviteAcceptCta: "Accept invitation",
+    memberInviteJoinPageCta: "Join page",
     requestInvite: "Request Invite",
     aboutSection: "About",
     teamsSection: "Teams",

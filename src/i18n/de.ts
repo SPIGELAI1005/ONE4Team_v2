@@ -569,6 +569,12 @@ export const de: Translations = {
     previewNavMenuHint:
       "Auf Smartphone und Tablet öffnet die echte Seite dieses Menü, damit alle öffentlichen Seiten ohne Überlappung erreichbar sind.",
     openDashboard: "Dashboard öffnen",
+    memberInviteBannerTitle: "Du bist eingeladen bei {clubName}",
+    memberInviteBannerDesc:
+      "Schau dir die Vereinsseite an, melde dich dann an oder erstelle ein Konto, um die Einladung anzunehmen.",
+    memberInviteSignInCta: "Anmelden / Konto erstellen",
+    memberInviteAcceptCta: "Einladung annehmen",
+    memberInviteJoinPageCta: "Beitrittsseite",
     requestInvite: "Einladung anfragen",
     aboutSection: "Über uns",
     teamsSection: "Teams",

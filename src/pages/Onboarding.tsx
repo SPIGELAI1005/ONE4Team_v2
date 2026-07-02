@@ -170,7 +170,8 @@ const Onboarding = () => {
   const handleRedeemInvite = async () => {
     if (!user) {
       toast({ title: t.onboarding.signInRequired, description: t.onboarding.signInToRedeem });
-      navigate("/auth");
+      const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      navigate(`/auth?returnTo=${encodeURIComponent(returnTo)}`);
       return;
     }
 

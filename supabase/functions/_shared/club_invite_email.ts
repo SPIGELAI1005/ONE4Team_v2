@@ -25,8 +25,15 @@ export function buildClubInviteOnboardingUrl(input: {
   siteOrigin: string;
 }): string {
   const origin = input.siteOrigin.replace(/\/+$/, "");
-  const qs = new URLSearchParams({ invite: input.inviteToken });
-  if (input.clubSlug?.trim()) qs.set("club", input.clubSlug.trim());
+  const token = input.inviteToken.trim();
+  const slug = input.clubSlug?.trim();
+
+  if (slug) {
+    const qs = new URLSearchParams({ invite: token });
+    return `${origin}/club/${encodeURIComponent(slug)}?${qs.toString()}`;
+  }
+
+  const qs = new URLSearchParams({ invite: token });
   return `${origin}/onboarding?${qs.toString()}`;
 }
 
@@ -37,6 +44,30 @@ function escapeHtml(value: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+/** Brand gold — solid colors only (gradients are stripped by Gmail/Outlook). */
+const INVITE_GOLD = "#C4952A";
+const INVITE_GOLD_DARK = "#8B6914";
+
+/**
+ * Bulletproof CTA for HTML email clients.
+ * Gradients + white link text fail in Gmail (invisible button on white cards).
+ */
+function renderInviteEmailButton(label: string, inviteLink: string): string {
+  const href = escapeHtml(inviteLink);
+  const text = escapeHtml(label);
+  return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto;">
+  <tr>
+    <td align="center" bgcolor="${INVITE_GOLD}" style="background-color:${INVITE_GOLD};border-radius:10px;mso-padding-alt:14px 40px;">
+      <a href="${href}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background-color:${INVITE_GOLD};border:1px solid ${INVITE_GOLD_DARK};border-radius:10px;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:700;line-height:120%;padding:14px 40px;text-align:center;text-decoration:none;letter-spacing:0.3px;">${text}</a>
+    </td>
+  </tr>
+</table>`;
+}
+
+function renderInviteEmailAccentBar(): string {
+  return `<tr><td bgcolor="${INVITE_GOLD}" style="background-color:${INVITE_GOLD};height:6px;font-size:0;line-height:0;">&nbsp;</td></tr>`;
 }
 
 export function buildClubInviteEmailContent(input: ClubInviteEmailContentInput): {
@@ -59,7 +90,7 @@ export function buildClubInviteEmailContent(input: ClubInviteEmailContentInput):
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:40px 16px;">
     <tr><td align="center">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 24px rgba(0,0,0,0.06);">
-        <tr><td style="background:linear-gradient(135deg,#8B6914,#C4952A,#D4A843);height:6px;font-size:0;line-height:0;">&nbsp;</td></tr>
+        ${renderInviteEmailAccentBar()}
         <tr><td align="center" style="padding:34px 32px 0 32px;">
           <p style="margin:0 0 8px 0;font-size:11px;font-weight:700;letter-spacing:1.6px;color:#a1a1aa;text-transform:uppercase;">Vereinseinladung</p>
           <p style="margin:0;font-size:24px;font-weight:750;color:#18181b;letter-spacing:-0.4px;">ONE<span style="color:#C4952A;">4</span>Team</p>
@@ -68,13 +99,11 @@ export function buildClubInviteEmailContent(input: ClubInviteEmailContentInput):
           <h1 style="margin:0 0 8px 0;font-size:21px;font-weight:700;color:#18181b;text-align:center;">Du bist eingeladen!</h1>
           <p style="margin:0 0 8px 0;font-size:15px;line-height:1.6;color:#52525b;text-align:center;">${greeting}</p>
           <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#52525b;text-align:center;">
-            <strong>${escapeHtml(clubName)}</strong> hat dich eingeladen, ONE4Team beizutreten. Nutze den Button, um dein Konto einzurichten und der Mannschaft beizutreten.
+            <strong>${escapeHtml(clubName)}</strong> hat dich eingeladen, ONE4Team beizutreten. Besuche die Vereinsseite, melde dich an und nimm die Einladung an.
           </p>
         </td></tr>
-        <tr><td align="center" style="padding:0 32px;">
-          <table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" style="background:linear-gradient(135deg,#8B6914,#C4952A,#D4A843);border-radius:10px;">
-            <a href="${escapeHtml(inviteLink)}" target="_blank" style="display:inline-block;padding:14px 40px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:0.3px;">Einladung annehmen</a>
-          </td></tr></table>
+        <tr><td align="center" style="padding:0 32px 4px 32px;">
+          ${renderInviteEmailButton("Einladung annehmen", inviteLink)}
         </td></tr>
         <tr><td style="padding:20px 32px 0 32px;text-align:center;">
           <p style="margin:0;font-size:12px;color:#a1a1aa;line-height:1.5;">Falls der Button nicht funktioniert, kopiere diesen Link in deinen Browser:</p>
@@ -101,7 +130,7 @@ export function buildClubInviteEmailContent(input: ClubInviteEmailContentInput):
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:40px 16px;">
     <tr><td align="center">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 24px rgba(0,0,0,0.06);">
-        <tr><td style="background:linear-gradient(135deg,#8B6914,#C4952A,#D4A843);height:6px;font-size:0;line-height:0;">&nbsp;</td></tr>
+        ${renderInviteEmailAccentBar()}
         <tr><td align="center" style="padding:34px 32px 0 32px;">
           <p style="margin:0 0 8px 0;font-size:11px;font-weight:700;letter-spacing:1.6px;color:#a1a1aa;text-transform:uppercase;">Club invitation</p>
           <p style="margin:0;font-size:24px;font-weight:750;color:#18181b;letter-spacing:-0.4px;">ONE<span style="color:#C4952A;">4</span>Team</p>
@@ -110,13 +139,11 @@ export function buildClubInviteEmailContent(input: ClubInviteEmailContentInput):
           <h1 style="margin:0 0 8px 0;font-size:21px;font-weight:700;color:#18181b;text-align:center;">You've been invited!</h1>
           <p style="margin:0 0 8px 0;font-size:15px;line-height:1.6;color:#52525b;text-align:center;">${greeting}</p>
           <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#52525b;text-align:center;">
-            <strong>${escapeHtml(clubName)}</strong> invited you to join ONE4Team. Use the button below to set up your account and join the team.
+            <strong>${escapeHtml(clubName)}</strong> invited you to join ONE4Team. Visit the club page, sign in, and accept your invitation.
           </p>
         </td></tr>
-        <tr><td align="center" style="padding:0 32px;">
-          <table role="presentation" cellpadding="0" cellspacing="0"><tr><td align="center" style="background:linear-gradient(135deg,#8B6914,#C4952A,#D4A843);border-radius:10px;">
-            <a href="${escapeHtml(inviteLink)}" target="_blank" style="display:inline-block;padding:14px 40px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:0.3px;">Accept invitation</a>
-          </td></tr></table>
+        <tr><td align="center" style="padding:0 32px 4px 32px;">
+          ${renderInviteEmailButton("Accept invitation", inviteLink)}
         </td></tr>
         <tr><td style="padding:20px 32px 0 32px;text-align:center;">
           <p style="margin:0;font-size:12px;color:#a1a1aa;line-height:1.5;">If the button doesn't work, copy and paste this link into your browser:</p>

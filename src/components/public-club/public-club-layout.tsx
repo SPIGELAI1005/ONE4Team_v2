@@ -6,6 +6,7 @@ import { ClubThemeProvider } from "@/components/public-club/club-theme-provider"
 import { PublicClubDocumentHead } from "@/components/public-club/public-club-document-head";
 import { PublicClubFixedHeader } from "@/components/public-club/public-club-fixed-header";
 import { PublicClubNavbar } from "@/components/public-club/public-club-navbar";
+import { PublicClubMemberInviteBanner } from "@/components/public-club/public-club-member-invite-banner";
 import { PublicSommerfestTournamentBanner } from "@/components/sommerfest/public-sommerfest-tournament-banner";
 import { PublicClubFooter } from "@/components/public-club/public-club-footer";
 import { PublicClubInviteModal } from "@/components/public-club/public-club-invite-modal";
@@ -57,6 +58,7 @@ function PublicClubLayoutInner() {
                 </div>
               ) : null}
               <PublicClubNavbar />
+              <PublicClubMemberInviteBanner />
               <PublicSommerfestTournamentBanner />
             </PublicClubFixedHeader>
             <main className="flex-1">

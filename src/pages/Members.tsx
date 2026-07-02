@@ -45,6 +45,7 @@ import { MasterDataTabs } from "@/components/members/master-data-tabs";
 import { Badge } from "@/components/ui/badge";
 import { appendMemberAuditEvent } from "@/lib/member-audit";
 import { sendClubInviteEmail, type SendClubInviteEmailResult } from "@/lib/send-club-invite-email";
+import { buildClubInviteLandingUrl } from "@/lib/club-invite-links";
 import { cn } from "@/lib/utils";
 import {
   DASHBOARD_PAGE_INNER,
@@ -4805,9 +4806,11 @@ const Members = () => {
                               <Button
                                 variant="outline"
                                 onClick={() => {
-                                  const qs = new URLSearchParams({ invite: createdInviteToken });
-                                  if (clubSlug) qs.set("club", clubSlug);
-                                  const link = `${window.location.origin}/onboarding?${qs.toString()}`;
+                                  const link = buildClubInviteLandingUrl({
+                                    inviteToken: createdInviteToken,
+                                    clubSlug,
+                                    siteOrigin: window.location.origin,
+                                  });
                                   void handleCopy(link);
                                 }}
                                 className="w-full"
@@ -4881,9 +4884,11 @@ const Members = () => {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    const qs = new URLSearchParams({ invite: draftResendInviteToken });
-                    if (clubSlug) qs.set("club", clubSlug);
-                    const link = `${window.location.origin}/onboarding?${qs.toString()}`;
+                    const link = buildClubInviteLandingUrl({
+                      inviteToken: draftResendInviteToken,
+                      clubSlug,
+                      siteOrigin: window.location.origin,
+                    });
                     void handleCopy(link);
                   }}
                   className="w-full"
