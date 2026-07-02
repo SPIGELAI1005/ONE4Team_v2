@@ -618,6 +618,12 @@ export const de: Translations = {
       "Wir haben eine Willkommensnachricht an {email} mit Links zur Vereinsseite und zum Dashboard gesendet.",
     memberInviteModalSignInAfterSetupFailed:
       "Dein Konto wurde vorbereitet, aber die Anmeldung ist fehlgeschlagen. Melde dich unten an oder nutze erneut „Konto erstellen & beitreten“.",
+    memberInviteJoinSuccessTitle: "Willkommen im Team",
+    memberInviteJoinSuccessHeadline: "Du bist offiziell Teil von {clubName}",
+    memberInviteJoinSuccessDesc:
+      "Herzlichen Glückwunsch — deine Mitgliedschaft ist aktiv. Entdecke die öffentliche Vereinsseite oder öffne dein Dashboard.",
+    memberInviteJoinSuccessClubPageCta: "Vereinsseite ansehen",
+    memberInviteJoinSuccessDashboardCta: "Dashboard öffnen",
     requestInvite: "Einladung anfragen",
     aboutSection: "Über uns",
     teamsSection: "Teams",
@@ -3111,6 +3117,7 @@ export const de: Translations = {
     debugOn: "An",
     debugOff: "Aus",
     activeClub: "aktiver Verein",
+    viewClubPage: "Vereinsseite",
     signOut: "Abmelden",
     signingOut: "Abmeldung...",
   },

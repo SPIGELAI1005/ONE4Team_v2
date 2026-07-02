@@ -5,10 +5,13 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
+  ExternalLink,
+  LayoutDashboard,
   Loader2,
   LogIn,
   Mail,
   ShieldCheck,
+  Sparkles,
   UserPlus,
   X,
 } from "lucide-react";
@@ -155,16 +158,23 @@ export function PublicClubMemberInviteAcceptModal() {
       }
       setSuccessRole(result.role);
       setStep("success");
-      toast({
-        title: t.clubPage.memberInviteModalSuccessTitle.replace("{clubName}", preview?.clubName ?? club?.name ?? ""),
-        description: t.clubPage.memberInviteModalSuccessDesc,
-      });
-      window.setTimeout(() => {
-        navigate(`/dashboard/${result.role}`, { replace: true });
-      }, 1200);
     },
-    [club?.name, navigate, preview?.clubName, t.clubPage, toast, user?.id],
+    [user?.id],
   );
+
+  const clubPagePath = preview?.clubSlug ? `/club/${encodeURIComponent(preview.clubSlug)}` : club ? `/club/${encodeURIComponent(club.slug)}` : null;
+  const dashboardPath = successRole ? `/dashboard/${encodeURIComponent(successRole)}` : "/dashboard/player";
+
+  const handleGoToClubPage = () => {
+    if (!clubPagePath) return;
+    handleDismiss();
+    navigate(clubPagePath, { replace: true });
+  };
+
+  const handleGoToDashboard = () => {
+    handleDismiss();
+    navigate(dashboardPath, { replace: true });
+  };
 
   const loadPreview = useCallback(async () => {
     if (!club || inviteToken.length < 10) return;
@@ -203,11 +213,11 @@ export function PublicClubMemberInviteAcceptModal() {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !submitting) handleDismiss();
+      if (e.key === "Escape" && !submitting && step !== "success") handleDismiss();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, submitting]);
+  }, [open, submitting, step]);
 
   const handleDismiss = () => {
     if (dismissKey) sessionStorage.setItem(dismissKey, "1");
@@ -377,7 +387,7 @@ export function PublicClubMemberInviteAcceptModal() {
               clubReadableModalOverlayClass,
             )}
             onClick={() => {
-              if (!submitting) handleDismiss();
+              if (!submitting && step !== "success") handleDismiss();
             }}
             role="presentation"
           >
@@ -397,7 +407,7 @@ export function PublicClubMemberInviteAcceptModal() {
                   <div className="flex min-w-0 items-center gap-3">
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-neutral-100 text-[color:var(--club-primary)]">
                       {step === "success" ? (
-                        <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                        <Sparkles className="h-5 w-5 text-emerald-600" />
                       ) : step === "error" ? (
                         <AlertCircle className="h-5 w-5 text-amber-600" />
                       ) : (
@@ -412,30 +422,36 @@ export function PublicClubMemberInviteAcceptModal() {
                         {step === "error"
                           ? t.clubPage.memberInviteModalInvalidTitle
                           : step === "success"
-                            ? t.clubPage.memberInviteModalSuccessTitle.replace(
-                                "{clubName}",
-                                preview?.clubName ?? club.name,
-                              )
+                            ? t.clubPage.memberInviteJoinSuccessTitle
                             : t.clubPage.memberInviteModalTitle.replace("{clubName}", preview?.clubName ?? club.name)}
                       </h2>
                       {step === "review" ? (
                         <p className="mt-0.5 text-xs text-neutral-600 sm:text-sm">
                           {t.clubPage.memberInviteModalReviewDesc}
                         </p>
+                      ) : step === "success" ? (
+                        <p className="mt-0.5 text-xs text-neutral-600 sm:text-sm">
+                          {t.clubPage.memberInviteJoinSuccessHeadline.replace(
+                            "{clubName}",
+                            preview?.clubName ?? club.name,
+                          )}
+                        </p>
                       ) : null}
                     </div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-                    onClick={handleDismiss}
-                    disabled={submitting}
-                    aria-label={t.common.close}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  {step !== "success" ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+                      onClick={handleDismiss}
+                      disabled={submitting}
+                      aria-label={t.common.close}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  ) : null}
                 </div>
               </div>
 
@@ -472,14 +488,44 @@ export function PublicClubMemberInviteAcceptModal() {
                 ) : null}
 
                 {step === "success" ? (
-                  <div className="space-y-3 py-4 text-center">
-                    <p className="text-sm text-neutral-700">{t.clubPage.memberInviteModalSuccessDesc}</p>
-                    {successRole ? (
-                      <p className="text-xs text-neutral-500">
-                        {formatDashboardRoleLabel(successRole)}
+                  <div className="space-y-5 py-2 text-center">
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
+                      <CheckCircle2 className="h-8 w-8" />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm leading-relaxed text-neutral-700">
+                        {t.clubPage.memberInviteJoinSuccessDesc.replace(
+                          "{clubName}",
+                          preview?.clubName ?? club.name,
+                        )}
                       </p>
-                    ) : null}
-                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-neutral-500" />
+                      {successRole ? (
+                        <p className="text-xs font-medium text-neutral-500">
+                          {t.clubPage.memberInviteModalRole}: {formatDashboardRoleLabel(successRole)}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="grid gap-2 pt-1 sm:grid-cols-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full border-neutral-300 bg-white font-semibold text-neutral-900"
+                        onClick={handleGoToClubPage}
+                        disabled={!clubPagePath}
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        {t.clubPage.memberInviteJoinSuccessClubPageCta}
+                      </Button>
+                      <Button
+                        type="button"
+                        className={`w-full font-semibold ${clubCtaFillHoverClass}`}
+                        style={clubCtaPrimaryInlineStyle(club.primary_color)}
+                        onClick={handleGoToDashboard}
+                      >
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        {t.clubPage.memberInviteJoinSuccessDashboardCta}
+                      </Button>
+                    </div>
                   </div>
                 ) : null}
 

@@ -1,9 +1,10 @@
 import { useContext, useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import {
   Menu,
   X,
   Building2,
+  ExternalLink,
   LogOut,
   Settings,
 } from "lucide-react";
@@ -185,6 +186,19 @@ export default function DashboardTopBar() {
             </div>
 
             <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 lg:justify-self-end">
+              {activeClub?.slug ? (
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="hidden h-9 shrink-0 rounded-xl border-border/70 bg-card/40 px-2.5 text-xs font-medium sm:inline-flex"
+                >
+                  <Link to={`/club/${encodeURIComponent(activeClub.slug)}`}>
+                    <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                    {t.appHeader.viewClubPage}
+                  </Link>
+                </Button>
+              ) : null}
               <div className="hidden sm:block max-w-[200px] min-w-0">
                 <ClubSwitcher />
               </div>
@@ -260,11 +274,25 @@ export default function DashboardTopBar() {
                   <div className="w-9 h-9 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center text-primary">
                     <Building2 className="w-4 h-4" />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="text-sm font-medium text-foreground truncate">{activeClub.name}</div>
-                    <div className="text-[11px] text-muted-foreground truncate">active club</div>
+                    <div className="text-[11px] text-muted-foreground truncate">{t.appHeader.activeClub}</div>
                   </div>
                 </div>
+                {activeClub.slug ? (
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 w-full rounded-xl"
+                    onClick={() => setOpen(false)}
+                  >
+                    <Link to={`/club/${encodeURIComponent(activeClub.slug)}`}>
+                      <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                      {t.appHeader.viewClubPage}
+                    </Link>
+                  </Button>
+                ) : null}
               </div>
             )}
 

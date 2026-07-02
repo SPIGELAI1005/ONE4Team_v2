@@ -609,6 +609,12 @@ export const en = {
     memberInviteModalWelcomeEmailDesc: "We sent a welcome message to {email} with links to your club page and dashboard.",
     memberInviteModalSignInAfterSetupFailed:
       "Your account was prepared, but sign-in did not complete. Try signing in below or use Create account & join again.",
+    memberInviteJoinSuccessTitle: "Welcome to the team",
+    memberInviteJoinSuccessHeadline: "You're officially part of {clubName}",
+    memberInviteJoinSuccessDesc:
+      "Congratulations — your membership is active. Explore your club's public page or open your dashboard to get started.",
+    memberInviteJoinSuccessClubPageCta: "View club page",
+    memberInviteJoinSuccessDashboardCta: "Open dashboard",
     requestInvite: "Request Invite",
     aboutSection: "About",
     teamsSection: "Teams",
@@ -3093,6 +3099,7 @@ export const en = {
     debugOn: "On",
     debugOff: "Off",
     activeClub: "active club",
+    viewClubPage: "Club page",
     signOut: "Sign out",
     signingOut: "Signing out...",
   },
