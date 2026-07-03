@@ -70,6 +70,39 @@ function upsertFavicon(href: string, state: HeadRestore) {
   state.createdLinks.push(l);
 }
 
+function upsertAppleTouchIcon(href: string, clubName: string, state: HeadRestore) {
+  const lower = href.split("?")[0]?.toLowerCase() ?? "";
+  if (lower.endsWith(".svg")) return;
+
+  const existing = [
+    ...document.head.querySelectorAll('link[rel="apple-touch-icon"]'),
+  ] as HTMLLinkElement[];
+
+  if (existing.length > 0) {
+    for (const el of existing) {
+      if (!state.touchedLinks.has(el)) {
+        state.touchedLinks.set(el, {
+          href: el.getAttribute("href"),
+          type: el.getAttribute("type"),
+        });
+      }
+      el.setAttribute(SEO_MARK, "borrowed");
+      el.setAttribute("href", href);
+      el.setAttribute("sizes", "180x180");
+    }
+  } else {
+    const l = document.createElement("link");
+    l.setAttribute("rel", "apple-touch-icon");
+    l.setAttribute("sizes", "180x180");
+    l.setAttribute("href", href);
+    l.setAttribute(FAV_MARK, "created");
+    document.head.appendChild(l);
+    state.createdLinks.push(l);
+  }
+
+  upsertMeta("name", "apple-mobile-web-app-title", clubName.slice(0, 32), state);
+}
+
 function getMetaBy(attr: "name" | "property", value: string): HTMLMetaElement | null {
   return document.head.querySelector(`meta[${attr}="${CSS.escape(value)}"]`);
 }
@@ -297,6 +330,13 @@ export function PublicClubDocumentHead() {
     if (fav) {
       const abs = toAbsoluteUrl(fav, origin);
       if (abs) upsertFavicon(abs, state);
+    }
+
+    const appleCandidate = [club.favicon_url, club.logo_url, club.og_image_url, ogImage]
+      .map((value) => toAbsoluteUrl((value ?? "").trim() || null, origin))
+      .find((value) => value && !value.split("?")[0]?.toLowerCase().endsWith(".svg"));
+    if (appleCandidate) {
+      upsertAppleTouchIcon(appleCandidate, club.name, state);
     }
 
     const allowJsonLd = !noindex && club.seoStructuredDataEnabled;
