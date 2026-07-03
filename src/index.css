@@ -680,6 +680,172 @@
     filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.9));
   }
 
+  /* Public club page: Sommerfest tournament banner — subtle draw-attention motion */
+  @keyframes sommerfest-public-banner-gradient {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  @keyframes sommerfest-public-banner-glow {
+    0%, 100% {
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.12),
+        0 2px 20px rgba(217, 249, 157, 0.08);
+    }
+    50% {
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        0 4px 28px rgba(217, 249, 157, 0.22);
+    }
+  }
+
+  @keyframes sommerfest-public-banner-sweep {
+    0% { transform: translateX(-120%) skewX(-12deg); opacity: 0; }
+    15% { opacity: 1; }
+    85% { opacity: 1; }
+    100% { transform: translateX(220%) skewX(-12deg); opacity: 0; }
+  }
+
+  @keyframes sommerfest-public-banner-accent {
+    0%, 100% { background-position: 0% 50%; opacity: 0.85; }
+    50% { background-position: 100% 50%; opacity: 1; }
+  }
+
+  @keyframes sommerfest-public-banner-icon-ring {
+    0%, 100% {
+      box-shadow:
+        0 0 0 0 rgba(217, 249, 157, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+    50% {
+      box-shadow:
+        0 0 0 5px rgba(217, 249, 157, 0),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+  }
+
+  @keyframes sommerfest-public-banner-cta-nudge {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(2px); }
+  }
+
+  .sommerfest-public-banner {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    background: linear-gradient(
+      112deg,
+      #052e16 0%,
+      #14532d 22%,
+      #166534 45%,
+      #15803d 68%,
+      #14532d 88%,
+      #052e16 100%
+    );
+    background-size: 220% 100%;
+    animation:
+      sommerfest-public-banner-gradient 10s ease-in-out infinite,
+      sommerfest-public-banner-glow 3.2s ease-in-out infinite;
+    transition: filter 0.25s ease;
+  }
+
+  .sommerfest-public-banner::before {
+    content: "";
+    position: absolute;
+    inset: -20% -40%;
+    background: linear-gradient(
+      105deg,
+      transparent 42%,
+      rgba(255, 255, 255, 0.07) 50%,
+      transparent 58%
+    );
+    animation: sommerfest-public-banner-sweep 5.5s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .sommerfest-public-banner::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(217, 249, 157, 0.35),
+      rgba(251, 191, 36, 0.75),
+      rgba(217, 249, 157, 0.35),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: sommerfest-public-banner-accent 4s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .sommerfest-public-banner:hover,
+  .sommerfest-public-banner:focus-visible {
+    filter: brightness(1.06);
+  }
+
+  .sommerfest-public-banner--live,
+  .sommerfest-public-banner--festival {
+    animation:
+      sommerfest-public-banner-gradient 8s ease-in-out infinite,
+      sommerfest-public-banner-glow 2.2s ease-in-out infinite;
+  }
+
+  .sommerfest-public-banner--festival::before {
+    animation: sommerfest-public-banner-sweep 4s ease-in-out infinite;
+  }
+
+  .sommerfest-public-banner--live::after {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(248, 113, 113, 0.45),
+      rgba(251, 191, 36, 0.85),
+      rgba(248, 113, 113, 0.45),
+      transparent
+    );
+    background-size: 200% 100%;
+  }
+
+  .sommerfest-public-banner-icon {
+    animation: sommerfest-public-banner-icon-ring 2.8s ease-in-out infinite;
+  }
+
+  .sommerfest-public-banner--live .sommerfest-public-banner-icon {
+    animation: sommerfest-public-banner-icon-ring 1.6s ease-in-out infinite;
+  }
+
+  .sommerfest-public-banner-cta {
+    animation: sommerfest-public-banner-cta-nudge 2.4s ease-in-out infinite;
+  }
+
+  .sommerfest-public-banner:hover .sommerfest-public-banner-cta,
+  .sommerfest-public-banner:focus-visible .sommerfest-public-banner-cta {
+    animation: none;
+    transform: translateX(2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sommerfest-public-banner,
+    .sommerfest-public-banner--live,
+    .sommerfest-public-banner--festival {
+      animation: none;
+    }
+
+    .sommerfest-public-banner::before,
+    .sommerfest-public-banner::after,
+    .sommerfest-public-banner-icon,
+    .sommerfest-public-banner-cta {
+      animation: none;
+    }
+  }
+
 
   /* World cards: transparent by default, subtle fill on hover */
   .world-card-hover {

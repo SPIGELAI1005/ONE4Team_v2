@@ -31,6 +31,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Members ops, team assignment, club member card (2026-06-28):** Members search/save UX; **`team_players`** / **`team_coaches`** assignment from **`/members`** and **`/teams`**; Club Card PNG export (**`club-pass-capture.ts`**); repair migrations **`20260725140000`**, **`20260725150000`** — see `CHANGELOG.md` § **2026-06-28**, `TASKS.md` **MEM-OPS-***.
 
+**Member invite UX + social previews (2026-07-03):** Public club **`?invite=`** accept modal; **`complete-club-invite-signup`** Edge; welcome email; dashboard **Club page** return for non-members; server-rendered OG for **`/club/*`**; animated Sommerfest banner — migrations **`20260731230000`**, **`20260731240000`** — see `CHANGELOG.md` § **2026-07-03**, `TASKS.md` **INVITE-UX-***.
+
 ---
 
 ## Phase 0 — Foundation (Week 0–1)

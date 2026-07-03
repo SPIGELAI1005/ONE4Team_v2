@@ -25,6 +25,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/hooks/use-language";
 import { useDashboardNav } from "@/hooks/use-dashboard-nav";
 import { useDashboardNavLabels } from "@/hooks/use-dashboard-nav-labels";
+import { useDashboardClubPageLink } from "@/hooks/use-dashboard-club-page-link";
 import { pathnameToNavId } from "@/lib/dashboard-nav";
 import { DashboardTopBarContext } from "@/contexts/dashboard-top-bar-context";
 import ClubSwitcher from "@/components/dashboard/ClubSwitcher";
@@ -45,6 +46,7 @@ export default function DashboardTopBar() {
   const { t } = useLanguage();
   const navLabels = useDashboardNavLabels();
   const { sidebarItems, roleLabel, personaSlug } = useDashboardNav(navLabels);
+  const clubPageLink = useDashboardClubPageLink();
 
   const [open, setOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -186,14 +188,14 @@ export default function DashboardTopBar() {
             </div>
 
             <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 lg:justify-self-end">
-              {activeClub?.slug ? (
+              {clubPageLink ? (
                 <Button
                   asChild
                   variant="outline"
                   size="sm"
                   className="hidden h-9 shrink-0 rounded-xl border-border/70 bg-card/40 px-2.5 text-xs font-medium sm:inline-flex"
                 >
-                  <Link to={`/club/${encodeURIComponent(activeClub.slug)}`}>
+                  <Link to={clubPageLink.href}>
                     <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                     {t.appHeader.viewClubPage}
                   </Link>
@@ -267,7 +269,7 @@ export default function DashboardTopBar() {
       {open && (
         <div className="md:hidden border-t border-border bg-background/70 backdrop-blur-2xl max-h-[min(70vh,calc(100dvh-8rem))] overflow-y-auto">
           <div className="px-4 py-3 grid gap-3">
-            {activeClub?.name && (
+            {clubPageLink && (
               <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-3">
                 <div className="text-[11px] text-muted-foreground mb-2">{t.common.club}</div>
                 <div className="flex items-center gap-2">
@@ -275,24 +277,24 @@ export default function DashboardTopBar() {
                     <Building2 className="w-4 h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium text-foreground truncate">{activeClub.name}</div>
-                    <div className="text-[11px] text-muted-foreground truncate">{t.appHeader.activeClub}</div>
+                    <div className="text-sm font-medium text-foreground truncate">{clubPageLink.name}</div>
+                    {activeClub?.slug && clubPageLink.href.includes(`/club/${encodeURIComponent(activeClub.slug)}`) ? (
+                      <div className="text-[11px] text-muted-foreground truncate">{t.appHeader.activeClub}</div>
+                    ) : null}
                   </div>
                 </div>
-                {activeClub.slug ? (
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="mt-3 w-full rounded-xl"
-                    onClick={() => setOpen(false)}
-                  >
-                    <Link to={`/club/${encodeURIComponent(activeClub.slug)}`}>
-                      <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-                      {t.appHeader.viewClubPage}
-                    </Link>
-                  </Button>
-                ) : null}
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 w-full rounded-xl"
+                  onClick={() => setOpen(false)}
+                >
+                  <Link to={clubPageLink.href}>
+                    <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                    {t.appHeader.viewClubPage}
+                  </Link>
+                </Button>
               </div>
             )}
 

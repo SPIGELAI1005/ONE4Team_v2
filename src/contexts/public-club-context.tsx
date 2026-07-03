@@ -31,6 +31,7 @@ import {
   redactSessionTimesForPrivacy,
 } from "@/lib/public-club-privacy";
 import { mergePublicClubNews } from "@/lib/tsv-allach-public-news";
+import { setPublicClubReturnContext } from "@/lib/public-club-return";
 import { mergePublicClubEvents } from "@/lib/tsv-allach-public-events";
 import {
   mergePublicClubMatchesRecent,
@@ -187,6 +188,15 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
   const basePath = `/club/${clubSlug}`;
   const canRequestInvite = Boolean(club?.is_public && club?.micrositePrivacy.allowJoinRequestsPublic);
   const showAdminDraftEmptyHints = isDraftPreviewMode && !draftPreviewBlocked;
+
+  useEffect(() => {
+    if (!club?.slug || !club.is_public) return;
+    setPublicClubReturnContext({
+      slug: club.slug,
+      name: club.name,
+      path: `${basePath}${searchSuffix}`,
+    });
+  }, [basePath, club?.is_public, club?.name, club?.slug, searchSuffix]);
 
   const effectiveSupportedLanguages = useMemo((): ClubPageLanguage[] => {
     if (!club) return [];

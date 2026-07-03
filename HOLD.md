@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-07-01 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-25** communication/tasks/attendance, § **2026-06-27** TSV Allach Sommerfest + membership application, § **2026-06-30** member payments + invite email, § **2026-07-01** marketing + public club polish, § **2026-07-01** partner portal + Partner Page + AI 4 T partner, § **2026-07-01** persona data scoping + Live Scores UI, § **2026-07-01** AI 4 T pilot UX P4-002 + Sommerfest banner fix), `MEMORY_BANK.md`, `DEPLOYMENT.md`, `docs/AI4T_RELEASE_REVIEW.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
+Last updated: 2026-07-03 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-25** communication/tasks/attendance, § **2026-06-27** TSV Allach Sommerfest + membership application, § **2026-06-30** member payments + invite email, § **2026-07-01** marketing + public club polish, § **2026-07-01** partner portal + Partner Page + AI 4 T partner, § **2026-07-01** persona data scoping + Live Scores UI, § **2026-07-01** AI 4 T pilot UX P4-002 + Sommerfest banner fix, § **2026-07-03** member invite UX + social previews + Sommerfest banner animation + dashboard club return), `MEMORY_BANK.md`, `DEPLOYMENT.md`, `docs/AI4T_RELEASE_REVIEW.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
 
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 
@@ -202,6 +202,26 @@ Blockers:
 - **`chat-bridge`** must be deployed to the target Supabase project
 - Meta webhook URL must be **public** (not `localhost`)
 - **BRIDGE-WA-001:** Meta GET webhook verification (`hub.challenge`) may need a code change before Meta accepts the callback URL
+
+## Member invite accept — preview RPC + signup Edge (2026-07-03)
+Apply in the same Supabase project as the app (after partner/marketplace migrations):
+1. `supabase/migrations/20260731230000_preview_club_invite.sql`
+2. `supabase/migrations/20260731240000_get_auth_user_id_by_email.sql`
+3. Deploy Edge: **`complete-club-invite-signup`**
+4. Redeploy **`send-club-invite-email`** if invite URL template was updated
+5. Regenerate **`src/integrations/supabase/types.ts`** if RPC signatures changed
+
+Smoke: create invite in **Members** → email/link opens **`/club/{slug}?invite=TOKEN`** → modal pre-fills admin data → set password → welcome email → congratulations → **View club page** / **Open dashboard**. See **`CHANGELOG.md`** § **2026-07-03** and **`TASKS.md` INVITE-UX-OPS-001**.
+
+## Club-branded social previews + iOS shortcuts (2026-07-03)
+Vercel deployment (no new Supabase migrations):
+1. Ensure **`VITE_SUPABASE_URL`**, **`VITE_SUPABASE_PUBLISHABLE_KEY`**, **`VITE_PUBLIC_SITE_URL`** (or equivalent site origin) are set on Vercel Production + Preview
+2. Redeploy after **`middleware.ts`** + **`api/club-social-preview.ts`** merge
+3. Club admin: set **`meta_description`**, **`og_image_url`**, PNG favicon in **Club Page Admin**
+4. Refresh WhatsApp/Facebook cache: [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/) for each club URL
+5. iPhone: remove and re-add home screen shortcut after deploy for updated **`apple-touch-icon`**
+
+See **`CHANGELOG.md`** § **2026-07-03** and **`docs/PRODUCTION_RELEASE_CHECKLIST.md`**.
 
 ## Phase 7 items (need Supabase / infra)
 - Staging + prod Supabase projects (completed for Phase 12 closure)

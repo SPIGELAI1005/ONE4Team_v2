@@ -70,6 +70,20 @@ Reference: **`docs/marketplace-implementation-plan.md`** §10.
 
 ## NOW (top priority)
 
+### Member invite UX + public club accept (2026-07-03) — code in repo
+- [x] **INVITE-UX-001** Dashboard sidebar persona route fix (`02aabbc`)
+- [x] **INVITE-UX-002** Invite links route to **`/club/{slug}?invite=TOKEN`** (`0a4c2ab`)
+- [x] **INVITE-UX-003** Request invite modal contrast on club hero (`593e4fa`)
+- [x] **INVITE-UX-004** Pre-filled accept modal + **`preview_club_invite`** RPC (`e5ea5b8`, migration **`20260731230000`**)
+- [x] **INVITE-UX-005** **`complete-club-invite-signup`** Edge — auto-confirm, welcome email, redeem (`d821fab`, migration **`20260731240000`**)
+- [x] **INVITE-UX-006** Post-join congratulations + dashboard **Club page** link for members (`04069cb`)
+- [x] **INVITE-UX-007** Club-branded social OG + **`apple-touch-icon`** (`91bc275`)
+- [x] **INVITE-UX-008** Dashboard **Club page** return for non-members via **`public-club-return.ts`**
+- [x] **INVITE-UX-009** Sommerfest tournament banner attention animation
+- [x] **INVITE-UX-DOC-001** Doc sync — **`CHANGELOG.md`**, **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`HOLD.md`**, **`README.md`**, checklists
+- [ ] **INVITE-UX-OPS-001** Apply **`20260731230000`**, **`20260731240000`**; deploy **`complete-club-invite-signup`**; smoke invite accept + welcome email
+- [ ] **INVITE-UX-OPS-002** Smoke social share (Facebook Debugger) + iPhone home screen icon after Vercel deploy
+
 ### Partner portal + Partner Page + AI 4 T partner (2026-07-01) — code in repo
 - [x] **PARTNER-001** Dual-world routes (`partner-portal-routes.ts`, `PersonaPortalGate`, `RequireModule`)
 - [x] **PARTNER-002** Marketplace provider portal + club hub (`Marketplace.tsx`, schema **`20260731150000`**–**`20260731200000`**)

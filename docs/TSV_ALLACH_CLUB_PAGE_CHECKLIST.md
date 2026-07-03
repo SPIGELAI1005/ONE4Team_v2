@@ -190,8 +190,31 @@ Featured teams: Erste Herren, Erste Frauen, Zweite Herren, Senioren, one Jugend 
 | SF.2 | Set scores during event (kick-off / full time) | **Matches** admin |
 | SF.3 | Verify public live board updates | `/club/tsv-allach-09/tournament/sommerfest-2026` |
 | SF.4 | Pulsating **Live tournament board** CTA visible from **11 Jul 2026** | Home + event detail + fixed banner |
+| SF.5 | **Animated Sommerfest banner** under header draws attention (gradient + sweep; respects reduced motion) | `/club/tsv-allach-09` home |
 
 Public URL slug: **`sommerfest-2026`**. Match import keys: **`tsv-sommerfest-2026:m01`** … **`m22`**.
+
+---
+
+## Member invite accept on public club page (2026-07-03)
+
+| # | Task | Where |
+|---|------|--------|
+| MI.1 | Apply migrations **`20260731230000`**, **`20260731240000`** | Supabase |
+| MI.2 | Deploy Edge **`complete-club-invite-signup`** | Supabase Functions |
+| MI.3 | Create invite in **Members** → link opens **`/club/tsv-allach-09?invite=…`** | Admin + email |
+| MI.4 | Modal pre-fills name/email/team; member sets password and joins | Public club page |
+| MI.5 | Welcome email arrives; congratulations step offers club page + dashboard | Inbox + UI |
+| MI.6 | Logged-in visitor: browse club → **Open Dashboard** → **Club page** link still visible | Dashboard menu |
+
+---
+
+## Social sharing + iOS home screen (2026-07-03)
+
+- [ ] Share **`/club/tsv-allach-09`** in WhatsApp — preview shows club name + logo (not generic ONE4Team)
+- [ ] Refresh cache in Facebook Sharing Debugger after each production deploy
+- [ ] **Club Page Admin:** **`og_image_url`**, meta description, PNG favicon set
+- [ ] iPhone **Add to Home Screen** shows club logo (re-add shortcut after deploy)
 
 ---
 

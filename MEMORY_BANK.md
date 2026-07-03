@@ -1,11 +1,16 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-07-01 (AI 4 T pilot UX P4-002, dark-mode Agent composer, Sommerfest banner fix, copy polish)
+Last updated: 2026-07-03 (member invite UX, social previews, Sommerfest banner animation, dashboard club return)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **Member invite UX — public club flow (2026-07-03):** Invite emails and copy links open **`/club/{slug}?invite=TOKEN`**. **`PublicClubMemberInviteAcceptModal`** auto-opens with **`preview_club_invite`** RPC; Edge **`complete-club-invite-signup`** confirms user without Supabase confirmation email, redeems invite, sends Resend welcome email. Post-join congratulations with **View club page** / **Open dashboard**. Migrations **`20260731230000`**, **`20260731240000`**. See **`CHANGELOG.md`** § **2026-07-03**.
+- **Dashboard club page return (2026-07-03):** **`DashboardTopBar`** **Club page** link uses active membership or **`sessionStorage`** return context (**`public-club-return.ts`**) when a logged-in user browses a public club then opens dashboard without club membership. See **`CHANGELOG.md`** § **2026-07-03**.
+- **Club-branded social + iOS (2026-07-03):** Vercel **`middleware.ts`** + **`api/club-social-preview.ts`** serve club OG tags to crawlers (WhatsApp, etc.); **`apple-touch-icon`** from club logo. Refresh Facebook Sharing Debugger cache after deploy. See **`CHANGELOG.md`** § **2026-07-03**.
+- **Sommerfest banner animation (2026-07-03):** **`PublicSommerfestTournamentBanner`** uses **`.sommerfest-public-banner`** CSS (gradient, sweep, accent line, icon pulse); live/festival variants; **`prefers-reduced-motion`**. See **`CHANGELOG.md`** § **2026-07-03**.
+- **Dashboard nav fix (2026-07-03):** Sidebar persona routes no longer all redirect to **`/dashboard/club_admin`**. See commit **`02aabbc`**.
 - **AI 4 T pilot UX — Phase 4.2 (2026-07-01):** Persona-scoped **`buildClubContext()`** (`staff` / `player` / `member` / `public` + team IDs + `?team=`). **Agent tab hidden** for player/member (`canUseClubAgentWorkflows` + gate role in **`AiAgentProvider`**). **`Ai4tPersonaHint`**, follow-up chips, thread trim (`prepareChatMessagesForApi`), mapped Edge errors (DE/EN + Settings link). Public modal: guide role can/cannot, team filter in embed. History: intent/status filters. **`Ai4tAdminUsageCard`** on club admin dashboard (`get_club_ai_usage_stats`, 7d). Partner **`buildPartnerAiContext()`**. Ops SQL + **`docs/AI4T_RELEASE_REVIEW.md`**; **`e2e/ai4t-smoke.spec.ts`** (skipped until auth fixtures). **`TASKS.md` AI4T-P4-002**. Pilot metrics **AI4T-PILOT-001**–**005** still open.
 - **AI 4 T Agent composer — dark mode (2026-07-01):** **`Ai4tChatComposer`** `variant="dashboard"` + `frameless` in **`AiAgentWorkspace`** — theme tokens (`bg-card`, `border-border`) instead of public-embed white styling; compact public modal footer uses `bg-background/90`.
 - **Sommerfest banner fix (2026-07-01):** **`sommerfestBannerMatchStats()`** only counts completed/in-progress after kickoff; generic subtitle before tournament day; republish no longer overwrites **`status`** on existing rows (**`tsv-allach-sommerfest-competition.ts`**). Tests: **`sommerfest-live-pulse.test.ts`**.
@@ -205,6 +210,8 @@ Persistent handoff context for future agents so work can continue without re-dis
 66. `20260730130000_tsv_allach_jako_shop_images.sql` — TSV Allach JAKO shop images (`CHANGELOG.md` § 2026-07-01)
 67. `20260730140000_tsv_allach_club_contact_address.sql` — TSV Allach club contact address (`CHANGELOG.md` § 2026-07-01)
 68. `20260731120000_partner_task_engagements.sql` through `20260731220000_repair_marketplace_provider_images_bucket.sql` — partner portal, marketplace provider profiles, supplier scope, image bucket (`CHANGELOG.md` § 2026-07-01 Partner portal)
+69. `20260731230000_preview_club_invite.sql` — invite token preview for public accept modal (`CHANGELOG.md` § 2026-07-03)
+70. `20260731240000_get_auth_user_id_by_email.sql` — invite signup helper (`CHANGELOG.md` § 2026-07-03)
 
 Also ensure previously listed communication migrations remain applied in the same project:
 - `20260301152000_add_chat_bridge_connectors_and_events.sql`
@@ -217,6 +224,9 @@ Also ensure previously listed communication migrations remain applied in the sam
 - If behavior mismatches local code expectations, verify app env vars point to the same Supabase project where all required migrations are applied.
 
 ## Suggested Next Implementation Steps
+- **Member invite smoke:** Apply **`20260731230000`**, **`20260731240000`**; deploy **`complete-club-invite-signup`**; smoke **`/club/tsv-allach-09?invite=…`** end-to-end; verify Resend welcome email (**`DEPLOY-EMAIL-001-PROD`**).
+- **Social previews:** After Vercel deploy, set **`VITE_PUBLIC_SITE_URL`**; refresh WhatsApp/Facebook cache via Sharing Debugger; confirm club admin **`og_image_url`** + PNG favicon in Club Page Admin.
+- **Sommerfest banner:** Smoke animation on TSV Allach club page; verify **`prefers-reduced-motion`** disables motion.
 - **AI 4 T pilot (manual):** Golden questions on TSV Allach trainer account; negative-feedback SQL weekly; agent smoke (plan week / cancel / notify); one coach interview for weekly AI habit — see **`docs/AI4T_RELEASE_REVIEW.md`** and **`docs/AI4T_GOLDEN_QUESTIONS.md`**.
 - **Persona RBAC smoke:** Complete **`RBAC-PERSONA-SMOKE`** — dual-role account switches Player vs Member; verify messages, tasks, dashboard upcoming (`TASKS.md`).
 - **Sprint exit:** Complete **\*-SMOKE** rows in **`TASKS.md` → SPRINT 2026-07-01**; **`DEPLOY-EMAIL-001-PROD`** (Resend domain).

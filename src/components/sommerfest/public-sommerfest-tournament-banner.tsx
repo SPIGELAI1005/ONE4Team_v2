@@ -79,9 +79,10 @@ export function PublicSommerfestTournamentBanner() {
   const copy = t.sommerfest2026;
   const totalFixtures = SOMMERFEST_MATCHES.length;
   const hasLive = stats.liveCount > 0;
+  const isFestivalHighlight = isSommerfestLivePulsateActive();
   const showProgress =
     stats.publishedCount > 0 &&
-    (hasLive || stats.finishedCount > 0 || isSommerfestLivePulsateActive());
+    (hasLive || stats.finishedCount > 0 || isFestivalHighlight);
   const progressLabel = showProgress
     ? copy.tournamentBannerProgress
         .replace("{finished}", String(stats.finishedCount))
@@ -91,37 +92,51 @@ export function PublicSommerfestTournamentBanner() {
   return (
     <Link
       to={tournamentHref}
-      className="group block border-b border-[#14532d]/30 bg-gradient-to-r from-[#14532d] via-[#166534] to-[#052e16] text-white transition-[filter] hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#86efac] focus-visible:ring-offset-2 focus-visible:ring-offset-[#052e16]"
+      className={cn(
+        "sommerfest-public-banner group block border-b border-[#14532d]/40 text-white",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#86efac] focus-visible:ring-offset-2 focus-visible:ring-offset-[#052e16]",
+        hasLive && "sommerfest-public-banner--live",
+        isFestivalHighlight && !hasLive && "sommerfest-public-banner--festival",
+      )}
       aria-label={copy.viewLiveTournament}
     >
-      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5 sm:py-3">
+      <div className="relative z-[1] mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5 sm:py-3">
         <div
           className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/15",
-            hasLive && "animate-pulse bg-red-500/25 ring-red-300/40",
+            "sommerfest-public-banner-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20 backdrop-blur-[2px]",
+            hasLive && "bg-red-500/30 ring-red-200/40",
           )}
         >
-          {hasLive ? <Radio className="h-4 w-4 text-red-200" aria-hidden /> : <Trophy className="h-4 w-4 text-[#d9f99d]" aria-hidden />}
+          {hasLive ? (
+            <Radio className="h-4 w-4 text-red-100" aria-hidden />
+          ) : (
+            <Trophy className="h-4 w-4 text-[#ecfccb]" aria-hidden />
+          )}
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-            <span className="font-display text-sm font-bold leading-tight sm:text-[15px]">{copy.tournamentBannerTitle}</span>
+            <span className="font-display text-sm font-bold leading-tight tracking-tight sm:text-[15px]">
+              {copy.tournamentBannerTitle}
+            </span>
             {hasLive ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-red-500/25 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-100 ring-1 ring-red-300/30">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-300" aria-hidden />
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-500/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-red-50 ring-1 ring-red-200/35 animate-pulse">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-200" aria-hidden />
                 {copy.tournamentBannerLive.replace("{count}", String(stats.liveCount))}
               </span>
             ) : null}
           </div>
-          <p className="truncate text-[11px] text-white/80 sm:text-xs">{progressLabel}</p>
+          <p className="truncate text-[11px] text-white/85 sm:text-xs">{progressLabel}</p>
         </div>
 
-        <span className="hidden shrink-0 items-center gap-1 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white ring-1 ring-white/15 transition-colors group-hover:bg-white/15 sm:inline-flex">
+        <span className="sommerfest-public-banner-cta hidden shrink-0 items-center gap-1 rounded-full bg-white/12 px-3 py-1.5 text-xs font-semibold text-white ring-1 ring-white/20 backdrop-blur-sm transition-[background-color,box-shadow] group-hover:bg-white/18 group-hover:ring-amber-200/40 sm:inline-flex">
           {copy.tournamentBannerCta}
-          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+          <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
         </span>
-        <ChevronRight className="h-4 w-4 shrink-0 text-white/70 sm:hidden" aria-hidden />
+        <ChevronRight
+          className="sommerfest-public-banner-cta h-4 w-4 shrink-0 text-white/80 sm:hidden"
+          aria-hidden
+        />
       </div>
     </Link>
   );

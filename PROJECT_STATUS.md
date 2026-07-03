@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-07-01 (AI 4 T pilot UX P4-002, dark-mode Agent composer, Sommerfest banner fix)
+Last updated: 2026-07-03 (member invite UX, social previews, Sommerfest banner, dashboard club return)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -39,6 +39,10 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - **AI 4 T Agent composer dark mode (2026-07-01):** Dashboard Agent tab composer uses theme tokens, not public-embed white styling.
 - **Sommerfest banner fix (2026-07-01):** Live tournament banner no longer shows completed match count before kickoff; republish preserves match status.
 - **Copy polish (2026-07-01):** Em-dash removal pass across EN/DE UI strings.
+- **Member invite UX — public club flow (2026-07-03):** Invite links → **`/club/{slug}?invite=TOKEN`**; pre-filled accept modal; **`complete-club-invite-signup`** Edge (no Supabase confirmation email); welcome email; post-join congratulations. Migrations **`20260731230000`**, **`20260731240000`**. See **`CHANGELOG.md`** § **2026-07-03**.
+- **Dashboard club return + nav (2026-07-03):** **Club page** link in dashboard for members and for logged-in visitors who browsed a public club without membership (**`public-club-return.ts`**); sidebar persona route fix. See **`CHANGELOG.md`** § **2026-07-03**.
+- **Club-branded social + iOS (2026-07-03):** Server-rendered OG for **`/club/*`** crawlers; **`apple-touch-icon`** from club logo. See **`CHANGELOG.md`** § **2026-07-03**.
+- **Sommerfest banner animation (2026-07-03):** Animated tournament banner on public club pages. See **`CHANGELOG.md`** § **2026-07-03**.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 

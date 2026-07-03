@@ -3,6 +3,48 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-03 (Member invite UX, social previews, Sommerfest banner, dashboard club return)
+
+### Dashboard navigation fix
+- **`use-permissions.ts`**, **`require-module.tsx`**, **`dashboard-nav.ts`**, **`App.tsx`:** Club admin sidebar links no longer redirect every item to `/dashboard/club_admin`; persona routes resolve correctly.
+
+### Member invite — public club page flow
+- **Invite links:** Email and copy-link targets **`/club/{slug}?invite=TOKEN`** (not `/onboarding`). **`club-invite-links.ts`**, **`send-club-invite-email`** Edge, Resend template.
+- **Request invite modal:** Improved contrast on club hero (white-glass pattern). **`public-club-request-invite-modal.tsx`**.
+- **Pre-filled accept modal:** **`PublicClubMemberInviteAcceptModal`** auto-opens on `?invite=`; **`preview_club_invite`** RPC (migration **`20260731230000`**); lib **`club-invite-preview.ts`**.
+- **Signup without Supabase confirmation email:** Edge **`complete-club-invite-signup`** creates/confirms user, redeems invite, sends branded **welcome email** via Resend (**`_shared/club_welcome_email.ts`**). Migration **`20260731240000_get_auth_user_id_by_email.sql`**.
+- **Password fields:** Eye toggle on invite modal password inputs.
+- **Post-join UX:** Congratulations step with **View club page** + **Open dashboard** (no auto-redirect). **`public-club-member-invite-accept-modal.tsx`**.
+
+### Dashboard — return to public club page
+- **`DashboardTopBar`:** **Club page** link for members with active club (existing).
+- **Session return context:** **`public-club-return.ts`** stores browsed public club in `sessionStorage`; **`use-dashboard-club-page-link.ts`** shows **Club page** in dashboard header/mobile menu when user opened dashboard from a club page without membership. **`public-club-context.tsx`** persists context on public club load.
+
+### Club-branded social sharing + iOS shortcuts
+- **`middleware.ts`:** Social crawlers on **`/club/*`** receive server-rendered HTML.
+- **`api/club-social-preview.ts`**, **`api/_lib/club-social-html.ts`:** Club **`og:title`**, description, image from DB.
+- **`public-club-document-head.tsx`:** Client **`apple-touch-icon`** + **`apple-mobile-web-app-title`** from club logo/name.
+- **Tests:** **`club-social-preview-html.test.ts`**.
+
+### Sommerfest tournament banner — attention animation
+- **`public-sommerfest-tournament-banner.tsx`:** Professional draw-attention motion (gradient shift, light sweep, gold accent line, icon ring pulse, CTA nudge).
+- **`index.css`:** **`.sommerfest-public-banner`** utilities; live/festival variants; **`prefers-reduced-motion`** respected.
+
+### Supabase (operator)
+- **`20260731230000_preview_club_invite.sql`** — token preview for invite accept modal.
+- **`20260731240000_get_auth_user_id_by_email.sql`** — invite signup helper.
+- Deploy Edge: **`complete-club-invite-signup`**, redeploy **`send-club-invite-email`** if invite URL template changed.
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`HOLD.md`**, **`README.md`**, **`ROADMAP.md`**, **`docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`**, **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**, **`docs/PRODUCTION_RELEASE_CHECKLIST.md`**.
+
+### Operator smoke
+- **`/club/tsv-allach-09?invite=…`:** Modal opens with admin pre-filled data; set password → join → congratulations → club page / dashboard.
+- **Logged-in non-member:** Browse club page → **Open Dashboard** → **Club page** link visible in dashboard menu.
+- **WhatsApp share:** Facebook Sharing Debugger refresh after deploy; club logo in preview (not generic ONE4Team).
+- **iPhone shortcut:** Re-add home screen icon after deploy for club **`apple-touch-icon`**.
+- **Sommerfest banner:** Visible animation on **`/club/tsv-allach-09`**; reduced motion disables animation.
+
 ## 2026-07-01 (AI 4 T pilot UX P4-002, dark-mode composer, Sommerfest fix, copy polish)
 
 ### AI 4 T — pilot UX batch (**AI4T-P4-002**)

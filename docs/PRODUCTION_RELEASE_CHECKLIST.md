@@ -203,8 +203,9 @@ Configured at [resend.com/domains](https://resend.com/domains) — **separate fr
 - [ ] Add member draft with valid email
 - [ ] **Send invite** → toast **“Invite email sent”** (no CORS / domain verification error)
 - [ ] Email arrives with **Accept invitation** button
-- [ ] Link opens `/onboarding?invite=...&club=...`
-- [ ] Member completes signup with the **same email** and joins the club
+- [ ] Link opens **`/club/{slug}?invite=…`** (public club page, not `/onboarding`)
+- [ ] Invite modal pre-fills admin data; member sets password and joins the club
+- [ ] Welcome email arrives after join (Resend)
 - [ ] **Resend invite** creates a new link; previous unused link no longer works
 
 ### Core product
@@ -215,6 +216,8 @@ Configured at [resend.com/domains](https://resend.com/domains) — **separate fr
 - [ ] Communication / messages (if used)
 - [ ] Club card download (PNG)
 - [ ] Public club page loads (if enabled for a club)
+- [ ] Share club URL in WhatsApp — preview shows club branding (after Facebook Debugger cache refresh)
+- [ ] Dashboard **Club page** link visible when user browsed public club then opened dashboard
 
 ### AI 4 T (if enabled)
 
