@@ -13,13 +13,15 @@ import {
 } from "../_shared/llm.ts";
 import { clubHasPlanFeature } from "../_shared/plan_entitlements.ts";
 import {
-  buildCoTrainerSystemPrompt,
+  buildCoTrainerSystemPromptForRole,
   detectObviousOffScope,
   extractLatestUserMessage,
   getScopeRefusalMessage,
   parseAiLanguage,
   streamScopeRefusal,
+  type CoTrainerAiRole,
 } from "../_shared/ai4team_scope.ts";
+import { assertClubTrainer } from "../_shared/ai4team_agent_tools.ts";
 import { logStructured, resolveCorrelationId } from "../_shared/request_context.ts";
 
 const MAX_BODY_BYTES = 600_000;
@@ -156,7 +158,30 @@ serve(async (req) => {
       );
     }
 
-    const systemPrompt = buildCoTrainerSystemPrompt(
+    const [isClubAdmin, isClubTrainer, membershipRes] = await Promise.all([
+      assertClubAdmin(admin, userId, clubId),
+      assertClubTrainer(admin, userId, clubId),
+      admin
+        .from("club_memberships")
+        .select("role")
+        .eq("club_id", clubId)
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .maybeSingle(),
+    ]);
+
+    let aiRole: CoTrainerAiRole = "member";
+    if (isClubAdmin) aiRole = "admin";
+    else if (isClubTrainer) aiRole = "trainer";
+    else {
+      const legacyRole = (membershipRes.data?.role ?? "").toLowerCase();
+      if (legacyRole === "player") aiRole = "player";
+      else if (legacyRole === "parent") aiRole = "parent";
+      else if (legacyRole === "staff") aiRole = "staff";
+    }
+
+    const systemPrompt = buildCoTrainerSystemPromptForRole(
+      aiRole,
       context,
       lang,
       clubRow?.club_ai_instructions ?? null,

@@ -191,8 +191,13 @@ Featured teams: Erste Herren, Erste Frauen, Zweite Herren, Senioren, one Jugend 
 | SF.3 | Verify public live board updates | `/club/tsv-allach-09/tournament/sommerfest-2026` |
 | SF.4 | Pulsating **Live tournament board** CTA visible from **11 Jul 2026** | Home + event detail + fixed banner |
 | SF.5 | **Animated Sommerfest banner** under header draws attention (gradient + sweep; respects reduced motion) | `/club/tsv-allach-09` home |
+| SF.6 | **Share tournament** on hero; **live glow** on poster left edge when matches live | Tournament page hero |
+| SF.7 | **Team logos** on live board cards; **Goals** KPI; high-contrast live red UI | Tournament board |
+| SF.8 | Mobile **bottom live bar**; Messages FAB does not overlap live cards | Phone + live matches |
 
 Public URL slug: **`sommerfest-2026`**. Match import keys: **`tsv-sommerfest-2026:m01`** … **`m22`**.
+
+**Deploy (2026-07-05):** Redeploy Edge **`co-trainer`** after pull for public AI 4 T role-specific system prompts.
 
 ---
 

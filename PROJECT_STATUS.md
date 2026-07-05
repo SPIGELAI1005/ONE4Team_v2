@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-07-03 (member invite UX, social previews, Sommerfest banner, dashboard club return)
+Last updated: 2026-07-05 (Sommerfest tournament UX, public AI 4 T RBAC)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -43,6 +43,8 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - **Dashboard club return + nav (2026-07-03):** **Club page** link in dashboard for members and for logged-in visitors who browsed a public club without membership (**`public-club-return.ts`**); sidebar persona route fix. See **`CHANGELOG.md`** § **2026-07-03**.
 - **Club-branded social + iOS (2026-07-03):** Server-rendered OG for **`/club/*`** crawlers; **`apple-touch-icon`** from club logo. See **`CHANGELOG.md`** § **2026-07-03**.
 - **Sommerfest banner animation (2026-07-03):** Animated tournament banner on public club pages. See **`CHANGELOG.md`** § **2026-07-03**.
+- **Sommerfest tournament page UX (2026-07-05):** Public live board polish — team logos, goals stat, high-contrast live styling, hero share + live glow, mobile live bar + Messages FAB layout. See **`CHANGELOG.md`** § **2026-07-05**.
+- **Public club AI 4 T RBAC (2026-07-05):** Role-scoped Guide/Agent in public modal; server-side co-trainer prompts. Deploy **`co-trainer`**. See **`CHANGELOG.md`** § **2026-07-05**.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 

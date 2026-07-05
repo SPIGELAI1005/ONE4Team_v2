@@ -33,6 +33,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Member invite UX + social previews (2026-07-03):** Public club **`?invite=`** accept modal; **`complete-club-invite-signup`** Edge; welcome email; dashboard **Club page** return for non-members; server-rendered OG for **`/club/*`**; animated Sommerfest banner — migrations **`20260731230000`**, **`20260731240000`** — see `CHANGELOG.md` § **2026-07-03**, `TASKS.md` **INVITE-UX-***.
 
+**Sommerfest tournament UX + public AI 4 T RBAC (2026-07-05):** Public tournament page polish (share, live glow, team logos, goals KPI, mobile live bar); public modal role-scoped Guide/Agent; co-trainer server prompts — deploy **`co-trainer`** — see `CHANGELOG.md` § **2026-07-05**, `TASKS.md` **ALLACH-SOMMERFEST-004**–**007**, **AI4T-PUB-RBAC-***.
+
 ---
 
 ## Phase 0 — Foundation (Week 0–1)

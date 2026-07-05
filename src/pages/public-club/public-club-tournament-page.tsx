@@ -1,20 +1,25 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Loader2, Radio } from "lucide-react";
 import { PublicSommerfestTournamentBoard } from "@/components/sommerfest/public-sommerfest-tournament-board";
+import { SommerfestHero } from "@/components/sommerfest/sommerfest-hero";
 import { PublicClubPageGate } from "@/components/public-club/public-club-page-gate";
-import { PublicClubSection } from "@/components/public-club/public-club-section";
+import { publicClubSectionContainer } from "@/components/public-club/public-club-section";
 import { usePublicClub } from "@/contexts/public-club-context";
 import { usePublicClubRouteSeo } from "@/contexts/public-club-route-seo-context";
 import { useLanguage } from "@/hooks/use-language";
 import { supabase } from "@/integrations/supabase/client";
 import { PUBLIC_CLUB_ROUTE_SEGMENTS } from "@/lib/public-club-routes";
 import {
+  buildSommerfestTournamentSlots,
   SOMMERFEST_COMPETITION_NAME,
   SOMMERFEST_TOURNAMENT_SLUG,
+  publicTournamentPath,
   type SommerfestDbMatchRow,
 } from "@/lib/tsv-allach-sommerfest-competition";
 import { isTsvAllachClub } from "@/lib/is-tsv-allach-club";
+import { isSommerfestTournamentInProgress, hasSommerfestLiveMatches } from "@/lib/sommerfest-live-pulse";
+import { publicMatchStatusBadge } from "@/lib/public-club-match-display";
 
 const REFRESH_MS = 20_000;
 
@@ -35,7 +40,7 @@ export default function PublicClubTournamentPage() {
     const { data, error: fetchError } = await supabase
       .from("matches")
       .select(
-        "id, opponent, is_home, match_date, location, status, home_score, away_score, competition_id, team_id, notes, publish_to_public_schedule, public_match_detail_enabled, competitions(name), teams(name)",
+        "id, opponent, is_home, match_date, location, status, home_score, away_score, competition_id, team_id, notes, opponent_logo_url, publish_to_public_schedule, public_match_detail_enabled, competitions(name), teams(name)",
       )
       .eq("club_id", club.id)
       .like("notes", "tsv-sommerfest-2026:%")
@@ -93,23 +98,49 @@ export default function PublicClubTournamentPage() {
 
   const eventsHref = `${basePath}/${PUBLIC_CLUB_ROUTE_SEGMENTS.events}${searchSuffix}`;
   const matchesHref = `${basePath}/${PUBLIC_CLUB_ROUTE_SEGMENTS.matches}${searchSuffix}`;
+  const homeHref = `${basePath}${searchSuffix}`;
+  const tournamentSharePath = publicTournamentPath(basePath, searchSuffix);
+
+  const tournamentIsLive = useMemo(() => {
+    if (matches.length === 0) return false;
+    if (hasSommerfestLiveMatches(matches)) return true;
+    const slots = buildSommerfestTournamentSlots(matches);
+    let finished = 0;
+    for (const slot of slots) {
+      const badge = slot.match ? publicMatchStatusBadge(slot.match.status) : "upcoming";
+      if (badge === "finished") finished++;
+    }
+    return isSommerfestTournamentInProgress(finished, slots.length);
+  }, [matches]);
 
   return (
     <PublicClubPageGate section="matches">
-      <PublicClubSection
-        title={t.sommerfest2026.tournamentPageTitle}
-        subtitle={t.sommerfest2026.tournamentPageSubtitle}
-      >
-        <div className="mx-auto max-w-3xl">
-          <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
+      <section className="border-t border-[color:var(--club-border)]/80 py-5 sm:py-12">
+        <div className={`${publicClubSectionContainer} space-y-4 sm:space-y-6`}>
+          <SommerfestHero
+            variant="matches"
+            shareUrl={showBoard ? tournamentSharePath : undefined}
+            isLive={showBoard && tournamentIsLive}
+          />
+
+          <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-0.5 text-sm [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-2 sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
             <Link
-              to={eventsHref}
-              className="inline-flex items-center gap-1 font-medium text-[color:var(--club-primary)] hover:underline"
+              to={homeHref}
+              className="inline-flex min-h-10 shrink-0 snap-start items-center gap-1.5 font-medium text-[color:var(--club-primary)] active:underline sm:min-h-0"
             >
               <ArrowLeft className="h-4 w-4" />
+              {t.common.home}
+            </Link>
+            <Link
+              to={eventsHref}
+              className="inline-flex min-h-10 shrink-0 snap-start items-center text-[color:var(--club-muted)] active:text-[color:var(--club-foreground)] sm:min-h-0"
+            >
               {t.sommerfest2026.backToEvent}
             </Link>
-            <Link to={matchesHref} className="text-[color:var(--club-muted)] hover:text-[color:var(--club-foreground)]">
+            <Link
+              to={matchesHref}
+              className="inline-flex min-h-10 shrink-0 snap-start items-center text-[color:var(--club-muted)] active:text-[color:var(--club-foreground)] sm:min-h-0"
+            >
               {t.clubPage.homeViewAllMatches}
             </Link>
           </div>
@@ -119,15 +150,15 @@ export default function PublicClubTournamentPage() {
               {t.sommerfest2026.tournamentUnavailable}
             </p>
           ) : loadingData || loading ? (
-            <div className="flex justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-[color:var(--club-primary)]" />
+            <div className="flex justify-center py-20">
+              <Loader2 className="h-9 w-9 animate-spin text-[color:var(--club-primary)]" />
             </div>
           ) : error ? (
             <p className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-6 text-sm text-red-700 dark:text-red-300">
               {error}
             </p>
           ) : matches.length === 0 ? (
-            <div className="rounded-2xl club-glass px-4 py-6 text-sm text-[color:var(--club-muted)]">
+            <div className="rounded-2xl club-glass px-5 py-8 text-sm text-[color:var(--club-muted)]">
               <div className="mb-2 flex items-center gap-2 font-semibold text-[color:var(--club-foreground)]">
                 <Radio className="h-4 w-4" />
                 {t.sommerfest2026.tournamentPendingTitle}
@@ -143,7 +174,7 @@ export default function PublicClubTournamentPage() {
             />
           )}
         </div>
-      </PublicClubSection>
+      </section>
     </PublicClubPageGate>
   );
 }

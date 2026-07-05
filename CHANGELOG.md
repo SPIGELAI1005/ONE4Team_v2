@@ -3,6 +3,41 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-05 (Sommerfest tournament UX polish, public AI 4 T RBAC, match detail fix)
+
+### Sommerfest 2026 — public tournament page UX
+- **`sommerfest-hero.tsx`:** Poster flush to hero right edge (full-height **`object-cover`**); **Share tournament** button (**`sommerfest-share-button.tsx`**, native share / WhatsApp / copy link); mobile side-by-side text + poster; left-aligned title/description on small screens.
+- **Live hero backlight:** Pulsating red glow when matches are **`in_progress`** or tournament day in progress (**`hasSommerfestLiveMatches`**, **`isSommerfestTournamentInProgress`**); glow uses poster **left-edge contour** (outward box-shadow only — never tints the image).
+- **`public-sommerfest-tournament-board.tsx`:** Five KPI stats (Live / Finished / Upcoming / Total / **Goals**); high-contrast **live red** styling (Live stat, score pills, **Jetzt live** block, match rows) via **`index.css`** **`.sommerfest-tournament-*-live-*`** utilities; **team logos** on match cards (**`sommerfestSlotSideLogos`**, opponent logo lookup); away team **right-aligned** with icon; compact mobile time-group cards; sticky category filters (single row); mobile **fixed bottom live bar** with horizontal swipe.
+- **`public-club-messages-hub.tsx` + CSS:** When live bar visible, Messages FAB **icon-only**, lifted above bar (no overlap with live score cards).
+- **`tsv-allach-sommerfest-competition.ts`:** **`sommerfestSlotSideLogos`**, **`buildSommerfestOpponentLogoLookup`**; tournament fetch includes **`opponent_logo_url`**.
+
+### Public club — AI 4 T role-based access
+- **`public-club-ai-role.ts`:** Maps membership role → guide prompts, agent tab visibility, context scope; unit tests **`public-club-ai-role.test.ts`**.
+- **`public-club-ai4t-modal.tsx`:** Signed-in users see **Guide** prompts for their role only; Agent tab hidden for non-trainer/admin.
+- **`Ai4tEmbedChat.tsx`:** Club embed passes role-scoped context; **`variant="club"`** composer styling.
+- **`Ai4tChatComposer.tsx`**, **`AiAgentWorkspace.tsx`:** Light club styling on public modal / compact composer (no dark/black input bar).
+- **`supabase/functions/co-trainer/index.ts`**, **`ai4team_scope.ts`:** Server resolves club role (admin/trainer RPCs + membership); role-specific system prompts for co-trainer. **Operator:** redeploy **`co-trainer`** Edge function for production RBAC prompts.
+
+### Bug fixes
+- **`public-club-match-detail-page.tsx`:** Fixed **`enabled` before initialization** ReferenceError (SEO effect used `enabled` before declaration).
+
+### Sommerfest live pulse
+- **`sommerfest-live-pulse.ts`:** **`hasSommerfestLiveMatches()`** for hero glow and live-first UX; tests extended in **`sommerfest-live-pulse.test.ts`**.
+
+### i18n
+- **`en.ts` / `de.ts`:** Tournament share strings, goals stat, mobile live swipe hint, guide role copy; removed trailing hero description suffix.
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`HOLD.md`**, **`README.md`**, **`ROADMAP.md`**, **`docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`**, **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**, **`docs/PRODUCTION_RELEASE_CHECKLIST.md`**.
+
+### Operator smoke
+- **`/club/tsv-allach-09/tournament/sommerfest-2026`:** Kick off a match in **Matches** → Live stat + hero glow + bottom live bar; share button; team icons on cards.
+- **Mobile:** Scroll schedule with live matches — Messages bubble compact above live bar.
+- **Public match detail:** Open a published Sommerfest fixture URL — page loads without console error.
+- **AI 4 T modal (signed-in player):** Agent tab hidden; Guide shows player prompts only.
+- **Deploy:** **`co-trainer`** Edge after pull if public AI role prompts not yet live in Supabase.
+
 ## 2026-07-03 (Member invite UX, social previews, Sommerfest banner, dashboard club return)
 
 ### Dashboard navigation fix

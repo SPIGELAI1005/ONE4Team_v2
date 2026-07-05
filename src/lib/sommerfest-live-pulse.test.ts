@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { isSommerfestLivePulsateActive, sommerfestBannerMatchStats } from "@/lib/sommerfest-live-pulse";
+import {
+  hasSommerfestLiveMatches,
+  isSommerfestLivePulsateActive,
+  isSommerfestTournamentInProgress,
+  sommerfestBannerMatchStats,
+} from "@/lib/sommerfest-live-pulse";
 
 describe("sommerfest-live-pulse", () => {
   it("is inactive before 11 July 2026", () => {
@@ -12,6 +17,34 @@ describe("sommerfest-live-pulse", () => {
 
   it("stays active after festival day", () => {
     expect(isSommerfestLivePulsateActive(new Date("2026-07-12T12:00:00+02:00"))).toBe(true);
+  });
+});
+
+describe("isSommerfestTournamentInProgress", () => {
+  const festivalDay = new Date("2026-07-11T14:00:00+02:00");
+  const beforeFestival = new Date("2026-07-10T12:00:00+02:00");
+
+  it("is false before festival day", () => {
+    expect(isSommerfestTournamentInProgress(0, 22, beforeFestival)).toBe(false);
+  });
+
+  it("is true on festival day while matches remain open", () => {
+    expect(isSommerfestTournamentInProgress(5, 22, festivalDay)).toBe(true);
+    expect(isSommerfestTournamentInProgress(0, 22, festivalDay)).toBe(true);
+  });
+
+  it("is false once every planned match is finished", () => {
+    expect(isSommerfestTournamentInProgress(22, 22, festivalDay)).toBe(false);
+  });
+});
+
+describe("hasSommerfestLiveMatches", () => {
+  it("is true when any row is in_progress", () => {
+    expect(hasSommerfestLiveMatches([{ status: "scheduled" }, { status: "in_progress" }])).toBe(true);
+  });
+
+  it("is false when no row is in_progress", () => {
+    expect(hasSommerfestLiveMatches([{ status: "scheduled" }, { status: "completed" }])).toBe(false);
   });
 });
 

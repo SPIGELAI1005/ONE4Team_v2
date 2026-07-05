@@ -219,10 +219,20 @@ Configured at [resend.com/domains](https://resend.com/domains) — **separate fr
 - [ ] Share club URL in WhatsApp — preview shows club branding (after Facebook Debugger cache refresh)
 - [ ] Dashboard **Club page** link visible when user browsed public club then opened dashboard
 
+### TSV Allach Sommerfest (Jul 2026 pilot)
+
+- [ ] **Matches** → **Turnier für Fans veröffentlichen** syncs 22 fixtures
+- [ ] Kick off / full time updates scores on **`/club/tsv-allach-09/tournament/sommerfest-2026`**
+- [ ] Live KPI, hero left-edge glow, mobile bottom live bar when match **`in_progress`**
+- [ ] Share tournament button; team logos on match cards
+- [ ] Public match detail page loads (no console error)
+
 ### AI 4 T (if enabled)
 
 - [ ] Settings → AI provider → **Test connection** succeeds
 - [ ] `/co-trainer` chat responds
+- [ ] Redeploy **`co-trainer`** after 2026-07-05 role-specific prompt changes (`supabase functions deploy co-trainer`)
+- [ ] Public club **AI 4 T** modal: player sees Guide only (Agent tab hidden); signed-in guide prompts match role
 - [ ] Agent workflows propose/confirm (if plan allows)
 
 ### Billing (if enabled)

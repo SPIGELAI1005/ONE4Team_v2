@@ -311,7 +311,7 @@ export function PublicClubMessagesHub() {
   return createPortal(
     <div className="text-[color:var(--club-foreground)]" style={publicClubCssVars(club)}>
       <motion.div
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-end p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6"
+        className="public-club-messages-fab-anchor pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex justify-end p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6"
         animate={{ y: toastVisible ? -TOAST_LIFT_PX : 0 }}
         transition={{ type: "spring", stiffness: 420, damping: 32 }}
       >
@@ -323,24 +323,24 @@ export function PublicClubMessagesHub() {
           whileTap={{ scale: 0.96 }}
           onClick={() => setOpen(true)}
           className={cn(
-            "group pointer-events-auto flex items-center gap-2.5 rounded-full px-3 py-2 sm:px-4 sm:py-2.5",
+            "public-club-messages-fab group pointer-events-auto flex items-center gap-2.5 rounded-full px-3 py-2 sm:gap-2.5 sm:px-4 sm:py-2.5",
             "border-[2.5px] border-black/15 bg-white text-neutral-900",
             "shadow-[0_10px_36px_rgba(0,0,0,0.32),0_2px_10px_rgba(0,0,0,0.14)]",
             "ring-2 ring-white/90",
-            "transition-[box-shadow,transform,border-color] duration-300",
+            "transition-[box-shadow,transform,border-color,padding] duration-300",
             "hover:border-[#e31e24]/70 hover:shadow-[0_14px_44px_rgba(0,0,0,0.36)]",
           )}
           aria-label={t.clubPage.messagesHubOpen}
         >
-          <span className="relative flex h-10 w-10 shrink-0 items-center justify-center">
-            <Ai4TLogo variant="bubble" className="h-9 w-9" />
+          <span className="public-club-messages-fab-icon relative flex h-10 w-10 shrink-0 items-center justify-center sm:h-10 sm:w-10">
+            <Ai4TLogo variant="bubble" className="h-9 w-9 sm:h-9 sm:w-9" />
             {unreadCount > 0 ? (
               <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-white bg-[#e31e24] px-1 text-[9px] font-bold text-white shadow-sm">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             ) : null}
           </span>
-          <span className="pr-0.5 text-sm font-semibold tracking-tight transition-colors group-hover:text-[#e31e24]">
+          <span className="public-club-messages-fab-label pr-0.5 text-sm font-semibold tracking-tight transition-colors group-hover:text-[#e31e24]">
             {t.clubPage.messagesHubLabel}
           </span>
         </motion.button>

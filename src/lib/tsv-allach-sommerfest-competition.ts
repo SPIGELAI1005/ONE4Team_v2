@@ -7,6 +7,11 @@ import {
   SOMMERFEST_MATCH_IMPORT_KEY_PREFIX,
 } from "@/lib/tsv-allach-sommerfest-match-sync";
 import type { PublicMatchLite } from "@/lib/public-club-models";
+import {
+  buildPublicMatchOpponentLogoLookup,
+  publicMatchSideLogos,
+} from "@/lib/public-club-match-display";
+import { resolveShowcaseTeamId } from "@/lib/tsv-allach-public-matches";
 import { resolveCanonicalYouthTeamName } from "@/lib/youth-team-label";
 
 export const SOMMERFEST_COMPETITION_NAME = "Sommerfest 2026";
@@ -14,7 +19,7 @@ export const SOMMERFEST_TOURNAMENT_SLUG = "sommerfest-2026";
 export const SOMMERFEST_EVENT_IMPORT_KEY = "tsv-sommerfest-2026";
 
 const MATCH_SELECT =
-  "id, opponent, is_home, match_date, location, status, home_score, away_score, competition_id, team_id, notes, publish_to_public_schedule, public_match_detail_enabled, competitions(name), teams(name)";
+  "id, opponent, is_home, match_date, location, status, home_score, away_score, competition_id, team_id, notes, opponent_logo_url, publish_to_public_schedule, public_match_detail_enabled, competitions(name), teams(name)";
 
 export interface SommerfestDbMatchRow {
   id: string;
@@ -28,6 +33,7 @@ export interface SommerfestDbMatchRow {
   competition_id: string | null;
   team_id: string | null;
   notes: string | null;
+  opponent_logo_url?: string | null;
   publish_to_public_schedule?: boolean | null;
   public_match_detail_enabled?: boolean | null;
   competitions?: { name: string } | null;
@@ -173,6 +179,61 @@ export function sommerfestSlotAwayName(
     return `Eltern (${resolveCanonicalYouthTeamName(teams, template.homeTeam)})`;
   }
   return resolveCanonicalYouthTeamName(teams, template.awayTeam);
+}
+
+function sommerfestSlotLogoMatch(
+  slot: SommerfestTournamentSlot,
+  teams: { id: string; name: string }[],
+): Pick<PublicMatchLite, "opponent" | "is_home" | "opponent_logo_url" | "team_id" | "teams"> {
+  if (slot.match) {
+    return {
+      is_home: slot.match.is_home,
+      opponent: slot.match.opponent,
+      opponent_logo_url: slot.match.opponent_logo_url ?? null,
+      team_id: slot.match.team_id,
+      teams: slot.match.teams ?? null,
+    };
+  }
+
+  const homeTeam = resolveCanonicalYouthTeamName(teams, slot.template.homeTeam);
+  const opponent =
+    slot.template.awayTeam.toLowerCase() === "eltern"
+      ? `Eltern (${homeTeam})`
+      : resolveCanonicalYouthTeamName(teams, slot.template.awayTeam);
+
+  return {
+    is_home: true,
+    opponent,
+    opponent_logo_url: null,
+    team_id: resolveShowcaseTeamId(teams, slot.template.homeTeam),
+    teams: { name: homeTeam },
+  };
+}
+
+export function sommerfestSlotSideLogos(
+  slot: SommerfestTournamentSlot,
+  teams: { id: string; name: string }[],
+  clubLogoUrl: string | null | undefined,
+  logoLookup: Map<string, string>,
+): { homeLogo: string | null; awayLogo: string | null } {
+  const matchForLogo = sommerfestSlotLogoMatch(slot, teams);
+  return publicMatchSideLogos(
+    {
+      id: slot.match?.id ?? slot.template.id,
+      match_date: slot.match?.match_date ?? "",
+      ...matchForLogo,
+    },
+    teams,
+    clubLogoUrl,
+    logoLookup,
+  );
+}
+
+export function buildSommerfestOpponentLogoLookup(
+  dbMatches: SommerfestDbMatchRow[],
+  teams: { id: string; name: string }[],
+): Map<string, string> {
+  return buildPublicMatchOpponentLogoLookup(dbMatches as PublicMatchLite[], teams);
 }
 
 export function isSommerfestCompetitionMatch(match: Pick<PublicMatchLite, "competitions" | "notes">): boolean {

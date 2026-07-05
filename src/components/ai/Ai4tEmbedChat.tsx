@@ -13,7 +13,7 @@ import { useAi4TeamVoice } from "@/hooks/use-ai4team-voice";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { buildClubContext, mergeQuickPrompts, type ClubQuickPrompt } from "@/lib/ai-context";
-import type { AiContextScope } from "@/lib/ai-agent-access";
+import { aiRoleToContextScope } from "@/lib/public-club-ai-role";
 import { buildFollowUpPrompts } from "@/lib/ai-follow-up-prompts";
 import { Ai4tFollowUpChips } from "@/components/ai/Ai4tFollowUpChips";
 import { useUserTeamIds } from "@/hooks/use-user-team-ids";
@@ -123,13 +123,7 @@ export function Ai4tEmbedChat({
         .eq("status", "active")
         .maybeSingle();
       const isAdmin = membershipRes.data?.role === "admin" || membershipRes.data?.role === "club_admin";
-      const embedScope: AiContextScope = publicTeamId
-        ? "public"
-        : roleKey === "player"
-          ? "player"
-          : roleKey === "trainer" || roleKey === "admin"
-            ? "staff"
-            : "member";
+      const embedScope = aiRoleToContextScope(roleKey, publicTeamId);
 
       try {
         const data = await buildClubContext(supabase, {
@@ -474,6 +468,7 @@ export function Ai4tEmbedChat({
       ) : null}
 
       <Ai4tChatComposer
+        variant="club"
         value={input}
         onChange={setInput}
         onSend={() => void handleSend()}

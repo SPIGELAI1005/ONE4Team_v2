@@ -15,10 +15,11 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Ai4TWordmark } from "@/components/ai/Ai4TWordmark";
 import { BrandedText } from "@/components/ai/Ai4TBrand";
-import { Ai4tEmbedChat, mapMembershipRole } from "@/components/ai/Ai4tEmbedChat";
+import { Ai4tEmbedChat } from "@/components/ai/Ai4tEmbedChat";
 import { AiAgentWorkspace } from "@/components/ai-agent/AiAgentWorkspace";
 import { ClubScopedAiAgentProvider } from "@/contexts/ai-agent-context";
 import { usePublicClub } from "@/contexts/public-club-context";
+import { usePublicClubReportPersona } from "@/hooks/use-public-club-report-persona";
 import { useLanguage } from "@/hooks/use-language";
 import {
   AI4T_INTRO_ROLES,
@@ -26,19 +27,16 @@ import {
   getAi4TAssistantRoleName,
   type Ai4TRoleKey,
 } from "@/lib/ai-4-t-role-prompts";
+import {
+  aiRoleToAgentPerms,
+  resolvePublicClubAiRole,
+} from "@/lib/public-club-ai-role";
 import { clubAi4tModalOverlayClass, clubAi4tModalPanelClass } from "@/lib/public-club-glass-classes";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { ai4tMainTabListClass, ai4tMainTabTriggerClass } from "@/lib/ai4t-tab-classes";
 
 const FEATURE_IDS = ["chat", "agent", "plans", "context", "workflows", "history"] as const;
 type FeatureId = (typeof FEATURE_IDS)[number];
-
-function memberRoleToAgentPerms(role: Ai4TRoleKey): { canManageSchedule: boolean; canManageMembers: boolean } {
-  if (role === "admin") return { canManageSchedule: true, canManageMembers: true };
-  if (role === "trainer") return { canManageSchedule: true, canManageMembers: false };
-  return { canManageSchedule: false, canManageMembers: false };
-}
 
 const FEATURE_ICONS: Record<FeatureId, typeof MessageSquare> = {
   chat: MessageSquare,
@@ -63,17 +61,27 @@ export function PublicClubAi4tModal() {
     ai4teamLaunch,
     goToAuthWithReturn,
     homeTeamFilterId,
+    membershipId,
+    membershipRole,
   } = usePublicClub();
 
   const isSignedIn = Boolean(user);
   const [mainTab, setMainTab] = useState<"chat" | "agent" | "guide">("chat");
   const [guideRole, setGuideRole] = useState<Ai4TRoleKey>("trainer");
   const [chatSeed, setChatSeed] = useState<string | null>(null);
-  const [memberRole, setMemberRole] = useState<Ai4TRoleKey>("member");
+  const { persona, loading: personaLoading } = usePublicClubReportPersona(club?.id, membershipId, membershipRole);
+  const memberRole = useMemo(
+    () => (isSignedIn ? resolvePublicClubAiRole(persona, membershipRole) : ("member" as Ai4TRoleKey)),
+    [isSignedIn, membershipRole, persona],
+  );
 
-  const guidePrompts = useMemo(() => buildAi4TRoleQuickPrompts(guideRole, language), [guideRole, language]);
-  const assistantName = getAi4TAssistantRoleName(guideRole);
-  const agentPerms = useMemo(() => memberRoleToAgentPerms(memberRole), [memberRole]);
+  const guidePrompts = useMemo(
+    () => buildAi4TRoleQuickPrompts(isSignedIn ? memberRole : guideRole, language),
+    [guideRole, isSignedIn, language, memberRole],
+  );
+  const assistantName = getAi4TAssistantRoleName(isSignedIn ? memberRole : guideRole);
+  const guideLimitsRole = isSignedIn ? memberRole : guideRole;
+  const agentPerms = useMemo(() => aiRoleToAgentPerms(memberRole), [memberRole]);
   const showAgentTab = isSignedIn && (agentPerms.canManageSchedule || agentPerms.canManageMembers);
   const returnPath = `${basePath}${searchSuffix}`;
 
@@ -95,25 +103,10 @@ export function PublicClubAi4tModal() {
   }, [showAi4tModal, isSignedIn, user, club?.id, ai4tInitialPrompt]);
 
   useEffect(() => {
-    if (!showAi4tModal || !isSignedIn || !user?.id || !club?.id) {
-      setMemberRole("member");
-      return;
+    if (showAi4tModal && isSignedIn) {
+      setGuideRole(memberRole);
     }
-    let cancelled = false;
-    void supabase
-      .from("club_memberships")
-      .select("role")
-      .eq("club_id", club.id)
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!cancelled) setMemberRole(mapMembershipRole(data?.role));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [showAi4tModal, isSignedIn, user?.id, club?.id]);
+  }, [showAi4tModal, isSignedIn, memberRole]);
 
   useEffect(() => {
     if (!showAi4tModal) return;
@@ -229,7 +222,7 @@ export function PublicClubAi4tModal() {
                   <BrandedText text={intro.overview} />
                 </p>
 
-                {intro.guideRoleLimits[guideRole] ? (
+                {intro.guideRoleLimits[guideLimitsRole] ? (
                   <div className="mt-4 rounded-2xl border border-neutral-200/80 bg-neutral-50/80 p-4">
                     <h3 className="text-sm font-semibold text-neutral-900">{intro.guideRoleLimitsTitle}</h3>
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -238,7 +231,7 @@ export function PublicClubAi4tModal() {
                           {intro.guideCan}
                         </div>
                         <ul className="mt-1.5 space-y-1 text-xs text-neutral-700">
-                          {intro.guideRoleLimits[guideRole].can.map((line) => (
+                          {intro.guideRoleLimits[guideLimitsRole].can.map((line) => (
                             <li key={line}>• {line}</li>
                           ))}
                         </ul>
@@ -248,7 +241,7 @@ export function PublicClubAi4tModal() {
                           {intro.guideCannot}
                         </div>
                         <ul className="mt-1.5 space-y-1 text-xs text-neutral-700">
-                          {intro.guideRoleLimits[guideRole].cannot.map((line) => (
+                          {intro.guideRoleLimits[guideLimitsRole].cannot.map((line) => (
                             <li key={line}>• {line}</li>
                           ))}
                         </ul>
@@ -280,25 +273,36 @@ export function PublicClubAi4tModal() {
                       {assistantName}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-neutral-500">{intro.examplePromptsHintClub}</p>
+                  <p className="mt-1 text-xs text-neutral-500">
+                    {isSignedIn ? intro.guidePromptsForYourRole : intro.examplePromptsHintClub}
+                  </p>
 
-                  <div className="mt-3 flex gap-1.5 overflow-x-auto px-0.5 py-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                    {AI4T_INTRO_ROLES.map((role) => (
-                      <button
-                        key={role}
-                        type="button"
-                        onClick={() => setGuideRole(role)}
-                        className={cn(
-                          "box-border shrink-0 rounded-full border-2 px-3 py-1.5 text-xs font-medium transition-colors",
-                          guideRole === role
-                            ? "border-[color:var(--club-primary)] bg-[color:var(--club-primary)]/10 text-neutral-900"
-                            : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50",
-                        )}
-                      >
-                        {intro.roles[role]}
-                      </button>
-                    ))}
-                  </div>
+                  {!isSignedIn ? (
+                    <div className="mt-3 flex gap-1.5 overflow-x-auto px-0.5 py-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      {AI4T_INTRO_ROLES.map((role) => (
+                        <button
+                          key={role}
+                          type="button"
+                          onClick={() => setGuideRole(role)}
+                          className={cn(
+                            "box-border shrink-0 rounded-full border-2 px-3 py-1.5 text-xs font-medium transition-colors",
+                            guideRole === role
+                              ? "border-[color:var(--club-primary)] bg-[color:var(--club-primary)]/10 text-neutral-900"
+                              : "border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50",
+                          )}
+                        >
+                          {intro.roles[role]}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-3">
+                      <span className="inline-flex rounded-full border border-[color:var(--club-primary)]/30 bg-[color:var(--club-primary)]/10 px-3 py-1 text-xs font-medium text-neutral-900">
+                        {intro.roles[memberRole]}
+                        {personaLoading ? " …" : null}
+                      </span>
+                    </div>
+                  )}
 
                   <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {guidePrompts.map((qp) => (

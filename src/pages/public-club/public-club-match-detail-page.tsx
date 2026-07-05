@@ -34,6 +34,9 @@ export default function PublicClubMatchDetailPage() {
     [club?.micrositePrivacy.showMatchResultsPublic, row]
   );
 
+  const enabled = row?.public_match_detail_enabled === true;
+  const badge = row ? publicMatchStatusBadge(row.status) : "upcoming";
+
   useEffect(() => {
     if (!club?.id || !matchId) {
       setLoading(false);
@@ -82,8 +85,6 @@ export default function PublicClubMatchDetailPage() {
   }, [club, enabled, locale, row, setExtras, teams]);
 
   const listHref = `${basePath}/${PUBLIC_CLUB_ROUTE_SEGMENTS.matches}${searchSuffix}`;
-  const enabled = row?.public_match_detail_enabled === true;
-  const badge = row ? publicMatchStatusBadge(row.status) : "upcoming";
 
   const opponentLogoLookup = useMemo(() => {
     const merged = mergePublicMatchLists(publicMatches, publicMatchesUpcoming);

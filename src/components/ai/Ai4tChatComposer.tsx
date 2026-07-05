@@ -92,7 +92,7 @@ export function Ai4tChatComposer({
             "ai4t-subtle-scroll box-border min-h-[56px] max-h-[min(28vh,240px)] flex-1 resize-none overflow-y-hidden rounded-xl border px-3 py-3 text-sm leading-relaxed focus-visible:outline-none",
             isDashboard
               ? "border-border bg-card text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
-              : "border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-400 focus-visible:ring-2 focus-visible:ring-[color:var(--club-primary)]/40",
+              : "border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-400 focus-visible:ring-2 focus-visible:ring-[color:var(--club-primary)]/40 [color-scheme:light]",
           )}
         />
         <Ai4TSendButton

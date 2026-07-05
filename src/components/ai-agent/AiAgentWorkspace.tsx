@@ -1089,7 +1089,7 @@ export function AiAgentWorkspace({
       </div>
 
       {compact ? (
-        <div className="relative z-10 shrink-0 space-y-2 border-t border-border bg-background/90 px-1 pt-2 backdrop-blur-xl">
+        <div className="relative z-10 shrink-0 space-y-2 border-t border-neutral-200/80 bg-white/85 px-1 pt-2 backdrop-blur-sm">
           {pendingProposal ? (
             <AiAgentProposalCard
               proposal={pendingProposal}
@@ -1106,12 +1106,12 @@ export function AiAgentWorkspace({
             />
           ) : null}
           {nlClarifyQuestion ? (
-            <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-snug text-amber-100">
+            <p className="rounded-xl border border-amber-500/25 bg-amber-50 px-3 py-2 text-xs leading-snug text-amber-950">
               {nlClarifyQuestion}
             </p>
           ) : null}
           <Ai4tChatComposer
-            variant="dashboard"
+            variant="club"
             frameless
             value={nlInput}
             onChange={setNlInput}

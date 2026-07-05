@@ -70,6 +70,17 @@ Reference: **`docs/marketplace-implementation-plan.md`** §10.
 
 ## NOW (top priority)
 
+### Sommerfest tournament UX + public AI 4 T RBAC (2026-07-05) — code in repo
+- [x] **ALLACH-SOMMERFEST-004** Tournament hero share button + poster layout + live backlight (`sommerfest-hero.tsx`, `sommerfest-share-button.tsx`)
+- [x] **ALLACH-SOMMERFEST-005** Live board UX — goals KPI, team logos, high-contrast live red, mobile bottom bar (`public-sommerfest-tournament-board.tsx`, `index.css`)
+- [x] **ALLACH-SOMMERFEST-006** Messages FAB compact/lifted when mobile live bar visible (`public-club-messages-hub.tsx`)
+- [x] **ALLACH-SOMMERFEST-007** `hasSommerfestLiveMatches()` + hero glow trigger (`sommerfest-live-pulse.ts`)
+- [x] **AI4T-PUB-RBAC-001** Public club AI role mapping + modal/embed gates (`public-club-ai-role.ts`, `public-club-ai4t-modal.tsx`)
+- [x] **AI4T-PUB-RBAC-002** Co-trainer server role prompts (`co-trainer/index.ts`, `ai4team_scope.ts`)
+- [x] **PUB-FIX-001** Public match detail `enabled` TDZ fix (`public-club-match-detail-page.tsx`)
+- [ ] **AI4T-PUB-RBAC-OPS** Deploy **`co-trainer`** Edge on linked Supabase project
+- [ ] **ALLACH-SOMMERFEST-SMOKE** Festival day: publish → kick off → verify hero glow, live bar, share, logos on **`/club/tsv-allach-09/tournament/sommerfest-2026`**
+
 ### Member invite UX + public club accept (2026-07-03) — code in repo
 - [x] **INVITE-UX-001** Dashboard sidebar persona route fix (`02aabbc`)
 - [x] **INVITE-UX-002** Invite links route to **`/club/{slug}?invite=TOKEN`** (`0a4c2ab`)

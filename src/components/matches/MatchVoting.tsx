@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Trophy, Star, Check } from "lucide-react";
+import { Star, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
@@ -24,76 +24,105 @@ const MatchVoting = ({ matchId, matchStatus, members }: MatchVotingProps) => {
   const [results, setResults] = useState<VoteResult[]>([]);
   const [myMembershipId, setMyMembershipId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  const refreshVotes = async (membershipId: string | null) => {
+    const { data: votes } = await supabase
+      .from("match_votes")
+      .select("voter_membership_id, voted_for_membership_id")
+      .eq("match_id", matchId);
+
+    if (membershipId) {
+      const myV = (votes || []).find((v) => v.voter_membership_id === membershipId);
+      setMyVote(myV?.voted_for_membership_id || null);
+    } else {
+      setMyVote(null);
+    }
+
+    const tally: Record<string, number> = {};
+    (votes || []).forEach((v) => {
+      tally[v.voted_for_membership_id] = (tally[v.voted_for_membership_id] || 0) + 1;
+    });
+
+    const nameMap: Record<string, string> = {};
+    members.forEach((m) => {
+      nameMap[m.id] = m.profiles?.display_name || "Player";
+    });
+
+    const sorted = Object.entries(tally)
+      .map(([mid, count]) => ({ membership_id: mid, name: nameMap[mid] || "Player", votes: count }))
+      .sort((a, b) => b.votes - a.votes);
+    setResults(sorted);
+  };
 
   useEffect(() => {
     if (!clubId || !user) return;
     const fetch = async () => {
-      // Get my membership
+      setLoading(true);
       const { data: mem } = await supabase
-        .from("club_memberships").select("id").eq("club_id", clubId).eq("user_id", user.id).maybeSingle();
-      setMyMembershipId(mem?.id || null);
-
-      // Get votes
-      const { data: votes } = await supabase
-        .from("match_votes").select("voter_membership_id, voted_for_membership_id").eq("match_id", matchId);
-
-      if (votes && mem) {
-        const myV = votes.find(v => v.voter_membership_id === mem.id);
-        setMyVote(myV?.voted_for_membership_id || null);
-      }
-
-      // Tally
-      const tally: Record<string, number> = {};
-      (votes || []).forEach(v => {
-        tally[v.voted_for_membership_id] = (tally[v.voted_for_membership_id] || 0) + 1;
-      });
-
-      const nameMap: Record<string, string> = {};
-      members.forEach((m) => {
-        nameMap[m.id] = m.profiles?.display_name || "Player";
-      });
-
-      const sorted = Object.entries(tally)
-        .map(([mid, count]) => ({ membership_id: mid, name: nameMap[mid] || "Player", votes: count }))
-        .sort((a, b) => b.votes - a.votes);
-      setResults(sorted);
+        .from("club_memberships")
+        .select("id")
+        .eq("club_id", clubId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const membershipId = mem?.id || null;
+      setMyMembershipId(membershipId);
+      await refreshVotes(membershipId);
       setLoading(false);
     };
-    fetch();
+    void fetch();
   }, [clubId, user, matchId, members]);
 
+  const handleRemoveVote = async () => {
+    if (!myMembershipId || !myVote || submitting) return;
+    setSubmitting(true);
+    const { error } = await supabase
+      .from("match_votes")
+      .delete()
+      .eq("match_id", matchId)
+      .eq("voter_membership_id", myMembershipId);
+
+    setSubmitting(false);
+    if (error) {
+      toast({ title: "Could not remove vote", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    setMyVote(null);
+    await refreshVotes(myMembershipId);
+    toast({ title: "Vote removed" });
+  };
+
   const handleVote = async (votedForId: string) => {
-    if (!myMembershipId || !clubId || votedForId === myMembershipId) {
+    if (!myMembershipId || !clubId || submitting) return;
+    if (votedForId === myMembershipId) {
       toast({ title: "Can't vote for yourself", variant: "destructive" });
       return;
     }
-    const { error } = await supabase.from("match_votes").upsert({
-      match_id: matchId,
-      voter_membership_id: myMembershipId,
-      voted_for_membership_id: votedForId,
-      club_id: clubId,
-    }, { onConflict: "match_id,voter_membership_id" });
+    if (myVote === votedForId) {
+      await handleRemoveVote();
+      return;
+    }
 
-    if (error) { toast({ title: "Vote failed", description: error.message, variant: "destructive" }); return; }
+    setSubmitting(true);
+    const { error } = await supabase.from("match_votes").upsert(
+      {
+        match_id: matchId,
+        voter_membership_id: myMembershipId,
+        voted_for_membership_id: votedForId,
+        club_id: clubId,
+      },
+      { onConflict: "match_id,voter_membership_id" },
+    );
+    setSubmitting(false);
+
+    if (error) {
+      toast({ title: "Vote failed", description: error.message, variant: "destructive" });
+      return;
+    }
+
     setMyVote(votedForId);
-
-    // Update results locally
-    setResults(prev => {
-      const updated = [...prev];
-      const oldVote = prev.find(r => r.membership_id === myVote);
-      if (oldVote) oldVote.votes = Math.max(0, oldVote.votes - 1);
-      const newVote = updated.find(r => r.membership_id === votedForId);
-      if (newVote) { newVote.votes++; }
-      else {
-        const name = members.find(m => m.id === votedForId);
-        updated.push({
-          membership_id: votedForId,
-          name: name?.profiles?.display_name || "Player",
-          votes: 1,
-        });
-      }
-      return updated.filter(r => r.votes > 0).sort((a, b) => b.votes - a.votes);
-    });
+    await refreshVotes(myMembershipId);
     toast({ title: "Vote recorded! ⭐" });
   };
 
@@ -127,18 +156,38 @@ const MatchVoting = ({ matchId, matchStatus, members }: MatchVotingProps) => {
       )}
 
       {/* Vote buttons */}
-      <div className="space-y-1">
-        <p className="text-[10px] text-muted-foreground mb-2">
-          {myVote ? "Change your vote:" : "Cast your vote:"}
-        </p>
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[10px] text-muted-foreground">
+            {myVote ? "Change your vote or remove it:" : "Cast your vote:"}
+          </p>
+          {myVote ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={submitting}
+              onClick={() => void handleRemoveVote()}
+              className="h-7 rounded-lg border-destructive/30 px-2.5 text-[10px] text-muted-foreground hover:border-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              <X className="mr-1 h-3 w-3" />
+              Remove vote
+            </Button>
+          ) : null}
+        </div>
         <div className="flex flex-wrap gap-1">
           {members.filter(m => m.id !== myMembershipId).slice(0, 20).map(m => (
-            <button key={m.id} onClick={() => handleVote(m.id)}
-              className={`text-[10px] px-2 py-1 rounded-lg border transition-colors ${
+            <button
+              key={m.id}
+              type="button"
+              disabled={submitting}
+              onClick={() => void handleVote(m.id)}
+              className={`text-[10px] px-2 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
                 myVote === m.id
                   ? "bg-primary/10 border-primary text-primary"
                   : "border-border text-muted-foreground hover:text-foreground hover:border-primary/30"
-              }`}>
+              }`}
+            >
               {m.profiles?.display_name || "Player"}
             </button>
           ))}
