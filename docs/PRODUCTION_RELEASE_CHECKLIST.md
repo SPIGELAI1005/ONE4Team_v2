@@ -35,8 +35,13 @@ These can wait until you publish on Vercel; track them in **`TASKS.md` → DEPLO
 
 ### Auth (signup/login — separate from member invites)
 
-- [ ] **Authentication → URL configuration**: Site URL = your production URL (e.g. `https://one4team.com`)
-- [ ] Redirect URLs include production (and preview URLs if you use Vercel preview deploys)
+- [ ] **Authentication → URL configuration**: Site URL = canonical production URL (recommended: `https://www.one4team.com`)
+- [ ] **Redirect URLs** include:
+  - `https://www.one4team.com/**`
+  - `https://one4team.com/**` (if apex is used)
+  - Vercel preview URLs (if preview deploys call Edge Functions)
+- [ ] **Origin-based email links (by design):** magic links, signup confirmation, and **Copy invite link** use `window.location.origin` — operators must open the app on **`https://www.one4team.com`** before sending invites or magic links so recipients get production URLs (not `*.vercel.app`)
+- [ ] **Password reset:** Settings → reset email uses `redirectTo: {origin}/auth` (same as magic links); whitelist that URL in Redirect URLs above
 - [ ] **Email Templates** (Supabase Auth): confirm signup, magic link, reset password pasted from `supabase/email-templates/` (optional but recommended for branded auth emails)
 
 ### Storage
@@ -60,7 +65,13 @@ These can wait until you publish on Vercel; track them in **`TASKS.md` → DEPLO
 
 - [ ] Production domain added (e.g. `one4team.com` / `www.one4team.com`)
 - [ ] DNS points to Vercel; SSL certificate active (HTTPS)
-- [ ] Decide **apex vs www** and redirect consistently
+- [ ] Decide **apex vs www** and redirect consistently (recommended: apex → `www`, both in Supabase redirect URLs)
+
+### Post-investigation smoke (2026-07-05)
+
+- [ ] Open embedded club chat (public club → Messages) — pagination label matches visible message count (not “0 messages” when chat has rows)
+- [ ] From **`https://www.one4team.com`**, Settings → password reset — email link lands on `www` `/auth`, not demo Vercel URL
+- [ ] Send member invite from **`https://www.one4team.com`** — link uses `www` origin (or use Copy invite link after opening production URL)
 
 ---
 
@@ -76,7 +87,7 @@ Set in **Vercel → Project → Settings → Environment Variables → Productio
 
 ### Recommended
 
-- [ ] `VITE_PUBLIC_SITE_URL` = `https://one4team.com` (canonical URL for SEO / public club pages)
+- [ ] `VITE_PUBLIC_SITE_URL` = `https://www.one4team.com` (canonical URL for SEO / public club pages)
 - [ ] `VITE_APP_ENV` = `prod`
 - [ ] `VITE_PLATFORM_ADMIN_EMAILS` = comma-separated admin emails (or empty = no platform admin)
 - [ ] `VITE_DEV_UNLOCK_ALL_FEATURES` = **`false`**
@@ -265,7 +276,8 @@ Configured at [resend.com/domains](https://resend.com/domains) — **separate fr
 | Browser can call Edge Functions | **Supabase → Secrets → `EDGE_ALLOWED_ORIGINS`** |
 | Domain verified for `@yourdomain.com` | **Resend → Domains** + DNS at domain host |
 | Deploy invite email function | CLI: `supabase functions deploy send-club-invite-email` |
-| Auth signup/reset emails | **Supabase → Authentication → Email Templates** |
+| Auth signup/reset/magic link redirect | **Supabase → Authentication → URL configuration** + open app on production domain before sending |
+| RLS integration tests (optional) | **`docs/RLS_INTEGRATION_TEST.md`** — GitHub Actions `workflow_dispatch` job **`rls-integration`** |
 | Database schema | **Supabase → SQL migrations** |
 
 ---

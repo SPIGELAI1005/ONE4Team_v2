@@ -439,7 +439,7 @@ serve(async (req) => {
     }
 
     const proposal = run.proposal as AgentProposalPayload;
-    let steps = Array.isArray(proposal?.steps) ? [...proposal.steps] : [];
+    const steps = Array.isArray(proposal?.steps) ? [...proposal.steps] : [];
 
     const cancelOverride =
       typeof body.cancel_activity_id === "string" ? body.cancel_activity_id.trim() : "";

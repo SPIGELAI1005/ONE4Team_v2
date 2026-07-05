@@ -1,0 +1,28 @@
+name: RLS integration
+
+on:
+  workflow_dispatch:
+
+jobs:
+  rls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: RLS integration tests
+        run: npm test -- src/test/rls.integration.test.ts
+        env:
+          RLS_TEST_SUPABASE_URL: ${{ secrets.RLS_TEST_SUPABASE_URL }}
+          RLS_TEST_SUPABASE_ANON_KEY: ${{ secrets.RLS_TEST_SUPABASE_ANON_KEY }}
+          RLS_TEST_JWT_USER_A: ${{ secrets.RLS_TEST_JWT_USER_A }}
+          RLS_TEST_CLUB_A_ID: ${{ secrets.RLS_TEST_CLUB_A_ID }}
+          RLS_TEST_CLUB_B_ID: ${{ secrets.RLS_TEST_CLUB_B_ID }}

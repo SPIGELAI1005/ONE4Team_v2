@@ -135,6 +135,17 @@ Smoke: **`/payments`** Fee Types + Record payment (multi-package); **`/members`*
 
 See **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** sections **F**, **G**, **H** (Members & invites) and **`TASKS.md` DEPLOY-EMAIL-001**.
 
+## Production auth URLs — follow up before custom domain go-live
+
+Track **`OPS-AUTH-URL-001`** in **`TASKS.md`**.
+
+- Magic links, signup, and **Copy invite link** use **`window.location.origin`** — open **`https://www.one4team.com`** before sending so links are not `*.vercel.app`.
+- Password reset (Settings) uses **`redirectTo: {origin}/auth`** after code fix — whitelist **`https://www.one4team.com/auth`** in Supabase Redirect URLs.
+- Supabase Site URL should match canonical production (`https://www.one4team.com` recommended).
+- Vercel: apex **`one4team.com`** → redirect to **`www.one4team.com`**.
+
+Post-deploy smoke: embedded club chat pagination count; password reset from `www`.
+
 ## Invite redemption — pgcrypto repair (2026-07-31)
 If redeem shows **`function digest(text, unknown) does not exist`**, apply:
 

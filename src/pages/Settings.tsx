@@ -533,7 +533,9 @@ export default function Settings() {
     if (!user?.email || resetSending) return;
     setResetSending(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(user.email);
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
       if (error) throw error;
       toast({ title: t.settingsPage.resetLinkSent });
     } catch (err: unknown) {

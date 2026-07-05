@@ -159,7 +159,7 @@ export default function PublicClubNewsPage() {
   useEffect(() => {
     if (!club?.id || MOCK_FLAG) return;
     void resetAndLoad();
-  }, [MOCK_FLAG, club?.id, resetAndLoad]);
+  }, [club?.id, resetAndLoad]);
 
   const loadMore = useCallback(async () => {
     if (!club?.id || MOCK_FLAG || !hasMore || loadingMore) return;

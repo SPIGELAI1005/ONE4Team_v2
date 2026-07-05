@@ -1,6 +1,6 @@
 # ONE4Team — Comprehensive project audit
 
-**Audit date:** 2026-07-05 (updated for public messaging forward/share, microsite polish, Sommerfest mobile refinements; prior: tournament UX, public AI 4 T RBAC)  
+**Audit date:** 2026-07-06 (updated for bug investigation remediation: CI/lint green, communication pagination, auth URL ops, Supabase config gate; prior: public messaging forward/share, microsite polish, Sommerfest mobile refinements)  
 **Scope:** Codebase, architecture, UX/design, production readiness, competitive positioning, market value, and value-growth levers  
 **Primary reference (existing):** [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) — strict production-readiness review with risk register, readiness scores, and remediation sprints  
 
@@ -18,7 +18,7 @@ ONE4Team is a **mature-in-code, early-in-market** multi-tenant club management S
 | **Code & architecture** | Strong foundations; some god-components and i18n monoliths need refactor | **68** |
 | **UX & design** | Distinctive glass/iOS-style UI; DE market fit; occasional complexity on admin surfaces | **74** |
 | **Production readiness** | Conditionally ready for controlled rollout (aligns with ops audit **61** overall) | **61** |
-| **Test & quality gates** | CI guardrails, RLS integration tests, k6 scripts; unit tests thin on pages | **58** |
+| **Test & quality gates** | CI guardrails, RLS integration tests, k6 scripts; **309 unit tests + ESLint `--max-warnings 0` green (2026-07-06)**; optional RLS workflow | **62** |
 | **Commercial readiness** | Billing/shop wired; invite email pipeline new; domain/DNS ops still operator-heavy | **55** |
 
 **Bottom line:** The platform is **technically credible for pilot clubs** (e.g. TSV Allach 09) and **not yet optimized for unmanaged scale** (10k+ concurrent users, full observability, mobile native). Strategic value is in **German amateur-sports depth + AI-assisted ops + club-branded public web**, not in being a generic team chat app.
@@ -131,7 +131,7 @@ flowchart TB
 ### UX strengths
 
 - **Role-based dashboard** — admin sees finances/setup; trainer/player see sports widgets (`dashboard-section-visibility.ts`).
-- **Public club microsite** — mobile header, team filter (`?team=`), RSVP on schedule/matches, Messages hub (**Open Messages**), embedded Communication with forward-to-WhatsApp and readable composer (2026-07-05), Sommerfest live board with team logos/goals KPI/mobile live bar, mobile hero club logo + pulse (2026-07-05).
+- **Public club microsite** — mobile header, team filter (`?team=`), RSVP on schedule/matches, Messages hub (**Open Messages**), embedded Communication with forward-to-WhatsApp, readable composer, **accurate pagination footer** (2026-07-06), Sommerfest live board with team logos/goals KPI/mobile live bar, mobile hero club logo + pulse (2026-07-05).
 - **AI 4 T Agent** — contextual entry from Members/Teams/Activities; propose → confirm → execute reduces admin busywork.
 - **Member ops** — Excel/CSV import, draft → invite workflow, club card PNG export, team assignment from members and teams.
 - **Cookie consent** — GDPR-oriented preference centre (v2 schema in localStorage).

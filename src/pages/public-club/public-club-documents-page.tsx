@@ -132,7 +132,7 @@ export default function PublicClubDocumentsPage() {
       const blob = `${d.title} ${d.description ?? ""} ${d.category} ${catLabel}`.toLowerCase();
       return blob.includes(nq);
     });
-  }, [docs, category, nq]);
+  }, [docs, category, nq, t.clubPage]);
 
   const faqPreview = useMemo(() => faq.slice(0, 3), [faq]);
   const joinFaqHref = `${basePath}/${PUBLIC_CLUB_ROUTE_SEGMENTS.join}${searchSuffix}#faq`;

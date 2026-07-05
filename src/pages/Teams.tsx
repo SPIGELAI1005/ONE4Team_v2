@@ -1478,7 +1478,7 @@ const Teams = () => {
     return () => {
       cancelled = true;
     };
-  }, [showAddTeam, editingTeamId, supportsTeamCoachesTable, supportsTeamPublicPrivacy, supabase]);
+  }, [showAddTeam, editingTeamId, supportsTeamCoachesTable, supportsTeamPublicPrivacy]);
 
   const syncSessionBookings = async (params: {
     title: string;

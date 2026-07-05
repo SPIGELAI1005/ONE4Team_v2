@@ -117,7 +117,7 @@ export function PublicClubAi4tModal() {
     return () => window.removeEventListener("keydown", onKey);
   }, [showAi4tModal, setShowAi4tModal]);
 
-  const usePromptInChat = (prompt: string) => {
+  const applyPromptInChat = (prompt: string) => {
     setChatSeed(prompt);
     setMainTab("chat");
   };
@@ -309,7 +309,7 @@ export function PublicClubAi4tModal() {
                       <button
                         key={qp.label}
                         type="button"
-                        onClick={() => usePromptInChat(qp.prompt)}
+                        onClick={() => applyPromptInChat(qp.prompt)}
                         className="rounded-xl border border-neutral-200 bg-white p-3 text-left transition-colors hover:border-[color:var(--club-primary)]/40 hover:bg-neutral-50"
                       >
                         <div className="text-xs font-semibold text-neutral-900">{qp.label}</div>

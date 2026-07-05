@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { resolveCancelActivityIdFromHints, type UpcomingTrainingRow } from "@/lib/ai-agent/resolve-cancel-activity";
 
 const upcoming: UpcomingTrainingRow[] = [
@@ -12,6 +12,14 @@ const upcoming: UpcomingTrainingRow[] = [
 ];
 
 describe("resolve-cancel-activity", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-24T12:00:00.000Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
   it("matches team name and today hint", () => {
     const match = resolveCancelActivityIdFromHints(
       { team_name: "U12-1", date_hint: "today" },

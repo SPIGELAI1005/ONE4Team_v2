@@ -52,7 +52,7 @@ export function Ai4tChatComposer({
     const next = Math.min(Math.max(el.scrollHeight, minPx), maxPx);
     el.style.height = `${next}px`;
     el.style.overflowY = el.scrollHeight > maxPx ? "auto" : "hidden";
-  }, []);
+  }, [fieldRef]);
 
   useEffect(() => {
     syncTextareaHeight();

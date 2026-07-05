@@ -60,6 +60,15 @@ Reference: **`docs/marketplace-implementation-plan.md`** §10.
 
 **Blocked on C until domain verified:** Resend test sender `onboarding@resend.dev` only delivers to the Resend account email. Use **Copy invite link** for pilot until **DEPLOY-EMAIL-001c** is done.
 
+### Track D — Production auth URLs (operator)
+
+Reference: **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** §B Auth, §C Custom domain, post-investigation smoke.
+
+- [ ] **OPS-AUTH-URL-001** Supabase Site URL = `https://www.one4team.com` (or chosen canonical)
+- [ ] **OPS-AUTH-URL-001b** Redirect URLs: `https://www.one4team.com/**`, `https://one4team.com/**`, Vercel previews
+- [ ] **OPS-AUTH-URL-001c** Vercel apex → `www` redirect; open app on `www` before sending invites/magic links
+- [ ] **OPS-AUTH-URL-001-SMOKE** Password reset from `www` → link lands on `www/auth`; embedded chat pagination count matches visible messages
+
 ### Sprint — next after exit
 
 1. Complete **\*-SMOKE** rows above (TSV Allach / QA dual-role account).
@@ -69,6 +78,23 @@ Reference: **`docs/marketplace-implementation-plan.md`** §10.
 ---
 
 ## NOW (top priority)
+
+### Bug investigation remediation (2026-07-06) — code in repo
+- [x] **BUGFIX-001** Communication pagination count fallback + **`communication-pagination.ts`** tests
+- [x] **BUGFIX-002** Dashboard nav duplicate **`/reports`** / **`/player-stats`** keys removed
+- [x] **BUGFIX-003** **`applyPromptInChat`** rename (ESLint rules-of-hooks)
+- [x] **BUGFIX-004** Stable **`resolve-cancel-activity`** test (fake system time)
+- [x] **BUGFIX-005** Marketplace tab permission map (ESLint no-fallthrough)
+- [x] **BUGFIX-006** Password reset **`redirectTo: {origin}/auth`**
+- [x] **BUGFIX-007** Communication pagination i18n (EN/DE)
+- [x] **BUGFIX-008** Supabase config banner + prod missing-env gate
+- [x] **BUGFIX-009** ESLint green (**`--max-warnings 0`**) + hook-deps cleanup
+- [x] **BUGFIX-010** Lazy **`AnalyticsWidgets`**; hero default interim image path
+- [x] **BUGFIX-011** RLS integration docs + optional **`rls-integration`** workflow
+- [x] **BUGFIX-012** E2E **`loginAsE2eUser`** fixture; **`ai4t-smoke.spec.ts`** when creds set
+- [x] **BUGFIX-DOC-001** Doc sync — **`CHANGELOG.md`**, **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, ops/checklists
+- [ ] **OPS-AUTH-URL-001** Operator: Supabase Site URL + redirect URLs + Vercel apex→www (see **`HOLD.md`**)
+- [ ] **OPS-AUTH-URL-001-SMOKE** Embedded chat pagination label; password reset from **`www`** lands on **`/auth`**
 
 ### Public messaging + microsite polish (2026-07-05) — code in repo
 - [x] **COMM-FWD-001** Message forward menu — WhatsApp / native share / copy (`message-forward-button.tsx`, `share-utils.ts`)

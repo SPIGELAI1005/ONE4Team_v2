@@ -5,7 +5,11 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? '';
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '';
 
-if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+export function isSupabaseConfigured(): boolean {
+  return Boolean(SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY);
+}
+
+if (!isSupabaseConfigured()) {
   console.warn(
     '[ONE4Team] Missing Supabase environment variables (VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY). ' +
     'Auth and database features will not work. Set them in your .env or Vercel dashboard.'

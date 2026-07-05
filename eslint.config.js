@@ -28,4 +28,10 @@ export default tseslint.config(
       "no-empty": "warn",
     },
   },
+  {
+    files: ["src/contexts/**/*.{ts,tsx}", "src/components/ai/**/*.{ts,tsx}", "src/components/public-club/club-theme-provider.tsx", "src/components/public-club/public-club-section.tsx"],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
 );

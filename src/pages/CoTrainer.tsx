@@ -791,7 +791,6 @@ const CoTrainer = () => {
       clubId,
       language,
       toast,
-      t.coTrainerPage.chatErrorTitle,
       t.coTrainerPage.chatErrorHeading,
       t.coTrainerPage.chatErrorHint,
       t.coTrainerPage.chatErrorNoClub,

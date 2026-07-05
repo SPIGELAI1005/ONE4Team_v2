@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/hooks/use-language";
 import { motion } from "framer-motion";
@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { BrandedText } from "@/components/ai/Ai4TBrand";
-import AnalyticsWidgets from "@/components/dashboard/AnalyticsWidgets";
+const AnalyticsWidgets = lazy(() => import("@/components/dashboard/AnalyticsWidgets"));
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
 import LiveMatchTicker from "@/components/dashboard/LiveMatchTicker";
 import { TasksSummaryCard } from "@/components/dashboard/TasksSummaryCard";
@@ -518,7 +518,7 @@ const DashboardContent = () => {
     }
     if (isClubAdminPersona && activeClubId) return true;
     return Boolean(registrationSummary?.registration_track);
-  }, [activeClubId, externalPersona, registrationSummary, role]);
+  }, [activeClubId, externalPersona, isClubAdminPersona, registrationSummary]);
 
   const clubSetupDisplay = useMemo(() => {
     const isClubAdmin =
@@ -575,7 +575,7 @@ const DashboardContent = () => {
       slug: clubSetupProfile?.slug || activeClub?.slug || null,
       timezone: clubSetupProfile?.timezone || null,
     };
-  }, [activeClub, adminSnapshot, clubSetupProfile, registrationSummary, role, t]);
+  }, [activeClub, adminSnapshot, clubSetupProfile, isClubAdminPersona, registrationSummary, t]);
 
   const dashboardGreeting = `${t.dashboard.welcomeBack}${firstName ? `, ${firstName}` : ""}${activeClub?.name ? ` · ${activeClub.name}` : ""}`;
 
@@ -730,7 +730,11 @@ const DashboardContent = () => {
 
         {sections.financialSummary && isClubAdminPersona ? <FinancialSummary compact /> : null}
 
-        {sections.analyticsWidgets ? <AnalyticsWidgets /> : null}
+        {sections.analyticsWidgets ? (
+          <Suspense fallback={<div className="h-48 animate-pulse rounded-2xl bg-muted/40" />}>
+            <AnalyticsWidgets />
+          </Suspense>
+        ) : null}
         {sections.seasonProgression ? <SeasonProgressionChart /> : null}
         {sections.teamChemistry ? <TeamChemistry /> : null}
         {sections.achievementBadges ? <AchievementBadges /> : null}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Star, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ const MatchVoting = ({ matchId, matchStatus, members }: MatchVotingProps) => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  const refreshVotes = async (membershipId: string | null) => {
+  const refreshVotes = useCallback(async (membershipId: string | null) => {
     const { data: votes } = await supabase
       .from("match_votes")
       .select("voter_membership_id, voted_for_membership_id")
@@ -53,7 +53,7 @@ const MatchVoting = ({ matchId, matchStatus, members }: MatchVotingProps) => {
       .map(([mid, count]) => ({ membership_id: mid, name: nameMap[mid] || "Player", votes: count }))
       .sort((a, b) => b.votes - a.votes);
     setResults(sorted);
-  };
+  }, [matchId, members]);
 
   useEffect(() => {
     if (!clubId || !user) return;
@@ -71,7 +71,7 @@ const MatchVoting = ({ matchId, matchStatus, members }: MatchVotingProps) => {
       setLoading(false);
     };
     void fetch();
-  }, [clubId, user, matchId, members]);
+  }, [clubId, refreshVotes, user, matchId, members]);
 
   const handleRemoveVote = async () => {
     if (!myMembershipId || !myVote || submitting) return;

@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components -- context + provider colocated intentionally */
 import { createContext, useCallback, useMemo, useState, type ReactNode } from "react";
 
 export interface DashboardTopBarConfig {

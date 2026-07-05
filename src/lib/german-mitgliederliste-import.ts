@@ -100,7 +100,7 @@ export function deriveGermanMembershipStatus(
 export function normalizeGermanPhone(raw: string): string {
   const t = raw.trim();
   if (!t) return "";
-  if (/e[+\-]/i.test(t)) {
+  if (/e[+-]/i.test(t)) {
     const n = Number(t.replace(",", "."));
     if (Number.isFinite(n)) {
       const digits = String(Math.round(n));

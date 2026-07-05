@@ -57,7 +57,7 @@ export function SommerfestHero({
     return () => {
       cancelled = true;
     };
-  }, [clubId, clubLogoUrl, publicClub?.club?.logo_url]);
+  }, [clubId, clubLogoUrl, publicClub]);
 
   const resolvedLogoUrl =
     clubLogoUrl?.trim() || publicClub?.club?.logo_url?.trim() || fetchedClubBranding?.logoUrl || defaultLogo;

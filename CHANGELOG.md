@@ -3,6 +3,48 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-06 (Bug investigation remediation — CI, messaging, auth, quality)
+
+### Communication — pagination count fix
+- **`communication-pagination.ts` + tests:** **`resolveMessagePaginationCount`** and **`messagePaginationRange`** — fallback when Supabase `{ count: "exact" }` is 0/null but rows load; display never contradicts visible messages on page 1.
+- **`Communication.tsx`:** Head-only count query when primary count is zero; localized pagination footer (EN/DE).
+
+### Navigation, AI 4 T, tests, marketplace
+- **`dashboard-nav.ts`:** Removed duplicate **`/reports`** / **`/player-stats`** keys in **`pathnameToNavId`** (Vite duplicate-key warning).
+- **`public-club-ai4t-modal.tsx`:** Renamed **`usePromptInChat`** → **`applyPromptInChat`** (ESLint rules-of-hooks).
+- **`resolve-cancel-activity.test.ts`:** **`vi.setSystemTime(2026-06-24)`** — stabilizes **`date_hint: "today"`** (no longer date-flaky in CI).
+- **`marketplace-access.ts`:** **`CLUB_TAB_PERMISSION`** map replaces grouped switch (ESLint **`no-fallthrough`**).
+
+### Auth, i18n, Supabase client guard
+- **`Settings.tsx`:** Password reset uses **`redirectTo: ${window.location.origin}/auth`** (aligned with magic links; origin-based by design).
+- **`communicationPage` i18n:** **`messagesPaginationEmpty`**, **`messagesPaginationRange`**, **`paginationPrevious`**, **`paginationNext`** (EN/DE).
+- **`SupabaseConfigBanner.tsx` + `App.tsx`:** Dev banner when **`VITE_SUPABASE_*`** missing; prod blocking config screen instead of silent **`placeholder.supabase.co`**.
+- **`client.ts`:** **`isSupabaseConfigured()`** export.
+
+### Ops docs + test infrastructure
+- **`docs/PRODUCTION_RELEASE_CHECKLIST.md`:** Auth URL checklist (Site URL, redirect URLs, origin-based invites/magic links); post-investigation smoke items.
+- **`docs/RLS_INTEGRATION_TEST.md`:** Env vars + local run instructions.
+- **`.github/workflows/rls-integration.yml`:** Optional **`workflow_dispatch`** RLS job (secrets-gated).
+- **`TASKS.md` / `HOLD.md`:** **`OPS-AUTH-URL-001`** operator track.
+
+### E2E, lint, bundles, hero assets
+- **`e2e/fixtures/auth.ts`:** Shared **`loginAsE2eUser`** for **`E2E_AI4T_EMAIL`** / **`E2E_AI4T_PASSWORD`**; **`ai4t-smoke.spec.ts`** enabled when creds set.
+- **ESLint:** All errors/warnings cleared (**`npm run lint`** green with **`--max-warnings 0`**); hook-deps fixes across dashboard/public-club/matches; **`eslint.config.js`** context/ai react-refresh override.
+- **`DashboardContent.tsx`:** Lazy-load **`AnalyticsWidgets`** (charts chunk deferred).
+- **`club-hero-default-assets.ts`:** Interim fallback image path until final neutral PNGs ship under **`public/assets/club-hero-defaults/`**.
+
+### Verification
+- **`npm run lint`**, **`npm test`** (309 passed), **`npm run build`**, **`npm run budget:bundle`** — green.
+
+### Operator smoke (post-deploy)
+- Embedded club chat — pagination label matches visible messages (not “0 messages” when rows shown).
+- **`/reports`** / **`/player-stats`** — correct sidebar highlight.
+- Settings → password reset from production domain — link uses same origin **`/auth`** (whitelist in Supabase Redirect URLs).
+- Open app on **`https://www.one4team.com`** before sending invites/magic links (origin-based URLs unchanged).
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`HOLD.md`**, **`README.md`**, **`ROADMAP.md`**, **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**, **`docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`**, **`ops/PRODUCTION_READINESS_ARTIFACTS.md`**, **`ops/PRODUCTION_READINESS_EVIDENCE_LOG.md`**.
+
 ## 2026-07-05 (Public messaging forward/share, microsite polish, Sommerfest mobile refinements)
 
 ### Public club — embedded Communication UX

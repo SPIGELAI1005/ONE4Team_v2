@@ -13,6 +13,9 @@
 
 export const CLUB_HERO_DEFAULT_ASSET_BASE = "/assets/club-hero-defaults";
 
+/** Shared interim raster until final neutral hero PNGs are added under `public/assets/club-hero-defaults/`. */
+export const CLUB_HERO_INTERIM_FALLBACK_PATH = "/images/camps/sommer-fussball-camp-2026.png";
+
 export const CLUB_HERO_DEFAULT_FALLBACK_ID = "abstract-sports-pattern-neutral" as const;
 
 export interface ClubHeroDefaultAsset {
@@ -70,6 +73,6 @@ export function normalizeDefaultHeroAssetId(raw: unknown): string {
 export function getDefaultHeroAssetPublicPath(id: string | null | undefined): string {
   const normalized = normalizeDefaultHeroAssetId(id);
   const row = DEFAULT_CLUB_HERO_ASSETS.find((a) => a.id === normalized);
-  if (row) return row.path;
-  return DEFAULT_CLUB_HERO_ASSETS.find((a) => a.id === CLUB_HERO_DEFAULT_FALLBACK_ID)?.path ?? `${CLUB_HERO_DEFAULT_ASSET_BASE}/${CLUB_HERO_DEFAULT_FALLBACK_ID}.png`;
+  if (row) return CLUB_HERO_INTERIM_FALLBACK_PATH;
+  return CLUB_HERO_INTERIM_FALLBACK_PATH;
 }

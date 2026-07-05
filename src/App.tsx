@@ -18,6 +18,8 @@ import { RequireAnyModule } from "@/components/auth/require-any-module";
 import { ClubOnlyRoute, PartnerOnlyRoute, PersonaAwareAiRedirect } from "@/components/routing/PersonaPortalGate";
 import { PlanGate } from "@/components/plan-gate";
 import { dashboardRouteTransitionKey } from "@/lib/dashboard-nav";
+import { SupabaseConfigBanner, SupabaseConfigErrorScreen } from "@/components/SupabaseConfigBanner";
+import { isSupabaseConfigured } from "@/integrations/supabase/client";
 
 // Route-level code splitting (reduces initial bundle size)
 const Index = lazy(() => import("./pages/Index"));
@@ -657,6 +659,7 @@ function AppShell() {
 
   return (
     <div className="min-h-screen flex flex-col min-w-0 overflow-x-hidden">
+      <SupabaseConfigBanner />
       <div className="flex-1 min-w-0">
         <AnimatedRoutes />
       </div>
@@ -664,7 +667,16 @@ function AppShell() {
   );
 }
 
-const App = () => (
+const App = () => {
+  if (import.meta.env.PROD && !isSupabaseConfigured()) {
+    return (
+      <ThemeProvider>
+        <SupabaseConfigErrorScreen />
+      </ThemeProvider>
+    );
+  }
+
+  return (
   <ThemeProvider>
     <LanguageProvider>
     <QueryClientProvider client={queryClient}>
@@ -681,6 +693,7 @@ const App = () => (
     </QueryClientProvider>
     </LanguageProvider>
   </ThemeProvider>
-);
+  );
+};
 
 export default App;

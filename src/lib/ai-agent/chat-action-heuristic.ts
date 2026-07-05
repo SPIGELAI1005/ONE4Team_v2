@@ -17,7 +17,7 @@ export function shouldTryAgentInterpretation(message: string): boolean {
   if (hasAction.test(lower)) return true;
 
   // Voice-style short commands: "U17 Dienstag 18 Uhr", "Training morgen absagen"
-  if (/\b(u\d+|jugend|senior|damen|herren|u\s?\d+)\b/i.test(m) && /\b(\d{1,2}[:\.]\d{2}|\d{1,2}\s*uhr|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag|monday|tuesday|wednesday|thursday|friday|saturday|sunday|morgen|tomorrow|heute|today)\b/i.test(m)) {
+  if (/\b(u\d+|jugend|senior|damen|herren|u\s?\d+)\b/i.test(m) && /\b(\d{1,2}[:.]\d{2}|\d{1,2}\s*uhr|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonntag|monday|tuesday|wednesday|thursday|friday|saturday|sunday|morgen|tomorrow|heute|today)\b/i.test(m)) {
     return true;
   }
 

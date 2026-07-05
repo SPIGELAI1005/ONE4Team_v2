@@ -209,6 +209,16 @@ Public URL slug: **`sommerfest-2026`**. Match import keys: **`tsv-sommerfest-202
 
 **Deploy (2026-07-05):** Redeploy Edge **`co-trainer`** after pull for public AI 4 T role-specific system prompts.
 
+## Bug investigation remediation — messaging + auth (2026-07-06)
+
+| # | Task | Where |
+|---|------|--------|
+| BUG.1 | Embedded chat pagination label matches visible messages (not “0” when rows shown) | Public club → **Open Messages** |
+| BUG.2 | Password reset from production domain → email link lands on **`/auth`** on same origin | Settings → reset (after **`OPS-AUTH-URL-001`**) |
+| BUG.3 | Open **`https://www.one4team.com`** before sending invites/magic links (origin-based URLs) | Members / Auth |
+
+Code: **`communication-pagination.ts`**, **`Settings.tsx`** **`redirectTo`**, **`SupabaseConfigBanner`**. CI: **`npm run lint`** + **`npm test`** (309 passed). Optional RLS: **`docs/RLS_INTEGRATION_TEST.md`**.
+
 ---
 
 ## Member invite accept on public club page (2026-07-03)

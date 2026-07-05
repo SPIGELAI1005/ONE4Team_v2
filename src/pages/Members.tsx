@@ -913,7 +913,7 @@ const Members = () => {
         variant: "destructive",
       });
     },
-    [toast, t.membersPage.inviteCreated, t.membersPage.inviteEmailFailedDesc, t.membersPage.inviteEmailFailedTitle, t.membersPage.inviteEmailNotConfiguredDesc, t.membersPage.inviteEmailSentDesc, t.membersPage.inviteEmailSentTitle],
+    [toast, t.membersPage.inviteCreated, t.membersPage.inviteEmailEdgeUnreachableDesc, t.membersPage.inviteEmailFailedDesc, t.membersPage.inviteEmailFailedTitle, t.membersPage.inviteEmailNotConfiguredDesc, t.membersPage.inviteEmailSentDesc, t.membersPage.inviteEmailSentTitle],
   );
 
   const fetchMemberDrafts = useCallback(async () => {

@@ -65,10 +65,11 @@ export function MarketplaceRequestDialog({
 
   useEffect(() => {
     if (!open) return;
-    setForm(request ? requestFormFromRow(request) : emptyRequestFormState());
-    if (!request && !form.category) {
-      setForm((prev) => ({ ...prev, category: MARKETPLACE_CATEGORIES[0] }));
+    if (request) {
+      setForm(requestFormFromRow(request));
+      return;
     }
+    setForm({ ...emptyRequestFormState(), category: MARKETPLACE_CATEGORIES[0] });
   }, [open, request]);
 
   const categoryLabel = (key: string) =>

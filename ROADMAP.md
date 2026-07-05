@@ -35,6 +35,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Sommerfest tournament UX + public AI 4 T RBAC (2026-07-05):** Public tournament page polish (share, live glow, team logos, goals KPI, mobile live bar); public modal role-scoped Guide/Agent; co-trainer server prompts — deploy **`co-trainer`** — see `CHANGELOG.md` § **2026-07-05**, `TASKS.md` **ALLACH-SOMMERFEST-004**–**007**, **AI4T-PUB-RBAC-***.
 
+**Bug investigation remediation (2026-07-06):** Communication pagination count fix; ESLint/CI green (309 tests); password reset origin **`redirectTo`**; Supabase config gate; RLS optional workflow; E2E auth fixture; lazy analytics charts — operator **`OPS-AUTH-URL-001`** — see `CHANGELOG.md` § **2026-07-06**, `TASKS.md` **BUGFIX-***.
+
 ---
 
 ## Phase 0 — Foundation (Week 0–1)

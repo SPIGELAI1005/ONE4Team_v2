@@ -162,6 +162,11 @@ export function PublicClubMemberInviteAcceptModal() {
     [user?.id],
   );
 
+  const handleDismiss = useCallback(() => {
+    if (dismissKey) sessionStorage.setItem(dismissKey, "1");
+    setOpen(false);
+  }, [dismissKey]);
+
   const clubPagePath = preview?.clubSlug ? `/club/${encodeURIComponent(preview.clubSlug)}` : club ? `/club/${encodeURIComponent(club.slug)}` : null;
   const dashboardPath = successRole ? `/dashboard/${encodeURIComponent(successRole)}` : "/dashboard/player";
 
@@ -217,12 +222,7 @@ export function PublicClubMemberInviteAcceptModal() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, submitting, step]);
-
-  const handleDismiss = () => {
-    if (dismissKey) sessionStorage.setItem(dismissKey, "1");
-    setOpen(false);
-  };
+  }, [open, submitting, step, handleDismiss]);
 
   const handleReopen = () => {
     if (dismissKey) sessionStorage.removeItem(dismissKey);

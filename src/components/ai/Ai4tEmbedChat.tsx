@@ -301,6 +301,7 @@ export function Ai4tEmbedChat({
       language,
       messages,
       pendingWorkflow,
+      onWorkflowProposal,
       t.coTrainerPage,
       toast,
       upsertAssistant,

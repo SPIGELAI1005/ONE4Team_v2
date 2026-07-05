@@ -28,6 +28,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  messagePaginationRange,
+  resolveMessagePaginationCount,
+} from "@/lib/communication-pagination";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { useToast } from "@/hooks/use-toast";
 import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
@@ -403,7 +407,6 @@ export function CommunicationWorkspace({
         messageAccess,
       ),
     [
-      embedded,
       messageAccess,
       supportsTrainersChannel,
       t.communicationPage.announcementsChannel,
@@ -512,6 +515,18 @@ export function CommunicationWorkspace({
     });
   }, [mergedMessages, messageSearch]);
   const messageTotalPages = Math.max(1, Math.ceil(messageTotalCount / MESSAGE_PAGE_SIZE));
+  const messagePaginationDisplay = useMemo(
+    () => messagePaginationRange(messageTotalCount, messagePage, MESSAGE_PAGE_SIZE, messages.length),
+    [messageTotalCount, messagePage, messages.length],
+  );
+  const messagePaginationLabel = useMemo(() => {
+    const { from, to, total } = messagePaginationDisplay;
+    if (total === 0) return t.communicationPage.messagesPaginationEmpty;
+    return t.communicationPage.messagesPaginationRange
+      .replace("{from}", String(from))
+      .replace("{to}", String(to))
+      .replace("{total}", String(total));
+  }, [messagePaginationDisplay, t.communicationPage.messagesPaginationEmpty, t.communicationPage.messagesPaginationRange]);
 
   const providerHealth = useMemo(
     () =>
@@ -664,6 +679,14 @@ export function CommunicationWorkspace({
         return query;
       };
 
+      const runCountQuery = async (withTrainersColumn: boolean) => {
+        const query = supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("club_id", clubId);
+        return applyChannelToMessageQuery(query, selectedChannel, withTrainersColumn);
+      };
+
       let response = await runQuery(true, true);
       if (response.error?.message.includes("column messages.attachments does not exist")) {
         setSupportsAttachments(false);
@@ -694,8 +717,24 @@ export function CommunicationWorkspace({
         }
       }
       const hydrated = await hydrateMessages(rawRows);
-      setMessages([...hydrated].reverse());
-      setMessageTotalCount(response.count ?? 0);
+      const reversed = [...hydrated].reverse();
+      setMessages(reversed);
+
+      let totalCount = response.count ?? 0;
+      if (totalCount === 0 && rawRows.length > 0) {
+        const countResponse = await runCountQuery(supportsTrainersChannel);
+        if (!countResponse.error && countResponse.count != null) {
+          totalCount = countResponse.count;
+        }
+      }
+      totalCount = resolveMessagePaginationCount({
+        supabaseCount: totalCount,
+        rowCount: rawRows.length,
+        page: messagePage,
+        visibleCount: reversed.length,
+        pageSize: MESSAGE_PAGE_SIZE,
+      });
+      setMessageTotalCount(totalCount);
       setPendingMessages([]);
       setLoadingMessages(false);
     };
@@ -1691,9 +1730,7 @@ export function CommunicationWorkspace({
                     </div>
                     <div className="mt-2 flex items-center justify-between">
                       <div className={cn("text-[11px]", embedded ? "text-neutral-500" : "text-muted-foreground")}>
-                        {messageTotalCount === 0
-                          ? "Showing 0 messages"
-                          : `Showing ${(messagePage - 1) * MESSAGE_PAGE_SIZE + 1}-${Math.min(messagePage * MESSAGE_PAGE_SIZE, messageTotalCount)} of ${messageTotalCount}`}
+                        {messagePaginationLabel}
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
@@ -1704,7 +1741,7 @@ export function CommunicationWorkspace({
                           disabled={messagePage <= 1}
                           onClick={() => setMessagePage((current) => Math.max(1, current - 1))}
                         >
-                          Previous
+                          {t.communicationPage.paginationPrevious}
                         </Button>
                         <span className="text-[11px] text-muted-foreground">
                           {messagePage}/{messageTotalPages}
@@ -1717,7 +1754,7 @@ export function CommunicationWorkspace({
                           disabled={messagePage >= messageTotalPages}
                           onClick={() => setMessagePage((current) => Math.min(messageTotalPages, current + 1))}
                         >
-                          Next
+                          {t.communicationPage.paginationNext}
                         </Button>
                       </div>
                     </div>

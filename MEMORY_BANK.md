@@ -1,11 +1,12 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-07-05 (public messaging forward/share, microsite polish, Sommerfest mobile refinements)
+Last updated: 2026-07-06 (bug investigation remediation — CI, messaging, auth, quality)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **Bug investigation remediation (2026-07-06):** Communication pagination count fix (**`communication-pagination.ts`**); dashboard nav duplicate-key cleanup; **`applyPromptInChat`** ESLint fix; stable **`resolve-cancel-activity`** test; marketplace tab permission map; password reset **`redirectTo`**; Communication pagination i18n; **`SupabaseConfigBanner`** + prod config gate; RLS integration docs/workflow; E2E auth fixture; full ESLint green + lazy **`AnalyticsWidgets`**; hero default interim image. Operator track **`OPS-AUTH-URL-001`**. See **`CHANGELOG.md`** § **2026-07-06**.
 - **Public club messaging — forward + embedded UX (2026-07-05):** Embedded Communication modal — readable chat input (**`clubEmbeddedLightInput*`** classes); **Forward** per message via **`message-forward-button.tsx`** (WhatsApp / native share / copy) with header **`Message forwarded from ONE4Team - {club}`** + From/Team lines (**`share-utils.ts`**). Dropdown **`z-[80]`** above modal. CTA **Open Messages** / **Nachrichten öffnen**. See **`CHANGELOG.md`** § **2026-07-05 (Public messaging…)**.
 - **Public club microsite polish (2026-07-05):** Team detail mobile CTA dedupe; announcement delete hover contrast; news section symmetric **`max-w-6xl`** container; DE **AI 4 T** home title. See **`CHANGELOG.md`** same section.
 - **Sommerfest 2026 mobile hero (2026-07-05):** Tournament hero — mobile **club logo** + circular live pulse (**`.sommerfest-hero-logo-live-wrap`**); desktop poster unchanged; pitch filters 5-column grid on mobile. See **`CHANGELOG.md`** same section.

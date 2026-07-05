@@ -177,7 +177,7 @@ export function useMarketplaceProviderProfile(providerType: MarketplaceProviderT
       if (!error) await reload();
       return { error: error as Error | null };
     },
-    [user, providerType, profile?.id, reload],
+    [user, providerType, profile?.id, profile?.listing_status, reload],
   );
 
   const submitForReview = useCallback(async () => {

@@ -12,5 +12,5 @@ export function useRegisterAiAgentContext(ctx: AgentPageContext | null) {
     return () => {
       agent.registerPageContext(null);
     };
-  }, [agent, ctx?.source, ctx?.entityType, ctx?.entityId, ctx?.teamId, ctx?.teamName]);
+  }, [agent, ctx]);
 }
