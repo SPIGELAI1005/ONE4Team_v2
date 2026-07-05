@@ -1087,6 +1087,70 @@
     }
   }
 
+  /* Sommerfest hero mobile: omnidirectional live glow behind club logo */
+  @keyframes sommerfest-hero-logo-live-shadow {
+    0%, 100% {
+      opacity: 0.55;
+      box-shadow: 0 0 14px rgba(220, 38, 38, 0.42);
+    }
+    50% {
+      opacity: 1;
+      box-shadow: 0 0 26px rgba(248, 113, 113, 0.78);
+    }
+  }
+
+  @keyframes sommerfest-hero-logo-live-shadow-soft {
+    0%, 100% {
+      opacity: 0.35;
+      box-shadow: 0 0 22px rgba(185, 28, 28, 0.28);
+    }
+    50% {
+      opacity: 0.75;
+      box-shadow: 0 0 36px rgba(239, 68, 68, 0.52);
+    }
+  }
+
+  .sommerfest-hero-logo-live-wrap {
+    isolation: isolate;
+    border-radius: 9999px;
+    overflow: visible;
+  }
+
+  .sommerfest-hero-logo-live-wrap::before,
+  .sommerfest-hero-logo-live-wrap::after {
+    content: "";
+    position: absolute;
+    inset: -10px;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: 9999px;
+    background: transparent;
+  }
+
+  .sommerfest-hero-logo-live-wrap::before {
+    animation: sommerfest-hero-logo-live-shadow 2.2s ease-in-out infinite;
+  }
+
+  .sommerfest-hero-logo-live-wrap::after {
+    filter: blur(10px);
+    animation: sommerfest-hero-logo-live-shadow-soft 2.2s ease-in-out infinite;
+    animation-delay: -0.6s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sommerfest-hero-logo-live-wrap::before {
+      animation: none;
+      opacity: 0.7;
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.55);
+    }
+
+    .sommerfest-hero-logo-live-wrap::after {
+      animation: none;
+      opacity: 0.45;
+      box-shadow: 0 0 28px rgba(220, 38, 38, 0.35);
+    }
+  }
+
 
   /* World cards: transparent by default, subtle fill on hover */
   .world-card-hover {

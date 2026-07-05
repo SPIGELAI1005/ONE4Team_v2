@@ -1,12 +1,15 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-07-05 (Sommerfest tournament UX, public AI 4 T RBAC, match detail fix)
+Last updated: 2026-07-05 (public messaging forward/share, microsite polish, Sommerfest mobile refinements)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
-- **Sommerfest 2026 tournament UX — public page (2026-07-05):** **`/club/:slug/tournament/sommerfest-2026`** — hero poster full-height flush-right + **Share tournament** (**`sommerfest-share-button.tsx`**); **live backlight** on poster left edge when **`hasSommerfestLiveMatches()`** or festival in progress (**`sommerfest-live-pulse.ts`**). Board: 5 KPIs incl. **Goals**, high-contrast live red UI, **team logos** on cards (**`sommerfestSlotSideLogos`**), mobile bottom live bar; Messages FAB compact/lifted when live bar open. See **`CHANGELOG.md`** § **2026-07-05**.
+- **Public club messaging — forward + embedded UX (2026-07-05):** Embedded Communication modal — readable chat input (**`clubEmbeddedLightInput*`** classes); **Forward** per message via **`message-forward-button.tsx`** (WhatsApp / native share / copy) with header **`Message forwarded from ONE4Team - {club}`** + From/Team lines (**`share-utils.ts`**). Dropdown **`z-[80]`** above modal. CTA **Open Messages** / **Nachrichten öffnen**. See **`CHANGELOG.md`** § **2026-07-05 (Public messaging…)**.
+- **Public club microsite polish (2026-07-05):** Team detail mobile CTA dedupe; announcement delete hover contrast; news section symmetric **`max-w-6xl`** container; DE **AI 4 T** home title. See **`CHANGELOG.md`** same section.
+- **Sommerfest 2026 mobile hero (2026-07-05):** Tournament hero — mobile **club logo** + circular live pulse (**`.sommerfest-hero-logo-live-wrap`**); desktop poster unchanged; pitch filters 5-column grid on mobile. See **`CHANGELOG.md`** same section.
+- **Sommerfest 2026 tournament UX — public page (2026-07-05):** **`/club/:slug/tournament/sommerfest-2026`** — hero poster full-height flush-right + **Share tournament** (**`sommerfest-share-button.tsx`**); **live backlight** on poster left edge when **`hasSommerfestLiveMatches()`** or festival in progress (**`sommerfest-live-pulse.ts`**). Board: 5 KPIs incl. **Goals**, high-contrast live red UI, **team logos** on cards (**`sommerfestSlotSideLogos`**), mobile bottom live bar; Messages FAB compact/lifted when live bar open. See **`CHANGELOG.md`** § **2026-07-05 (Sommerfest tournament UX…)**.
 - **Public club AI 4 T RBAC (2026-07-05):** **`public-club-ai-role.ts`** — role → guide prompts, agent tab gate, context scope; modal + embed use role; **`co-trainer`** Edge resolves role server-side (**`ai4team_scope.ts`**). Deploy **`co-trainer`** for prod. Tests: **`public-club-ai-role.test.ts`**. See **`CHANGELOG.md`** § **2026-07-05**.
 - **Public match detail fix (2026-07-05):** **`public-club-match-detail-page.tsx`** — `enabled` declared before SEO `useEffect` (TDZ crash fix).
 - **Member invite UX — public club flow (2026-07-03):** Invite emails and copy links open **`/club/{slug}?invite=TOKEN`**. **`PublicClubMemberInviteAcceptModal`** auto-opens with **`preview_club_invite`** RPC; Edge **`complete-club-invite-signup`** confirms user without Supabase confirmation email, redeems invite, sends Resend welcome email. Post-join congratulations with **View club page** / **Open dashboard**. Migrations **`20260731230000`**, **`20260731240000`**. See **`CHANGELOG.md`** § **2026-07-03**.

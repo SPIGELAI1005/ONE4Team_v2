@@ -194,8 +194,18 @@ Featured teams: Erste Herren, Erste Frauen, Zweite Herren, Senioren, one Jugend 
 | SF.6 | **Share tournament** on hero; **live glow** on poster left edge when matches live | Tournament page hero |
 | SF.7 | **Team logos** on live board cards; **Goals** KPI; high-contrast live red UI | Tournament board |
 | SF.8 | Mobile **bottom live bar**; Messages FAB does not overlap live cards | Phone + live matches |
+| SF.9 | Mobile hero shows **club logo** + live pulse (desktop keeps poster) | Tournament page hero (phone) |
+| SF.10 | Pitch category filters — **5 columns** on mobile | Tournament board filters |
 
 Public URL slug: **`sommerfest-2026`**. Match import keys: **`tsv-sommerfest-2026:m01`** … **`m22`**.
+
+## Public messaging — forward + embedded UX (2026-07-05)
+
+| # | Task | Where |
+|---|------|--------|
+| MSG.1 | Type in embedded chat composer — text visible (not white on white) | Public club → **Open Messages** |
+| MSG.2 | **Forward** menu appears above modal (not behind) | Any sent message → **Weiterleiten** |
+| MSG.3 | WhatsApp forward includes **Message forwarded from ONE4Team - {club}** + From + Team | Share to WhatsApp |
 
 **Deploy (2026-07-05):** Redeploy Edge **`co-trainer`** after pull for public AI 4 T role-specific system prompts.
 

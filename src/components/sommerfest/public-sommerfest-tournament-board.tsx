@@ -222,20 +222,6 @@ export function PublicSommerfestTournamentBoard({
 
   const grouped = useMemo(() => groupSlotsByTime(filtered), [filtered]);
 
-  const categoryCounts = useMemo(() => {
-    const counts: Record<SommerfestMatchCategory | "all", number> = {
-      all: slots.length,
-      kleinfeld: 0,
-      kompaktfeld: 0,
-      damen: 0,
-      herren: 0,
-    };
-    for (const slot of slots) {
-      counts[slot.template.category]++;
-    }
-    return counts;
-  }, [slots]);
-
   function renderMetaRow(slot: SommerfestTournamentSlot, badge: PublicMatchStatusBadge, matchNumber: string) {
     return (
       <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
@@ -387,15 +373,14 @@ export function PublicSommerfestTournamentBoard({
         </div>
       ) : null}
 
-      {/* Category filters — single row; equal-width pills on sm+, swipe row on phone */}
-      <div className="sticky top-[7.25rem] z-20 rounded-2xl border border-[color:var(--club-border)]/50 bg-[color:var(--club-background)]/92 p-2 backdrop-blur-md sm:top-16 sm:p-2.5">
+      {/* Category filters — five equal columns; no counts (stats row above) */}
+      <div className="sticky top-[7.25rem] z-20 rounded-2xl border border-[color:var(--club-border)]/50 bg-[color:var(--club-background)]/92 p-1.5 backdrop-blur-md sm:top-16 sm:p-2.5">
         <div
-          className="flex flex-nowrap items-stretch gap-1 overflow-x-auto overscroll-x-contain scroll-px-3 px-1 py-0.5 [scrollbar-width:none] sm:grid sm:grid-cols-5 sm:gap-1.5 sm:overflow-visible sm:px-0 sm:py-0 [&::-webkit-scrollbar]:hidden"
+          className="grid grid-cols-5 gap-0.5 sm:gap-1.5"
           role="tablist"
           aria-label={copy.scheduleTitle}
         >
           {CATEGORY_ORDER.map((id) => {
-            const count = categoryCounts[id];
             const active = category === id;
             return (
               <button
@@ -405,22 +390,14 @@ export function PublicSommerfestTournamentBoard({
                 aria-selected={active}
                 onClick={() => setCategory(id)}
                 className={cn(
-                  "inline-flex min-h-10 min-w-[4.75rem] shrink-0 snap-start items-center justify-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-semibold transition-all touch-manipulation sm:min-h-11 sm:min-w-0 sm:w-full sm:px-1.5 sm:text-[11px] md:px-2 md:text-xs",
+                  "inline-flex min-h-9 w-full min-w-0 items-center justify-center rounded-full px-0.5 py-1 text-[9px] font-semibold leading-tight transition-all touch-manipulation sm:min-h-11 sm:px-1.5 sm:text-[11px] md:px-2 md:text-xs",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--club-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--club-background)]",
                   active
                     ? "bg-[color:var(--club-primary)] text-white shadow-md"
                     : "bg-[color:var(--club-card)]/90 text-[color:var(--club-muted)] active:bg-[color:var(--club-tertiary)]/50",
                 )}
               >
-                <span className="truncate">{copy.categories[id]}</span>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] tabular-nums leading-none",
-                    active ? "bg-white/20 text-white" : "bg-[color:var(--club-tertiary)]/45 text-[color:var(--club-foreground)]/80",
-                  )}
-                >
-                  {count}
-                </span>
+                <span className="line-clamp-2 text-center">{copy.categories[id]}</span>
               </button>
             );
           })}

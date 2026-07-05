@@ -1,6 +1,6 @@
 # ONE4Team — Comprehensive project audit
 
-**Audit date:** 2026-07-05 (updated for Sommerfest tournament UX, public AI 4 T RBAC, match detail fix)  
+**Audit date:** 2026-07-05 (updated for public messaging forward/share, microsite polish, Sommerfest mobile refinements; prior: tournament UX, public AI 4 T RBAC)  
 **Scope:** Codebase, architecture, UX/design, production readiness, competitive positioning, market value, and value-growth levers  
 **Primary reference (existing):** [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) — strict production-readiness review with risk register, readiness scores, and remediation sprints  
 
@@ -131,7 +131,7 @@ flowchart TB
 ### UX strengths
 
 - **Role-based dashboard** — admin sees finances/setup; trainer/player see sports widgets (`dashboard-section-visibility.ts`).
-- **Public club microsite** — mobile header, team filter (`?team=`), RSVP on schedule/matches, Messages hub, Sommerfest live board with team logos/goals KPI/mobile live bar, hero share + live glow (2026-07-05).
+- **Public club microsite** — mobile header, team filter (`?team=`), RSVP on schedule/matches, Messages hub (**Open Messages**), embedded Communication with forward-to-WhatsApp and readable composer (2026-07-05), Sommerfest live board with team logos/goals KPI/mobile live bar, mobile hero club logo + pulse (2026-07-05).
 - **AI 4 T Agent** — contextual entry from Members/Teams/Activities; propose → confirm → execute reduces admin busywork.
 - **Member ops** — Excel/CSV import, draft → invite workflow, club card PNG export, team assignment from members and teams.
 - **Cookie consent** — GDPR-oriented preference centre (v2 schema in localStorage).

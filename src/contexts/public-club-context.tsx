@@ -136,6 +136,11 @@ export function usePublicClub() {
   return ctx;
 }
 
+/** Safe read when the hero or chrome may render outside {@link PublicClubProvider}. */
+export function useOptionalPublicClub() {
+  return useContext(PublicClubContext);
+}
+
 export function PublicClubProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const { clubSlug = "" } = useParams();

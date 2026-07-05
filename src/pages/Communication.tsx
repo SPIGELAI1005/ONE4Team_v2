@@ -38,13 +38,14 @@ import { supabaseErrorMessage } from "@/lib/supabase-error-message";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PUBLIC_NEWS_CATEGORIES } from "@/lib/public-club-news";
 import { filterAnnouncementsForUser, filterMessageChannelsForUser, buildMessageAccessFromGateRole, TRAINERS_CHANNEL_ID } from "@/lib/club-message-access";
-import { clubAi4tModalOverlayClass, clubAi4tModalPanelClass, clubGlassInputClass } from "@/lib/public-club-glass-classes";
+import { clubAi4tModalOverlayClass, clubAi4tModalPanelClass, clubEmbeddedLightInputFieldClass, clubEmbeddedLightInputShellClass, clubGlassInputClass } from "@/lib/public-club-glass-classes";
 import { cn } from "@/lib/utils";
 import { useUserTeamIds } from "@/hooks/use-user-team-ids";
 import { useModuleGateRole } from "@/hooks/use-module-gate-role";
 import { useClubAdmin } from "@/hooks/use-club-admin";
 import { uploadClubImageAsset } from "@/lib/upload-club-image";
 import { AnnouncementDetailView } from "@/components/communication/announcement-detail-view";
+import { MessageForwardButton } from "@/components/communication/message-forward-button";
 import { canDeleteMessage, canEditMessage, canManageAnnouncements } from "@/lib/club-message-moderation";
 
 type Announcement = {
@@ -233,6 +234,8 @@ export interface CommunicationWorkspaceProps {
   editAnnouncementId?: string;
   /** Public club hero `?team=` filter - limits visible team channels. */
   teamFilterId?: string;
+  /** Optional club display name for forwarded message attribution. */
+  clubNameOverride?: string;
 }
 
 export function CommunicationWorkspace({
@@ -242,6 +245,7 @@ export function CommunicationWorkspace({
   initialAnnouncementId,
   editAnnouncementId,
   teamFilterId,
+  clubNameOverride,
 }: CommunicationWorkspaceProps = {}) {
   const { user } = useAuth();
   const { clubId: hookClubId, loading: clubLoading } = useClubId();
@@ -268,6 +272,7 @@ export function CommunicationWorkspace({
   const [messages, setMessages] = useState<Message[]>([]);
   const [pendingMessages, setPendingMessages] = useState<Message[]>([]);
   const [teams, setTeams] = useState<TeamChannel[]>([]);
+  const [clubName, setClubName] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [messagePage, setMessagePage] = useState(1);
@@ -539,13 +544,14 @@ export function CommunicationWorkspace({
     if (!clubId) return;
     setLoading(true);
     setBaseDataLoadError(null);
-    const [annRes, teamsRes] = await Promise.all([
+    const [annRes, teamsRes, clubRes] = await Promise.all([
       supabase
         .from("announcements")
         .select("*")
         .eq("club_id", clubId)
         .order("created_at", { ascending: false }),
       supabase.from("teams").select("id, name").eq("club_id", clubId).order("name"),
+      supabase.from("clubs").select("name").eq("id", clubId).maybeSingle(),
     ]);
 
     let combinedErr: string | null = null;
@@ -565,6 +571,9 @@ export function CommunicationWorkspace({
     if (teamsRes.error) {
       combinedErr = combinedErr || supabaseErrorMessage(teamsRes.error);
     }
+    if (clubRes.error) {
+      combinedErr = combinedErr || supabaseErrorMessage(clubRes.error);
+    }
 
     if (combinedErr) {
       setBaseDataLoadError(combinedErr);
@@ -573,6 +582,7 @@ export function CommunicationWorkspace({
 
     setAnnouncements((annRes.data as Announcement[]) || []);
     setTeams((teamsRes.data as TeamChannel[]) || []);
+    setClubName(typeof clubRes.data?.name === "string" ? clubRes.data.name : "");
     setLoading(false);
   }, [
     clubId,
@@ -588,6 +598,7 @@ export function CommunicationWorkspace({
     setMessages([]);
     setPendingMessages([]);
     setTeams([]);
+    setClubName("");
     setLoading(true);
     setLoadingMessages(true);
     setMissingMessagesTable(false);
@@ -1663,7 +1674,7 @@ export function CommunicationWorkspace({
                       className={cn(
                         "flex items-center gap-2 rounded-xl px-3",
                         embedded
-                          ? cn(clubGlassInputClass, "py-2")
+                          ? cn(clubEmbeddedLightInputShellClass, "py-2")
                           : "border border-border bg-background/70",
                       )}
                     >
@@ -1672,7 +1683,10 @@ export function CommunicationWorkspace({
                         value={messageSearch}
                         onChange={(event) => setMessageSearch(event.target.value)}
                         placeholder={t.communicationPage.searchMessagesPlaceholder}
-                        className="border-0 bg-transparent shadow-none focus-visible:ring-0"
+                        className={cn(
+                          "border-0 bg-transparent shadow-none focus-visible:ring-0",
+                          embedded && clubEmbeddedLightInputFieldClass,
+                        )}
                       />
                     </div>
                     <div className="mt-2 flex items-center justify-between">
@@ -1895,6 +1909,18 @@ export function CommunicationWorkspace({
                                       {t.communicationPage.editMessage}
                                     </button>
                                   ) : null}
+                                  {message.send_state !== "sending" && message.content.trim() ? (
+                                    <MessageForwardButton
+                                      content={message.content}
+                                      clubName={clubNameOverride ?? clubName}
+                                      senderName={message.profiles?.display_name}
+                                      channelLabel={selectedChannel.label}
+                                      menuAlign={isMe ? "end" : "start"}
+                                      className={cn(
+                                        isMe && embedded ? "text-white/90" : "text-primary",
+                                      )}
+                                    />
+                                  ) : null}
                                   {canDeleteOwnMessage ? (
                                     <button
                                       type="button"
@@ -1946,7 +1972,7 @@ export function CommunicationWorkspace({
                       className={cn(
                         "flex items-center gap-2 rounded-full px-3 py-2",
                         embedded
-                          ? cn(clubGlassInputClass, "border-neutral-200/90")
+                          ? clubEmbeddedLightInputShellClass
                           : "border border-border bg-card",
                       )}
                     >
@@ -1973,7 +1999,10 @@ export function CommunicationWorkspace({
                         value={newMessage}
                         onChange={(event) => setNewMessage(event.target.value)}
                         onKeyDown={(event) => event.key === "Enter" && void handleSendMessage()}
-                        className="border-0 bg-transparent shadow-none focus-visible:ring-0"
+                        className={cn(
+                          "border-0 bg-transparent shadow-none focus-visible:ring-0",
+                          embedded && clubEmbeddedLightInputFieldClass,
+                        )}
                         maxLength={1000}
                       />
                       <Button

@@ -93,6 +93,7 @@ export function PublicClubCommunicationModal() {
               <CommunicationWorkspace
                 embedded
                 clubIdOverride={club.id}
+                clubNameOverride={club.name}
                 initialChannelId={communicationInitialChannel ?? undefined}
                 initialAnnouncementId={communicationInitialAnnouncementId ?? undefined}
                 editAnnouncementId={communicationEditAnnouncementId ?? undefined}

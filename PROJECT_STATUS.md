@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-07-05 (Sommerfest tournament UX, public AI 4 T RBAC)
+Last updated: 2026-07-05 (public messaging forward/share, microsite polish, Sommerfest mobile refinements)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -44,7 +44,9 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - **Club-branded social + iOS (2026-07-03):** Server-rendered OG for **`/club/*`** crawlers; **`apple-touch-icon`** from club logo. See **`CHANGELOG.md`** § **2026-07-03**.
 - **Sommerfest banner animation (2026-07-03):** Animated tournament banner on public club pages. See **`CHANGELOG.md`** § **2026-07-03**.
 - **Sommerfest tournament page UX (2026-07-05):** Public live board polish — team logos, goals stat, high-contrast live styling, hero share + live glow, mobile live bar + Messages FAB layout. See **`CHANGELOG.md`** § **2026-07-05**.
-- **Public club AI 4 T RBAC (2026-07-05):** Role-scoped Guide/Agent in public modal; server-side co-trainer prompts. Deploy **`co-trainer`**. See **`CHANGELOG.md`** § **2026-07-05**.
+- **Public club AI 4 T RBAC (2026-07-05):** Role-scoped Guide/Agent in public modal; server-side co-trainer prompts. Deploy **`co-trainer`**. See **`CHANGELOG.md`** § **2026-07-05 (Sommerfest tournament UX…)**.
+- **Public messaging forward + embedded UX (2026-07-05):** Chat forward to WhatsApp/native/copy with ONE4Team + club attribution; embedded composer text contrast fix; forward menu z-index. CTA **Open Messages**. See **`CHANGELOG.md`** § **2026-07-05 (Public messaging…)**.
+- **Public club microsite polish (2026-07-05):** Team detail mobile CTAs, announcement delete hover, news layout, DE AI 4 T title, Sommerfest mobile hero logo + pitch filters. See **`CHANGELOG.md`** same section.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 

@@ -27,6 +27,7 @@ import {
   clubMobileMenuGlassStyle,
 } from "@/lib/public-club-glass-classes";
 import { PublicClubLanguageToggle } from "@/components/public-club/public-club-language-toggle";
+import { publicClubSectionContainer } from "@/components/public-club/public-club-section";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/one4team-logo.png";
 
@@ -140,7 +141,7 @@ export function PublicClubNavbar() {
 
   return (
     <header className="club-glass-nav shadow-sm">
-      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
+      <div className={`${publicClubSectionContainer} flex items-center gap-3 py-3`}>
         <Link to={`${basePath}${searchSuffix}`} className="flex min-w-0 items-center gap-2 shrink-0">
           <img
             src={club.logo_url || logo}

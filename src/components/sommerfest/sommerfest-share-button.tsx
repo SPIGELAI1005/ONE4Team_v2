@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
+import { buildWhatsAppShareUrl, resolveShareUrl } from "@/lib/share-utils";
 import { cn } from "@/lib/utils";
 
 interface SommerfestShareButtonProps {
@@ -14,16 +15,6 @@ interface SommerfestShareButtonProps {
   title: string;
   message: string;
   className?: string;
-}
-
-function resolveShareUrl(url: string): string {
-  if (/^https?:\/\//i.test(url)) return url;
-  if (typeof window === "undefined") return url;
-  return new URL(url, window.location.origin).href;
-}
-
-function buildWhatsAppShareUrl(text: string, url: string): string {
-  return `https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`;
 }
 
 export function SommerfestShareButton({ url, title, message, className }: SommerfestShareButtonProps) {

@@ -265,7 +265,7 @@ export default function PublicClubTeamDetailPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2 sm:items-end">
+                  <div className="hidden flex-col gap-2 sm:flex sm:items-end">
                     <Button
                       type="button"
                       className={`rounded-full ${clubCtaFillHoverClass}`}

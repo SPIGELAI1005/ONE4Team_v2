@@ -3,6 +3,38 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-05 (Public messaging forward/share, microsite polish, Sommerfest mobile refinements)
+
+### Public club — embedded Communication UX
+- **`Communication.tsx` + `public-club-glass-classes.ts`:** Embedded chat composer and message search use **`clubEmbeddedLightInputShellClass`** / **`clubEmbeddedLightInputFieldClass`** — fixes white-on-white typed text in the public club Communication modal.
+- **`message-forward-button.tsx` + `share-utils.ts`:** **Forward** action on each chat message — native share (when available), **WhatsApp**, **Copy message**. Forwarded text header: **`Message forwarded from ONE4Team - {club}`** with **From:** and **Team:** attribution lines. Club name from DB fetch or **`clubNameOverride`** in embedded modal.
+- **`clubModalPopoverContentClass` (`z-[80]`):** Forward dropdown renders above Communication modal (`z-[60]`) and nested dialogs; right-aligned bubbles use **`menuAlign="end"`** + **`side="top"`**.
+- **`sommerfest-share-button.tsx`:** WhatsApp / resolve URL helpers moved to shared **`share-utils.ts`**.
+
+### Public club — microsite polish
+- **`public-club-team-detail-page.tsx`:** Mobile duplicate **Join team** / **Contact club** CTAs removed (hero buttons hidden on small screens; mobile block below card kept).
+- **`announcement-detail-view.tsx`:** Delete announcement hover uses **`hover:bg-destructive hover:text-destructive-foreground`** (readable on embedded light modal).
+- **`public-club-section.tsx`:** Shared section container **`max-w-6xl`**, symmetric padding, **`text-left`** — fixes off-center news/content on mobile; navbar/footer use same **`publicClubSectionContainer`**.
+- **`de.ts`:** Public home **AI 4 T** section title localized (**`ai4teamPublicTitle`**).
+- **`en.ts` / `de.ts`:** Messages CTA **`messagesCtaSignedIn`** → **Open Messages** / **Nachrichten öffnen**.
+
+### Sommerfest 2026 — mobile hero + board
+- **`sommerfest-hero.tsx` + `index.css`:** Mobile uses **club logo** (circular, live red pulse behind logo) instead of cropped poster; desktop keeps poster + **`lg:grid`** layout; removed redundant calendar date pill (date in top badge); **`useOptionalPublicClub()`** for logo fallback.
+- **`public-sommerfest-tournament-board.tsx`:** Pitch category filters — **`grid grid-cols-5`** on all breakpoints; compact mobile labels; count badges removed.
+- **`en.ts`:** Shorter pitch filter labels (**Small**, **Compact**).
+
+### i18n — message forward
+- **`communicationPage`:** **`forwardMessage`**, **`forwardMessageHeader`**, **`forwardMessageFrom`**, **`forwardMessageTeam`**, **`shareViaNative`**, **`shareViaWhatsApp`**, **`shareCopyMessage`**, **`messageCopied`**.
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`HOLD.md`**, **`README.md`**, **`docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`**, **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**, **`ops/PRODUCTION_READINESS_ARTIFACTS.md`**.
+
+### Operator smoke
+- **Public club → Open Messages → team channel:** Type in composer — text visible (dark on white); tap **Forward** on a message — menu above modal; WhatsApp prefill shows ONE4Team header + sender + team.
+- **Mobile team detail:** Single CTA row for join/contact.
+- **Sommerfest tournament (phone):** Hero shows club logo + pulse; pitch filters fit one row.
+- **News section (mobile):** Content aligned with page padding.
+
 ## 2026-07-05 (Sommerfest tournament UX polish, public AI 4 T RBAC, match detail fix)
 
 ### Sommerfest 2026 — public tournament page UX

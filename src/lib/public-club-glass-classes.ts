@@ -45,6 +45,9 @@ export const clubReadableModalPanelClass = clubAi4tModalPanelClass;
 
 export const clubReadableModalOverlayClass = clubAi4tModalOverlayClass;
 
+/** Portaled menus/popovers above club modals (overlay z-[60], nested dialogs z-[70]). */
+export const clubModalPopoverContentClass = "z-[80]";
+
 /** Form fields on white-glass modals — high contrast on busy club backgrounds. */
 export const clubModalFormLabelClass = "text-sm font-medium text-neutral-900";
 
@@ -68,6 +71,13 @@ export const clubGlassChipClass =
 /** Search / text inputs on club pages. */
 export const clubGlassInputClass =
   "club-glass rounded-xl border border-[color:var(--club-border)] bg-transparent text-[color:var(--club-foreground)] placeholder:text-[color:var(--club-muted)] focus-visible:ring-2 focus-visible:ring-[color:var(--club-primary)]";
+
+/** White-surface inputs inside embedded Communication (modal on public club). */
+export const clubEmbeddedLightInputShellClass =
+  "border border-neutral-200/90 bg-white text-neutral-900 shadow-sm";
+
+export const clubEmbeddedLightInputFieldClass =
+  "border-0 bg-transparent shadow-none focus-visible:ring-0 text-neutral-900 placeholder:text-neutral-500 caret-neutral-900 [color-scheme:light]";
 
 export function clubMobileMenuGlassStyle(
   branding: Parameters<typeof clubBrandingSurfaceCssVars>[0],

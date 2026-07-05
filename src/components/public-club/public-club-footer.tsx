@@ -7,6 +7,7 @@ import { useLanguage } from "@/hooks/use-language";
 import { usePublicClub } from "@/contexts/public-club-context";
 import { PUBLIC_CLUB_ROUTE_SEGMENTS } from "@/lib/public-club-routes";
 import { requestOpenCookieSettings } from "@/lib/cookie-consent";
+import { publicClubSectionContainer } from "@/components/public-club/public-club-section";
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -133,7 +134,7 @@ export function PublicClubFooter({ club }: { club: PublicClubRecord | null }) {
 
   return (
     <footer className="mt-auto border-t border-[color:var(--club-border)] bg-[color:color-mix(in_srgb,var(--club-card)_40%,transparent)] py-10">
-      <div className="mx-auto w-full max-w-lg px-4 sm:max-w-xl md:max-w-4xl lg:max-w-6xl xl:max-w-7xl">
+      <div className={publicClubSectionContainer}>
         <div className="grid gap-8 md:grid-cols-[1.2fr_1fr_1fr] md:gap-6">
           <div className="text-center md:text-left">
             <div className="mb-3 flex flex-col items-center gap-2 md:flex-row md:items-center">

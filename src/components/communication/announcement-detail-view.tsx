@@ -83,8 +83,8 @@ export function AnnouncementDetailView({
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "h-8 gap-1.5 px-2 text-destructive hover:text-destructive",
-                  embedded && "hover:bg-red-50",
+                  "h-8 gap-1.5 px-2 text-destructive hover:bg-destructive hover:text-destructive-foreground",
+                  embedded && "hover:bg-red-50 hover:text-destructive",
                 )}
                 onClick={onDelete}
               >

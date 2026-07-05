@@ -1,6 +1,6 @@
 # Production readiness — consolidated evidence log
 
-Last updated: 2026-07-01 — see `CHANGELOG.md` § 2026-07-01 (persona data scoping player/member, public Live Scores UI, partner portal **`20260731120000`**–**`20260731220000`**, sprint DB parity); § 2026-06-30 (member payments **`20260728120000`**–**`20260728140000`**, invite email Edge **`send-club-invite-email`**); § 2026-06-27 (TSV Allach Sommerfest + membership application **`20260627120000`**–**`20260628120000`**); § 2026-06-24 (attendance + AI 4 T pilot **`20260624120000`**–**`20260626120000`**); § 2026-06-15 (AI 4 T Agent **`20260615120000`**–**`20260615150000`**); prior § 2026-06-14 (admin financial **`20260614120000`**, AI 4 T **`20260614140000`**); operator tasks **`SPRINT 2026-07-01`**, **`RBAC-PERSONA-SMOKE`**, **`DEPLOY-EMAIL-001-PROD`**, **`PARTNER-OPS-*-SMOKE`** in `TASKS.md`.
+Last updated: 2026-07-05 — see `CHANGELOG.md` § 2026-07-05 (public messaging forward/share, embedded Communication UX, microsite polish, Sommerfest mobile hero); § 2026-07-05 (Sommerfest tournament UX, public AI 4 T RBAC); § 2026-07-03 (member invite UX); § 2026-07-01 (persona scoping, partner portal); operator smokes **`COMM-FWD-SMOKE`**, **`ALLACH-SOMMERFEST-SMOKE`**, **`AI4T-PUB-RBAC-OPS`** in `TASKS.md`.
 
 Single index for [PRODUCTION_READINESS_COMPLETION_PLAN.md](PRODUCTION_READINESS_COMPLETION_PLAN.md). Link tickets, screenshots, or CI logs in the **Evidence** column as you complete each step.
 

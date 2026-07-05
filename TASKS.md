@@ -70,6 +70,20 @@ Reference: **`docs/marketplace-implementation-plan.md`** §10.
 
 ## NOW (top priority)
 
+### Public messaging + microsite polish (2026-07-05) — code in repo
+- [x] **COMM-FWD-001** Message forward menu — WhatsApp / native share / copy (`message-forward-button.tsx`, `share-utils.ts`)
+- [x] **COMM-FWD-002** Forward text template — ONE4Team + club + From/Team attribution (i18n + `buildMessageShareText`)
+- [x] **COMM-FWD-003** Forward dropdown z-index above Communication modal (`clubModalPopoverContentClass`)
+- [x] **COMM-UX-001** Embedded chat composer/search readable text (`clubEmbeddedLightInput*`)
+- [x] **PUB-FIX-002** Team detail mobile duplicate join/contact CTAs
+- [x] **PUB-FIX-003** Announcement delete hover contrast in embedded modal
+- [x] **PUB-FIX-004** Public news/section symmetric container on mobile
+- [x] **PUB-FIX-005** DE AI 4 T public home section title
+- [x] **PUB-COPY-001** Messages CTA → **Open Messages** / **Nachrichten öffnen**
+- [x] **ALLACH-SOMMERFEST-008** Mobile hero club logo + live pulse; desktop poster layout preserved
+- [x] **ALLACH-SOMMERFEST-009** Pitch filters 5-column grid on mobile
+- [ ] **COMM-FWD-SMOKE** Forward message to WhatsApp — verify header, club name, sender, team on phone
+
 ### Sommerfest tournament UX + public AI 4 T RBAC (2026-07-05) — code in repo
 - [x] **ALLACH-SOMMERFEST-004** Tournament hero share button + poster layout + live backlight (`sommerfest-hero.tsx`, `sommerfest-share-button.tsx`)
 - [x] **ALLACH-SOMMERFEST-005** Live board UX — goals KPI, team logos, high-contrast live red, mobile bottom bar (`public-sommerfest-tournament-board.tsx`, `index.css`)
