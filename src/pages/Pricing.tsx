@@ -450,10 +450,6 @@ function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
             <span>{members.toLocaleString()} members x EUR {plan.memberPrice[billing]}</span>
             <span>EUR {memberCost.toFixed(2)}/{periodSuffix}</span>
           </div>
-          <div className="flex justify-between text-muted-foreground">
-            <span>{t.pricingPage.pricePerMember}</span>
-            <span>EUR {pricePerMember.toFixed(2)}/{periodSuffix}</span>
-          </div>
           {discount && (
             <div className="flex justify-between text-primary font-medium">
               <span>{t.pricingPage.volumeDiscount} ({discountPct}%)</span>
@@ -463,6 +459,10 @@ function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
           <div className="flex justify-between text-foreground font-display font-bold text-lg sm:text-xl pt-2 border-t border-border/50">
             <span>{t.common.total}</span>
             <span>EUR {total.toFixed(2)}/{periodSuffix}</span>
+          </div>
+          <div className="flex justify-between text-muted-foreground text-xs sm:text-sm italic pt-1">
+            <span>{t.pricingPage.pricePerMember}</span>
+            <span>EUR {pricePerMember.toFixed(2)}/{periodSuffix}</span>
           </div>
         </div>
       </div>
