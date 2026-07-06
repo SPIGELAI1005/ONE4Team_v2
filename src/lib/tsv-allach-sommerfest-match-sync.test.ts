@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   extractSommerfestMatchIdFromNotes,
+  sommerfestDatetimeLocalToIso,
+  sommerfestEffectiveKickoffTime,
+  sommerfestIsoToDatetimeLocal,
+  sommerfestMatchDateIso,
   sommerfestMatchImportKey,
   sommerfestMatchToInsertRow,
   sommerfestTemplateToDashboardMatch,
@@ -40,5 +44,20 @@ describe("tsv-allach-sommerfest-match-sync", () => {
       opponent_logo_url: "https://cdn.example/opponent.png",
     });
     expect(mapped.opponent_logo_url).toBe("https://cdn.example/opponent.png");
+  });
+
+  it("round-trips Berlin datetime-local values for persisted kickoffs", () => {
+    const iso = sommerfestMatchDateIso("11:00");
+    expect(iso).toBe("2026-07-11T09:00:00.000Z");
+    expect(sommerfestIsoToDatetimeLocal(iso)).toBe("2026-07-11T11:00");
+    expect(sommerfestDatetimeLocalToIso("2026-07-11T11:00")).toBe(iso);
+  });
+
+  it("uses persisted kickoff time over template default in schedule labels", () => {
+    const template = SOMMERFEST_MATCHES.find((match) => match.id === "m01");
+    expect(template?.time).toBe("11:00");
+    expect(
+      sommerfestEffectiveKickoffTime(template!, { match_date: "2026-07-11T08:30:00.000Z" }),
+    ).toBe("10:30");
   });
 });

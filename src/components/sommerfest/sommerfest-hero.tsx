@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { MapPin } from "lucide-react";
+import { SommerfestRegulationsInfoButton } from "@/components/sommerfest/sommerfest-regulations-info-button";
 import { SommerfestShareButton } from "@/components/sommerfest/sommerfest-share-button";
 import { useOptionalPublicClub } from "@/contexts/public-club-context";
 import { useLanguage } from "@/hooks/use-language";
@@ -92,7 +93,10 @@ export function SommerfestHero({
             </span>
           </div>
           {shareUrl ? (
-            <SommerfestShareButton url={shareUrl} title={copy.title} message={copy.shareMessage} />
+            <div className="flex flex-wrap items-center gap-2">
+              <SommerfestShareButton url={shareUrl} title={copy.title} message={copy.shareMessage} />
+              <SommerfestRegulationsInfoButton />
+            </div>
           ) : null}
         </div>
 

@@ -14,7 +14,7 @@ import {
   type SommerfestTournamentSlot,
 } from "@/lib/tsv-allach-sommerfest-competition";
 import { publicMatchStatusBadge, type PublicMatchStatusBadge } from "@/lib/public-club-match-display";
-import { sommerfestMatchDateIso } from "@/lib/tsv-allach-sommerfest-match-sync";
+import { sommerfestEffectiveKickoffTime, sommerfestMatchDateIso } from "@/lib/tsv-allach-sommerfest-match-sync";
 import { type SommerfestMatchCategory } from "@/lib/tsv-allach-sommerfest-2026";
 import { isSommerfestTournamentInProgress } from "@/lib/sommerfest-live-pulse";
 import { cn } from "@/lib/utils";
@@ -33,7 +33,7 @@ const LIVE_MOBILE_BAR_DOC_FLAG = "data-sommerfest-live-bar";
 function groupSlotsByTime(slots: SommerfestTournamentSlot[]) {
   const map = new Map<string, SommerfestTournamentSlot[]>();
   for (const slot of slots) {
-    const time = slot.template.time;
+    const time = sommerfestEffectiveKickoffTime(slot.template, slot.match);
     const bucket = map.get(time) ?? [];
     bucket.push(slot);
     map.set(time, bucket);

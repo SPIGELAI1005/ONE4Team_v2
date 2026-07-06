@@ -196,8 +196,20 @@ Featured teams: Erste Herren, Erste Frauen, Zweite Herren, Senioren, one Jugend 
 | SF.8 | Mobile **bottom live bar**; Messages FAB does not overlap live cards | Phone + live matches |
 | SF.9 | Mobile hero shows **club logo** + live pulse (desktop keeps poster) | Tournament page hero (phone) |
 | SF.10 | Pitch category filters — **5 columns** on mobile | Tournament board filters |
+| SF.11 | **Info** button beside **Share tournament** — match duration regulations | Tournament page hero |
+| SF.12 | Admin kickoff edit persists in **Spieldetails** + schedule overview (Berlin timezone) | **Matches** → Sommerfest fixture → save time |
 
 Public URL slug: **`sommerfest-2026`**. Match import keys: **`tsv-sommerfest-2026:m01`** … **`m22`**.
+
+## Public messaging — mobile Communication modal (2026-07-06)
+
+| # | Task | Where |
+|---|------|--------|
+| MSG-M.1 | Phone: channel list does not consume full modal — use dropdown | Public club → **Open Messages** |
+| MSG-M.2 | Message thread scrolls between search and composer | Same |
+| MSG-M.3 | Change Sommerfest kickoff → save → reopen — time matches overview | **Matches** admin |
+
+Code: **`Communication.tsx`** (embedded mobile), **`public-club-communication-modal.tsx`**, **`tsv-allach-sommerfest-match-sync.ts`**.
 
 ## Public messaging — forward + embedded UX (2026-07-05)
 

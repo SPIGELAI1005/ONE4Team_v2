@@ -3,6 +3,32 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-06 (Sommerfest kickoff sync, tournament info, mobile club messaging)
+
+### Sommerfest — match kickoff time sync
+- **`tsv-allach-sommerfest-match-sync.ts`:** Berlin timezone helpers — **`sommerfestDatetimeLocalToIso`**, **`sommerfestIsoToDatetimeLocal`**, **`sommerfestEffectiveKickoffTime`**, **`sommerfestBerlinTimeLabel`** — fixes datetime-local save/read drift (UTC vs Europe/Berlin).
+- **`Matches.tsx`:** Sommerfest-linked matches normalize kickoff on save; **`editMatchDate`** syncs after persist; **`sommerfestDbMatches`** passed to schedule component.
+- **`sommerfest-match-schedule.tsx`:** Groups fixtures by **effective kickoff** (DB **`match_date`** when saved, else template default).
+- **`public-sommerfest-tournament-board.tsx`:** Live board time buckets use persisted kickoff, not static template time only.
+- Tests: **`tsv-allach-sommerfest-match-sync.test.ts`** (round-trip + effective kickoff label).
+
+### Sommerfest — tournament regulations info
+- **`sommerfest-regulations-info-button.tsx`:** **Info** popover beside **Share tournament** — match durations (Kleinfeld 25 min, Kompaktfeld 2×25, Damen 2×25, Herren 2×30).
+- **`sommerfest-hero.tsx`:** Share + Info button row when **`shareUrl`** set.
+- i18n **`sommerfest2026.regulations*`** (EN/DE).
+
+### Public club — mobile Communication modal
+- **`Communication.tsx` (embedded):** On mobile, channel sidebar hidden; channel **`<Select>`** in header; compact search/pagination (pagination row hidden when single page); message thread **`min-h-0 flex-1`** so chat history is readable.
+- **`public-club-communication-modal.tsx`:** **`100dvh`** on phone; slimmer header/footer (footer hint desktop-only).
+
+### Operator smoke
+- **Matches → Sommerfest fixture:** Change kickoff to 11:00 → save → reopen **Spieldetails** — time stays 11:00; schedule overview matches.
+- **Tournament page:** **Info** next to **Share tournament** shows duration rules.
+- **Public club → Open Messages (phone):** Channel dropdown visible; message bubbles scroll between search and composer.
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`HOLD.md`**, **`README.md`**, **`ROADMAP.md`**, **`docs/TSV_ALLACH_CLUB_PAGE_CHECKLIST.md`**, **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**.
+
 ## 2026-07-06 (Bug investigation remediation — CI, messaging, auth, quality)
 
 ### Communication — pagination count fix

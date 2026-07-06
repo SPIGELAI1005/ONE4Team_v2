@@ -79,6 +79,17 @@ Reference: **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** §B Auth, §C Custom domai
 
 ## NOW (top priority)
 
+### Sommerfest kickoff sync + mobile messaging (2026-07-06) — code in repo
+- [x] **SOMMERFEST-TIME-001** Berlin timezone save/load for Sommerfest match kickoffs (`tsv-allach-sommerfest-match-sync.ts`, `Matches.tsx`)
+- [x] **SOMMERFEST-TIME-002** Schedule + public board group by effective DB kickoff (`sommerfest-match-schedule.tsx`, `public-sommerfest-tournament-board.tsx`)
+- [x] **SOMMERFEST-TIME-003** Unit tests — datetime round-trip + effective kickoff label
+- [x] **SOMMERFEST-INFO-001** Tournament **Info** button — match duration regulations popover (`sommerfest-regulations-info-button.tsx`)
+- [x] **COMM-MOBILE-001** Embedded Communication — mobile channel dropdown, hidden sidebar, scrollable message thread
+- [x] **COMM-MOBILE-002** Public club Communication modal — `100dvh` on phone, compact chrome
+- [x] **SOMMERFEST-DOC-001** Doc sync — **`CHANGELOG.md`**, **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, checklists
+- [ ] **SOMMERFEST-TIME-SMOKE** Change U07-III vs Eltern kickoff → save → reopen Spieldetails — time matches schedule overview
+- [ ] **COMM-MOBILE-SMOKE** Phone: Open Messages → read chat history; switch channel via dropdown
+
 ### Bug investigation remediation (2026-07-06) — code in repo
 - [x] **BUGFIX-001** Communication pagination count fallback + **`communication-pagination.ts`** tests
 - [x] **BUGFIX-002** Dashboard nav duplicate **`/reports`** / **`/player-stats`** keys removed

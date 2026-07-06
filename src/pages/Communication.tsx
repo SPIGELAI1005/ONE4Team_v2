@@ -1383,14 +1383,14 @@ export function CommunicationWorkspace({
             <div
               className={
                 embedded
-                  ? "grid h-full min-h-0 flex-1 gap-3 sm:grid-cols-[minmax(0,200px)_minmax(0,1fr)] lg:grid-cols-[220px_minmax(0,1fr)]"
+                  ? "flex h-full min-h-0 flex-1 flex-col gap-2 sm:grid sm:grid-cols-[minmax(0,200px)_minmax(0,1fr)] sm:gap-3 lg:grid-cols-[220px_minmax(0,1fr)]"
                   : "grid lg:grid-cols-[280px_minmax(0,1fr)] gap-4 h-[calc(100vh-180px)]"
               }
             >
             <aside
               className={
                 embedded
-                  ? "overflow-y-auto rounded-2xl border border-neutral-200/80 bg-neutral-50/80 p-2 sm:p-3"
+                  ? "hidden min-h-0 overflow-y-auto rounded-2xl border border-neutral-200/80 bg-neutral-50/80 p-2 sm:block sm:p-3"
                   : "rounded-2xl border border-border/70 bg-card/50 backdrop-blur-xl p-3 overflow-y-auto"
               }
             >
@@ -1472,25 +1472,28 @@ export function CommunicationWorkspace({
             <section
               className={
                 embedded
-                  ? "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-neutral-200/80 bg-white/95"
+                  ? "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-neutral-200/80 bg-white/95 sm:min-h-0"
                   : "rounded-2xl border border-border/70 bg-card/50 backdrop-blur-xl overflow-hidden flex flex-col min-h-0"
               }
             >
               <div
                 className={cn(
-                  "px-4 py-3 border-b flex items-center justify-between",
+                  "border-b",
+                  embedded
+                    ? "flex shrink-0 flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3"
+                    : "flex items-center justify-between px-4 py-3",
                   embedded ? "border-neutral-200/80" : "border-border/70",
                 )}
               >
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex min-w-0 items-center gap-2">
                   {selectedChannel.kind === "announcements" ? (
-                    <Megaphone className={cn("w-4 h-4", embedded ? "text-[color:var(--club-primary)]" : "text-primary")} />
+                    <Megaphone className={cn("w-4 h-4 shrink-0", embedded ? "text-[color:var(--club-primary)]" : "text-primary")} />
                   ) : selectedChannel.isTrainersChannel ? (
-                    <Users className={cn("w-4 h-4", embedded ? "text-[color:var(--club-primary)]" : "text-primary")} />
+                    <Users className={cn("w-4 h-4 shrink-0", embedded ? "text-[color:var(--club-primary)]" : "text-primary")} />
                   ) : (
-                    <MessageSquare className={cn("w-4 h-4", embedded ? "text-[color:var(--club-primary)]" : "text-primary")} />
+                    <MessageSquare className={cn("w-4 h-4 shrink-0", embedded ? "text-[color:var(--club-primary)]" : "text-primary")} />
                   )}
-                  <div className={cn("font-medium truncate", embedded ? "text-neutral-900" : "text-foreground")}>
+                  <div className={cn("min-w-0 font-medium truncate", embedded ? "text-neutral-900" : "text-foreground")}>
                     {selectedChannel.kind === "announcements"
                       ? t.communicationPage.clubAnnouncements
                       : selectedChannel.isTrainersChannel
@@ -1498,11 +1501,28 @@ export function CommunicationWorkspace({
                         : `# ${selectedChannel.label}`}
                   </div>
                 </div>
+                {embedded ? (
+                  <Select value={selectedChannelId} onValueChange={setSelectedChannelId}>
+                    <SelectTrigger
+                      aria-label={t.communicationPage.channels}
+                      className="h-9 w-full rounded-xl border-neutral-200/80 bg-neutral-50 text-sm text-neutral-900 sm:hidden"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {channels.map((channel) => (
+                        <SelectItem key={channel.id} value={channel.id}>
+                          {channel.kind === "announcements" ? channel.label : `# ${channel.label}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : null}
                 {selectedChannel.kind === "chat" && !embedded ? (
                   <div className="text-[11px] text-muted-foreground">{t.communicationPage.chatManagementPlatform}</div>
                 ) : null}
                 {selectedChannel.kind === "announcements" && canPostAnnouncements ? (
-                  <div className="shrink-0">{announceButton}</div>
+                  <div className="shrink-0 self-end sm:self-auto">{announceButton}</div>
                 ) : null}
               </div>
 
@@ -1705,63 +1725,77 @@ export function CommunicationWorkspace({
                 <>
                   <div
                     className={cn(
-                      "px-4 pt-3 border-b pb-3",
-                      embedded ? "border-neutral-200/80" : "border-border/70",
+                      "shrink-0 border-b",
+                      embedded ? "border-neutral-200/80 px-3 py-2 sm:px-4 sm:pt-3 sm:pb-3" : "border-border/70 px-4 pt-3 pb-3",
                     )}
                   >
                     <div
                       className={cn(
                         "flex items-center gap-2 rounded-xl px-3",
                         embedded
-                          ? cn(clubEmbeddedLightInputShellClass, "py-2")
+                          ? cn(clubEmbeddedLightInputShellClass, "py-1.5 sm:py-2")
                           : "border border-border bg-background/70",
                       )}
                     >
-                      <Search className={cn("w-4 h-4", embedded ? "text-neutral-500" : "text-muted-foreground")} />
+                      <Search className={cn("w-4 h-4 shrink-0", embedded ? "text-neutral-500" : "text-muted-foreground")} />
                       <Input
                         value={messageSearch}
                         onChange={(event) => setMessageSearch(event.target.value)}
                         placeholder={t.communicationPage.searchMessagesPlaceholder}
                         className={cn(
-                          "border-0 bg-transparent shadow-none focus-visible:ring-0",
+                          "h-8 border-0 bg-transparent shadow-none focus-visible:ring-0 sm:h-9",
                           embedded && clubEmbeddedLightInputFieldClass,
                         )}
                       />
                     </div>
-                    <div className="mt-2 flex items-center justify-between">
-                      <div className={cn("text-[11px]", embedded ? "text-neutral-500" : "text-muted-foreground")}>
-                        {messagePaginationLabel}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-2 text-xs"
-                          disabled={messagePage <= 1}
-                          onClick={() => setMessagePage((current) => Math.max(1, current - 1))}
+                    {messageTotalPages > 1 || !embedded ? (
+                      <div
+                        className={cn(
+                          "mt-2 flex items-center justify-between gap-2",
+                          embedded && messageTotalPages <= 1 && "sm:mt-2",
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "min-w-0 truncate text-[10px] sm:text-[11px]",
+                            embedded ? "text-neutral-500" : "text-muted-foreground",
+                          )}
                         >
-                          {t.communicationPage.paginationPrevious}
-                        </Button>
-                        <span className="text-[11px] text-muted-foreground">
-                          {messagePage}/{messageTotalPages}
-                        </span>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-2 text-xs"
-                          disabled={messagePage >= messageTotalPages}
-                          onClick={() => setMessagePage((current) => Math.min(messageTotalPages, current + 1))}
-                        >
-                          {t.communicationPage.paginationNext}
-                        </Button>
+                          {messagePaginationLabel}
+                        </div>
+                        {messageTotalPages > 1 ? (
+                          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs"
+                              disabled={messagePage <= 1}
+                              onClick={() => setMessagePage((current) => Math.max(1, current - 1))}
+                            >
+                              {t.communicationPage.paginationPrevious}
+                            </Button>
+                            <span className="text-[10px] text-muted-foreground sm:text-[11px]">
+                              {messagePage}/{messageTotalPages}
+                            </span>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs"
+                              disabled={messagePage >= messageTotalPages}
+                              onClick={() => setMessagePage((current) => Math.min(messageTotalPages, current + 1))}
+                            >
+                              {t.communicationPage.paginationNext}
+                            </Button>
+                          </div>
+                        ) : null}
                       </div>
-                    </div>
+                    ) : null}
                   </div>
                   <div
                     className={cn(
-                      "flex-1 overflow-y-auto p-4 space-y-2",
+                      "min-h-0 flex-1 overflow-y-auto p-3 space-y-2 sm:p-4",
                       embedded
                         ? "bg-neutral-50/80"
                         : "bg-[radial-gradient(circle_at_10%_20%,hsl(var(--primary)/0.08),transparent_35%),radial-gradient(circle_at_90%_80%,hsl(var(--accent)/0.08),transparent_35%)]",
@@ -1983,7 +2017,7 @@ export function CommunicationWorkspace({
 
                   <div
                     className={cn(
-                      "border-t p-3 space-y-2",
+                      "shrink-0 border-t p-2.5 space-y-2 sm:p-3",
                       embedded ? "border-neutral-200/80 bg-white" : "border-border/70 bg-background/70",
                     )}
                   >

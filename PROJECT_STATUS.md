@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-07-06 (bug investigation remediation — CI, messaging, auth, quality)
+Last updated: 2026-07-06 (Sommerfest kickoff sync, tournament info, mobile club messaging)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -47,7 +47,8 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - **Public club AI 4 T RBAC (2026-07-05):** Role-scoped Guide/Agent in public modal; server-side co-trainer prompts. Deploy **`co-trainer`**. See **`CHANGELOG.md`** § **2026-07-05 (Sommerfest tournament UX…)**.
 - **Public messaging forward + embedded UX (2026-07-05):** Chat forward to WhatsApp/native/copy with ONE4Team + club attribution; embedded composer text contrast fix; forward menu z-index. CTA **Open Messages**. See **`CHANGELOG.md`** § **2026-07-05 (Public messaging…)**.
 - **Public club microsite polish (2026-07-05):** Team detail mobile CTAs, announcement delete hover, news layout, DE AI 4 T title, Sommerfest mobile hero logo + pitch filters. See **`CHANGELOG.md`** same section.
-- **Bug investigation remediation (2026-07-06):** Communication pagination count + i18n footer; dashboard nav dedupe; password reset origin **`redirectTo`**; Supabase config banner/prod gate; ESLint/CI green (309 unit tests); lazy analytics charts; RLS optional CI workflow; E2E auth helper; **`OPS-AUTH-URL-001`** ops checklist. See **`CHANGELOG.md`** § **2026-07-06**.
+- **Sommerfest kickoff sync + tournament info + mobile messaging (2026-07-06):** Admin match time save uses Europe/Berlin offset; schedule/live board reflect persisted **`match_date`**; **Info** popover for match durations on tournament hero; embedded club **Communication** modal optimized for mobile (channel dropdown, scrollable messages). See **`CHANGELOG.md`** § **2026-07-06 (Sommerfest kickoff sync…)**.
+- **Bug investigation remediation (2026-07-06):** Communication pagination count + i18n footer; dashboard nav dedupe; password reset origin **`redirectTo`**; Supabase config banner/prod gate; ESLint/CI green (309 unit tests); lazy analytics charts; RLS optional CI workflow; E2E auth helper; **`OPS-AUTH-URL-001`** ops checklist. See **`CHANGELOG.md`** § **2026-07-06 (Bug investigation…)**.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 

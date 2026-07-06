@@ -1,11 +1,12 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-07-06 (bug investigation remediation — CI, messaging, auth, quality)
+Last updated: 2026-07-06 (Sommerfest kickoff sync, tournament info, mobile club messaging)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **Sommerfest kickoff sync + tournament info + mobile messaging (2026-07-06):** Admin **`/matches`** Sommerfest fixtures — Berlin timezone save/load (**`sommerfestDatetimeLocalToIso`** / **`sommerfestIsoToDatetimeLocal`**); schedule + public board group by **effective kickoff** from DB; **`SommerfestRegulationsInfoButton`** (match durations) beside **Share tournament**; embedded **Communication** modal — mobile channel **`<Select>`**, hidden sidebar, readable scrollable chat thread, **`100dvh`** modal. See **`CHANGELOG.md`** § **2026-07-06 (Sommerfest kickoff sync…)**.
 - **Bug investigation remediation (2026-07-06):** Communication pagination count fix (**`communication-pagination.ts`**); dashboard nav duplicate-key cleanup; **`applyPromptInChat`** ESLint fix; stable **`resolve-cancel-activity`** test; marketplace tab permission map; password reset **`redirectTo`**; Communication pagination i18n; **`SupabaseConfigBanner`** + prod config gate; RLS integration docs/workflow; E2E auth fixture; full ESLint green + lazy **`AnalyticsWidgets`**; hero default interim image. Operator track **`OPS-AUTH-URL-001`**. See **`CHANGELOG.md`** § **2026-07-06**.
 - **Public club messaging — forward + embedded UX (2026-07-05):** Embedded Communication modal — readable chat input (**`clubEmbeddedLightInput*`** classes); **Forward** per message via **`message-forward-button.tsx`** (WhatsApp / native share / copy) with header **`Message forwarded from ONE4Team - {club}`** + From/Team lines (**`share-utils.ts`**). Dropdown **`z-[80]`** above modal. CTA **Open Messages** / **Nachrichten öffnen**. See **`CHANGELOG.md`** § **2026-07-05 (Public messaging…)**.
 - **Public club microsite polish (2026-07-05):** Team detail mobile CTA dedupe; announcement delete hover contrast; news section symmetric **`max-w-6xl`** container; DE **AI 4 T** home title. See **`CHANGELOG.md`** same section.

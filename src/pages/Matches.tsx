@@ -39,6 +39,8 @@ import { resolveShowcaseTeamId } from "@/lib/tsv-allach-public-matches";
 import {
   extractSommerfestMatchIdFromNotes,
   isSommerfestTemplateOnlyMatch,
+  sommerfestDatetimeLocalToIso,
+  sommerfestIsoToDatetimeLocal,
   sommerfestMatchImportKey,
   sommerfestMatchToInsertRow,
   sommerfestTemplateToDashboardMatch,
@@ -99,6 +101,19 @@ function toDatetimeLocalValue(iso: string): string {
   const date = new Date(iso);
   const pad = (value: number) => String(value).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function matchDatetimeLocalValue(match: Pick<Match, "match_date" | "notes" | "sommerfestTemplateId">): string {
+  if (isSommerfestLinkedMatch(match)) return sommerfestIsoToDatetimeLocal(match.match_date);
+  return toDatetimeLocalValue(match.match_date);
+}
+
+function matchDateForPersist(
+  match: Pick<Match, "notes" | "sommerfestTemplateId">,
+  editValue: string,
+): string {
+  if (isSommerfestLinkedMatch(match)) return sommerfestDatetimeLocalToIso(editValue);
+  return editValue;
 }
 
 function formatMatchHeadline(match: Pick<Match, "opponent" | "is_home" | "team_id" | "teams">, teams: Team[]) {
@@ -508,7 +523,7 @@ const Matches = () => {
     setAwayScore(match.away_score?.toString() || "");
     setEditOpponent(match.opponent);
     setEditIsHome(match.is_home);
-    setEditMatchDate(toDatetimeLocalValue(match.match_date));
+    setEditMatchDate(matchDatetimeLocalValue(match));
     setEditLocation(match.location ?? "");
     setEditTeamId(match.team_id ?? "");
     setEditCompId(match.competition_id ?? "");
@@ -562,6 +577,7 @@ const Matches = () => {
       };
     });
     setEditOpponentLogoUrl(updated.opponent_logo_url ?? null);
+    setEditMatchDate(matchDatetimeLocalValue(updated));
   };
 
   const resolveSelectedMatchId = async (): Promise<string | null> => {
@@ -704,7 +720,7 @@ const Matches = () => {
         .update({
           opponent: editOpponent.trim(),
           is_home: editIsHome,
-          match_date: editMatchDate,
+          match_date: matchDateForPersist(selectedMatch, editMatchDate),
           location: editLocation.trim() || null,
           team_id: nextTeamId,
           competition_id: editCompId || null,
@@ -898,6 +914,7 @@ const Matches = () => {
                   ) : null}
                   <SommerfestMatchSchedule
                     teams={teams}
+                    dbMatches={sommerfestDbMatches}
                     interactive
                     onMatchClick={(template) => void openSommerfestMatch(template)}
                   />

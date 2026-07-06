@@ -7,6 +7,9 @@ import { resolveShowcaseTeamId } from "@/lib/tsv-allach-public-matches";
 import { resolveCanonicalYouthTeamName } from "@/lib/youth-team-label";
 
 export const SOMMERFEST_MATCH_IMPORT_KEY_PREFIX = "tsv-sommerfest-2026:";
+export const SOMMERFEST_TIMEZONE = "Europe/Berlin";
+/** Sommerfest day uses fixed CEST (+02:00) for stable kickoff conversion. */
+const SOMMERFEST_UTC_OFFSET = "+02:00";
 
 export function sommerfestMatchImportKey(templateId: string): string {
   return `${SOMMERFEST_MATCH_IMPORT_KEY_PREFIX}${templateId}`;
@@ -27,9 +30,62 @@ export function extractSommerfestMatchIdFromNotes(notes: string | null | undefin
 
 export function sommerfestMatchDateIso(time: string): string {
   const [hours, minutes] = time.split(":").map((part) => Number(part));
-  const date = new Date(`${SOMMERFEST_DATE}T00:00:00+02:00`);
+  const date = new Date(`${SOMMERFEST_DATE}T00:00:00${SOMMERFEST_UTC_OFFSET}`);
   date.setHours(hours, minutes ?? 0, 0, 0);
   return date.toISOString();
+}
+
+function berlinTimeParts(iso: string) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: SOMMERFEST_TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date(iso));
+  const hour = parts.find((part) => part.type === "hour")?.value ?? "00";
+  const minute = parts.find((part) => part.type === "minute")?.value ?? "00";
+  return { hour, minute };
+}
+
+/** HH:mm kickoff label in Europe/Berlin. */
+export function sommerfestBerlinTimeLabel(iso: string): string {
+  const { hour, minute } = berlinTimeParts(iso);
+  return `${hour}:${minute}`;
+}
+
+/** Effective schedule time: persisted DB kickoff when available, else template default. */
+export function sommerfestEffectiveKickoffTime(
+  template: SommerfestMatch,
+  dbMatch?: { match_date: string } | null,
+): string {
+  if (dbMatch?.match_date) return sommerfestBerlinTimeLabel(dbMatch.match_date);
+  return template.time;
+}
+
+/** Convert `<input type="datetime-local">` value to ISO using Sommerfest Berlin offset. */
+export function sommerfestDatetimeLocalToIso(localValue: string): string {
+  const match = localValue.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
+  if (!match) return localValue;
+  const [, datePart, hours, minutes] = match;
+  const date = new Date(`${datePart}T00:00:00${SOMMERFEST_UTC_OFFSET}`);
+  date.setHours(Number(hours), Number(minutes), 0, 0);
+  return date.toISOString();
+}
+
+/** Convert stored ISO to `<input type="datetime-local">` in Europe/Berlin. */
+export function sommerfestIsoToDatetimeLocal(iso: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: SOMMERFEST_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date(iso));
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "00";
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
 }
 
 export function sommerfestMatchOpponent(

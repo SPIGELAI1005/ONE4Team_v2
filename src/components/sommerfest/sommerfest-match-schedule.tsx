@@ -8,6 +8,7 @@ import {
   type SommerfestMatch,
   type SommerfestMatchCategory,
 } from "@/lib/tsv-allach-sommerfest-2026";
+import { sommerfestEffectiveKickoffTime } from "@/lib/tsv-allach-sommerfest-match-sync";
 import { cn } from "@/lib/utils";
 
 const CATEGORY_ORDER: (SommerfestMatchCategory | "all")[] = [
@@ -18,24 +19,30 @@ const CATEGORY_ORDER: (SommerfestMatchCategory | "all")[] = [
   "herren",
 ];
 
-function groupByTime(matches: SommerfestMatch[]) {
+function groupByEffectiveTime(
+  matches: SommerfestMatch[],
+  dbMatches?: ReadonlyMap<string, { match_date: string }>,
+) {
   const map = new Map<string, SommerfestMatch[]>();
   for (const match of matches) {
-    const bucket = map.get(match.time) ?? [];
+    const time = sommerfestEffectiveKickoffTime(match, dbMatches?.get(match.id));
+    const bucket = map.get(time) ?? [];
     bucket.push(match);
-    map.set(match.time, bucket);
+    map.set(time, bucket);
   }
   return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
 }
 
 interface SommerfestMatchScheduleProps {
   teams?: { id: string; name: string }[];
+  dbMatches?: ReadonlyMap<string, { match_date: string }>;
   onMatchClick?: (match: SommerfestMatch) => void;
   interactive?: boolean;
 }
 
 export function SommerfestMatchSchedule({
   teams = [],
+  dbMatches,
   onMatchClick,
   interactive = false,
 }: SommerfestMatchScheduleProps) {
@@ -44,7 +51,7 @@ export function SommerfestMatchSchedule({
   const [category, setCategory] = useState<SommerfestMatchCategory | "all">("all");
 
   const filtered = useMemo(() => sommerfestMatchesByCategory(category), [category]);
-  const grouped = useMemo(() => groupByTime(filtered), [filtered]);
+  const grouped = useMemo(() => groupByEffectiveTime(filtered, dbMatches), [filtered, dbMatches]);
 
   function displayTeamName(label: string) {
     return resolveCanonicalYouthTeamName(teams, label);
