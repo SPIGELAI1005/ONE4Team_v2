@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import FootballFieldAnimation from "@/components/landing/FootballFieldAnimation";
+import { Ai4TInnovationHeroCard } from "@/components/ai/Ai4TInnovationHeroCard";
 import logo from "@/assets/one4team-logo.png";
 
 /** Animated counter that counts from 0 to `target` when visible */
@@ -130,6 +131,12 @@ const About = () => {
             {t.aboutPage.heroLine2}
             <br />
             {t.aboutPage.heroLine3}
+            {"heroLine4" in t.aboutPage && t.aboutPage.heroLine4 ? (
+              <>
+                <br />
+                {t.aboutPage.heroLine4}
+              </>
+            ) : null}
           </motion.p>
         </motion.div>
       </section>
@@ -292,31 +299,45 @@ const About = () => {
       </section>
 
       {/* AI Section */}
-      <section className="py-16 sm:py-20 md:py-24">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <FadeInSection className="text-center mb-10 sm:mb-14">
-            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4">
+      <section className="relative overflow-hidden py-16 sm:py-20 md:py-24">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent dark:via-[#e31e24]/[0.05]" />
+        <div
+          className="pointer-events-none absolute left-1/2 top-24 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/5 blur-3xl dark:bg-[#e31e24]/10 sm:h-96 sm:w-96"
+          aria-hidden
+        />
+
+        <div className="container relative z-10 mx-auto px-4">
+          <FadeInSection className="mb-8 text-center sm:mb-10">
+            <h2 className="mb-3 font-display text-3xl font-bold sm:mb-4 sm:text-4xl md:text-5xl">
               {t.aboutPage.poweredByAI} <span className="text-gradient-gold">{t.aboutPage.aiHighlight}</span>
             </h2>
-            <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl mx-auto">
+            <p className="mx-auto max-w-2xl text-sm text-muted-foreground sm:text-base md:text-lg">
               {t.aboutPage.aiDesc}
             </p>
           </FadeInSection>
 
-          <div className="space-y-4 sm:space-y-6">
+          <FadeInSection className="mx-auto mb-10 max-w-6xl sm:mb-12" delay={0.05}>
+            <Ai4TInnovationHeroCard
+              title={t.featuresPage.aiTitle}
+              titleHighlight={t.featuresPage.aiHighlight}
+              description={t.featuresPage.aiDesc}
+            />
+          </FadeInSection>
+
+          <div className="mx-auto max-w-4xl space-y-4 sm:space-y-6">
             {[
               { icon: Bot, title: t.aboutPage.coTrainerTitle, desc: t.aboutPage.coTrainerAboutDesc },
               { icon: BarChart3, title: t.aboutPage.smartAnalytics, desc: t.aboutPage.smartAnalyticsDesc },
               { icon: Rocket, title: t.aboutPage.coAIminTitle, desc: t.aboutPage.coAIminAboutDesc },
             ].map((item, i) => (
-              <FadeInSection key={i} delay={i * 0.1}>
-                <div className="glass-card rounded-2xl p-5 sm:p-6 flex gap-4 items-start hover:border-primary/20 transition-all duration-300">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl bg-gradient-gold flex items-center justify-center">
-                    <item.icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary-foreground" strokeWidth={1.5} />
+              <FadeInSection key={i} delay={0.1 + i * 0.1}>
+                <div className="glass-card flex items-start gap-4 rounded-2xl p-5 transition-all duration-300 hover:border-primary/20 sm:p-6">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-gold sm:h-12 sm:w-12">
+                    <item.icon className="h-5 w-5 text-primary-foreground sm:h-6 sm:w-6" strokeWidth={1.5} />
                   </div>
                   <div>
-                    <h3 className="font-display font-bold text-foreground text-sm sm:text-base mb-1">{item.title}</h3>
-                    <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">{item.desc}</p>
+                    <h3 className="mb-1 font-display text-sm font-bold text-foreground sm:text-base">{item.title}</h3>
+                    <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">{item.desc}</p>
                   </div>
                 </div>
               </FadeInSection>

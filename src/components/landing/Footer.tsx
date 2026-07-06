@@ -46,7 +46,7 @@ const Footer = () => {
                   <XIcon className="w-4 h-4" />
                 </a>
                 <a
-                  href="mailto:spigelai@gmail.com"
+                  href="mailto:support@one4team.com"
                   className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all"
                   title="Email"
                 >

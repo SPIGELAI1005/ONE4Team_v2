@@ -269,6 +269,12 @@
     border-color: hsl(var(--ring) / 0.2);
   }
 
+  /* Stable panel for legal/long-form content (no backdrop-filter or inset highlight flicker) */
+  .legal-panel {
+    background: hsl(var(--card) / 0.85);
+    border: 1px solid hsl(var(--border) / 0.55);
+  }
+
   /* iOS liquid-magnifier glass card */
   .glass-liquid {
     position: relative;

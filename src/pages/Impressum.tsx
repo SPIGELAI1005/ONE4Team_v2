@@ -10,10 +10,10 @@ import Footer from "@/components/landing/Footer";
 function FadeInSection({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.6, delay, ease: "easeOut" }}
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.45, delay, ease: "easeOut" }}
       className={className}
     >
       {children}
@@ -78,7 +78,7 @@ const Impressum = () => {
         <div className="container mx-auto px-4 max-w-3xl space-y-8">
           {/* Company Info */}
           <FadeInSection>
-            <div className="glass-card rounded-2xl p-5 sm:p-6">
+            <div className="legal-panel rounded-2xl p-5 sm:p-6">
               <h2 className="font-display font-bold text-foreground text-base sm:text-lg mb-4">{imp.companyInfo.heading}</h2>
               <div className="space-y-1.5 text-sm text-muted-foreground">
                 <p className="font-semibold text-foreground">{imp.companyInfo.name}</p>
@@ -92,7 +92,7 @@ const Impressum = () => {
 
           {/* Registration */}
           <FadeInSection delay={0.05}>
-            <div className="glass-card rounded-2xl p-5 sm:p-6">
+            <div className="legal-panel rounded-2xl p-5 sm:p-6">
               <h2 className="font-display font-bold text-foreground text-base sm:text-lg mb-3">{imp.registration.heading}</h2>
               <p className="text-muted-foreground text-sm leading-relaxed">{imp.registration.content}</p>
             </div>
@@ -100,7 +100,7 @@ const Impressum = () => {
 
           {/* VAT */}
           <FadeInSection delay={0.1}>
-            <div className="glass-card rounded-2xl p-5 sm:p-6">
+            <div className="legal-panel rounded-2xl p-5 sm:p-6">
               <h2 className="font-display font-bold text-foreground text-base sm:text-lg mb-3">{imp.vat.heading}</h2>
               <p className="text-muted-foreground text-sm leading-relaxed">{imp.vat.content}</p>
             </div>
@@ -108,7 +108,7 @@ const Impressum = () => {
 
           {/* Responsible for Content */}
           <FadeInSection delay={0.15}>
-            <div className="glass-card rounded-2xl p-5 sm:p-6">
+            <div className="legal-panel rounded-2xl p-5 sm:p-6">
               <h2 className="font-display font-bold text-foreground text-base sm:text-lg mb-3">{imp.responsibility.heading}</h2>
               <p className="text-muted-foreground text-sm leading-relaxed">{imp.responsibility.content}</p>
             </div>
@@ -116,7 +116,7 @@ const Impressum = () => {
 
           {/* EU Dispute Resolution */}
           <FadeInSection delay={0.2}>
-            <div className="glass-card rounded-2xl p-5 sm:p-6">
+            <div className="legal-panel rounded-2xl p-5 sm:p-6">
               <h2 className="font-display font-bold text-foreground text-base sm:text-lg mb-3">{imp.disputeResolution.heading}</h2>
               <p className="text-muted-foreground text-sm leading-relaxed">
                 {imp.disputeResolution.content.split("https://ec.europa.eu/consumers/odr")[0]}
@@ -136,7 +136,7 @@ const Impressum = () => {
 
           {/* Liability for Content */}
           <FadeInSection delay={0.25}>
-            <div className="glass-card rounded-2xl p-5 sm:p-6">
+            <div className="legal-panel rounded-2xl p-5 sm:p-6">
               <h2 className="font-display font-bold text-foreground text-base sm:text-lg mb-3">{imp.liability.heading}</h2>
               <p className="text-muted-foreground text-sm leading-relaxed">{imp.liability.content}</p>
             </div>
@@ -144,7 +144,7 @@ const Impressum = () => {
 
           {/* Liability for Links */}
           <FadeInSection delay={0.3}>
-            <div className="glass-card rounded-2xl p-5 sm:p-6">
+            <div className="legal-panel rounded-2xl p-5 sm:p-6">
               <h2 className="font-display font-bold text-foreground text-base sm:text-lg mb-3">{imp.liabilityLinks.heading}</h2>
               <p className="text-muted-foreground text-sm leading-relaxed">{imp.liabilityLinks.content}</p>
             </div>
@@ -152,7 +152,7 @@ const Impressum = () => {
 
           {/* Copyright */}
           <FadeInSection delay={0.35}>
-            <div className="glass-card rounded-2xl p-5 sm:p-6">
+            <div className="legal-panel rounded-2xl p-5 sm:p-6">
               <h2 className="font-display font-bold text-foreground text-base sm:text-lg mb-3">{imp.copyright.heading}</h2>
               <p className="text-muted-foreground text-sm leading-relaxed">{imp.copyright.content}</p>
             </div>

@@ -1,6 +1,6 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-07-06 (Sommerfest kickoff sync, tournament info, mobile club messaging)
+Last updated: 2026-07-07 (legal audit, marketing polish, UX fixes)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
@@ -49,6 +49,7 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - **Public club microsite polish (2026-07-05):** Team detail mobile CTAs, announcement delete hover, news layout, DE AI 4 T title, Sommerfest mobile hero logo + pitch filters. See **`CHANGELOG.md`** same section.
 - **Sommerfest kickoff sync + tournament info + mobile messaging (2026-07-06):** Admin match time save uses Europe/Berlin offset; schedule/live board reflect persisted **`match_date`**; **Info** popover for match durations on tournament hero; embedded club **Communication** modal optimized for mobile (channel dropdown, scrollable messages). See **`CHANGELOG.md`** § **2026-07-06 (Sommerfest kickoff sync…)**.
 - **Bug investigation remediation (2026-07-06):** Communication pagination count + i18n footer; dashboard nav dedupe; password reset origin **`redirectTo`**; Supabase config banner/prod gate; ESLint/CI green (309 unit tests); lazy analytics charts; RLS optional CI workflow; E2E auth helper; **`OPS-AUTH-URL-001`** ops checklist. See **`CHANGELOG.md`** § **2026-07-06 (Bug investigation…)**.
+- **Legal audit + marketing polish (2026-07-07):** Privacy/Terms/cookie copy for AI 4 T, Stripe, sub-processors; Privacy **13** sections; **`.legal-panel`** legal-page flicker fix; **41-day** trial; Pricing **AI 4 T** add-on; **`support@one4team.com`**; Auth logo home link; Matches mobile datetime fields; **`ScrollToTop`**. Operator **LEGAL-OPS-001** / **LEGAL-OPS-002** open. See **`CHANGELOG.md`** § **2026-07-07**.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 

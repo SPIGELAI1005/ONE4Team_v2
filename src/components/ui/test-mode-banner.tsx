@@ -39,7 +39,7 @@ export function TestModeBanner() {
       "",
     ].join("\n");
 
-    const mailtoUrl = `mailto:spigelai@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const mailtoUrl = `mailto:support@one4team.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     // Use same-tab navigation so mailto is handled reliably by the OS/browser.
     window.location.href = mailtoUrl;
   };

@@ -79,6 +79,22 @@ Reference: **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** §B Auth, §C Custom domai
 
 ## NOW (top priority)
 
+### Legal audit + marketing polish (2026-07-07) — code in repo
+- [x] **LEGAL-001** Privacy/Terms/cookie GDPR + EU AI Act copy refresh (EN + DE); Privacy **13** sections; Terms **15** sections
+- [x] **LEGAL-002** Privacy **§5 Sub-processors & integrations** (Supabase, Vercel, Stripe, AI 4 T, email, External Bridge)
+- [x] **LEGAL-UI-001** Legal page section flicker fix — **`.legal-panel`** + opacity-only **`FadeInSection`** (`Privacy`, `Terms`, `Impressum`)
+- [x] **MARKETING-001** **41-day** free trial copy (EN/DE pricing + FAQ)
+- [x] **MARKETING-002** Pricing add-ons — Payments, Pro Comms, **AI 4 T** (EUR 4/mo, video, aligned card layout)
+- [x] **MARKETING-003** DE pricing counter suffix **Tage**; remove **Add-on** prefix from add-on titles
+- [x] **MARKETING-004** About EN hero four-line copy; **`Ai4TInnovationHeroCard`** extraction on Features
+- [x] **SUPPORT-001** **`support@one4team.com`** across i18n, Footer, SupportFaq, test banner, `.env.example`
+- [x] **UX-001** Auth header logo navigates home (`AppHeader` **`logoHref`**)
+- [x] **UX-002** **`ScrollToTop`** on route change
+- [x] **UX-003** Matches mobile **`datetime-local`** field alignment (`MATCH_DETAIL_FIELD_CLASS`)
+- [x] **LEGAL-DOC-001** Doc sync — **`CHANGELOG.md`**, **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`ROADMAP.md`**, **`README.md`**, **`HOLD.md`**, audit/ops docs
+- [ ] **LEGAL-OPS-001** Operator: full postal street address → Impressum + Privacy controller (TMG §5)
+- [ ] **LEGAL-OPS-002** Operator: HRB number → Impressum once registered at Amtsgericht München
+
 ### Sommerfest kickoff sync + mobile messaging (2026-07-06) — code in repo
 - [x] **SOMMERFEST-TIME-001** Berlin timezone save/load for Sommerfest match kickoffs (`tsv-allach-sommerfest-match-sync.ts`, `Matches.tsx`)
 - [x] **SOMMERFEST-TIME-002** Schedule + public board group by effective DB kickoff (`sommerfest-match-schedule.tsx`, `public-sommerfest-tournament-board.tsx`)
@@ -602,10 +618,14 @@ See [`docs/AI4T_ROADMAP.md`](docs/AI4T_ROADMAP.md) · Golden harness [`docs/AI4T
 
 ### P10-010 Legal pages & compliance
 - [x] **P10-010a** Create Terms of Service page (`/terms`) with 14 sections, German law compliant.
-- [x] **P10-010b** Create Privacy Policy page (`/privacy`) with 11 sections, DSGVO/GDPR compliant.
+- [x] **P10-010b** Create Privacy Policy page (`/privacy`) with 13 sections, DSGVO/GDPR compliant.
 - [x] **P10-010c** Create Impressum page (`/impressum`) with 8 numbered sections per Section 5 TMG.
 - [x] **P10-010d** Add EN + DE translations for all legal content.
 - [x] **P10-010e** Add routes in `App.tsx` for `/terms`, `/privacy`, `/impressum`.
+- [x] **P10-010f** Privacy Policy: dedicated “Sub-processors & integrations” section (AI, Stripe, optional bridges) — EN + DE *(2026-07-07)*.
+- [x] **P10-010g** Legal pages UI: **`.legal-panel`** stable cards + opacity-only scroll-in (fix top-edge flicker on Privacy/Terms/Impressum) *(2026-07-07)*.
+- [ ] **LEGAL-OPS-001** Operator/legal: Add full postal street address to Impressum + Privacy controller section (TMG §5).
+- [ ] **LEGAL-OPS-002** Operator/legal: Add Handelsregister (HRB) number to Impressum once registered at Amtsgericht München; replace “registration pending”.
 
 ### P10-020 Cookie Consent & Footer
 - [x] **P10-020a** Create GDPR-compliant Cookie Consent Banner component.

@@ -1,6 +1,6 @@
 # ONE4Team — Comprehensive project audit
 
-**Audit date:** 2026-07-06 (updated for Sommerfest kickoff sync, tournament info button, mobile club messaging; prior: bug investigation remediation, public messaging forward/share, microsite polish, Sommerfest mobile refinements)  
+**Audit date:** 2026-07-07 (updated for legal audit + marketing polish: Privacy §5 sub-processors, AI 4 T legal copy, **41-day** trial, Pricing AI 4 T add-on, **`support@one4team.com`**, legal-page flicker fix; prior: Sommerfest kickoff sync, tournament info, mobile club messaging)  
 **Scope:** Codebase, architecture, UX/design, production readiness, competitive positioning, market value, and value-growth levers  
 **Primary reference (existing):** [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) — strict production-readiness review with risk register, readiness scores, and remediation sprints  
 
@@ -134,7 +134,8 @@ flowchart TB
 - **Public club microsite** — mobile header, team filter (`?team=`), RSVP on schedule/matches, Messages hub (**Open Messages**), embedded Communication with forward-to-WhatsApp, readable composer, **mobile channel dropdown + scrollable chat thread** (2026-07-06), **accurate pagination footer** (2026-07-06), Sommerfest live board with team logos/goals KPI/mobile live bar, **Info** duration popover + **persisted kickoff times** (2026-07-06), mobile hero club logo + pulse (2026-07-05).
 - **AI 4 T Agent** — contextual entry from Members/Teams/Activities; propose → confirm → execute reduces admin busywork.
 - **Member ops** — Excel/CSV import, draft → invite workflow, club card PNG export, team assignment from members and teams.
-- **Cookie consent** — GDPR-oriented preference centre (v2 schema in localStorage).
+- **Cookie consent** — GDPR-oriented preference centre (v2 schema in localStorage); AI 4 T explicitly outside cookie categories (2026-07-07).
+- **Legal pages** — Privacy **13** sections incl. **§5 Sub-processors & integrations** and **§11 AI 4 T**; Terms **§14 AI 4 T**; stable **`.legal-panel`** rendering without glass flicker (2026-07-07). Operator still owes full street address + HRB (**LEGAL-OPS-001** / **002**).
 
 ### UX gaps & friction
 

@@ -72,7 +72,7 @@ export const en = {
   hero: {
     tagline: "The complete operating system for hobby clubs.",
     subtitle: "People · Teams · Infrastructure · Partners · Community",
-    subtitleLine2: "One platform for operations, public club sites, and live tournaments. Pilot-proven with TSV Allach 09.",
+    subtitleLine2: "One platform for operations, public club sites, shop and live tournaments.",
     watchDemo: "Explore Features",
     membersManaged: "Members Managed",
     teamsManaged: "Teams & Squads",
@@ -149,7 +149,7 @@ export const en = {
     tabMarketing: "Marketing",
     yourPrivacyTitle: "Your privacy",
     yourPrivacyBody:
-      "When you use a website or web app, information may be stored or read in your browser, often as cookies. It can relate to your preferences or device and is mainly used so things work as expected. It usually does not identify you directly, but it can make the experience more personal. Because we respect your right to privacy, you can refuse certain non-essential categories. Use the category tabs to learn more and adjust defaults. Blocking some categories may limit parts of the experience or optional features.",
+      "When you use a website or web app, information may be stored or read in your browser, often as cookies. It can relate to your preferences or device and is mainly used so things work as expected. It usually does not identify you directly, but it can make the experience more personal. Because we respect your right to privacy, you can refuse certain non-essential categories. Use the category tabs to learn more and adjust defaults. Blocking some categories may limit parts of the experience or optional features. AI features (AI 4 T) are not controlled through these cookie categories; they are described in our Privacy Policy and require an active subscription or trial where applicable.",
     moreInfo: "More information",
     confirmSelection: "Save my choices",
     allowAll: "Allow all",
@@ -175,7 +175,7 @@ export const en = {
   termsPage: {
     title: "Terms of Service",
     subtitle: "Terms & Conditions for using ONE4Team",
-    lastUpdated: "Last updated: February 14, 2026",
+    lastUpdated: "Last updated: July 1, 2026",
     sections: [
       {
         title: "1. Scope and Provider",
@@ -230,7 +230,11 @@ export const en = {
         content: "The European Commission provides an online dispute resolution (ODR) platform at https://ec.europa.eu/consumers/odr. We are not obligated and not willing to participate in dispute resolution proceedings before a consumer arbitration board.",
       },
       {
-        title: "14. Severability",
+        title: "14. AI-assisted features (AI 4 T)",
+        content: "Optional AI features (AI 4 T) may be available depending on your subscription, trial, and role. AI outputs are generated automatically and provided for information and productivity support only. They do not constitute legal, medical, financial, or other professional advice. You and your club remain responsible for reviewing outputs before sharing them with members, publishing them, or using them in operations. AI features are club-scoped and subject to fair-use and security limits; misuse, off-topic abuse, or attempts to bypass safeguards may lead to throttling or suspension. Where required by the EU AI Act and related transparency rules, we inform users that they are interacting with an AI system and that outputs should be verified by a human.",
+      },
+      {
+        title: "15. Severability",
         content: "If any provision of these Terms is found to be invalid or unenforceable, the remaining provisions shall remain in full force and effect. The invalid provision shall be replaced by a valid provision that most closely achieves the economic purpose of the invalid provision.",
       },
     ],
@@ -240,50 +244,58 @@ export const en = {
   privacyPage: {
     title: "Privacy Policy",
     subtitle: "How we handle your data",
-    lastUpdated: "Last updated: February 14, 2026",
+    lastUpdated: "Last updated: July 1, 2026",
     sections: [
       {
         title: "1. Controller",
-        content: "The controller responsible for data processing is SPIGEL AI UG (haftungsbeschrankt), represented by George Neacsu, Munich, Germany. For data protection inquiries, please contact us at spigelai@gmail.com.",
+        content: "The controller responsible for data processing is SPIGEL AI UG (haftungsbeschrankt), represented by George Neacsu, Munich, Germany. For data protection inquiries, please contact us at support@one4team.com.",
       },
       {
         title: "2. Data We Collect",
-        content: "We collect and process the following categories of personal data: (a) Account data: email address, display name, avatar URL, phone number; (b) Club data: club memberships, roles, team assignments; (c) Activity data: training attendance, match participation, event RSVPs; (d) Payment data: dues records, payment status (no credit card data is stored on our servers); (e) Communication data: messages sent through the platform; (f) Technical data: IP address, browser type, device information, access times; (g) Usage data: pages visited, features used, interaction patterns.",
+        content: "We collect and process the following categories of personal data: (a) Account data: email address, display name, avatar URL, phone number; (b) Club data: club memberships, roles, team assignments; (c) Activity data: training attendance, match participation, event RSVPs; (d) Payment data: dues records, payment status (card data is processed by Stripe; we do not store full card numbers on our servers); (e) Communication data: messages sent through the platform; (f) Technical data: IP address, browser type, device information, access times; (g) Usage data: pages visited, features used, interaction patterns; (h) AI interaction data: prompts, chat messages, optional voice input transcripts, and aggregated AI usage statistics when you use AI 4 T features.",
       },
       {
         title: "3. Legal Basis for Processing",
-        content: "We process your data based on: (a) Contract performance (Art. 6(1)(b) GDPR) - to provide the Service you registered for; (b) Legitimate interests (Art. 6(1)(f) GDPR) - to improve our Service, ensure security, and prevent abuse; (c) Consent (Art. 6(1)(a) GDPR) - for analytics cookies and optional communications; (d) Legal obligation (Art. 6(1)(c) GDPR) - to comply with tax and commercial law requirements.",
+        content: "We process your data based on: (a) Contract performance (Art. 6(1)(b) GDPR) - to provide the Service you registered for, including optional AI 4 T features included in your plan or trial; (b) Legitimate interests (Art. 6(1)(f) GDPR) - to improve our Service, ensure security, prevent abuse, and enforce fair-use limits for AI features; (c) Consent (Art. 6(1)(a) GDPR) - for analytics cookies and optional communications; (d) Legal obligation (Art. 6(1)(c) GDPR) - to comply with tax and commercial law requirements.",
       },
       {
         title: "4. Data Sharing",
-        content: "We share data with: (a) Supabase Inc. (hosting and database services, servers in the EU); (b) Vercel Inc. (web hosting and CDN); (c) Other members of your club (only data necessary for club operations, as controlled by your club administrator). We do not sell your personal data to third parties. Data transfers to countries outside the EU/EEA are covered by Standard Contractual Clauses (SCCs) or adequacy decisions.",
+        content: "We share personal data with sub-processors and integrations that help us operate ONE4Team (see section 5), with payment providers when billing or checkout features are used, with AI model providers when AI 4 T is enabled, and with other members of your club where necessary for club operations and controlled by your club administrator. We do not sell personal data. International transfers use appropriate safeguards such as Standard Contractual Clauses (SCCs) where required.",
       },
       {
-        title: "5. Cookies",
+        title: "5. Sub-processors & integrations",
+        content: "We use the following categories of sub-processors and integrations to operate ONE4Team. This list reflects our standard production stack; optional club-configured integrations may add further providers chosen by your club administrator.\n\n(a) Infrastructure & hosting: Supabase Inc. (database, authentication, file storage, Edge functions; primary processing in the EU) and Vercel Inc. (application hosting and content delivery). Purpose: operating the platform, securing accounts, and storing club data.\n\n(b) Payments: Stripe (Stripe Payments Europe Ltd. / Stripe Inc. as applicable) for subscription billing and optional club dues checkout. Purpose: payment processing. We do not store full payment card numbers on our servers.\n\n(c) AI 4 T (optional): When enabled on an eligible plan or trial, prompts and permitted club context may be sent to a language-model provider. The platform default is typically OpenAI; club administrators may alternatively configure OpenAI, Anthropic, Google Gemini, Azure OpenAI, or GitHub Models using their own API credentials. Purpose: generating AI-assisted responses within club scope.\n\n(d) Transactional email: Supabase Auth and ONE4Team Edge functions send account, invite, and notification emails through the email channel configured in our Supabase project. Purpose: authentication, invitations, and operational notices.\n\n(e) External communication bridges (optional, club-configured): Where a club enables External Bridge features, message metadata and content may be exchanged with third-party messaging providers such as Meta WhatsApp Cloud API or SMS/email gateway providers configured by the club. Purpose: linking external channels to in-app club messaging.\n\n(f) Other club members: Operational data visible to other members of your club according to role and administrator settings is intentional sharing within your organization, not a sub-processor relationship.\n\nTransfers outside the EU/EEA: Where a provider processes data outside the EU/EEA, we rely on appropriate safeguards such as Standard Contractual Clauses (SCCs) and, where available, adequacy decisions. Contact support@one4team.com for more information. We update this list when we add or materially change sub-processors.",
+      },
+      {
+        title: "6. Cookies",
         content: "We use: (a) Essential cookies: required for authentication, session management, and language/theme preferences. These are strictly necessary and do not require consent. (b) Analytics cookies: used to understand how visitors interact with our platform. These are only set with your explicit consent. You can manage your cookie preferences at any time through the cookie settings banner.",
       },
       {
-        title: "6. Data Retention",
+        title: "7. Data Retention",
         content: "We retain your data for as long as your account is active or as needed to provide the Service. After account deletion, personal data is deleted within 30 days, except where longer retention is required by law (e.g., commercial records under HGB: 6-10 years). Anonymized usage statistics may be retained indefinitely.",
       },
       {
-        title: "7. Your Rights (GDPR)",
-        content: "Under the GDPR, you have the right to: (a) Access your personal data (Art. 15 GDPR); (b) Rectification of inaccurate data (Art. 16 GDPR); (c) Erasure of your data (Art. 17 GDPR); (d) Restriction of processing (Art. 18 GDPR); (e) Data portability (Art. 20 GDPR); (f) Object to processing (Art. 21 GDPR); (g) Withdraw consent at any time (Art. 7(3) GDPR). To exercise these rights, contact us at spigelai@gmail.com.",
+        title: "8. Your Rights (GDPR)",
+        content: "Under the GDPR, you have the right to: (a) Access your personal data (Art. 15 GDPR); (b) Rectification of inaccurate data (Art. 16 GDPR); (c) Erasure of your data (Art. 17 GDPR); (d) Restriction of processing (Art. 18 GDPR); (e) Data portability (Art. 20 GDPR); (f) Object to processing (Art. 21 GDPR); (g) Withdraw consent at any time (Art. 7(3) GDPR). To exercise these rights, contact us at support@one4team.com.",
       },
       {
-        title: "8. Data Security",
+        title: "9. Data Security",
         content: "We implement appropriate technical and organizational measures to protect your data, including: encryption in transit (TLS/SSL), encryption at rest, Row Level Security (RLS) policies for multi-tenant data isolation, regular security audits, and access controls based on the principle of least privilege.",
       },
       {
-        title: "9. Children",
+        title: "10. Children",
         content: "Our Service is not directed to children under 16. If a child under 16 uses the Service (e.g., as a club member), parental or guardian consent is required in accordance with Art. 8 GDPR. Club administrators are responsible for ensuring appropriate consent is obtained.",
       },
       {
-        title: "10. Changes to This Policy",
+        title: "11. AI 4 T and automated processing",
+        content: "ONE4Team offers optional AI-assisted features marketed as AI 4 T (for example Co-Trainer, admin copilot workflows, and match analysis). These features are available only on eligible plans or time-limited trials and are limited to club-scoped use. When you use them, we process your prompts and, where your role permits, relevant club context (such as teams, schedule, matches, roster snippets, or dues summaries) to generate responses. Processing is based on contract performance and, where applicable, legitimate interests in security and abuse prevention. Responses are generated automatically and may be incomplete or incorrect; they are assistive only and do not replace professional judgment. Authorized club administrators may connect their own AI provider credentials; in that case the selected provider processes data on the club's instructions. We apply rate limits, scope guardrails, and role-based access controls. We do not use AI 4 T for solely automated decisions with legal or similarly significant effects without human review. Under the EU AI Act, our intended use is transparency-oriented assistance for club operations rather than high-risk automated decision-making. Please avoid entering unnecessary special-category data (for example health details beyond what your club legitimately manages) into AI prompts.",
+      },
+      {
+        title: "12. Changes to This Policy",
         content: "We may update this Privacy Policy from time to time. Material changes will be communicated via email or in-app notification. The current version is always available at /privacy.",
       },
       {
-        title: "11. Supervisory Authority",
+        title: "13. Supervisory Authority",
         content: "You have the right to lodge a complaint with a data protection supervisory authority. The competent authority for our company is: Bayerisches Landesamt fur Datenschutzaufsicht (BayLDA), Promenade 18, 91522 Ansbach, Germany.",
       },
     ],
@@ -299,7 +311,7 @@ export const en = {
       name: "SPIGEL AI UG (haftungsbeschrankt)",
       represented: "Represented by: George Neacsu",
       address: "Munich, Germany",
-      email: "Email: spigelai@gmail.com",
+      email: "Email: support@one4team.com",
       website: "Website: https://www.one4team.com",
     },
     registration: {
@@ -1804,8 +1816,9 @@ export const en = {
   aboutPage: {
     title: "About",
     heroLine1: "ONE4Team is the complete operating system for hobby clubs.",
-    heroLine2: "We empower communities to organize, connect, and thrive through one unified platform",
-    heroLine3: "with built-in AI, public club microsites, and pilot-proven workflows.",
+    heroLine2: "We empower communities to organize, connect and thrive",
+    heroLine3: "through one unified platform",
+    heroLine4: "with built-in AI, public club microsites, and pilot-proven workflows.",
     ourMission: "Our",
     missionHighlight: "Mission",
     missionDesc: "Running a hobby club should be rewarding, not overwhelming. Yet most clubs still juggle spreadsheets, chat groups, paper forms, and disconnected tools just to keep things running.",
@@ -1881,7 +1894,7 @@ export const en = {
     title: "Powerful",
     titleHighlight: "Features",
     description: "Everything your club needs to thrive, from back-office operations to a bilingual public microsite,",
-    descriptionLine2: "live tournaments, and integrated AI. Built and refined with real pilot clubs.",
+    descriptionLine2: "live tournaments and integrated AI.",
     // Hero stats
     coreModules: "Core Modules",
     rolesSupported: "Roles Supported",
@@ -2067,7 +2080,7 @@ export const en = {
     // Bottom CTA
     ctaTitle: "Ready to transform",
     ctaHighlight: "your club?",
-    ctaDesc: "Start your free trial today. Experience every feature for 14 days, no credit card required.",
+    ctaDesc: "Start your free trial today. Experience every feature for 41 days, no credit card required.",
     ctaButton: "Start Free Trial",
     explorePricing: "Explore Pricing",
   },
@@ -2076,8 +2089,8 @@ export const en = {
   clubsAndPartnersPage: {
     title: "Our",
     titleHighlight: "Clubs & Partners",
-    description: "ONE4Team is built hand-in-hand with real clubs and trusted industry partners.",
-    descriptionLine2: "TSV Allach 09 pilots the platform in production, from public microsites to Sommerfest 2026 and integrated AI.",
+    description: "ONE4Team is built hand-in-hand with real clubs from diverse sport arts and trusted industry partners.",
+    descriptionLine2: "",
     // Hero stats
     partnerClubs: "Pilot Clubs",
     industryPartners: "Industry Partners",
@@ -2176,27 +2189,32 @@ export const en = {
     earlyBirdUntil: "all plans until December 13th, 2026!",
     timeLeft: "left",
     freeTrial: "Free Trial",
+    freeTrialCountSuffix: " days",
     setupFee: "Setup Fee",
     save20: "Yearly (save 20%)",
     mostPopular: "Most Popular",
     custom: "Custom",
     contactUs: "Contact Us",
     allPlansInclude: "All plans include a",
-    freeTrialDays: "14-day free trial",
+    freeTrialDays: "41-day free trial",
     noCreditCard: ". No credit card required. Volume discounts apply automatically for larger clubs.",
     optionalAddons: "Optional",
     addonsHighlight: "Add-ons",
     addonsDesc: "Enhance any plan with powerful add-on modules. Available for all tiers.",
-    paymentsAddon: "Payments Add-on",
+    paymentsAddon: "Payments",
     paymentsAddonDesc: "Accept dues in-app, generate invoices/receipts, and automatic reconciliation.",
-    proCommsAddon: "Pro Comms Add-on",
+    proCommsAddon: "Pro Comms",
     proCommsAddonDesc: "WhatsApp, SMS & email notifications, scheduled broadcasts, and message templates.",
+    ai4tAddon: "AI 4 T",
+    ai4tAddonDesc: "Club-aware AI workspace: smarter session planning, admin and management. Less paperwork, more time for sport.",
+    ai4tAddonPrice: "EUR 4/mo",
     howPricingWorks: "How",
     pricingWorksHighlight: "Pricing",
     pricingWorksEnd: "Works",
     pricingWorksDesc: "Transparent and predictable. Every plan follows a simple formula.",
     basePrice: "Base Price",
     basePriceDesc: "A small fixed fee per plan that covers core infrastructure, updates, and platform access.",
+    pricePerMember: "Price per Member",
     perMember: "Per Member",
     perMemberDesc: "A fair per-member fee that scales with your club. Only pay for active members you actually manage.",
     volumeDiscount: "Volume Discount",
@@ -2222,7 +2240,7 @@ export const en = {
     learnMore: "Learn More",
     startFreeTrialToday: "Start your free trial",
     todayHighlight: "today.",
-    ctaDesc: "14 days. All features. No credit card. See why clubs choose ONE4Team.",
+    ctaDesc: "41 days. All features. No credit card. See why clubs choose ONE4Team.",
     // Plan names & descriptions
     kickoff: "Kick-off",
     kickoffDesc: "Best for small teams getting organized.",
@@ -2317,7 +2335,7 @@ export const en = {
     faq: [
       {
         q: "Can I try ONE4Team for free?",
-        a: "Yes. Every plan comes with a 14-day free trial. No credit card required. Explore all features and decide with confidence.",
+        a: "Yes. Every plan comes with a 41-day free trial. No credit card required. Explore all features and decide with confidence.",
       },
       {
         q: "What happens after the trial?",

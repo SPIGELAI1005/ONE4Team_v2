@@ -19,6 +19,8 @@ export interface AppHeaderProps {
   title: string;
   subtitle?: string;
   back?: boolean;
+  /** When set, logo + title navigate to this path (e.g. "/" on auth pages). */
+  logoHref?: string;
   rightSlot?: React.ReactNode;
   /** Mobile-only unified menu for public club pages (PWA-style); desktop unchanged */
   variant?: "default" | "clubPublic";
@@ -32,6 +34,7 @@ export default function AppHeader({
   title,
   subtitle,
   back = true,
+  logoHref,
   rightSlot,
   variant = "default",
   titleLeading,
@@ -133,30 +136,66 @@ export default function AppHeader({
           )}
 
           <div className="flex items-center gap-2 min-w-0">
-            {titleLeading ?? <img src={logo} alt="" className="w-7 h-7 shrink-0 rounded-md object-cover" />}
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 min-w-0">
-                <h1 className="font-display font-bold text-[15px] sm:text-base text-foreground tracking-tight truncate">
-                  <BrandedText text={title} />
-                </h1>
-                <span
-                  className={
-                    isClubPublic
-                      ? "hidden md:inline-flex text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/15"
-                      : "hidden sm:inline-flex text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/15"
-                  }
-                >
-                  {roleLabel}
-                </span>
-              </div>
-              {subtitleResolved ? (
-                <p
-                  className={`text-[11px] sm:text-xs text-muted-foreground truncate ${isClubPublic ? "max-md:hidden" : ""}`}
-                >
-                  <BrandedText text={subtitleResolved} />
-                </p>
-              ) : null}
-            </div>
+            {logoHref ? (
+              <button
+                type="button"
+                onClick={() => navigate(logoHref)}
+                className="flex items-center gap-2 min-w-0 rounded-lg text-left transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background touch-manipulation"
+                aria-label={t.common.home}
+              >
+                {titleLeading ?? <img src={logo} alt="" className="w-7 h-7 shrink-0 rounded-md object-cover" />}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-display font-bold text-[15px] sm:text-base text-foreground tracking-tight truncate">
+                      <BrandedText text={title} />
+                    </span>
+                    <span
+                      className={
+                        isClubPublic
+                          ? "hidden md:inline-flex text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/15"
+                          : "hidden sm:inline-flex text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/15"
+                      }
+                    >
+                      {roleLabel}
+                    </span>
+                  </div>
+                  {subtitleResolved ? (
+                    <p
+                      className={`text-[11px] sm:text-xs text-muted-foreground truncate ${isClubPublic ? "max-md:hidden" : ""}`}
+                    >
+                      <BrandedText text={subtitleResolved} />
+                    </p>
+                  ) : null}
+                </div>
+              </button>
+            ) : (
+              <>
+                {titleLeading ?? <img src={logo} alt="" className="w-7 h-7 shrink-0 rounded-md object-cover" />}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <h1 className="font-display font-bold text-[15px] sm:text-base text-foreground tracking-tight truncate">
+                      <BrandedText text={title} />
+                    </h1>
+                    <span
+                      className={
+                        isClubPublic
+                          ? "hidden md:inline-flex text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/15"
+                          : "hidden sm:inline-flex text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/15"
+                      }
+                    >
+                      {roleLabel}
+                    </span>
+                  </div>
+                  {subtitleResolved ? (
+                    <p
+                      className={`text-[11px] sm:text-xs text-muted-foreground truncate ${isClubPublic ? "max-md:hidden" : ""}`}
+                    >
+                      <BrandedText text={subtitleResolved} />
+                    </p>
+                  ) : null}
+                </div>
+              </>
+            )}
           </div>
         </div>
 

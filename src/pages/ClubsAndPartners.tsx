@@ -107,8 +107,12 @@ const ClubsAndPartners = () => {
             className="text-base sm:text-lg md:text-xl text-foreground/70 dark:text-foreground/80 max-w-2xl mx-auto font-light leading-relaxed px-2"
           >
             {t.clubsAndPartnersPage.description}
-            <br />
-            {t.clubsAndPartnersPage.descriptionLine2}
+            {t.clubsAndPartnersPage.descriptionLine2 ? (
+              <>
+                <br />
+                {t.clubsAndPartnersPage.descriptionLine2}
+              </>
+            ) : null}
           </motion.p>
 
           {/* Stats */}

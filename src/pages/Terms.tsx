@@ -10,10 +10,10 @@ import Footer from "@/components/landing/Footer";
 function FadeInSection({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.6, delay, ease: "easeOut" }}
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.45, delay, ease: "easeOut" }}
       className={className}
     >
       {children}
@@ -83,7 +83,7 @@ const Terms = () => {
           <div className="space-y-8">
             {t.termsPage.sections.map((section, i) => (
               <FadeInSection key={i} delay={i * 0.03}>
-                <div className="glass-card rounded-2xl p-5 sm:p-6">
+                <div className="legal-panel rounded-2xl p-5 sm:p-6">
                   <h2 className="font-display font-bold text-foreground text-base sm:text-lg mb-3">
                     {section.title}
                   </h2>

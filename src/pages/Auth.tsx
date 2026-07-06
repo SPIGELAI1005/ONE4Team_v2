@@ -596,7 +596,7 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background relative">
-      <AppHeader title="ONE4Team" subtitle={mode === "login" ? t.common.signIn : t.auth.createAccount} back={false} />
+      <AppHeader title="ONE4Team" subtitle={mode === "login" ? t.common.signIn : t.auth.createAccount} back={false} logoHref="/" />
 
       <div className="fixed inset-0 pointer-events-none">
         <FootballFieldAnimation lang={language} />

@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-07-06 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-25** communication/tasks/attendance, § **2026-06-27** TSV Allach Sommerfest + membership application, § **2026-06-30** member payments + invite email, § **2026-07-01** marketing + public club polish, § **2026-07-01** partner portal + Partner Page + AI 4 T partner, § **2026-07-01** persona data scoping + Live Scores UI, § **2026-07-01** AI 4 T pilot UX P4-002 + Sommerfest banner fix, § **2026-07-03** member invite UX + social previews + Sommerfest banner animation + dashboard club return, § **2026-07-05** Sommerfest tournament UX + public AI 4 T RBAC, § **2026-07-05** public messaging forward/share + microsite polish + Sommerfest mobile refinements, § **2026-07-06** bug investigation remediation, § **2026-07-06** Sommerfest kickoff sync + tournament info + mobile club messaging), `MEMORY_BANK.md`, `DEPLOYMENT.md`, `docs/AI4T_RELEASE_REVIEW.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
+Last updated: 2026-07-07 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-25** communication/tasks/attendance, § **2026-06-27** TSV Allach Sommerfest + membership application, § **2026-06-30** member payments + invite email, § **2026-07-01** marketing + public club polish, § **2026-07-01** partner portal + Partner Page + AI 4 T partner, § **2026-07-01** persona data scoping + Live Scores UI, § **2026-07-01** AI 4 T pilot UX P4-002 + Sommerfest banner fix, § **2026-07-03** member invite UX + social previews + Sommerfest banner animation + dashboard club return, § **2026-07-05** Sommerfest tournament UX + public AI 4 T RBAC, § **2026-07-05** public messaging forward/share + microsite polish + Sommerfest mobile refinements, § **2026-07-06** bug investigation remediation, § **2026-07-06** Sommerfest kickoff sync + tournament info + mobile club messaging, § **2026-07-07** legal audit + marketing polish), `MEMORY_BANK.md`, `DEPLOYMENT.md`, `docs/AI4T_RELEASE_REVIEW.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
 
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 
@@ -233,6 +233,14 @@ Vercel deployment (no new Supabase migrations):
 5. iPhone: remove and re-add home screen shortcut after deploy for updated **`apple-touch-icon`**
 
 See **`CHANGELOG.md`** § **2026-07-03** and **`docs/PRODUCTION_RELEASE_CHECKLIST.md`**.
+
+## Legal / Impressum — operator (2026-07-07)
+Code ships GDPR/EU AI Act–aligned Privacy/Terms/cookie copy and **§5 Sub-processors & integrations**. Impressum still shows **Munich, Germany** without full street address and **HRB pending** until registered.
+
+1. **LEGAL-OPS-001:** Add full postal street address to **`/impressum`** and Privacy **§1 Controller** (TMG §5) once confirmed with operator.
+2. **LEGAL-OPS-002:** Add Handelsregister (**HRB**) number at Amtsgericht München; replace “registration pending” placeholder in Impressum EN/DE.
+
+See **`CHANGELOG.md`** § **2026-07-07** and **`TASKS.md`** **LEGAL-OPS-001** / **LEGAL-OPS-002**.
 
 ## Phase 7 items (need Supabase / infra)
 - Staging + prod Supabase projects (completed for Phase 12 closure)

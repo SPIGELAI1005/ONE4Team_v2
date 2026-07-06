@@ -231,6 +231,16 @@ Code: **`Communication.tsx`** (embedded mobile), **`public-club-communication-mo
 
 Code: **`communication-pagination.ts`**, **`Settings.tsx`** **`redirectTo`**, **`SupabaseConfigBanner`**. CI: **`npm run lint`** + **`npm test`** (309 passed). Optional RLS: **`docs/RLS_INTEGRATION_TEST.md`**.
 
+## Platform legal + marketing (2026-07-07)
+
+| # | Task | Where |
+|---|------|--------|
+| LEG.1 | Privacy **§5 Sub-processors** lists Supabase, Vercel, Stripe, AI 4 T, email, External Bridge | `/privacy` EN + DE |
+| LEG.2 | Legal section cards — no top-edge flicker on scroll | `/privacy`, `/terms`, `/impressum` |
+| LEG.3 | Support contact **`support@one4team.com`** in Footer and FAQ | Marketing pages |
+| MKT.1 | Pricing shows **41-day** trial + **AI 4 T** add-on (EUR 4/mo) | `/pricing` |
+| OPS.1 | Add full street address + HRB when registered | **`TASKS.md`** **LEGAL-OPS-001** / **002** |
+
 ---
 
 ## Member invite accept on public club page (2026-07-03)

@@ -13,10 +13,13 @@ import { useClubId } from "@/hooks/use-club-id";
 import { useToast } from "@/hooks/use-toast";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { correlationHeaders } from "@/lib/observability";
+import { cn } from "@/lib/utils";
 import { getStripe } from "@/lib/stripe";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import FootballFieldAnimation from "@/components/landing/FootballFieldAnimation";
+import { Ai4TIntroLogoVideo } from "@/components/ai/Ai4TIntroLogoVideo";
+import { BrandedText } from "@/components/ai/Ai4TBrand";
 import logo from "@/assets/one4team-logo.png";
 
 /* ─── Pricing Data ─── */
@@ -342,6 +345,8 @@ function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
 
   const plan = plans.find((p) => p.id === selectedPlan)!;
   const { total, base, memberCost, discount, discountPct } = calculatePrice(plan, members, billing);
+  const periodSuffix = billing === "yearly" ? "yr" : "mo";
+  const pricePerMember = members > 0 ? total / members : 0;
 
   const normalizeMembers = useCallback((value: number) => {
     if (Number.isNaN(value)) return members;
@@ -439,11 +444,15 @@ function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between text-muted-foreground">
             <span>{t.pricingPage.basePrice}</span>
-            <span>EUR {base.toFixed(2)}/{billing === "yearly" ? "yr" : "mo"}</span>
+            <span>EUR {base.toFixed(2)}/{periodSuffix}</span>
           </div>
           <div className="flex justify-between text-muted-foreground">
             <span>{members.toLocaleString()} members x EUR {plan.memberPrice[billing]}</span>
-            <span>EUR {memberCost.toFixed(2)}/{billing === "yearly" ? "yr" : "mo"}</span>
+            <span>EUR {memberCost.toFixed(2)}/{periodSuffix}</span>
+          </div>
+          <div className="flex justify-between text-muted-foreground">
+            <span>{t.pricingPage.pricePerMember}</span>
+            <span>EUR {pricePerMember.toFixed(2)}/{periodSuffix}</span>
           </div>
           {discount && (
             <div className="flex justify-between text-primary font-medium">
@@ -453,7 +462,7 @@ function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
           )}
           <div className="flex justify-between text-foreground font-display font-bold text-lg sm:text-xl pt-2 border-t border-border/50">
             <span>{t.common.total}</span>
-            <span>EUR {total.toFixed(2)}/{billing === "yearly" ? "yr" : "mo"}</span>
+            <span>EUR {total.toFixed(2)}/{periodSuffix}</span>
           </div>
         </div>
       </div>
@@ -538,16 +547,24 @@ const Pricing = () => {
 
   const addons = [
     {
+      variant: "default" as const,
       icon: CreditCard,
       name: t.pricingPage.paymentsAddon,
       price: "EUR 0–19/mo",
       desc: t.pricingPage.paymentsAddonDesc,
     },
     {
+      variant: "default" as const,
       icon: MessageSquare,
       name: t.pricingPage.proCommsAddon,
       price: "EUR 9/mo",
       desc: t.pricingPage.proCommsAddonDesc,
+    },
+    {
+      variant: "ai4t" as const,
+      name: t.pricingPage.ai4tAddon,
+      price: t.pricingPage.ai4tAddonPrice,
+      desc: t.pricingPage.ai4tAddonDesc,
     },
   ];
 
@@ -606,7 +623,7 @@ const Pricing = () => {
           >
             {[
               { target: 14, suffix: "+", label: t.hero.platformModules },
-              { target: 14, suffix: " days", label: t.pricingPage.freeTrial },
+              { target: 41, suffix: t.pricingPage.freeTrialCountSuffix, label: t.pricingPage.freeTrial },
               { target: 0, suffix: "", label: t.pricingPage.setupFee, display: "EUR 0" },
             ].map((stat, i) => (
               <div key={i} className="text-center">
@@ -684,33 +701,72 @@ const Pricing = () => {
             </p>
           </FadeInSection>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-3xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto items-stretch">
             {addons.map((addon, i) => (
-              <FadeInSection key={i} delay={i * 0.1}>
+              <FadeInSection key={i} delay={i * 0.1} className="h-full">
                 <motion.div
                   whileHover={{ y: -4 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className="glass-card rounded-2xl p-5 sm:p-6 hover:border-primary/20 hover:shadow-gold transition-all duration-300 cursor-default h-full"
+                  className={cn(
+                    "glass-card rounded-2xl p-5 sm:p-6 transition-all duration-300 cursor-default h-full flex flex-col gap-5 hover:border-primary/20 hover:shadow-gold",
+                    addon.variant === "ai4t" &&
+                      "group relative overflow-hidden border border-border/60 dark:border-white/10 dark:bg-gradient-to-br dark:from-zinc-950 dark:via-zinc-900 dark:to-black dark:shadow-[0_24px_80px_-24px_rgba(227,30,36,0.35)] hover:!border-primary/20 hover:!shadow-gold",
+                  )}
                 >
-                  <div className="flex gap-4 mb-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl bg-gradient-gold flex items-center justify-center">
-                      <addon.icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary-foreground" strokeWidth={1.5} />
-                    </div>
-                    <div>
-                      <div className="flex items-baseline gap-2 mb-1">
-                        <h3 className="font-display font-bold text-foreground text-sm sm:text-base">{addon.name}</h3>
-                        <span className="text-primary font-semibold text-xs sm:text-sm">{addon.price}</span>
+                  {addon.variant === "ai4t" && (
+                    <div
+                      className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/[0.05] via-transparent to-[#e31e24]/[0.04] dark:from-[rgba(227,30,36,0.18)] dark:via-transparent dark:to-[rgba(255,255,255,0.06)] transition-opacity duration-300 group-hover:opacity-70"
+                      aria-hidden
+                    />
+                  )}
+                  <div className="relative flex flex-col flex-1 gap-5">
+                  {addon.variant === "ai4t" ? (
+                    <div className="flex flex-1 gap-3 sm:gap-4 min-h-0">
+                      <div className="relative aspect-[683/1024] w-[4.5rem] sm:w-20 shrink-0 overflow-hidden rounded-xl bg-black">
+                        <Ai4TIntroLogoVideo className="h-full w-full" />
                       </div>
-                      <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">{addon.desc}</p>
+                      <div className="flex-1 min-w-0 flex flex-col">
+                        <div className="flex items-start justify-between gap-3">
+                          <h3 className="font-display font-bold text-foreground text-sm sm:text-base leading-snug">
+                            {addon.name}
+                          </h3>
+                          <span className="text-primary font-semibold text-xs sm:text-sm shrink-0 whitespace-nowrap text-right leading-snug">
+                            {addon.price}
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed mt-2 flex-1">
+                          <BrandedText text={addon.desc} ai4tOnly />
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="flex gap-4 flex-1">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl bg-gradient-gold flex items-center justify-center">
+                        <addon.icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary-foreground" strokeWidth={1.5} />
+                      </div>
+                      <div className="flex-1 min-w-0 flex flex-col">
+                        <div className="flex items-start justify-between gap-3">
+                          <h3 className="font-display font-bold text-foreground text-sm sm:text-base leading-snug">
+                            {addon.name}
+                          </h3>
+                          <span className="text-primary font-semibold text-xs sm:text-sm shrink-0 whitespace-nowrap text-right leading-snug">
+                            {addon.price}
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed mt-2 flex-1">
+                          {addon.desc}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <Button
                     onClick={() => navigate("/onboarding")}
-                    className="w-full rounded-xl font-semibold text-sm glass-card bg-gold-on-hover text-foreground"
+                    className="w-full rounded-xl font-semibold text-sm glass-card bg-gold-on-hover text-foreground justify-center relative"
                   >
                     {t.common.book}
-                    <ArrowRight className="ml-2 w-4 h-4" />
+                    <ArrowRight className="absolute right-4 w-4 h-4" aria-hidden="true" />
                   </Button>
+                  </div>
                 </motion.div>
               </FadeInSection>
             ))}

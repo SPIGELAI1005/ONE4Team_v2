@@ -39,6 +39,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Sommerfest kickoff sync + mobile messaging (2026-07-06):** Berlin timezone match kickoff save/load; schedule + live board use persisted times; tournament **Info** (durations) beside share; embedded club Communication mobile layout — see `CHANGELOG.md` § **2026-07-06 (Sommerfest kickoff sync…)**.
 
+**Legal audit + marketing polish (2026-07-07):** Privacy/Terms/cookie GDPR + EU AI Act copy; **§5 Sub-processors & integrations**; legal-page **`.legal-panel`** flicker fix; **41-day** trial; Pricing **AI 4 T** add-on; **`support@one4team.com`**; operator **LEGAL-OPS-001** / **LEGAL-OPS-002** — see `CHANGELOG.md` § **2026-07-07**, `TASKS.md` **P10-010f**–**P10-010g**.
+
 ---
 
 ## Phase 0 — Foundation (Week 0–1)
@@ -228,7 +230,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 **Deliverables**
 - EPIC O: Legal pages
   - Terms of Service (14 sections, TMG/BGB/GDPR compliant)
-  - Privacy Policy (11 sections, DSGVO/GDPR compliant)
+  - Privacy Policy (13 sections, DSGVO/GDPR compliant; sub-processors §5, AI 4 T §11)
+  - Terms of Service (15 sections incl. AI 4 T §14)
   - Impressum (8 numbered sections, Section 5 TMG)
   - All pages translated EN + DE
 - EPIC P: Cookie Consent

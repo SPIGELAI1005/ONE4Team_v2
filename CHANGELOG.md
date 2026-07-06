@@ -3,6 +3,35 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-07 (Legal audit, marketing polish, UX fixes)
+
+### Legal pages — GDPR / EU AI Act audit
+- **`privacyPage` / `termsPage` (EN + DE):** Last updated **July 1, 2026**; expanded data categories (AI interaction data, Stripe card handling); new **§5 Sub-processors & integrations** (Supabase, Vercel, Stripe, AI 4 T providers, transactional email, optional External Bridge); **§11 AI 4 T and automated processing** (Privacy); **§14 AI-assisted features (AI 4 T)** (Terms); renumbered sections (Privacy **13**, Terms **15** incl. severability).
+- **`cookieConsent.yourPrivacyBody`:** Clarifies AI 4 T is not controlled via cookie categories; see Privacy Policy.
+- **`TASKS.md`:** **P10-010f** complete; operator todos **LEGAL-OPS-001** (full postal address) and **LEGAL-OPS-002** (HRB number) added.
+
+### Legal pages — UI flicker fix
+- **`index.css`:** **`.legal-panel`** — stable card surface without `backdrop-filter` or inset highlight (avoids sub-pixel top-edge shimmer on long-form legal pages).
+- **`Privacy.tsx`**, **`Terms.tsx`**, **`Impressum.tsx`:** Section cards use **`legal-panel`**; **`FadeInSection`** scroll-in uses **opacity only** (no `y` transform) to prevent compositing artifacts.
+
+### Marketing — trial, pricing add-ons, copy
+- **41-day free trial** across EN/DE pricing and FAQ copy (was 14/45 days in some strings).
+- **`Pricing.tsx`:** Three add-on cards (Payments, Pro Comms, **AI 4 T**) — aligned layout, centered **Book/Buchen** CTAs; **AI 4 T** card with **`Ai4TIntroLogoVideo`**, EUR 4/mo, red highlight + gold hover; removed **Add-on** prefix from card titles.
+- **`pricingPage.freeTrialCountSuffix`:** German counter uses **Tage** (not English **days**).
+- **`aboutPage` (EN):** Hero reformulated to four lines; **`About.tsx`** renders optional **`heroLine4`**.
+- **`Features.tsx`:** AI innovation hero extracted to **`Ai4TInnovationHeroCard.tsx`**.
+
+### Support contact + auth UX
+- **Support email** standardized to **`support@one4team.com`** (i18n, **`Footer`**, **`SupportFaq`**, **`test-mode-banner`**, **`.env.example`**). QA SQL scripts that lookup test user by legacy email unchanged.
+- **`AppHeader`:** Optional **`logoHref`** — **`Auth.tsx`** logo/title navigates home (`/`).
+- **`ScrollToTop.tsx` + `App.tsx`:** Scroll to top on route change.
+
+### Matches — mobile layout
+- **`Matches.tsx`:** **`MATCH_DETAIL_FIELD_CLASS`** — consistent alignment for match detail fields including **`datetime-local`** on mobile.
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`HOLD.md`**, **`README.md`**, **`ROADMAP.md`**, **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**, **`ops/PRODUCTION_READINESS_ARTIFACTS.md`**, **`ops/PRODUCTION_READINESS_EVIDENCE_LOG.md`**.
+
 ## 2026-07-06 (Sommerfest kickoff sync, tournament info, mobile club messaging)
 
 ### Sommerfest — match kickoff time sync

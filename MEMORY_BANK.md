@@ -1,11 +1,12 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-07-06 (Sommerfest kickoff sync, tournament info, mobile club messaging)
+Last updated: 2026-07-07 (legal audit, marketing polish, UX fixes)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **Legal audit + marketing polish (2026-07-07):** Privacy/Terms/cookie copy expanded for AI 4 T, Stripe, sub-processors (**§5**), EU AI Act transparency; Privacy **13** sections; operator todos **LEGAL-OPS-001** (street address), **LEGAL-OPS-002** (HRB). Legal pages use **`.legal-panel`** + opacity-only scroll-in (no top-edge flicker). **41-day** free trial; Pricing **AI 4 T** add-on card (EUR 4/mo + video); DE trial suffix **Tage**; About EN hero 4 lines; **`support@one4team.com`**; Auth logo → home; **`ScrollToTop`**; Matches mobile datetime alignment. See **`CHANGELOG.md`** § **2026-07-07**.
 - **Sommerfest kickoff sync + tournament info + mobile messaging (2026-07-06):** Admin **`/matches`** Sommerfest fixtures — Berlin timezone save/load (**`sommerfestDatetimeLocalToIso`** / **`sommerfestIsoToDatetimeLocal`**); schedule + public board group by **effective kickoff** from DB; **`SommerfestRegulationsInfoButton`** (match durations) beside **Share tournament**; embedded **Communication** modal — mobile channel **`<Select>`**, hidden sidebar, readable scrollable chat thread, **`100dvh`** modal. See **`CHANGELOG.md`** § **2026-07-06 (Sommerfest kickoff sync…)**.
 - **Bug investigation remediation (2026-07-06):** Communication pagination count fix (**`communication-pagination.ts`**); dashboard nav duplicate-key cleanup; **`applyPromptInChat`** ESLint fix; stable **`resolve-cancel-activity`** test; marketplace tab permission map; password reset **`redirectTo`**; Communication pagination i18n; **`SupabaseConfigBanner`** + prod config gate; RLS integration docs/workflow; E2E auth fixture; full ESLint green + lazy **`AnalyticsWidgets`**; hero default interim image. Operator track **`OPS-AUTH-URL-001`**. See **`CHANGELOG.md`** § **2026-07-06**.
 - **Public club messaging — forward + embedded UX (2026-07-05):** Embedded Communication modal — readable chat input (**`clubEmbeddedLightInput*`** classes); **Forward** per message via **`message-forward-button.tsx`** (WhatsApp / native share / copy) with header **`Message forwarded from ONE4Team - {club}`** + From/Team lines (**`share-utils.ts`**). Dropdown **`z-[80]`** above modal. CTA **Open Messages** / **Nachrichten öffnen**. See **`CHANGELOG.md`** § **2026-07-05 (Public messaging…)**.
@@ -232,6 +233,7 @@ Also ensure previously listed communication migrations remain applied in the sam
 - If behavior mismatches local code expectations, verify app env vars point to the same Supabase project where all required migrations are applied.
 
 ## Suggested Next Implementation Steps
+- **Legal operator:** Complete **LEGAL-OPS-001** (full postal street address in Impressum + Privacy controller) and **LEGAL-OPS-002** (HRB at Amtsgericht München) once registered — do not guess addresses in copy.
 - **Member invite smoke:** Apply **`20260731230000`**, **`20260731240000`**; deploy **`complete-club-invite-signup`**; smoke **`/club/tsv-allach-09?invite=…`** end-to-end; verify Resend welcome email (**`DEPLOY-EMAIL-001-PROD`**).
 - **Social previews:** After Vercel deploy, set **`VITE_PUBLIC_SITE_URL`**; refresh WhatsApp/Facebook cache via Sharing Debugger; confirm club admin **`og_image_url`** + PNG favicon in Club Page Admin.
 - **Sommerfest banner:** Smoke animation on TSV Allach club page; verify **`prefers-reduced-motion`** disables motion.

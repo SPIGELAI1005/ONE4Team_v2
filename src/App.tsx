@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { useLanguage } from "@/hooks/use-language";
 import PageTransition from "@/components/layout/PageTransition";
+import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { CookieConsent } from "@/components/ui/cookie-consent";
 import { RequireAdmin } from "@/components/auth/require-role";
 import { RequireModule } from "@/components/auth/require-module";
@@ -685,6 +686,7 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
+            <ScrollToTop />
             <AppShell />
             <CookieConsent />
           </AuthProvider>

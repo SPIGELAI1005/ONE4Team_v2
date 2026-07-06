@@ -12,8 +12,7 @@ import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import FootballFieldAnimation from "@/components/landing/FootballFieldAnimation";
 import logo from "@/assets/one4team-logo.png";
-import { Ai4TIntroLogoVideo } from "@/components/ai/Ai4TIntroLogoVideo";
-import { BrandedText } from "@/components/ai/Ai4TBrand";
+import { Ai4TInnovationHeroCard } from "@/components/ai/Ai4TInnovationHeroCard";
 
 /* ─── Animated Counter ─── */
 function AnimatedCounter({ target, suffix = "", duration = 2000, prefix = "" }: { target: number; suffix?: string; duration?: number; prefix?: string }) {
@@ -110,11 +109,10 @@ const Features = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-base sm:text-lg md:text-xl text-foreground/70 dark:text-foreground/80 max-w-2xl mx-auto font-light leading-relaxed px-2"
+            className="mx-auto max-w-3xl px-2 text-base font-light leading-relaxed text-foreground/70 dark:text-foreground/80 sm:max-w-4xl sm:text-lg lg:max-w-5xl md:text-xl"
           >
-            {t.featuresPage.description}
-            <br />
-            {t.featuresPage.descriptionLine2}
+            <span className="block">{t.featuresPage.description}</span>
+            <span className="block">{t.featuresPage.descriptionLine2}</span>
           </motion.p>
 
           {/* Stats */}
@@ -239,31 +237,11 @@ const Features = () => {
 
         <div className="container relative z-10 mx-auto px-4">
           <FadeInSection className="mx-auto mb-10 max-w-6xl sm:mb-14">
-            <div className="glass-card relative overflow-hidden rounded-3xl border border-border/60 shadow-gold transition-all hover:border-primary/20 dark:border-white/10 dark:bg-gradient-to-br dark:from-zinc-950 dark:via-zinc-900 dark:to-black dark:shadow-[0_24px_80px_-24px_rgba(227,30,36,0.35)]">
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/[0.05] via-transparent to-[#e31e24]/[0.04] dark:from-[rgba(227,30,36,0.18)] dark:via-transparent dark:to-[rgba(255,255,255,0.06)]" />
-
-              <div className="relative grid min-h-0 grid-cols-[auto_minmax(0,1fr)] items-stretch">
-                <motion.div
-                  initial={{ opacity: 0, y: 16, scale: 0.98 }}
-                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                  viewport={{ once: true, margin: "-40px" }}
-                  transition={{ duration: 0.7, ease: "easeOut" }}
-                  className="relative h-full w-auto shrink-0 overflow-hidden rounded-l-3xl bg-black aspect-[683/1024] min-w-[9rem] max-w-[46vw] sm:min-w-[10.5rem] sm:max-w-[12.5rem] md:max-w-[14.5rem] lg:max-w-[16.5rem]"
-                >
-                  <Ai4TIntroLogoVideo className="h-full w-full" />
-                </motion.div>
-
-                <div className="flex flex-col justify-center p-4 text-left sm:p-6 md:p-12">
-                  <h2 className="font-display text-xl font-bold leading-tight tracking-tight text-foreground sm:text-3xl md:text-5xl">
-                    {t.featuresPage.aiTitle}{" "}
-                    <span className="text-gradient-gold">{t.featuresPage.aiHighlight}</span>
-                  </h2>
-                  <p className="mt-3 text-xs leading-relaxed text-muted-foreground sm:mt-4 sm:text-sm md:text-lg">
-                    <BrandedText text={t.featuresPage.aiDesc} ai4tOnly />
-                  </p>
-                </div>
-              </div>
-            </div>
+            <Ai4TInnovationHeroCard
+              title={t.featuresPage.aiTitle}
+              titleHighlight={t.featuresPage.aiHighlight}
+              description={t.featuresPage.aiDesc}
+            />
           </FadeInSection>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">

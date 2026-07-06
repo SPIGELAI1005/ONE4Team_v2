@@ -25,7 +25,7 @@ import { DASHBOARD_PAGE_MAX_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-p
 import { BrandedText } from "@/components/ai/Ai4TBrand";
 import { Mail, Copy } from "lucide-react";
 
-const DEFAULT_SUPPORT_EMAIL = "spigelai@gmail.com";
+const DEFAULT_SUPPORT_EMAIL = "support@one4team.com";
 const MAILTO_SAFE_LEN = 1700;
 
 const REPORT_TOPIC_ORDER = [

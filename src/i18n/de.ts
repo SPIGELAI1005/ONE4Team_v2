@@ -74,7 +74,7 @@ export const de: Translations = {
   hero: {
     tagline: "Das komplette Betriebssystem für Sportvereine.",
     subtitle: "Menschen · Teams · Infrastruktur · Partner · Gemeinschaft",
-    subtitleLine2: "Eine Plattform für Betrieb, öffentliche Vereinsseiten und Live-Turniere. Im Pilot mit TSV Allach 09 erprobt.",
+    subtitleLine2: "Eine Plattform für Betrieb, öffentliche Vereinsseiten, Shop und Live-Turniere.",
     watchDemo: "Funktionen entdecken",
     membersManaged: "Verwaltete Mitglieder",
     teamsManaged: "Teams & Mannschaften",
@@ -151,7 +151,7 @@ export const de: Translations = {
     tabMarketing: "Marketing",
     yourPrivacyTitle: "Ihre Privatsphäre",
     yourPrivacyBody:
-      "Wenn Sie eine Website oder Web-App nutzen, können Informationen in Ihrem Browser gespeichert oder ausgelesen werden, häufig in Form von Cookies. Das kann Ihre Präferenzen oder Ihr Gerät betreffen und dient vor allem dazu, dass die Anwendung zuverlässig funktioniert. In der Regel identifiziert Sie das nicht direkt, kann aber ein persönlicheres Erlebnis ermöglichen. Weil wir Ihr Recht auf Privatsphäre respektieren, können Sie bestimmte nicht notwendige Kategorien ablehnen. Nutzen Sie die Register, um mehr zu erfahren und Voreinstellungen zu ändern. Das Blockieren einzelner Kategorien kann Teile der Nutzung oder optionale Funktionen einschränken.",
+      "Wenn Sie eine Website oder Web-App nutzen, können Informationen in Ihrem Browser gespeichert oder ausgelesen werden, häufig in Form von Cookies. Das kann Ihre Präferenzen oder Ihr Gerät betreffen und dient vor allem dazu, dass die Anwendung zuverlässig funktioniert. In der Regel identifiziert Sie das nicht direkt, kann aber ein persönlicheres Erlebnis ermöglichen. Weil wir Ihr Recht auf Privatsphäre respektieren, können Sie bestimmte nicht notwendige Kategorien ablehnen. Nutzen Sie die Register, um mehr zu erfahren und Voreinstellungen zu ändern. Das Blockieren einzelner Kategorien kann Teile der Nutzung oder optionale Funktionen einschränken. KI-Funktionen (AI 4 T) werden nicht über diese Cookie-Kategorien gesteuert; sie sind in unserer Datenschutzerklärung beschrieben und setzen ggf. ein aktives Abonnement oder eine Testphase voraus.",
     moreInfo: "Weitere Informationen",
     confirmSelection: "Meine Auswahl speichern",
     allowAll: "Alle zulassen",
@@ -177,7 +177,7 @@ export const de: Translations = {
   termsPage: {
     title: "Allgemeine Geschaftsbedingungen",
     subtitle: "Nutzungsbedingungen für ONE4Team",
-    lastUpdated: "Letzte Aktualisierung: 14. Februar 2026",
+    lastUpdated: "Letzte Aktualisierung: 1. Juli 2026",
     sections: [
       {
         title: "1. Geltungsbereich und Anbieter",
@@ -232,7 +232,11 @@ export const de: Translations = {
         content: "Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: https://ec.europa.eu/consumers/odr. Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.",
       },
       {
-        title: "14. Salvatorische Klausel",
+        title: "14. KI-gestützte Funktionen (AI 4 T)",
+        content: "Optionale KI-Funktionen (AI 4 T) können je nach Abonnement, Testphase und Rolle verfügbar sein. KI-Ausgaben werden automatisch erzeugt und dienen ausschließlich der Information und Produktivitätsunterstützung. Sie stellen keine Rechts-, Medizin-, Finanz- oder sonstige professionelle Beratung dar. Sie und Ihr Verein bleiben dafür verantwortlich, Ausgaben vor der Weitergabe an Mitglieder, Veröffentlichung oder operativer Nutzung zu prüfen. KI-Funktionen sind auf den Verein beschränkt und unterliegen Fair-use- und Sicherheitslimits; Missbrauch, off-topic-Nutzung oder Umgehungsversuche können zu Drosselung oder Sperrung führen. Soweit nach der EU-KI-Verordnung und verwandten Transparenzregeln erforderlich, weisen wir darauf hin, dass Sie mit einem KI-System interagieren und Ausgaben von Menschen verifiziert werden sollten.",
+      },
+      {
+        title: "15. Salvatorische Klausel",
         content: "Sollte eine Bestimmung dieser AGB unwirksam oder undurchführbar sein, bleiben die übrigen Bestimmungen in vollem Umfang wirksam. Die unwirksame Bestimmung wird durch eine wirksame Bestimmung ersetzt, die dem wirtschaftlichen Zweck der unwirksamen Bestimmung am nächsten kommt.",
       },
     ],
@@ -242,50 +246,58 @@ export const de: Translations = {
   privacyPage: {
     title: "Datenschutzerklärung",
     subtitle: "Wie wir Ihre Daten verarbeiten",
-    lastUpdated: "Letzte Aktualisierung: 14. Februar 2026",
+    lastUpdated: "Letzte Aktualisierung: 1. Juli 2026",
     sections: [
       {
         title: "1. Verantwortlicher",
-        content: "Verantwortlich für die Datenverarbeitung ist die SPIGEL AI UG (haftungsbeschränkt), vertreten durch George Neacsu, München, Deutschland. Für Datenschutzanfragen kontaktieren Sie uns bitte unter spigelai@gmail.com.",
+        content: "Verantwortlich für die Datenverarbeitung ist die SPIGEL AI UG (haftungsbeschränkt), vertreten durch George Neacsu, München, Deutschland. Für Datenschutzanfragen kontaktieren Sie uns bitte unter support@one4team.com.",
       },
       {
         title: "2. Erhobene Daten",
-        content: "Wir erheben und verarbeiten folgende Kategorien personenbezogener Daten: (a) Kontodaten: E-Mail-Adresse, Anzeigename, Avatar-URL, Telefonnummer; (b) Vereinsdaten: Vereinsmitgliedschaften, Rollen, Teamzuordnungen; (c) Aktivitätsdaten: Trainingsanwesenheit, Spielteilnahme, Veranstaltungszusagen; (d) Zahlungsdaten: Beitragserfassung, Zahlungsstatus (keine Kreditkartendaten werden auf unseren Servern gespeichert); (e) Kommunikationsdaten: über die Plattform gesendete Nachrichten; (f) Technische Daten: IP-Adresse, Browsertyp, Geräteinformationen, Zugriffszeiten; (g) Nutzungsdaten: besuchte Seiten, genutzte Funktionen, Interaktionsmuster.",
+        content: "Wir erheben und verarbeiten folgende Kategorien personenbezogener Daten: (a) Kontodaten: E-Mail-Adresse, Anzeigename, Avatar-URL, Telefonnummer; (b) Vereinsdaten: Vereinsmitgliedschaften, Rollen, Teamzuordnungen; (c) Aktivitätsdaten: Trainingsanwesenheit, Spielteilnahme, Veranstaltungszusagen; (d) Zahlungsdaten: Beitragserfassung, Zahlungsstatus (Kartendaten werden von Stripe verarbeitet; vollständige Kartennummern speichern wir nicht auf unseren Servern); (e) Kommunikationsdaten: über die Plattform gesendete Nachrichten; (f) Technische Daten: IP-Adresse, Browsertyp, Geräteinformationen, Zugriffszeiten; (g) Nutzungsdaten: besuchte Seiten, genutzte Funktionen, Interaktionsmuster; (h) KI-Interaktionsdaten: Eingaben, Chat-Nachrichten, optionale Spracheingabe-Transkripte und aggregierte KI-Nutzungsstatistiken bei Nutzung von AI 4 T.",
       },
       {
         title: "3. Rechtsgrundlagen der Verarbeitung",
-        content: "Wir verarbeiten Ihre Daten auf Grundlage von: (a) Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO) - zur Erbringung des Dienstes, für den Sie sich registriert haben; (b) Berechtigte Interessen (Art. 6 Abs. 1 lit. f DSGVO) - zur Verbesserung unseres Dienstes, Gewährleistung der Sicherheit und Missbrauchsprävention; (c) Einwilligung (Art. 6 Abs. 1 lit. a DSGVO) - für Analyse-Cookies und optionale Kommunikation; (d) Rechtliche Verpflichtung (Art. 6 Abs. 1 lit. c DSGVO) - zur Erfüllung steuer- und handelsrechtlicher Anforderungen.",
+        content: "Wir verarbeiten Ihre Daten auf Grundlage von: (a) Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO) - zur Erbringung des Dienstes, für den Sie sich registriert haben, einschließlich optionaler AI-4-T-Funktionen in Ihrem Tarif oder Ihrer Testphase; (b) Berechtigte Interessen (Art. 6 Abs. 1 lit. f DSGVO) - zur Verbesserung unseres Dienstes, Gewährleistung der Sicherheit, Missbrauchsprävention und Durchsetzung fair-use-Limits für KI-Funktionen; (c) Einwilligung (Art. 6 Abs. 1 lit. a DSGVO) - für Analyse-Cookies und optionale Kommunikation; (d) Rechtliche Verpflichtung (Art. 6 Abs. 1 lit. c DSGVO) - zur Erfüllung steuer- und handelsrechtlicher Anforderungen.",
       },
       {
         title: "4. Datenweitergabe",
-        content: "Wir teilen Daten mit: (a) Supabase Inc. (Hosting- und Datenbankdienste, Server in der EU); (b) Vercel Inc. (Webhosting und CDN); (c) Anderen Mitgliedern Ihres Vereins (nur Daten, die für den Vereinsbetrieb erforderlich sind, gesteuert durch Ihren Vereinsadministrator). Wir verkaufen Ihre personenbezogenen Daten nicht an Dritte. Datenübertragungen in Länder außerhalb der EU/des EWR sind durch Standardvertragsklauseln (SCCs) oder Angemessenheitsbeschlüsse abgesichert.",
+        content: "Wir teilen personenbezogene Daten mit Unterauftragsverarbeitern und Integrationen, die uns beim Betrieb von ONE4Team unterstützen (siehe Abschnitt 5), mit Zahlungsanbietern bei Nutzung von Abrechnungs- oder Checkout-Funktionen, mit KI-Modellanbietern bei aktiviertem AI 4 T sowie mit anderen Mitgliedern Ihres Vereins, soweit dies für den Vereinsbetrieb erforderlich ist und durch Ihren Vereinsadministrator gesteuert wird. Wir verkaufen personenbezogene Daten nicht. Internationale Übermittlungen sind erforderlichenfalls durch geeignete Garantien wie Standardvertragsklauseln (SCCs) abgesichert.",
       },
       {
-        title: "5. Cookies",
+        title: "5. Unterauftragsverarbeiter & Integrationen",
+        content: "Wir setzen die folgenden Kategorien von Unterauftragsverarbeitern und Integrationen ein, um ONE4Team zu betreiben. Diese Liste spiegelt unseren Standard-Produktionsstack wider; optionale, vom Verein konfigurierte Integrationen können weitere vom Vereinsadministrator gewählte Anbieter hinzufügen.\n\n(a) Infrastruktur & Hosting: Supabase Inc. (Datenbank, Authentifizierung, Dateispeicher, Edge Functions; primäre Verarbeitung in der EU) und Vercel Inc. (Anwendungs-Hosting und Content Delivery). Zweck: Betrieb der Plattform, Absicherung von Konten und Speicherung von Vereinsdaten.\n\n(b) Zahlungen: Stripe (Stripe Payments Europe Ltd. / Stripe Inc. je nach Anwendbarkeit) für Abonnementabrechnung und optionalen Vereinsbeitrags-Checkout. Zweck: Zahlungsabwicklung. Wir speichern keine vollständigen Zahlungskartennummern auf unseren Servern.\n\n(c) AI 4 T (optional): Bei Aktivierung in einem berechtigten Tarif oder Testzeitraum können Eingaben und zulässiger Vereinskontext an einen Sprachmodell-Anbieter übermittelt werden. Standardmäßig ist dies typischerweise OpenAI; Vereinsadministratoren können alternativ OpenAI, Anthropic, Google Gemini, Azure OpenAI oder GitHub Models mit eigenen API-Zugangsdaten konfigurieren. Zweck: KI-gestützte Antworten im Vereinskontext.\n\n(d) Transaktions-E-Mails: Supabase Auth und ONE4Team Edge Functions versenden Konto-, Einladungs- und Benachrichtigungs-E-Mails über den in unserem Supabase-Projekt konfigurierten E-Mail-Kanal. Zweck: Authentifizierung, Einladungen und betriebliche Mitteilungen.\n\n(e) Externe Kommunikations-Bridges (optional, vom Verein konfiguriert): Wenn ein Verein External-Bridge-Funktionen aktiviert, können Nachrichtenmetadaten und -inhalte mit Drittanbieter-Messaging-Diensten wie der Meta WhatsApp Cloud API oder vom Verein konfigurierten SMS-/E-Mail-Gateways ausgetauscht werden. Zweck: Anbindung externer Kanäle an die Vereinskommunikation in der App.\n\n(f) Andere Vereinsmitglieder: Betriebsdaten, die anderen Mitgliedern Ihres Vereins gemäß Rolle und Administrator-Einstellungen sichtbar sind, stellen eine beabsichtigte Weitergabe innerhalb Ihrer Organisation dar, keine Unterauftragsverarbeitung.\n\nÜbermittlungen außerhalb der EU/des EWR: Verarbeitet ein Anbieter Daten außerhalb der EU/des EWR, stützen wir uns auf geeignete Garantien wie Standardvertragsklauseln (SCCs) und, soweit verfügbar, Angemessenheitsbeschlüsse. Kontaktieren Sie support@one4team.com für weitere Informationen. Wir aktualisieren diese Liste, wenn wir Unterauftragsverarbeiter hinzufügen oder wesentlich ändern.",
+      },
+      {
+        title: "6. Cookies",
         content: "Wir verwenden: (a) Essenzielle Cookies: erforderlich für Authentifizierung, Sitzungsverwaltung und Sprach-/Designpräferenzen. Diese sind unbedingt notwendig und erfordern keine Einwilligung. (b) Analyse-Cookies: werden verwendet, um zu verstehen, wie Besucher mit unserer Plattform interagieren. Diese werden nur mit Ihrer ausdrücklichen Einwilligung gesetzt. Sie können Ihre Cookie-Präferenzen jederzeit über das Cookie-Einstellungsbanner verwalten.",
       },
       {
-        title: "6. Datenspeicherung",
+        title: "7. Datenspeicherung",
         content: "Wir speichern Ihre Daten, solange Ihr Konto aktiv ist oder zur Erbringung des Dienstes erforderlich. Nach Kontolöschung werden personenbezogene Daten innerhalb von 30 Tagen gelöscht, es sei denn, eine längere Aufbewahrung ist gesetzlich vorgeschrieben (z.B. Handelsunterlagen nach HGB: 6-10 Jahre). Anonymisierte Nutzungsstatistiken können unbegrenzt aufbewahrt werden.",
       },
       {
-        title: "7. Ihre Rechte (DSGVO)",
-        content: "Gemäß der DSGVO haben Sie das Recht auf: (a) Auskunft über Ihre personenbezogenen Daten (Art. 15 DSGVO); (b) Berichtigung unrichtiger Daten (Art. 16 DSGVO); (c) Löschung Ihrer Daten (Art. 17 DSGVO); (d) Einschränkung der Verarbeitung (Art. 18 DSGVO); (e) Datenübertragbarkeit (Art. 20 DSGVO); (f) Widerspruch gegen die Verarbeitung (Art. 21 DSGVO); (g) Widerruf der Einwilligung jederzeit (Art. 7 Abs. 3 DSGVO). Zur Ausübung dieser Rechte kontaktieren Sie uns unter spigelai@gmail.com.",
+        title: "8. Ihre Rechte (DSGVO)",
+        content: "Gemäß der DSGVO haben Sie das Recht auf: (a) Auskunft über Ihre personenbezogenen Daten (Art. 15 DSGVO); (b) Berichtigung unrichtiger Daten (Art. 16 DSGVO); (c) Löschung Ihrer Daten (Art. 17 DSGVO); (d) Einschränkung der Verarbeitung (Art. 18 DSGVO); (e) Datenübertragbarkeit (Art. 20 DSGVO); (f) Widerspruch gegen die Verarbeitung (Art. 21 DSGVO); (g) Widerruf der Einwilligung jederzeit (Art. 7 Abs. 3 DSGVO). Zur Ausübung dieser Rechte kontaktieren Sie uns unter support@one4team.com.",
       },
       {
-        title: "8. Datensicherheit",
+        title: "9. Datensicherheit",
         content: "Wir setzen angemessene technische und organisatorische Maßnahmen zum Schutz Ihrer Daten ein, darunter: Verschlüsselung bei der Übertragung (TLS/SSL), Verschlüsselung im Ruhezustand, Row Level Security (RLS) Richtlinien für mandantenfähige Datenisolierung, regelmäßige Sicherheitsüberprüfungen und Zugriffskontrollen nach dem Prinzip der geringsten Berechtigung.",
       },
       {
-        title: "9. Kinder",
+        title: "10. Kinder",
         content: "Unser Dienst richtet sich nicht an Kinder unter 16 Jahren. Wenn ein Kind unter 16 Jahren den Dienst nutzt (z.B. als Vereinsmitglied), ist die Einwilligung der Eltern oder Erziehungsberechtigten gemäß Art. 8 DSGVO erforderlich. Vereinsadministratoren sind dafür verantwortlich, die entsprechende Einwilligung einzuholen.",
       },
       {
-        title: "10. Änderungen dieser Richtlinie",
+        title: "11. AI 4 T und automatisierte Verarbeitung",
+        content: "ONE4Team bietet optionale KI-gestützte Funktionen unter der Bezeichnung AI 4 T (z. B. Co-Trainer, Admin-Copilot-Workflows und Spielanalyse). Diese Funktionen sind nur in berechtigten Tarifen oder zeitlich begrenzten Testphasen verfügbar und auf den Vereinskontext beschränkt. Bei Nutzung verarbeiten wir Ihre Eingaben und - soweit Ihre Rolle dies erlaubt - relevanten Vereinskontext (z. B. Teams, Terminplan, Spiele, Kaderauszüge oder Beitragsübersichten) zur Erzeugung von Antworten. Die Verarbeitung erfolgt zur Vertragserfüllung und, soweit anwendbar, auf Basis berechtigter Interessen an Sicherheit und Missbrauchsprävention. Antworten werden automatisch erzeugt und können unvollständig oder fehlerhaft sein; sie dienen nur der Unterstützung und ersetzen keine fachliche Beurteilung. Berechtigte Vereinsadministratoren können eigene KI-Anbieter-Zugangsdaten hinterlegen; dann verarbeitet der gewählte Anbieter Daten im Auftrag des Vereins. Wir setzen Ratenlimits, Scope-Grenzen und rollenbasierte Zugriffskontrollen ein. AI 4 T trifft keine allein automatisierten Entscheidungen mit rechtlicher oder ähnlich erheblicher Wirkung ohne menschliche Prüfung. Nach der EU-KI-Verordnung ist die beabsichtigte Nutzung transparente Assistenz für den Vereinsbetrieb, nicht risikoreiche automatisierte Entscheidungsfindung. Bitte geben Sie in KI-Eingaben keine unnötigen Daten besonderer Kategorien ein (z. B. Gesundheitsdaten über das hinaus, was Ihr Verein legitimerweise verwaltet).",
+      },
+      {
+        title: "12. Änderungen dieser Richtlinie",
         content: "Wir können diese Datenschutzerklärung von Zeit zu Zeit aktualisieren. Wesentliche Änderungen werden per E-Mail oder In-App-Benachrichtigung kommuniziert. Die aktuelle Version ist jederzeit unter /privacy abrufbar.",
       },
       {
-        title: "11. Aufsichtsbehörde",
+        title: "13. Aufsichtsbehörde",
         content: "Sie haben das Recht, eine Beschwerde bei einer Datenschutzaufsichtsbehörde einzureichen. Die für unser Unternehmen zuständige Behörde ist: Bayerisches Landesamt für Datenschutzaufsicht (BayLDA), Promenade 18, 91522 Ansbach, Deutschland.",
       },
     ],
@@ -301,7 +313,7 @@ export const de: Translations = {
       name: "SPIGEL AI UG (haftungsbeschrankt)",
       represented: "Vertreten durch: George Neacsu",
       address: "Munchen, Deutschland",
-      email: "E-Mail: spigelai@gmail.com",
+      email: "E-Mail: support@one4team.com",
       website: "Webseite: https://www.one4team.com",
     },
     registration: {
@@ -1902,7 +1914,7 @@ export const de: Translations = {
     title: "Leistungsstarke",
     titleHighlight: "Funktionen",
     description: "Alles, was dein Verein braucht, vom Backoffice bis zur zweisprachigen öffentlichen Microsite,",
-    descriptionLine2: "Live-Turnieren und integrierter KI. Entwickelt und verfeinert mit echten Pilotvereinen.",
+    descriptionLine2: "Live-Turnieren und integrierter KI.",
     // Hero-Statistiken
     coreModules: "Kernmodule",
     rolesSupported: "Rollen unterstützt",
@@ -2087,7 +2099,7 @@ export const de: Translations = {
     // Bottom CTA
     ctaTitle: "Bereit, deinen Verein",
     ctaHighlight: "zu transformieren?",
-    ctaDesc: "Starte noch heute deine kostenlose Testphase. Erlebe alle Funktionen 14 Tage lang, keine Kreditkarte erforderlich.",
+    ctaDesc: "Starte noch heute deine kostenlose Testphase. Erlebe alle Funktionen 41 Tage lang, keine Kreditkarte erforderlich.",
     ctaButton: "Kostenlos testen",
     explorePricing: "Preise entdecken",
   },
@@ -2096,8 +2108,8 @@ export const de: Translations = {
   clubsAndPartnersPage: {
     title: "Unsere",
     titleHighlight: "Vereine & Partner",
-    description: "ONE4Team wird Hand in Hand mit echten Vereinen und vertrauenswürdigen Branchenpartnern entwickelt.",
-    descriptionLine2: "TSV Allach 09 pilotiert die Plattform im Produktivbetrieb, von öffentlichen Microsites bis Sommerfest 2026 und integrierter KI.",
+    description: "ONE4Team wird Hand in Hand mit echten Vereinen aus unterschiedlichen Sportarten und vertrauenswürdigen Branchenpartnern entwickelt.",
+    descriptionLine2: "",
     // Hero-Statistiken
     partnerClubs: "Pilotvereine",
     industryPartners: "Branchenpartner",
@@ -2196,27 +2208,32 @@ export const de: Translations = {
     earlyBirdUntil: "auf alle Pläne bis zum 13. Dezember 2026!",
     timeLeft: "verbleibend",
     freeTrial: "Kostenlose Testphase",
+    freeTrialCountSuffix: " Tage",
     setupFee: "Einrichtungsgebühr",
     save20: "Jährlich (20% sparen)",
     mostPopular: "Beliebteste",
     custom: "Individuell",
     contactUs: "Kontaktiere uns",
     allPlansInclude: "Alle Pläne beinhalten eine",
-    freeTrialDays: "14-tägige kostenlose Testphase",
+    freeTrialDays: "41-tägige kostenlose Testphase",
     noCreditCard: ". Keine Kreditkarte erforderlich. Mengenrabatte gelten automatisch für größere Vereine.",
     optionalAddons: "Optionale",
     addonsHighlight: "Zusatzmodule",
     addonsDesc: "Erweitere jeden Plan mit leistungsstarken Zusatzmodulen. Verfügbar für alle Stufen.",
-    paymentsAddon: "Zahlungs-Zusatzmodul",
+    paymentsAddon: "Zahlungen",
     paymentsAddonDesc: "Beiträge in der App annehmen, Rechnungen/Quittungen generieren und automatische Abstimmung.",
-    proCommsAddon: "Pro-Kommunikation-Zusatzmodul",
+    proCommsAddon: "Pro-Kommunikation",
     proCommsAddonDesc: "WhatsApp, SMS & E-Mail-Benachrichtigungen, geplante Broadcasts und Nachrichtenvorlagen.",
+    ai4tAddon: "AI 4 T",
+    ai4tAddonDesc: "Vereinsbezogener KI-Workspace: intelligentere Trainingsplanung, Admin und Management. Weniger Papierkram, mehr Zeit für den Sport.",
+    ai4tAddonPrice: "EUR 4/mo",
     howPricingWorks: "Wie die",
     pricingWorksHighlight: "Preisgestaltung",
     pricingWorksEnd: "funktioniert",
     pricingWorksDesc: "Transparent und vorhersehbar. Jeder Plan folgt einer einfachen Formel.",
     basePrice: "Grundpreis",
     basePriceDesc: "Eine kleine feste Gebühr pro Plan, die Kerninfrastruktur, Updates und Plattformzugang abdeckt.",
+    pricePerMember: "Preis pro Mitglied",
     perMember: "Pro Mitglied",
     perMemberDesc: "Eine faire Pro-Mitglied-Gebühr, die mit deinem Verein skaliert. Zahle nur für aktive Mitglieder, die du tatsächlich verwaltest.",
     volumeDiscount: "Mengenrabatt",
@@ -2242,7 +2259,7 @@ export const de: Translations = {
     learnMore: "Mehr erfahren",
     startFreeTrialToday: "Starte deine kostenlose Testphase",
     todayHighlight: "heute.",
-    ctaDesc: "14 Tage. Alle Funktionen. Keine Kreditkarte. Erfahre, warum Vereine sich für ONE4Team entscheiden.",
+    ctaDesc: "41 Tage. Alle Funktionen. Keine Kreditkarte. Erfahre, warum Vereine sich für ONE4Team entscheiden.",
     kickoff: "Kick-off",
     kickoffDesc: "Ideal für kleine Teams, die sich organisieren.",
     squad: "Squad",
@@ -2335,7 +2352,7 @@ export const de: Translations = {
     faq: [
       {
         q: "Kann ich ONE4Team kostenlos testen?",
-        a: "Ja. Jeder Plan kommt mit einer 14-tägigen kostenlosen Testphase. Keine Kreditkarte erforderlich. Erkunde alle Funktionen und entscheide mit Zuversicht.",
+        a: "Ja. Jeder Plan kommt mit einer 41-tägigen kostenlosen Testphase. Keine Kreditkarte erforderlich. Erkunde alle Funktionen und entscheide mit Zuversicht.",
       },
       {
         q: "Was passiert nach der Testphase?",

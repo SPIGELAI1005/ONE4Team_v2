@@ -92,6 +92,10 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-accent/10 text-accent",
 };
 
+/** Shared field styling in the match detail editor (aligns datetime-local with selects on mobile). */
+const MATCH_DETAIL_FIELD_CLASS =
+  "box-border h-10 w-full min-w-0 max-w-full rounded-xl border-border bg-card px-3 text-sm [&::-webkit-date-and-time-value]:min-w-0 [&::-webkit-date-and-time-value]:text-left";
+
 const eventTypeLabels: Record<string, string> = {
   goal: "⚽ Goal", assist: "🅰️ Assist", yellow_card: "🟨 Yellow", red_card: "🟥 Red",
   substitution_in: "🔄 Sub In", substitution_out: "🔄 Sub Out",
@@ -1228,12 +1232,12 @@ const Matches = () => {
                 </button>
 
                 {openPanels.details && (
-                  <div className="mt-3 space-y-3">
+                  <div className="mt-3 min-w-0 space-y-3">
                     <Input
                       placeholder={t.matchesPage.phOpponent}
                       value={editOpponent}
                       onChange={(e) => setEditOpponent(e.target.value)}
-                      className="bg-card"
+                      className={MATCH_DETAIL_FIELD_CLASS}
                       maxLength={200}
                     />
                     {clubId ? (
@@ -1261,23 +1265,23 @@ const Matches = () => {
                         {t.matchesPage.awayVenue}
                       </Button>
                     </div>
-                    <div>
+                    <div className="w-full min-w-0">
                       <label className="text-[10px] text-muted-foreground mb-1 block">{t.matchesPage.labelDateTime}</label>
                       <Input
                         type="datetime-local"
                         value={editMatchDate}
                         onChange={(e) => setEditMatchDate(e.target.value)}
-                        className="bg-card"
+                        className={MATCH_DETAIL_FIELD_CLASS}
                       />
                     </div>
                     <Input
                       placeholder={t.matchesPage.phLocation}
                       value={editLocation}
                       onChange={(e) => setEditLocation(e.target.value)}
-                      className="bg-card"
+                      className={MATCH_DETAIL_FIELD_CLASS}
                     />
                     <Select value={editTeamId || "__none"} onValueChange={(value) => setEditTeamId(value === "__none" ? "" : value)}>
-                      <SelectTrigger className="w-full h-10 rounded-xl border-border bg-card px-3 text-sm">
+                      <SelectTrigger className={MATCH_DETAIL_FIELD_CLASS}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1290,7 +1294,7 @@ const Matches = () => {
                       </SelectContent>
                     </Select>
                     <Select value={editCompId || "__none"} onValueChange={(value) => setEditCompId(value === "__none" ? "" : value)}>
-                      <SelectTrigger className="w-full h-10 rounded-xl border-border bg-card px-3 text-sm">
+                      <SelectTrigger className={MATCH_DETAIL_FIELD_CLASS}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1303,7 +1307,7 @@ const Matches = () => {
                       </SelectContent>
                     </Select>
                     <Select value={editStatus} onValueChange={setEditStatus}>
-                      <SelectTrigger className="w-full h-10 rounded-xl border-border bg-card px-3 text-sm">
+                      <SelectTrigger className={MATCH_DETAIL_FIELD_CLASS}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
