@@ -523,6 +523,12 @@ export const en = {
     clubCreated: "Club created!",
     clubReadyToGo: "is ready to go.",
     errorCreatingClub: "Error creating club",
+    createClubUnknown: "Something went wrong. Please try again.",
+    createClubNotAuthenticated: "Sign in first, then create your club.",
+    createClubDuplicateSlug:
+      "A club with this URL already exists. Choose a different club name.",
+    createClubProvisioningConflict:
+      "Club setup hit a temporary conflict. Please try again. If it persists, contact support@one4team.com.",
     // Roles
     clubAdmin: "Club Admin",
     clubAdminDesc: "Full club management access",

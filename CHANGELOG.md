@@ -3,6 +3,50 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-07 (Dashboard mobile polish, AI 4 T UX, Messages, Asset Map, chat-bridge CORS)
+
+### Dashboard mobile shell (iOS-like)
+- **`DashboardLayout.tsx`:** Fixed `inset-0` shell; inner **`.dashboard-scroll-area`** as single scroll region below top bar.
+- **`MobileBottomNav.tsx`:** Always mounted (`md:hidden`); **`ResizeObserver`** sets **`--dashboard-bottom-clearance`**; sync **`useIsMobile`** init to reduce hydration flash.
+- **`index.css`:** Mobile dashboard typography polish; **`.dashboard-header-actions`** 44px utility targets; **`data-dashboard-chat-shell`** / **`data-dashboard-messages-shell`** full-height flex shells (scroll inside message list, not page).
+- **`dashboard-page-shell.ts`:** Shared tokens — **`DASHBOARD_TYPE_*`**, **`DASHBOARD_IOS_SEGMENT*`**, **`DASHBOARD_TOOLBAR_BUTTON`**, **`DASHBOARD_HEADER_*`**.
+- **New:** **`DashboardIosSegmentTabs.tsx`**, **`DashboardToolbarActions.tsx`** — iOS segment tabs + overflow toolbar on **`Matches`**, **`Settings`**, **`Teams`**.
+- **`DashboardTopBar.tsx`**, **`NotificationBell.tsx`**, **`AppHeader`**, theme/language toggles — aligned header icon sizing; notification panel portaled to **`document.body`** with mobile-safe inset.
+- **`use-mobile.tsx`:** Sync initial viewport match on first paint.
+
+### AI 4 T (`/co-trainer`) — mobile layout
+- **`CoTrainer.tsx`:** Compact mobile empty state (welcome + horizontal suggestion chips); workspace metadata card **hidden on mobile**; subtitle hidden on compact header; **`DashboardIosSegmentTabs`** for Chat/Agent/History; full-height **`data-dashboard-chat-shell`**; fixed bottom **`Ai4tChatComposer`**.
+- **`Ai4tChatComposer.tsx`:** Dashboard variant — **red-bordered** input row (AI 4 T only); shared composer for Chat + Agent tabs.
+- **`ai4t-tab-classes.ts`:** Taller mobile tab strip; **`ai4t-dashboard-tab-icon`** sizing in CSS.
+- Header **New chat** button uses **`DASHBOARD_HEADER_UTILITY_BUTTON`** (44px on phone).
+
+### Messages (`/communication`) — dashboard mobile
+- **`Communication.tsx`:** **`data-dashboard-messages-shell`**; channel sidebar **hidden below `lg`**; mobile channel **`<Select>`**; compact search/pagination; fixed bottom composer with **gold/primary** ONE4Team border (not red); subtitle hidden on mobile.
+
+### Teams — Asset Map mobile
+- **`Teams.tsx`:** iOS segment tabs for Separate/Combined/Booked; pitch cards stack/wrap on mobile; grid **`min-w-0`** + horizontal scroll guards; JSX structure fix for separate-view grid wrappers.
+
+### Edge — chat-bridge CORS
+- **`chat-bridge/index.ts`:** **`Access-Control-Allow-Headers`** includes **`x-correlation-id`** (fixes browser preflight from **`correlationHeaders()`** in Communication).
+- **`_shared/cors.ts`:** Also allows **`x-bridge-secret`** in shared header list.
+- **Deployed:** `supabase functions deploy chat-bridge` on linked project.
+
+### DB repairs (migrations in repo)
+- **`20260707190000_repair_create_club_with_admin_role_assignment.sql`** — fix duplicate role assignment 409 on club creation.
+- **`20260707200000_repair_marketplace_requests_rls_recursion.sql`** — marketplace 500 RLS recursion fix.
+
+### Tests + onboarding
+- **`onboarding-club.ts`** + **`onboarding-club.test.ts`** — club creation helper + unit tests.
+- **`use-marketplace.ts`**, **`Onboarding.tsx`** — related onboarding/marketplace fixes.
+
+### Operator smoke
+- **Phone:** AI 4 T — chat fills viewport; composer pinned; tabs readable; Messages — channel dropdown + fixed composer; bottom nav does not cover content.
+- **Desktop:** AI 4 T / Messages / Teams layouts unchanged from prior desktop behavior.
+- **Communication:** Admin External Bridge panel loads without CORS error (after **`chat-bridge`** redeploy).
+
+### Documentation sync
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`HOLD.md`**, **`README.md`**, **`ROADMAP.md`**, **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**, **`ops/PRODUCTION_READINESS_ARTIFACTS.md`**, **`ops/PRODUCTION_READINESS_EVIDENCE_LOG.md`**.
+
 ## 2026-07-07 (Legal audit, marketing polish, UX fixes)
 
 ### Legal pages — GDPR / EU AI Act audit

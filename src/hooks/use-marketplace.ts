@@ -28,10 +28,23 @@ export type {
 function isMissingRelation(error: unknown): boolean {
   if (!error || typeof error !== "object") return false;
   const message = String((error as { message?: unknown }).message ?? "").toLowerCase();
+  const code = String((error as { code?: unknown }).code ?? "");
   return (
     message.includes("does not exist") ||
     message.includes("could not find") ||
-    message.includes("schema cache")
+    message.includes("schema cache") ||
+    code === "42P01"
+  );
+}
+
+function isRlsOrServerError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const message = String((error as { message?: unknown }).message ?? "").toLowerCase();
+  const code = String((error as { code?: unknown }).code ?? "");
+  return (
+    code === "500" ||
+    message.includes("infinite recursion") ||
+    message.includes("internal server error")
   );
 }
 
@@ -274,7 +287,7 @@ export function useClubMarketplace(clubId: string | null) {
     ]);
 
     const schemaError = [providerRes, requestRes, savedRes].find(
-      (res) => res.error && isMissingRelation(res.error),
+      (res) => res.error && (isMissingRelation(res.error) || isRlsOrServerError(res.error)),
     )?.error;
 
     if (schemaError) {

@@ -29,11 +29,13 @@ import {
 } from "@/lib/rbac-config";
 import { PARTNER_PORTAL_ROUTES } from "@/lib/partner-portal-routes";
 import {
+  DASHBOARD_PAGE_INNER_SM,
   DASHBOARD_PAGE_MAX_INNER,
   DASHBOARD_PAGE_ROOT,
-  DASHBOARD_TABS_INNER_SCROLL,
-  DASHBOARD_TABS_ROW,
+  DASHBOARD_TYPE_CAPTION,
+  DASHBOARD_TYPE_MICRO,
 } from "@/lib/dashboard-page-shell";
+import { DashboardIosSegmentTabs } from "@/components/dashboard/DashboardIosSegmentTabs";
 import { switchDashboardPersona as applyDashboardPersonaSwitch } from "@/lib/switch-dashboard-persona";
 import { useActiveDashboardPersonaSlug } from "@/hooks/use-active-dashboard-persona-slug";
 
@@ -612,7 +614,7 @@ export default function Settings() {
     <div className="flex items-center justify-between py-3">
       <div className="min-w-0 pr-4">
         <div className="text-sm font-medium text-foreground">{label}</div>
-        <div className="text-[11px] text-muted-foreground">{description}</div>
+        <div className={DASHBOARD_TYPE_MICRO}>{description}</div>
       </div>
       <button
         onClick={onChange}
@@ -630,22 +632,12 @@ export default function Settings() {
         subtitle={isPartnerPersona ? t.settingsPage.subtitlePartner : t.settingsPage.subtitle}
       />
 
-      {/* Tabs */}
-      <div className={DASHBOARD_TABS_ROW}>
-        <div className={DASHBOARD_TABS_INNER_SCROLL}>
-          {tabs.map((tb) => (
-            <button
-              type="button"
-              key={tb.id}
-              onClick={() => setTab(tb.id)}
-              className={`flex shrink-0 items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
-                tab === tb.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <tb.icon className="w-4 h-4" /> {tb.label}
-            </button>
-          ))}
-        </div>
+      <div className={DASHBOARD_PAGE_INNER_SM}>
+        <DashboardIosSegmentTabs
+          value={tab}
+          onChange={setTab}
+          tabs={tabs.map((tb) => ({ id: tb.id, label: tb.label, icon: tb.icon }))}
+        />
       </div>
 
       <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-2xl py-4 sm:py-6`}>
@@ -721,7 +713,7 @@ export default function Settings() {
                       <div className="text-sm font-semibold text-foreground">
                         {isPartnerPersona ? t.settingsPage.partnerRoleTitle : t.settingsPage.roleAccessTitle}
                       </div>
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className={DASHBOARD_TYPE_MICRO}>
                         {isPartnerPersona ? t.settingsPage.partnerRoleDesc : t.settingsPage.roleAccessDesc}
                       </p>
                     </div>
@@ -734,7 +726,7 @@ export default function Settings() {
                           </span>
                         </div>
                         <div className="rounded-xl border border-border/60 bg-background/30 p-3 space-y-2">
-                          <div className="text-[11px] text-muted-foreground">{t.settingsPage.roleSwitchDashboardTitle}</div>
+                          <div className={DASHBOARD_TYPE_MICRO}>{t.settingsPage.roleSwitchDashboardTitle}</div>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             {dashboardPersonaOptions.map((role) => {
                               const currentActive =
@@ -752,7 +744,7 @@ export default function Settings() {
                                       : "border-border/60 bg-card/30 text-foreground hover:border-primary/30 hover:bg-primary/5"
                                   }`}
                                 >
-                                  <div className="text-[11px] font-semibold">{formatDashboardRoleLabel(role)}</div>
+                                  <div className={`${DASHBOARD_TYPE_CAPTION} font-semibold`}>{formatDashboardRoleLabel(role)}</div>
                                   {isSelected && <div className="text-[9px] mt-0.5 opacity-90">{t.common.active}</div>}
                                 </button>
                               );
@@ -763,7 +755,7 @@ export default function Settings() {
                     ) : activeClubRoleSummary ? (
                       <div className="space-y-3">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[11px] text-muted-foreground">{t.settingsPage.roleActiveClub}</span>
+                          <span className={DASHBOARD_TYPE_MICRO}>{t.settingsPage.roleActiveClub}</span>
                           <span className="text-xs px-2 py-1 rounded-full border border-border/60 bg-card/40 text-foreground">
                             {activeClub?.name || activeClubRoleSummary.clubName}
                           </span>
@@ -774,7 +766,7 @@ export default function Settings() {
 
                         {/* Active dashboard role switcher */}
                         <div className="rounded-xl border border-border/60 bg-background/30 p-3 space-y-2">
-                          <div className="text-[11px] text-muted-foreground">{t.settingsPage.roleSwitchDashboardTitle}</div>
+                          <div className={DASHBOARD_TYPE_MICRO}>{t.settingsPage.roleSwitchDashboardTitle}</div>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                             {activeClubRoleSummary.effectiveRoles.map((role) => {
                               const currentActive =
@@ -792,7 +784,7 @@ export default function Settings() {
                                       : "border-border/60 bg-card/30 text-foreground hover:border-primary/30 hover:bg-primary/5"
                                   }`}
                                 >
-                                  <div className="text-[11px] font-semibold">{formatRoleLabel(role)}</div>
+                                  <div className={`${DASHBOARD_TYPE_CAPTION} font-semibold`}>{formatRoleLabel(role)}</div>
                                   {isSelected && <div className="text-[9px] mt-0.5 opacity-90">{t.common.active}</div>}
                                 </button>
                               );
@@ -803,7 +795,7 @@ export default function Settings() {
                         {/* Change DB role (admin only) */}
                         {perms.isAdmin && activeClubId && (
                           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-2">
-                            <div className="text-[11px] text-muted-foreground">{t.settingsPage.roleDbChangeTitle}</div>
+                            <div className={DASHBOARD_TYPE_MICRO}>{t.settingsPage.roleDbChangeTitle}</div>
                             <div className="flex items-center gap-2 flex-wrap">
                               <Select
                                 value={activeClubRoleSummary.baseRole}
@@ -851,7 +843,7 @@ export default function Settings() {
                                     : "border-border/60 bg-card/30 text-muted-foreground"
                                 }`}
                               >
-                                <div className="text-[11px] font-medium">{formatRoleLabel(role)}</div>
+                                <div className={`${DASHBOARD_TYPE_CAPTION} font-medium`}>{formatRoleLabel(role)}</div>
                                 <div className="text-[10px] mt-0.5 opacity-80">
                                   {isBaseRole ? t.settingsPage.roleAssigned : hasRole ? t.settingsPage.roleInherited : t.settingsPage.roleNotGranted}
                                 </div>
@@ -861,7 +853,7 @@ export default function Settings() {
                         </div>
 
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[11px] text-muted-foreground">{t.settingsPage.roleEffectiveRoles}</span>
+                          <span className={DASHBOARD_TYPE_MICRO}>{t.settingsPage.roleEffectiveRoles}</span>
                           {activeClubRoleSummary.effectiveRoles.map((role) => (
                             <span key={role} className="text-xs px-2 py-1 rounded-full border border-primary/20 bg-primary/10 text-primary">
                               {formatRoleLabel(role)}
@@ -875,7 +867,7 @@ export default function Settings() {
 
                     {roleMemberships.length > 1 && (
                       <div className="pt-1 border-t border-border/60">
-                        <div className="text-[11px] text-muted-foreground mb-2">{t.settingsPage.roleMembershipsOverview}</div>
+                        <div className={`${DASHBOARD_TYPE_MICRO} mb-2`}>{t.settingsPage.roleMembershipsOverview}</div>
                         <div className="space-y-2">
                           {roleMemberships.map((membership) => (
                             <div key={membership.clubId} className="rounded-xl border border-border/60 bg-card/30 px-3 py-2">
@@ -887,7 +879,7 @@ export default function Settings() {
                                   </span>
                                 )}
                               </div>
-                              <div className="text-[11px] text-muted-foreground mt-1">
+                              <div className={`${DASHBOARD_TYPE_MICRO} mt-1`}>
                                 {t.settingsPage.roleBaseRole}: {formatRoleLabel(membership.baseRole)} {"->"} {membership.effectiveRoles.map(formatRoleLabel).join(" / ")}
                               </div>
                             </div>
@@ -922,7 +914,7 @@ export default function Settings() {
                 </div>
                 <div>
                   <h2 className="font-display font-bold text-foreground">{t.settingsPage.partnerSettingsTitle}</h2>
-                  <p className="text-[11px] text-muted-foreground">{t.settingsPage.partnerSettingsDesc}</p>
+                  <p className={DASHBOARD_TYPE_MICRO}>{t.settingsPage.partnerSettingsDesc}</p>
                 </div>
               </div>
               <Button asChild variant="outline" className="w-full sm:w-auto">
@@ -936,7 +928,7 @@ export default function Settings() {
             <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-5 space-y-3">
               <div>
                 <h3 className="text-sm font-semibold text-foreground">{t.settingsPage.partnerPortalTitle}</h3>
-                <p className="text-[11px] text-muted-foreground mt-1">{t.settingsPage.partnerPortalDesc}</p>
+                <p className={`${DASHBOARD_TYPE_MICRO} mt-1`}>{t.settingsPage.partnerPortalDesc}</p>
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
                 <Button asChild variant="secondary" size="sm">
@@ -960,7 +952,7 @@ export default function Settings() {
                 </div>
                 <div>
                   <h2 className="font-display font-bold text-foreground">{t.settingsPage.clubSettings}</h2>
-                  <p className="text-[11px] text-muted-foreground">{t.settingsPage.clubSettingsDesc}</p>
+                  <p className={DASHBOARD_TYPE_MICRO}>{t.settingsPage.clubSettingsDesc}</p>
                 </div>
               </div>
 
@@ -1068,7 +1060,7 @@ export default function Settings() {
                       <h2 className="font-display font-bold text-foreground">
                         <BrandedText text={t.settingsPage.llmTitle} />
                       </h2>
-                      <p className="text-[11px] text-muted-foreground">{t.settingsPage.llmDesc}</p>
+                      <p className={DASHBOARD_TYPE_MICRO}>{t.settingsPage.llmDesc}</p>
                     </div>
                   </div>
                   <div className="flex flex-col items-stretch sm:items-end gap-2 shrink-0">
@@ -1282,7 +1274,7 @@ export default function Settings() {
                 </div>
                 <div>
                   <h2 className="font-display font-bold text-foreground">{t.settingsPage.notificationPrefs}</h2>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className={DASHBOARD_TYPE_MICRO}>
                     {isPartnerPersona ? t.settingsPage.notificationPrefsDescPartner : t.settingsPage.notificationPrefsDesc}
                   </p>
                 </div>
@@ -1320,7 +1312,7 @@ export default function Settings() {
                 </div>
                 <div>
                   <h2 className="font-display font-bold text-foreground">{t.settingsPage.changePassword}</h2>
-                  <p className="text-[11px] text-muted-foreground">{t.settingsPage.changePasswordDesc}</p>
+                  <p className={DASHBOARD_TYPE_MICRO}>{t.settingsPage.changePasswordDesc}</p>
                 </div>
               </div>
               <Button
@@ -1341,7 +1333,7 @@ export default function Settings() {
                 </div>
                 <div>
                   <h2 className="font-display font-bold text-foreground">{t.settingsPage.changeEmail}</h2>
-                  <p className="text-[11px] text-muted-foreground">{t.settingsPage.changeEmailDesc}</p>
+                  <p className={DASHBOARD_TYPE_MICRO}>{t.settingsPage.changeEmailDesc}</p>
                 </div>
               </div>
               <div className="grid gap-3 sm:grid-cols-[1fr_auto] items-end">
@@ -1373,7 +1365,7 @@ export default function Settings() {
                 </div>
                 <div>
                   <h2 className="font-display font-bold text-foreground">{t.settingsPage.signOut}</h2>
-                  <p className="text-[11px] text-muted-foreground">{t.settingsPage.signOutDesc}</p>
+                  <p className={DASHBOARD_TYPE_MICRO}>{t.settingsPage.signOutDesc}</p>
                 </div>
               </div>
               <Button
@@ -1396,7 +1388,7 @@ export default function Settings() {
               </div>
               <div className="mb-3">
                 <h3 className="text-sm font-medium text-foreground">{t.settingsPage.deleteAccount}</h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5">{t.settingsPage.deleteAccountDesc}</p>
+                <p className={`${DASHBOARD_TYPE_MICRO} mt-0.5`}>{t.settingsPage.deleteAccountDesc}</p>
               </div>
               <Button variant="outline" className="border-destructive/30 text-destructive hover:bg-destructive/10" disabled>
                 <Trash2 className="w-4 h-4 mr-1" /> {t.settingsPage.deleteAccount}

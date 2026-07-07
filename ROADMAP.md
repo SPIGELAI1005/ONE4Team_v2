@@ -39,6 +39,10 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Sommerfest kickoff sync + mobile messaging (2026-07-06):** Berlin timezone match kickoff save/load; schedule + live board use persisted times; tournament **Info** (durations) beside share; embedded club Communication mobile layout — see `CHANGELOG.md` § **2026-07-06 (Sommerfest kickoff sync…)**.
 
+**Dashboard mobile polish + AI 4 T / Messages UX (2026-07-07):** Fixed dashboard scroll shell + bottom-nav clearance; iOS segment tabs; **AI 4 T** compact mobile chat + fixed red-highlighted composer; **Messages** dashboard mobile channel picker + gold fixed composer; **Teams Asset Map** responsive layout; **`chat-bridge`** CORS **`x-correlation-id`** — see `CHANGELOG.md` § **2026-07-07 (Dashboard mobile polish…)**.
+
+**Legal audit + marketing polish (2026-07-07):** Privacy/Terms/cookie GDPR refresh; **41-day** trial; Pricing AI 4 T add-on; legal-page flicker fix — see `CHANGELOG.md` § **2026-07-07 (Legal audit…)**.
+
 **Legal audit + marketing polish (2026-07-07):** Privacy/Terms/cookie GDPR + EU AI Act copy; **§5 Sub-processors & integrations**; legal-page **`.legal-panel`** flicker fix; **41-day** trial; Pricing **AI 4 T** add-on; **`support@one4team.com`**; operator **LEGAL-OPS-001** / **LEGAL-OPS-002** — see `CHANGELOG.md` § **2026-07-07**, `TASKS.md` **P10-010f**–**P10-010g**.
 
 ---

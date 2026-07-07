@@ -13,10 +13,11 @@ import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_INNER_SM, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
+import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_INNER_SM, DASHBOARD_PAGE_ROOT, DASHBOARD_TYPE_MICRO } from "@/lib/dashboard-page-shell";
+import { DashboardIosSegmentTabs } from "@/components/dashboard/DashboardIosSegmentTabs";
+import { DashboardToolbarActions } from "@/components/dashboard/DashboardToolbarActions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabaseErrorMessage, isTransientSupabaseMessage } from "@/lib/supabase-error-message";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useLanguage } from "@/hooks/use-language";
 import { useActiveClub } from "@/hooks/use-active-club";
 import { useMembershipId } from "@/hooks/use-membership-id";
@@ -830,34 +831,42 @@ const Matches = () => {
         toolbarRevision={String(canManageMatches)}
         rightSlot={
           canManageMatches ? (
-            <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-end max-w-[min(100%,14rem)] sm:max-w-none">
-              <Button size="sm" variant="outline" onClick={() => setShowAddComp(true)} className="rounded-xl glass-card text-[11px] sm:text-[12px] haptic-press shrink-0">
-                <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> {t.matchesPage.btnCompetition}
-              </Button>
-              <Button size="sm" className="bg-gradient-gold-static text-primary-foreground hover:brightness-110 rounded-xl text-[11px] sm:text-[12px] shadow-gold haptic-press shrink-0" onClick={() => { setOpponentLogoUrl(null); setShowAddMatch(true); }}>
-                <Plus className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} /> {t.matchesPage.btnMatch}
-              </Button>
-            </div>
+            <DashboardToolbarActions
+              maxVisibleMobile={2}
+              actions={[
+                {
+                  id: "competition",
+                  label: t.matchesPage.btnCompetition,
+                  icon: Plus,
+                  variant: "outline",
+                  onClick: () => setShowAddComp(true),
+                },
+                {
+                  id: "match",
+                  label: t.matchesPage.btnMatch,
+                  icon: Plus,
+                  variant: "gold",
+                  onClick: () => {
+                    setOpponentLogoUrl(null);
+                    setShowAddMatch(true);
+                  },
+                },
+              ]}
+            />
           ) : null
         }
       />
 
-      {/* iOS Segmented Tabs */}
       <div className={DASHBOARD_PAGE_INNER_SM}>
-        <div className="ios-segment flex overflow-x-auto min-w-0">
-          {([
-            { id: "matches" as const, label: t.matchesPage.tabMatches, icon: Trophy },
-            { id: "competitions" as const, label: t.matchesPage.tabCompetitions, icon: Award },
-            { id: "standings" as const, label: t.matchesPage.tabStandings, icon: Target },
-          ]).map((tabItem) => (
-            <button key={tabItem.id} onClick={() => setTab(tabItem.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-2 sm:px-3 py-2 text-[11px] sm:text-[12px] font-medium rounded-md transition-all duration-200 min-w-0 ${
-                tab === tabItem.id ? "ios-segment-active text-foreground" : "text-muted-foreground"
-              }`}>
-              <tabItem.icon className="w-3.5 h-3.5 shrink-0" strokeWidth={1.5} /> <span className="truncate">{tabItem.label}</span>
-            </button>
-          ))}
-        </div>
+        <DashboardIosSegmentTabs
+          value={tab}
+          onChange={setTab}
+          tabs={[
+            { id: "matches", label: t.matchesPage.tabMatches, icon: Trophy },
+            { id: "competitions", label: t.matchesPage.tabCompetitions, icon: Award },
+            { id: "standings", label: t.matchesPage.tabStandings, icon: Target },
+          ]}
+        />
       </div>
 
       <div className={DASHBOARD_PAGE_INNER}>
@@ -1181,7 +1190,7 @@ const Matches = () => {
                   <h3 className="font-display font-bold text-foreground">
                     {formatMatchHeadline(selectedMatch, teams)}
                   </h3>
-                  <div className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                  <div className={`mt-1 ${DASHBOARD_TYPE_MICRO} leading-relaxed`}>
                     {new Date(selectedMatch.match_date).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                     {selectedMatch.location ? ` · ${selectedMatch.location}` : ""}
                   </div>
@@ -1440,7 +1449,7 @@ const Matches = () => {
                         <Button size="sm" className="h-8 bg-gradient-gold-static text-primary-foreground hover:brightness-110" onClick={handleAddMatchEvent}>+</Button>
                       </div>
                       ) : (
-                        <p className="text-[11px] text-muted-foreground">{t.matchesPage.readOnlyMatchHint}</p>
+                        <p className={DASHBOARD_TYPE_MICRO}>{t.matchesPage.readOnlyMatchHint}</p>
                       )}
                     </div>
                   </>

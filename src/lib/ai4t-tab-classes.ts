@@ -11,10 +11,10 @@ export const ai4tMainTabTriggerClass =
 
 /** Dashboard /co-trainer - respects light & dark theme. */
 export const ai4tDashboardTabListClass =
-  "w-full grid grid-cols-3 h-11 rounded-xl p-1 bg-neutral-100/90 dark:bg-muted/30";
+  "grid h-12 w-full min-w-0 rounded-xl p-1 bg-neutral-100/90 dark:bg-muted/30 lg:h-11";
 
 export const ai4tDashboardTabTriggerClass =
-  "inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors shadow-none " +
+  "inline-flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium transition-colors shadow-none touch-manipulation max-lg:text-[13px] lg:py-1.5 " +
   "data-[state=inactive]:bg-neutral-300 data-[state=inactive]:text-neutral-700 " +
   "data-[state=inactive]:hover:bg-neutral-400 " +
   "dark:data-[state=inactive]:bg-muted/80 dark:data-[state=inactive]:text-muted-foreground " +

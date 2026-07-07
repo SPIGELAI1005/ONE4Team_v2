@@ -1,6 +1,6 @@
 # ONE4Team — Comprehensive project audit
 
-**Audit date:** 2026-07-07 (updated for legal audit + marketing polish: Privacy §5 sub-processors, AI 4 T legal copy, **41-day** trial, Pricing AI 4 T add-on, **`support@one4team.com`**, legal-page flicker fix; prior: Sommerfest kickoff sync, tournament info, mobile club messaging)  
+**Audit date:** 2026-07-07 (updated for dashboard mobile polish: AI 4 T compact mobile chat + fixed composer, Messages dashboard mobile layout + gold composer, Teams Asset Map responsive grids, chat-bridge CORS; prior: legal audit + marketing polish — Privacy §5 sub-processors, AI 4 T legal copy, **41-day** trial, Pricing AI 4 T add-on, **`support@one4team.com`**, legal-page flicker fix; Sommerfest kickoff sync, tournament info, mobile club messaging)  
 **Scope:** Codebase, architecture, UX/design, production readiness, competitive positioning, market value, and value-growth levers  
 **Primary reference (existing):** [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) — strict production-readiness review with risk register, readiness scores, and remediation sprints  
 

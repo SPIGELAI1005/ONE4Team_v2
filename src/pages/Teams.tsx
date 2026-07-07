@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
   Plus, Trophy, Dumbbell, Loader2,
-  Calendar, MapPin, Clock, Trash2, X, LayoutGrid, AlertTriangle, CheckCircle2, ShieldCheck, Pencil, Layers3, Building2, ChevronDown, UploadCloud, Search,
+  Calendar, MapPin, Clock, History, Trash2, X, LayoutGrid, AlertTriangle, CheckCircle2, ShieldCheck, Pencil, Layers3, Building2, ChevronDown, UploadCloud, Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,10 +17,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useLanguage } from "@/hooks/use-language";
-import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
+import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_INNER_SM, DASHBOARD_PAGE_ROOT, DASHBOARD_TYPE_CAPTION, DASHBOARD_TYPE_MICRO } from "@/lib/dashboard-page-shell";
+import { DashboardIosSegmentTabs } from "@/components/dashboard/DashboardIosSegmentTabs";
+import { DashboardToolbarActions, type DashboardToolbarAction } from "@/components/dashboard/DashboardToolbarActions";
 import { resolveSportId, resolveSportLabel, SPORTS_CATALOG } from "@/lib/sports";
 import { useLocation } from "react-router-dom";
-import { Link } from "react-router-dom";
 import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
 import { AiAgentTeamsShortcuts } from "@/components/ai-agent/AiAgentTeamsShortcuts";
 import { useRegisterAiAgentContext } from "@/hooks/use-register-ai-agent-context";
@@ -1129,12 +1130,12 @@ const Teams = () => {
     return pitch.layer_id === activeLayerId;
   }, [activeLayerId, activeLayerPurposeFilter, layerById]);
 
-  const derivePitchLayerIdFromFilter = (filterId: string): string => {
+  const derivePitchLayerIdFromFilter = useCallback((filterId: string): string => {
     if (filterId === "all") return "";
     const purposeFilter = resolveLayerFilterPurpose(filterId);
     if (!purposeFilter) return filterId;
     return pickDefaultLayerIdForPurpose(layers, purposeFilter);
-  };
+  }, [layers]);
 
   const filteredPitches = useMemo(() => {
     return pitches.filter(matchesActiveLayerFilter);
@@ -2844,6 +2845,94 @@ const Teams = () => {
 
   const teamsToolbarRevision = `${currentTab}-${canManage}-${canManageLayers}-${bookingActionLabel}-${activeLayerId}-${pitches.length}`;
 
+  const teamsToolbarActions = useMemo((): DashboardToolbarAction[] => {
+    const actions: DashboardToolbarAction[] = [];
+    if (canManage) {
+      actions.push({
+        id: "training-import",
+        label: "Training plan import",
+        icon: UploadCloud,
+        href: "/training-plan-import",
+        variant: "outline",
+      });
+    }
+    if (currentTab === "pitches") {
+      if (canManageLayers) {
+        actions.push({
+          id: "add-layer",
+          label: t.teamsPage.headerAddLayer,
+          icon: Layers3,
+          variant: "outline",
+          onClick: () => setShowAddLayer(true),
+        });
+      }
+      actions.push({
+        id: "add-booking",
+        label: bookingActionLabel,
+        icon: LayoutGrid,
+        variant: "outline",
+        onClick: () => setShowAddBooking(true),
+        disabled: !canManage,
+      });
+      actions.push({
+        id: "add-pitch",
+        label: t.teamsPage.addPitch,
+        icon: MapPin,
+        variant: "gold",
+        onClick: () => {
+          setEditingPitchId(null);
+          setPitchName("");
+          setPitchNotes("");
+          setPitchParentId("");
+          setPitchElementType("pitch");
+          setPitchLayerId(derivePitchLayerIdFromFilter(activeLayerId));
+          setSelectedPitchCells([]);
+          setPitchDisplayColor(suggestColorByIndex(pitches.length));
+          setElementColorSectionOpen(false);
+          setShowAddPitch(true);
+        },
+        disabled: !canManage,
+      });
+    } else if (currentTab === "teams") {
+      actions.push({
+        id: "add-team",
+        label: t.teamsPage.addTeam,
+        icon: Plus,
+        variant: "gold",
+        onClick: () => {
+          resetTeamForm();
+          setShowAddTeam(true);
+        },
+        disabled: !canManage,
+      });
+    } else if (currentTab === "sessions") {
+      actions.push({
+        id: "add-session",
+        label: t.teamsPage.addSession,
+        icon: Calendar,
+        variant: "gold",
+        onClick: () => {
+          resetSessionForm();
+          setShowAddSession(true);
+        },
+        disabled: !canManage,
+      });
+    }
+    return actions;
+  }, [
+    activeLayerId,
+    bookingActionLabel,
+    canManage,
+    canManageLayers,
+    currentTab,
+    derivePitchLayerIdFromFilter,
+    pitches.length,
+    t.teamsPage.addPitch,
+    t.teamsPage.addSession,
+    t.teamsPage.addTeam,
+    t.teamsPage.headerAddLayer,
+  ]);
+
   return (
     <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot
@@ -2851,101 +2940,30 @@ const Teams = () => {
         subtitle={canManage ? t.teamsPage.subtitleManage : t.teamsPage.subtitleView}
         toolbarRevision={teamsToolbarRevision}
         rightSlot={
-          <div className="flex gap-2 flex-wrap">
-            <AiAgentHeaderButton intent="create_training" />
-            {canManage && (
-              <Button asChild size="sm" variant="outline">
-                <Link to="/training-plan-import">Training plan import</Link>
-              </Button>
-            )}
-            {currentTab === "pitches" && (
-              <>
-                {canManageLayers && (
-                  <Button size="sm" variant="outline" onClick={() => setShowAddLayer(true)}>
-                    <Layers3 className="w-4 h-4 mr-1" /> {t.teamsPage.headerAddLayer}
-                  </Button>
-                )}
-                <Button size="sm" variant="outline" onClick={() => setShowAddBooking(true)} disabled={!canManage}>
-                  <LayoutGrid className="w-4 h-4 mr-1" /> {bookingActionLabel}
-                </Button>
-                <Button
-                  size="sm"
-                  className="bg-gradient-gold-static text-primary-foreground hover:brightness-110"
-                  onClick={() => {
-                    setEditingPitchId(null);
-                    setPitchName("");
-                    setPitchNotes("");
-                    setPitchParentId("");
-                    setPitchElementType("pitch");
-                    setPitchLayerId(derivePitchLayerIdFromFilter(activeLayerId));
-                    setSelectedPitchCells([]);
-                    setPitchDisplayColor(suggestColorByIndex(pitches.length));
-                    setElementColorSectionOpen(false);
-                    setShowAddPitch(true);
-                  }}
-                  disabled={!canManage}
-                >
-                  <LayoutGrid className="w-4 h-4 mr-1" /> {t.teamsPage.addPitch}
-                </Button>
-              </>
-            )}
-            {currentTab === "teams" && (
-              <Button
-                size="sm"
-                className="bg-gradient-gold-static text-primary-foreground hover:brightness-110"
-                onClick={() => {
-                  resetTeamForm();
-                  setShowAddTeam(true);
-                }}
-                disabled={!canManage}
-              >
-                <Plus className="w-4 h-4 mr-1" /> {t.teamsPage.addTeam}
-              </Button>
-            )}
-            {currentTab === "sessions" && (
-              <Button
-                size="sm"
-                className="bg-gradient-gold-static text-primary-foreground hover:brightness-110"
-                onClick={() => {
-                  resetSessionForm();
-                  setShowAddSession(true);
-                }}
-                disabled={!canManage}
-              >
-                <Calendar className="w-4 h-4 mr-1" /> {t.teamsPage.addSession}
-              </Button>
-            )}
-          </div>
+          <DashboardToolbarActions
+            leading={<AiAgentHeaderButton intent="create_training" />}
+            actions={teamsToolbarActions}
+            maxVisibleMobile={1}
+          />
         }
       />
 
-      <div className={`${DASHBOARD_PAGE_INNER} min-w-0`}>
-        {!isAssetLayersPage && (
-          <div className="mb-4 w-full min-w-0 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="inline-flex rounded-xl border border-border/60 bg-card/40 p-1">
-          {(
-            [
-              { id: "pitches", label: t.teamsPage.tabs.pitches },
-              { id: "teams", label: t.teamsPage.tabs.teams },
-              { id: "sessions", label: t.teamsPage.tabs.sessions },
-              { id: "history", label: t.teamsPage.tabs.history },
-            ] as const
-          ).map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
-                currentTab === tab.id ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-            </div>
-          </div>
-        )}
+      {!isAssetLayersPage ? (
+        <div className={DASHBOARD_PAGE_INNER_SM}>
+          <DashboardIosSegmentTabs
+            value={currentTab}
+            onChange={setActiveTab}
+            tabs={[
+              { id: "pitches", label: t.teamsPage.tabs.pitches, icon: LayoutGrid },
+              { id: "teams", label: t.teamsPage.tabs.teams, icon: Trophy },
+              { id: "sessions", label: t.teamsPage.tabs.sessions, icon: Calendar },
+              { id: "history", label: t.teamsPage.tabs.history, icon: History },
+            ]}
+          />
+        </div>
+      ) : null}
 
+      <div className={`${DASHBOARD_PAGE_INNER} min-w-0`}>
         {(clubLoading || loading) ? (
           <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
         ) : !clubId ? (
@@ -2968,7 +2986,7 @@ const Teams = () => {
                   />
                 </div>
                 {trimmedTeamListSearch ? (
-                  <p className="mt-1.5 text-[11px] text-muted-foreground">{t.teamsPage.searchTeamsHint}</p>
+                  <p className={`mt-1.5 ${DASHBOARD_TYPE_MICRO}`}>{t.teamsPage.searchTeamsHint}</p>
                 ) : null}
               </div>
             ) : null}
@@ -3004,7 +3022,7 @@ const Teams = () => {
                     <div className="h-2 w-full overflow-hidden rounded-full bg-border/60">
                       <div className="h-full bg-primary transition-all" style={{ width: `${uploadProgress.percent}%` }} />
                     </div>
-                    <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <div className={`mt-1 flex items-center justify-between ${DASHBOARD_TYPE_MICRO}`}>
                       <span>{uploadProgress.percent}% ({uploadProgress.processed}/{uploadProgress.total})</span>
                       {uploadProgress.done && uploadProgress.mode === "teams" && (
                         <span className="inline-flex items-center gap-1 text-primary"><CheckCircle2 className="w-3.5 h-3.5" /> {t.teamsPage.upload.validated}</span>
@@ -3085,7 +3103,7 @@ const Teams = () => {
                 <button
                   type="button"
                   onClick={() => setTrainingCalendarView("list")}
-                  className={`px-2.5 py-1 text-[11px] rounded-lg transition-colors ${
+                  className={`px-2.5 py-1 ${DASHBOARD_TYPE_CAPTION} rounded-lg transition-colors ${
                     trainingCalendarView === "list" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -3094,7 +3112,7 @@ const Teams = () => {
                 <button
                   type="button"
                   onClick={() => setTrainingCalendarView("calendar")}
-                  className={`px-2.5 py-1 text-[11px] rounded-lg transition-colors ${
+                  className={`px-2.5 py-1 ${DASHBOARD_TYPE_CAPTION} rounded-lg transition-colors ${
                     trainingCalendarView === "calendar" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -3110,7 +3128,7 @@ const Teams = () => {
                         key={mode}
                         type="button"
                         onClick={() => setTrainingCalendarGranularity(mode)}
-                        className={`px-2.5 py-1 text-[11px] rounded-lg transition-colors ${
+                        className={`px-2.5 py-1 ${DASHBOARD_TYPE_CAPTION} rounded-lg transition-colors ${
                           trainingCalendarGranularity === mode ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
                         }`}
                       >
@@ -3166,7 +3184,7 @@ const Teams = () => {
                     <div className="h-2 w-full overflow-hidden rounded-full bg-border/60">
                       <div className="h-full bg-primary transition-all" style={{ width: `${uploadProgress.percent}%` }} />
                     </div>
-                    <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+                    <div className={`mt-1 flex items-center justify-between ${DASHBOARD_TYPE_MICRO}`}>
                       <span>{uploadProgress.percent}% ({uploadProgress.processed}/{uploadProgress.total})</span>
                       {uploadProgress.done && uploadProgress.mode === "sessions" && (
                         <span className="inline-flex items-center gap-1 text-primary"><CheckCircle2 className="w-3.5 h-3.5" /> {t.teamsPage.upload.validated}</span>
@@ -3185,7 +3203,7 @@ const Teams = () => {
                         <Calendar className="w-4 h-4 text-primary" />
                         Pick a date
                       </div>
-                      <div className="mt-1 text-[11px] text-muted-foreground">
+                      <div className={`mt-1 ${DASHBOARD_TYPE_MICRO}`}>
                         Days with schedule items are underlined.
                       </div>
                     </div>
@@ -3268,7 +3286,7 @@ const Teams = () => {
                     <Button size="sm" variant="outline" onClick={() => setTrainingCalendarDate(addDays(trainingCalendarDate, -1))} className="h-8">
                       Prev
                     </Button>
-                    <div className="text-[11px] text-muted-foreground">
+                    <div className={DASHBOARD_TYPE_MICRO}>
                       {format(trainingCalendarDate, "MMMM yyyy")}
                     </div>
                     <Button size="sm" variant="outline" onClick={() => setTrainingCalendarDate(addDays(trainingCalendarDate, 1))} className="h-8">
@@ -3291,7 +3309,7 @@ const Teams = () => {
                           <button
                             type="button"
                             onClick={() => setTrainingCalendarLayout("agenda")}
-                            className={`px-2.5 py-1 text-[11px] rounded-lg transition-colors ${
+                            className={`px-2.5 py-1 ${DASHBOARD_TYPE_CAPTION} rounded-lg transition-colors ${
                               trainingCalendarLayout === "agenda" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
                             }`}
                           >
@@ -3300,7 +3318,7 @@ const Teams = () => {
                           <button
                             type="button"
                             onClick={() => setTrainingCalendarLayout("grid")}
-                            className={`px-2.5 py-1 text-[11px] rounded-lg transition-colors ${
+                            className={`px-2.5 py-1 ${DASHBOARD_TYPE_CAPTION} rounded-lg transition-colors ${
                               trainingCalendarLayout === "grid" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
                             }`}
                           >
@@ -3327,7 +3345,7 @@ const Teams = () => {
                           gridTemplateColumns: `72px repeat(${dayGridModel.columnCount}, minmax(110px, 1fr))`,
                         }}
                       >
-                        <div className="sticky top-0 z-20 bg-card/90 backdrop-blur border-b border-border/60 p-2 text-[11px] text-muted-foreground">
+                        <div className={`sticky top-0 z-20 bg-card/90 backdrop-blur border-b border-border/60 p-2 ${DASHBOARD_TYPE_MICRO}`}>
                           Time
                         </div>
                         {trainingCalendarGridPitches.map((pitch) => (
@@ -3418,13 +3436,13 @@ const Teams = () => {
                         }}
                       >
                         {/* Header row 1: weekdays */}
-                        <div className="sticky top-0 z-20 bg-card/90 backdrop-blur border-b border-border/60 p-2 text-[11px] text-muted-foreground">
+                        <div className={`sticky top-0 z-20 bg-card/90 backdrop-blur border-b border-border/60 p-2 ${DASHBOARD_TYPE_MICRO}`}>
                           Time
                         </div>
                         {weekGridModel.days.map((day) => (
                           <div
                             key={`day-${format(day, "yyyy-MM-dd")}`}
-                            className="sticky top-0 z-20 bg-card/90 backdrop-blur border-b border-border/60 p-2 text-[11px] font-semibold text-foreground"
+                            className={`sticky top-0 z-20 bg-card/90 backdrop-blur border-b border-border/60 p-2 ${DASHBOARD_TYPE_CAPTION} font-semibold text-foreground`}
                             style={{ gridColumn: `span ${trainingCalendarGridPitches.length}` }}
                           >
                             {format(day, "EEEE")}
@@ -3563,7 +3581,7 @@ const Teams = () => {
                                   <div key={ev.id} className="flex items-start justify-between gap-2 rounded-lg border border-border/50 bg-card/20 px-3 py-2">
                                     <div>
                                       <div className="text-sm text-foreground">{ev.title}</div>
-                                      <div className="text-[11px] text-muted-foreground">
+                                      <div className={DASHBOARD_TYPE_MICRO}>
                                         {format(ev.startsAt, "HH:mm")}
                                         {ev.endsAt ? `–${format(ev.endsAt, "HH:mm")}` : ""}
                                         {ev.teamName ? ` · ${ev.teamName}` : ""}
@@ -3705,9 +3723,9 @@ const Teams = () => {
                     <div className="flex items-start justify-between gap-3 flex-wrap">
                       <div>
                         <div className="text-sm font-semibold text-foreground">{entry.actionLabel} • {entry.entityLabel}</div>
-                        <div className="mt-1 text-[11px] text-muted-foreground">{entry.scopeLabel}</div>
+                        <div className={`mt-1 ${DASHBOARD_TYPE_MICRO}`}>{entry.scopeLabel}</div>
                       </div>
-                      <div className="text-right text-[11px] text-muted-foreground">
+                      <div className={`text-right ${DASHBOARD_TYPE_MICRO}`}>
                         <div>{entry.timestamp}</div>
                         <div>{t.teamsPage.history.byLabel}: {entry.actor}</div>
                       </div>
@@ -3719,7 +3737,7 @@ const Teams = () => {
                           <div className="mt-0.5 text-xs text-foreground break-words">{item.value}</div>
                         </div>
                       )) : (
-                        <div className="text-[11px] text-muted-foreground">{t.teamsPage.history.noDetails}</div>
+                        <div className={DASHBOARD_TYPE_MICRO}>{t.teamsPage.history.noDetails}</div>
                       )}
                     </div>
                   </div>
@@ -3728,7 +3746,7 @@ const Teams = () => {
             )}
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4 flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-primary" />
@@ -3801,42 +3819,44 @@ const Teams = () => {
 
             <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
               <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
-                <div className="text-[11px] text-muted-foreground">{t.teamsPage.kpis.totalBookings}</div>
+                <div className={DASHBOARD_TYPE_MICRO}>{t.teamsPage.kpis.totalBookings}</div>
                 <div className="mt-1 text-2xl font-display font-bold text-foreground">{usageSummary.totalBookings}</div>
               </div>
               <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
-                <div className="text-[11px] text-muted-foreground">{t.teamsPage.kpis.doubleBooked}</div>
+                <div className={DASHBOARD_TYPE_MICRO}>{t.teamsPage.kpis.doubleBooked}</div>
                 <div className="mt-1 text-2xl font-display font-bold text-accent">{usageSummary.conflictCount}</div>
               </div>
               <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
-                <div className="text-[11px] text-muted-foreground">{t.teamsPage.kpis.freeNow}</div>
+                <div className={DASHBOARD_TYPE_MICRO}>{t.teamsPage.kpis.freeNow}</div>
                 <div className="mt-1 text-2xl font-display font-bold text-primary">{usageSummary.freeNow}</div>
               </div>
               <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
-                <div className="text-[11px] text-muted-foreground">{t.teamsPage.kpis.mostUsed}</div>
+                <div className={DASHBOARD_TYPE_MICRO}>{t.teamsPage.kpis.mostUsed}</div>
                 <div className="mt-1 text-sm font-semibold text-foreground truncate">{usageSummary.topPitchName}</div>
-                <div className="text-[11px] text-muted-foreground">{usageSummary.topPitchCount} {t.teamsPage.bookingsShort}</div>
+                <div className={DASHBOARD_TYPE_MICRO}>{usageSummary.topPitchCount} {t.teamsPage.bookingsShort}</div>
               </div>
             </div>
 
-            <div className="grid xl:grid-cols-3 gap-6 xl:items-stretch">
-              <div className="xl:col-span-2 flex min-h-0 flex-col">
-                <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
-                  <h2 className="font-display font-semibold text-foreground flex items-center gap-2">
-                    <LayoutGrid className="w-4 h-4 text-primary" /> {t.teamsPage.pitchesPlanner} (
-                    {pitchViewMode === "booked" ? pitchesBookedOnSelectedDay.length : filteredPitches.length})
+            <div className="grid min-w-0 gap-6 xl:grid-cols-3 xl:items-stretch">
+              <div className="flex min-h-0 min-w-0 flex-col xl:col-span-2">
+                <div className="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <h2 className="font-display font-semibold text-foreground flex min-w-0 items-center gap-2 text-base max-lg:text-[17px]">
+                    <LayoutGrid className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="truncate">
+                      {t.teamsPage.pitchesPlanner} (
+                      {pitchViewMode === "booked" ? pitchesBookedOnSelectedDay.length : filteredPitches.length})
+                    </span>
                   </h2>
-                  <div className="inline-flex flex-wrap justify-end gap-0.5 rounded-xl border border-border/60 bg-card/40 p-1">
-                    <button type="button" onClick={() => setPitchViewMode("separate")} className={`px-2.5 py-1 text-[11px] rounded-lg transition-colors ${pitchViewMode === "separate" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-                      {t.teamsPage.viewSeparate}
-                    </button>
-                    <button type="button" onClick={() => setPitchViewMode("combined")} className={`px-2.5 py-1 text-[11px] rounded-lg transition-colors ${pitchViewMode === "combined" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-                      {t.teamsPage.viewCombined}
-                    </button>
-                    <button type="button" onClick={() => setPitchViewMode("booked")} className={`px-2.5 py-1 text-[11px] rounded-lg transition-colors ${pitchViewMode === "booked" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-                      {t.teamsPage.viewBooked}
-                    </button>
-                  </div>
+                  <DashboardIosSegmentTabs
+                    className="w-full min-w-0 sm:max-w-md"
+                    value={pitchViewMode}
+                    onChange={setPitchViewMode}
+                    tabs={[
+                      { id: "separate", label: t.teamsPage.viewSeparate },
+                      { id: "combined", label: t.teamsPage.viewCombined },
+                      { id: "booked", label: t.teamsPage.viewBooked },
+                    ]}
+                  />
                 </div>
                 {filteredPitches.length === 0 ? (
                   <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-8 text-center text-muted-foreground text-sm">{t.teamsPage.noPitchesHint} {GRID_LABEL}</div>
@@ -3846,8 +3866,9 @@ const Teams = () => {
                       {t.teamsPage.assetMapBookedEmpty}
                     </div>
                   ) : (
-                    <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
-                      <div className="relative">
+                    <div className="min-w-0 overflow-hidden rounded-2xl border border-border/60 bg-card/40 p-3 backdrop-blur-2xl max-lg:p-3 sm:p-4">
+                      <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain">
+                        <div className="relative mx-auto w-full min-w-0 max-w-full">
                         <div
                           className="grid gap-[4px]"
                           style={{
@@ -3934,65 +3955,84 @@ const Teams = () => {
                             ))}
                           </div>
                         ) : null}
+                        </div>
                       </div>
-                      <p className="text-[10px] text-muted-foreground mt-2">
+                      <p className="mt-2 text-[10px] text-muted-foreground max-lg:text-xs">
                         {pitchViewMode === "booked" ? t.teamsPage.combinedBookedHint : t.teamsPage.combinedHint}
                       </p>
                     </div>
                   )
                 ) : (
-                  <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
                     {filteredPitches.map((pitch) => (
                       <div
                         key={pitch.id}
                         ref={(node) => {
                           pitchCardRefs.current[pitch.id] = node;
                         }}
-                        className={`rounded-2xl border bg-card/40 backdrop-blur-2xl p-4 ${selectedBookingPitchId === pitch.id ? "border-primary/60 ring-1 ring-primary/50" : "border-border/60"}`}
+                        className={`min-w-0 overflow-hidden rounded-2xl border bg-card/40 p-3 backdrop-blur-2xl max-lg:p-3 sm:p-4 ${selectedBookingPitchId === pitch.id ? "border-primary/60 ring-1 ring-primary/50" : "border-border/60"}`}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm font-semibold text-foreground truncate flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full border" style={{ background: hexToRgba(pitchColorById.get(pitch.id) || "#71717a", 0.7), borderColor: hexToRgba(pitchColorById.get(pitch.id) || "#71717a", 0.96) }} />
-                            {pitch.name}
+                        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground">
+                            <span className="h-2.5 w-2.5 shrink-0 rounded-full border" style={{ background: hexToRgba(pitchColorById.get(pitch.id) || "#71717a", 0.7), borderColor: hexToRgba(pitchColorById.get(pitch.id) || "#71717a", 0.96) }} />
+                            <span className="truncate">{pitch.name}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                          <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:justify-end">
+                            <div className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] text-primary max-lg:text-xs">
                               {formatElementTypeLabel(pitch.element_type, t.teamsPage.elementTypes)}
                             </div>
                             {pitch.layer_id && (
-                              <div className="text-[10px] px-2 py-0.5 rounded-full bg-background/70 text-muted-foreground border border-border/60">
+                              <div className="shrink-0 rounded-full border border-border/60 bg-background/70 px-2 py-0.5 text-[10px] text-muted-foreground max-lg:text-xs">
                                 {layerNameById.get(pitch.layer_id) || t.teamsPage.layerBadge}
                               </div>
                             )}
-                            <div className="text-[11px] text-muted-foreground">{pitch.grid_cells.length} {t.teamsPage.cells}</div>
+                            <div className={`${DASHBOARD_TYPE_MICRO} shrink-0`}>{pitch.grid_cells.length} {t.teamsPage.cells}</div>
                             {canManage && (
-                              <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => handleOpenEditPitch(pitch)}><Pencil className="w-3.5 h-3.5" /></Button>
-                                <Button variant="ghost" size="icon" className="w-7 h-7 text-muted-foreground hover:text-accent" onClick={() => handleDeletePitchRequest(pitch.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                              <div className="flex shrink-0 items-center gap-0.5">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 max-lg:h-9 max-lg:w-9" onClick={() => handleOpenEditPitch(pitch)}><Pencil className="h-3.5 w-3.5" /></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 max-lg:h-9 max-lg:w-9 text-muted-foreground hover:text-accent" onClick={() => handleDeletePitchRequest(pitch.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                               </div>
                             )}
                           </div>
                         </div>
-                        <div className="mt-3 grid gap-[3px]" style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))` }}>
-                          {Array.from({ length: GRID_CELLS }, (_, index) => {
-                            const active = pitch.grid_cells.includes(index);
-                            return <div key={`${pitch.id}-${index}`} className={`aspect-square rounded-[2px] border ${active ? "" : "bg-background/40 border-border/40"}`} style={active ? { background: hexToRgba(pitchColorById.get(pitch.id) || "#71717a", 0.7), borderColor: hexToRgba(pitchColorById.get(pitch.id) || "#71717a", 0.92) } : undefined} />;
-                          })}
+                        <div className="mt-3 w-full min-w-0 overflow-x-auto overscroll-x-contain">
+                          <div
+                            className="grid w-full min-w-0 max-w-full gap-[3px]"
+                            style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))` }}
+                          >
+                            {Array.from({ length: GRID_CELLS }, (_, index) => {
+                              const active = pitch.grid_cells.includes(index);
+                              return (
+                                <div
+                                  key={`${pitch.id}-${index}`}
+                                  className={`aspect-square rounded-[2px] border ${active ? "" : "bg-background/40 border-border/40"}`}
+                                  style={
+                                    active
+                                      ? {
+                                          background: hexToRgba(pitchColorById.get(pitch.id) || "#71717a", 0.7),
+                                          borderColor: hexToRgba(pitchColorById.get(pitch.id) || "#71717a", 0.92),
+                                        }
+                                      : undefined
+                                  }
+                                />
+                              );
+                            })}
+                          </div>
                         </div>
-                        {pitch.notes && <p className="mt-3 text-[11px] text-muted-foreground">{pitch.notes}</p>}
+                        {pitch.notes ? <p className={`mt-3 ${DASHBOARD_TYPE_MICRO}`}>{pitch.notes}</p> : null}
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
-              <div className="flex min-h-0 flex-col xl:h-full">
+              <div className="flex min-h-0 min-w-0 flex-col xl:h-full">
                 <h2 className="font-display font-semibold text-foreground mb-4 flex shrink-0 items-center gap-2">
                   <Calendar className="w-4 h-4 text-primary" /> {t.teamsPage.daySchedule}
                 </h2>
                 <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-border/60 bg-card/40 p-4 backdrop-blur-2xl">
                   <div className="shrink-0">
-                    <label className="text-[11px] text-muted-foreground mb-1 block">{t.teamsPage.selectDay}</label>
+                    <label className={`${DASHBOARD_TYPE_MICRO} mb-1 block`}>{t.teamsPage.selectDay}</label>
                     <Input type="date" value={usageDate} onChange={(event) => setUsageDate(event.target.value)} className="bg-background/50" />
                   </div>
                   <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto">
@@ -4024,10 +4064,10 @@ const Teams = () => {
                             </Button>
                           </div>
                         </div>
-                        <div className="mt-1 text-[11px] text-muted-foreground">{booking.pitchName} • {booking.teamName || t.teamsPage.clubWide} • {t.teamsPage.bookingTypes[booking.booking_type]}</div>
+                        <div className={`mt-1 ${DASHBOARD_TYPE_MICRO}`}>{booking.pitchName} • {booking.teamName || t.teamsPage.clubWide} • {t.teamsPage.bookingTypes[booking.booking_type]}</div>
                         {selectedBookingId === booking.id && (
                           <div className="mt-2 rounded-lg border border-border/60 bg-background/40 p-2.5 space-y-1.5">
-                            <div className="grid grid-cols-2 gap-2 text-[11px]">
+                            <div className={`grid grid-cols-2 gap-2 ${DASHBOARD_TYPE_MICRO}`}>
                               <div>
                                 <div className="text-muted-foreground">{t.teamsPage.bookingDetails.start}</div>
                                 <div className="text-foreground">{new Date(booking.starts_at).toLocaleString()}</div>
@@ -4037,7 +4077,7 @@ const Teams = () => {
                                 <div className="text-foreground">{new Date(booking.ends_at).toLocaleString()}</div>
                               </div>
                             </div>
-                            <div className="text-[11px]">
+                            <div className={DASHBOARD_TYPE_MICRO}>
                               <span className="text-muted-foreground">{t.teamsPage.bookingDetails.contactPerson}: </span>
                               <span className="text-foreground">
                                 {booking.team_id
@@ -4074,7 +4114,7 @@ const Teams = () => {
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">
               <div className="space-y-4">
                 <div className="rounded-xl border border-border/60 bg-background/40 p-3">
-                  <div className="text-[11px] font-medium text-foreground mb-2">{t.teamsPage.teamModal.basicSectionTitle}</div>
+                  <div className={`${DASHBOARD_TYPE_CAPTION} font-medium text-foreground mb-2`}>{t.teamsPage.teamModal.basicSectionTitle}</div>
                   <div className="grid md:grid-cols-2 gap-3">
                     <Input placeholder={t.teamsPage.teamModal.namePlaceholder} value={teamName} onChange={e => setTeamName(e.target.value)} className="bg-background" maxLength={100} />
                     <Select value={teamSport} onValueChange={setTeamSport}>
@@ -4093,7 +4133,7 @@ const Teams = () => {
                 </div>
 
                 <div className="rounded-xl border border-border/60 bg-background/40 p-3">
-                  <div className="text-[11px] font-medium text-foreground mb-2">{t.teamsPage.teamModal.membersSectionTitle}</div>
+                  <div className={`${DASHBOARD_TYPE_CAPTION} font-medium text-foreground mb-2`}>{t.teamsPage.teamModal.membersSectionTitle}</div>
                   <Input
                     placeholder={t.teamsPage.teamModal.memberSearchPlaceholder}
                     value={teamMemberSearch}
@@ -4138,14 +4178,14 @@ const Teams = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="mt-3 text-[11px] text-muted-foreground">
+                  <div className={`mt-3 ${DASHBOARD_TYPE_MICRO}`}>
                     {t.teamsPage.teamModal.selectionSummaryPrefix} {selectedCoachMembershipIds.length} {t.teamsPage.teamModal.selectionSummaryCoaches} · {selectedPlayerMembershipIds.length} {t.teamsPage.teamModal.selectionSummaryPlayers}
                   </div>
                 </div>
 
                 {supportsTeamPublicPrivacy ? (
                   <div className="rounded-xl border border-border/60 bg-background/40 p-3">
-                    <div className="text-[11px] font-medium text-foreground mb-2">{t.teamsPage.teamModal.publicSectionTitle}</div>
+                    <div className={`${DASHBOARD_TYPE_CAPTION} font-medium text-foreground mb-2`}>{t.teamsPage.teamModal.publicSectionTitle}</div>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between gap-3">
                         <Label htmlFor="team-public-visible" className="text-xs font-normal leading-snug">
@@ -4187,7 +4227,7 @@ const Teams = () => {
                           value={teamPublicDocLines}
                           onChange={(e) => setTeamPublicDocLines(e.target.value)}
                           placeholder={t.teamsPage.teamModal.publicDocumentLinksPlaceholder}
-                          className="min-h-[80px] resize-y bg-background font-mono text-[11px]"
+                          className={`min-h-[80px] resize-y bg-background font-mono ${DASHBOARD_TYPE_MICRO}`}
                           rows={4}
                         />
                       </div>
@@ -4206,7 +4246,7 @@ const Teams = () => {
                               <div key={`coach-public-${membershipId}`} className="rounded-lg border border-border/60 bg-background/50 p-2.5 space-y-2">
                                 <div className="text-xs font-medium text-foreground truncate">{label}</div>
                                 <div className="flex items-center justify-between gap-2">
-                                  <Label className="text-[11px] font-normal shrink">{t.teamsPage.teamModal.coachPublicShowLabel}</Label>
+                                  <Label className={`${DASHBOARD_TYPE_CAPTION} font-normal shrink`}>{t.teamsPage.teamModal.coachPublicShowLabel}</Label>
                                   <Switch
                                     checked={cfg.show}
                                     onCheckedChange={(checked) =>
@@ -4429,7 +4469,7 @@ const Teams = () => {
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="h-8 text-[11px]"
+                        className={`h-8 ${DASHBOARD_TYPE_CAPTION}`}
                         onClick={() => {
                           const idx = editingPitchId ? pitches.findIndex((p) => p.id === editingPitchId) : pitches.length;
                           setPitchDisplayColor(suggestColorByIndex(idx >= 0 ? idx : 0));
@@ -4718,7 +4758,7 @@ const Teams = () => {
                   <Input type="datetime-local" value={bookingEnd} onChange={(event) => setBookingEnd(event.target.value)} className="bg-background" />
                 </div>
               </div>
-              <div className="text-[11px] text-muted-foreground rounded-xl border border-border/60 bg-background/40 p-2 flex items-center gap-2">
+              <div className={`${DASHBOARD_TYPE_MICRO} rounded-xl border border-border/60 bg-background/40 p-2 flex items-center gap-2`}>
                 <AlertTriangle className="w-3.5 h-3.5 text-primary" />
                 {t.teamsPage.bookingModal.overlapHint}
               </div>

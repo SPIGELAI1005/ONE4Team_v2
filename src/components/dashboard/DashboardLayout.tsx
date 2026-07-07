@@ -15,15 +15,20 @@ const DashboardLayout = () => {
   return (
     <AiAgentProvider>
       <DashboardTopBarProvider>
-        <div className="flex h-screen bg-background overflow-hidden min-w-0">
-          {!isMobile && <DashboardSidebar />}
-          <main className="flex flex-1 min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto">
+        <div
+          className="fixed inset-0 flex bg-background overflow-hidden min-w-0"
+          data-dashboard-mobile={isMobile ? "true" : undefined}
+        >
+          <div className="hidden md:block shrink-0">
+            <DashboardSidebar />
+          </div>
+          <main className="flex flex-1 min-h-0 min-w-0 flex-col overflow-hidden">
             <DashboardTopBar />
-            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <div className="dashboard-scroll-area">
               <Outlet />
             </div>
           </main>
-          {isMobile && <MobileBottomNav />}
+          <MobileBottomNav />
         </div>
         <AiAgentSheet />
       </DashboardTopBarProvider>

@@ -41,7 +41,15 @@ import {
   type AdminDashboardSnapshot,
   type ClubSetupProfile,
 } from "@/lib/club-dashboard-snapshot";
-import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
+import {
+  DASHBOARD_CARD,
+  DASHBOARD_KPI_GRID,
+  DASHBOARD_PAGE_INNER,
+  DASHBOARD_PAGE_ROOT,
+  DASHBOARD_TYPE_CAPTION,
+  DASHBOARD_TYPE_MICRO,
+  DASHBOARD_TYPE_SECTION_TITLE,
+} from "@/lib/dashboard-page-shell";
 import { getDashboardSections } from "@/lib/dashboard-section-visibility";
 import {
   defaultDashboardPersonaSlug,
@@ -583,7 +591,7 @@ const DashboardContent = () => {
     <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot title={config.title} greeting={dashboardGreeting} showBack={false} />
 
-      <div className={`${DASHBOARD_PAGE_INNER} space-y-5`}>
+      <div className={`${DASHBOARD_PAGE_INNER} space-y-5 max-lg:space-y-6`}>
         {showGettingStarted && (role === "trainer" || isClubAdminPersona) && (
           <div className="rounded-2xl glass-card p-5">
             <div className="font-display font-semibold text-foreground text-[15px] flex items-center gap-2">
@@ -699,30 +707,30 @@ const DashboardContent = () => {
 
         {/* KPIs - hidden for external provider personas (marketplace cards only) */}
         {!externalPersona ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className={DASHBOARD_KPI_GRID}>
           {kpis.map((kpi, i) => (
             <motion.div
               key={kpi.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.08, type: "spring", stiffness: 300, damping: 25 }}
-              className="p-4 rounded-2xl glass-card haptic-press cursor-default"
+              className={`${DASHBOARD_CARD} haptic-press cursor-default`}
             >
-              <div className="flex items-center justify-between mb-2.5">
-                <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <kpi.icon className="w-4 h-4 text-primary" strokeWidth={1.5} />
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-9 h-9 max-lg:w-10 max-lg:h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <kpi.icon className="w-4 h-4 max-lg:w-[18px] max-lg:h-[18px] text-primary" strokeWidth={1.5} />
                 </div>
                 {kpi.change && (
-                  <span className="text-[11px] font-medium text-primary flex items-center gap-0.5 ios-pill bg-primary/8 border-primary/20">
+                  <span className={`${DASHBOARD_TYPE_MICRO} font-medium text-primary flex items-center gap-0.5 ios-pill bg-primary/8 border-primary/20 px-2 py-0.5`}>
                     <ArrowUpRight className="w-3 h-3" />
                     {kpi.change}
                   </span>
                 )}
               </div>
-              <div className="text-2xl font-display font-bold text-foreground tracking-tight">
+              <div className="text-2xl max-lg:text-[1.75rem] font-display font-bold text-foreground tracking-tight">
                 {dashboardLoading && kpi.value === "-" ? "…" : kpi.value}
               </div>
-              <div className="text-[11px] text-muted-foreground mt-0.5">{kpi.label}</div>
+              <div className={`${DASHBOARD_TYPE_CAPTION} mt-1`}>{kpi.label}</div>
             </motion.div>
           ))}
         </div>
@@ -768,8 +776,8 @@ const DashboardContent = () => {
         {sections.upcomingAndAi ? (
         <div className="grid lg:grid-cols-3 gap-5">
           {/* Upcoming */}
-          <div className="lg:col-span-2 rounded-2xl glass-card p-5">
-            <h2 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2 text-[15px]">
+          <div className={`lg:col-span-2 ${DASHBOARD_CARD}`}>
+            <h2 className={`${DASHBOARD_TYPE_SECTION_TITLE} mb-4 flex items-center gap-2`}>
               <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Calendar className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
               </div>
@@ -786,8 +794,8 @@ const DashboardContent = () => {
                   className="flex items-center justify-between py-3 px-3 rounded-xl hover:bg-muted/30 transition-all duration-200 cursor-default"
                 >
                   <div>
-                    <div className="text-[13px] font-medium text-foreground">{event.title}</div>
-                    <div className="text-[11px] text-muted-foreground mt-0.5">{event.time}</div>
+                    <div className="text-sm max-lg:text-[15px] font-medium text-foreground">{event.title}</div>
+                    <div className={`${DASHBOARD_TYPE_MICRO} mt-0.5`}>{event.time}</div>
                   </div>
                   <span
                     className={`ios-pill ${
@@ -807,9 +815,9 @@ const DashboardContent = () => {
           </div>
 
           {/* AI Suggestions */}
-          <div className="rounded-2xl glass-card p-5 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
-            <h2 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2 text-[15px] relative">
+          <div className={`${DASHBOARD_CARD} relative overflow-hidden`}>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
+            <h2 className={`${DASHBOARD_TYPE_SECTION_TITLE} mb-4 flex items-center gap-2 relative`}>
               <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Bot className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
               </div>

@@ -33,6 +33,8 @@ import NotificationBell from "@/components/dashboard/NotificationBell";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/one4team-logo.png";
 import { BrandedText } from "@/components/ai/Ai4TBrand";
+import { cn } from "@/lib/utils";
+import { DASHBOARD_HEADER_ACTIONS, DASHBOARD_HEADER_UTILITY_BUTTON } from "@/lib/dashboard-page-shell";
 
 export default function DashboardTopBar() {
   const ctx = useContext(DashboardTopBarContext);
@@ -128,8 +130,8 @@ export default function DashboardTopBar() {
 
   return (
     <header className="sticky top-0 z-50 shrink-0 border-b border-border bg-background/70 backdrop-blur-2xl">
-      <div className="px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3">
-        <div className="flex flex-col gap-2 min-w-0">
+      <div className="px-4 max-lg:px-5 sm:px-4 lg:px-6 py-3 max-lg:py-3.5 sm:py-3">
+        <div className="flex flex-col gap-2.5 max-lg:gap-3 min-w-0">
           <div
             className="
               flex min-w-0 flex-wrap items-start justify-between gap-2
@@ -141,11 +143,11 @@ export default function DashboardTopBar() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="md:hidden shrink-0 h-10 w-10 touch-manipulation"
+                className="md:hidden shrink-0 h-10 w-10 min-h-[44px] min-w-[44px] touch-manipulation [&_svg]:size-5 lg:[&_svg]:size-4"
                 onClick={() => setOpen((v) => !v)}
                 aria-label={open ? t.appHeader.closeMenu : t.appHeader.openMenu}
               >
-                {open ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                {open ? <X className="size-5 lg:size-4" /> : <Menu className="size-5 lg:size-4" />}
               </Button>
 
               {showBack && (
@@ -168,15 +170,15 @@ export default function DashboardTopBar() {
                   {config?.titleIcon ? (
                     <span className="shrink-0 flex items-center">{config.titleIcon}</span>
                   ) : null}
-                  <h1 className="min-w-0 truncate text-[15px] font-bold tracking-tight text-foreground sm:text-base lg:text-lg">
+                  <h1 className="min-w-0 truncate text-[17px] font-bold tracking-tight text-foreground sm:text-base lg:text-lg">
                     <BrandedText text={titleText} />
                   </h1>
-                  <span className="hidden shrink-0 rounded-full border border-primary/15 bg-primary/10 px-2 py-0.5 text-[10px] text-primary sm:inline-flex">
+                  <span className="hidden shrink-0 rounded-full border border-primary/15 bg-primary/10 px-2.5 py-0.5 text-[11px] max-lg:text-xs text-primary sm:inline-flex">
                     {roleLabel}
                   </span>
                 </div>
                 {subtitleResolved ? (
-                  <p className="mt-0.5 line-clamp-2 break-words text-[11px] text-muted-foreground sm:text-xs sm:line-clamp-none lg:line-clamp-2">
+                  <p className="mt-0.5 line-clamp-2 break-words text-sm text-muted-foreground lg:text-xs lg:line-clamp-2">
                     <BrandedText text={subtitleResolved} />
                   </p>
                 ) : null}
@@ -187,7 +189,7 @@ export default function DashboardTopBar() {
               {config?.renderRightSlot?.()}
             </div>
 
-            <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 lg:justify-self-end">
+            <div className={cn(DASHBOARD_HEADER_ACTIONS, "lg:justify-self-end")}>
               {clubPageLink ? (
                 <Button
                   asChild
@@ -205,13 +207,13 @@ export default function DashboardTopBar() {
                 <ClubSwitcher />
               </div>
               <NotificationBell />
-              <LanguageToggle size="sm" />
-              <ThemeToggle size="sm" />
+              <LanguageToggle className={DASHBOARD_HEADER_UTILITY_BUTTON} />
+              <ThemeToggle className={DASHBOARD_HEADER_UTILITY_BUTTON} />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    className="w-9 h-9 rounded-2xl bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-xs shadow-gold ml-0.5 hover:brightness-110 transition overflow-hidden shrink-0 touch-manipulation"
+                    className="h-10 w-10 min-h-[44px] min-w-[44px] lg:h-9 lg:w-9 lg:min-h-0 lg:min-w-0 rounded-2xl bg-gradient-gold flex items-center justify-center text-primary-foreground font-bold text-sm lg:text-xs shadow-gold ml-0.5 hover:brightness-110 transition overflow-hidden shrink-0 touch-manipulation"
                     aria-label={t.sidebar.settings}
                     title={displayName ? `${displayName} · ${t.sidebar.settings}` : t.sidebar.settings}
                   >
@@ -241,13 +243,8 @@ export default function DashboardTopBar() {
             </div>
           </div>
 
-          <div className="lg:hidden flex flex-wrap items-center gap-2 min-w-0">
-            <div className="sm:hidden w-full min-w-0">
-              <ClubSwitcher />
-            </div>
-            {config?.renderRightSlot ? (
-              <div className="flex flex-wrap items-center gap-2 w-full min-w-0">{config.renderRightSlot()}</div>
-            ) : null}
+          <div className={cn(DASHBOARD_HEADER_ACTIONS, "min-w-0 justify-end lg:hidden")}>
+            {config?.renderRightSlot ? config.renderRightSlot() : null}
           </div>
         </div>
 
@@ -268,7 +265,12 @@ export default function DashboardTopBar() {
 
       {open && (
         <div className="md:hidden border-t border-border bg-background/70 backdrop-blur-2xl max-h-[min(70vh,calc(100dvh-8rem))] overflow-y-auto">
-          <div className="px-4 py-3 grid gap-3">
+          <div className="px-4 py-4 grid gap-3">
+            <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-3.5">
+              <div className="text-xs max-lg:text-sm text-muted-foreground mb-2">{t.common.club}</div>
+              <ClubSwitcher />
+            </div>
+
             {clubPageLink && (
               <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-xl p-3">
                 <div className="text-[11px] text-muted-foreground mb-2">{t.common.club}</div>
@@ -356,7 +358,7 @@ export default function DashboardTopBar() {
                       setOpen(false);
                       navigate(item.route);
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-2xl text-sm border transition-colors ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 max-lg:py-3 rounded-2xl text-sm max-lg:text-[15px] border transition-colors touch-manipulation ${
                       active
                         ? isMarketplace
                           ? "bg-primary/10 text-violet-600 dark:text-violet-400 border-primary/20"

@@ -79,6 +79,22 @@ Reference: **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** §B Auth, §C Custom domai
 
 ## NOW (top priority)
 
+### Dashboard mobile polish + AI 4 T / Messages UX (2026-07-07) — code in repo
+- [x] **MOBILE-001** Dashboard scroll shell + bottom-nav clearance (`DashboardLayout`, `MobileBottomNav`, `index.css`)
+- [x] **MOBILE-002** Shell tokens + iOS segments + toolbar actions (`dashboard-page-shell.ts`, `DashboardIosSegmentTabs`, `DashboardToolbarActions`)
+- [x] **MOBILE-003** Header utility icons + notification panel mobile (`DashboardTopBar`, `NotificationBell`, `index.css`)
+- [x] **MOBILE-004** Matches / Settings / Teams mobile toolbar + segment polish
+- [x] **AI4T-MOBILE-001** CoTrainer compact mobile layout + fixed composer + chat shell CSS
+- [x] **AI4T-MOBILE-002** Dashboard composer red highlight (`Ai4tChatComposer` variant=dashboard)
+- [x] **AI4T-MOBILE-003** AI 4 T tab/header icon sizing (`ai4t-tab-classes.ts`, header utility button)
+- [x] **COMM-MOBILE-001** Communication dashboard mobile — channel select, fixed gold composer, hidden sidebar
+- [x] **TEAMS-MOBILE-001** Asset Map responsive layout (`Teams.tsx` pitches tab)
+- [x] **EDGE-001** `chat-bridge` CORS `x-correlation-id` + redeploy
+- [x] **DB-001** Repair migrations `20260707190000`, `20260707200000` in repo
+- [x] **ONBOARD-001** `onboarding-club.ts` + unit tests
+- [x] **MOBILE-DOC-001** Doc sync — changelog, memory bank, status, HOLD, README, ROADMAP, ops docs
+- [ ] **MOBILE-SMOKE-001** Manual: phone smoke — AI 4 T chat, Messages composer, Teams Asset Map, bottom nav clearance
+
 ### Legal audit + marketing polish (2026-07-07) — code in repo
 - [x] **LEGAL-001** Privacy/Terms/cookie GDPR + EU AI Act copy refresh (EN + DE); Privacy **13** sections; Terms **15** sections
 - [x] **LEGAL-002** Privacy **§5 Sub-processors & integrations** (Supabase, Vercel, Stripe, AI 4 T, email, External Bridge)

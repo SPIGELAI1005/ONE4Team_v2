@@ -61,6 +61,8 @@ export function Ai4tChatComposer({
   const busy = disabled || isLoading;
   const isDashboard = variant === "dashboard";
   const controlVariant = isDashboard ? "default" : "club";
+  const dashboardComposerRowClass =
+    "rounded-2xl border-2 border-[#e31e24]/75 bg-[#e31e24]/[0.08] p-2 shadow-[0_0_0_1px_rgba(227,30,36,0.2)]";
 
   return (
     <div
@@ -68,13 +70,13 @@ export function Ai4tChatComposer({
         "shrink-0",
         !frameless &&
           (isDashboard
-            ? "border-t border-border bg-background/80 px-1 py-3 backdrop-blur-xl"
+            ? "border-t border-[#e31e24]/25 bg-background/80 px-1 py-3 backdrop-blur-xl"
             : "border-t border-neutral-200/80 bg-white/80 px-1 py-3 backdrop-blur-sm"),
         frameless && "py-0",
         className,
       )}
     >
-      <div className="flex items-end gap-1.5">
+      <div className={cn("flex items-end gap-1.5", isDashboard && dashboardComposerRowClass)}>
         <textarea
           ref={fieldRef}
           value={value}
@@ -91,7 +93,7 @@ export function Ai4tChatComposer({
           className={cn(
             "ai4t-subtle-scroll box-border min-h-[56px] max-h-[min(28vh,240px)] flex-1 resize-none overflow-y-hidden rounded-xl border px-3 py-3 text-sm leading-relaxed focus-visible:outline-none",
             isDashboard
-              ? "border-border bg-card text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/40"
+              ? "border-[#e31e24]/30 bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-[#e31e24]/60 focus-visible:ring-2 focus-visible:ring-[#e31e24]/35"
               : "border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-400 focus-visible:ring-2 focus-visible:ring-[color:var(--club-primary)]/40 [color-scheme:light]",
           )}
         />

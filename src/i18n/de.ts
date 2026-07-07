@@ -529,6 +529,12 @@ export const de: Translations = {
     clubCreated: "Verein erstellt!",
     clubReadyToGo: "ist startklar.",
     errorCreatingClub: "Fehler beim Erstellen des Vereins",
+    createClubUnknown: "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+    createClubNotAuthenticated: "Bitte melde dich zuerst an und erstelle dann deinen Verein.",
+    createClubDuplicateSlug:
+      "Ein Verein mit dieser URL existiert bereits. Wähle einen anderen Vereinsnamen.",
+    createClubProvisioningConflict:
+      "Beim Einrichten ist ein temporärer Konflikt aufgetreten. Bitte erneut versuchen. Falls es weiterhin fehlschlägt: support@one4team.com.",
     // Rollen
     clubAdmin: "Vereins-Admin",
     clubAdminDesc: "Voller Zugriff auf die Vereinsverwaltung",

@@ -14,6 +14,8 @@ import { useDashboardNavLabels } from "@/hooks/use-dashboard-nav-labels";
 import { pathnameToNavId } from "@/lib/dashboard-nav";
 import logo from "@/assets/one4team-logo.png";
 import { BrandedText } from "@/components/ai/Ai4TBrand";
+import { cn } from "@/lib/utils";
+import { DASHBOARD_HEADER_ACTIONS, DASHBOARD_HEADER_UTILITY_BUTTON } from "@/lib/dashboard-page-shell";
 
 export interface AppHeaderProps {
   title: string;
@@ -91,8 +93,8 @@ export default function AppHeader({
   const mobileToolbarExtras = (
     <>
       {rightSlot}
-      <LanguageToggle />
-      <ThemeToggle />
+      <LanguageToggle className={DASHBOARD_HEADER_UTILITY_BUTTON} />
+      <ThemeToggle className={DASHBOARD_HEADER_UTILITY_BUTTON} />
       {user && (
         <Button
           variant="outline"
@@ -120,11 +122,11 @@ export default function AppHeader({
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className="md:hidden h-10 w-10 min-h-[44px] min-w-[44px] [&_svg]:size-5"
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? t.appHeader.closeMenu : t.appHeader.openMenu}
           >
-            {open ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            {open ? <X className="size-5" /> : <Menu className="size-5" />}
           </Button>
 
           {back && (
@@ -199,7 +201,7 @@ export default function AppHeader({
           </div>
         </div>
 
-        <div className={`flex items-center gap-2 ${isClubPublic ? "max-md:hidden" : ""}`}>{mobileToolbarExtras}</div>
+        <div className={cn(DASHBOARD_HEADER_ACTIONS, isClubPublic ? "max-md:hidden" : "")}>{mobileToolbarExtras}</div>
 
         {debugEnabled && (
           <div className="hidden lg:flex items-center gap-2 text-[10px] text-muted-foreground">

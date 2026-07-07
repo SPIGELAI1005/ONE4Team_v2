@@ -16,7 +16,7 @@ export function edgeCorsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get("origin");
   const baseHeaders = {
     "Access-Control-Allow-Headers":
-      "authorization, x-client-info, apikey, content-type, x-correlation-id",
+      "authorization, x-client-info, apikey, content-type, x-correlation-id, x-bridge-secret",
   };
 
   if (allow && origin) {

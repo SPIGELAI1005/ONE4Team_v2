@@ -29,7 +29,7 @@ import { useModuleGateRole } from "@/hooks/use-module-gate-role";
 import { isExternalRole } from "@/lib/rbac-config";
 import { useLanguage } from "@/hooks/use-language";
 import { useTheme } from "@/hooks/use-theme";
-import { DASHBOARD_PAGE_MAX_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
+import { DASHBOARD_PAGE_MAX_INNER, DASHBOARD_PAGE_ROOT, DASHBOARD_HEADER_ICON, DASHBOARD_HEADER_UTILITY_BUTTON } from "@/lib/dashboard-page-shell";
 import { useActiveClub } from "@/hooks/use-active-club";
 import {
   buildClubContext,
@@ -58,9 +58,7 @@ import { Ai4tPersonaHint } from "@/components/ai/Ai4tPersonaHint";
 import { Ai4tFollowUpChips } from "@/components/ai/Ai4tFollowUpChips";
 import { Ai4TLogo } from "@/components/ai/Ai4TLogo";
 import { Ai4tChatWatermark } from "@/components/ai/Ai4tChatWatermark";
-import { Ai4TSendButton } from "@/components/ai/Ai4TSendButton";
 import { Ai4TBrand, BrandedText } from "@/components/ai/Ai4TBrand";
-import { Ai4TeamVoiceControls } from "@/components/ai-agent/Ai4TeamVoiceControls";
 import { useAi4TeamVoice } from "@/hooks/use-ai4team-voice";
 import { useAiAgent } from "@/contexts/ai-agent-context";
 import { parseChatAgentCommand } from "@/lib/ai-agent/chat-intent-detect";
@@ -78,6 +76,8 @@ import { Ai4tAssistantMessage } from "@/components/ai/Ai4tAssistantMessage";
 import { fetchAiMessageFeedbackMap, type AiMessageFeedbackRating } from "@/lib/ai-message-feedback";
 import { ai4tDashboardTabListClass, ai4tDashboardTabTriggerClass } from "@/lib/ai4t-tab-classes";
 import { isPartnerPortalPath } from "@/lib/partner-portal-routes";
+import { Ai4tChatComposer } from "@/components/ai/Ai4tChatComposer";
+import { cn } from "@/lib/utils";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -322,6 +322,7 @@ const CoTrainer = () => {
   const [followUpPrompts, setFollowUpPrompts] = useState<ClubQuickPrompt[]>([]);
   const [historyIntentFilter, setHistoryIntentFilter] = useState("all");
   const [historyStatusFilter, setHistoryStatusFilter] = useState("all");
+  const [compactMobileChrome, setCompactMobileChrome] = useState(false);
 
   const gateRole = useModuleGateRole();
   const { teamIds: userTeamIds } = useUserTeamIds(clubId);
@@ -383,6 +384,14 @@ const CoTrainer = () => {
   useEffect(() => {
     if (!showAgentTab && mainTab === "agent") setMainTab("chat");
   }, [showAgentTab, mainTab]);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 1023px)");
+    const sync = () => setCompactMobileChrome(mql.matches);
+    sync();
+    mql.addEventListener("change", sync);
+    return () => mql.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -1066,56 +1075,66 @@ const CoTrainer = () => {
   };
 
   return (
-    <div className={`${DASHBOARD_PAGE_ROOT} min-h-0`}>
+    <div data-dashboard-chat-shell className={`${DASHBOARD_PAGE_ROOT} min-h-0 flex flex-col`}>
       <DashboardHeaderSlot
         title={t.coTrainerPage.headerTitle}
-        subtitle={headerSubtitle}
+        subtitle={compactMobileChrome ? undefined : headerSubtitle}
         toolbarRevision={messages.length + mainTab.length}
         rightSlot={
           mainTab === "chat" ? (
             <button
               type="button"
               onClick={handleNewChat}
-              className="w-9 h-9 rounded-2xl bg-card/40 border border-border/60 backdrop-blur-xl flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              className={cn(
+                DASHBOARD_HEADER_UTILITY_BUTTON,
+                "rounded-2xl border border-border/60 bg-card/40 text-muted-foreground backdrop-blur-xl transition-colors hover:text-foreground",
+              )}
               aria-label={t.coTrainerPage.newChat}
               title={t.coTrainerPage.newChat}
             >
-              <MessageSquarePlus className="w-4 h-4" />
+              <MessageSquarePlus className={DASHBOARD_HEADER_ICON} />
             </button>
           ) : (
-            <div className="w-9 h-9 rounded-2xl bg-card/40 border border-border/60 backdrop-blur-xl flex items-center justify-center overflow-hidden p-0.5">
-              <Ai4TLogo size="xs" className="h-7 w-7" />
+            <div
+              className={cn(
+                DASHBOARD_HEADER_UTILITY_BUTTON,
+                "overflow-hidden rounded-2xl border border-border/60 bg-card/40 p-1 backdrop-blur-xl",
+              )}
+            >
+              <Ai4TLogo size="xs" className="h-7 w-7 max-lg:h-8 max-lg:w-8" />
             </div>
           )
         }
       />
 
-      <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as typeof mainTab)} className="flex flex-col flex-1 min-h-0">
-        <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl shrink-0 pt-4`}>
-          <TabsList className={ai4tDashboardTabListClass}>
+      <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as typeof mainTab)} className="flex min-h-0 flex-1 flex-col">
+        <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl shrink-0 pt-2 max-lg:pt-2 lg:pt-4`}>
+          <TabsList className={cn(ai4tDashboardTabListClass, showAgentTab ? "grid-cols-3" : "grid-cols-2")}>
             <TabsTrigger value="chat" className={ai4tDashboardTabTriggerClass}>
-              <MessageSquare className="w-3.5 h-3.5" />
+              <MessageSquare className="ai4t-dashboard-tab-icon shrink-0" />
               {t.coTrainerPage.tabChat}
             </TabsTrigger>
             {showAgentTab ? (
               <TabsTrigger value="agent" className={ai4tDashboardTabTriggerClass}>
-                <Ai4TeamAgentIcon />
+                <Ai4TeamAgentIcon className="ai4t-dashboard-tab-icon" />
                 {t.coTrainerPage.tabAgent}
               </TabsTrigger>
             ) : null}
             <TabsTrigger value="history" className={ai4tDashboardTabTriggerClass}>
-              <History className="w-3.5 h-3.5" />
+              <History className="ai4t-dashboard-tab-icon shrink-0" />
               {t.coTrainerPage.tabHistory}
             </TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="chat" className="flex-1 flex flex-col min-h-0 mt-0 data-[state=inactive]:hidden">
-          <div ref={scrollRef} className="relative flex-1 overflow-y-auto">
+        <TabsContent value="chat" className="mt-0 flex min-h-0 flex-1 flex-col data-[state=inactive]:hidden">
+          <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
             {resolvedTheme === "light" ? <Ai4tChatWatermark /> : null}
-            <div className={`relative z-[1] ${DASHBOARD_PAGE_MAX_INNER} max-w-3xl space-y-4 py-6`}>
-              <Ai4tPersonaHint />
-              <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
+            <div className={`relative z-[1] ${DASHBOARD_PAGE_MAX_INNER} max-w-3xl space-y-3 py-3 max-lg:space-y-2 max-lg:py-2 lg:space-y-4 lg:py-6`}>
+              <div className="max-lg:[&_.rounded-2xl]:rounded-xl max-lg:[&_.rounded-2xl]:py-2.5">
+                <Ai4tPersonaHint />
+              </div>
+              <div className="hidden rounded-2xl border border-border/60 bg-card/40 p-4 backdrop-blur-2xl lg:block">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-2">
                     <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
@@ -1186,15 +1205,15 @@ const CoTrainer = () => {
               </div>
 
               {messages.length > 0 && (
-                <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3">
-                  <div className="text-[11px] text-muted-foreground mb-2">{t.coTrainerPage.suggestedDuringChat}</div>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                <div className="hidden rounded-2xl border border-border/60 bg-card/40 p-3 backdrop-blur-2xl lg:block">
+                  <div className="mb-2 text-[11px] text-muted-foreground">{t.coTrainerPage.suggestedDuringChat}</div>
+                  <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
                     {quickPrompts.map((qp) => (
                       <button
                         key={`live-${qp.label}`}
                         type="button"
                         onClick={() => void handleSend(qp.prompt)}
-                        className="p-2.5 rounded-xl bg-background/60 border border-border text-left hover:border-primary/30 hover:bg-primary/5 transition-colors"
+                        className="rounded-xl border border-border bg-background/60 p-2.5 text-left transition-colors hover:border-primary/30 hover:bg-primary/5"
                       >
                         <div className="text-[11px] font-medium text-foreground">{qp.label}</div>
                       </button>
@@ -1204,10 +1223,49 @@ const CoTrainer = () => {
               )}
 
               {messages.length === 0 ? (
+                <>
+                <div className="rounded-2xl border border-border/60 bg-card/40 p-3 backdrop-blur-2xl max-lg:block lg:hidden">
+                  <p className="text-sm leading-snug text-muted-foreground">{roleWelcome}</p>
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground/90">{assistantRoleName}</span>
+                    {!isPartnerPersona && clubName ? (
+                      <>
+                        {" · "}
+                        <span className="text-foreground/80">{clubName}</span>
+                      </>
+                    ) : null}
+                    {!isPartnerPortal && contextLoading ? <Loader2 className="ml-1 inline h-3 w-3 animate-spin" /> : null}
+                  </p>
+                  <div className="mt-2.5 flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-foreground">{t.coTrainerPage.suggestedStartsTitle}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 shrink-0 gap-1 px-2 text-[11px]"
+                      onClick={() => setShowIntroModal(true)}
+                    >
+                      <Info className="h-3.5 w-3.5" />
+                      <BrandedText text={t.coTrainerPage.introLearnMore} />
+                    </Button>
+                  </div>
+                  <div className="mt-2 flex gap-2 overflow-x-auto overscroll-x-contain pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                    {quickPrompts.map((qp) => (
+                      <button
+                        key={`start-mobile-${qp.label}`}
+                        type="button"
+                        onClick={() => void handleSend(qp.prompt)}
+                        className="min-w-[8.5rem] max-w-[70vw] shrink-0 rounded-xl border border-border bg-background/60 px-3 py-2.5 text-left text-xs font-medium text-foreground transition-colors hover:border-primary/30 hover:bg-primary/5"
+                      >
+                        {qp.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="grid gap-4 lg:grid-cols-[1.1fr_1fr]"
+                  className="hidden gap-4 lg:grid lg:grid-cols-[1.1fr_1fr]"
                 >
                   <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-5">
                     <div className="mb-4 flex items-start justify-between gap-2">
@@ -1267,6 +1325,7 @@ const CoTrainer = () => {
                     </div>
                   </div>
                 </motion.div>
+                </>
               ) : (
                 <AnimatePresence>
                   {messages.map((msg, i) => (
@@ -1334,39 +1393,20 @@ const CoTrainer = () => {
             </div>
           </div>
 
-          <div className="border-t border-border bg-background/80 backdrop-blur-xl shrink-0">
-            <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl py-3`}>
-              <div className="flex items-end gap-1.5">
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  placeholder={isPartnerPersona ? t.coTrainerPage.inputPlaceholderPartner : t.coTrainerPage.inputPlaceholder}
-                  rows={1}
-                  className="flex-1 resize-none rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-                <Ai4TSendButton
-                  disabled={!input.trim() || isLoading}
-                  onClick={() => void handleSend()}
-                  variant="default"
-                  aria-label={t.coTrainerPage.tabChat}
-                />
-                <Ai4TeamVoiceControls
-                  disabled={isLoading}
-                  voice={aiVoice}
-                  onVoiceCommand={handleVoiceCommand}
-                />
-              </div>
-              {aiVoice.speechSupported || aiVoice.ttsSupported ? (
-                <p className="mt-1.5 text-[10px] text-muted-foreground">{t.coTrainerPage.voice.hint}</p>
-              ) : null}
-            </div>
+          <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl shrink-0`}>
+            <Ai4tChatComposer
+              variant="dashboard"
+              value={input}
+              onChange={setInput}
+              onSend={() => void handleSend()}
+              isLoading={isLoading}
+              placeholder={isPartnerPersona ? t.coTrainerPage.inputPlaceholderPartner : t.coTrainerPage.inputPlaceholder}
+              voice={aiVoice}
+              onVoiceCommand={handleVoiceCommand}
+              sendAriaLabel={t.coTrainerPage.tabChat}
+              textareaRef={inputRef}
+              className="max-lg:[&_p]:hidden"
+            />
           </div>
         </TabsContent>
 

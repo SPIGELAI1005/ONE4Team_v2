@@ -4,7 +4,8 @@ import { logStructured, resolveCorrelationId } from "../_shared/request_context.
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-bridge-secret",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-bridge-secret, x-correlation-id",
 };
 
 type Provider = "telegram" | "whatsapp";

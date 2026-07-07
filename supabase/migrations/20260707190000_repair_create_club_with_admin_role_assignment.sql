@@ -1,4 +1,12 @@
--- Enhanced create_club_with_admin: seeds default data and accepts metadata
+-- Repair create_club_with_admin: stop double-inserting club_role_assignments.
+--
+-- trg_club_memberships_ensure_assignment (20260324140000) already inserts a
+-- club-scoped assignment on every club_memberships INSERT. The enhanced
+-- provisioning function (20260326110000) inserted the same row again, causing:
+--   duplicate key value violates unique constraint
+--   "idx_club_role_assignments_unique_club_self"
+-- and HTTP 409 from PostgREST when onboarding calls create_club_with_admin.
+
 CREATE OR REPLACE FUNCTION public.create_club_with_admin(
   _name TEXT,
   _slug TEXT,
@@ -15,9 +23,7 @@ AS $$
 DECLARE
   _club_id UUID;
   _user_id UUID;
-  _membership_id UUID;
   _team_id UUID;
-  _user_email TEXT;
 BEGIN
   _user_id := auth.uid();
   IF _user_id IS NULL THEN
@@ -34,7 +40,6 @@ BEGIN
     RAISE EXCEPTION 'Description must be under 500 characters';
   END IF;
 
-  -- Create club with metadata fields
   INSERT INTO public.clubs (
     name, slug, description, is_public,
     default_language, timezone, season_start_month
@@ -47,14 +52,10 @@ BEGIN
   )
   RETURNING id INTO _club_id;
 
-  -- Create admin membership
+  -- Admin membership; trg_club_memberships_ensure_assignment seeds club_role_assignments.
   INSERT INTO public.club_memberships (club_id, user_id, role, status)
-  VALUES (_club_id, _user_id, 'admin', 'active')
-  RETURNING id INTO _membership_id;
+  VALUES (_club_id, _user_id, 'admin', 'active');
 
-  -- club_role_assignments seeded by trg_club_memberships_ensure_assignment (20260324140000)
-
-  -- Seed a default team
   BEGIN
     INSERT INTO public.teams (club_id, name, age_group, is_active)
     VALUES (_club_id, trim(_name) || ' - First Team', 'Senior', true)
@@ -63,7 +64,6 @@ BEGIN
     NULL;
   END;
 
-  -- Seed a welcome announcement
   BEGIN
     INSERT INTO public.announcements (club_id, title, content, created_by)
     VALUES (
@@ -76,7 +76,6 @@ BEGIN
     NULL;
   END;
 
-  -- Seed a billing subscription (trialing)
   BEGIN
     INSERT INTO public.billing_subscriptions (club_id, plan_id, billing_cycle, status, metadata)
     VALUES (_club_id, _plan_id, 'monthly', 'trialing', _metadata)
@@ -85,7 +84,6 @@ BEGIN
     NULL;
   END;
 
-  -- Seed default shop categories
   BEGIN
     INSERT INTO public.shop_categories (club_id, name, is_active)
     VALUES

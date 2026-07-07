@@ -50,6 +50,7 @@ import { cn } from "@/lib/utils";
 import {
   DASHBOARD_PAGE_INNER,
   DASHBOARD_PAGE_ROOT,
+  DASHBOARD_TAB_BUTTON,
   DASHBOARD_TABS_INNER_SCROLL,
   DASHBOARD_TABS_ROW,
 } from "@/lib/dashboard-page-shell";
@@ -3241,7 +3242,7 @@ const Members = () => {
           <button
             type="button"
             onClick={() => setTab("members")}
-            className={`flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`${DASHBOARD_TAB_BUTTON} ${
               tab === "members" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -3250,7 +3251,7 @@ const Members = () => {
           <button
             type="button"
             onClick={() => setTab("invites")}
-            className={`flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`${DASHBOARD_TAB_BUTTON} ${
               tab === "invites" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -3260,7 +3261,7 @@ const Members = () => {
             <button
               type="button"
               onClick={() => setTab("roles")}
-              className={`flex shrink-0 items-center gap-2 whitespace-nowrap px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`${DASHBOARD_TAB_BUTTON} ${
                 tab === "roles" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/hooks/use-language";
+import { cn } from "@/lib/utils";
 
 interface LanguageToggleProps {
   size?: "sm" | "default";
@@ -14,10 +15,10 @@ export function LanguageToggle({ size = "default", className }: LanguageTogglePr
       variant="ghost"
       size={size === "sm" ? "sm" : "icon"}
       onClick={toggleLanguage}
-      className={className}
+      className={cn(className)}
       aria-label={language === "en" ? "Switch to German" : "Zu Englisch wechseln"}
     >
-      <span className="text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors">
+      <span className="dashboard-header-lang text-muted-foreground transition-colors hover:text-foreground">
         {language === "en" ? "DE" : "EN"}
       </span>
     </Button>

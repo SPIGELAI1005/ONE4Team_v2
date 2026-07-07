@@ -16,6 +16,11 @@ import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/one4team-logo.png";
 import { isErrorWithMessage } from "@/types/dashboard";
 import { getRedeemInviteErrorMessage } from "@/lib/redeem-invite-errors";
+import {
+  buildCreateClubRpcPayload,
+  getCreateClubErrorMessage,
+  slugifyClubName,
+} from "@/lib/onboarding-club";
 import { notifyMembershipsUpdated } from "@/hooks/use-active-club";
 
 type World = "club" | "partner" | null;
@@ -45,6 +50,18 @@ const Onboarding = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { t } = useLanguage();
+
+  const clubSlugPreview = useMemo(() => slugifyClubName(clubName), [clubName]);
+
+  const createClubErrorLabels = useMemo(
+    () => ({
+      unknown: t.onboarding.createClubUnknown,
+      notAuthenticated: t.onboarding.createClubNotAuthenticated,
+      duplicateSlug: t.onboarding.createClubDuplicateSlug,
+      provisioningConflict: t.onboarding.createClubProvisioningConflict,
+    }),
+    [t],
+  );
 
   const clubRoles = [
     { id: "admin", label: t.onboarding.clubAdmin, icon: Crown, desc: t.onboarding.clubAdminDesc },
@@ -224,28 +241,15 @@ const Onboarding = () => {
 
     setCreating(true);
     try {
-      const slug = clubName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-
-      // Create club and admin membership atomically
       const searchParams = new URLSearchParams(window.location.search);
-      const planId = searchParams.get("plan") || "kickoff";
-      const registrationSummary = localStorage.getItem("one4team.registrationSummary");
-      let metadata: Record<string, unknown> = { source: "onboarding" };
-      if (registrationSummary) {
-        try {
-          const parsed = JSON.parse(registrationSummary);
-          metadata = { ...metadata, ...parsed };
-        } catch { /* ignore parse errors */ }
-      }
-
-      const { data: clubId, error } = await supabase.rpc("create_club_with_admin", {
-        _name: clubName.trim(),
-        _slug: slug || `club-${Date.now()}`,
-        _description: clubDescription.trim() || null,
-        _is_public: true,
-        _plan_id: planId,
-        _metadata: metadata,
+      const rpcPayload = buildCreateClubRpcPayload({
+        clubName,
+        clubDescription,
+        planParam: searchParams.get("plan"),
+        registrationSummary: localStorage.getItem("one4team.registrationSummary"),
       });
+
+      const { data: clubId, error } = await supabase.rpc("create_club_with_admin", rpcPayload);
 
       if (error) throw error;
       if (clubId && user) localStorage.setItem(`${ACTIVE_CLUB_KEY_PREFIX}:${user.id}`, clubId);
@@ -256,7 +260,7 @@ const Onboarding = () => {
     } catch (err: unknown) {
       toast({
         title: t.onboarding.errorCreatingClub,
-        description: isErrorWithMessage(err) ? err.message : "Unknown error",
+        description: getCreateClubErrorMessage(err, createClubErrorLabels),
         variant: "destructive",
       });
     } finally {
@@ -553,7 +557,7 @@ const Onboarding = () => {
                 {clubName.trim() && (
                   <div className="p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">{t.onboarding.clubUrl}</span>
-                    one4team.com/club/{clubName.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}
+                    one4team.com/club/{clubSlugPreview || "…"}
                   </div>
                 )}
 

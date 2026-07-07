@@ -34,7 +34,8 @@ import {
 } from "@/lib/communication-pagination";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { useToast } from "@/hooks/use-toast";
-import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
+import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT, DASHBOARD_TYPE_CAPTION, DASHBOARD_TYPE_MICRO } from "@/lib/dashboard-page-shell";
+import { DashboardToolbarActions } from "@/components/dashboard/DashboardToolbarActions";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useLanguage } from "@/hooks/use-language";
 import { correlationHeaders } from "@/lib/observability";
@@ -296,6 +297,7 @@ export function CommunicationWorkspace({
   const [connectorEvents, setConnectorEvents] = useState<BridgeEvent[]>([]);
   const [showBridgeSettings, setShowBridgeSettings] = useState(false);
   const [bridgeForm, setBridgeForm] = useState<BridgeForm | null>(null);
+  const [compactMobileChrome, setCompactMobileChrome] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [annTitle, setAnnTitle] = useState("");
@@ -322,6 +324,15 @@ export function CommunicationWorkspace({
   useEffect(() => {
     messagePageRef.current = messagePage;
   }, [messagePage]);
+
+  useEffect(() => {
+    if (embedded) return;
+    const mql = window.matchMedia("(max-width: 1023px)");
+    const sync = () => setCompactMobileChrome(mql.matches);
+    sync();
+    mql.addEventListener("change", sync);
+    return () => mql.removeEventListener("change", sync);
+  }, [embedded]);
 
   const hydrateMessages = useCallback(async (rows: MessageBase[]) => {
     if (!rows.length) return [] as Message[];
@@ -1273,29 +1284,29 @@ export function CommunicationWorkspace({
   const canPostAnnouncements = canManageAnnouncements(isClubAdmin) && !missingAnnouncementsTable;
 
   const announceButton =
-    selectedChannel.kind === "announcements" && canPostAnnouncements ? (
-      <Button
-        size="sm"
-        className={cn(
-          "hover:brightness-110",
-          embedded
-            ? "bg-[color:var(--club-primary)] text-white shadow-sm"
-            : "bg-gradient-gold-static text-primary-foreground",
-        )}
-        onClick={() => {
-          resetAnnouncementForm();
-          setShowAddAnnouncement(true);
-        }}
-      >
-        <Plus className="w-4 h-4 mr-1" /> {t.communicationPage.announce}
-      </Button>
+    !embedded && selectedChannel.kind === "announcements" && canPostAnnouncements ? (
+      <DashboardToolbarActions
+        maxVisibleMobile={1}
+        actions={[
+          {
+            id: "announce",
+            label: t.communicationPage.announce,
+            icon: Plus,
+            variant: "gold",
+            onClick: () => {
+              resetAnnouncementForm();
+              setShowAddAnnouncement(true);
+            },
+          },
+        ]}
+      />
     ) : null;
 
   const announcementComposeBar = canPostAnnouncements && selectedChannel.kind === "announcements" ? (
     <div
       className={cn(
         "shrink-0 border-t p-3",
-        embedded ? "border-neutral-200/80 bg-white" : "border-border/70 bg-background/70",
+        embedded ? "border-neutral-200/80 bg-white" : "border-border/70 bg-background/80 backdrop-blur-xl max-lg:px-3 max-lg:py-3",
       )}
     >
       <button
@@ -1325,11 +1336,14 @@ export function CommunicationWorkspace({
   ) : null;
 
   return (
-    <div className={embedded ? "flex h-full min-h-0 flex-col" : DASHBOARD_PAGE_ROOT}>
+    <div
+      className={embedded ? "flex h-full min-h-0 flex-col" : cn(DASHBOARD_PAGE_ROOT, "flex min-h-0 flex-col")}
+      data-dashboard-messages-shell={embedded ? undefined : true}
+    >
       {!embedded ? (
         <DashboardHeaderSlot
           title={t.communicationPage.title}
-          subtitle={t.communicationPage.subtitle}
+          subtitle={compactMobileChrome ? undefined : t.communicationPage.subtitle}
           toolbarRevision={`${selectedChannel.kind}-${perms.isAdmin}-${missingAnnouncementsTable}`}
           rightSlot={announceButton}
         />
@@ -1339,7 +1353,7 @@ export function CommunicationWorkspace({
         className={
           embedded
             ? "flex flex-1 flex-col min-h-0"
-            : `${DASHBOARD_PAGE_INNER} flex flex-1 flex-col min-h-0`
+            : `${DASHBOARD_PAGE_INNER} flex min-h-0 flex-1 flex-col max-lg:py-3`
         }
       >
         {(clubLoading || loading) ? (
@@ -1363,7 +1377,7 @@ export function CommunicationWorkspace({
         ) : (
           <>
             {baseDataLoadError ? (
-              <Alert variant="destructive" className="mb-4">
+              <Alert variant="destructive" className="mb-4 max-lg:mb-2">
                 <AlertTitle>{t.common.error}</AlertTitle>
                 <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-sm">{baseDataLoadError}</span>
@@ -1384,14 +1398,14 @@ export function CommunicationWorkspace({
               className={
                 embedded
                   ? "flex h-full min-h-0 flex-1 flex-col gap-2 sm:grid sm:grid-cols-[minmax(0,200px)_minmax(0,1fr)] sm:gap-3 lg:grid-cols-[220px_minmax(0,1fr)]"
-                  : "grid lg:grid-cols-[280px_minmax(0,1fr)] gap-4 h-[calc(100vh-180px)]"
+                  : "flex min-h-0 flex-1 flex-col lg:grid lg:h-[calc(100vh-180px)] lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-4"
               }
             >
             <aside
               className={
                 embedded
                   ? "hidden min-h-0 overflow-y-auto rounded-2xl border border-neutral-200/80 bg-neutral-50/80 p-2 sm:block sm:p-3"
-                  : "rounded-2xl border border-border/70 bg-card/50 backdrop-blur-xl p-3 overflow-y-auto"
+                  : "hidden min-h-0 overflow-y-auto rounded-2xl border border-border/70 bg-card/50 p-3 backdrop-blur-xl lg:block"
               }
             >
               <div
@@ -1435,25 +1449,25 @@ export function CommunicationWorkspace({
                   <div className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1.5">
                     <BotMessageSquare className="w-3.5 h-3.5 text-primary" /> {t.communicationPage.externalBridgeBeta}
                   </div>
-                  <div className="text-[11px] text-muted-foreground mb-2">
+                  <div className={`${DASHBOARD_TYPE_MICRO} mb-2`}>
                     {t.communicationPage.connectSelectedChannels}
                   </div>
                   <div className="flex gap-2 mb-2">
-                    <Button size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => openBridgeSettings("whatsapp")}>
+                    <Button size="sm" variant="outline" className={`h-8 ${DASHBOARD_TYPE_CAPTION}`} onClick={() => openBridgeSettings("whatsapp")}>
                       {t.communicationPage.whatsApp}
                     </Button>
-                    <Button size="sm" variant="outline" className="h-8 text-[11px]" onClick={() => openBridgeSettings("telegram")}>
+                    <Button size="sm" variant="outline" className={`h-8 ${DASHBOARD_TYPE_CAPTION}`} onClick={() => openBridgeSettings("telegram")}>
                       {t.communicationPage.telegram}
                     </Button>
                   </div>
                   <div className="space-y-2">
                     {providerHealth.length === 0 ? (
-                      <div className="text-[11px] text-muted-foreground">{t.communicationPage.noConnectorsConfigured}</div>
+                      <div className={DASHBOARD_TYPE_MICRO}>{t.communicationPage.noConnectorsConfigured}</div>
                     ) : (
                       providerHealth.map(({ connector, processed, failed }) => (
                         <div key={connector.id} className="rounded-lg border border-border/60 px-2 py-1.5">
                           <div className="flex items-center justify-between">
-                            <div className="text-[11px] font-medium">{providerLabel(connector.provider)}</div>
+                            <div className={`${DASHBOARD_TYPE_CAPTION} font-medium`}>{providerLabel(connector.provider)}</div>
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${connectorStatusColor[connector.status]}`}>
                               {connectorStatusLabel(connector.status)}
                             </span>
@@ -1473,27 +1487,32 @@ export function CommunicationWorkspace({
               className={
                 embedded
                   ? "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-neutral-200/80 bg-white/95 sm:min-h-0"
-                  : "rounded-2xl border border-border/70 bg-card/50 backdrop-blur-xl overflow-hidden flex flex-col min-h-0"
+                  : "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/70 bg-card/50 backdrop-blur-xl"
               }
             >
               <div
                 className={cn(
-                  "border-b",
+                  "shrink-0 border-b",
                   embedded
-                    ? "flex shrink-0 flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3"
-                    : "flex items-center justify-between px-4 py-3",
+                    ? "flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3"
+                    : "flex flex-col gap-2 px-3 py-2 lg:flex-row lg:items-center lg:justify-between lg:px-4 lg:py-3",
                   embedded ? "border-neutral-200/80" : "border-border/70",
                 )}
               >
-                <div className="flex min-w-0 items-center gap-2">
-                  {selectedChannel.kind === "announcements" ? (
-                    <Megaphone className={cn("w-4 h-4 shrink-0", embedded ? "text-[color:var(--club-primary)]" : "text-primary")} />
-                  ) : selectedChannel.isTrainersChannel ? (
-                    <Users className={cn("w-4 h-4 shrink-0", embedded ? "text-[color:var(--club-primary)]" : "text-primary")} />
-                  ) : (
-                    <MessageSquare className={cn("w-4 h-4 shrink-0", embedded ? "text-[color:var(--club-primary)]" : "text-primary")} />
+                <div
+                  className={cn(
+                    "flex min-w-0 items-center gap-2",
+                    embedded ? "hidden sm:flex" : "hidden lg:flex",
                   )}
-                  <div className={cn("min-w-0 font-medium truncate", embedded ? "text-neutral-900" : "text-foreground")}>
+                >
+                  {selectedChannel.kind === "announcements" ? (
+                    <Megaphone className={cn("h-4 w-4 shrink-0", embedded ? "text-[color:var(--club-primary)]" : "text-primary")} />
+                  ) : selectedChannel.isTrainersChannel ? (
+                    <Users className={cn("h-4 w-4 shrink-0", embedded ? "text-[color:var(--club-primary)]" : "text-primary")} />
+                  ) : (
+                    <MessageSquare className={cn("h-4 w-4 shrink-0", embedded ? "text-[color:var(--club-primary)]" : "text-primary")} />
+                  )}
+                  <div className={cn("min-w-0 truncate font-medium", embedded ? "text-neutral-900" : "text-foreground")}>
                     {selectedChannel.kind === "announcements"
                       ? t.communicationPage.clubAnnouncements
                       : selectedChannel.isTrainersChannel
@@ -1501,25 +1520,28 @@ export function CommunicationWorkspace({
                         : `# ${selectedChannel.label}`}
                   </div>
                 </div>
-                {embedded ? (
-                  <Select value={selectedChannelId} onValueChange={setSelectedChannelId}>
-                    <SelectTrigger
-                      aria-label={t.communicationPage.channels}
-                      className="h-9 w-full rounded-xl border-neutral-200/80 bg-neutral-50 text-sm text-neutral-900 sm:hidden"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {channels.map((channel) => (
-                        <SelectItem key={channel.id} value={channel.id}>
-                          {channel.kind === "announcements" ? channel.label : `# ${channel.label}`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : null}
+                <Select value={selectedChannelId} onValueChange={setSelectedChannelId}>
+                  <SelectTrigger
+                    aria-label={t.communicationPage.channels}
+                    className={cn(
+                      "h-10 w-full text-sm",
+                      embedded
+                        ? "rounded-xl border-neutral-200/80 bg-neutral-50 text-neutral-900 sm:hidden"
+                        : "rounded-xl border-border/70 bg-background/70 lg:hidden",
+                    )}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {channels.map((channel) => (
+                      <SelectItem key={channel.id} value={channel.id}>
+                        {channel.kind === "announcements" ? channel.label : `# ${channel.label}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {selectedChannel.kind === "chat" && !embedded ? (
-                  <div className="text-[11px] text-muted-foreground">{t.communicationPage.chatManagementPlatform}</div>
+                  <div className={cn(DASHBOARD_TYPE_MICRO, "hidden lg:block")}>{t.communicationPage.chatManagementPlatform}</div>
                 ) : null}
                 {selectedChannel.kind === "announcements" && canPostAnnouncements ? (
                   <div className="shrink-0 self-end sm:self-auto">{announceButton}</div>
@@ -1726,7 +1748,9 @@ export function CommunicationWorkspace({
                   <div
                     className={cn(
                       "shrink-0 border-b",
-                      embedded ? "border-neutral-200/80 px-3 py-2 sm:px-4 sm:pt-3 sm:pb-3" : "border-border/70 px-4 pt-3 pb-3",
+                      embedded
+                        ? "border-neutral-200/80 px-3 py-2 sm:px-4 sm:pt-3 sm:pb-3"
+                        : "border-border/70 px-3 py-2 max-lg:py-2 lg:px-4 lg:pt-3 lg:pb-3",
                     )}
                   >
                     <div
@@ -1734,10 +1758,10 @@ export function CommunicationWorkspace({
                         "flex items-center gap-2 rounded-xl px-3",
                         embedded
                           ? cn(clubEmbeddedLightInputShellClass, "py-1.5 sm:py-2")
-                          : "border border-border bg-background/70",
+                          : "border border-border bg-background/70 py-1.5 max-lg:py-1.5",
                       )}
                     >
-                      <Search className={cn("w-4 h-4 shrink-0", embedded ? "text-neutral-500" : "text-muted-foreground")} />
+                      <Search className={cn("h-4 w-4 shrink-0", embedded ? "text-neutral-500" : "text-muted-foreground")} />
                       <Input
                         value={messageSearch}
                         onChange={(event) => setMessageSearch(event.target.value)}
@@ -1751,20 +1775,21 @@ export function CommunicationWorkspace({
                     {messageTotalPages > 1 || !embedded ? (
                       <div
                         className={cn(
-                          "mt-2 flex items-center justify-between gap-2",
+                          "mt-2 flex items-center justify-between gap-2 max-lg:mt-1.5",
                           embedded && messageTotalPages <= 1 && "sm:mt-2",
                         )}
                       >
                         <div
                           className={cn(
-                            "min-w-0 truncate text-[10px] sm:text-[11px]",
+                            `min-w-0 truncate ${DASHBOARD_TYPE_MICRO}`,
                             embedded ? "text-neutral-500" : "text-muted-foreground",
+                            !embedded && "hidden lg:block",
                           )}
                         >
                           {messagePaginationLabel}
                         </div>
                         {messageTotalPages > 1 ? (
-                          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+                          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
                             <Button
                               type="button"
                               size="sm"
@@ -1775,7 +1800,7 @@ export function CommunicationWorkspace({
                             >
                               {t.communicationPage.paginationPrevious}
                             </Button>
-                            <span className="text-[10px] text-muted-foreground sm:text-[11px]">
+                            <span className={DASHBOARD_TYPE_MICRO}>
                               {messagePage}/{messageTotalPages}
                             </span>
                             <Button
@@ -1926,7 +1951,7 @@ export function CommunicationWorkspace({
                                         href={attachment.signed_url || "#"}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="block text-[11px] underline decoration-dotted hover:opacity-80"
+                                        className={`block ${DASHBOARD_TYPE_MICRO} underline decoration-dotted hover:opacity-80`}
                                       >
                                         {attachment.file_name}
                                       </a>
@@ -2017,12 +2042,14 @@ export function CommunicationWorkspace({
 
                   <div
                     className={cn(
-                      "shrink-0 border-t p-2.5 space-y-2 sm:p-3",
-                      embedded ? "border-neutral-200/80 bg-white" : "border-border/70 bg-background/70",
+                      "shrink-0 border-t p-2.5 sm:p-3",
+                      embedded
+                        ? "border-neutral-200/80 bg-white"
+                        : "border-border/70 bg-background/80 backdrop-blur-xl max-lg:px-3 max-lg:py-3",
                     )}
                   >
                     {selectedFiles.length ? (
-                      <div className="flex flex-wrap gap-1.5">
+                      <div className="mb-2 flex flex-wrap gap-1.5">
                         {selectedFiles.map((file, index) => (
                           <div key={`${file.name}-${index}`} className="text-[10px] px-2 py-1 rounded-full border border-border bg-background/70 flex items-center gap-1">
                             <span className="truncate max-w-[140px]">{file.name}</span>
@@ -2041,16 +2068,16 @@ export function CommunicationWorkspace({
                     ) : null}
                     <div
                       className={cn(
-                        "flex items-center gap-2 rounded-full px-3 py-2",
+                        "flex items-center gap-2 rounded-2xl px-3 py-2 max-lg:min-h-[52px] max-lg:py-2.5",
                         embedded
                           ? clubEmbeddedLightInputShellClass
-                          : "border border-border bg-card",
+                          : "border-2 border-primary/45 bg-primary/[0.08] shadow-[0_0_0_1px_hsl(var(--primary)/0.2)] ring-1 ring-primary/10",
                       )}
                     >
                       <label
                         className={cn(
-                          "inline-flex items-center cursor-pointer",
-                          embedded ? "text-neutral-500 hover:text-neutral-800" : "text-muted-foreground hover:text-foreground",
+                          "inline-flex min-h-[44px] min-w-[44px] items-center justify-center",
+                          embedded ? "cursor-pointer text-neutral-500 hover:text-neutral-800" : "cursor-pointer text-muted-foreground hover:text-foreground",
                         )}
                       >
                         <input
@@ -2071,8 +2098,9 @@ export function CommunicationWorkspace({
                         onChange={(event) => setNewMessage(event.target.value)}
                         onKeyDown={(event) => event.key === "Enter" && void handleSendMessage()}
                         className={cn(
-                          "border-0 bg-transparent shadow-none focus-visible:ring-0",
+                          "h-10 border-0 bg-transparent shadow-none focus-visible:ring-0 max-lg:text-[15px]",
                           embedded && clubEmbeddedLightInputFieldClass,
+                          !embedded && "text-foreground placeholder:text-muted-foreground",
                         )}
                         maxLength={1000}
                       />
@@ -2081,11 +2109,11 @@ export function CommunicationWorkspace({
                         onClick={() => void handleSendMessage()}
                         disabled={!newMessage.trim() && selectedFiles.length === 0}
                         className={cn(
-                          "w-8 h-8 rounded-full text-primary-foreground hover:brightness-110",
+                          "h-10 w-10 shrink-0 rounded-xl text-primary-foreground hover:brightness-110 max-lg:h-11 max-lg:w-11",
                           embedded ? "bg-[color:var(--club-primary)]" : "bg-gradient-gold-static",
                         )}
                       >
-                        <Send className="w-4 h-4" />
+                        <Send className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
