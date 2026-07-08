@@ -66,7 +66,6 @@ export default function GuidedSetup() {
         club_id: clubId,
         name: teamName.trim(),
         age_group: teamAgeGroup,
-        is_active: true,
       });
       if (error) throw error;
       trackUsageEvent({

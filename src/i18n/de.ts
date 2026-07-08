@@ -3810,6 +3810,10 @@ export const de: Translations = {
     planAllowsMembers: "Dein {planName}-Paket erlaubt bis zu {limit} Mitglieder. Upgrade, um mehr hinzuzufügen.",
     planAllowsTeams: "Dein {planName}-Paket erlaubt bis zu {limit} Teams. Upgrade, um mehr hinzuzufügen.",
     upgradePlan: "Paket upgraden",
+    contactSupport: "ONE4Team kontaktieren",
+    contactEmailSubject: "Funktionsanfrage: {feature} im {planName}-Paket",
+    contactEmailBody:
+      "Hallo ONE4Team-Team,\n\nunser Verein nutzt das {planName}-Paket und wir möchten die Funktion \"{feature}\" verwenden. Könnt ihr uns helfen, sie freizuschalten?\n\nDanke,",
   },
 
   placeholders: {

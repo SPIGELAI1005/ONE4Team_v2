@@ -1,9 +1,10 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-07-08 (Operator Control Center — financials, charts, UX polish)
+Last updated: 2026-07-08 (Plan gate UX + guided setup team creation fix)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
+- **Plan gate + onboarding fix (2026-07-08):** **`PlanGate`** upgrade screen — ONE4Team logo + star badge; **Contact ONE4Team** mailto under **View Plans**; guided setup **Create your first team** fixed (removed invalid **`is_active`** on **`teams`** insert). See **`CHANGELOG.md`** § **2026-07-08 (Plan gate UX…)**.
 - **Operator Control Center (2026-07-08):** Platform admin at **`/operator`** — overview, clubs, users, modules, analytics, **financials** (MRR, cost model, development investment charts), marketplace, performance, issues, audit, support, **legal** (editable templates + PDF), settings. Recharts timelines and breakdowns; EN/DE i18n; scroll-to-top on nav; portaled metric tooltips. See **`CHANGELOG.md`** § **2026-07-08** and **`docs/operator-control-center.md`**.
 - channel-based communication hub with bridge connector foundation (WhatsApp/Telegram),
 - reliable chat send/retry UX, attachments, and search,

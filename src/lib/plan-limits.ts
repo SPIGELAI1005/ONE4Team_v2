@@ -166,3 +166,26 @@ export function getPlanDisplayName(planId: string | null | undefined): string {
   };
   return names[planId ?? ""] ?? "Free";
 }
+
+const FEATURE_DISPLAY_NAMES: Record<FeatureKey, string> = {
+  members: "Members",
+  teams: "Teams",
+  matches: "Matches",
+  events: "Events",
+  communication: "Communication",
+  payments: "Payments",
+  partners: "Partners",
+  shop: "Shop",
+  clubPage: "Club page",
+  clubPageMultilingual: "Multilingual club page",
+  ai: "AI 4 T",
+  analytics: "Analytics",
+  customBranding: "Custom branding",
+  apiAccess: "API access",
+  prioritySupport: "Priority support",
+};
+
+/** Human-readable feature label for support/upgrade copy (not localized; product feature names). */
+export function getFeatureDisplayName(feature: FeatureKey): string {
+  return FEATURE_DISPLAY_NAMES[feature] ?? feature;
+}

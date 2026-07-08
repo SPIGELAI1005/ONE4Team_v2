@@ -3787,6 +3787,10 @@ export const en = {
     planAllowsMembers: "Your {planName} plan allows up to {limit} members. Upgrade to add more.",
     planAllowsTeams: "Your {planName} plan allows up to {limit} teams. Upgrade to add more.",
     upgradePlan: "Upgrade Plan",
+    contactSupport: "Contact ONE4Team",
+    contactEmailSubject: "Feature request: {feature} on {planName} plan",
+    contactEmailBody:
+      "Hi ONE4Team team,\n\nOur club is on the {planName} plan and we'd like to use the \"{feature}\" feature. Could you help us unlock it?\n\nThanks,",
   },
 
   // ─── Shared form placeholders (technical / examples) ───

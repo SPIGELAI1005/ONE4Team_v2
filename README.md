@@ -31,6 +31,7 @@ Club/team management SaaS with an iOS-style glass UI, full internationalization 
 - **Partner showcase**: TSV Allach 09 + Sportecke München with images and testimonials
 - **Test Mode Banner**: Dismissible beta disclaimer across all pages
 - **Operator Control Center (`/operator`, 2026-07-08)**: Internal platform admin for `platform_users` — clubs, users, modules, analytics, **financials** (MRR, editable cost model, development investment charts with **series show/hide toggles**), marketplace, performance, issues, audit, support, **legal** (editable templates + PDF), settings. Recharts on overview/analytics/financials; **mobile-responsive** card layout; full EN/DE. See **`docs/operator-control-center.md`**.
+- **Plan gates (subscription limits)**: Locked features show upgrade screen with ONE4Team logo + star, **View Plans**, and **Contact ONE4Team** (`support@one4team.com` prefilled email); guided setup team creation on **`/guided-setup`** (client fix for `teams` schema)
 
 ## Stack
 - Vite + React + TypeScript

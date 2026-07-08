@@ -3,6 +3,18 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-08 (Plan gate UX + guided setup team creation fix)
+
+### Plan gate — upgrade screen UX (`PlanGate`)
+- **`src/components/plan-gate.tsx`:** Replaced lock icon with **ONE4Team logo + gold star badge** (matches operator header branding pattern) on the upgrade-required screen shown when a club lacks a feature (e.g. AI 4 T on Kickoff).
+- **Contact ONE4Team:** Secondary outline button under **View Plans** opens a prefilled **`mailto:support@one4team.com`** with localized subject/body referencing the locked feature and current plan name.
+- **`src/lib/plan-limits.ts`:** Added **`getFeatureDisplayName()`** for human-readable feature labels in support email copy (e.g. `ai` → **AI 4 T**).
+- **i18n:** **`planGate.contactSupport`**, **`contactEmailSubject`**, **`contactEmailBody`** in EN/DE.
+
+### Fix: Guided setup “Create your first team” failed (`Failed to create team`)
+- **`src/pages/GuidedSetup.tsx`:** Removed **`is_active: true`** from the client-side **`teams`** insert — the table has **no `is_active` column** (same class of bug as the **`create_club_with_admin`** RPC fix in migration **`20260801210000`**). PostgREST returned `undefined_column` → generic toast **Failed to create team**.
+- **Client-only fix** — no new migration required; takes effect on next deploy.
+
 ## 2026-07-08 (Club creation hotfix — teams.is_active)
 
 ### Fix: `create_club_with_admin` 400 (`column "is_active" of relation "teams" does not exist`)
