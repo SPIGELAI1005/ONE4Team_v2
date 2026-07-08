@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Loader2,
@@ -76,6 +77,9 @@ import {
   DASHBOARD_PAGE_INNER_SM,
   DASHBOARD_PAGE_MAX_INNER,
   DASHBOARD_PAGE_ROOT,
+  DASHBOARD_TAB_BUTTON,
+  DASHBOARD_TABS_INNER_SCROLL,
+  DASHBOARD_TABS_ROW,
 } from "@/lib/dashboard-page-shell";
 import { Link } from "react-router-dom";
 import {
@@ -232,9 +236,20 @@ const privacyLabelKeys: (keyof PrivacyPack)[] = [
   "allow_join_requests_public",
 ];
 
-/** Same active treatment as Members page tabs (`border-primary` + `text-primary`). */
-const clubPageAdminSettingsTabTriggerClass =
-  "min-h-11 justify-center rounded-none border-b-2 border-transparent bg-transparent px-1.5 py-3 text-center text-[11px] font-medium leading-snug text-muted-foreground shadow-none transition-colors hover:text-foreground data-[state=active]:border-primary data-[state=active]:!bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none sm:px-2 sm:text-xs md:text-sm";
+const CLUB_PAGE_ADMIN_TAB_IDS = [
+  "basics",
+  "branding",
+  "assets",
+  "pages",
+  "homepage",
+  "privacy",
+  "join",
+  "contact",
+  "seo",
+  "publish",
+] as const;
+
+type ClubPageAdminTabId = (typeof CLUB_PAGE_ADMIN_TAB_IDS)[number];
 
 export default function ClubPageAdmin() {
   const { activeClub, activeClubId, loading: clubLoading } = useActiveClub();
@@ -264,7 +279,24 @@ export default function ClubPageAdmin() {
   const [clubRowKeys, setClubRowKeys] = useState<Set<string>>(new Set());
   const [configSaveBaseline, setConfigSaveBaseline] = useState<ClubPublicPageConfig | null>(null);
   const [teamsForHome, setTeamsForHome] = useState<{ id: string; name: string }[]>([]);
-  const [activeTab, setActiveTab] = useState("basics");
+  const [activeTab, setActiveTab] = useState<ClubPageAdminTabId>("basics");
+
+  const clubPageAdminTabs = useMemo(
+    () =>
+      [
+        { id: "basics" as const, label: t.clubPageAdmin.tabBasics, icon: Globe },
+        { id: "branding" as const, label: t.clubPageAdmin.tabBranding, icon: Palette },
+        { id: "assets" as const, label: t.clubPageAdmin.tabAssets, icon: ImageIcon },
+        { id: "pages" as const, label: t.clubPageAdmin.tabPages, icon: LayoutGrid },
+        { id: "homepage" as const, label: t.clubPageAdmin.tabHomepage, icon: Megaphone },
+        { id: "privacy" as const, label: t.clubPageAdmin.tabPrivacy, icon: Shield },
+        { id: "join" as const, label: t.clubPageAdmin.tabJoin, icon: UserPlus },
+        { id: "contact" as const, label: t.clubPageAdmin.tabContactSocial, icon: Share2 },
+        { id: "seo" as const, label: t.clubPageAdmin.tabSeo, icon: SearchIcon },
+        { id: "publish" as const, label: t.clubPageAdmin.tabPublish, icon: Rocket },
+      ] satisfies { id: ClubPageAdminTabId; label: string; icon: typeof Globe }[],
+    [t.clubPageAdmin],
+  );
 
   const fetchClubData = useCallback(
     async (options?: { silent?: boolean }): Promise<boolean> => {
@@ -766,39 +798,60 @@ export default function ClubPageAdmin() {
 
         <ClubPageAdminLivePublicPreview form={form} />
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-10 space-y-6">
-          <TabsList className="grid h-auto w-full grid-cols-5 gap-0 rounded-none border-b border-border bg-transparent p-0 text-muted-foreground">
-            <TabsTrigger value="basics" className={clubPageAdminSettingsTabTriggerClass}>
-              {t.clubPageAdmin.tabBasics}
-            </TabsTrigger>
-            <TabsTrigger value="branding" className={clubPageAdminSettingsTabTriggerClass}>
-              {t.clubPageAdmin.tabBranding}
-            </TabsTrigger>
-            <TabsTrigger value="assets" className={clubPageAdminSettingsTabTriggerClass}>
-              {t.clubPageAdmin.tabAssets}
-            </TabsTrigger>
-            <TabsTrigger value="pages" className={clubPageAdminSettingsTabTriggerClass}>
-              {t.clubPageAdmin.tabPages}
-            </TabsTrigger>
-            <TabsTrigger value="homepage" className={clubPageAdminSettingsTabTriggerClass}>
-              {t.clubPageAdmin.tabHomepage}
-            </TabsTrigger>
-            <TabsTrigger value="privacy" className={clubPageAdminSettingsTabTriggerClass}>
-              {t.clubPageAdmin.tabPrivacy}
-            </TabsTrigger>
-            <TabsTrigger value="join" className={clubPageAdminSettingsTabTriggerClass}>
-              {t.clubPageAdmin.tabJoin}
-            </TabsTrigger>
-            <TabsTrigger value="contact" className={clubPageAdminSettingsTabTriggerClass}>
-              {t.clubPageAdmin.tabContactSocial}
-            </TabsTrigger>
-            <TabsTrigger value="seo" className={clubPageAdminSettingsTabTriggerClass}>
-              {t.clubPageAdmin.tabSeo}
-            </TabsTrigger>
-            <TabsTrigger value="publish" className={clubPageAdminSettingsTabTriggerClass}>
-              {t.clubPageAdmin.tabPublish}
-            </TabsTrigger>
-          </TabsList>
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => {
+            if ((CLUB_PAGE_ADMIN_TAB_IDS as readonly string[]).includes(value)) {
+              setActiveTab(value as ClubPageAdminTabId);
+            }
+          }}
+          className="mt-10 space-y-6"
+        >
+          <div className={cn(DASHBOARD_TABS_ROW, "-mx-4 max-lg:-mx-5 sm:-mx-5 lg:-mx-8")}>
+            <div className="px-4 pb-3 md:hidden max-lg:px-5 sm:px-5">
+              <Select
+                value={activeTab}
+                onValueChange={(value) => {
+                  if ((CLUB_PAGE_ADMIN_TAB_IDS as readonly string[]).includes(value)) {
+                    setActiveTab(value as ClubPageAdminTabId);
+                  }
+                }}
+              >
+                <SelectTrigger aria-label={t.clubPageAdmin.title} className="h-11 w-full rounded-xl border-border/70 bg-background/70 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {clubPageAdminTabs.map((tab) => (
+                    <SelectItem key={tab.id} value={tab.id}>
+                      {tab.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className={cn(DASHBOARD_TABS_INNER_SCROLL, "hidden touch-manipulation md:flex")}>
+              {clubPageAdminTabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      DASHBOARD_TAB_BUTTON,
+                      isActive
+                        ? "border-primary text-primary"
+                        : "border-transparent text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           <TabsContent value="basics" className="space-y-6">
             <SectionCard icon={Globe} title={t.clubPageAdmin.tabBasics}>

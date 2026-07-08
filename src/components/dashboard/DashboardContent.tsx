@@ -58,6 +58,9 @@ import {
 import { isExternalRole, normalizeDashboardRole } from "@/lib/rbac-config";
 import { usePermissions } from "@/hooks/use-permissions";
 import {
+  readActiveDashboardPersonaSlug,
+} from "@/lib/switch-dashboard-persona";
+import {
   fetchClubFinancialSnapshot,
   formatMoneyFromCents,
 } from "@/lib/club-financial-snapshot";
@@ -234,23 +237,35 @@ const DashboardContent = () => {
     [normalizedRole],
   );
 
-  // Route-driven profile (A): persist selected role so the unified top bar reflects it on every page.
-  useEffect(() => {
-    if (!role) return;
-    localStorage.setItem("one4team.activeRole", role);
-  }, [role]);
-
   useEffect(() => {
     if (!role || perms.activeClubLoading || perms.assignmentsLoading) return;
+    const urlRole = normalizeDashboardRole(role);
+    if (!urlRole) return;
+    const storedPersona = normalizeDashboardRole(readActiveDashboardPersonaSlug());
     const personaCtx = { treatAsClubAdmin: perms.isAdmin };
-    if (!isDashboardPersonaAllowed(role, perms.role, perms.assignments, personaCtx)) {
-      const fallback = defaultDashboardPersonaSlug(perms.role, perms.assignments, personaCtx);
-      const normCurrent = normalizeDashboardRole(role);
-      const normFallback = normalizeDashboardRole(fallback);
-      if (normCurrent === normFallback) return;
-      localStorage.setItem("one4team.activeRole", fallback);
-      navigate(`/dashboard/${fallback}`, { replace: true });
+
+    if (
+      storedPersona &&
+      storedPersona !== urlRole &&
+      isDashboardPersonaAllowed(storedPersona, perms.role, perms.assignments, personaCtx)
+    ) {
+      navigate(`/dashboard/${storedPersona}`, { replace: true });
+      return;
     }
+
+    if (isDashboardPersonaAllowed(urlRole, perms.role, perms.assignments, personaCtx)) {
+      localStorage.setItem("one4team.activeRole", urlRole);
+      return;
+    }
+
+    const fallback = defaultDashboardPersonaSlug(perms.role, perms.assignments, personaCtx);
+    const normFallback = normalizeDashboardRole(fallback);
+    if (urlRole === normFallback) {
+      localStorage.setItem("one4team.activeRole", normFallback);
+      return;
+    }
+    localStorage.setItem("one4team.activeRole", normFallback);
+    navigate(`/dashboard/${normFallback}`, { replace: true });
   }, [
     role,
     perms.role,

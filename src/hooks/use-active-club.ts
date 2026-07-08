@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/useAuth";
 
@@ -44,6 +44,9 @@ export function useActiveClub() {
   const [clubs, setClubs] = useState<ClubOption[]>([]);
   const [activeClubId, setActiveClubId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const activeClubIdRef = useRef<string | null>(null);
+  const hasLoadedOnceRef = useRef(false);
+  activeClubIdRef.current = activeClubId;
 
   const userClubKey = user ? `${CLUB_KEY_PREFIX}:${user.id}` : null;
 
@@ -51,11 +54,14 @@ export function useActiveClub() {
     if (!user) {
       setClubs([]);
       setActiveClubId(null);
+      hasLoadedOnceRef.current = false;
       setLoading(false);
       return;
     }
 
-    setLoading(true);
+    if (!hasLoadedOnceRef.current) {
+      setLoading(true);
+    }
 
     const { data, error } = await supabase
       .from("club_memberships")
@@ -89,15 +95,18 @@ export function useActiveClub() {
 
     setClubs(options);
 
+    const currentId = activeClubIdRef.current;
+    const currentStillValid = Boolean(currentId && options.some((c) => c.id === currentId));
     const stored = (userClubKey ? localStorage.getItem(userClubKey) : null) ?? localStorage.getItem(CLUB_KEY_PREFIX);
-    const preferred = stored && options.some((c) => c.id === stored) ? stored : null;
-    const next = preferred ?? options[0]?.id ?? null;
+    const storedValid = stored && options.some((c) => c.id === stored) ? stored : null;
+    const next = currentStillValid ? currentId! : storedValid ?? options[0]?.id ?? null;
 
     setActiveClubId(next);
     if (next && userClubKey) localStorage.setItem(userClubKey, next);
     localStorage.removeItem(CLUB_KEY_PREFIX);
     if (!next && userClubKey) localStorage.removeItem(userClubKey);
 
+    hasLoadedOnceRef.current = true;
     setLoading(false);
   }, [user, userClubKey]);
 

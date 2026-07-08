@@ -1,17 +1,23 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogOut } from "lucide-react";
+import { Menu, X, LogOut, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { LanguageToggle } from "@/components/ui/language-toggle";
 import { TestModeBanner } from "@/components/ui/test-mode-banner";
 import { usePermissions } from "@/hooks/use-permissions";
-import { useActiveClub, notifyMembershipsUpdated } from "@/hooks/use-active-club";
+import { useActiveClub } from "@/hooks/use-active-club";
 import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/hooks/use-language";
 import { useDashboardNav } from "@/hooks/use-dashboard-nav";
 import { useDashboardNavLabels } from "@/hooks/use-dashboard-nav-labels";
+import { useActiveDashboardPersonaSlug } from "@/hooks/use-active-dashboard-persona-slug";
 import { pathnameToNavId } from "@/lib/dashboard-nav";
+import { getDashboardPersonaOptions, type DashboardRole } from "@/lib/rbac-config";
+import {
+  isSameDashboardPersona,
+  switchDashboardPersona,
+} from "@/lib/switch-dashboard-persona";
 import logo from "@/assets/one4team-logo.png";
 import { BrandedText } from "@/components/ai/Ai4TBrand";
 import { cn } from "@/lib/utils";
@@ -49,15 +55,48 @@ export default function AppHeader({
   const { user, signOut } = useAuth();
   const { t } = useLanguage();
   const navLabels = useDashboardNavLabels();
-  const { sidebarItems, roleLabel, personaSlug } = useDashboardNav(navLabels);
+  const { sidebarItems, roleLabel } = useDashboardNav(navLabels);
+  const activePersonaSlug = useActiveDashboardPersonaSlug();
+
+  const previewPersonaOptions = useMemo(() => {
+    if (perms.isAdmin) return getDashboardPersonaOptions("club_admin");
+    if (perms.isTrainer) return getDashboardPersonaOptions("trainer");
+    return getDashboardPersonaOptions(perms.role);
+  }, [perms.isAdmin, perms.isTrainer, perms.role]);
+
+  const handlePreviewPersonaSwitch = useCallback(
+    (role: DashboardRole) => {
+      switchDashboardPersona(role, navigate);
+      setOpen(false);
+    },
+    [navigate],
+  );
 
   const [open, setOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  const activeRole = (typeof window !== "undefined" ? localStorage.getItem("one4team.activeRole") : null) || null;
+  const debugRouteRole = activePersonaSlug;
 
   const isClubPublic = variant === "clubPublic";
 
+  const renderPreviewPersonaButtons = () =>
+    previewPersonaOptions.map((role) => {
+      const isActive = isSameDashboardPersona(activePersonaSlug, role);
+      return (
+        <button
+          key={role}
+          type="button"
+          onClick={() => handlePreviewPersonaSwitch(role)}
+          className={`flex-1 px-3 py-2 rounded-2xl text-xs font-medium border transition-colors ${
+            isActive
+              ? "bg-primary/10 text-primary border-primary/20"
+              : "bg-background/40 text-foreground border-border/60 hover:bg-muted/30"
+          }`}
+        >
+          {role === "club_admin" ? "Admin" : role.charAt(0).toUpperCase() + role.slice(1)}
+        </button>
+      );
+    });
   const subtitleResolved = useMemo(() => {
     if (isClubPublic) return subtitle ?? null;
     const club = activeClub?.name || null;
@@ -74,7 +113,6 @@ export default function AppHeader({
 
   const debugClubId = activeClub?.id || null;
   const debugMembershipRole = perms.role;
-  const debugRouteRole = activeRole;
 
   const handleSignOut = async () => {
     if (isSigningOut) return;
@@ -257,29 +295,7 @@ export default function AppHeader({
                       </button>
                     </div>
                     <div className="flex gap-2">
-                      {(perms.isAdmin ? ["admin", "trainer", "player"] : perms.isTrainer ? ["trainer", "player"] : ["player"]).map((r) => {
-                        const isActive =
-                          (activeRole || (perms.isAdmin ? "admin" : perms.isTrainer ? "trainer" : "player")) === r;
-                        return (
-                          <button
-                            key={r}
-                            type="button"
-                            onClick={() => {
-                              localStorage.setItem("one4team.activeRole", r);
-                              notifyMembershipsUpdated();
-                              setOpen(false);
-                              navigate(`/dashboard/${r}`);
-                            }}
-                            className={`flex-1 px-3 py-2 rounded-2xl text-xs font-medium border transition-colors ${
-                              isActive
-                                ? "bg-primary/10 text-primary border-primary/20"
-                                : "bg-background/40 text-foreground border-border/60 hover:bg-muted/30"
-                            }`}
-                          >
-                            {r.charAt(0).toUpperCase() + r.slice(1)}
-                          </button>
-                        );
-                      })}
+                      {renderPreviewPersonaButtons()}
                     </div>
                   </div>
                 ) : null}
@@ -371,29 +387,7 @@ export default function AppHeader({
                     </button>
                   </div>
                   <div className="flex gap-2">
-                    {(perms.isAdmin ? ["admin", "trainer", "player"] : perms.isTrainer ? ["trainer", "player"] : ["player"]).map((r) => {
-                      const isActive =
-                        (activeRole || (perms.isAdmin ? "admin" : perms.isTrainer ? "trainer" : "player")) === r;
-                      return (
-                        <button
-                          key={r}
-                          type="button"
-                          onClick={() => {
-                            localStorage.setItem("one4team.activeRole", r);
-                            notifyMembershipsUpdated();
-                            setOpen(false);
-                            navigate(`/dashboard/${r}`);
-                          }}
-                          className={`flex-1 px-3 py-2 rounded-2xl text-xs font-medium border transition-colors ${
-                            isActive
-                              ? "bg-primary/10 text-primary border-primary/20"
-                              : "bg-background/40 text-foreground border-border/60 hover:bg-muted/30"
-                          }`}
-                        >
-                          {r.charAt(0).toUpperCase() + r.slice(1)}
-                        </button>
-                      );
-                    })}
+                    {renderPreviewPersonaButtons()}
                   </div>
                 </div>
 

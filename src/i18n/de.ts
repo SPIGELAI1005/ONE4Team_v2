@@ -1,5 +1,6 @@
 // ─── German translations ───
 import type { Translations } from "./en";
+import { operatorDe } from "./operator/de";
 
 export const de: Translations = {
   // ─── Allgemein ───
@@ -5424,6 +5425,8 @@ export const de: Translations = {
       sourcesTitle: "Quellen",
     },
   },
+
+  operator: operatorDe,
 
   financial: {
     sectionTitle: "Vereinsfinanzen",

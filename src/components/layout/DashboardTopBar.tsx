@@ -20,13 +20,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { usePermissions } from "@/hooks/use-permissions";
-import { useActiveClub, notifyMembershipsUpdated } from "@/hooks/use-active-club";
+import { useActiveClub } from "@/hooks/use-active-club";
 import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/hooks/use-language";
 import { useDashboardNav } from "@/hooks/use-dashboard-nav";
 import { useDashboardNavLabels } from "@/hooks/use-dashboard-nav-labels";
 import { useDashboardClubPageLink } from "@/hooks/use-dashboard-club-page-link";
+import { useActiveDashboardPersonaSlug } from "@/hooks/use-active-dashboard-persona-slug";
 import { pathnameToNavId } from "@/lib/dashboard-nav";
+import { getDashboardPersonaOptions, type DashboardRole } from "@/lib/rbac-config";
+import {
+  isSameDashboardPersona,
+  switchDashboardPersona,
+} from "@/lib/switch-dashboard-persona";
 import { DashboardTopBarContext } from "@/contexts/dashboard-top-bar-context";
 import ClubSwitcher from "@/components/dashboard/ClubSwitcher";
 import NotificationBell from "@/components/dashboard/NotificationBell";
@@ -47,15 +53,27 @@ export default function DashboardTopBar() {
   const { user, signOut } = useAuth();
   const { t } = useLanguage();
   const navLabels = useDashboardNavLabels();
-  const { sidebarItems, roleLabel, personaSlug } = useDashboardNav(navLabels);
+  const { sidebarItems, roleLabel } = useDashboardNav(navLabels);
   const clubPageLink = useDashboardClubPageLink();
+  const activePersonaSlug = useActiveDashboardPersonaSlug();
+
+  const previewPersonaOptions = useMemo(() => {
+    if (perms.isAdmin) return getDashboardPersonaOptions("club_admin");
+    if (perms.isTrainer) return getDashboardPersonaOptions("trainer");
+    return getDashboardPersonaOptions(perms.role);
+  }, [perms.isAdmin, perms.isTrainer, perms.role]);
+
+  const handlePreviewPersonaSwitch = (role: DashboardRole) => {
+    switchDashboardPersona(role, navigate);
+    setOpen(false);
+  };
 
   const [open, setOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
 
-  const activeRole = (typeof window !== "undefined" ? localStorage.getItem("one4team.activeRole") : null) || null;
+  const debugRouteRole = activePersonaSlug;
 
   const subtitleResolved = useMemo(() => {
     if (config?.greeting) return config.greeting;
@@ -74,7 +92,6 @@ export default function DashboardTopBar() {
 
   const debugClubId = activeClub?.id || null;
   const debugMembershipRole = perms.role;
-  const debugRouteRole = activeRole;
 
   useEffect(() => {
     if (!user) {
@@ -317,31 +334,26 @@ export default function DashboardTopBar() {
                 </button>
               </div>
               <div className="flex gap-2">
-                {(perms.isAdmin ? ["admin", "trainer", "player"] : perms.isTrainer ? ["trainer", "player"] : ["player"]).map(
-                  (r) => {
-                    const isActive =
-                      (activeRole || (perms.isAdmin ? "admin" : perms.isTrainer ? "trainer" : "player")) === r;
-                    return (
-                      <button
-                        key={r}
-                        type="button"
-                        onClick={() => {
-                          localStorage.setItem("one4team.activeRole", r);
-                          notifyMembershipsUpdated();
-                          setOpen(false);
-                          navigate(`/dashboard/${r}`);
-                        }}
-                        className={`flex-1 px-3 py-2 rounded-2xl text-xs font-medium border transition-colors ${
-                          isActive
-                            ? "bg-primary/10 text-primary border-primary/20"
-                            : "bg-background/40 text-foreground border-border/60 hover:bg-muted/30"
-                        }`}
-                      >
-                        {r.charAt(0).toUpperCase() + r.slice(1)}
-                      </button>
-                    );
-                  },
-                )}
+                {previewPersonaOptions.map((role) => {
+                  const isActive = isSameDashboardPersona(
+                    activePersonaSlug,
+                    role,
+                  );
+                  return (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => handlePreviewPersonaSwitch(role)}
+                      className={`flex-1 px-3 py-2 rounded-2xl text-xs font-medium border transition-colors ${
+                        isActive
+                          ? "bg-primary/10 text-primary border-primary/20"
+                          : "bg-background/40 text-foreground border-border/60 hover:bg-muted/30"
+                      }`}
+                    >
+                      {role === "club_admin" ? "Admin" : role.charAt(0).toUpperCase() + role.slice(1)}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

@@ -1,6 +1,4 @@
 import type { NavigateFunction } from "react-router-dom";
-import type { ClubOption } from "@/hooks/use-active-club";
-import { notifyMembershipsUpdated } from "@/hooks/use-active-club";
 import { defaultPartnerPortalPath, PARTNER_PORTAL_ROUTES } from "@/lib/partner-portal-routes";
 import {
   isExternalRole,
@@ -33,37 +31,13 @@ export function publishDashboardPersonaChange(role: DashboardRole): void {
   );
 }
 
-function pickClubForPersona(persona: DashboardRole, clubs: ClubOption[]): string | null {
-  if (!clubs.length) return null;
-
-  const score = (club: ClubOption): number => {
-    const legacy = club.role?.toLowerCase() ?? "";
-    const normalized = normalizeDashboardRole(club.role);
-
-    if (persona === "club_admin") {
-      if (legacy === "admin" || normalized === "club_admin") return 100;
-      return 0;
-    }
-    if (persona === "trainer") {
-      if (legacy === "trainer" || normalized === "trainer") return 80;
-      if (legacy === "admin") return 60;
-      return 0;
-    }
-    if (persona === "player") {
-      if (normalized === "player") return 70;
-      if (legacy === "trainer" || legacy === "admin") return 40;
-      return 0;
-    }
-    if (isExternalRole(persona)) {
-      if (legacy === persona) return 90;
-      return 10;
-    }
-    return legacy === persona ? 50 : 0;
-  };
-
-  const ranked = [...clubs].sort((a, b) => score(b) - score(a));
-  const best = ranked.find((club) => score(club) > 0);
-  return best?.id ?? clubs[0]?.id ?? null;
+export function isSameDashboardPersona(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): boolean {
+  const left = a ? normalizeDashboardRole(a) : null;
+  const right = b ? normalizeDashboardRole(b) : null;
+  return left !== null && right !== null && left === right;
 }
 
 /** Route to open after switching persona (dashboard or partner portal home). */
@@ -78,37 +52,40 @@ export function resolvePersonaSwitchTarget(role: DashboardRole): string {
   return `/dashboard/${normalized}`;
 }
 
-export interface SwitchDashboardPersonaOptions {
-  clubs?: ClubOption[];
-  setActiveClub?: (clubId: string) => void;
-  notifyMemberships?: () => void;
-}
-
 /**
- * Persist dashboard persona, align active club when switching to club roles,
- * and navigate to the correct portal home.
+ * Persist dashboard persona only — does not change active club or refetch memberships.
+ * Dashboard persona is a view mode for the club the user already selected.
  */
-export function switchDashboardPersona(
-  role: DashboardRole,
-  navigate: NavigateFunction,
-  options?: SwitchDashboardPersonaOptions,
-): DashboardRole | null {
+export function persistDashboardPersona(role: DashboardRole): DashboardRole | null {
   const normalized = normalizeDashboardRole(role);
   if (!normalized) return null;
 
   localStorage.setItem(ACTIVE_DASHBOARD_PERSONA_KEY, normalized);
   localStorage.removeItem("one4team_role");
   publishDashboardPersonaChange(normalized);
+  return normalized;
+}
 
-  if (!isExternalRole(normalized) && options?.clubs?.length) {
-    const clubId = pickClubForPersona(normalized, options.clubs);
-    if (clubId) options.setActiveClub?.(clubId);
-  }
+export interface SwitchDashboardPersonaOptions {
+  /** When false, only persist persona (e.g. Settings). Default true. */
+  navigateToHome?: boolean;
+}
 
-  (options?.notifyMemberships ?? notifyMembershipsUpdated)();
+/**
+ * Persist dashboard persona and optionally navigate to the matching dashboard home.
+ * Never changes the active club — use ClubSwitcher for that.
+ */
+export function switchDashboardPersona(
+  role: DashboardRole,
+  navigate: NavigateFunction,
+  options?: SwitchDashboardPersonaOptions,
+): DashboardRole | null {
+  const normalized = persistDashboardPersona(role);
+  if (!normalized) return null;
 
-  const target = resolvePersonaSwitchTarget(normalized);
-  navigate(target, { replace: true });
+  if (options?.navigateToHome === false) return normalized;
+
+  navigate(resolvePersonaSwitchTarget(normalized), { replace: true });
   return normalized;
 }
 

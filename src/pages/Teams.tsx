@@ -22,6 +22,7 @@ import { DashboardIosSegmentTabs } from "@/components/dashboard/DashboardIosSegm
 import { DashboardToolbarActions, type DashboardToolbarAction } from "@/components/dashboard/DashboardToolbarActions";
 import { resolveSportId, resolveSportLabel, SPORTS_CATALOG } from "@/lib/sports";
 import { useLocation } from "react-router-dom";
+import { trackUsageEvent } from "@/lib/usage-events";
 import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
 import { AiAgentTeamsShortcuts } from "@/components/ai-agent/AiAgentTeamsShortcuts";
 import { useRegisterAiAgentContext } from "@/hooks/use-register-ai-agent-context";
@@ -1904,6 +1905,14 @@ const Teams = () => {
         .from("team_players")
         .insert(playersToAdd.map((membershipId) => ({ team_id: teamId, membership_id: membershipId })));
       if (error) throw error;
+      if (clubId) {
+        trackUsageEvent({
+          eventName: "player_created",
+          clubId,
+          moduleKey: "trainings",
+          metadata: { count: playersToAdd.length },
+        });
+      }
     }
 
     if (supportsTeamCoachesTable) {
@@ -1965,6 +1974,12 @@ const Teams = () => {
       .single();
     if (error) { toast({ title: t.teamsPage.common.error, description: error.message, variant: "destructive" }); return; }
     const createdTeam = data as Team;
+    trackUsageEvent({
+      eventName: "team_created",
+      clubId,
+      moduleKey: "trainings",
+      metadata: { source: "manual" },
+    });
     try {
       await persistTeamAssignments(createdTeam.id);
       if (supportsTeamCoachesTable && supportsTeamPublicPrivacy) {
@@ -2144,6 +2159,12 @@ const Teams = () => {
     const { data, error } = await createSession();
     if (error) { toast({ title: t.teamsPage.common.error, description: error.message, variant: "destructive" }); return; }
     const createdSession = data as unknown as TrainingSession;
+    trackUsageEvent({
+      eventName: "training_created",
+      clubId,
+      moduleKey: "trainings",
+      metadata: { has_team: Boolean(payload.team_id) },
+    });
     setSessions(prev => [...prev, createdSession]);
     const createdBookings = await syncSessionBookings({
       title: payload.title,

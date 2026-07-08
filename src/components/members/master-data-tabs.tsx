@@ -208,11 +208,6 @@ export function MasterDataTabs({
     clubcard: labels.clubCard,
   };
 
-  const maxFields = FIELD_TABS.reduce((max, { key }) => {
-    const count = MEMBER_MASTER_FIELDS.filter((f) => f.group === key).length;
-    return Math.max(max, count);
-  }, 0);
-
   const handleGenerateId = () => {
     const id = `O4T-${Date.now().toString(36).toUpperCase().slice(-6)}${Math.random().toString(36).slice(2, 4).toUpperCase()}`;
     onChange?.("internal_club_number", id);
@@ -254,17 +249,14 @@ export function MasterDataTabs({
 
   const allTabs = [...FIELD_TABS, CARD_TAB];
 
-  const cols = compact ? 3 : 4;
-  const maxRows = Math.ceil(maxFields / cols);
-  const rowHeight = readOnly ? 64 : 72;
-  const gapPx = 12;
-  const minH = maxRows * rowHeight + (maxRows - 1) * gapPx;
-  // Keep the panel height stable so the page doesn't jump when switching tabs.
-  // Content inside can scroll if it exceeds the fixed height.
-  const panelH = compact ? 520 : 560;
+  const panelHeightClass = compact ? "lg:h-[520px]" : "lg:h-[560px]";
+  const fieldGridClass = compact
+    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
   const photoUrlColSpan = compact
-    ? "col-span-2 sm:col-span-3"
-    : "col-span-2 sm:col-span-3 md:col-span-4";
+    ? "col-span-1 sm:col-span-2 lg:col-span-3"
+    : "col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-4";
+  const selectTriggerClass = "h-10 w-full min-w-0 text-sm";
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -306,17 +298,16 @@ export function MasterDataTabs({
           <TabsContent key={key} value={key} className="mt-0 w-full min-w-0 outline-none">
             <div
               className={cn(
-                "w-full min-w-0 rounded-2xl border border-border/40 bg-muted/10 p-3",
+                "w-full min-w-0 overflow-hidden rounded-2xl border border-border/40 bg-muted/10 p-3 max-lg:p-4",
+                panelHeightClass,
               )}
-              style={{ height: panelH }}
             >
               <div
                 className={cn(
-                  "grid w-full min-w-0 gap-3 pr-1",
-                  "overflow-y-auto",
-                  compact ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4",
+                  "grid w-full min-w-0 gap-3 pr-0 sm:pr-1",
+                  fieldGridClass,
+                  "max-lg:overflow-visible lg:max-h-full lg:overflow-y-auto",
                 )}
-                style={{ minHeight: minH }}
               >
                 {fields.map((field) => {
                   const val = values[field.key];
@@ -364,10 +355,10 @@ export function MasterDataTabs({
 
                 if (field.key === "sex") {
                   return (
-                    <div key={field.key} className="rounded-xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3 space-y-2">
+                    <div key={field.key} className="min-w-0 rounded-xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3 space-y-2">
                       <label className={cn("text-xs font-medium", accent)}>{formatFieldLabel(field.column)}</label>
                       <Select value={String(val ?? "")} onValueChange={(v) => onChange?.(field.key, v || null)}>
-                        <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="-" /></SelectTrigger>
+                        <SelectTrigger className={selectTriggerClass}><SelectValue placeholder="-" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="male">Male</SelectItem>
                           <SelectItem value="female">Female</SelectItem>
@@ -381,10 +372,10 @@ export function MasterDataTabs({
 
                 if (field.key === "membership_kind") {
                   return (
-                    <div key={field.key} className="rounded-xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3 space-y-2">
+                    <div key={field.key} className="min-w-0 rounded-xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3 space-y-2">
                       <label className={cn("text-xs font-medium", accent)}>{formatFieldLabel(field.column)}</label>
                       <Select value={String(val ?? "")} onValueChange={(v) => onChange?.(field.key, v || null)}>
-                        <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="-" /></SelectTrigger>
+                        <SelectTrigger className={selectTriggerClass}><SelectValue placeholder="-" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="active_participant">Active participant</SelectItem>
                           <SelectItem value="supporting_member">Supporting member</SelectItem>
@@ -396,10 +387,10 @@ export function MasterDataTabs({
 
                 if (field.key === "strong_leg" || field.key === "strong_hand") {
                   return (
-                    <div key={field.key} className="rounded-xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3 space-y-2">
+                    <div key={field.key} className="min-w-0 rounded-xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3 space-y-2">
                       <label className={cn("text-xs font-medium", accent)}>{formatFieldLabel(field.column)}</label>
                       <Select value={String(val ?? "")} onValueChange={(v) => onChange?.(field.key, v || null)}>
-                        <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="-" /></SelectTrigger>
+                        <SelectTrigger className={selectTriggerClass}><SelectValue placeholder="-" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="left">Left</SelectItem>
                           <SelectItem value="right">Right</SelectItem>
@@ -413,19 +404,21 @@ export function MasterDataTabs({
                 if (field.key === "photo_url" && avatarUpload) {
                   const urlStr = val != null ? String(val) : "";
                   return (
-                    <div key={field.key} className={cn("space-y-2", photoUrlColSpan)}>
-                      <label className={cn("text-sm", accent)}>{formatFieldLabel(field.column)}</label>
-                      <div className="text-xs text-muted-foreground">{labels.avatarPreview}</div>
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <div className="w-14 h-14 rounded-2xl border border-border/60 bg-background/60 overflow-hidden flex items-center justify-center shrink-0">
+                    <div key={field.key} className={cn("min-w-0 space-y-3", photoUrlColSpan)}>
+                      <div>
+                        <label className={cn("text-sm font-medium", accent)}>{formatFieldLabel(field.column)}</label>
+                        <div className="mt-1 text-xs text-muted-foreground">{labels.avatarPreview}</div>
+                      </div>
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                        <div className="w-16 h-16 rounded-2xl border border-border/60 bg-background/60 overflow-hidden flex items-center justify-center shrink-0">
                           {urlStr ? (
                             <img src={urlStr} alt="" className="w-full h-full object-cover" />
                           ) : (
-                            <UserCircle2 className="w-8 h-8 text-muted-foreground" />
+                            <UserCircle2 className="w-9 h-9 text-muted-foreground" />
                           )}
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                          <label className="inline-flex">
+                        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:flex-wrap">
+                          <label className="inline-flex w-full sm:w-auto">
                             <input
                               type="file"
                               accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
@@ -437,7 +430,7 @@ export function MasterDataTabs({
                                 event.currentTarget.value = "";
                               }}
                             />
-                            <span className="inline-flex items-center rounded-md border border-input bg-background px-3 py-2 text-xs font-medium cursor-pointer hover:bg-accent hover:text-accent-foreground">
+                            <span className="inline-flex w-full items-center justify-center rounded-md border border-input bg-background px-3 py-2.5 text-xs font-medium cursor-pointer hover:bg-accent hover:text-accent-foreground sm:w-auto">
                               {avatarUpload.uploading ? (
                                 <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
                               ) : (
@@ -450,7 +443,7 @@ export function MasterDataTabs({
                             <Button
                               type="button"
                               variant="outline"
-                              className="h-9 text-xs"
+                              className="h-10 w-full text-xs sm:w-auto"
                               onClick={() => avatarUpload.onRemove?.()}
                               disabled={avatarUpload.uploading}
                             >
@@ -459,10 +452,10 @@ export function MasterDataTabs({
                           ) : null}
                         </div>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-xs text-muted-foreground mb-1">{labels.avatarUrl}</div>
                         <Input
-                          className="h-10 text-sm"
+                          className="h-10 w-full min-w-0 text-sm"
                           value={urlStr}
                           onChange={(e) => onChange?.(field.key, e.target.value || null)}
                           placeholder="https://..."
@@ -477,18 +470,18 @@ export function MasterDataTabs({
                 const isLong = isLongTextField(String(field.key));
 
                 return (
-                  <div key={field.key} className="rounded-xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3 space-y-2">
+                  <div key={field.key} className="min-w-0 rounded-xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3 space-y-2">
                     <label className={cn("text-xs font-medium", accent)}>{formatFieldLabel(field.column)}</label>
                     {isLong ? (
                       <Textarea
-                        className="text-sm min-h-[96px] rounded-xl bg-background/50"
+                        className="w-full min-w-0 text-sm min-h-[96px] rounded-xl bg-background/50"
                         value={val != null ? String(val) : ""}
                         placeholder="-"
                         onChange={(e) => onChange?.(field.key, e.target.value || null)}
                       />
                     ) : (
                       <Input
-                        className="h-10 text-sm rounded-xl bg-background/50"
+                        className="h-10 w-full min-w-0 text-sm rounded-xl bg-background/50"
                         type={isDate ? "date" : isNumber ? "number" : "text"}
                         value={val != null ? String(val) : ""}
                         placeholder="-"
@@ -514,7 +507,7 @@ export function MasterDataTabs({
       })}
 
       <TabsContent value="clubcard" className="mt-0 w-full min-w-0 outline-none">
-        <div style={{ height: panelH }} className="flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/40 bg-muted/10 p-3">
+        <div className={cn("flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/40 bg-muted/10 p-3 max-lg:p-4", panelHeightClass)}>
           <p className="text-sm text-muted-foreground mb-4">{labels.clubCardHint}</p>
 
           {!readOnly && (

@@ -1,4 +1,6 @@
 // ─── English translations ───
+import { operatorEn } from "./operator/en";
+
 export const en = {
   // ─── Common / Shared ───
   common: {
@@ -5403,6 +5405,8 @@ export const en = {
       sourcesTitle: "Sources",
     },
   },
+
+  operator: operatorEn,
 
   financial: {
     sectionTitle: "Club finances",

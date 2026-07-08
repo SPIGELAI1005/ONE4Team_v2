@@ -11,7 +11,11 @@ import {
   PARTNER_PORTAL_ROUTES,
   portalPathImpliedPersonaSlug,
 } from "@/lib/partner-portal-routes";
-import { isExternalRole, normalizeDashboardRole, type DashboardRole } from "@/lib/rbac-config";
+import {
+  isExternalRole,
+  normalizeDashboardRole,
+  type DashboardRole,
+} from "@/lib/rbac-config";
 import { readActiveDashboardPersonaSlug } from "@/lib/switch-dashboard-persona";
 
 const ACTIVE_ROLE_KEY = "one4team.activeRole";
@@ -39,12 +43,23 @@ export function useModuleGateRole(): DashboardRole | null {
   const perms = usePermissions();
   const personaRaw = useActiveDashboardPersonaRaw();
 
+  const permissionsLoading = perms.activeClubLoading || perms.assignmentsLoading;
+
   return useMemo(
     () =>
       resolveModuleGateRole(perms.role, perms.assignments, personaRaw, {
-        treatAsClubAdmin: perms.isAdmin && !perms.assignmentsLoading,
+        treatAsClubAdmin:
+          perms.isAdmin ||
+          normalizeDashboardRole(perms.role) === "club_admin",
+        permissionsLoading,
       }),
-    [perms.role, perms.assignments, perms.isAdmin, perms.assignmentsLoading, personaRaw],
+    [
+      perms.role,
+      perms.assignments,
+      perms.isAdmin,
+      permissionsLoading,
+      personaRaw,
+    ],
   );
 }
 

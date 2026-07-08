@@ -16,9 +16,11 @@ import { CookieConsent } from "@/components/ui/cookie-consent";
 import { RequireAdmin } from "@/components/auth/require-role";
 import { RequireModule } from "@/components/auth/require-module";
 import { RequireAnyModule } from "@/components/auth/require-any-module";
+import { RequireOperator } from "@/components/operator/RequireOperator";
 import { ClubOnlyRoute, PartnerOnlyRoute, PersonaAwareAiRedirect } from "@/components/routing/PersonaPortalGate";
 import { PlanGate } from "@/components/plan-gate";
 import { dashboardRouteTransitionKey } from "@/lib/dashboard-nav";
+import { operatorRouteTransitionKey } from "@/lib/operator-nav";
 import { SupabaseConfigBanner, SupabaseConfigErrorScreen } from "@/components/SupabaseConfigBanner";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
 
@@ -28,6 +30,21 @@ const Auth = lazy(() => import("./pages/Auth"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const DashboardLayout = lazy(() => import("./components/dashboard/DashboardLayout"));
 const DashboardContent = lazy(() => import("./components/dashboard/DashboardContent"));
+const OperatorLayout = lazy(() => import("./components/operator/OperatorLayout").then((module) => ({ default: module.OperatorLayout })));
+const OperatorOverview = lazy(() => import("./pages/operator/OperatorOverview"));
+const OperatorClubs = lazy(() => import("./pages/operator/OperatorClubs"));
+const OperatorClubDetail = lazy(() => import("./pages/operator/OperatorClubDetail"));
+const OperatorUsers = lazy(() => import("./pages/operator/OperatorUsers"));
+const OperatorModules = lazy(() => import("./pages/operator/OperatorModules"));
+const OperatorAnalytics = lazy(() => import("./pages/operator/OperatorAnalytics"));
+const OperatorFinancials = lazy(() => import("./pages/operator/OperatorFinancials"));
+const OperatorMarketplace = lazy(() => import("./pages/operator/OperatorMarketplace"));
+const OperatorLegal = lazy(() => import("./pages/operator/OperatorLegal"));
+const OperatorPerformance = lazy(() => import("./pages/operator/OperatorPerformance"));
+const OperatorIssues = lazy(() => import("./pages/operator/OperatorIssues"));
+const OperatorAudit = lazy(() => import("./pages/operator/OperatorAudit"));
+const OperatorSupport = lazy(() => import("./pages/operator/OperatorSupport"));
+const OperatorSettings = lazy(() => import("./pages/operator/OperatorSettings"));
 const PublicClubLayout = lazy(() => import("./components/public-club/public-club-layout"));
 const PublicClubHomePage = lazy(() => import("./pages/public-club/public-club-home-page"));
 const PublicClubNewsPage = lazy(() => import("./pages/public-club/public-club-news-page"));
@@ -83,7 +100,6 @@ const Impressum = lazy(() => import("./pages/Impressum"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Health = lazy(() => import("./pages/Health"));
 const Crash = lazy(() => import("./pages/Crash"));
-const PlatformAdmin = lazy(() => import("./pages/PlatformAdmin"));
 const GuidedSetup = lazy(() => import("./pages/GuidedSetup"));
 const TrainingPlanImport = lazy(() => import("./pages/TrainingPlanImport"));
 const CoachPlaceholderResolution = lazy(() => import("./pages/CoachPlaceholderResolution"));
@@ -121,7 +137,11 @@ function RouteFallback() {
 
 const AnimatedRoutes = () => {
   const location = useLocation();
-  const routeTransitionKey = dashboardRouteTransitionKey(location.pathname);
+  const dashboardTransitionKey = dashboardRouteTransitionKey(location.pathname);
+  const routeTransitionKey =
+    dashboardTransitionKey === location.pathname
+      ? operatorRouteTransitionKey(location.pathname)
+      : dashboardTransitionKey;
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={routeTransitionKey}>
@@ -601,14 +621,163 @@ const AnimatedRoutes = () => {
         </Route>
 
         <Route
-          path="/platform-admin"
+          path="/operator"
           element={
             <RequireAuth>
-              <Suspense fallback={<RouteFallback />}>
-                <PlatformAdmin />
-              </Suspense>
+              <RequireOperator>
+                <Suspense fallback={<RouteFallback />}>
+                  <OperatorLayout />
+                </Suspense>
+              </RequireOperator>
             </RequireAuth>
           }
+        >
+          <Route
+            index
+            element={
+              <RequireOperator requiredPermission="operator.overview.read">
+                <Suspense fallback={<RouteFallback />}>
+                  <OperatorOverview />
+                </Suspense>
+              </RequireOperator>
+            }
+          />
+          <Route
+            path="clubs"
+            element={
+              <RequireOperator requiredPermission="operator.clubs.read">
+                <Suspense fallback={<RouteFallback />}>
+                  <OperatorClubs />
+                </Suspense>
+              </RequireOperator>
+            }
+          />
+          <Route
+            path="clubs/:clubId"
+            element={
+              <RequireOperator requiredPermission="operator.clubs.read">
+                <Suspense fallback={<RouteFallback />}>
+                  <OperatorClubDetail />
+                </Suspense>
+              </RequireOperator>
+            }
+          />
+          <Route
+            path="users"
+            element={
+              <RequireOperator requiredPermission="operator.users.read">
+                <Suspense fallback={<RouteFallback />}>
+                  <OperatorUsers />
+                </Suspense>
+              </RequireOperator>
+            }
+          />
+          <Route
+            path="modules"
+            element={
+              <RequireOperator requiredPermission="operator.modules.read">
+                <Suspense fallback={<RouteFallback />}>
+                  <OperatorModules />
+                </Suspense>
+              </RequireOperator>
+            }
+          />
+          <Route
+            path="analytics"
+            element={
+              <RequireOperator requiredPermission="operator.analytics.read">
+                <Suspense fallback={<RouteFallback />}>
+                  <OperatorAnalytics />
+                </Suspense>
+              </RequireOperator>
+            }
+          />
+          <Route
+            path="financials"
+            element={
+              <RequireOperator requiredPermission="operator.analytics.read">
+                <Suspense fallback={<RouteFallback />}>
+                  <OperatorFinancials />
+                </Suspense>
+              </RequireOperator>
+            }
+          />
+          <Route
+            path="marketplace"
+            element={
+              <RequireOperator requiredPermission="operator.analytics.read">
+                <Suspense fallback={<RouteFallback />}>
+                  <OperatorMarketplace />
+                </Suspense>
+              </RequireOperator>
+            }
+          />
+          <Route
+            path="performance"
+            element={
+              <RequireOperator requiredPermission="operator.logs.read">
+                <Suspense fallback={<RouteFallback />}>
+                  <OperatorPerformance />
+                </Suspense>
+              </RequireOperator>
+            }
+          />
+          <Route
+            path="issues"
+            element={
+              <RequireOperator requiredPermission="operator.logs.read">
+                <Suspense fallback={<RouteFallback />}>
+                  <OperatorIssues />
+                </Suspense>
+              </RequireOperator>
+            }
+          />
+          <Route
+            path="audit"
+            element={
+              <RequireOperator requiredPermission="operator.audit.read">
+                <Suspense fallback={<RouteFallback />}>
+                  <OperatorAudit />
+                </Suspense>
+              </RequireOperator>
+            }
+          />
+          <Route
+            path="support"
+            element={
+              <RequireOperator requiredPermission="operator.support.use">
+                <Suspense fallback={<RouteFallback />}>
+                  <OperatorSupport />
+                </Suspense>
+              </RequireOperator>
+            }
+          />
+          <Route
+            path="legal"
+            element={
+              <RequireOperator requiredPermission="operator.settings.read">
+                <Suspense fallback={<RouteFallback />}>
+                  <OperatorLegal />
+                </Suspense>
+              </RequireOperator>
+            }
+          />
+          <Route
+            path="settings"
+            element={
+              <RequireOperator requiredPermission="operator.settings.read">
+                <Suspense fallback={<RouteFallback />}>
+                  <OperatorSettings />
+                </Suspense>
+              </RequireOperator>
+            }
+          />
+          <Route path="*" element={<Navigate to="/operator" replace />} />
+        </Route>
+
+        <Route
+          path="/platform-admin"
+          element={<Navigate to="/operator" replace />}
         />
         <Route
           path="/guided-setup"

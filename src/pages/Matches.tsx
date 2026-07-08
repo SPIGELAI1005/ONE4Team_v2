@@ -20,6 +20,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabaseErrorMessage, isTransientSupabaseMessage } from "@/lib/supabase-error-message";
 import { useLanguage } from "@/hooks/use-language";
 import { useActiveClub } from "@/hooks/use-active-club";
+import { trackUsageEvent } from "@/lib/usage-events";
 import { useMembershipId } from "@/hooks/use-membership-id";
 import { useModuleDataScope } from "@/hooks/use-module-data-scope";
 import {
@@ -636,6 +637,12 @@ const Matches = () => {
       opponent_logo_url: opponentLogoUrl,
     }).select("*, competitions(name), teams(name)").single();
     if (error) { toast({ title: t.common.error, description: error.message, variant: "destructive" }); return; }
+    trackUsageEvent({
+      eventName: "match_created",
+      clubId,
+      moduleKey: "matches",
+      metadata: { has_team: Boolean(teamId) },
+    });
     setMatchesTotalCount((previous) => previous + 1);
     if (matchesPage === 1) {
       setMatches(prev => [data as unknown as Match, ...prev].slice(0, MATCHES_PAGE_SIZE));

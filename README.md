@@ -30,6 +30,7 @@ Club/team management SaaS with an iOS-style glass UI, full internationalization 
 - **Support & FAQ (`/support`)**: Expanded FAQs for AI 4 T, billing trials, imports, and reports — written for club users (no backend setup jargon).
 - **Partner showcase**: TSV Allach 09 + Sportecke München with images and testimonials
 - **Test Mode Banner**: Dismissible beta disclaimer across all pages
+- **Operator Control Center (`/operator`, 2026-07-08)**: Internal platform admin for `platform_users` — clubs, users, modules, analytics, **financials** (MRR, editable cost model, development investment charts), marketplace, performance, issues, audit, support, **legal** (editable templates + PDF), settings. Recharts on overview/analytics/financials; full EN/DE. See **`docs/operator-control-center.md`**.
 
 ## Stack
 - Vite + React + TypeScript

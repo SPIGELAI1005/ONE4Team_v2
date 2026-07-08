@@ -36,7 +36,7 @@ import {
   DASHBOARD_TYPE_MICRO,
 } from "@/lib/dashboard-page-shell";
 import { DashboardIosSegmentTabs } from "@/components/dashboard/DashboardIosSegmentTabs";
-import { switchDashboardPersona as applyDashboardPersonaSwitch } from "@/lib/switch-dashboard-persona";
+import { persistDashboardPersona } from "@/lib/switch-dashboard-persona";
 import { useActiveDashboardPersonaSlug } from "@/hooks/use-active-dashboard-persona-slug";
 
 const LS_NOTIF_KEY = "one4team.notifications";
@@ -107,7 +107,7 @@ function formatRoleLabel(role: string): string {
 
 export default function Settings() {
   const { user, changeEmail, signOut } = useAuth();
-  const { activeClubId, activeClub, clubs, loading: activeClubLoading, refetchMemberships, setActiveClubId } = useActiveClub();
+  const { activeClubId, activeClub, clubs, loading: activeClubLoading } = useActiveClub();
   const perms = usePermissions();
   const { t, setLanguage, language } = useLanguage();
   const { toast } = useToast();
@@ -197,13 +197,17 @@ export default function Settings() {
 
   const activePersonaSlug = useActiveDashboardPersonaSlug();
 
+  const clubPersonaSwitchOptions = useMemo(() => {
+    if (!activeClubRoleSummary) return [];
+    const fromMembership = activeClubRoleSummary.effectiveRoles
+      .map((role) => normalizeDashboardRole(role))
+      .filter((role): role is DashboardRole => Boolean(role));
+    return Array.from(new Set<DashboardRole>([...dashboardPersonaOptions, ...fromMembership]));
+  }, [activeClubRoleSummary, dashboardPersonaOptions]);
+
   const switchDashboardPersona = useCallback(
     (role: DashboardRole) => {
-      const switched = applyDashboardPersonaSwitch(role, navigate, {
-        clubs,
-        setActiveClub: setActiveClubId,
-        notifyMemberships: () => void refetchMemberships(),
-      });
+      const switched = persistDashboardPersona(role);
       if (!switched) return;
       toast({
         title: t.settingsPage.roleSwitchToastTitle,
@@ -213,7 +217,7 @@ export default function Settings() {
         ),
       });
     },
-    [clubs, navigate, refetchMemberships, setActiveClubId, t.settingsPage.roleSwitchToastDesc, t.settingsPage.roleSwitchToastTitle, toast],
+    [t.settingsPage.roleSwitchToastDesc, t.settingsPage.roleSwitchToastTitle, toast],
   );
 
   useEffect(() => {
@@ -768,7 +772,7 @@ export default function Settings() {
                         <div className="rounded-xl border border-border/60 bg-background/30 p-3 space-y-2">
                           <div className={DASHBOARD_TYPE_MICRO}>{t.settingsPage.roleSwitchDashboardTitle}</div>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            {activeClubRoleSummary.effectiveRoles.map((role) => {
+                            {clubPersonaSwitchOptions.map((role) => {
                               const currentActive =
                                 activePersonaSlug || activeClubRoleSummary.baseRole;
                               const isSelected =
@@ -777,14 +781,14 @@ export default function Settings() {
                                 <button
                                   key={role}
                                   type="button"
-                                  onClick={() => switchDashboardPersona(role as DashboardRole)}
+                                  onClick={() => switchDashboardPersona(role)}
                                   className={`min-h-11 rounded-xl border px-2.5 py-2 text-center transition-all ${
                                     isSelected
                                       ? "border-primary bg-gradient-gold-static text-primary-foreground shadow-gold"
                                       : "border-border/60 bg-card/30 text-foreground hover:border-primary/30 hover:bg-primary/5"
                                   }`}
                                 >
-                                  <div className={`${DASHBOARD_TYPE_CAPTION} font-semibold`}>{formatRoleLabel(role)}</div>
+                                  <div className={`${DASHBOARD_TYPE_CAPTION} font-semibold`}>{formatDashboardRoleLabel(role)}</div>
                                   {isSelected && <div className="text-[9px] mt-0.5 opacity-90">{t.common.active}</div>}
                                 </button>
                               );

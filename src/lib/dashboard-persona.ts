@@ -8,6 +8,8 @@ import {
 export interface DashboardPersonaContext {
   /** When true, club-admin personas are allowed even if legacy membership is e.g. supplier. */
   treatAsClubAdmin?: boolean;
+  /** True while club / assignment permissions are still hydrating after navigation or club switch. */
+  permissionsLoading?: boolean;
 }
 
 /**
@@ -55,6 +57,14 @@ export function resolveModuleGateRole(
   ctx?: DashboardPersonaContext,
 ): ReturnType<typeof resolveDashboardRole> {
   const persona = normalizeDashboardRole(activePersonaRaw);
+
+  // Keep the user's explicit dashboard persona while permissions re-hydrate (club switch,
+  // membership refetch). Without this, menuRole briefly falls back to legacy membership
+  // (e.g. member) and the UI looks like the role switch was undone.
+  if (ctx?.permissionsLoading && persona) {
+    return persona;
+  }
+
   if (
     persona &&
     isDashboardPersonaAllowed(persona, legacyRole, assignments, ctx)

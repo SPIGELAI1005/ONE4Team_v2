@@ -17,10 +17,12 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { PublicClubAttendanceProvider } from "@/contexts/public-club-attendance-context";
 import { useLanguage } from "@/hooks/use-language";
+import { usePublicClubUsageTracking } from "@/hooks/use-public-club-usage-tracking";
 
 function PublicClubLayoutInner() {
   const { t } = useLanguage();
   const { loading, club, isPreviewMode, isDraftPreviewMode, draftPreviewBlocked } = usePublicClub();
+  usePublicClubUsageTracking(club?.id, isPreviewMode || isDraftPreviewMode);
 
   return (
     <PublicClubRouteSeoProvider>

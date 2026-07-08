@@ -1,6 +1,6 @@
 # ONE4Team — Comprehensive project audit
 
-**Audit date:** 2026-07-07 (updated for dashboard mobile polish: AI 4 T compact mobile chat + fixed composer, Messages dashboard mobile layout + gold composer, Teams Asset Map responsive grids, chat-bridge CORS; prior: legal audit + marketing polish — Privacy §5 sub-processors, AI 4 T legal copy, **41-day** trial, Pricing AI 4 T add-on, **`support@one4team.com`**, legal-page flicker fix; Sommerfest kickoff sync, tournament info, mobile club messaging)  
+**Audit date:** 2026-07-08 (updated for Operator Control Center — financials, development cost model, Recharts; prior: dashboard mobile polish…)  
 **Scope:** Codebase, architecture, UX/design, production readiness, competitive positioning, market value, and value-growth levers  
 **Primary reference (existing):** [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) — strict production-readiness review with risk register, readiness scores, and remediation sprints  
 
@@ -48,9 +48,9 @@ This document **extends** the ops audit with product, UX, competitive, and valua
 
 | Metric | Value | Notes |
 |--------|------:|-------|
-| TypeScript/TSX files (`src/`) | ~388 | Pages + components + lib |
-| Lines of code (`src/`) | ~84,000 | Excludes tests, config, SQL |
-| SQL migrations | 114 | Rich domain model; apply order critical |
+| TypeScript/TSX files (`src/`) | ~675 | Includes operator Control Center pages/components |
+| Lines of code (`src/`) | ~139,000 | Excludes tests, config; operator wave adds ~55k since prior audit |
+| SQL migrations | 171+ | Rich domain model; operator migrations `20260801*`; apply order critical |
 | Edge Functions (deployed set) | 6+ active | co-trainer, ai4team-agent, send-club-invite-email, chat-bridge, … |
 | Unit/integration test files | ~28 | Heavy on `src/lib/*`; light on pages |
 | E2E specs | 5 | smoke, protected routes, nav, continuity, error boundary |

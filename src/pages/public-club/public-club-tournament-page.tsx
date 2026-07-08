@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Loader2, Radio } from "lucide-react";
 import { PublicSommerfestTournamentBoard } from "@/components/sommerfest/public-sommerfest-tournament-board";
@@ -20,6 +20,7 @@ import {
 import { isTsvAllachClub } from "@/lib/is-tsv-allach-club";
 import { isSommerfestTournamentInProgress, hasSommerfestLiveMatches } from "@/lib/sommerfest-live-pulse";
 import { publicMatchStatusBadge } from "@/lib/public-club-match-display";
+import { trackUsageEvent } from "@/lib/usage-events";
 
 const REFRESH_MS = 20_000;
 
@@ -34,6 +35,18 @@ export default function PublicClubTournamentPage() {
 
   const isSommerfestRoute = tournamentSlug === SOMMERFEST_TOURNAMENT_SLUG;
   const showBoard = Boolean(club && isTsvAllachClub(club) && isSommerfestRoute);
+  const trackedTournamentRef = useRef(false);
+
+  useEffect(() => {
+    if (!club?.id || !showBoard || trackedTournamentRef.current) return;
+    trackedTournamentRef.current = true;
+    trackUsageEvent({
+      eventName: "tournament_opened",
+      clubId: club.id,
+      route: `${basePath}/tournament/${tournamentSlug}`,
+      metadata: { tournament_slug: tournamentSlug },
+    });
+  }, [basePath, club?.id, showBoard, tournamentSlug]);
 
   const loadMatches = useCallback(async () => {
     if (!club?.id || !showBoard) return;

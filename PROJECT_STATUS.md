@@ -1,9 +1,10 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-07-07 (dashboard mobile polish, AI 4 T UX, Messages, Asset Map, chat-bridge CORS)
+Last updated: 2026-07-08 (Operator Control Center — financials, charts, UX polish)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
+- **Operator Control Center (2026-07-08):** Platform admin at **`/operator`** — overview, clubs, users, modules, analytics, **financials** (MRR, cost model, development investment charts), marketplace, performance, issues, audit, support, **legal** (editable templates + PDF), settings. Recharts timelines and breakdowns; EN/DE i18n; scroll-to-top on nav; portaled metric tooltips. See **`CHANGELOG.md`** § **2026-07-08** and **`docs/operator-control-center.md`**.
 - channel-based communication hub with bridge connector foundation (WhatsApp/Telegram),
 - reliable chat send/retry UX, attachments, and search,
 - professional member import/invite workflows (Excel/CSV + validation),
@@ -51,6 +52,7 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - **Bug investigation remediation (2026-07-06):** Communication pagination count + i18n footer; dashboard nav dedupe; password reset origin **`redirectTo`**; Supabase config banner/prod gate; ESLint/CI green (309 unit tests); lazy analytics charts; RLS optional CI workflow; E2E auth helper; **`OPS-AUTH-URL-001`** ops checklist. See **`CHANGELOG.md`** § **2026-07-06 (Bug investigation…)**.
 - **Legal audit + marketing polish (2026-07-07):** Privacy/Terms/cookie copy for AI 4 T, Stripe, sub-processors; Privacy **13** sections; **`.legal-panel`** legal-page flicker fix; **41-day** trial; Pricing **AI 4 T** add-on; **`support@one4team.com`**; Auth logo home link; Matches mobile datetime fields; **`ScrollToTop`**. Operator **LEGAL-OPS-001** / **LEGAL-OPS-002** open. See **`CHANGELOG.md`** § **2026-07-07 (Legal audit…)**.
 - **Dashboard mobile polish + AI 4 T / Messages UX (2026-07-07):** Fixed dashboard scroll shell + bottom-nav clearance; iOS segment tabs and toolbar tokens on key pages; **AI 4 T** compact mobile chat layout, red-highlighted composer, fixed input bar; **Messages** mobile channel picker, gold-bordered fixed composer, hidden sidebar; **Teams Asset Map** responsive grids; **`chat-bridge`** CORS **`x-correlation-id`** fix (redeploy); club-create + marketplace RLS repair migrations. See **`CHANGELOG.md`** § **2026-07-07 (Dashboard mobile polish…)**.
+- **Operator Control Center — financials + charts (2026-07-08):** **`/operator/financials`** — revenue/profitability KPIs, editable cost model (tools + development effort), investment vs revenue timeline (operating + purple development line), cost pie, revenue-by-plan bar; metric info bubbles; Euro currency icons. Chart legend/tooltip contrast fixes; operator layout scroll reset; tooltip portal fix. **`/operator/legal`** editable documents + two-column signatures. See **`CHANGELOG.md`** § **2026-07-08**.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 

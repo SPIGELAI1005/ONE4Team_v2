@@ -25,6 +25,7 @@ import { RoleManager } from "@/components/members/role-manager";
 import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
 import { useRegisterAiAgentContext } from "@/hooks/use-register-ai-agent-context";
 import { trackEvent } from "@/lib/telemetry";
+import { trackUsageEvent } from "@/lib/usage-events";
 import type { ClubMemberMasterRecord } from "@/lib/member-master-schema";
 import {
   DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY,
@@ -2525,6 +2526,15 @@ const Members = () => {
       hasPrefillEmail: Boolean((prefillEmail ?? inviteEmail).trim()),
       inviteDays: Number(inviteDays),
     });
+    trackUsageEvent({
+      eventName: "invitation_sent",
+      clubId,
+      moduleKey: "invites",
+      metadata: {
+        role: inviteRole,
+        has_prefill_email: Boolean((prefillEmail ?? inviteEmail).trim()),
+      },
+    });
     const emailValue = (prefillEmail ?? inviteEmail).trim();
     const normalizedInviteEmail = normalizeEmail(emailValue);
     if (normalizedInviteEmail) {
@@ -3522,7 +3532,7 @@ const Members = () => {
                 <div className="space-y-2">
                   {visibleDrafts.map((draft) => (
                     editingDraftId === draft.id ? (
-                      <div key={draft.id} className="w-full min-w-0 space-y-4 rounded-lg border-2 border-primary/30 bg-background/60 p-4">
+                      <div key={draft.id} className="w-full min-w-0 overflow-x-hidden space-y-4 rounded-lg border-2 border-primary/30 bg-background/60 p-4 max-lg:p-4">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <div className="text-xs text-muted-foreground mb-1">{t.membersPage.draftEditLabelFirstName}</div>
@@ -3668,7 +3678,7 @@ const Members = () => {
                                 })
                               }
                             >
-                              <SelectTrigger id={`draft-${draft.id}-role`} className="h-10 text-sm">
+                              <SelectTrigger id={`draft-${draft.id}-role`} className="h-10 w-full text-sm">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -3723,7 +3733,7 @@ const Members = () => {
                           {t.membersPage.masterDataFields}
                         </button>
                         {draftMasterExpanded && (
-                          <div className="w-full min-w-0 rounded-lg border border-border/40 bg-muted/10 p-3">
+                          <div className="w-full min-w-0 overflow-x-hidden rounded-lg border border-border/40 bg-muted/10 p-3 max-lg:p-4">
                             <MasterDataTabs
                               values={draftMergedMasterForTabs}
                               labels={masterTabLabels}
@@ -3776,9 +3786,9 @@ const Members = () => {
                             />
                           </div>
                         )}
-                        <div className="flex flex-wrap items-center justify-end gap-2">
+                        <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
                           {draftSaveConfirmedAt && editingDraftId === draft.id ? (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 mr-auto sm:mr-0">
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 sm:mr-auto">
                               <Check className="h-3.5 w-3.5" />
                               {t.membersPage.masterDataSavedHint}
                             </span>
@@ -3802,7 +3812,7 @@ const Members = () => {
                               {t.membersPage.resendInvite}
                             </Button>
                           ) : null}
-                          <Button size="sm" variant="ghost" onClick={handleCancelDraftEdit} className="h-9 text-sm" disabled={draftSaving}>
+                          <Button size="sm" variant="ghost" onClick={handleCancelDraftEdit} className="h-11 w-full text-sm sm:h-9 sm:w-auto" disabled={draftSaving}>
                             {t.common.cancel}
                           </Button>
                           <Button
@@ -3810,7 +3820,7 @@ const Members = () => {
                             type="button"
                             onClick={() => void handleSaveDraftEdit()}
                             disabled={draftSaving || !editingDraftForm.email.trim()}
-                            className="h-9 bg-gradient-gold-static text-sm font-semibold text-primary-foreground hover:brightness-110"
+                            className="h-11 w-full bg-gradient-gold-static text-sm font-semibold text-primary-foreground hover:brightness-110 sm:h-9 sm:w-auto sm:min-w-[6.5rem]"
                           >
                             {draftSaving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
                             {t.common.save}
@@ -4074,7 +4084,7 @@ const Members = () => {
                           className="border-b border-border bg-card border-t border-primary/20"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <div className="w-full min-w-0 space-y-3 px-4 pb-4 pt-3 sm:px-5">
+                          <div className="w-full min-w-0 overflow-x-hidden space-y-3 px-4 pb-4 pt-3 sm:px-5">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground min-w-0">
                                 {member.profiles?.phone ? (
@@ -4178,7 +4188,7 @@ const Members = () => {
                               </div>
                             ) : null}
 
-                            <div className="w-full min-w-0 rounded-lg border border-border/40 bg-muted/10 p-3">
+                            <div className="w-full min-w-0 overflow-x-hidden rounded-lg border border-border/40 bg-muted/10 p-3 max-lg:p-4">
                               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
                                 <UserCircle2 className="w-4 h-4 text-primary" /> {t.membersPage.masterDataFields}
                               </div>
@@ -4253,7 +4263,7 @@ const Members = () => {
                               </div>
                             ) : null}
 
-                            <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center">
+                            <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:items-center">
                               {memberPanelSaveConfirmedId === member.id ? (
                                 <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 sm:mr-auto">
                                   <Check className="h-3.5 w-3.5" />
@@ -4263,23 +4273,23 @@ const Members = () => {
                               {memberPanelEditModeId === member.id ? (
                                 <>
                                   <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-11 w-full sm:h-9 sm:flex-1"
+                                    disabled={memberPanelSaving}
+                                    onClick={cancelMemberPanelEdit}
+                                  >
+                                    {t.common.cancel}
+                                  </Button>
+                                  <Button
                                     size="sm"
                                     type="button"
-                                    className="w-full bg-gradient-gold-static font-semibold text-primary-foreground hover:brightness-110 sm:flex-1"
+                                    className="h-11 w-full bg-gradient-gold-static font-semibold text-primary-foreground hover:brightness-110 sm:h-9 sm:flex-1"
                                     disabled={memberPanelSaving}
                                     onClick={() => void saveMemberPanelInline(member)}
                                   >
                                     {memberPanelSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                     {t.common.save}
-                                  </Button>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-full sm:flex-1"
-                                    disabled={memberPanelSaving}
-                                    onClick={cancelMemberPanelEdit}
-                                  >
-                                    {t.common.cancel}
                                   </Button>
                                 </>
                               ) : (

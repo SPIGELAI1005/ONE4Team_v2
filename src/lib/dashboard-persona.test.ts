@@ -47,6 +47,15 @@ describe("dashboard-persona", () => {
     );
   });
 
+  it("preserves explicit persona while permissions are loading", () => {
+    expect(
+      resolveModuleGateRole("member", [], "club_admin", {
+        treatAsClubAdmin: false,
+        permissionsLoading: true,
+      }),
+    ).toBe("club_admin");
+  });
+
   it("never returns null when membership role is unknown", () => {
     expect(resolveModuleGateRole(null, [], null)).toBe("member");
   });

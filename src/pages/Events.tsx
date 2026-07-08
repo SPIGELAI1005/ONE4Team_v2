@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 import { useLanguage } from "@/hooks/use-language";
 import { useActiveClub } from "@/hooks/use-active-club";
+import { trackUsageEvent } from "@/lib/usage-events";
 import { isTsvAllachClub } from "@/lib/is-tsv-allach-club";
 import { SommerfestHero } from "@/components/sommerfest/sommerfest-hero";
 import { SommerfestEventsHub } from "@/components/sommerfest/sommerfest-events-hub";
@@ -174,6 +175,12 @@ const Events = () => {
       .select()
       .single();
     if (error) { toast({ title: t.common.error, description: error.message, variant: "destructive" }); return; }
+    trackUsageEvent({
+      eventName: "event_created",
+      clubId,
+      moduleKey: "events",
+      metadata: { event_type: eventType },
+    });
     setEvents(prev => [data as Event, ...prev]);
     setShowAdd(false);
     setTitle(""); setDescription(""); setLocation(""); setStartsAt(""); setEndsAt(""); setMaxPart("");

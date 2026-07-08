@@ -11,12 +11,14 @@ import {
   formatDashboardRoleLabel,
   getMobileNavModules,
   getSidebarMenuItems,
+  normalizeDashboardRole,
   type DashboardRole,
 } from "@/lib/rbac-config";
 
 import { useActiveDashboardPersonaSlug } from "@/hooks/use-active-dashboard-persona-slug";
 import {
   ACTIVE_DASHBOARD_PERSONA_KEY,
+  publishDashboardPersonaChange,
 } from "@/lib/switch-dashboard-persona";
 
 export interface UseDashboardNavResult {
@@ -36,12 +38,15 @@ export function useDashboardNav(labels: DashboardNavLabels): UseDashboardNavResu
 
   useEffect(() => {
     if (!urlRole) return;
-    localStorage.setItem(ACTIVE_DASHBOARD_PERSONA_KEY, urlRole);
+    const normalized = normalizeDashboardRole(urlRole);
+    if (!normalized) return;
+    localStorage.setItem(ACTIVE_DASHBOARD_PERSONA_KEY, normalized);
     localStorage.removeItem("one4team_role");
+    publishDashboardPersonaChange(normalized);
   }, [urlRole]);
 
-  const personaRaw = urlRole || storedSlug;
-  const personaSlug = personaRaw || menuRole || "member";
+  const personaFromUrl = urlRole ? normalizeDashboardRole(urlRole) : null;
+  const personaSlug = personaFromUrl ?? storedSlug ?? menuRole ?? "member";
 
   const sidebarModules = useMemo(
     () => getSidebarMenuItems(menuRole),
@@ -63,7 +68,7 @@ export function useDashboardNav(labels: DashboardNavLabels): UseDashboardNavResu
     [mobileModules, labels, personaSlug, menuRole],
   );
 
-  const roleLabel = formatDashboardRoleLabel(menuRole);
+  const roleLabel = formatDashboardRoleLabel(storedSlug ?? menuRole);
 
   return {
     menuRole,

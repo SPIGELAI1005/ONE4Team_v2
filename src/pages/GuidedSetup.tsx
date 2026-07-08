@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/use-language";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
+import { trackUsageEvent } from "@/lib/usage-events";
 import logo from "@/assets/one4team-logo.png";
 
 type Step = "welcome" | "team" | "invite" | "club-page" | "complete";
@@ -68,6 +69,12 @@ export default function GuidedSetup() {
         is_active: true,
       });
       if (error) throw error;
+      trackUsageEvent({
+        eventName: "team_created",
+        clubId,
+        moduleKey: "trainings",
+        metadata: { source: "guided_setup" },
+      });
       toast({
         title: t.guidedSetupPage.teamCreatedTitle,
         description: t.guidedSetupPage.teamCreatedDesc.replace("{name}", teamName.trim()),
@@ -93,6 +100,12 @@ export default function GuidedSetup() {
       if (error) throw error;
       const token = typeof data === "string" ? data : (data as { token?: string })?.token ?? String(data);
       setInviteToken(token);
+      trackUsageEvent({
+        eventName: "invitation_sent",
+        clubId,
+        moduleKey: "invites",
+        metadata: { source: "guided_setup" },
+      });
       toast({ title: t.guidedSetupPage.inviteCreatedTitle, description: t.guidedSetupPage.inviteCreatedDesc });
     } catch (err) {
       toast({ title: t.common.error, description: err instanceof Error ? err.message : t.guidedSetupPage.inviteCreateFailed, variant: "destructive" });

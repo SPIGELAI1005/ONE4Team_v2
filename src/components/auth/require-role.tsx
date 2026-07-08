@@ -1,6 +1,9 @@
 import { Navigate } from "react-router-dom";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useAuth } from "@/contexts/useAuth";
+import { useModuleGateRole } from "@/hooks/use-module-gate-role";
+import { dashboardPathForPersona } from "@/lib/switch-dashboard-persona";
+import { normalizeDashboardRole } from "@/lib/rbac-config";
 
 const DEV_BYPASS_GUARDS =
   import.meta.env.DEV &&
@@ -25,6 +28,7 @@ export function RequireTrainer({ children, fallbackPath }: { children: React.Rea
 function RequireRole({ children, requireAdmin, requireTrainer, fallbackPath }: RequireRoleProps) {
   const { user, loading: authLoading } = useAuth();
   const perms = usePermissions();
+  const gateRole = useModuleGateRole();
 
   if (authLoading || perms.activeClubLoading || perms.assignmentsLoading) {
     return (
@@ -41,13 +45,13 @@ function RequireRole({ children, requireAdmin, requireTrainer, fallbackPath }: R
   if (DEV_BYPASS_GUARDS) return <>{children}</>;
 
   if (requireAdmin && !perms.isAdmin) {
-    const role = perms.role || "player";
-    return <Navigate to={fallbackPath || `/dashboard/${role}`} replace />;
+    const redirectRole = gateRole ?? normalizeDashboardRole(perms.role) ?? "member";
+    return <Navigate to={fallbackPath || dashboardPathForPersona(redirectRole)} replace />;
   }
 
   if (requireTrainer && !perms.isTrainer) {
-    const role = perms.role || "player";
-    return <Navigate to={fallbackPath || `/dashboard/${role}`} replace />;
+    const redirectRole = gateRole ?? normalizeDashboardRole(perms.role) ?? "member";
+    return <Navigate to={fallbackPath || dashboardPathForPersona(redirectRole)} replace />;
   }
 
   return <>{children}</>;

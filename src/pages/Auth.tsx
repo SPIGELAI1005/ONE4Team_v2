@@ -35,6 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import FootballFieldAnimation from "@/components/landing/FootballFieldAnimation";
 import { trackEvent } from "@/lib/telemetry";
+import { trackUsageEvent } from "@/lib/usage-events";
 import logo from "@/assets/one4team-logo.png";
 
 type RegistrationTrack = "club_admin" | "partner";
@@ -538,7 +539,10 @@ const Auth = () => {
           description: isInvalidCredentials ? t.auth.loginFailedUnconfirmedHint : error.message,
           variant: "destructive",
         });
-      } else trackEvent("login_success", { hasReturnTo: Boolean(searchParams.get("returnTo")) });
+      } else {
+        trackEvent("login_success", { hasReturnTo: Boolean(searchParams.get("returnTo")) });
+        trackUsageEvent({ eventName: "user_logged_in", route: searchParams.get("returnTo") ?? "/dashboard" });
+      }
     } else {
       if (signupPath === "fast_track") {
         await registerFastTrack();

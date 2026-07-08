@@ -3,6 +3,34 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-08 (Operator Control Center — financials, charts, UX polish)
+
+### Operator Control Center — `/operator`
+- **Financials (`/operator/financials`):** Revenue (MRR/ARR/ARPU), profitability, and **development investment** sections with editable **cost model** (itemized subscriptions, usage drivers, save + comment history in `localStorage`).
+- **Development build cost model:** Estimate one-time app build investment by **lines of code × cost/line** (default ~84,000 LOC × €3 from `docs/PROJECT_COMPREHENSIVE_AUDIT.md`) or **person-days × daily rate** (default 400 × €600); method toggle in cost model card; feeds **Total invested** and net position.
+- **Charts (Recharts):** Cumulative **Investment vs revenue** timeline (operating spend, **purple development** line, revenue, sign-colored net); **Monthly cost breakdown** pie; **Revenue by plan** stacked bar (paying MRR + trial pipeline); **Club growth** area + **Club status** pie on Overview; **Active users** + **Module usage** bars on Analytics.
+- **Chart UX:** Interactive legends (click to highlight/dim series); high-contrast tooltips (`--popover` / `--popover-foreground`); legend label text forced to **`--foreground`** (not slice color) on all operator charts.
+- **Metric cards:** Info bubbles (ⓘ) with calculation hints; **Euro** icons for currency metrics (DE/EU market).
+- **Legal (`/operator/legal`):** Editable document body + PDF preview tabs; two-column signature layout in preview and PDF export; pinned ink colors on light preview surface (readable in dark theme).
+- **i18n:** Full EN/DE for operator pages (performance, issues, audit, support, settings, financials, legal, charts, cost model).
+- **Layout fixes:** German label wrapping on Performance **App-Status** cards; Compliance badge overflow on Legal template list.
+
+### Operator shell UX
+- **`OperatorLayout.tsx`:** Scroll container resets to **top on route change** (operator pages scroll inside layout, not `window`).
+- **`tooltip.tsx`:** `TooltipContent` rendered via **Radix Portal** + `collisionPadding` so metric info bubbles are not clipped by card `backdrop-blur` stacking contexts.
+
+### Lib + tests
+- **`src/lib/operator-financials.ts`:** `DevelopmentModel`, `computeDevelopmentCost`, `buildInvestmentTimeline` (cumulative operating + development), cost model snapshot/history, legacy flat-cost migration.
+- **`src/components/operator/charts/`:** `OperatorChartCard`, `InvestmentTimelineChart`, `CostBreakdownPie`, `RevenueByPlanBar`, `ClubGrowthArea`, `CategoryPie`, `SimpleBarChart`.
+- **`src/lib/operator-financials.test.ts`:** Development cost + timeline tests (18 cases).
+
+### Documentation
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`docs/operator-control-center.md`**, **`docs/operator-control-center-qa.md`**, **`README.md`**.
+
+### Operator smoke
+- **Financials:** Development line visible on timeline; pie/bar legends readable in dark mode; info tooltips fully visible; navigation starts at page top.
+- **Legal:** Edit tab → preview/PDF; club signature column on the right.
+
 ## 2026-07-07 (Dashboard mobile polish, AI 4 T UX, Messages, Asset Map, chat-bridge CORS)
 
 ### Dashboard mobile shell (iOS-like)
