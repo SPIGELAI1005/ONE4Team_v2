@@ -432,7 +432,7 @@ function ClubGrowthTable({
                 <TableCell>
                   <Badge variant="outline">{club.status}</Badge>
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
+                <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                   {formatOverviewTimestamp(club[dateField])}
                 </TableCell>
               </TableRow>

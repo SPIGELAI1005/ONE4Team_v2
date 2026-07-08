@@ -252,6 +252,9 @@ Path: **`/operator/financials`**, **`/operator`**, **`/operator/overview`**, **`
 - [ ] Cost model: edit tool name/amount; add/remove tool; save with comment; reload page — saved values persist (`localStorage`).
 - [ ] Development section: toggle **By lines of code** vs **By effort**; totals update; summary line shows selected method + € total.
 - [ ] Investment timeline shows **Betriebsausgaben**, **Entwicklung** (purple dashed), **Einnahmen**, **Netto** lines.
+- [ ] **Show lines** toggles: hide **Entwicklung** → development line disappears; **Netto** Y-axis rescales (net = revenue − operating only).
+- [ ] Re-enable **Entwicklung** → net includes development spend again.
+- [ ] Legend click still highlights/dims a visible series.
 - [ ] Legend text readable in **dark mode** (foreground color, not slice/series color).
 - [ ] Hover metric **ⓘ** bubble — full tooltip visible (not clipped by card).
 - [ ] Currency icons use **Euro**, not dollar.
@@ -277,6 +280,14 @@ Path: **`/operator/financials`**, **`/operator`**, **`/operator/overview`**, **`
 
 - [ ] Switch to DE — financials, performance, issues, audit, support, settings, legal strings translated.
 - [ ] Chart axis/tooltip labels localized where applicable.
+- [ ] Development effort labels use **man-days** (not person-days) in EN/DE.
+
+### 8.6 Mobile layout (~390px)
+
+- [ ] Overview, Financials, Analytics, Clubs, Users, Audit, Legal, Performance — no horizontal page scroll (cards fit viewport width).
+- [ ] Financials cost-breakdown pie and revenue-by-plan bar legends wrap inside card (no card wider than screen).
+- [ ] Bottom nav scrolls horizontally; active item visible.
+- [ ] Performance **App-Status** metric labels wrap without overlapping icons (DE long labels).
 
 ---
 

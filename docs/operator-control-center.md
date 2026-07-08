@@ -157,7 +157,7 @@ Sensitive RPCs should pass a **reason** (module/plan matrix RPCs enforce this). 
 ## UI conventions
 
 - Page wrapper: `OperatorPageShell` (`max-w-[92rem]`, consistent padding)
-- Cards: `OPERATOR_CARD_CLASS` (`border-border/70 bg-card/70`)
+- Cards: `OPERATOR_CARD_CLASS` (`min-w-0 border-border/70 bg-card/70`) — grid children shrink on mobile so chart legends and tables do not force horizontal overflow
 - Empty states: `OperatorSectionEmptyState` (dashed border)
 - Errors: `OperatorPageError` (full-page) or inline destructive banners
 - Internal disclaimer: `OperatorInternalBanner` (amber) on sensitive views
@@ -179,16 +179,16 @@ Route: **`/operator/financials`** (permission: `operator.analytics.read`).
 |---|---|
 | Revenue | MRR, ARR, paying clubs, ARPU from live plan catalog + club billing status |
 | Profitability | Monthly cost, net, margin, break-even clubs (from editable cost model) |
-| Development investment | Build cost (LOC or person-days), cumulative operating + development spend, net position, break-even month |
+| Development investment | Build cost (LOC or man-days), cumulative operating + development spend, net position, break-even month |
 | Charts | Cumulative investment vs revenue timeline; monthly fixed-cost pie; revenue-by-plan stacked bar |
 | Cost model | Itemized subscriptions (editable names/amounts, add/remove tools), usage drivers, **development effort** fields, comment + save/history (`localStorage`) |
 
 **Development build cost** defaults are anchored on documented codebase size (~84,000 LOC in `src/` per comprehensive audit). Two estimation methods:
 
 1. **Lines of code** — `linesOfCode × costPerLine` (default 84,000 × €3)
-2. **Effort** — `personDays × dailyRate` (default 400 × €600)
+2. **Effort** — `personDays × dailyRate` (default 400 man-days × €600; UI labels use **man-days**)
 
-The active method drives the **purple cumulative development line** on the investment timeline. Net position = cumulative revenue − (operating spend + development).
+The active method drives the **purple cumulative development line** on the investment timeline. Net position = cumulative revenue − (visible operating spend + visible development). Use **series visibility toggles** above the chart to hide development (net then reflects operating spend only) or operating; legend click still highlights/dims visible series.
 
 Key files: `src/lib/operator-financials.ts`, `src/pages/operator/OperatorFinancials.tsx`, `src/components/operator/OperatorCostModelCard.tsx`, `src/components/operator/charts/*`.
 
@@ -222,7 +222,9 @@ Shared chart shell: `OperatorChartCard`. Recharts-based components under `src/co
 | Monthly cost breakdown | Financials | Pie |
 | Revenue by plan | Financials | Stacked bar |
 
-Legend labels use **`--foreground`** text (not slice/series color). Tooltips use popover theme tokens. Legends are clickable to highlight/dim series.
+Legend labels use **`--foreground`** text (not slice/series color). Tooltips use popover theme tokens. Legends are clickable to highlight/dim series. **Investment timeline** also exposes **Show lines** toggles (eye icons) to show/hide each series; the **net** line recomputes from currently visible cost lines (hiding development makes net = revenue − operating only).
+
+**Mobile:** Metric grids stack to one column; filter forms stack; wide tables scroll inside the table wrapper; bottom nav scrolls horizontally (13 items). Verify at ~390px width — no card should exceed viewport width.
 
 ---
 

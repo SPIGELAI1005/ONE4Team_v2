@@ -174,7 +174,7 @@ describe("computeDevelopmentCost", () => {
     expect(dev.total).toBe(dev.locCost);
   });
 
-  it("switches to person-days × daily rate for the effort method", () => {
+  it("switches to man-days × daily rate for the effort method", () => {
     const model: CostModel = {
       ...DEFAULT_COST_MODEL,
       development: { ...DEFAULT_DEVELOPMENT_MODEL, method: "effort", personDays: 100, dailyRate: 500 },

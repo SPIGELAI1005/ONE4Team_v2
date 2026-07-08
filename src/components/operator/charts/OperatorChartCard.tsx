@@ -26,7 +26,7 @@ export function OperatorChartCard({
       <CardHeader className="pb-3">
         <CardTitle className="font-display text-base">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="min-w-0">
         {isLoading ? <Skeleton className="h-56 w-full" /> : hasData ? children : <OperatorSectionEmptyState title={emptyTitle} description={emptyDescription} />}
       </CardContent>
     </Card>

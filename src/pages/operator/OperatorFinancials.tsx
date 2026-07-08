@@ -375,6 +375,7 @@ export default function OperatorFinancials() {
             developmentLabel={f.developmentLabel}
             revenueLabel={f.revenueLabel}
             netLabel={f.netLabel}
+            seriesToggleLabel={f.investmentTimelineSeriesLabel}
           />
         </OperatorChartCard>
       </section>
@@ -384,7 +385,7 @@ export default function OperatorFinancials() {
           <CardHeader className="pb-3">
             <CardTitle className="font-display text-base">{f.revenueByPlan}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="min-w-0">
             {isLoading ? (
               <Skeleton className="h-56 w-full" />
             ) : revenue.byPlan.length === 0 ? (
@@ -438,7 +439,7 @@ export default function OperatorFinancials() {
           <CardHeader className="pb-3">
             <CardTitle className="font-display text-base">{f.costBreakdown}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="min-w-0">
             {isLoading ? (
               <Skeleton className="h-56 w-full" />
             ) : (

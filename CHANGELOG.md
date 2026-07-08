@@ -7,10 +7,11 @@ It records notable changes, features, and hardening steps.
 
 ### Operator Control Center — `/operator`
 - **Financials (`/operator/financials`):** Revenue (MRR/ARR/ARPU), profitability, and **development investment** sections with editable **cost model** (itemized subscriptions, usage drivers, save + comment history in `localStorage`).
-- **Development build cost model:** Estimate one-time app build investment by **lines of code × cost/line** (default ~84,000 LOC × €3 from `docs/PROJECT_COMPREHENSIVE_AUDIT.md`) or **person-days × daily rate** (default 400 × €600); method toggle in cost model card; feeds **Total invested** and net position.
+- **Development build cost model:** Estimate one-time app build investment by **lines of code × cost/line** (default ~84,000 LOC × €3 from `docs/PROJECT_COMPREHENSIVE_AUDIT.md`) or **man-days × daily rate** (default 400 × €600); method toggle in cost model card; feeds **Total invested** and net position.
 - **Charts (Recharts):** Cumulative **Investment vs revenue** timeline (operating spend, **purple development** line, revenue, sign-colored net); **Monthly cost breakdown** pie; **Revenue by plan** stacked bar (paying MRR + trial pipeline); **Club growth** area + **Club status** pie on Overview; **Active users** + **Module usage** bars on Analytics.
-- **Chart UX:** Interactive legends (click to highlight/dim series); high-contrast tooltips (`--popover` / `--popover-foreground`); legend label text forced to **`--foreground`** (not slice color) on all operator charts.
+- **Chart UX:** Interactive legends (click to highlight/dim series); **series visibility toggles** on investment timeline (show/hide operating, development, revenue, net — net recalculates from visible cost lines only); high-contrast tooltips (`--popover` / `--popover-foreground`); legend label text forced to **`--foreground`** (not slice color) on all operator charts.
 - **Metric cards:** Info bubbles (ⓘ) with calculation hints; **Euro** icons for currency metrics (DE/EU market).
+- **Mobile layout (`/operator`):** Operator cards use **`min-w-0`** so chart legends and tables do not overflow narrow viewports; chart card content constrained; overview club date columns **`whitespace-nowrap`**; bottom nav horizontal scroll on phone.
 - **Legal (`/operator/legal`):** Editable document body + PDF preview tabs; two-column signature layout in preview and PDF export; pinned ink colors on light preview surface (readable in dark theme).
 - **i18n:** Full EN/DE for operator pages (performance, issues, audit, support, settings, financials, legal, charts, cost model).
 - **Layout fixes:** German label wrapping on Performance **App-Status** cards; Compliance badge overflow on Legal template list.
@@ -25,10 +26,11 @@ It records notable changes, features, and hardening steps.
 - **`src/lib/operator-financials.test.ts`:** Development cost + timeline tests (18 cases).
 
 ### Documentation
-- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`docs/operator-control-center.md`**, **`docs/operator-control-center-qa.md`**, **`README.md`**.
+- **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`docs/operator-control-center.md`**, **`docs/operator-control-center-qa.md`**, **`README.md`** — investment timeline series toggles, mobile layout, man-days terminology.
 
 ### Operator smoke
-- **Financials:** Development line visible on timeline; pie/bar legends readable in dark mode; info tooltips fully visible; navigation starts at page top.
+- **Financials:** Development line visible on timeline; **Show lines** toggles hide/show series (net recalculates); pie/bar legends readable in dark mode; info tooltips fully visible; navigation starts at page top.
+- **Mobile (~390px):** Operator cards fit viewport (no chart-card horizontal overflow); bottom nav scrolls; Performance DE labels wrap cleanly.
 - **Legal:** Edit tab → preview/PDF; club signature column on the right.
 
 ## 2026-07-07 (Dashboard mobile polish, AI 4 T UX, Messages, Asset Map, chat-bridge CORS)

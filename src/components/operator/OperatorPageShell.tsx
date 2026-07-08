@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 export const OPERATOR_PAGE_CLASS =
   "mx-auto flex w-full max-w-[92rem] flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8";
 
-export const OPERATOR_CARD_CLASS = "border-border/70 bg-card/70";
+export const OPERATOR_CARD_CLASS = "min-w-0 border-border/70 bg-card/70";
 
 export const OPERATOR_HERO_CLASS =
   "rounded-3xl border border-border/70 bg-card/70 p-5 shadow-sm backdrop-blur-xl sm:p-6";

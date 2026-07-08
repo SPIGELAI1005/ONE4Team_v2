@@ -150,7 +150,7 @@ export type DevelopmentCostMethod = "loc" | "effort";
 // One-time build investment (development effort spent on the app before/while it
 // generates revenue). Two interchangeable estimation methods are supported:
 //   - "loc":    lines of code × estimated cost per line
-//   - "effort": person-days (mandays) × blended daily rate
+//   - "effort": man-days × blended daily rate
 export interface DevelopmentModel {
   linesOfCode: number;
   costPerLine: number;
