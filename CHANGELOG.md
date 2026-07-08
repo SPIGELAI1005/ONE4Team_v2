@@ -3,6 +3,15 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-08 (Club creation hotfix — teams.is_active)
+
+### Fix: `create_club_with_admin` 400 (`column "is_active" of relation "teams" does not exist`)
+- **Migration `20260801210000_repair_create_club_with_admin_teams_is_active.sql`** (applied to remote `qbtunzuztvnkerbdazjs`).
+- Root cause: the RPC seeded a default team via `INSERT INTO public.teams (club_id, name, age_group, is_active)`, but `teams` has **no `is_active` column** (columns: `id, club_id, name, sport, age_group, coach_name, league, public_*`, timestamps). Missing column → `undefined_column` (42703) → HTTP 400, aborting the whole RPC. The seed blocks only trapped `undefined_table`, not `undefined_column`.
+- Yesterday's repair (`20260707190000`) fixed the earlier **409** duplicate `club_role_assignments` insert, which had been failing *before* the teams insert — so fixing it unmasked this pre-existing 400.
+- **Fix:** removed `is_active` from the teams insert (uses `club_id, name, age_group` only) and broadened every optional-seed block to also swallow `undefined_column` / other seed errors so best-effort default data (team, announcement, billing, shop categories) can never block core club + admin membership creation.
+- Verified live: teams insert is now `INTO public.teams (club_id, name, age_group)`.
+
 ## 2026-07-08 (Operator Control Center — financials, charts, UX polish)
 
 ### Operator Control Center — `/operator`
