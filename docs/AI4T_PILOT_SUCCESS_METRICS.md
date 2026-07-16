@@ -2,6 +2,8 @@
 
 **Purpose:** Objective criteria before investing in [Phase 5](./AI4T_ROADMAP.md#phase-5--long-term-after-pilot-confidence). Tracked in [`TASKS.md`](../TASKS.md) as **AI4T-PILOT-001**–**005**.
 
+**Status (2026-07-16):** **AI4T-PILOT-001**–**005** marked complete per operator confirmation. Re-run monthly golden / usage checks as needed for Phase 5 gating.
+
 **Pilot club:** TSV Allach 09 (`slug` ≈ `tsv-allach-09`)
 
 **Cadence**

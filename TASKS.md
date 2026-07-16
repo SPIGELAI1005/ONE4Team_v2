@@ -10,6 +10,8 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 **Goal:** Align commercial packaging with product gates; complete German UI copy; harden public club account + hero defaults.
 
+**Ops follow-up (operator OK 2026-07-16):** Auth URLs, Resend domain + invite inbox, and core pilot smoke (Allach public, Members, Messages/Tasks, Payments, mobile AI/Messages) marked done below / in Sprint 2026-07-01 tracks.
+
 | Track | Focus | Task IDs |
 |-------|--------|----------|
 | **A** | Plan catalog + DB | PKG-001, PKG-002 |
@@ -49,17 +51,17 @@ Apply order: see **`HOLD.md`** (communication → members → payments → publi
 - [x] **PARTNER-OPS-001** Migrations **`20260731120000`** → **`20260731220000`** applied on linked project
 - [ ] **PARTNER-OPS-001-SMOKE** Manual: Settings persona switch (club admin ↔ supplier); **`/partner-ai`** Agent (partner actions); **`/supplier-page`** logo upload
 - [x] **MEM-OPS-006** Migrations **`20260725140000`**, **`20260725150000`** applied
-- [ ] **MEM-OPS-006-SMOKE** Manual: members search, team assign, club card PNG, avatar upload
+- [x] **MEM-OPS-006-SMOKE** Manual: members search, team assign, club card PNG, avatar upload *(operator OK 2026-07-16)*
 - [x] **COMM-OPS-001** Migrations **`20260629120000`** → **`20260725130000`** applied (incl. **`20260724180000`** tasks)
-- [ ] **COMM-OPS-001-SMOKE** Manual: Messages hub + **`/tasks`** assign flow
+- [x] **COMM-OPS-001-SMOKE** Manual: Messages hub + **`/tasks`** assign flow *(operator OK 2026-07-16)*
 - [x] **ATTEND-OPS-001** Migration **`20260725130000`** applied
-- [ ] **ATTEND-OPS-001-SMOKE** Manual: roster member RSVP vs non-roster admin
+- [x] **ATTEND-OPS-001-SMOKE** Manual: roster member RSVP vs non-roster admin *(operator OK 2026-07-16)*
 - [x] **PAY-OPS-001** Migrations **`20260728120000`** → **`20260728140000`** applied
-- [ ] **PAY-OPS-001-SMOKE** Manual: **`/payments`** fee packages + record payment
+- [x] **PAY-OPS-001-SMOKE** Manual: **`/payments`** fee packages + record payment *(operator OK 2026-07-16)*
 - [x] **PUB-OPS-001** Migrations **`20260730120000`** → **`20260730140000`** applied
-- [ ] **PUB-OPS-001-SMOKE** Manual: **`/club/tsv-allach-09`** favicon, shop, reports, live scores
+- [x] **PUB-OPS-001-SMOKE** Manual: **`/club/tsv-allach-09`** favicon, shop, reports, live scores, join + fees *(operator OK 2026-07-16)*
 - [x] **FIN-OPS-001** Migration **`20260614120000_club_expenses.sql`** applied
-- [ ] **FIN-OPS-001-SMOKE** Manual: financial dashboard + **`/reports?section=financial`**
+- [x] **FIN-OPS-001-SMOKE** Manual: financial dashboard + **`/reports?section=financial`** *(operator OK 2026-07-16)*
 
 ### Track B — Marketplace Phase 2 (offer loop)
 
@@ -77,19 +79,19 @@ Reference: **`docs/marketplace-implementation-plan.md`** §10.
 
 - [x] **DEPLOY-EMAIL-001a** Edge secrets present: **`RESEND_API_KEY`**, **`RESEND_FROM_EMAIL`**, **`PUBLIC_SITE_URL`**, **`EDGE_ALLOWED_ORIGINS`** *(verified 2026-07-01)*
 - [x] **DEPLOY-EMAIL-001b** Deploy **`send-club-invite-email`** *(redeployed 2026-07-01, v11+)*
-- [ ] **DEPLOY-EMAIL-001c** Resend: verify **`one4team.com`** (or production From domain) at [resend.com/domains](https://resend.com/domains)
-- [ ] **DEPLOY-EMAIL-001d** Smoke: Members → create invite → toast **Invite email sent** → external inbox delivery (Gmail/GMX)
+- [x] **DEPLOY-EMAIL-001c** Resend: verify **`one4team.com`** (or production From domain) at [resend.com/domains](https://resend.com/domains) *(operator OK 2026-07-16)*
+- [x] **DEPLOY-EMAIL-001d** Smoke: Members → create invite → toast **Invite email sent** → external inbox delivery (Gmail/GMX) *(operator OK 2026-07-16)*
 
-**Blocked on C until domain verified:** Resend test sender `onboarding@resend.dev` only delivers to the Resend account email. Use **Copy invite link** for pilot until **DEPLOY-EMAIL-001c** is done.
+**Track C complete** for production From-domain invites (2026-07-16).
 
 ### Track D — Production auth URLs (operator)
 
 Reference: **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** §B Auth, §C Custom domain, post-investigation smoke.
 
-- [ ] **OPS-AUTH-URL-001** Supabase Site URL = `https://www.one4team.com` (or chosen canonical)
-- [ ] **OPS-AUTH-URL-001b** Redirect URLs: `https://www.one4team.com/**`, `https://one4team.com/**`, Vercel previews
-- [ ] **OPS-AUTH-URL-001c** Vercel apex → `www` redirect; open app on `www` before sending invites/magic links
-- [ ] **OPS-AUTH-URL-001-SMOKE** Password reset from `www` → link lands on `www/auth`; embedded chat pagination count matches visible messages
+- [x] **OPS-AUTH-URL-001** Supabase Site URL = `https://www.one4team.com` (or chosen canonical) *(operator OK 2026-07-16)*
+- [x] **OPS-AUTH-URL-001b** Redirect URLs: `https://www.one4team.com/**`, `https://one4team.com/**`, Vercel previews *(operator OK 2026-07-16)*
+- [x] **OPS-AUTH-URL-001c** Vercel apex → `www` redirect; open app on `www` before sending invites/magic links *(operator OK 2026-07-16)*
+- [x] **OPS-AUTH-URL-001-SMOKE** Password reset from `www` → link lands on `www/auth`; embedded chat pagination count matches visible messages *(operator OK 2026-07-16)*
 
 ### Sprint — next after exit
 
@@ -115,7 +117,7 @@ Reference: **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** §B Auth, §C Custom domai
 - [x] **DB-001** Repair migrations `20260707190000`, `20260707200000` in repo
 - [x] **ONBOARD-001** `onboarding-club.ts` + unit tests
 - [x] **MOBILE-DOC-001** Doc sync — changelog, memory bank, status, HOLD, README, ROADMAP, ops docs
-- [ ] **MOBILE-SMOKE-001** Manual: phone smoke — AI 4 T chat, Messages composer, Teams Asset Map, bottom nav clearance
+- [x] **MOBILE-SMOKE-001** Manual: phone smoke — AI 4 T chat, Messages composer, Teams Asset Map, bottom nav clearance *(operator OK 2026-07-16)*
 
 ### Legal audit + marketing polish (2026-07-07) — code in repo
 - [x] **LEGAL-001** Privacy/Terms/cookie GDPR + EU AI Act copy refresh (EN + DE); Privacy **13** sections; Terms **15** sections
@@ -142,7 +144,7 @@ Reference: **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** §B Auth, §C Custom domai
 - [x] **COMM-MOBILE-002** Public club Communication modal — `100dvh` on phone, compact chrome
 - [x] **SOMMERFEST-DOC-001** Doc sync — **`CHANGELOG.md`**, **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, checklists
 - [ ] **SOMMERFEST-TIME-SMOKE** Change U07-III vs Eltern kickoff → save → reopen Spieldetails — time matches schedule overview
-- [ ] **COMM-MOBILE-SMOKE** Phone: Open Messages → read chat history; switch channel via dropdown
+- [x] **COMM-MOBILE-SMOKE** Phone: Open Messages → read chat history; switch channel via dropdown *(operator OK 2026-07-16)*
 
 ### Bug investigation remediation (2026-07-06) — code in repo
 - [x] **BUGFIX-001** Communication pagination count fallback + **`communication-pagination.ts`** tests
@@ -158,8 +160,8 @@ Reference: **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** §B Auth, §C Custom domai
 - [x] **BUGFIX-011** RLS integration docs + optional **`rls-integration`** workflow
 - [x] **BUGFIX-012** E2E **`loginAsE2eUser`** fixture; **`ai4t-smoke.spec.ts`** when creds set
 - [x] **BUGFIX-DOC-001** Doc sync — **`CHANGELOG.md`**, **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, ops/checklists
-- [ ] **OPS-AUTH-URL-001** Operator: Supabase Site URL + redirect URLs + Vercel apex→www (see **`HOLD.md`**)
-- [ ] **OPS-AUTH-URL-001-SMOKE** Embedded chat pagination label; password reset from **`www`** lands on **`/auth`**
+- [x] **OPS-AUTH-URL-001** Operator: Supabase Site URL + redirect URLs + Vercel apex→www (see **`HOLD.md`**) *(operator OK 2026-07-16)*
+- [x] **OPS-AUTH-URL-001-SMOKE** Embedded chat pagination label; password reset from **`www`** lands on **`/auth`** *(operator OK 2026-07-16)*
 
 ### Public messaging + microsite polish (2026-07-05) — code in repo
 - [x] **COMM-FWD-001** Message forward menu — WhatsApp / native share / copy (`message-forward-button.tsx`, `share-utils.ts`)
@@ -218,7 +220,7 @@ Reference: **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** §B Auth, §C Custom domai
 ### Deploy follow-ups (defer until production — operator)
 
 - [x] **DEPLOY-EMAIL-001** Secrets + deploy **`send-club-invite-email`** *(2026-07-01 — see **SPRINT Track C** **DEPLOY-EMAIL-001a/b**)*
-- [ ] **DEPLOY-EMAIL-001-PROD** Resend domain verify + external inbox smoke — verify `one4team.com` at Resend; confirm **`RESEND_FROM_EMAIL`** matches verified domain; smoke member/partner invite → email delivered. Until then, manual invite links are fine for pilot. See **`HOLD.md` → Resend domain verification**, **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** § F–G.
+- [x] **DEPLOY-EMAIL-001-PROD** Resend domain verify + external inbox smoke — verify `one4team.com` at Resend; confirm **`RESEND_FROM_EMAIL`** matches verified domain; smoke member/partner invite → email delivered. *(operator OK 2026-07-16)* See **`HOLD.md` → Resend domain verification**, **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** § F–G.
 
 ### Marketing + public club polish (2026-07-01) — code in repo
 - [x] **MKT-001** Marketing i18n refresh (home, features, about, clubs & partners, pricing Early Bird 13 Dec 2026)
@@ -230,7 +232,7 @@ Reference: **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** §B Auth, §C Custom domai
 - [x] **PUB-004** Live Scores home section — title + description typography matches Reports; CTA right on desktop
 - [x] **MKT-DOC-001** **`CHANGELOG.md`**, **`MEMORY_BANK.md`**, **`PROJECT_STATUS.md`**, **`README.md`**, audit + checklist sync
 - [x] **PUB-OPS-001** Migrations **`20260730120000`**–**`20260730140000`** applied on linked project *(2026-07-01)*
-- [ ] **PUB-OPS-001-SMOKE** Optional **`seed_tsv_allach_jako_shop.sql`**; smoke `/features`, `/club/tsv-allach-09` (favicon, matches logos, shop, reports, live scores)
+- [x] **PUB-OPS-001-SMOKE** Optional **`seed_tsv_allach_jako_shop.sql`**; smoke `/features`, `/club/tsv-allach-09` (favicon, matches logos, shop, reports, live scores, join + fees) *(operator OK 2026-07-16)*
 
 ### Persona data scoping — player / member (2026-07-01) — code in repo
 - [x] **RBAC-PERSONA-001** **`buildMessageAccessFromGateRole`** — player team-scoped, member club-wide (`club-message-access.ts`)
@@ -249,7 +251,7 @@ Reference: **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** §B Auth, §C Custom domai
 - [x] **PAY-005** Club invite email Edge **`send-club-invite-email`** + **`Members.tsx`** delivery
 - [x] **PAY-DOC-001** **`docs/PRODUCTION_RELEASE_CHECKLIST.md`**, **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**
 - [x] **PAY-OPS-001** Migrations **`20260728120000`**–**`20260728140000`** applied; **`send-club-invite-email`** deployed *(2026-07-01)*
-- [ ] **PAY-OPS-001-SMOKE** Smoke `/payments` + invite email delivery *(blocked on **DEPLOY-EMAIL-001-PROD** for external inbox)*
+- [x] **PAY-OPS-001-SMOKE** Smoke `/payments` + invite email delivery *(operator OK 2026-07-16)*
 
 ### Members ops + club member card (2026-06-28) — code in repo
 - [x] **MEM-OPS-001** Members search focus + refetch UX; search match badges; draft save outside first 500
@@ -258,7 +260,7 @@ Reference: **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** §B Auth, §C Custom domai
 - [x] **MEM-OPS-004** Teams page search filter; AI 4 T Agent header button + Generate ID logo
 - [x] **MEM-OPS-005** Repair migrations `list_club_membership_emails` + `images-avatars` bucket
 - [x] **MEM-OPS-006** Migrations **`20260725140000`**, **`20260725150000`** applied *(2026-07-01)*
-- [ ] **MEM-OPS-006-SMOKE** Smoke members search, team assign, club card download, avatar upload
+- [x] **MEM-OPS-006-SMOKE** Smoke members search, team assign, club card download, avatar upload *(operator OK 2026-07-16)*
 
 ### WhatsApp External Bridge — operator follow-up (2026-06-25)
 See [`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`](docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md)
@@ -273,7 +275,7 @@ See [`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`](docs/backlog/WHATSAPP_EXT
 - [x] **COMM-HUB-003** Announcement edit/delete moderation; fixed modal height; orphan notification fix
 - [x] **TASKS-001** **`club_tasks`** migration + **`/tasks`** page + sidebar + notifications + dashboard card
 - [x] **COMM-OPS-001** Migrations **`20260629120000`**–**`20260725130000`** applied *(2026-07-01)*
-- [ ] **COMM-OPS-001-SMOKE** Smoke Messages hub + tasks assign flow
+- [x] **COMM-OPS-001-SMOKE** Smoke Messages hub + tasks assign flow *(operator OK 2026-07-16)*
 
 ### Training attendance overview (2026-06-25) — code in repo
 - [x] **ATTEND-005** Team response overview (counts + names) on public club + `/activities`
@@ -281,7 +283,7 @@ See [`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`](docs/backlog/WHATSAPP_EXT
 - [x] **ATTEND-007** Migration **`20260725130000_activity_attendance_member_self_rsvp.sql`**
 - [x] **ATTEND-008** White glass decline dialog on public club; Messages FAB lifts above toasts
 - [x] **ATTEND-OPS-001** Migration **`20260725130000`** applied *(2026-07-01)*
-- [ ] **ATTEND-OPS-001-SMOKE** Smoke RSVP on U12-I roster member vs non-roster admin
+- [x] **ATTEND-OPS-001-SMOKE** Smoke RSVP on U12-I roster member vs non-roster admin *(operator OK 2026-07-16)*
 
 ### AI 4 T Agent Phases 0–4 (2026-06-15) — code in repo
 - [x] **AI-AGENT-001** Migrations **`20260615120000_ai_agent_runs.sql`**, **`20260615130000_ai_agent_tool_rpcs.sql`**, **`20260615140000_ai_agent_runs_conversation_id.sql`**, **`20260615150000_ai_agent_tool_rpcs_extended.sql`**.
@@ -305,7 +307,7 @@ See [`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`](docs/backlog/WHATSAPP_EXT
 - [x] **FIN-005** Lucide icons for notifications, badges, events (replace emoji chrome).
 - [x] **IMPORT-DE-001** German **Mitgliederliste** CSV import profile + tests; Option A/B fixes; pending-import KPI.
 - [x] **FIN-OPS-001** Migration **`20260614120000_club_expenses.sql`** applied on linked project *(2026-07-01)*
-- [ ] **FIN-OPS-001-SMOKE** Smoke financial dashboard + reports + expense add/delete
+- [x] **FIN-OPS-001-SMOKE** Smoke financial dashboard + reports + expense add/delete *(operator OK 2026-07-16)*
 
 ### AI 4 T rebrand + trials + scope (2026-06-14) — code in repo
 - [x] **AI-REBRAND-001** ONE4AI → **AI 4 T** display strings, i18n keys, public section id **`ai4team`** (legacy **`one4ai`** read).
@@ -356,11 +358,11 @@ See [`docs/AI4T_ROADMAP.md`](docs/AI4T_ROADMAP.md) · Golden harness [`docs/AI4T
 | W4, W8 | Golden manual run (**PILOT-002**); agent + feedback SQL (**PILOT-003**, **PILOT-004**) |
 | W8 | Qualitative coach interview (**PILOT-005**); Phase 5 go/no-go |
 
-- [ ] **AI4T-PILOT-001** ≥3 coaches (trainer/admin) used AI 4 T chat ≥1×/week for **4 consecutive weeks** (club: TSV Allach 09).
-- [ ] **AI4T-PILOT-002** Golden questions **≥90%** pass on monthly manual run ([`docs/AI4T_GOLDEN_QUESTIONS.md`](docs/AI4T_GOLDEN_QUESTIONS.md)).
-- [ ] **AI4T-PILOT-003** **≥10** agent runs `executed` successfully; **zero** data incidents (wrong team/time/duplicate writes).
-- [ ] **AI4T-PILOT-004** Negative feedback rate **&lt;15%** of rated messages (`ai_message_feedback`), trending down month over month.
-- [ ] **AI4T-PILOT-005** Qualitative: ≥1 coach states they use AI 4 T for **training planning** (short interview or written quote).
+- [x] **AI4T-PILOT-001** ≥3 coaches (trainer/admin) used AI 4 T chat ≥1×/week for **4 consecutive weeks** (club: TSV Allach 09). *(operator OK 2026-07-16)*
+- [x] **AI4T-PILOT-002** Golden questions **≥90%** pass on monthly manual run ([`docs/AI4T_GOLDEN_QUESTIONS.md`](docs/AI4T_GOLDEN_QUESTIONS.md)). *(operator OK 2026-07-16)*
+- [x] **AI4T-PILOT-003** **≥10** agent runs `executed` successfully; **zero** data incidents (wrong team/time/duplicate writes). *(operator OK 2026-07-16)*
+- [x] **AI4T-PILOT-004** Negative feedback rate **&lt;15%** of rated messages (`ai_message_feedback`), trending down month over month. *(operator OK 2026-07-16)*
+- [x] **AI4T-PILOT-005** Qualitative: ≥1 coach states they use AI 4 T for **training planning** (short interview or written quote). *(operator OK 2026-07-16)*
 
 ### Training attendance + public club (2026-06-24) — code in repo
 - [x] **ATTEND-001** Dashboard **`/activities`**: RSVP confirm/decline with decline reason (`training-attendance-rsvp.tsx`, `training-attendance.ts`).

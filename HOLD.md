@@ -122,35 +122,24 @@ Secrets (Supabase Edge): **`RESEND_API_KEY`**, **`RESEND_FROM_EMAIL`**, **`PUBLI
 
 Smoke: **`/payments`** Fee Types + Record payment (multi-package); **`/members`** send invite → email in inbox. Resend **domain must be verified** for production From address. See **`CHANGELOG.md` § 2026-06-30**, **`docs/PRODUCTION_RELEASE_CHECKLIST.md`**, **`TASKS.md` PAY-OPS-001**.
 
-## Resend domain verification — follow up before production deploy
+## Resend domain verification — production email
 
-**Status:** Deferred (local dev OK). Invites are created in the database; only automatic email delivery is blocked.
+**Status (2026-07-16):** **Done** — `one4team.com` verified at Resend; invite → external inbox smoke passed (**`DEPLOY-EMAIL-001c/d`**, **`DEPLOY-EMAIL-001-PROD`**).
 
-**What you may see now:** toast *“Invite created, email not sent”* with Resend error *“The one4team.com domain is not verified…”*. Use **Copy invite link** in the invite dialog and share manually (works for member and partner roles, e.g. Supplier).
+Previously deferred items (now complete):
+- [x] Domain verified at Resend (SPF/DKIM)
+- [x] Edge secrets + **`send-club-invite-email`**
+- [x] Smoke: Members → create invite → **Invite email sent** → external inbox
 
-**Status (2026-07-01):** Edge secrets set; **`send-club-invite-email`** redeployed. **Still required:** verify sending domain at Resend (**`DEPLOY-EMAIL-001-PROD`** in **`TASKS.md`**).
+See **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** sections **F**, **G**, **H** and **`TASKS.md` DEPLOY-EMAIL-001**.
 
-**Before go-live, complete:**
+## Production auth URLs
 
-- [ ] Add and verify **`one4team.com`** (or your sending domain) at [resend.com/domains](https://resend.com/domains) (SPF, DKIM; optional DMARC at DNS host)
-- [ ] Supabase Edge secrets: **`RESEND_API_KEY`**, **`RESEND_FROM_EMAIL`** = `ONE4Team <invites@one4team.com>` (must match verified domain), **`PUBLIC_SITE_URL`**, **`EDGE_ALLOWED_ORIGINS`**
-- [ ] Deploy Edge: **`send-club-invite-email`**
-- [ ] Smoke: Members → create invite → toast **“Invite email sent”**; email arrives at an external inbox (Gmail, GMX, etc.)
+**Status (2026-07-16):** **Done** — Site URL + redirects + Vercel apex→www (**`OPS-AUTH-URL-001`** + smoke).
 
-**Note:** Resend test sender `onboarding@resend.dev` only delivers to the email on your Resend account — not suitable for real club/partner invites.
-
-See **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** sections **F**, **G**, **H** (Members & invites) and **`TASKS.md` DEPLOY-EMAIL-001**.
-
-## Production auth URLs — follow up before custom domain go-live
-
-Track **`OPS-AUTH-URL-001`** in **`TASKS.md`**.
-
-- Magic links, signup, and **Copy invite link** use **`window.location.origin`** — open **`https://www.one4team.com`** before sending so links are not `*.vercel.app`.
-- Password reset (Settings) uses **`redirectTo: {origin}/auth`** after code fix — whitelist **`https://www.one4team.com/auth`** in Supabase Redirect URLs.
-- Supabase Site URL should match canonical production (`https://www.one4team.com` recommended).
-- Vercel: apex **`one4team.com`** → redirect to **`www.one4team.com`**.
-
-Post-deploy smoke: embedded club chat pagination count; password reset from `www`.
+- Canonical: **`https://www.one4team.com`**
+- Magic links / invites / password reset use **`www`** origin
+- Post-deploy smoke: password reset landing on **`/auth`**; chat pagination — operator OK
 
 ## Invite redemption — pgcrypto repair (2026-07-31)
 If redeem shows **`function digest(text, unknown) does not exist`**, apply:

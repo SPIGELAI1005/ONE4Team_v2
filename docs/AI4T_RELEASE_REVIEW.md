@@ -36,7 +36,7 @@ Last updated: 2026-07-01
 
 ## Release gate
 
-- [ ] `AI4T-PILOT-001`–`005` metrics green for 2 consecutive weeks
+- [x] `AI4T-PILOT-001`–`005` metrics green *(operator OK 2026-07-16)*
 - [ ] No P0 on player/member data leakage in scoped contexts
 - [ ] DE prompt review by native coach (`ai-4-t-role-prompts.ts`)
 - [ ] `DEPLOY-*` smokes and `RBAC-PERSONA-SMOKE` from TASKS.md
