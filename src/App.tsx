@@ -74,6 +74,7 @@ const SupplierTasks = lazy(() => import("./pages/supplier/SupplierTasks"));
 const SupplierReports = lazy(() => import("./pages/supplier/SupplierReports"));
 const SupplierPageAdmin = lazy(() => import("./pages/supplier/SupplierPageAdmin"));
 const PublicSupplierPage = lazy(() => import("./pages/public-supplier/PublicSupplierPage"));
+const PublicProviderProfilePage = lazy(() => import("./pages/public-provider/PublicProviderProfilePage"));
 const Payments = lazy(() => import("./pages/Payments"));
 const Events = lazy(() => import("./pages/Events"));
 const Matches = lazy(() => import("./pages/Matches"));
@@ -245,6 +246,16 @@ const AnimatedRoutes = () => {
                 </Suspense>
               </PageTransition>
             </RequireAuth>
+          }
+        />
+        <Route
+          path="/providers/:slug"
+          element={
+            <PageTransition>
+              <Suspense fallback={<RouteFallback />}>
+                <PublicProviderProfilePage />
+              </Suspense>
+            </PageTransition>
           }
         />
         <Route

@@ -17,6 +17,7 @@ import {
   DEFAULT_MARKETPLACE_DISCOVER_FILTERS,
   filterMarketplaceProviders,
   hasActiveDiscoverFilters,
+  sortMarketplaceProvidersFeaturedFirst,
   type MarketplaceDiscoverFilters,
 } from "@/lib/marketplace-discover";
 import {
@@ -73,7 +74,7 @@ export function MarketplaceDiscoverPanel({
   );
 
   const filteredProviders = useMemo(
-    () => filterMarketplaceProviders(providers, savedIds, filters),
+    () => sortMarketplaceProvidersFeaturedFirst(filterMarketplaceProviders(providers, savedIds, filters)),
     [providers, savedIds, filters],
   );
 

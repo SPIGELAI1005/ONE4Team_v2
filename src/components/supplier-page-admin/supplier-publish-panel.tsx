@@ -1,4 +1,4 @@
-import { ExternalLink, Eye, Loader2, Pause, Play, Rocket, Save, Send } from "lucide-react";
+import { ExternalLink, Eye, Loader2, Pause, Play, Rocket, Save, Send, Share2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -9,8 +9,11 @@ import {
   canSubmitListingForReview,
   isListingEditable,
 } from "@/lib/marketplace-listing-structure";
+import { publicProviderShareUrl } from "@/lib/public-provider-profile";
 import { PARTNER_PANEL_CLASS } from "@/lib/partner-workflow-ui";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/hooks/use-language";
 
 export interface SupplierPublishPanelLabels {
   intro: string;
@@ -21,6 +24,7 @@ export interface SupplierPublishPanelLabels {
   submitForReview: string;
   previewPage: string;
   viewLivePage: string;
+  sharePublicPage?: string;
   pauseListing: string;
   reactivateListing: string;
   visibilityTitle: string;
@@ -71,10 +75,29 @@ export function SupplierPublishPanel({
   const busy = saving || actionLoading;
   const editable = isListingEditable(profile?.listing_status);
   const completeness = profile?.profile_completeness ?? 0;
+  const { toast } = useToast();
+  const { t } = useLanguage();
   const publicUrl =
     previewSlug && profile?.visibility === "public" && profile.listing_status === "active"
       ? `/supplier/${previewSlug}`
       : null;
+  const marketplaceShareUrl =
+    previewSlug &&
+    profile &&
+    profile.listing_status === "active" &&
+    (profile.visibility === "public" || profile.visibility === "marketplace_only")
+      ? publicProviderShareUrl(previewSlug)
+      : null;
+
+  const sharePublicPage = async () => {
+    if (!marketplaceShareUrl) return;
+    try {
+      await navigator.clipboard.writeText(marketplaceShareUrl);
+      toast({ title: t.publicProviderPage.shareCopied });
+    } catch {
+      window.open(marketplaceShareUrl, "_blank", "noopener,noreferrer");
+    }
+  };
 
   const visibilityDesc =
     profile?.visibility === "public"
@@ -179,6 +202,12 @@ export function SupplierPublishPanel({
           <Button variant="outline" size="sm" disabled title={labels.viewLivePage}>
             <Rocket className="mr-1 h-4 w-4" />
             {labels.viewLivePage}
+          </Button>
+        ) : null}
+        {marketplaceShareUrl ? (
+          <Button variant="outline" size="sm" onClick={() => void sharePublicPage()}>
+            <Share2 className="mr-1 h-4 w-4" />
+            {labels.sharePublicPage ?? t.publicProviderPage.share}
           </Button>
         ) : null}
         {canPauseListing(profile?.listing_status) ? (

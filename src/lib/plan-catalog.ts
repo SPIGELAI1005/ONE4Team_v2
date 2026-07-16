@@ -51,6 +51,14 @@ export const VOLUME_DISCOUNT_PCT = 15;
 /** Fair-use AI for Kick-off / Squad; Pro+ includes AI in the plan. */
 export const AI4T_ADDON_PRICE_MONTHLY = 19;
 
+export {
+  AI_MONTHLY_CAPS,
+  AI_USAGE_WARN_RATIO,
+  BESPOKE_AI_MONTHLY_CAPS,
+  getAiMonthlyCaps,
+  type AiMonthlyCaps,
+} from "@/lib/ai-usage-meter";
+
 export const PLAN_CATALOG: Record<Exclude<PlanId, "bespoke">, PlanCommercialConfig> = {
   kickoff: {
     id: "kickoff",

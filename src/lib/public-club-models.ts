@@ -16,6 +16,10 @@ import { normalizeDefaultHeroAssetId } from "@/lib/club-hero-default-assets";
 import type { PublicMicrositePrivacy } from "@/lib/public-club-privacy";
 import { publicMicrositePrivacyFromConfig } from "@/lib/public-club-privacy";
 import { applyTsvAllachClubContactDefaults } from "@/lib/tsv-allach-club-contact";
+import {
+  resolveEffectiveSiteBanner,
+  type ClubSiteBannerConfig,
+} from "@/lib/club-site-banner";
 
 export type PublicClubRecord = {
   id: string;
@@ -96,6 +100,8 @@ export type PublicClubRecord = {
   pageLocalized: Partial<Record<ClubPageLanguage, Partial<ClubLocalizedContent>>>;
   /** Resolved flexible public nav + homepage module layout. */
   publicPageLayout: PublicPageConfig;
+  /** Effective top chrome banner (Allach Sommerfest default when unset). */
+  siteBanner: ClubSiteBannerConfig;
 };
 
 export type TeamRowLite = {
@@ -364,6 +370,10 @@ export function mapClubRow(
     supported_languages: supportedLanguages,
     pageLocalized,
     publicPageLayout: resolvePublicPageConfigFromClub(layoutCfg),
+    siteBanner: resolveEffectiveSiteBanner(layoutCfg.siteBanner, {
+      name: String(record.name),
+      slug: String(record.slug),
+    }),
     ...home,
   });
 }

@@ -1,11 +1,14 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-07-16 (Commercial packaging, German i18n, public club UX, hero isolation)
+Last updated: 2026-07-16 (Product Waves A–E, configurable club site banner, matches status UX)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **Product Waves A–E (2026-07-16, code + linked DB):** PROD-005…021 shipped — admin week-at-a-glance; weekly digest Edge + opt-in; invite `master_data` merge; AI usage meters/caps; trainer today-session; member my-dues + payment claims; marketplace filters/engagement/provider SEO/moderation/reviews/`marketplace:*`; join funnel; news draft/schedule; public club PWA; bilingual Club Page Admin UX. Migrations **`20260802120000`**–**`20260802150000`** applied on linked remote (fixes toast `announcements.scheduled_publish_at does not exist`). Still open for Edge: deploy **`process-weekly-digests`** + cron; optional redeploy **`co-trainer`** / **`ai4team-agent`** for AI caps. Backlog unchanged: **PKG-003**, legal address/HRB, partner smoke. See **`CHANGELOG.md`** § **2026-07-16 (Product Waves…)**, **`TASKS.md`**, **`HOLD.md`**.
+- **Configurable public club site banner (2026-07-16):** **`ClubPageAdmin`** Homepage → Site banner — enable/disable, kinds (**promo** / **news** / **event** / **alert** / **sommerfest_live**), headline/subtitle/CTA/href. Stored in public page draft/published JSON (`siteBanner`). Live site updates only after **Publish**. Allach without saved `siteBanner` keeps historical Sommerfest default. Lib: **`club-site-banner.ts`**; chrome: **`PublicSommerfestTournamentBanner`**. Banner hidden on its own destination path.
+- **Matches status UX (2026-07-16):** Match detail editor replaces status **Select** with a responsive **button group** (2×2 mobile / 4-across wider) for Scheduled / In progress / Completed / Cancelled.
 - **Ops verified (2026-07-16, operator):** Auth Site URL / redirects / www; Resend `one4team.com` + invite inbox smoke; pilot smoke — Allach public, Members, Messages/Tasks, Payments, attendance RSVP, financial reports, mobile AI 4 T + Messages; **AI4T-PILOT-001–005** closed. Still open: **PKG-003** Stripe sync, legal address/HRB, partner/marketplace E2E smoke.
 - **Commercial packaging + plan gates (2026-07-16):** Single source **`src/lib/plan-catalog.ts`** drives **`plan-limits`**, Pricing page, and catalog seed. Kick-off / Squad / Pro / Champions: base + per-member EUR pricing (yearly = monthly×12×0.8), volume −15%, aligned member caps (100 / 400 / 1,200 / 5,000). AI add-on **€19/mo** (Kick-off/Squad); Pro+ includes fair-use AI. Migration **`20260801220000`** applied on linked remote. Stripe price IDs may still need Dashboard sync. See **`CHANGELOG.md`** § **2026-07-16**, **`GTM_PRICING_PACKAGING.md`**.
 - **German i18n pass (2026-07-16):** EN/DE key parity; umlaut restoration; leftover English translated (club, partner, marketplace, operator). Fixed blank Members DE key (**`openFullRegistry`**), About hero line 4, supplier portal save strings.

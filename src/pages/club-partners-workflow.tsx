@@ -76,6 +76,12 @@ import {
   marketplaceOfferPath,
   marketplaceRequestPath,
 } from "@/lib/marketplace-club-relationship";
+import {
+  ENGAGEMENT_PIPELINE_STAGES,
+  deriveEngagementPipelineStage,
+  isMarketplaceSourcedEngagement,
+  type EngagementPipelineStage,
+} from "@/lib/engagement-pipeline";
 import { cn } from "@/lib/utils";
 
 const NONE = "__none__";
@@ -117,6 +123,7 @@ export default function ClubPartnersWorkflow({ embedded = false }: ClubPartnersW
   const [q, setQ] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState<EngagementCategory | "all">("all");
+  const [pipelineFilter, setPipelineFilter] = useState<EngagementPipelineStage | "all">("all");
   const [partnerFilter, setPartnerFilter] = useState(partnerParam ?? "all");
   const [marketplaceOnly, setMarketplaceOnly] = useState(false);
 
@@ -184,13 +191,35 @@ export default function ClubPartnersWorkflow({ embedded = false }: ClubPartnersW
     });
   }, [partners, q, typeFilter, marketplaceOnly]);
 
+  const resolveEngagementTimeline = useCallback(
+    (task: PartnerTaskRow) => {
+      const linkedContract = contracts.find(
+        (c) => c.id === task.contract_id || c.partner_id === task.partner_id,
+      );
+      const linkedInvoice = invoices.find((inv) => inv.partner_id === task.partner_id);
+      return {
+        taskStatus: task.task_status,
+        hasContract: Boolean(linkedContract),
+        contractStatus: linkedContract?.contract_status ?? null,
+        hasInvoice: Boolean(linkedInvoice),
+        invoiceStatus: linkedInvoice?.invoice_status ?? null,
+        marketplaceOfferId: task.marketplace_offer_id,
+      };
+    },
+    [contracts, invoices],
+  );
+
   const scopedTasks = useMemo(() => {
     return tasks.filter((row) => {
       if (partnerFilter !== "all" && row.partner_id !== partnerFilter) return false;
       if (categoryFilter !== "all" && row.engagement_category !== categoryFilter) return false;
+      if (pipelineFilter !== "all") {
+        const stage = deriveEngagementPipelineStage(resolveEngagementTimeline(row));
+        if (stage !== pipelineFilter) return false;
+      }
       return true;
     });
-  }, [tasks, partnerFilter, categoryFilter]);
+  }, [tasks, partnerFilter, categoryFilter, pipelineFilter, resolveEngagementTimeline]);
 
   const scopedContracts = useMemo(
     () => contracts.filter((row) => partnerFilter === "all" || row.partner_id === partnerFilter),
@@ -501,6 +530,8 @@ export default function ClubPartnersWorkflow({ embedded = false }: ClubPartnersW
   const renderEngagementCard = (task: PartnerTaskRow, compact = false) => {
     const CategoryIcon = engagementCategoryIcon(task.engagement_category);
     const linkedEvent = events.find((e) => e.id === task.related_event_id);
+    const stage = deriveEngagementPipelineStage(resolveEngagementTimeline(task));
+    const stageIndex = ENGAGEMENT_PIPELINE_STAGES.indexOf(stage);
     return (
       <div key={task.id} className={cn(PARTNER_PANEL_CLASS, "p-4")}>
         <div className="flex items-start justify-between gap-3">
@@ -513,9 +544,34 @@ export default function ClubPartnersWorkflow({ embedded = false }: ClubPartnersW
               <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", taskStatusBadgeClass(task.task_status))}>
                 {p.taskStatuses[task.task_status]}
               </span>
+              <span className="rounded-full px-2 py-0.5 text-[10px] font-medium bg-muted text-foreground">
+                {p.engagements.pipelineStages[stage]}
+              </span>
+              {isMarketplaceSourcedEngagement(task) ? (
+                <span className="rounded-full px-2 py-0.5 text-[10px] font-medium bg-violet-500/10 text-violet-700 dark:text-violet-300">
+                  {p.marketplace.fromMarketplace}
+                </span>
+              ) : null}
             </div>
             <div className="mt-2 font-display font-bold text-foreground">{task.title}</div>
             <div className="mt-1 text-xs text-muted-foreground">{partnerLabel(task.partner_id)}</div>
+            {!compact ? (
+              <div className="mt-3">
+                <div className="text-[10px] font-medium text-muted-foreground mb-1">{p.engagements.pipelineTitle}</div>
+                <div className="flex gap-1">
+                  {ENGAGEMENT_PIPELINE_STAGES.map((s, idx) => (
+                    <div
+                      key={s}
+                      className={cn(
+                        "h-1.5 flex-1 rounded-full",
+                        idx <= stageIndex ? "bg-primary" : "bg-muted",
+                      )}
+                      title={p.engagements.pipelineStages[s]}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
             {!compact && task.description ? (
               <p className="mt-2 text-sm text-muted-foreground">{task.description}</p>
             ) : null}
@@ -782,17 +838,35 @@ export default function ClubPartnersWorkflow({ embedded = false }: ClubPartnersW
                 selectPartnerLabel={p.selectPartner}
                 filterAllLabel={p.directory.filterAllTypes}
                 extraFilter={
-                  <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as EngagementCategory | "all")}>
-                    <SelectTrigger className="h-10 rounded-xl sm:w-[220px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{p.engagements.filterAll}</SelectItem>
-                      {ENGAGEMENT_CATEGORIES.map((cat) => (
-                        <SelectItem key={cat} value={cat}>{p.engagementCategories[cat]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex flex-wrap gap-2">
+                    <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as EngagementCategory | "all")}>
+                      <SelectTrigger className="h-10 rounded-xl sm:w-[220px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{p.engagements.filterAll}</SelectItem>
+                        {ENGAGEMENT_CATEGORIES.map((cat) => (
+                          <SelectItem key={cat} value={cat}>{p.engagementCategories[cat]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={pipelineFilter}
+                      onValueChange={(v) => setPipelineFilter(v as EngagementPipelineStage | "all")}
+                    >
+                      <SelectTrigger className="h-10 rounded-xl sm:w-[200px]">
+                        <SelectValue placeholder={p.engagements.pipelineFilter} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{p.engagements.pipelineAll}</SelectItem>
+                        {ENGAGEMENT_PIPELINE_STAGES.map((stage) => (
+                          <SelectItem key={stage} value={stage}>
+                            {p.engagements.pipelineStages[stage]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 }
                 empty={p.engagements.empty}
               >

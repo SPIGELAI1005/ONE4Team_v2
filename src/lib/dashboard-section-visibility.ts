@@ -12,6 +12,9 @@ export interface DashboardSectionFlags {
   seasonAwards: boolean;
   adminNotificationSender: boolean;
   ai4teamWeeklyDigest: boolean;
+  weekAtAGlance: boolean;
+  trainerToday: boolean;
+  myDues: boolean;
   upcomingAndAi: boolean;
   marketplaceCards: boolean;
   tasksSummary: boolean;
@@ -29,6 +32,9 @@ const CLUB_ADMIN_SECTIONS: DashboardSectionFlags = {
   seasonAwards: false,
   adminNotificationSender: true,
   ai4teamWeeklyDigest: true,
+  weekAtAGlance: true,
+  trainerToday: false,
+  myDues: false,
   upcomingAndAi: true,
   marketplaceCards: true,
   tasksSummary: true,
@@ -46,6 +52,9 @@ const TRAINER_SECTIONS: DashboardSectionFlags = {
   seasonAwards: true,
   adminNotificationSender: false,
   ai4teamWeeklyDigest: false,
+  weekAtAGlance: false,
+  trainerToday: true,
+  myDues: false,
   upcomingAndAi: true,
   marketplaceCards: false,
   tasksSummary: true,
@@ -74,6 +83,9 @@ const PLAYER_SECTIONS: DashboardSectionFlags = {
   seasonAwards: false,
   adminNotificationSender: false,
   ai4teamWeeklyDigest: false,
+  weekAtAGlance: false,
+  trainerToday: false,
+  myDues: true,
   upcomingAndAi: true,
   marketplaceCards: false,
   tasksSummary: true,
@@ -91,6 +103,9 @@ const PARENT_SECTIONS: DashboardSectionFlags = {
   seasonAwards: false,
   adminNotificationSender: false,
   ai4teamWeeklyDigest: false,
+  weekAtAGlance: false,
+  trainerToday: false,
+  myDues: true,
   upcomingAndAi: true,
   marketplaceCards: false,
   tasksSummary: true,
@@ -108,6 +123,9 @@ const MEMBER_SECTIONS: DashboardSectionFlags = {
   seasonAwards: false,
   adminNotificationSender: false,
   ai4teamWeeklyDigest: false,
+  weekAtAGlance: false,
+  trainerToday: false,
+  myDues: true,
   upcomingAndAi: true,
   marketplaceCards: false,
   tasksSummary: true,
@@ -125,6 +143,9 @@ const SPONSOR_SECTIONS: DashboardSectionFlags = {
   seasonAwards: false,
   adminNotificationSender: false,
   ai4teamWeeklyDigest: false,
+  weekAtAGlance: false,
+  trainerToday: false,
+  myDues: false,
   upcomingAndAi: true,
   marketplaceCards: true,
   tasksSummary: true,
@@ -142,6 +163,9 @@ const PROVIDER_SECTIONS: DashboardSectionFlags = {
   seasonAwards: false,
   adminNotificationSender: false,
   ai4teamWeeklyDigest: false,
+  weekAtAGlance: false,
+  trainerToday: false,
+  myDues: false,
   upcomingAndAi: false,
   marketplaceCards: true,
   tasksSummary: false,
@@ -159,6 +183,9 @@ const DEFAULT_SECTIONS: DashboardSectionFlags = {
   seasonAwards: false,
   adminNotificationSender: false,
   ai4teamWeeklyDigest: false,
+  weekAtAGlance: false,
+  trainerToday: false,
+  myDues: false,
   upcomingAndAi: true,
   marketplaceCards: false,
   tasksSummary: true,

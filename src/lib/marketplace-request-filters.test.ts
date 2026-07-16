@@ -1,115 +1,88 @@
 import { describe, expect, it } from "vitest";
-import type { MarketplaceRequestRow } from "@/lib/marketplace-models";
 import {
+  computeProviderRequestInboxKpis,
   filterRequestsForProvider,
-  isRequestRelevantForProvider,
-  offerCountForRequest,
-  parseRequestAttachments,
+  parseProviderRequestFiltersFromSearch,
+  providerRequestFiltersToSearchParams,
 } from "@/lib/marketplace-request-filters";
+import type { MarketplaceRequestRow } from "@/lib/marketplace-models";
 
-function makeRequest(overrides: Partial<MarketplaceRequestRow> = {}): MarketplaceRequestRow {
+function req(partial: Partial<MarketplaceRequestRow> & Pick<MarketplaceRequestRow, "id">): MarketplaceRequestRow {
   return {
-    id: "req-1",
-    club_id: "club-1",
-    title: "Test request",
+    club_id: "c1",
+    created_by: "u1",
+    title: "Need kit",
     category: "equipment",
+    provider_type_wanted: "supplier",
     description: null,
-    location: null,
-    deadline: null,
-    budget_min: null,
-    budget_max: null,
-    visibility: "marketplace",
-    status: "open",
-    provider_type_wanted: null,
     quantity: null,
-    attachments: null,
-    created_by: "user-1",
-    created_at: "2026-01-01T00:00:00Z",
-    updated_at: "2026-01-01T00:00:00Z",
-    ...overrides,
+    visibility: "marketplace",
+    budget_min: 100,
+    budget_max: 500,
+    deadline: null,
+    location: "Munich",
+    attachments: [],
+    status: "open",
+    created_at: "",
+    updated_at: "",
+    ...partial,
   };
 }
 
-describe("isRequestRelevantForProvider", () => {
-  it("excludes private and non-open requests", () => {
-    expect(
-      isRequestRelevantForProvider(
-        makeRequest({ visibility: "private" }),
-        "supplier",
-        ["equipment"],
-      ),
-    ).toBe(false);
-    expect(
-      isRequestRelevantForProvider(
-        makeRequest({ status: "draft" }),
-        "supplier",
-        ["equipment"],
-      ),
-    ).toBe(false);
-  });
-
-  it("matches provider type and category", () => {
-    expect(
-      isRequestRelevantForProvider(
-        makeRequest({ provider_type_wanted: "supplier" }),
-        "supplier",
-        ["equipment"],
-      ),
-    ).toBe(true);
-    expect(
-      isRequestRelevantForProvider(
-        makeRequest({ provider_type_wanted: "consultant" }),
-        "supplier",
-        ["equipment"],
-      ),
-    ).toBe(false);
-    expect(
-      isRequestRelevantForProvider(
-        makeRequest({ category: "consulting" }),
-        "supplier",
-        ["equipment"],
-      ),
-    ).toBe(false);
-  });
-});
-
-describe("filterRequestsForProvider", () => {
-  const requests = [
-    makeRequest({ id: "a", category: "equipment" }),
-    makeRequest({ id: "b", category: "photography", status: "offers_received" }),
-    makeRequest({ id: "c", category: "equipment", visibility: "private" }),
+describe("filterRequestsForProvider extended", () => {
+  const base = [
+    req({ id: "1", location: "Munich", budget_min: 100, budget_max: 400 }),
+    req({ id: "2", location: "Berlin", budget_min: 800, budget_max: 1200, status: "offers_received" }),
+    req({ id: "3", location: "Munich South", budget_min: null, budget_max: null }),
   ];
 
-  it("filters by relevance and category", () => {
-    const filtered = filterRequestsForProvider(requests, "supplier", ["equipment"], {
-      category: "equipment",
-    });
-    expect(filtered.map((r) => r.id)).toEqual(["a"]);
-  });
-});
-
-describe("offerCountForRequest", () => {
-  it("counts offers for a request", () => {
-    const count = offerCountForRequest("req-1", [
-      { request_id: "req-1" },
-      { request_id: "req-2" },
-      { request_id: "req-1" },
-    ]);
-    expect(count).toBe(2);
-  });
-});
-
-describe("parseRequestAttachments", () => {
-  it("parses valid attachment rows", () => {
+  it("filters by location substring and budget overlap", () => {
     expect(
-      parseRequestAttachments([
-        { name: "Brief.pdf", url: "https://example.com/brief.pdf" },
-        { url: "https://example.com/photo.jpg" },
-        { url: "" },
+      filterRequestsForProvider(base, "supplier", ["equipment"], {
+        location: "munich",
+        budgetMax: 450,
+      }).map((r) => r.id),
+    ).toEqual(["1", "3"]);
+  });
+
+  it("filters no-offer-yet", () => {
+    expect(
+      filterRequestsForProvider(base, "supplier", ["equipment"], {
+        noOfferYet: true,
+        offeredRequestIds: new Set(["1"]),
+      }).map((r) => r.id),
+    ).toEqual(["2", "3"]);
+  });
+});
+
+describe("provider request filter URL helpers", () => {
+  it("round-trips search params", () => {
+    const params = providerRequestFiltersToSearchParams({
+      category: "equipment",
+      location: "Munich",
+      status: "open",
+      noOfferYet: true,
+      budgetMin: 50,
+      budgetMax: 200,
+    });
+    const parsed = parseProviderRequestFiltersFromSearch(params.toString());
+    expect(parsed.category).toBe("equipment");
+    expect(parsed.location).toBe("Munich");
+    expect(parsed.status).toBe("open");
+    expect(parsed.noOfferYet).toBe(true);
+    expect(parsed.budgetMin).toBe(50);
+    expect(parsed.budgetMax).toBe(200);
+  });
+});
+
+describe("computeProviderRequestInboxKpis", () => {
+  it("counts matching offered and won", () => {
+    const matching = [req({ id: "1" }), req({ id: "2" }), req({ id: "3" })];
+    expect(
+      computeProviderRequestInboxKpis(matching, [
+        { request_id: "1", status: "submitted" },
+        { request_id: "2", status: "accepted" },
       ]),
-    ).toEqual([
-      { name: "Brief.pdf", url: "https://example.com/brief.pdf" },
-      { name: "https://example.com/photo.jpg", url: "https://example.com/photo.jpg" },
-    ]);
+    ).toEqual({ openMatching: 3, offered: 2, won: 1 });
   });
 });

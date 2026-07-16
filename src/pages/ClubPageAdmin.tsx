@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { BrandedText } from "@/components/ai/Ai4TBrand";
+import { JoinFunnelAnalyticsCard } from "@/components/club-page-admin/join-funnel-analytics-card";
+import {
+  copyPrimaryLocalizedFields,
+  missingSecondaryRequiredFields,
+} from "@/lib/club-page-bilingual-ux";
+import { emptyClubLocalizedContent } from "@/lib/club-public-page-i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -55,6 +61,13 @@ import {
   type ClubPublicPageConfig,
   type ClubPublicPageEditorFormLike,
 } from "@/lib/club-public-page-config";
+import {
+  CLUB_SITE_BANNER_KINDS,
+  defaultSommerfestSiteBanner,
+  defaultsForSiteBannerKind,
+  normalizeClubSiteBannerKind,
+  type ClubSiteBannerConfig,
+} from "@/lib/club-site-banner";
 import { DEFAULT_CLUB_HERO_ASSETS } from "@/lib/club-hero-default-assets";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -414,6 +427,13 @@ export default function ClubPageAdmin() {
     setForm((prev) => ({
       ...prev,
       homepageModuleDefs: { ...prev.homepageModuleDefs, [id]: { ...prev.homepageModuleDefs[id], ...patch } },
+    }));
+  }, []);
+
+  const updateSiteBanner = useCallback((patch: Partial<ClubSiteBannerConfig>) => {
+    setForm((prev) => ({
+      ...prev,
+      siteBanner: { ...prev.siteBanner, ...patch },
     }));
   }, []);
 
@@ -925,12 +945,52 @@ export default function ClubPageAdmin() {
                 ) : null}
                 {canUseMultilingual && form.secondary_language_enabled ? (
                   <div className="space-y-3 rounded-xl border border-primary/25 bg-primary/5 p-4">
-                    <div className="text-sm font-medium">
-                      {t.clubPageAdmin.secondaryLanguageContentTitle.replace(
-                        "{language}",
-                        clubLanguageLabel(secondaryLanguage, t.clubPageAdmin),
-                      )}
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="text-sm font-medium">
+                        {t.clubPageAdmin.secondaryLanguageContentTitle.replace(
+                          "{language}",
+                          clubLanguageLabel(secondaryLanguage, t.clubPageAdmin),
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const primary = {
+                            ...emptyClubLocalizedContent(),
+                            description: form.description ?? "",
+                            meta_title: form.meta_title ?? "",
+                            meta_description: form.meta_description ?? "",
+                            news_page_subtitle: form.news_page_subtitle ?? "",
+                            public_location_notes: form.public_location_notes ?? "",
+                          };
+                          const next = copyPrimaryLocalizedFields(
+                            primary,
+                            form.localized_secondary,
+                            ["description", "meta_title", "meta_description", "news_page_subtitle", "public_location_notes"],
+                          );
+                          setForm((prev) => ({ ...prev, localized_secondary: next }));
+                        }}
+                      >
+                        {t.clubPageAdmin.copyFromPrimary}
+                      </Button>
                     </div>
+                    {missingSecondaryRequiredFields(
+                      {
+                        description: form.description ?? "",
+                        meta_title: form.meta_title ?? "",
+                        meta_description: form.meta_description ?? "",
+                        news_page_subtitle: form.news_page_subtitle ?? "",
+                        public_location_notes: form.public_location_notes ?? "",
+                      },
+                      form.localized_secondary,
+                      ["description", "meta_title"],
+                    ).length > 0 ? (
+                      <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                        {t.clubPageAdmin.secondaryIncompleteHint}
+                      </p>
+                    ) : null}
                     <div>
                       <div className="mb-1 text-xs text-muted-foreground">{t.clubPageAdmin.description}</div>
                       <textarea
@@ -1264,6 +1324,105 @@ export default function ClubPageAdmin() {
           </TabsContent>
 
           <TabsContent value="homepage" className="space-y-6">
+            <SectionCard icon={Megaphone} title={t.clubPageAdmin.siteBannerTitle}>
+              <p className="mb-4 text-[11px] text-muted-foreground">{t.clubPageAdmin.siteBannerIntro}</p>
+              <Alert className="mb-4 border-amber-500/40 bg-amber-500/10">
+                <AlertTitle className="text-sm">{t.clubPageAdmin.siteBannerPublishHintTitle}</AlertTitle>
+                <AlertDescription className="text-[11px] leading-relaxed text-muted-foreground">
+                  {t.clubPageAdmin.siteBannerPublishHintBody}
+                </AlertDescription>
+              </Alert>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/30 px-3 py-2.5">
+                  <div>
+                    <div className="text-sm text-foreground">{t.clubPageAdmin.siteBannerEnabled}</div>
+                    <div className="mt-0.5 text-[10px] text-muted-foreground">{t.clubPageAdmin.siteBannerEnabledDesc}</div>
+                  </div>
+                  <Switch
+                    checked={form.siteBanner.enabled}
+                    onCheckedChange={(c) => updateSiteBanner({ enabled: Boolean(c) })}
+                  />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <div className="mb-1 text-xs text-muted-foreground">{t.clubPageAdmin.siteBannerKind}</div>
+                    <Select
+                      value={normalizeClubSiteBannerKind(form.siteBanner.kind)}
+                      onValueChange={(v) => updateSiteBanner({ kind: normalizeClubSiteBannerKind(v) })}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CLUB_SITE_BANNER_KINDS.map((kind) => (
+                          <SelectItem key={kind} value={kind}>
+                            {kind === "promo"
+                              ? t.clubPageAdmin.siteBannerKindPromo
+                              : kind === "news"
+                                ? t.clubPageAdmin.siteBannerKindNews
+                                : kind === "event"
+                                  ? t.clubPageAdmin.siteBannerKindEvent
+                                  : kind === "alert"
+                                    ? t.clubPageAdmin.siteBannerKindAlert
+                                    : t.clubPageAdmin.siteBannerKindSommerfest}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex flex-wrap items-end gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-9"
+                      onClick={() =>
+                        updateSiteBanner(defaultsForSiteBannerKind(normalizeClubSiteBannerKind(form.siteBanner.kind)))
+                      }
+                    >
+                      {t.clubPageAdmin.siteBannerApplyTypeDefaults}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-9"
+                      onClick={() => updateSiteBanner(defaultSommerfestSiteBanner())}
+                    >
+                      {t.clubPageAdmin.siteBannerApplySommerfest}
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground">{t.clubPageAdmin.siteBannerKindHelp}</p>
+                <FieldRow
+                  label={t.clubPageAdmin.siteBannerHeadline}
+                  value={form.siteBanner.title}
+                  onChange={(v) => updateSiteBanner({ title: v })}
+                  placeholder="Sommer Camp // Campus Rossoblù"
+                />
+                <FieldRow
+                  label={t.clubPageAdmin.siteBannerSubtitle}
+                  value={form.siteBanner.subtitle}
+                  onChange={(v) => updateSiteBanner({ subtitle: v })}
+                />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <FieldRow
+                    label={t.clubPageAdmin.siteBannerCta}
+                    value={form.siteBanner.ctaLabel}
+                    onChange={(v) => updateSiteBanner({ ctaLabel: v })}
+                    placeholder="See camp information"
+                  />
+                  <FieldRow
+                    label={t.clubPageAdmin.siteBannerHref}
+                    value={form.siteBanner.href}
+                    onChange={(v) => updateSiteBanner({ href: v })}
+                    placeholder="/news/your-story-slug"
+                    helper={t.clubPageAdmin.siteBannerHrefHint}
+                  />
+                </div>
+              </div>
+            </SectionCard>
+
             <SectionCard icon={Megaphone} title={t.clubPageAdmin.tabHomepage}>
               <p className="mb-4 text-[11px] text-muted-foreground">{t.clubPageAdmin.homepageModulesIntro}</p>
               <div className="space-y-4">
@@ -1375,6 +1534,7 @@ export default function ClubPageAdmin() {
           </TabsContent>
 
           <TabsContent value="join" className="space-y-6">
+            <JoinFunnelAnalyticsCard />
             <SectionCard icon={UserPlus} title={t.clubPageAdmin.tabJoin}>
               <div className="grid gap-3">
                 <div>

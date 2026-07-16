@@ -1,5 +1,6 @@
 import type { PlanId } from "@/lib/stripe";
 import { BESPOKE_PLAN_LIMITS, PLAN_CATALOG } from "@/lib/plan-catalog";
+import { getAiMonthlyCaps, type AiMonthlyCaps } from "@/lib/ai-usage-meter";
 
 export interface PlanLimits {
   maxMembers: number;
@@ -109,4 +110,9 @@ const FEATURE_DISPLAY_NAMES: Record<FeatureKey, string> = {
 /** Human-readable feature label for support/upgrade copy (not localized; product feature names). */
 export function getFeatureDisplayName(feature: FeatureKey): string {
   return FEATURE_DISPLAY_NAMES[feature] ?? feature;
+}
+
+/** Monthly AI 4 T fair-use caps for the active plan (mirrors Edge `ai_usage_caps.ts`). */
+export function getPlanAiMonthlyCaps(planId: string | null | undefined): AiMonthlyCaps {
+  return getAiMonthlyCaps(planId);
 }

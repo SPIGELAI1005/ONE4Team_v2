@@ -15,6 +15,7 @@ import { useActiveClub } from "@/hooks/use-active-club";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/use-language";
 import { trackEvent } from "@/lib/telemetry";
+import { isAnnouncementPubliclyVisible } from "@/lib/announcement-publish";
 import {
   CLUB_PUBLIC_PAGE_ROW_SELECT,
   getClubPageDraftConfig,
@@ -522,7 +523,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
         supabase
           .from("announcements")
           .select(
-            "id, title, content, created_at, priority, publish_to_public_website, public_news_category, image_url, excerpt"
+            "id, title, content, created_at, priority, publish_to_public_website, public_news_category, image_url, excerpt, scheduled_publish_at, is_draft"
           )
           .eq("club_id", club.id)
           .eq("publish_to_public_website", true)
@@ -603,7 +604,9 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
           msg.includes("publish_to_public_website") ||
           msg.includes("public_news_category") ||
           msg.includes("image_url") ||
-          msg.includes("excerpt");
+          msg.includes("excerpt") ||
+          msg.includes("scheduled_publish_at") ||
+          msg.includes("is_draft");
         if (!missingNewsColumns && !isMissingRelationError(newsRes.error)) {
           toast({ title: t.common.error, description: newsRes.error.message, variant: "destructive" });
         }
@@ -705,11 +708,33 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       setDbEvents(
         eventRows.map((e) => redactEventForPrivacy(e, pv.showTrainingLocationsPublic, pv.showTrainingTimesPublic))
       );
-      const rawNews = !newsRes.error ? ((newsRes.data as NewsRowLite[]) || []) : [];
+      let rawNews = !newsRes.error ? ((newsRes.data as NewsRowLite[]) || []) : [];
+      if (newsRes.error) {
+        const newsMsg = String(newsRes.error.message ?? "");
+        if (newsMsg.includes("scheduled_publish_at") || newsMsg.includes("is_draft")) {
+          const retryNews = await supabase
+            .from("announcements")
+            .select(
+              "id, title, content, created_at, priority, publish_to_public_website, public_news_category, image_url, excerpt",
+            )
+            .eq("club_id", club.id)
+            .eq("publish_to_public_website", true)
+            .order("created_at", { ascending: false })
+            .limit(12);
+          if (!retryNews.error) rawNews = (retryNews.data as NewsRowLite[]) || [];
+        }
+      }
+      const visibleNews = rawNews.filter((n) =>
+        isAnnouncementPubliclyVisible({
+          publish_to_public_website: n.publish_to_public_website,
+          is_draft: (n as { is_draft?: boolean }).is_draft,
+          scheduled_publish_at: (n as { scheduled_publish_at?: string | null }).scheduled_publish_at,
+        }),
+      );
       setDbNews(
         pv.youthHidePublicPlayerImages
-          ? rawNews.map((n) => ({ ...n, image_url: null }))
-          : rawNews
+          ? visibleNews.map((n) => ({ ...n, image_url: null }))
+          : visibleNews
       );
       setMemberCount((membersCountRes as unknown as { count: number | null }).count ?? 0);
       setShopProducts(((shopRes as unknown as { data: ShopProductLite[] | null }).data) || []);

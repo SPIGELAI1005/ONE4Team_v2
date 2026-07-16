@@ -65,6 +65,8 @@ type Announcement = {
   public_news_category?: string | null;
   image_url?: string | null;
   excerpt?: string | null;
+  scheduled_publish_at?: string | null;
+  is_draft?: boolean;
 };
 
 type Message = {
@@ -305,6 +307,8 @@ export function CommunicationWorkspace({
   const [annPriority, setAnnPriority] = useState("normal");
   const [annPublishPublic, setAnnPublishPublic] = useState(false);
   const [annPublicCategory, setAnnPublicCategory] = useState("club");
+  const [annScheduledAt, setAnnScheduledAt] = useState("");
+  const [annIsDraft, setAnnIsDraft] = useState(false);
   const [annImageUrl, setAnnImageUrl] = useState("");
   const [annImageUploading, setAnnImageUploading] = useState(false);
   const annImageFileRef = useRef<HTMLInputElement>(null);
@@ -1034,6 +1038,8 @@ export function CommunicationWorkspace({
     setAnnPriority("normal");
     setAnnPublishPublic(false);
     setAnnPublicCategory("club");
+    setAnnScheduledAt("");
+    setAnnIsDraft(false);
     setAnnImageUrl("");
     setAnnExcerpt("");
   };
@@ -1052,6 +1058,12 @@ export function CommunicationWorkspace({
     setAnnTeamId(announcement.team_id ?? "all");
     setAnnPublishPublic(Boolean(announcement.publish_to_public_website));
     setAnnPublicCategory(announcement.public_news_category ?? "club");
+    setAnnScheduledAt(
+      announcement.scheduled_publish_at
+        ? new Date(announcement.scheduled_publish_at).toISOString().slice(0, 16)
+        : "",
+    );
+    setAnnIsDraft(Boolean(announcement.is_draft));
     setAnnImageUrl(announcement.image_url ?? "");
     setShowAddAnnouncement(true);
   };
@@ -1084,6 +1096,8 @@ export function CommunicationWorkspace({
       public_news_category: annPublishPublic ? annPublicCategory : "club",
       image_url: annImageUrl.trim() || null,
       excerpt: annExcerpt.trim() || null,
+      scheduled_publish_at: annScheduledAt.trim() ? new Date(annScheduledAt).toISOString() : null,
+      is_draft: annIsDraft,
     };
 
     if (editingAnnouncementId) {
@@ -2360,6 +2374,25 @@ export function CommunicationWorkspace({
                     </p>
                   </div>
                   <Switch id="ann-publish-public" checked={annPublishPublic} onCheckedChange={setAnnPublishPublic} />
+                </div>
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-border/50 px-3 py-2">
+                  <div>
+                    <Label htmlFor="ann-draft" className={cn("text-xs", embedded && "text-neutral-800")}>
+                      {t.communicationPage.saveAsDraft}
+                    </Label>
+                  </div>
+                  <Switch id="ann-draft" checked={annIsDraft} onCheckedChange={setAnnIsDraft} />
+                </div>
+                <div className="space-y-1">
+                  <Label className={cn("text-xs", embedded && "text-neutral-800")}>
+                    {t.communicationPage.scheduledPublishAt}
+                  </Label>
+                  <Input
+                    type="datetime-local"
+                    value={annScheduledAt}
+                    onChange={(e) => setAnnScheduledAt(e.target.value)}
+                    className={cn("h-10 rounded-xl", embedded ? clubGlassInputClass : "")}
+                  />
                 </div>
               </div>
               {annPublishPublic ? (

@@ -12,21 +12,63 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 **Ops follow-up (operator OK 2026-07-16):** Auth URLs, Resend domain + invite inbox, and core pilot smoke (Allach public, Members, Messages/Tasks, Payments, mobile AI/Messages) marked done below / in Sprint 2026-07-01 tracks.
 
+**Follow-up (same day):** Product Waves A–E landed; linked DB migrations through **`20260802150000`**; configurable club **site banner** + matches status button group. See **`CHANGELOG.md`** § **2026-07-16 (Product Waves…)**.
+
 | Track | Focus | Task IDs |
 |-------|--------|----------|
 | **A** | Plan catalog + DB | PKG-001, PKG-002 |
 | **B** | German i18n | I18N-DE-001 |
 | **C** | Public club / hero | PUB-ACCT-001, HERO-ISO-001 |
+| **D** | Product improvements Wave B | PROD-006, PROD-008, PROD-010 |
+| **E** | Product improvements Waves A–E | PROD-005 … PROD-021 |
+| **F** | Site banner + matches UX | PUB-BANNER-001, MATCH-STATUS-001 |
+
+### Backlog (out of scope for PROD-005…021 program)
+
+- [ ] **PKG-003** Sync Stripe Dashboard price IDs / amounts to new catalog (operator)
+- [ ] **LEGAL-OPS-001** / **LEGAL-OPS-002** — Impressum street address + HRB
+- [ ] **Marketplace → Partners bridge** polish / Phase 3 remainders — see **PARTNER-OPS-003** + `docs/marketplace-implementation-plan.md`
+- [ ] **PARTNER-OPS-001-SMOKE** / **PARTNER-OPS-002-SMOKE** — persona + offer-loop manual smoke
+
+### Product improvements PROD-005…021
+
+- [x] **PROD-005** Admin **week-at-a-glance** (unpaid dues, join requests, RSVP gaps, overdue tasks)
+- [x] **PROD-006** Parent/member **weekly digest** — `process-weekly-digests` Edge (Resend), member opt-in + admin automation toggle, EN/DE i18n; builds on `automation_rules` / `automation_runs` (`weekly_digest`). Migration **`20260802120000_wave_b_weekly_digest_ai_caps_dues_claims.sql`**.
+- [x] **PROD-007** Merge draft **`master_data`** on invite accept (**P12-050d**) — migration **`20260802130000_redeem_invite_merge_draft_master_data.sql`**
+- [x] **PROD-008** **AI usage meters** — monthly caps in `plan-catalog` / `plan-limits`, fair-use UI on `Ai4tAdminUsageCard` + Settings, Edge cap enforcement aligned with `ai_usage_caps.ts`.
+- [x] **PROD-009** Trainer mobile **today’s session** card
+- [x] **PROD-010** **Member self-serve my dues** — `MyDuesCard` on member/parent/player dashboard, club IBAN/instructions in Settings, `dues_payment_claims` + `submit_due_payment_claim` RPC (no Stripe club-dues checkout).
+- [x] **PROD-011** Provider request inbox filters (region/budget/status/no-offer)
+- [x] **PROD-012** Engagement status timeline (Partners CRM)
+- [x] **PROD-013** Public provider SEO page `/providers/:slug`
+- [x] **PROD-014** Listing moderation queue
+- [x] **PROD-015** Verified / featured badges + filters
+- [x] **PROD-016** Reviews after closed engagement
+- [x] **PROD-017** Distinct **`marketplace:read` / `marketplace:write`** permissions
+- [x] **PROD-018** Join funnel analytics
+- [x] **PROD-019** News/events CMS polish (schedule, preview, share)
+- [x] **PROD-020** Public club PWA install prompt
+- [x] **PROD-021** Multilingual Club Page Admin editing UX
+
+### Site banner + matches UX (post Wave E)
+
+- [x] **PUB-BANNER-001** Configurable public club **site banner** in Club Page Admin (enable/types/copy/link; publish required; Allach Sommerfest default when unset)
+- [x] **MATCH-STATUS-001** Match detail editor: status **button group** instead of dropdown (mobile-friendly)
+
+### Packaging / i18n / public club (Track A–C)
 
 - [x] **PKG-001** **`plan-catalog.ts`** + **`plan-limits`** + Pricing UI + EN/DE feature copy
 - [x] **PKG-002** Migration **`20260801220000_revise_plan_catalog_pricing_limits.sql`** applied on linked remote
-- [ ] **PKG-003** Sync Stripe Dashboard price IDs / amounts to new catalog (operator)
+- [ ] **PKG-003** Sync Stripe Dashboard price IDs / amounts to new catalog (operator) — **backlog** (see above)
 - [x] **I18N-DE-001** Comprehensive DE pass (parity, umlauts, leftovers) — club/partner/marketplace/operator
 - [x] **PUB-ACCT-001** Public profile menu + account settings modal + invite dismiss fixes
 - [x] **HERO-ISO-001** Neutral hero PNGs + tenant-isolation tests (no Allach camp default)
 - [x] **TEAMS-PICKER-001** Edit Team member picker — full club roster search
 - [x] **AI4T-BRAND-001** Red **4** branding on dashboard AI surfaces
 - [x] **ALLACH-FEE-001** Membership package annual fees + €30 registration on join form
+
+- [x] **WAVE-MIG-001** Linked remote: apply **`20260802120000`** → **`20260802150000`** *(operator 2026-07-16)*
+- [ ] **WAVE-EDGE-001** Deploy **`process-weekly-digests`** + schedule cron; redeploy AI Edges for caps (see **`HOLD.md`**)
 
 ---
 
@@ -475,7 +517,7 @@ See [`docs/AI4T_ROADMAP.md`](docs/AI4T_ROADMAP.md) · Golden harness [`docs/AI4T
 - [x] **P12-050a** Apply migrations: `20260324120000`, `20260324140000`, `20260324201000`, `20260324210000`, `20260325220000` (order: master records → role assignments → SELECT broaden → draft `master_data` → redeem invite guardians).
 - [x] **P12-050b** Members UI: tabbed master data, draft inline edit with `master_data`, bulk add expand + XLSX column merge, detail Club Card tab, larger list/draft controls.
 - [x] **P12-050c** App permissions aligned with `club_role_assignments` + legacy membership roles (`permissions.ts`, hooks).
-- [ ] **P12-050d** Follow-up: merge draft `master_data` into `club_member_master_records` on invite acceptance (server trigger or app); optional E2E for registry paths.
+- [x] **P12-050d** Follow-up: merge draft `master_data` into `club_member_master_records` on invite acceptance (server trigger or app); optional E2E for registry paths. — done via **`20260802130000_redeem_invite_merge_draft_master_data.sql`** / **PROD-007**.
 - [x] **P12-050e** Guardians UX + data path (2026-03-25): draft Safety tab (Player role only) with `__draft_guardian_membership_ids` in `master_data`; roster Safety tab guardians only for `player` role; `invite_payload.guardian_membership_ids` on draft invite; migration `20260325220000` extends `redeem_club_invite` to create `club_member_guardian_links`; non-player inline save removes ward guardian rows.
 
 ### P12-020 Abuse controls + quality gates

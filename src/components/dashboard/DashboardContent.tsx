@@ -25,6 +25,9 @@ import { TasksSummaryCard } from "@/components/dashboard/TasksSummaryCard";
 import { MarketplaceDashboardCards } from "@/components/dashboard/MarketplaceDashboardCards";
 import AdminNotificationSender from "@/components/dashboard/AdminNotificationSender";
 import { Ai4tAdminUsageCard } from "@/components/dashboard/Ai4tAdminUsageCard";
+import { MyDuesCard } from "@/components/dashboard/MyDuesCard";
+import { AdminWeekAtAGlanceCard } from "@/components/dashboard/AdminWeekAtAGlanceCard";
+import { TrainerTodaySessionCard } from "@/components/dashboard/TrainerTodaySessionCard";
 import FinancialSummary from "@/components/dashboard/FinancialSummary";
 import SeasonProgressionChart from "@/components/analytics/SeasonProgressionChart";
 import TeamChemistry from "@/components/analytics/TeamChemistry";
@@ -716,7 +719,15 @@ const DashboardContent = () => {
 
         {sections.liveMatchTicker ? <LiveMatchTicker /> : null}
 
+        {sections.weekAtAGlance && isClubAdminPersona ? <AdminWeekAtAGlanceCard /> : null}
+
+        {sections.trainerToday && (role === "trainer" || role === "team_staff") ? (
+          <TrainerTodaySessionCard />
+        ) : null}
+
         {sections.tasksSummary ? <TasksSummaryCard /> : null}
+
+        {sections.myDues ? <MyDuesCard /> : null}
 
         {sections.marketplaceCards ? <MarketplaceDashboardCards /> : null}
 

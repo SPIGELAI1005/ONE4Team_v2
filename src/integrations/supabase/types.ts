@@ -1485,6 +1485,7 @@ export type Database = {
           team: string | null
           updated_at: string
           user_id: string
+          weekly_digest_opt_in: boolean
         }
         Insert: {
           age_group?: string | null
@@ -1497,6 +1498,7 @@ export type Database = {
           team?: string | null
           updated_at?: string
           user_id: string
+          weekly_digest_opt_in?: boolean
         }
         Update: {
           age_group?: string | null
@@ -1509,6 +1511,7 @@ export type Database = {
           team?: string | null
           updated_at?: string
           user_id?: string
+          weekly_digest_opt_in?: boolean
         }
         Relationships: [
           {
@@ -2092,6 +2095,8 @@ export type Database = {
           meta_title: string | null
           name: string
           og_image_url: string | null
+          payment_iban: string | null
+          payment_instructions: string | null
           phone: string | null
           primary_color: string | null
           public_location_notes: string | null
@@ -2140,6 +2145,8 @@ export type Database = {
           meta_title?: string | null
           name: string
           og_image_url?: string | null
+          payment_iban?: string | null
+          payment_instructions?: string | null
           phone?: string | null
           primary_color?: string | null
           public_location_notes?: string | null
@@ -2188,6 +2195,8 @@ export type Database = {
           meta_title?: string | null
           name?: string
           og_image_url?: string | null
+          payment_iban?: string | null
+          payment_instructions?: string | null
           phone?: string | null
           primary_color?: string | null
           public_location_notes?: string | null
@@ -2691,6 +2700,66 @@ export type Database = {
           },
           {
             foreignKeyName: "membership_dues_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "club_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dues_payment_claims: {
+        Row: {
+          amount_cents: number | null
+          claimed_at: string
+          club_id: string
+          created_at: string
+          currency: string
+          due_id: string | null
+          id: string
+          membership_id: string
+          note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          amount_cents?: number | null
+          claimed_at?: string
+          club_id: string
+          created_at?: string
+          currency?: string
+          due_id?: string | null
+          id?: string
+          membership_id: string
+          note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          amount_cents?: number | null
+          claimed_at?: string
+          club_id?: string
+          created_at?: string
+          currency?: string
+          due_id?: string | null
+          id?: string
+          membership_id?: string
+          note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dues_payment_claims_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dues_payment_claims_membership_id_fkey"
             columns: ["membership_id"]
             isOneToOne: false
             referencedRelation: "club_memberships"
@@ -4087,6 +4156,35 @@ export type Database = {
       enqueue_automation_run: {
         Args: { _club_id: string; _payload?: Json; _rule_type: string }
         Returns: string
+      }
+      claim_automation_runs: {
+        Args: { _limit?: number; _run_type?: string }
+        Returns: Database["public"]["Tables"]["automation_runs"]["Row"][]
+      }
+      complete_automation_run: {
+        Args: {
+          _error_message?: string
+          _result?: Json
+          _run_id: string
+          _status: string
+        }
+        Returns: undefined
+      }
+      upsert_weekly_digest_rule: {
+        Args: { _club_id: string; _enabled: boolean }
+        Returns: string
+      }
+      set_weekly_digest_opt_in: {
+        Args: { _club_id: string; _opt_in: boolean }
+        Returns: undefined
+      }
+      submit_due_payment_claim: {
+        Args: { _club_id: string; _due_id: string; _note?: string }
+        Returns: string
+      }
+      get_club_ai_monthly_usage: {
+        Args: { _club_id: string }
+        Returns: Json
       }
       get_club_abuse_alerts: {
         Args: { _club_id: string; _limit?: number; _status?: string }

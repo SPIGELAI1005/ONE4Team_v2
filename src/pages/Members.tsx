@@ -25,6 +25,7 @@ import { RoleManager } from "@/components/members/role-manager";
 import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
 import { useRegisterAiAgentContext } from "@/hooks/use-register-ai-agent-context";
 import { trackEvent } from "@/lib/telemetry";
+import { trackJoinFunnelEvent } from "@/lib/track-join-funnel";
 import { trackUsageEvent } from "@/lib/usage-events";
 import type { ClubMemberMasterRecord } from "@/lib/member-master-schema";
 import {
@@ -2577,6 +2578,7 @@ const Members = () => {
 
     if (outcome === "joined") {
       trackEvent("join_request_approved", { outcome: "joined_directly" });
+      if (clubId) void trackJoinFunnelEvent({ clubId, eventName: "request_approved" });
       setInviteRequests((prev) => prev.map((r) => (r.id === request.id ? { ...r, status: "approved" } : r)));
       toast({ title: t.common.approved, description: t.membersPage.requestApprovedAndJoined });
       return;

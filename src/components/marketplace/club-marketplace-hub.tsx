@@ -25,6 +25,8 @@ import { MarketplaceDiscoverPanel } from "@/components/marketplace/marketplace-d
 import { MarketplaceKpiStrip } from "@/components/marketplace/marketplace-kpi-strip";
 import { MarketplaceTabBar } from "@/components/marketplace/marketplace-tab-bar";
 import { MarketplaceSchemaBanner } from "@/components/marketplace/marketplace-schema-banner";
+import { MarketplaceModerationPanel } from "@/components/marketplace/marketplace-moderation-panel";
+import { MarketplaceEngagementReviewsPanel } from "@/components/marketplace/marketplace-engagement-reviews-panel";
 import {
   buildClubProviderRelationshipMap,
   type ClubProviderRelationshipStatus,
@@ -323,19 +325,16 @@ export default function ClubMarketplaceHub() {
               )
             )}
 
-            {tab === "reviews" && (
-              <MarketplaceEmptyState
-                title={m.club.empty.noReviewsTitle}
-                description={m.club.empty.noReviewsDesc}
-              />
-            )}
+            {tab === "reviews" && <MarketplaceEngagementReviewsPanel clubId={clubId} />}
 
-            {tab === "moderation" && (
+            {tab === "moderation" && canModerate ? (
+              <MarketplaceModerationPanel onChanged={() => void reload()} />
+            ) : tab === "moderation" ? (
               <MarketplaceEmptyState
                 title={m.club.empty.noModerationTitle}
                 description={m.club.empty.noModerationDesc}
               />
-            )}
+            ) : null}
           </>
         )}
       </div>

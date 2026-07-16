@@ -90,3 +90,14 @@ export function hasActiveDiscoverFilters(filters: MarketplaceDiscoverFilters): b
     filters.referencesFilter !== "all"
   );
 }
+
+export function sortMarketplaceProvidersFeaturedFirst(
+  providers: MarketplaceProviderProfileRow[],
+): MarketplaceProviderProfileRow[] {
+  return [...providers].sort((a, b) => {
+    if (a.is_featured !== b.is_featured) return a.is_featured ? -1 : 1;
+    if (a.verification_status === "verified" && b.verification_status !== "verified") return -1;
+    if (b.verification_status === "verified" && a.verification_status !== "verified") return 1;
+    return a.provider_name.localeCompare(b.provider_name);
+  });
+}

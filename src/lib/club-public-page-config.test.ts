@@ -64,6 +64,14 @@ function sampleEditorForm() {
     join_auto_approve_invited_only: true,
     featured_team_ids: ["team-uuid-1", "team-uuid-2"],
     homepage_show_partners: true,
+    siteBanner: {
+      enabled: true,
+      kind: "sommerfest_live" as const,
+      title: "Sommerfest 2026",
+      subtitle: "Live board",
+      ctaLabel: "Open",
+      href: "/tournament/sommerfest-2026",
+    },
     microPages: {
       ...base.microPages,
       news: { ...base.microPages.news, enabled: true, showInNav: true, label: "News" },
@@ -134,6 +142,7 @@ describe("club-public-page-config", () => {
     expect(output.join_auto_approve_invited_only).toBe(input.join_auto_approve_invited_only);
     expect(output.featured_team_ids).toEqual(input.featured_team_ids);
     expect(output.homepage_show_partners).toBe(input.homepage_show_partners);
+    expect(output.siteBanner).toEqual(input.siteBanner);
     expect(output.microPages.news.label).toBe("News");
     expect(output.privacy.allow_join_requests_public).toBe(true);
   });
@@ -163,6 +172,8 @@ describe("club-public-page-config", () => {
     expect(club.hero_image_url).toBe("https://cdn.example/hero.jpg");
     expect(club.news_page_subtitle).toBe("Stadion Ticker");
     expect(club.join_auto_approve_invited_only).toBe(true);
+    expect(club.siteBanner.enabled).toBe(true);
+    expect(club.siteBanner.kind).toBe("sommerfest_live");
   });
 
   it("keeps a stable fingerprint after serialize and parse", () => {

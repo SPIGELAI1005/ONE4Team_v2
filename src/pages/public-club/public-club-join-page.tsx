@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { isMissingRelationError } from "@/lib/public-club-models";
 import { trackEvent } from "@/lib/telemetry";
+import { trackJoinFunnelEvent } from "@/lib/track-join-funnel";
 import { isTsvAllachClub } from "@/lib/is-tsv-allach-club";
 import { TsvAllachMembershipApplicationForm } from "@/components/public-club/tsv-allach-membership-application-form";
 import {
@@ -99,6 +100,11 @@ export default function PublicClubJoinPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { club, user, basePath, searchSuffix, goToAuthWithReturn, canRequestInvite } = usePublicClub();
+
+  useEffect(() => {
+    if (!club?.id) return;
+    void trackJoinFunnelEvent({ clubId: club.id, eventName: "join_view", path: `${basePath}/join` });
+  }, [basePath, club?.id]);
   const [faq, setFaq] = useState<PublicFaqRow[]>([]);
   const [role, setRole] = useState<JoinRoleId>("player");
   const [firstName, setFirstName] = useState("");
@@ -237,6 +243,7 @@ export default function PublicClubJoinPage() {
           });
           if (error) throw error;
           trackEvent("club_public_invite_request", { clubSlug: club.slug });
+          void trackJoinFunnelEvent({ clubId: club.id, eventName: "request_submitted", path: `${basePath}/join` });
           setSent(true);
           toast({ title: t.clubPage.joinFormSuccessTitle, description: t.clubPage.joinFormSuccessBody });
         }
@@ -330,6 +337,7 @@ export default function PublicClubJoinPage() {
         });
         if (error) throw error;
         trackEvent("club_public_invite_request", { clubSlug: club.slug });
+        void trackJoinFunnelEvent({ clubId: club.id, eventName: "request_submitted", path: `${basePath}/join` });
         setSent(true);
         toast({ title: t.clubPage.joinFormSuccessTitle, description: t.clubPage.joinFormSuccessBody });
       }

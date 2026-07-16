@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Ai4TInlineLabel } from "@/components/ai/Ai4TBrand";
+import { AiUsageMeter } from "@/components/dashboard/AiUsageMeter";
 import { useLanguage } from "@/hooks/use-language";
 import { useActiveClub } from "@/hooks/use-active-club";
+import { useSubscription } from "@/hooks/use-subscription";
 import { supabase } from "@/integrations/supabase/client";
+import { buildAiUsageMeterState } from "@/lib/ai-usage-meter";
 
 interface AiUsageStats {
   agent_runs_total?: number;
@@ -16,13 +19,13 @@ interface AiUsageStats {
 export function Ai4tAdminUsageCard() {
   const { t } = useLanguage();
   const { activeClubId } = useActiveClub();
+  const { planId } = useSubscription();
   const [stats, setStats] = useState<AiUsageStats | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const weekRange = useMemo(() => {
+  const monthRange = useMemo(() => {
     const to = new Date();
-    const from = new Date();
-    from.setDate(from.getDate() - 7);
+    const from = new Date(to.getFullYear(), to.getMonth(), 1);
     return { from: from.toISOString(), to: to.toISOString() };
   }, []);
 
@@ -36,8 +39,8 @@ export function Ai4tAdminUsageCard() {
     void supabase
       .rpc("get_club_ai_usage_stats", {
         _club_id: activeClubId,
-        _from: weekRange.from,
-        _to: weekRange.to,
+        _from: monthRange.from,
+        _to: monthRange.to,
       })
       .then(({ data, error }) => {
         if (!cancelled) {
@@ -51,7 +54,15 @@ export function Ai4tAdminUsageCard() {
     return () => {
       cancelled = true;
     };
-  }, [activeClubId, weekRange.from, weekRange.to]);
+  }, [activeClubId, monthRange.from, monthRange.to]);
+
+  const meter = useMemo(() => {
+    if (!stats) return null;
+    return buildAiUsageMeterState(planId, {
+      agentRuns: stats.agent_runs_total ?? 0,
+      conversations: stats.conversations_updated ?? 0,
+    });
+  }, [planId, stats]);
 
   if (!activeClubId) return null;
 
@@ -66,7 +77,7 @@ export function Ai4tAdminUsageCard() {
           <div className="font-display font-bold">
             <Ai4TInlineLabel text={t.dashboard.ai4tUsageTitle} logoClassName="h-4 w-4" />
           </div>
-          <p className="text-xs text-muted-foreground mt-1">{t.dashboard.ai4tUsageSubtitle}</p>
+          <p className="text-xs text-muted-foreground mt-1">{t.dashboard.ai4tUsageSubtitleMonthly}</p>
         </div>
         <Link to="/co-trainer?tab=history" className="text-xs text-primary hover:underline shrink-0">
           {t.dashboard.ai4tUsageViewHistory}
@@ -77,24 +88,27 @@ export function Ai4tAdminUsageCard() {
           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageAgentRuns}</div>
-            <div className="text-xl font-semibold mt-1">{total}</div>
+        <>
+          {meter ? <AiUsageMeter meter={meter} className="mt-4" /> : null}
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageAgentRuns}</div>
+              <div className="text-xl font-semibold mt-1">{total}</div>
+            </div>
+            <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageExecuted}</div>
+              <div className="text-xl font-semibold mt-1">{executed}</div>
+            </div>
+            <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageSuccessRate}</div>
+              <div className="text-xl font-semibold mt-1">{successRate != null ? `${successRate}%` : "-"}</div>
+            </div>
+            <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageChats}</div>
+              <div className="text-xl font-semibold mt-1">{stats?.conversations_updated ?? 0}</div>
+            </div>
           </div>
-          <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageExecuted}</div>
-            <div className="text-xl font-semibold mt-1">{executed}</div>
-          </div>
-          <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageSuccessRate}</div>
-            <div className="text-xl font-semibold mt-1">{successRate != null ? `${successRate}%` : "-"}</div>
-          </div>
-          <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
-            <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageChats}</div>
-            <div className="text-xl font-semibold mt-1">{stats?.conversations_updated ?? 0}</div>
-          </div>
-        </div>
+        </>
       )}
     </div>
   );

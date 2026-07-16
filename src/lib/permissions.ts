@@ -96,6 +96,8 @@ export type Permission =
   | "payments:write"
   | "partners:read"
   | "partners:write"
+  | "marketplace:read"
+  | "marketplace:write"
   | MarketplacePermission
   | "tasks:read"
   | "tasks:write"
@@ -158,6 +160,8 @@ function applyModuleLevelToLegacy(
       if (canWrite) set.add("partners:write");
       break;
     case "marketplace":
+      if (canRead || level === "own" || level === "full") set.add("marketplace:read");
+      if (canWrite || level === "own" || level === "full") set.add("marketplace:write");
       break;
     case "tasks":
       if (canRead) set.add("tasks:read");

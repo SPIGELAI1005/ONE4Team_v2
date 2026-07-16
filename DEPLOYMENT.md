@@ -122,6 +122,17 @@ Club workflows use the **`ai4team-agent`** Edge Function and Postgres RPCs. Six 
    - **Chat tab** — `/agent` slash commands (e.g. `/agent plan-week`) or natural-language workflow detection
 4. Requires the same AI plan gate as chat (`clubHasPlanFeature('ai')`) and trainer/admin role per intent.
 
+### Weekly digests + AI usage caps (2026-07-16 Waves B)
+
+1. Migrations **`20260802120000`**–**`20260802150000`** applied on linked remote (see **`HOLD.md`**).
+2. Deploy digest worker:
+   ```bash
+   supabase functions deploy process-weekly-digests
+   ```
+3. Optional: redeploy **`co-trainer`** and **`ai4team-agent`** after AI cap changes in **`ai_usage_caps.ts`**.
+4. Schedule a cron (or external scheduler) POST to **`process-weekly-digests`** with service role or **`WEEKLY_DIGEST_CRON_SECRET`**.
+5. Club admins enable automation; members opt in under notification preferences.
+
 ### TSV Allach public club — Sommerfest + membership application (2026-06-27)
 
 1. Apply migrations (after **`20260626120000`**):

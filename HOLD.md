@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-07-16 — cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-25** communication/tasks/attendance, § **2026-06-27** TSV Allach Sommerfest + membership application, § **2026-06-30** member payments + invite email, § **2026-07-01** marketing + public club polish, § **2026-07-01** partner portal + Partner Page + AI 4 T partner, § **2026-07-01** persona data scoping + Live Scores UI, § **2026-07-01** AI 4 T pilot UX P4-002 + Sommerfest banner fix, § **2026-07-03** member invite UX + social previews + Sommerfest banner animation + dashboard club return, § **2026-07-05** Sommerfest tournament UX + public AI 4 T RBAC, § **2026-07-05** public messaging forward/share + microsite polish + Sommerfest mobile refinements, § **2026-07-06** bug investigation remediation, § **2026-07-06** Sommerfest kickoff sync + tournament info + mobile club messaging, § **2026-07-07** legal audit + marketing polish, § **2026-07-07** dashboard mobile polish + AI 4 T / Messages UX + chat-bridge CORS, § **2026-07-08** Operator Control Center + plan gate UX, § **2026-07-16** commercial packaging + German i18n + public club UX), `MEMORY_BANK.md`, `DEPLOYMENT.md`, `docs/AI4T_RELEASE_REVIEW.md`, and `ops/PRODUCTION_READINESS_ARTIFACTS.md` (sections below are partial snapshots, not the canonical list).
+Last updated: 2026-07-16 — Waves A–E migrations applied on linked remote; site banner + matches status UX documented in **`CHANGELOG.md`** / **`MEMORY_BANK.md`**. Cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-25** communication/tasks/attendance, § **2026-06-27** TSV Allach Sommerfest + membership application, § **2026-06-30** member payments + invite email, § **2026-07-01** marketing + public club polish, § **2026-07-01** partner portal + Partner Page + AI 4 T partner, § **2026-07-01** persona data scoping + Live Scores UI, § **2026-07-01** AI 4 T pilot UX P4-002 + Sommerfest banner fix, § **2026-07-03** member invite UX + social previews + Sommerfest banner animation + dashboard club return, § **2026-07-05** Sommerfest tournament UX + public AI 4 T RBAC, § **2026-07-05** public messaging forward/share + microsite polish + Sommerfest mobile refinements, § **2026-07-06** bug investigation remediation, § **2026-07-06** Sommerfest kickoff sync + tournament info + mobile club messaging, § **2026-07-07** legal audit + marketing polish, § **2026-07-07** dashboard mobile polish + AI 4 T / Messages UX + chat-bridge CORS, § **2026-07-08** Operator Control Center + plan gate UX, § **2026-07-16** commercial packaging + German i18n + public club UX, § **2026-07-16** Product Waves A–E + site banner).
 
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 
@@ -66,6 +66,29 @@ See **`DEPLOYMENT.md` § AI 4 T** and **`TASKS.md` AI-OPS-001**.
 ## Commercial packaging — plan catalog (2026-07-16)
 - [x] Applied on linked remote: `supabase/migrations/20260801220000_revise_plan_catalog_pricing_limits.sql` (updates `public.plans` base prices + max users/teams).
 - [ ] **Operator:** Sync **Stripe** Dashboard prices / price IDs to match `src/lib/plan-catalog.ts` (Kick-off €19, Squad €39, Pro €79, Champions €149 base monthly + per-member rates). See **`TASKS.md` PKG-003**, **`GTM_PRICING_PACKAGING.md`**.
+
+## Product program backlog (not in PROD-005…021 waves)
+Keep operator-owned until scheduled; do **not** block Waves A–E on these:
+1. **PKG-003** — Stripe Dashboard ↔ `plan-catalog.ts`
+2. **LEGAL-OPS-001 / 002** — Impressum street address + HRB
+3. **Marketplace → Partners bridge** remainders / Phase 3 polish (`PARTNER-OPS-003`)
+4. **PARTNER-OPS-001-SMOKE** / **PARTNER-OPS-002-SMOKE** — dual-role + offer-loop E2E
+
+## Wave B digests / dues claims / AI caps (2026-07-16)
+Apply after plan catalog migration:
+1. ~~`supabase/migrations/20260802120000_wave_b_weekly_digest_ai_caps_dues_claims.sql`~~ — **applied** on linked remote (2026-07-16)
+2. Deploy Edge: **`process-weekly-digests`** (and redeploy **`co-trainer`**, **`ai4team-agent`** for AI caps) — **still open**
+3. Schedule cron POST to `process-weekly-digests` (service role or `WEEKLY_DIGEST_CRON_SECRET`) — **still open**
+
+## Product Waves A–E migrations (2026-07-16)
+Apply in order after Wave B — **all applied** on linked remote (2026-07-16):
+1. ~~`supabase/migrations/20260802130000_redeem_invite_merge_draft_master_data.sql`~~ (PROD-007)
+2. ~~`supabase/migrations/20260802140000_marketplace_engagement_reviews.sql`~~ (PROD-016)
+3. ~~`supabase/migrations/20260802150000_join_funnel_and_news_schedule.sql`~~ (PROD-018/019) — adds **`announcements.scheduled_publish_at`** + **`is_draft`**
+
+## Configurable site banner (no new SQL)
+- Banner lives in public page draft/published JSON (`siteBanner`). Clubs must **Publish** after editing Club Page Admin → Homepage → Site banner.
+- Smoke: **`/club-page-admin`** → save + publish → **`/club/:slug`** (banner hidden on destination URL).
 
 ## AI 4 T Agent — workflow migrations + Edge deploy (2026-06-15)
 Apply in the same Supabase project as the app (after **`20260614140000`** if using feature trials):

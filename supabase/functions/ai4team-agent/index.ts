@@ -9,6 +9,7 @@ import {
   resolveLlmCredentials,
 } from "../_shared/llm.ts";
 import { clubHasPlanFeature } from "../_shared/plan_entitlements.ts";
+import { buildAiFairUseRefusalMessage, checkClubAiFairUse } from "../_shared/ai_usage_caps.ts";
 import {
   assertClubTrainer,
   assertClubAdmin,
@@ -90,6 +91,11 @@ serve(async (req) => {
     if (rateLimited) return rateLimited;
 
     const language = parseAiLanguage(body.language, "");
+
+    const fairUse = await checkClubAiFairUse(admin, clubId);
+    if (!fairUse.allowed) {
+      return jsonResponse({ error: buildAiFairUseRefusalMessage(language, fairUse), code: "ai_fair_use_exceeded" }, 429, corsHeaders);
+    }
 
     if (mode === "interpret") {
       const message = typeof body.message === "string" ? body.message.trim() : "";

@@ -3,6 +3,29 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-16 (Product Waves A–E · configurable site banner · matches status UX)
+
+### Product improvements PROD-005…021 (Waves A–E)
+- **Wave A:** Admin **week-at-a-glance** card; **`redeem_club_invite`** merges draft **`master_data`** (**`20260802130000`**); trainer **today’s session** card.
+- **Wave B:** Weekly digest Edge **`process-weekly-digests`** + member opt-in / admin toggle; AI monthly usage meters + Edge caps; **`MyDuesCard`** + **`dues_payment_claims`** (**`20260802120000`**).
+- **Wave C:** Provider request filters/KPIs; engagement pipeline; public **`/providers/:slug`**.
+- **Wave D:** Listing moderation; verified/featured; engagement reviews (**`20260802140000`**); distinct **`marketplace:read` / `marketplace:write`**.
+- **Wave E:** Join funnel analytics; news draft + **`scheduled_publish_at` / `is_draft`** (**`20260802150000`**); public club PWA install + SW; bilingual Club Page Admin UX helpers.
+- **Linked remote:** `supabase db push` applied **`20260802120000`** → **`20260802150000`** (resolves public-club toast **`column announcements.scheduled_publish_at does not exist`**).
+- **Hardening:** Public club news query falls back when schedule columns missing; treats those errors as non-fatal.
+
+### Configurable public club site banner
+- **`src/lib/club-site-banner.ts`:** `siteBanner` in public page config — enable flag, kinds **promo** / **news** / **event** / **alert** / **sommerfest_live** (legacy **`custom` → promo**), title/subtitle/CTA/href; Allach default Sommerfest when unset.
+- **`ClubPageAdmin`:** Homepage **Site banner** card — toggle, type select, apply type/Sommerfest defaults, publish reminder (draft alone does not update live site).
+- **`PublicSommerfestTournamentBanner`:** Renders configured strip; per-kind visuals; live match stats only for **`sommerfest_live`**; hides on destination path; normalizes relative hrefs.
+- Round-trip covered in **`club-public-page-config.test.ts`** + **`club-site-banner.test.ts`**.
+
+### Matches — mobile-friendly status control
+- **`Matches.tsx`:** Match details editor uses a **status button group** (Scheduled / In progress / Completed / Cancelled) instead of a dropdown — 2×2 on mobile, four across on wider screens; same gold selected style as Home/Away.
+
+### Operator follow-up
+- Deploy Edge **`process-weekly-digests`** and schedule cron; optional redeploy **`co-trainer`** / **`ai4team-agent`** for AI caps. See **`HOLD.md`**.
+
 ## 2026-07-16 (Commercial packaging, German i18n, public club UX, hero tenant isolation)
 
 ### Commercial packaging — single source of truth

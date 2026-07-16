@@ -5,7 +5,7 @@ import {
   calculateCatalogPrice,
   suggestPlanForMemberCount,
 } from "@/lib/plan-catalog";
-import { getPlanLimits } from "@/lib/plan-limits";
+import { getPlanLimits, getPlanAiMonthlyCaps } from "@/lib/plan-limits";
 
 describe("plan catalog packaging", () => {
   it("keeps yearly prices at 20% off monthly × 12", () => {
@@ -52,5 +52,10 @@ describe("plan catalog packaging", () => {
 
   it("prices AI add-on above token-cost floor", () => {
     expect(AI4T_ADDON_PRICE_MONTHLY).toBeGreaterThanOrEqual(15);
+  });
+
+  it("exports AI monthly caps from catalog", () => {
+    expect(PLAN_CATALOG.pro).toBeDefined();
+    expect(getPlanAiMonthlyCaps("pro").agentRuns).toBe(250);
   });
 });

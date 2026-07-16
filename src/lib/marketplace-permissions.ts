@@ -56,20 +56,11 @@ const PROVIDER_SIDE_PERMISSIONS: readonly MarketplacePermission[] = [
 
 const ALL_MARKETPLACE_PERMISSIONS: readonly MarketplacePermission[] = MARKETPLACE_PERMISSIONS;
 
-function isLegacyClubOwnerAdmin(legacyRole: string | null | undefined): boolean {
-  return legacyRole?.trim().toLowerCase() === "admin";
-}
-
-function permissionsForResolvedRole(
-  role: DashboardRole,
-  legacyRole: string | null | undefined,
-): MarketplacePermission[] {
+function permissionsForResolvedRole(role: DashboardRole): MarketplacePermission[] {
   if (role === "admin") return [...ALL_MARKETPLACE_PERMISSIONS];
 
   if (role === "club_admin") {
-    const perms = [...CLUB_SIDE_PERMISSIONS];
-    if (isLegacyClubOwnerAdmin(legacyRole)) perms.push("marketplace:moderate");
-    return perms;
+    return [...CLUB_SIDE_PERMISSIONS, "marketplace:moderate"];
   }
 
   if (isExternalRole(role)) return [...PROVIDER_SIDE_PERMISSIONS];
@@ -87,7 +78,7 @@ export function marketplacePermissionsFor(
 ): MarketplacePermission[] {
   const role = resolveDashboardRole(legacyRole, assignments);
   if (!role || !canAccessModule(role, "marketplace")) return [];
-  return permissionsForResolvedRole(role, legacyRole);
+  return permissionsForResolvedRole(role);
 }
 
 export function hasMarketplacePermission(

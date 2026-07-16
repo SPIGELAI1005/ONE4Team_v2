@@ -94,6 +94,8 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-accent/10 text-accent",
 };
 
+const MATCH_STATUS_OPTIONS = ["scheduled", "in_progress", "completed", "cancelled"] as const;
+
 /** Shared field styling in the match detail editor (aligns datetime-local with selects on mobile). */
 const MATCH_DETAIL_FIELD_CLASS =
   "box-border h-10 w-full min-w-0 max-w-full rounded-xl border-border bg-card px-3 text-sm [&::-webkit-date-and-time-value]:min-w-0 [&::-webkit-date-and-time-value]:text-left";
@@ -1322,17 +1324,43 @@ const Matches = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Select value={editStatus} onValueChange={setEditStatus}>
-                      <SelectTrigger className={MATCH_DETAIL_FIELD_CLASS}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="scheduled">{t.matchesPage.statusScheduled}</SelectItem>
-                        <SelectItem value="in_progress">{t.matchesPage.statusInProgress}</SelectItem>
-                        <SelectItem value="completed">{t.matchesPage.statusCompleted}</SelectItem>
-                        <SelectItem value="cancelled">{t.matchesPage.statusCancelled}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="w-full min-w-0">
+                      <label className="mb-1.5 block text-[10px] text-muted-foreground">
+                        {t.matchesPage.labelStatus}
+                      </label>
+                      <div
+                        role="group"
+                        aria-label={t.matchesPage.labelStatus}
+                        className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+                      >
+                        {MATCH_STATUS_OPTIONS.map((status) => {
+                          const selected = editStatus === status;
+                          const label =
+                            status === "scheduled"
+                              ? t.matchesPage.statusScheduled
+                              : status === "in_progress"
+                                ? t.matchesPage.statusInProgress
+                                : status === "completed"
+                                  ? t.matchesPage.statusCompleted
+                                  : t.matchesPage.statusCancelled;
+                          return (
+                            <Button
+                              key={status}
+                              type="button"
+                              size="sm"
+                              variant={selected ? "default" : "outline"}
+                              aria-pressed={selected}
+                              onClick={() => setEditStatus(status)}
+                              className={`h-10 min-h-10 touch-manipulation px-2 text-xs leading-tight sm:text-sm ${
+                                selected ? "bg-gradient-gold-static text-primary-foreground hover:brightness-110" : ""
+                              }`}
+                            >
+                              {label}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
                     <Button
                       size="sm"
                       className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110"

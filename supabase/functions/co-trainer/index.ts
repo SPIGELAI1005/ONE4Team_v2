@@ -13,6 +13,10 @@ import {
 } from "../_shared/llm.ts";
 import { clubHasPlanFeature } from "../_shared/plan_entitlements.ts";
 import {
+  buildAiFairUseRefusalMessage,
+  checkClubAiFairUse,
+} from "../_shared/ai_usage_caps.ts";
+import {
   buildCoTrainerSystemPromptForRole,
   detectObviousOffScope,
   extractLatestUserMessage,
@@ -129,6 +133,11 @@ serve(async (req) => {
     const messages = body.messages;
     const context = typeof body.context === "string" ? body.context : "";
     const lang = parseAiLanguage(body.language, context);
+
+    const fairUse = await checkClubAiFairUse(admin, clubId);
+    if (!fairUse.allowed) {
+      return streamScopeRefusal(buildAiFairUseRefusalMessage(lang, fairUse), corsHeaders);
+    }
 
     const latestUser = extractLatestUserMessage(messages);
     const offScope = detectObviousOffScope(latestUser);

@@ -18,11 +18,38 @@ import { Link } from "react-router-dom";
 import { PublicClubAttendanceProvider } from "@/contexts/public-club-attendance-context";
 import { useLanguage } from "@/hooks/use-language";
 import { usePublicClubUsageTracking } from "@/hooks/use-public-club-usage-tracking";
+import {
+  PublicClubInstallBanner,
+  registerPublicClubServiceWorker,
+} from "@/components/public-club/public-club-install-banner";
+import { useEffect } from "react";
+import { trackJoinFunnelEvent } from "@/lib/track-join-funnel";
 
 function PublicClubLayoutInner() {
   const { t } = useLanguage();
   const { loading, club, isPreviewMode, isDraftPreviewMode, draftPreviewBlocked } = usePublicClub();
   usePublicClubUsageTracking(club?.id, isPreviewMode || isDraftPreviewMode);
+
+  useEffect(() => {
+    registerPublicClubServiceWorker();
+    const linkId = "one4team-club-manifest";
+    if (!document.getElementById(linkId)) {
+      const link = document.createElement("link");
+      link.id = linkId;
+      link.rel = "manifest";
+      link.href = "/club-manifest.webmanifest";
+      document.head.appendChild(link);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!club?.id || isPreviewMode || isDraftPreviewMode) return;
+    void trackJoinFunnelEvent({
+      clubId: club.id,
+      eventName: "page_view",
+      path: window.location.pathname,
+    });
+  }, [club?.id, isDraftPreviewMode, isPreviewMode]);
 
   return (
     <PublicClubRouteSeoProvider>
@@ -67,6 +94,7 @@ function PublicClubLayoutInner() {
               <Outlet />
             </main>
             <PublicClubFooter club={club} />
+            <PublicClubInstallBanner clubName={club.name} />
             <PublicClubInviteModal />
             <PublicClubAi4tModal />
             <PublicClubCommunicationModal />
