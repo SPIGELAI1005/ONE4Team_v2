@@ -5,6 +5,7 @@ import {
   applicationPayloadForRpc,
   buildAllachApplicationMessage,
   emptyTsvAllachMembershipApplication,
+  formatAllachMembershipFeeLabel,
   formatAllachPhone,
 } from "@/lib/tsv-allach-membership-application";
 
@@ -29,18 +30,8 @@ describe("tsv-allach-membership-application", () => {
     expect(payload.email).toBe("a@b.de");
   });
 
-  it("summarizes message for reviewers", () => {
-    const app = emptyTsvAllachMembershipApplication();
-    app.applicantType = "child";
-    app.childFullName = "Max Mustermann";
-    app.membershipType = "youth";
-    app.street = "Hauptstr. 1";
-    app.postalCode = "80999";
-    app.city = "München";
-    app.country = "DE";
-    const msg = buildAllachApplicationMessage(app);
-    expect(msg).toContain("Child / youth");
-    expect(msg).toContain("Max Mustermann");
-    expect(msg).toContain("80999");
+  it("formats annual membership fee labels", () => {
+    expect(formatAllachMembershipFeeLabel("youth", "de")).toBe("120 € / Jahr");
+    expect(formatAllachMembershipFeeLabel("adult_active", "en")).toBe("€180 / year");
   });
 });

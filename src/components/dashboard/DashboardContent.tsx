@@ -17,7 +17,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
-import { BrandedText } from "@/components/ai/Ai4TBrand";
+import { BrandedText, Ai4TInlineLabel } from "@/components/ai/Ai4TBrand";
 const AnalyticsWidgets = lazy(() => import("@/components/dashboard/AnalyticsWidgets"));
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
 import LiveMatchTicker from "@/components/dashboard/LiveMatchTicker";
@@ -767,7 +767,7 @@ const DashboardContent = () => {
           <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <div className="text-sm font-semibold text-foreground">
-                <BrandedText text={t.dashboard.ai4teamWeeklySummary} />
+                <Ai4TInlineLabel text={t.dashboard.ai4teamWeeklySummary} logoClassName="h-4 w-4" />
               </div>
               <div className="text-xs text-muted-foreground mt-0.5">{t.dashboard.ai4teamWeeklySummaryDesc}</div>
             </div>
@@ -775,9 +775,9 @@ const DashboardContent = () => {
               to={`/co-trainer?tab=chat&prompt=${encodeURIComponent(
                 "Create a weekly leadership digest for our club with top priorities, risks, and owner actions for the next 7 days.",
               )}`}
-              className="inline-flex items-center justify-center rounded-xl bg-gradient-gold-static px-4 py-2 text-xs font-semibold text-primary-foreground hover:brightness-110 shrink-0"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-gold-static px-4 py-2 text-xs font-semibold text-primary-foreground hover:brightness-110 shrink-0"
             >
-              <BrandedText text={t.dashboard.ai4teamWeeklySummary} />
+              <Ai4TInlineLabel text={t.dashboard.ai4teamWeeklySummary} showLogo={false} />
             </Link>
           </div>
         ) : null}

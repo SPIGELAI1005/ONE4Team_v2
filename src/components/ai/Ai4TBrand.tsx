@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode } from "react";
+import { Ai4TLogo } from "@/components/ai/Ai4TLogo";
 import { cn } from "@/lib/utils";
 
 /** Canonical product name string (plain text / i18n). */
@@ -19,6 +20,37 @@ export function Ai4TBrand({ className }: { className?: string }) {
   return (
     <span className={cn("ai-4-t-wordmark", className)}>
       AI <span className={AI_4_T_DIGIT_CLASS}>4</span> T
+    </span>
+  );
+}
+
+/** Bubble logo sized for dashboard page titles (next to top-bar heading). */
+export function Ai4TTitleIcon({ className }: { className?: string }) {
+  return <Ai4TLogo size="xs" variant="bubble" className={cn("h-7 w-7 shrink-0", className)} />;
+}
+
+/** Logo + red-digit wordmark for inline dashboard section labels. */
+export function Ai4TInlineLabel({
+  text,
+  className,
+  logoClassName,
+  textClassName,
+  showLogo = true,
+}: {
+  text: string;
+  className?: string;
+  logoClassName?: string;
+  textClassName?: string;
+  showLogo?: boolean;
+}) {
+  return (
+    <span className={cn("inline-flex min-w-0 items-center gap-1.5", className)}>
+      {showLogo ? (
+        <Ai4TLogo size="xs" variant="bubble" className={cn("h-3.5 w-3.5 shrink-0", logoClassName)} />
+      ) : null}
+      <span className={cn("min-w-0", textClassName)}>
+        <BrandedText text={text} />
+      </span>
     </span>
   );
 }

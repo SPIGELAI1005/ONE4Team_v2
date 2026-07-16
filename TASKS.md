@@ -6,6 +6,28 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ---
 
+## SPRINT 2026-07-16 — Packaging · i18n · public club UX
+
+**Goal:** Align commercial packaging with product gates; complete German UI copy; harden public club account + hero defaults.
+
+| Track | Focus | Task IDs |
+|-------|--------|----------|
+| **A** | Plan catalog + DB | PKG-001, PKG-002 |
+| **B** | German i18n | I18N-DE-001 |
+| **C** | Public club / hero | PUB-ACCT-001, HERO-ISO-001 |
+
+- [x] **PKG-001** **`plan-catalog.ts`** + **`plan-limits`** + Pricing UI + EN/DE feature copy
+- [x] **PKG-002** Migration **`20260801220000_revise_plan_catalog_pricing_limits.sql`** applied on linked remote
+- [ ] **PKG-003** Sync Stripe Dashboard price IDs / amounts to new catalog (operator)
+- [x] **I18N-DE-001** Comprehensive DE pass (parity, umlauts, leftovers) — club/partner/marketplace/operator
+- [x] **PUB-ACCT-001** Public profile menu + account settings modal + invite dismiss fixes
+- [x] **HERO-ISO-001** Neutral hero PNGs + tenant-isolation tests (no Allach camp default)
+- [x] **TEAMS-PICKER-001** Edit Team member picker — full club roster search
+- [x] **AI4T-BRAND-001** Red **4** branding on dashboard AI surfaces
+- [x] **ALLACH-FEE-001** Membership package annual fees + €30 registration on join form
+
+---
+
 ## SPRINT 2026-07-01 — DB parity · Marketplace Phase 2 · Invite email
 
 **Goal:** Linked Supabase project matches repo schema; marketplace offer create → club accept works; invite email Edge deployable for pilots.

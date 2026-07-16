@@ -2,8 +2,8 @@ import type { OperatorTranslations } from "./en";
 
 export const operatorDe = {
   shell: {
-    controlCenter: "Control Center",
-    defaultTitle: "ONE4Team Control Center",
+    controlCenter: "Kontrollzentrum",
+    defaultTitle: "ONE4Team Kontrollzentrum",
     search: "Suchen",
     home: "Startseite",
     signOut: "Abmelden",
@@ -43,7 +43,7 @@ export const operatorDe = {
     verifying: "Operator-Zugriff wird geprüft…",
     accessRequired: "Operator-Zugriff erforderlich",
     accessBody:
-      "Das ONE4Team Control Center ist ausgewählten Plattform-Operator:innen vorbehalten. Vereins-Dashboard-Rollen gewähren keinen Zugriff.",
+      "Das ONE4Team Kontrollzentrum ist ausgewählten Plattform-Operator:innen vorbehalten. Vereins-Dashboard-Rollen gewähren keinen Zugriff.",
     signedInAs: "Angemeldet als",
     verifyFailed: "Operator-Zugriff konnte nicht geprüft werden.",
     localBootstrap: "Lokaler Bootstrap (Supabase SQL Editor)",
@@ -102,7 +102,7 @@ export const operatorDe = {
     },
     settings: {
       label: "Einstellungen",
-      description: "Control-Center-Einstellungen und Zugriffsgrundlage.",
+      description: "Kontrollzentrum-Einstellungen und Zugriffsgrundlage.",
     },
   },
   overview: {
@@ -355,7 +355,7 @@ export const operatorDe = {
       current: "Aktuell",
       new: "Neu",
       included: "Enthalten",
-      notIncluded: "Nicht enthalten",
+      notIncluded: "Nicht enthälten",
       confirmChange: "Änderung bestätigen",
       limitsUsersTeams: "{users} Benutzer · {teams} Teams",
     },
@@ -454,7 +454,7 @@ export const operatorDe = {
     moduleFilters: {
       dashboard: "Dashboard",
       members: "Mitglieder",
-      trainings: "Training & Teams",
+      trainings: "Training & Mannschaften",
       matches: "Spiele",
       events: "Events",
       marketplace: "Marktplatz",
@@ -819,7 +819,7 @@ export const operatorDe = {
     description:
       "Zweckgebundene Diagnose für internes Support-Personal. Alle Abfragen nutzen auditierte RPCs — kein direkter Tabellenzugriff und keine Service-Keys im Browser.",
     banner:
-      "SUPPORT und höher können schreibgeschützte Diagnosen ausführen. Sensible Änderungen erfordern weiterhin Plattformeinstellungen (nur OWNER) oder auditierte Vereinssteuerung an anderen Stellen im Control Center.",
+      "SUPPORT und höher können schreibgeschützte Diagnosen ausführen. Sensible Änderungen erfordern weiterhin Plattformeinstellungen (nur OWNER) oder auditierte Vereinssteuerung an anderen Stellen im Kontrollzentrum.",
     loadError: "Diagnose konnte nicht geladen werden.",
     errors: {
       clubNotFound: "Verein nicht gefunden",
@@ -931,18 +931,18 @@ export const operatorDe = {
   settingsPage: {
     title: "Einstellungen",
     description:
-      "Plattformzugriff, Control-Center-Standards und Sicherheitssichtbarkeit für interne ONE4Team-Operatoren.",
+      "Plattformzugriff, Kontrollzentrum-Standards und Sicherheitssichtbarkeit für interne ONE4Team-Operatoren.",
     banner:
-      "Änderungen an Plattformbenutzern erfordern die OWNER-Rolle und werden vollständig auditiert. Control-Center-Standards werden in platform_settings gespeichert und können nur von OWNER auditiert aktualisiert werden.",
+      "Änderungen an Plattformbenutzern erfordern die OWNER-Rolle und werden vollständig auditiert. Kontrollzentrum-Standards werden in platform_settings gespeichert und können nur von OWNER auditiert aktualisiert werden.",
     tabs: {
       platformUsers: "Plattformbenutzer",
-      controlCenter: "Control-Center-Einstellungen",
+      controlCenter: "Kontrollzentrum-Einstellungen",
       dataSecurity: "Daten & Sicherheit",
     },
     platformUsers: {
       title: "Plattformbenutzer",
       description:
-        "Interne ONE4Team-Operatoren mit Control-Center-Zugriff. Vereins-Dashboard-Rollen erscheinen hier nicht.",
+        "Interne ONE4Team-Operatoren mit Kontrollzentrum-Zugriff. Vereins-Dashboard-Rollen erscheinen hier nicht.",
       readOnlyHint:
         "Nur Lesezugriff. Nur Plattform-OWNER kann Zugriff gewähren, einladen, Rollen ändern oder Plattformbenutzer deaktivieren.",
       loadError: "Plattformbenutzer konnten nicht geladen werden.",
@@ -1018,7 +1018,7 @@ export const operatorDe = {
           "Testmodul-Schlüssel werden in platform_settings gespeichert und erhalten in einem Folgeschritt einen dedizierten Matrix-Editor.",
       },
       toast: {
-        saved: "Control-Center-Standards gespeichert",
+        saved: "Kontrollzentrum-Standards gespeichert",
         saveFailed: "Standards konnten nicht gespeichert werden",
       },
     },
@@ -1296,12 +1296,12 @@ export const operatorDe = {
   marketplace: {
     title: "Marktplatz & Partner",
     description:
-      "Ökosystem-Gesundheit über Marktplatz-Anbieter, Beschaffungsanfragen, Angebote sowie resultierende Partner-Engagements, Verträge und Rechnungen. Plattformweit aggregiert, ohne personenbezogene Daten.",
+      "Ökosystem-Gesundheit über Marktplatz-Anbieter, Beschaffungsanfragen, Angebote sowie resultierende Partner-Aufträge, Verträge und Rechnungen. Plattformweit aggregiert, ohne personenbezogene Daten.",
     loadErrorTitle: "Marktplatz-Überblick konnte nicht geladen werden",
     loadErrorMessage: "Die Marktplatz-Overview-RPC konnte nicht geladen werden.",
     providersSection: "Anbieter & Lieferanten",
     demandSection: "Nachfrage & Matching",
-    engagementsSection: "Partner-Engagements",
+    engagementsSection: "Partner-Aufträge",
     totalProviders: "Anbieter gesamt",
     activeListings: "Aktive Einträge",
     pendingReview: "Ausstehende Prüfung",
@@ -1313,14 +1313,14 @@ export const operatorDe = {
     acceptedCount: "{count} angenommen",
     requestBudgetMax: "Anfrage-Budget (max.)",
     requestBudgetHint: "Summe der angegebenen Maximalbudgets",
-    engagements: "Engagements",
+    engagements: "Aufträge",
     openEngagements: "{count} offen",
     providersByType: "Anbieter nach Typ",
     providersByStatus: "Anbieter nach Listing-Status",
     requestsByCategory: "Anfragen nach Kategorie",
     offersByStatus: "Angebote nach Status",
     partnersByType: "Partner nach Typ",
-    engagementsByCategory: "Engagements nach Kategorie",
+    engagementsByCategory: "Aufträge nach Kategorie",
     clubPartners: "Vereinspartner",
     clubsEngaged: "{count} Vereine beteiligt",
     fromMarketplace: "Vom Marktplatz",
@@ -1347,7 +1347,7 @@ export const operatorDe = {
       requestsCategory: { title: "Noch keine Anfragen", desc: "Anfragekategorien erscheinen, sobald Vereine Anfragen stellen." },
       offersStatus: { title: "Noch keine Angebote", desc: "Angebotsstatus erscheint, sobald Anbieter antworten." },
       partnersType: { title: "Noch keine Partner", desc: "Partnertypen erscheinen, sobald Vereine Partner hinzufügen oder Angebote annehmen." },
-      engagementsCategory: { title: "Noch keine Engagements", desc: "Engagement-Kategorien erscheinen, sobald Partner-Tasks erstellt sind." },
+      engagementsCategory: { title: "Noch keine Aufträge", desc: "Auftragskategorien erscheinen, sobald Partner-Aufgaben erstellt sind." },
       topProviders: { title: "Noch keine Anbieteraktivität", desc: "Anbieter ranken hier, sobald Vereine sie speichern oder Angebote annehmen." },
       recentRequests: { title: "Noch keine Anfragen", desc: "Vereins-Beschaffungsanfragen erscheinen hier." },
       topCategories: { title: "Noch keine Kategorien", desc: "Anbieterkategorien erscheinen, sobald Profile sie auflisten." },

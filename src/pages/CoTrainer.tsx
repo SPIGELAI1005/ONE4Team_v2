@@ -58,7 +58,7 @@ import { Ai4tPersonaHint } from "@/components/ai/Ai4tPersonaHint";
 import { Ai4tFollowUpChips } from "@/components/ai/Ai4tFollowUpChips";
 import { Ai4TLogo } from "@/components/ai/Ai4TLogo";
 import { Ai4tChatWatermark } from "@/components/ai/Ai4tChatWatermark";
-import { Ai4TBrand, BrandedText } from "@/components/ai/Ai4TBrand";
+import { Ai4TBrand, Ai4TTitleIcon, BrandedText } from "@/components/ai/Ai4TBrand";
 import { useAi4TeamVoice } from "@/hooks/use-ai4team-voice";
 import { useAiAgent } from "@/contexts/ai-agent-context";
 import { parseChatAgentCommand } from "@/lib/ai-agent/chat-intent-detect";
@@ -1078,6 +1078,7 @@ const CoTrainer = () => {
     <div data-dashboard-chat-shell className={`${DASHBOARD_PAGE_ROOT} min-h-0 flex flex-col`}>
       <DashboardHeaderSlot
         title={t.coTrainerPage.headerTitle}
+        titleIcon={<Ai4TTitleIcon />}
         subtitle={compactMobileChrome ? undefined : headerSubtitle}
         toolbarRevision={messages.length + mainTab.length}
         rightSlot={
@@ -1422,7 +1423,9 @@ const CoTrainer = () => {
                 }}
               />
             ) : !clubId ? (
-              <p className="text-sm text-muted-foreground text-center py-12">{t.ai.selectClub}</p>
+              <p className="text-sm text-muted-foreground text-center py-12">
+                <BrandedText text={t.ai.selectClub} />
+              </p>
             ) : (
               <AiAgentWorkspace
                 conversationId={conversationId}
@@ -1531,7 +1534,9 @@ const CoTrainer = () => {
 
                 {canSeeAiLog ? (
                   <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
-                    <div className="font-display font-bold">{t.ai.recentRequests}</div>
+                    <div className="font-display font-bold">
+                      <BrandedText text={t.ai.recentRequests} />
+                    </div>
                     <div className="mt-2 grid gap-2">
                       {aiLog.length === 0 ? (
                         <div className="text-xs text-muted-foreground">{t.ai.noRequests}</div>

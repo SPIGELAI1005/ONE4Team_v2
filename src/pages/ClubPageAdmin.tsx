@@ -550,7 +550,7 @@ export default function ClubPageAdmin() {
       if (!saved.ok) throw saved.error;
       toast({ title: t.clubPageAdmin.uploadSuccess, description: t.clubPageAdmin.uploadDraftSavedDesc });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Upload failed";
+      const message = error instanceof Error ? error.message : t.clubPageAdmin.uploadFailed;
       toast({
         title: t.clubPageAdmin.uploadFailed,
         description: message.includes("Bucket not found") ? t.clubPageAdmin.uploadBucketHint : message,

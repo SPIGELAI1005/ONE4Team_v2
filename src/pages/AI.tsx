@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
-import { BrandedText } from "@/components/ai/Ai4TBrand";
+import { BrandedText, Ai4TTitleIcon } from "@/components/ai/Ai4TBrand";
 import { useLanguage } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, ClipboardList, Shield, ScrollText } from "lucide-react";
@@ -252,7 +252,7 @@ export default function AI() {
 
   return (
     <div className={DASHBOARD_PAGE_ROOT}>
-      <DashboardHeaderSlot title={t.ai.title} subtitle={t.ai.subtitle} />
+      <DashboardHeaderSlot title={t.ai.title} subtitle={t.ai.subtitle} titleIcon={<Ai4TTitleIcon />} />
 
       <div className={DASHBOARD_PAGE_INNER}>
         {(clubLoading || loading) ? (

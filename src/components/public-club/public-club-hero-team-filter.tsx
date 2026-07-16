@@ -10,6 +10,7 @@ import {
 import { usePublicClub } from "@/contexts/public-club-context";
 import { useLanguage } from "@/hooks/use-language";
 import { clubCtaHeroGlassLinkClass } from "@/lib/public-club-cta-classes";
+import { clubPublicDropdownContentClass, clubPublicDropdownItemActiveClass } from "@/lib/public-club-glass-classes";
 import { cn } from "@/lib/utils";
 
 interface PublicClubHeroTeamFilterProps {
@@ -36,11 +37,11 @@ export function PublicClubHeroTeamFilter({ className }: PublicClubHeroTeamFilter
         <span className="truncate">{label}</span>
         <ChevronDown className="h-4 w-4 shrink-0 opacity-80" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="center" className="max-h-[min(60vh,320px)] w-[min(92vw,280px)] overflow-y-auto">
+      <DropdownMenuContent align="center" className={clubPublicDropdownContentClass}>
         <DropdownMenuLabel>{t.clubPage.homeTeamFilterLabel}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          className={cn(!homeTeamFilterId && "bg-muted/60 font-medium")}
+          className={cn(!homeTeamFilterId && clubPublicDropdownItemActiveClass)}
           onSelect={() => setHomeTeamFilterId("")}
         >
           {t.clubPage.scheduleTeamAll}
@@ -49,7 +50,7 @@ export function PublicClubHeroTeamFilter({ className }: PublicClubHeroTeamFilter
         {teams.map((team) => (
           <DropdownMenuItem
             key={team.id}
-            className={cn(homeTeamFilterId === team.id && "bg-muted/60 font-medium")}
+            className={cn(homeTeamFilterId === team.id && clubPublicDropdownItemActiveClass)}
             onSelect={() => setHomeTeamFilterId(team.id)}
           >
             {team.name}

@@ -514,7 +514,7 @@ export default function Settings() {
       setAvatarUrl(data.publicUrl);
       toast({ title: t.settingsPage.avatarUploadSuccess });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Upload failed";
+      const message = err instanceof Error ? err.message : t.settingsPage.uploadFailed;
       toast({
         title: t.settingsPage.avatarUploadFailed,
         description: message.includes("Bucket not found")

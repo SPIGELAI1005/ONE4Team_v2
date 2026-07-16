@@ -3,6 +3,37 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-16 (Commercial packaging, German i18n, public club UX, hero tenant isolation)
+
+### Commercial packaging — single source of truth
+- **`src/lib/plan-catalog.ts`:** Shared catalog for Kick-off / Squad / Pro / Champions — member/team/storage caps, base + per-member prices (monthly + yearly at 20% off), volume −15% thresholds, feature flags. Helpers: **`calculateCatalogPrice`**, **`suggestPlanForMemberCount`**. AI add-on floor **`AI4T_ADDON_PRICE_MONTHLY = 19`**.
+- **`src/lib/plan-limits.ts`:** Derives gates from the catalog (no duplicated cap tables).
+- **`src/pages/Pricing.tsx`:** Plans + calculator read catalog; **Pro** highlighted as most popular; calculator defaults **800 members / Pro**.
+- **Revised list prices (EUR):** Kick-off €19 + €0.15/member; Squad €39 + €0.25; Pro €79 + €0.30; Champions €149 + €0.40. Caps: 100 / 400 / 1,200 / 5,000 members.
+- **Migration `20260801220000_revise_plan_catalog_pricing_limits.sql`:** Applied on linked remote — updates **`public.plans`** base prices + `max_users` / `max_teams`.
+- **Docs:** **`GTM_PRICING_PACKAGING.md`** rewritten to match catalog. Tests: **`plan-catalog.test.ts`**.
+- **Follow-up:** Align Stripe Dashboard price IDs with new amounts if checkout is live.
+
+### German i18n — comprehensive pass
+- **`src/i18n/de.ts`** + **`src/i18n/operator/de.ts`:** Key parity with EN (~4,229 keys); fixed missing **`openFullRegistry`**, **`aboutPage.heroLine4`**, **`supplierPortal.saveChanges` / `saving`**; translated leftover English UI; bulk umlaut restoration (`öffentlich`, `Änderungen`, `München`, etc.); partner **Engagements** → **Aufträge**; External Bridge FAQ → **Externe Bridge**; Control Center → **Kontrollzentrum**.
+- Upload error fallbacks use i18n strings (**`Settings`**, **`Members`**, **`ClubPageAdmin`**, account settings modal).
+
+### Public club — profile menu + account settings
+- **`public-club-profile-menu.tsx`:** Profile dropdown aligned with team-filter glass styling (**`clubPublicDropdownContentClass`**).
+- **`public-club-account-settings-modal.tsx`:** In-page account settings (name, avatar, phone, password reset); portaled to **`document.body`**, centered, body scroll lock (fixes header-fixed clipping).
+- Invite accept modal: dismiss persistence, strip **`?invite=`**, contrast fix on Close.
+
+### Neutral hero defaults + tenant isolation
+- **`club-hero-default-assets.ts`:** Platform defaults are **neutral** PNGs under **`public/assets/club-hero-defaults/`** (no TSV Allach camp photo bleed).
+- Shipped five neutral assets; tests **`club-hero-default-assets.test.ts`**, **`club-tenant-isolation.test.ts`**.
+- **`PLACEHOLDER_ASSETS_TODO.md`:** Assets present; keep pilot photography out of defaults.
+
+### Teams, AI branding, Allach membership, marketing
+- **`Teams.tsx`:** Edit-team member picker searches full club roster (name/email) via **`list_club_membership_emails`**.
+- **AI 4 T branding:** **`Ai4TInlineLabel` / `Ai4TTitleIcon`** on dashboard shortcuts, usage card, Co-Trainer/AI headers, Tasks, mobile nav.
+- **TSV Allach membership form:** Annual fee amounts by package + €30 registration; removed promotional bank-step intro.
+- **`FeaturesSection.tsx`:** Larger feature card title/description for mobile readability.
+
 ## 2026-07-08 (Plan gate UX + guided setup team creation fix)
 
 ### Plan gate — upgrade screen UX (`PlanGate`)

@@ -1,5 +1,5 @@
-import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Ai4TInlineLabel } from "@/components/ai/Ai4TBrand";
 import { useLanguage } from "@/hooks/use-language";
 import { useAiAgentOptional } from "@/contexts/ai-agent-context";
 import type { AgentIntent } from "@/lib/ai-agent/types";
@@ -26,9 +26,8 @@ export function AiAgentTeamsShortcuts() {
 
   return (
     <div className="mb-4 rounded-xl border border-border/60 bg-card/40 p-3">
-      <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-        <Sparkles className="h-3.5 w-3.5 text-primary" />
-        {t.teamsPage.aiAgentShortcutsTitle}
+      <div className="mb-2 text-xs font-medium text-muted-foreground">
+        <Ai4TInlineLabel text={t.teamsPage.aiAgentShortcutsTitle} logoClassName="h-4 w-4" />
       </div>
       <div className="flex flex-wrap gap-2">
         {TOP_COACH_INTENTS.map((intent) => (

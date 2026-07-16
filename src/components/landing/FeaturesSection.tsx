@@ -25,13 +25,17 @@ const FeatureCard = ({ feature, index }: { feature: FeatureItem; index: number }
       style={{ y, opacity }}
       whileTap={{ scale: 0.97 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className="group p-3 sm:p-5 rounded-xl sm:rounded-2xl glass-card hover:border-primary/20 transition-all duration-300 hover:shadow-gold cursor-default"
+      className="group p-4 sm:p-5 rounded-xl sm:rounded-2xl glass-card hover:border-primary/20 transition-all duration-300 hover:shadow-gold cursor-default"
     >
       <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-gold-subtle flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform">
         <feature.icon className="w-4 h-4 sm:w-5 sm:h-5 text-primary" strokeWidth={1.5} />
       </div>
-      <h3 className="font-display font-semibold text-foreground mb-0.5 sm:mb-1 text-xs sm:text-sm">{feature.title}</h3>
-      <p className="text-muted-foreground text-[10px] sm:text-xs leading-relaxed">{feature.desc}</p>
+      <h3 className="font-display font-semibold text-foreground mb-1 text-sm sm:text-base leading-snug">
+        {feature.title}
+      </h3>
+      <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
+        {feature.desc}
+      </p>
     </motion.div>
   );
 };

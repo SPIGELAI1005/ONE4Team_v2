@@ -27,6 +27,7 @@ import {
   clubMobileMenuGlassStyle,
 } from "@/lib/public-club-glass-classes";
 import { PublicClubLanguageToggle } from "@/components/public-club/public-club-language-toggle";
+import { PublicClubProfileMenu } from "@/components/public-club/public-club-profile-menu";
 import { publicClubSectionContainer } from "@/components/public-club/public-club-section";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/one4team-logo.png";
@@ -173,6 +174,7 @@ export function PublicClubNavbar() {
             onChange={setPublicLanguage}
             className="hidden sm:inline-flex"
           />
+          <PublicClubProfileMenu className="hidden sm:inline-flex" />
           <Button
             size="sm"
             className={`hidden lg:inline-flex shrink-0 font-semibold ${clubCtaFillHoverClass}`}
@@ -242,6 +244,9 @@ export function PublicClubNavbar() {
                       setMenuOpen(false);
                     }}
                   />
+                </div>
+                <div className="mt-4 flex justify-center sm:hidden">
+                  <PublicClubProfileMenu />
                 </div>
                 <div className="mt-6 border-t border-[color:var(--club-border)] pt-4">
                   <Button

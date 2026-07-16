@@ -87,7 +87,41 @@ type ClubMembershipOption = {
   user_id: string;
   role: string;
   display_name: string;
+  email: string;
+  first_name: string;
+  last_name: string;
 };
+
+const TEAM_PLAYER_ASSIGNABLE_ROLES = new Set(["player", "member", "staff", "parent"]);
+
+function isTeamCoachMembershipRole(role: string): boolean {
+  return role === "trainer" || role === "admin";
+}
+
+function isTeamPlayerAssignableRole(role: string): boolean {
+  return TEAM_PLAYER_ASSIGNABLE_ROLES.has(role);
+}
+
+function unionMembershipOptions(...groups: ClubMembershipOption[][]): ClubMembershipOption[] {
+  const map = new Map<string, ClubMembershipOption>();
+  for (const group of groups) {
+    for (const membership of group) {
+      map.set(membership.id, membership);
+    }
+  }
+  return Array.from(map.values()).sort((a, b) =>
+    a.display_name.localeCompare(b.display_name, undefined, { sensitivity: "base" }),
+  );
+}
+
+function membershipMatchesTeamMemberSearch(membership: ClubMembershipOption, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const fullName = `${membership.first_name} ${membership.last_name}`.trim();
+  return [membership.display_name, membership.email, membership.first_name, membership.last_name, fullName].some(
+    (value) => value.toLowerCase().includes(q),
+  );
+}
 
 type TrainingSession = {
   id: string;
@@ -561,7 +595,7 @@ const Teams = () => {
           .limit(20);
       };
 
-      const [teamsRes, sessionsRes, pitchesRes, bookingsRes, pitchSchemaProbeRes, layerSchemaProbeRes, colorSchemaProbeRes, layersRes, historyProbeRes, historyRes, leagueProbeRes, teamCoachesProbeRes, teamPlayersRes, teamCoachesRes, membershipsRes, teamPublicProbeRes] = await Promise.all([
+      const [teamsRes, sessionsRes, pitchesRes, bookingsRes, pitchSchemaProbeRes, layerSchemaProbeRes, colorSchemaProbeRes, layersRes, historyProbeRes, historyRes, leagueProbeRes, teamCoachesProbeRes, teamPlayersRes, teamCoachesRes, membershipsRes, membershipEmailsRes, teamPublicProbeRes] = await Promise.all([
         supabase.from("teams").select("*").eq("club_id", clubId).order("name"),
         sessionQuery(),
         supabase.from("club_pitches").select("*").eq("club_id", clubId).order("name"),
@@ -577,6 +611,7 @@ const Teams = () => {
         supabase.from("team_players").select("team_id, membership_id").limit(2500),
         supabase.from("team_coaches").select("team_id, membership_id").limit(2500),
         supabase.from("club_memberships").select("id, user_id, role, status").eq("club_id", clubId).eq("status", "active").limit(2500),
+        supabase.rpc("list_club_membership_emails", { _club_id: clubId }),
         supabase.from("teams").select("public_website_visible").eq("club_id", clubId).limit(1),
       ]);
       const rawTeams = (teamsRes.data as unknown as Array<Record<string, unknown>>) || [];
@@ -661,25 +696,43 @@ const Teams = () => {
         );
       }
       const masterNameByMembershipId = new Map<string, string>();
+      const masterFirstNameByMembershipId = new Map<string, string>();
+      const masterLastNameByMembershipId = new Map<string, string>();
       if (membershipIds.length > 0) {
         const { data: masterRows } = await supabase
           .from("club_member_master_records")
           .select("membership_id, first_name, last_name")
           .in("membership_id", membershipIds);
         for (const row of (masterRows as Array<{ membership_id: string; first_name: string | null; last_name: string | null }> | null) ?? []) {
-          const label = [row.first_name, row.last_name].filter(Boolean).join(" ").trim();
+          const firstName = (row.first_name || "").trim();
+          const lastName = (row.last_name || "").trim();
+          if (firstName) masterFirstNameByMembershipId.set(row.membership_id, firstName);
+          if (lastName) masterLastNameByMembershipId.set(row.membership_id, lastName);
+          const label = [firstName, lastName].filter(Boolean).join(" ").trim();
           if (label) masterNameByMembershipId.set(row.membership_id, label);
+        }
+      }
+      const emailByMembershipId = new Map<string, string>();
+      if (!membershipEmailsRes.error) {
+        for (const row of (membershipEmailsRes.data as Array<{ membership_id: string; email: string }> | null) ?? []) {
+          if (row.membership_id && row.email) emailByMembershipId.set(row.membership_id, row.email);
         }
       }
       setMemberships(membershipsRaw.map((membership) => {
         const membershipId = String(membership.id);
         const masterName = masterNameByMembershipId.get(membershipId);
         const profileName = profileByUserId.get(String(membership.user_id)) || "";
+        const email = emailByMembershipId.get(membershipId) || "";
+        const firstName = masterFirstNameByMembershipId.get(membershipId) || "";
+        const lastName = masterLastNameByMembershipId.get(membershipId) || "";
         return {
           id: membershipId,
           user_id: String(membership.user_id),
           role: String(membership.role),
-          display_name: masterName || profileName || String(membership.user_id),
+          display_name: masterName || profileName || email || String(membership.user_id),
+          email,
+          first_name: firstName,
+          last_name: lastName,
         };
       }));
 
@@ -842,29 +895,46 @@ const Teams = () => {
     return Array.from(new Set([...fromTeamAssignments, ...fromLegacy]));
   }, [membershipNameById, teamCoachIdsByTeamId, teams]);
 
+  const selectedCoachMemberships = useMemo(
+    () => memberships.filter((membership) => selectedCoachMembershipIds.includes(membership.id)),
+    [memberships, selectedCoachMembershipIds],
+  );
+
+  const selectedPlayerMemberships = useMemo(
+    () => memberships.filter((membership) => selectedPlayerMembershipIds.includes(membership.id)),
+    [memberships, selectedPlayerMembershipIds],
+  );
+
   const coachMemberOptions = useMemo(() => {
-    return memberships.filter((membership) => membership.role === "trainer" || membership.role === "admin");
-  }, [memberships]);
+    const roleMatches = memberships.filter((membership) => isTeamCoachMembershipRole(membership.role));
+    return unionMembershipOptions(roleMatches, selectedCoachMemberships);
+  }, [memberships, selectedCoachMemberships]);
 
   const playerMemberOptions = useMemo(() => {
-    const assignableRoles = new Set(["player", "member", "staff", "parent"]);
-    return memberships.filter(
+    const roleMatches = memberships.filter(
       (membership) =>
-        assignableRoles.has(membership.role) ||
-        selectedPlayerMembershipIds.includes(membership.id),
+        isTeamPlayerAssignableRole(membership.role) || selectedPlayerMembershipIds.includes(membership.id),
     );
-  }, [memberships, selectedPlayerMembershipIds]);
+    return unionMembershipOptions(roleMatches, selectedPlayerMemberships);
+  }, [memberships, selectedPlayerMembershipIds, selectedPlayerMemberships]);
 
   const normalizedTeamMemberSearch = teamMemberSearch.trim().toLowerCase();
   const filteredCoachOptions = useMemo(() => {
     if (!normalizedTeamMemberSearch) return coachMemberOptions;
-    return coachMemberOptions.filter((membership) => membership.display_name.toLowerCase().includes(normalizedTeamMemberSearch));
-  }, [coachMemberOptions, normalizedTeamMemberSearch]);
+    const searchMatches = memberships.filter((membership) =>
+      membershipMatchesTeamMemberSearch(membership, normalizedTeamMemberSearch),
+    );
+    const coachMatches = searchMatches.filter((membership) => isTeamCoachMembershipRole(membership.role));
+    return unionMembershipOptions(coachMatches, selectedCoachMemberships);
+  }, [coachMemberOptions, memberships, normalizedTeamMemberSearch, selectedCoachMemberships]);
 
   const filteredPlayerOptions = useMemo(() => {
     if (!normalizedTeamMemberSearch) return playerMemberOptions;
-    return playerMemberOptions.filter((membership) => membership.display_name.toLowerCase().includes(normalizedTeamMemberSearch));
-  }, [normalizedTeamMemberSearch, playerMemberOptions]);
+    const searchMatches = memberships.filter((membership) =>
+      membershipMatchesTeamMemberSearch(membership, normalizedTeamMemberSearch),
+    );
+    return unionMembershipOptions(searchMatches, selectedPlayerMemberships);
+  }, [memberships, normalizedTeamMemberSearch, playerMemberOptions, selectedPlayerMemberships]);
 
   const pitchNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -4175,7 +4245,12 @@ const Teams = () => {
                               checked={selectedCoachMembershipIds.includes(membership.id)}
                               onChange={() => toggleCoachSelection(membership.id)}
                             />
-                            <span className="text-xs text-foreground truncate">{membership.display_name}</span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-xs text-foreground">{membership.display_name}</span>
+                              {membership.email && membership.email.toLowerCase() !== membership.display_name.toLowerCase() ? (
+                                <span className="block truncate text-[10px] text-muted-foreground">{membership.email}</span>
+                              ) : null}
+                            </span>
                           </label>
                         ))}
                       </div>
@@ -4193,7 +4268,12 @@ const Teams = () => {
                               checked={selectedPlayerMembershipIds.includes(membership.id)}
                               onChange={() => togglePlayerSelection(membership.id)}
                             />
-                            <span className="text-xs text-foreground truncate">{membership.display_name}</span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-xs text-foreground">{membership.display_name}</span>
+                              {membership.email && membership.email.toLowerCase() !== membership.display_name.toLowerCase() ? (
+                                <span className="block truncate text-[10px] text-muted-foreground">{membership.email}</span>
+                              ) : null}
+                            </span>
                           </label>
                         ))}
                       </div>

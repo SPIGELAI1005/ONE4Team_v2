@@ -1,9 +1,13 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-07-08 (Plan gate UX + guided setup team creation fix)
+Last updated: 2026-07-16 (Commercial packaging, German i18n, public club UX, hero isolation)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
+- **Commercial packaging (2026-07-16):** **`plan-catalog.ts`** is the source of truth for Kick-off / Squad / Pro / Champions prices, limits, and feature flags; Pricing UI + **`plan-limits`** + remote **`public.plans`** (migration **`20260801220000`**) aligned. Example: ~800-member club → **Pro** (~€255–319/mo depending on yearly vs monthly). See **`CHANGELOG.md`** § **2026-07-16**, **`GTM_PRICING_PACKAGING.md`**.
+- **German i18n (2026-07-16):** Comprehensive DE pass (parity, umlauts, leftover English) across club, partner, marketplace, and operator strings.
+- **Public club UX (2026-07-16):** Account settings modal; profile menu glass styling; invite modal fixes; **neutral** default hero assets (tenant isolation from pilot photography).
+- **Teams / AI branding (2026-07-16):** Full-club member picker on Edit Team; AI 4 T red-**4** branding on dashboard surfaces; Allach membership fee display; Features cards larger type.
 - **Plan gate + onboarding fix (2026-07-08):** **`PlanGate`** upgrade screen — ONE4Team logo + star badge; **Contact ONE4Team** mailto under **View Plans**; guided setup **Create your first team** fixed (removed invalid **`is_active`** on **`teams`** insert). See **`CHANGELOG.md`** § **2026-07-08 (Plan gate UX…)**.
 - **Operator Control Center (2026-07-08):** Platform admin at **`/operator`** — overview, clubs, users, modules, analytics, **financials** (MRR, cost model, development investment charts), marketplace, performance, issues, audit, support, **legal** (editable templates + PDF), settings. Recharts timelines and breakdowns; EN/DE i18n; scroll-to-top on nav; portaled metric tooltips. See **`CHANGELOG.md`** § **2026-07-08** and **`docs/operator-control-center.md`**.
 - channel-based communication hub with bridge connector foundation (WhatsApp/Telegram),
@@ -54,6 +58,7 @@ The project is **beyond Phase 12 local implementation scope** and now includes a
 - **Legal audit + marketing polish (2026-07-07):** Privacy/Terms/cookie copy for AI 4 T, Stripe, sub-processors; Privacy **13** sections; **`.legal-panel`** legal-page flicker fix; **41-day** trial; Pricing **AI 4 T** add-on; **`support@one4team.com`**; Auth logo home link; Matches mobile datetime fields; **`ScrollToTop`**. Operator **LEGAL-OPS-001** / **LEGAL-OPS-002** open. See **`CHANGELOG.md`** § **2026-07-07 (Legal audit…)**.
 - **Dashboard mobile polish + AI 4 T / Messages UX (2026-07-07):** Fixed dashboard scroll shell + bottom-nav clearance; iOS segment tabs and toolbar tokens on key pages; **AI 4 T** compact mobile chat layout, red-highlighted composer, fixed input bar; **Messages** mobile channel picker, gold-bordered fixed composer, hidden sidebar; **Teams Asset Map** responsive grids; **`chat-bridge`** CORS **`x-correlation-id`** fix (redeploy); club-create + marketplace RLS repair migrations. See **`CHANGELOG.md`** § **2026-07-07 (Dashboard mobile polish…)**.
 - **Operator Control Center — financials + charts (2026-07-08):** **`/operator/financials`** — revenue/profitability KPIs, editable cost model (tools + development effort), investment vs revenue timeline (operating + purple development line, **series show/hide toggles**, net recalculates from visible lines), cost pie, revenue-by-plan bar; metric info bubbles; Euro currency icons. **Mobile:** operator card **`min-w-0`** layout; chart legends wrap inside viewport. Chart legend/tooltip contrast fixes; operator layout scroll reset; tooltip portal fix. **`/operator/legal`** editable documents + two-column signatures. See **`CHANGELOG.md`** § **2026-07-08**.
+- **Commercial packaging + DE i18n + public club (2026-07-16):** Plan catalog prices/limits; German translation pass; public account settings; neutral hero defaults; Teams roster picker; AI branding; Allach fees. Migration **`20260801220000`**. See **`CHANGELOG.md`** § **2026-07-16**.
 
 Phase 12 release closure is complete: migration parity, verification SQL, validation matrix, and governance sign-off are recorded.
 

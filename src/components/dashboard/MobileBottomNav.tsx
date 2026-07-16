@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/hooks/use-language";
+import { BrandedText } from "@/components/ai/Ai4TBrand";
 import { useDashboardNav } from "@/hooks/use-dashboard-nav";
 import { pathnameToNavId } from "@/lib/dashboard-nav";
 
@@ -126,7 +127,7 @@ const MobileBottomNav = ({ active, onNavigate }: MobileBottomNavProps) => {
                 )}
               </div>
               <span className={`text-xs leading-tight ${isActive ? "font-semibold" : "font-medium"}`}>
-                {item.label}
+                <BrandedText text={item.label} />
               </span>
             </motion.button>
           );

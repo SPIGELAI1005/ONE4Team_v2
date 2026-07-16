@@ -46,6 +46,25 @@ export const ALLACH_MEMBERSHIP_TYPES = [
 
 export type AllachMembershipTypeId = (typeof ALLACH_MEMBERSHIP_TYPES)[number];
 
+/** Annual membership fees in EUR (plus one-time registration fee). */
+export const ALLACH_MEMBERSHIP_ANNUAL_FEES_EUR: Record<AllachMembershipTypeId, number> = {
+  youth: 120,
+  adult_active: 180,
+  adult_passive: 90,
+  family: 240,
+};
+
+/** One-time Aufnahmegebühr / registration fee in EUR. */
+export const ALLACH_MEMBERSHIP_REGISTRATION_FEE_EUR = 30;
+
+export function formatAllachMembershipFeeLabel(
+  typeId: AllachMembershipTypeId,
+  language: "en" | "de" = "de",
+): string {
+  const annual = ALLACH_MEMBERSHIP_ANNUAL_FEES_EUR[typeId];
+  return language === "de" ? `${annual} € / Jahr` : `€${annual} / year`;
+}
+
 export const ALLACH_PHONE_CODES = [
   { id: "DE", dial: "+49", label: "DE +49" },
   { id: "AT", dial: "+43", label: "AT +43" },

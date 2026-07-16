@@ -14,7 +14,12 @@ import { useToast } from "@/hooks/use-toast";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { correlationHeaders } from "@/lib/observability";
 import { cn } from "@/lib/utils";
-import { getStripe } from "@/lib/stripe";
+import { getStripe, isValidPlanId } from "@/lib/stripe";
+import {
+  PLAN_CATALOG,
+  calculateCatalogPrice,
+  type PlanCommercialConfig,
+} from "@/lib/plan-catalog";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import FootballFieldAnimation from "@/components/landing/FootballFieldAnimation";
@@ -36,18 +41,24 @@ interface PlanConfig {
   badge?: string;
 }
 
+function planFromCatalog(
+  catalog: PlanCommercialConfig,
+  extras: Pick<PlanConfig, "name" | "icon" | "description" | "features" | "highlighted" | "badge">,
+): PlanConfig {
+  return {
+    id: catalog.id,
+    basePrice: catalog.basePrice,
+    memberPrice: catalog.memberPrice,
+    discountThreshold: catalog.discountThreshold,
+    ...extras,
+  };
+}
+
 function calculatePrice(plan: PlanConfig, memberCount: number, billing: "yearly" | "monthly") {
-  if (plan.id === "bespoke") return { total: -1, base: 0, memberCost: 0, discount: false, discountPct: 0 };
-  const base = plan.basePrice[billing];
-  const memberCost = memberCount * plan.memberPrice[billing];
-  let total = base + memberCost;
-  let discount = false;
-  const discountPct = 15;
-  if (memberCount > plan.discountThreshold) {
-    discount = true;
-    total *= 0.85;
+  if (!isValidPlanId(plan.id) || plan.id === "bespoke") {
+    return { total: -1, base: 0, memberCost: 0, discount: false, discountPct: 0 };
   }
-  return { total, base, memberCost, discount, discountPct };
+  return calculateCatalogPrice(plan.id, memberCount, billing);
 }
 
 /* ─── Comparison Table Features (boolean grid - names come from translations) ─── */
@@ -338,8 +349,8 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
 function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
   const { t } = useLanguage();
   const minMembers = 1;
-  const [selectedPlan, setSelectedPlan] = useState<string>("squad");
-  const [members, setMembers] = useState(100);
+  const [selectedPlan, setSelectedPlan] = useState<string>("pro");
+  const [members, setMembers] = useState(800);
   const [billing, setBilling] = useState<"yearly" | "monthly">("yearly");
   const sliderMaxMembers = useMemo(() => Math.max(10000, members), [members]);
 
@@ -487,59 +498,43 @@ const Pricing = () => {
   const contentOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
   const [billing, setBilling] = useState<"yearly" | "monthly">("yearly");
-  const [memberCount] = useState(100);
+  const [memberCount] = useState(250);
   const [showComparison, setShowComparison] = useState(false);
 
   const plans: PlanConfig[] = [
-    {
-      id: "kickoff",
+    planFromCatalog(PLAN_CATALOG.kickoff, {
       name: t.pricingPage.kickoff,
       icon: Star,
       description: t.pricingPage.kickoffDesc,
-      basePrice: { yearly: 14, monthly: 1.40 },
-      memberPrice: { yearly: 1, monthly: 0.10 },
-      discountThreshold: 499,
       features: [...t.pricingPage.kickoffFeatures],
-    },
-    {
-      id: "squad",
+    }),
+    planFromCatalog(PLAN_CATALOG.squad, {
       name: t.pricingPage.squad,
       icon: Rocket,
       description: t.pricingPage.squadDesc,
-      basePrice: { yearly: 28, monthly: 2.80 },
-      memberPrice: { yearly: 2, monthly: 0.20 },
-      discountThreshold: 999,
       features: [...t.pricingPage.squadFeatures],
-      highlighted: true,
-      badge: t.pricingPage.mostPopular,
-    },
-    {
-      id: "pro",
+    }),
+    planFromCatalog(PLAN_CATALOG.pro, {
       name: t.pricingPage.pro,
       icon: Trophy,
       description: t.pricingPage.proDesc,
-      basePrice: { yearly: 56, monthly: 5.60 },
-      memberPrice: { yearly: 3, monthly: 0.30 },
-      discountThreshold: 1999,
       features: [...t.pricingPage.proFeatures],
-    },
-    {
-      id: "champions",
+      highlighted: true,
+      badge: t.pricingPage.mostPopular,
+    }),
+    planFromCatalog(PLAN_CATALOG.champions, {
       name: t.pricingPage.champions,
       icon: Crown,
       description: t.pricingPage.championsDesc,
-      basePrice: { yearly: 112, monthly: 11.20 },
-      memberPrice: { yearly: 4, monthly: 0.40 },
-      discountThreshold: 2999,
       features: [...t.pricingPage.championsFeatures],
-    },
+    }),
     {
       id: "bespoke",
       name: t.pricingPage.bespoke,
       icon: Sparkles,
       description: t.pricingPage.bespokeDesc,
       basePrice: { yearly: 0, monthly: 0 },
-      memberPrice: { yearly: 4, monthly: 0.40 },
+      memberPrice: { yearly: 0, monthly: 0 },
       discountThreshold: 0,
       features: [...t.pricingPage.bespokeFeatures],
     },
@@ -562,6 +557,7 @@ const Pricing = () => {
     },
     {
       variant: "ai4t" as const,
+      icon: Bot,
       name: t.pricingPage.ai4tAddon,
       price: t.pricingPage.ai4tAddonPrice,
       desc: t.pricingPage.ai4tAddonDesc,

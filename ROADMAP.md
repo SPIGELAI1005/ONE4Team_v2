@@ -45,6 +45,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Legal audit + marketing polish (2026-07-07):** Privacy/Terms/cookie GDPR + EU AI Act copy; **§5 Sub-processors & integrations**; legal-page **`.legal-panel`** flicker fix; **41-day** trial; Pricing **AI 4 T** add-on; **`support@one4team.com`**; operator **LEGAL-OPS-001** / **LEGAL-OPS-002** — see `CHANGELOG.md` § **2026-07-07**, `TASKS.md` **P10-010f**–**P10-010g**.
 
+**Commercial packaging + German i18n + public club UX (2026-07-16):** **`plan-catalog.ts`** single source for prices/limits (Kick-off→Champions); Pricing + plan gates + remote **`public.plans`** via **`20260801220000`**; DE i18n parity/umlauts; public account settings modal; neutral hero defaults (tenant isolation); Teams full-roster picker; AI 4 T branding; Allach membership fees — see `CHANGELOG.md` § **2026-07-16**, `GTM_PRICING_PACKAGING.md`, `TASKS.md` **PKG-*** / **I18N-DE-***.
+
 ---
 
 ## Phase 0 — Foundation (Week 0–1)

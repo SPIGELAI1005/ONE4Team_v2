@@ -1,22 +1,28 @@
 /**
  * Premium default hero slots for clubs without an uploaded hero or cover image.
  *
- * ---------------------------------------------------------------------------
- * TODO (art / assets): Place final PNG (or WebP) files in the **repo** folder:
+ * IMPORTANT (multi-tenant): These paths must be **club-neutral** stock assets only.
+ * Never point platform-wide fallbacks at pilot-club photography (e.g. TSV Allach camps).
+ *
+ * Place final PNG (or WebP) files in:
  *   `public/assets/club-hero-defaults/`
  * Filenames MUST match the `path` entries below (see also
  * `public/assets/club-hero-defaults/PLACEHOLDER_ASSETS_TODO.md`).
- * Until those files exist, `HeroImageTint` falls back to the CSS gradient
- * after an image load error.
- * ---------------------------------------------------------------------------
+ * Until those files exist, `HeroImageTint` falls back to the CSS gradient after
+ * an image load error.
  */
 
 export const CLUB_HERO_DEFAULT_ASSET_BASE = "/assets/club-hero-defaults";
 
-/** Shared interim raster until final neutral hero PNGs are added under `public/assets/club-hero-defaults/`. */
-export const CLUB_HERO_INTERIM_FALLBACK_PATH = "/images/camps/sommer-fussball-camp-2026.png";
-
 export const CLUB_HERO_DEFAULT_FALLBACK_ID = "abstract-sports-pattern-neutral" as const;
+
+/** Pilot- or club-branded paths that must never be used as platform-wide hero defaults. */
+export const FORBIDDEN_PLATFORM_HERO_PATH_PATTERNS = [
+  /\/images\/camps\//i,
+  /sommer-fussball-camp/i,
+  /tsv-allach/i,
+  /allach/i,
+] as const;
 
 export interface ClubHeroDefaultAsset {
   id: string;
@@ -69,10 +75,28 @@ export function normalizeDefaultHeroAssetId(raw: unknown): string {
   return CLUB_HERO_DEFAULT_FALLBACK_ID;
 }
 
-/** Public URL for a default slot, or the fallback slot if id is unknown. */
+function resolveDefaultHeroAsset(id: string): ClubHeroDefaultAsset {
+  return (
+    DEFAULT_CLUB_HERO_ASSETS.find((asset) => asset.id === id) ??
+    DEFAULT_CLUB_HERO_ASSETS.find((asset) => asset.id === CLUB_HERO_DEFAULT_FALLBACK_ID) ??
+    DEFAULT_CLUB_HERO_ASSETS[DEFAULT_CLUB_HERO_ASSETS.length - 1]
+  );
+}
+
+/** Public URL for a default slot, or the abstract fallback slot if id is unknown. */
 export function getDefaultHeroAssetPublicPath(id: string | null | undefined): string {
   const normalized = normalizeDefaultHeroAssetId(id);
-  const row = DEFAULT_CLUB_HERO_ASSETS.find((a) => a.id === normalized);
-  if (row) return CLUB_HERO_INTERIM_FALLBACK_PATH;
-  return CLUB_HERO_INTERIM_FALLBACK_PATH;
+  return resolveDefaultHeroAsset(normalized).path;
+}
+
+/** Guardrail for tests and CI — platform hero defaults must stay club-neutral. */
+export function assertClubNeutralHeroPublicPath(path: string): void {
+  for (const pattern of FORBIDDEN_PLATFORM_HERO_PATH_PATTERNS) {
+    if (pattern.test(path)) {
+      throw new Error(`Platform hero path must be club-neutral: ${path}`);
+    }
+  }
+  if (!path.startsWith(`${CLUB_HERO_DEFAULT_ASSET_BASE}/`)) {
+    throw new Error(`Platform hero path must live under ${CLUB_HERO_DEFAULT_ASSET_BASE}/: ${path}`);
+  }
 }

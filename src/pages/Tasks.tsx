@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, formatDistanceToNow } from "date-fns";
 import {
-  Bot,
   Building2,
   CalendarClock,
   CheckCircle2,
@@ -15,6 +14,7 @@ import {
   User,
   Users,
 } from "lucide-react";
+import { Ai4TInlineLabel } from "@/components/ai/Ai4TBrand";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -569,11 +569,10 @@ export default function Tasks() {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="w-full justify-center gap-1.5 text-muted-foreground"
+                      className="w-full justify-center"
                       onClick={() => navigate("/co-trainer?tab=chat")}
                     >
-                      <Bot className="h-4 w-4" />
-                      {t.tasksPage.draftWithAi}
+                      <Ai4TInlineLabel text={t.tasksPage.draftWithAi} logoClassName="h-4 w-4" />
                     </Button>
                   </div>
                 </div>

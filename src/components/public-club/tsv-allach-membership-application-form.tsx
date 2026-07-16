@@ -11,9 +11,12 @@ import { readableTextOnSolid } from "@/lib/hex-to-rgb";
 import { clubCtaFillHoverClass } from "@/lib/public-club-cta-classes";
 import {
   ALLACH_COUNTRIES,
+  ALLACH_MEMBERSHIP_ANNUAL_FEES_EUR,
+  ALLACH_MEMBERSHIP_REGISTRATION_FEE_EUR,
   ALLACH_MEMBERSHIP_TYPES,
   ALLACH_PHONE_CODES,
   emptyTsvAllachMembershipApplication,
+  formatAllachMembershipFeeLabel,
   type AllachMembershipTypeId,
   type AllachSalutation,
   type AllachYesNo,
@@ -98,14 +101,27 @@ export function TsvAllachMembershipApplicationForm({
   onSubmit,
   onReset,
 }: TsvAllachMembershipApplicationFormProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const copy = t.tsvAllachApplication;
   const [step, setStep] = useState(0);
   const [app, setApp] = useState<TsvAllachMembershipApplication>(() => emptyTsvAllachMembershipApplication(initialEmail));
 
   const patch = (partial: Partial<TsvAllachMembershipApplication>) => setApp((prev) => ({ ...prev, ...partial }));
 
-  const membershipLabel = (id: AllachMembershipTypeId) => copy.membershipTypes[id];
+  const membershipLabel = (id: AllachMembershipTypeId) => {
+    const fee = formatAllachMembershipFeeLabel(id, language === "de" ? "de" : "en");
+    return `${copy.membershipTypes[id]} — ${fee}`;
+  };
+
+  const selectedMembershipFeeSummary = useMemo(() => {
+    if (!app.membershipType) return null;
+    const id = app.membershipType as AllachMembershipTypeId;
+    if (!(id in ALLACH_MEMBERSHIP_ANNUAL_FEES_EUR)) return null;
+    return copy.membershipFeeSelected
+      .replace("{membership}", copy.membershipTypes[id])
+      .replace("{annualFee}", formatAllachMembershipFeeLabel(id, language === "de" ? "de" : "en"))
+      .replace("{registrationFee}", String(ALLACH_MEMBERSHIP_REGISTRATION_FEE_EUR));
+  }, [app.membershipType, copy.membershipFeeSelected, copy.membershipTypes, language]);
 
   const stepTitles = useMemo(
     () => [copy.sectionPersonal, copy.sectionAddress, copy.sectionPlayer, copy.sectionMembership, copy.sectionPayment],
@@ -395,6 +411,11 @@ export function TsvAllachMembershipApplicationForm({
                   ))}
                 </SelectContent>
               </Select>
+              {selectedMembershipFeeSummary ? (
+                <p className="rounded-xl border border-neutral-200 bg-white/80 px-3 py-2 text-sm font-medium text-neutral-900">
+                  {selectedMembershipFeeSummary}
+                </p>
+              ) : null}
             </div>
             <p className="text-sm text-neutral-700">{copy.membershipFeeNote}</p>
             <p className="text-xs text-neutral-600">{copy.trainerNote}</p>
@@ -423,7 +444,6 @@ export function TsvAllachMembershipApplicationForm({
 
         {step === 4 ? (
           <>
-            <p className="text-sm text-neutral-700">{copy.paymentIntro}</p>
             <div className="space-y-2">
               <Label className={joinFormLabelClass}>{copy.accountHolderLabel}<RequiredMark /></Label>
               <Input

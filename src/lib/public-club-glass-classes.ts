@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 
 import { clubBrandingSurfaceCssVars } from "@/components/public-club/club-theme-provider";
+import { cn } from "@/lib/utils";
 
 /**
  * Apple-style liquid glass surfaces for the public club microsite.
@@ -47,6 +48,15 @@ export const clubReadableModalOverlayClass = clubAi4tModalOverlayClass;
 
 /** Portaled menus/popovers above club modals (overlay z-[60], nested dialogs z-[70]). */
 export const clubModalPopoverContentClass = "z-[80]";
+
+/** Public club dropdown menus (View Teams, profile, etc.) — one shared popover surface. */
+export const clubPublicDropdownContentClass = cn(
+  clubModalPopoverContentClass,
+  "max-h-[min(60vh,320px)] w-[min(92vw,280px)] overflow-y-auto",
+);
+
+/** Selected / active row inside a public club dropdown. */
+export const clubPublicDropdownItemActiveClass = "bg-muted/60 font-medium";
 
 /** Form fields on white-glass modals — high contrast on busy club backgrounds. */
 export const clubModalFormLabelClass = "text-sm font-medium text-neutral-900";

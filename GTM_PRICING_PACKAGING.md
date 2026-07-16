@@ -1,45 +1,35 @@
-# ONE4Team Pricing and Packaging (Draft)
+# ONE4Team Pricing and Packaging
 
-## Packaging Model
+Source of truth in code: `src/lib/plan-catalog.ts` (limits + base/member prices).
+Marketing page and client plan gates derive from that catalog.
 
-### Starter (Pilot)
-- Target: grassroots clubs validating fit
-- Indicative price: free or discounted 60-90 day pilot
-- Includes:
-  - onboarding/invite/join workflow
-  - core members and communication features
-  - basic support and onboarding guidance
+## Packages (EUR, VAT-inclusive display)
 
-### Growth
-- Target: active clubs with multi-team operations
-- Indicative model: per-team or per-active-member monthly
-- Includes:
-  - full onboarding controls, role-aware reviewer policies
-  - abuse alerts and operations dashboard
-  - analytics/funnel reporting and standard support SLA
+| Plan | Members | Teams | Base / mo | Per member / mo | Volume −15% above | Highlights |
+|------|---------|-------|-----------|-----------------|-------------------|------------|
+| Kick-off | 100 | 5 | 19 | 0.15 | 80 | Core ops + public club page |
+| Squad | 400 | 20 | 39 | 0.25 | 300 | + payments, partners, shop |
+| **Pro** | **1,200** | **60** | **79** | **0.30** | **900** | + AI 4 T, analytics, bilingual, branding |
+| Champions | 5,000 | 200 | 149 | 0.40 | 2,500 | + API, priority SLA |
+| Bespoke | Custom | Custom | Custom | Custom | — | Contact sales |
 
-### Pro / Organization
-- Target: large clubs, academies, regional structures
-- Indicative model: custom annual contract
-- Includes:
-  - advanced governance/reporting
-  - compliance package support
-  - priority support and rollout assistance
+Yearly billing = monthly × 12 × 0.8 (20% off).
 
-## Pricing Guardrails
-- Do not underprice below operational support cost.
-- Keep pilot discount explicit with conversion criteria.
-- Align EU/DE prices in EUR and US prices in USD with consistent value boundaries.
+### Example club bills (Pro)
 
-## Pilot-to-Paid Conversion Rules
-- Pilot term: 8-12 weeks.
-- Success criteria:
-  - admin-time reduction target
-  - onboarding error-rate reduction
-  - activation and weekly active usage floor
-- Conversion trigger: success criteria met and owner sign-off.
+| Members | Monthly billing | Yearly billing (÷12) |
+|---------|-----------------|----------------------|
+| 800 | ~€319/mo | ~€255/mo |
+| 1,000 | ~€322/mo after volume | ~€258/mo after volume |
 
-## Commercial Risks to Monitor
-- Free-tier misuse without conversion path.
-- Support burden exceeding pilot value.
-- Scope creep requests before pricing confirmation.
+### Add-ons
+
+- Payments: EUR 0–19/mo (usage / Stripe)
+- Pro Comms: EUR 9/mo
+- AI 4 T: EUR 19/mo on Kick-off / Squad (included fair-use on Pro+)
+
+## Guardrails
+
+- Do not underprice below support + AI fair-use cost for large clubs.
+- Keep marketing caps identical to `plan-limits` / catalog.
+- Pilot discounts stay explicit with conversion criteria.

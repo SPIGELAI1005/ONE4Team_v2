@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Bot, Loader2 } from "lucide-react";
-import { BrandedText } from "@/components/ai/Ai4TBrand";
+import { Loader2 } from "lucide-react";
+import { Ai4TInlineLabel } from "@/components/ai/Ai4TBrand";
 import { useLanguage } from "@/hooks/use-language";
 import { useActiveClub } from "@/hooks/use-active-club";
 import { supabase } from "@/integrations/supabase/client";
@@ -63,9 +63,8 @@ export function Ai4tAdminUsageCard() {
     <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="font-display font-bold flex items-center gap-2">
-            <Bot className="w-5 h-5 text-primary" />
-            <BrandedText text={t.dashboard.ai4tUsageTitle} />
+          <div className="font-display font-bold">
+            <Ai4TInlineLabel text={t.dashboard.ai4tUsageTitle} logoClassName="h-4 w-4" />
           </div>
           <p className="text-xs text-muted-foreground mt-1">{t.dashboard.ai4tUsageSubtitle}</p>
         </div>

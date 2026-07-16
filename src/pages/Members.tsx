@@ -9,7 +9,7 @@ import {
   Shield, Dumbbell, Crown, UserCheck, Heart, MoreHorizontal,
   Phone, Calendar, Loader2,
   Link2, Copy, Check, Inbox, UserPlus, Clock, X, Upload, UploadCloud, Download, AlertTriangle,
-  Sparkles, FileSpreadsheet, UserCircle2, Pencil, ChevronDown, ChevronRight, RefreshCw, History,
+  Sparkles, FileSpreadsheet, UserCircle2, Pencil, ChevronDown, ChevronRight, RefreshCw, History, IdCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,7 @@ import {
 } from "@/lib/member-master-xlsx";
 import { MemberMasterDialog } from "@/components/members/member-master-dialog";
 import { MasterDataTabs } from "@/components/members/master-data-tabs";
+import { ClubMemberPassModal, buildClubMemberPassLabels } from "@/components/members/club-member-pass-modal";
 import { Badge } from "@/components/ui/badge";
 import { appendMemberAuditEvent } from "@/lib/member-audit";
 import { sendClubInviteEmail, type SendClubInviteEmailResult } from "@/lib/send-club-invite-email";
@@ -541,6 +542,7 @@ const Members = () => {
   const [membershipEmails, setMembershipEmails] = useState<Record<string, string>>({});
   const [guardianLinks, setGuardianLinks] = useState<GuardianLinkRow[]>([]);
   const [showMasterDialog, setShowMasterDialog] = useState(false);
+  const [clubPassModalMember, setClubPassModalMember] = useState<MemberRow | null>(null);
   const [showRegistryImport, setShowRegistryImport] = useState(false);
   const [registryImportBusy, setRegistryImportBusy] = useState(false);
   const [registryImportPreview, setRegistryImportPreview] = useState<
@@ -1146,6 +1148,7 @@ const Members = () => {
     removeAvatar: t.settingsPage.removeAvatar,
     avatarUrl: t.settingsPage.avatarUrl,
   }), [t]);
+  const clubPassLabels = useMemo(() => buildClubMemberPassLabels(t), [t]);
   const canReviewJoinRequests = perms.isAdmin || (perms.isTrainer && joinReviewerPolicy === "admin_trainer");
   const canAccessMembersPage = perms.isAdmin || perms.isTrainer;
 
@@ -2365,7 +2368,7 @@ const Members = () => {
       setMemberMasterEditDraft((d) => ({ ...d, photo_url: data.publicUrl }));
       toast({ title: t.settingsPage.avatarUploadSuccess });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Upload failed";
+      const message = err instanceof Error ? err.message : t.settingsPage.uploadFailed;
       toast({
         title: t.settingsPage.avatarUploadFailed,
         description: message.includes("Bucket not found") ? t.settingsPage.avatarUploadBucketHint : message,
@@ -2974,7 +2977,7 @@ const Members = () => {
       }));
       toast({ title: t.settingsPage.avatarUploadSuccess });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Upload failed";
+      const message = err instanceof Error ? err.message : t.settingsPage.uploadFailed;
       toast({
         title: t.settingsPage.avatarUploadFailed,
         description: message.includes("Bucket not found") ? t.settingsPage.avatarUploadBucketHint : message,
@@ -2999,7 +3002,7 @@ const Members = () => {
       updateBulkRowMasterField(rowId, "photo_url", data.publicUrl);
       toast({ title: t.settingsPage.avatarUploadSuccess });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Upload failed";
+      const message = err instanceof Error ? err.message : t.settingsPage.uploadFailed;
       toast({
         title: t.settingsPage.avatarUploadFailed,
         description: message.includes("Bucket not found") ? t.settingsPage.avatarUploadBucketHint : message,
@@ -4066,6 +4069,20 @@ const Members = () => {
                             <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${roleColors[member.role] || "bg-muted text-muted-foreground"}`}>
                               {getRoleLabel(member.role)}
                             </span>
+                            {masterByMembershipId[member.id]?.internal_club_number ? (
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setClubPassModalMember(member);
+                                }}
+                                className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/5 px-2.5 py-1 text-xs font-mono font-semibold text-primary transition-colors hover:bg-primary/10"
+                                title={t.membersPage.clubPassOpenHint}
+                              >
+                                <IdCard className="h-3.5 w-3.5 shrink-0" />
+                                {String(masterByMembershipId[member.id]?.internal_club_number)}
+                              </button>
+                            ) : null}
                             <span
                               className={`text-xs font-medium px-2.5 py-1 rounded-full ${
                                 member.status === "active" ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"
@@ -5226,6 +5243,46 @@ const Members = () => {
           </motion.div>
         </div>
       )}
+
+      {clubPassModalMember ? (
+        <ClubMemberPassModal
+          open={Boolean(clubPassModalMember)}
+          onOpenChange={(open) => {
+            if (!open) setClubPassModalMember(null);
+          }}
+          values={
+            memberPanelEditModeId === clubPassModalMember.id
+              ? memberMasterEditDraft
+              : (masterByMembershipId[clubPassModalMember.id] ?? {})
+          }
+          displayName={getMemberRosterName(clubPassModalMember)}
+          clubName={clubName}
+          logoSrc={clubLogoUrl ?? ""}
+          membershipRole={getRoleLabel(
+            memberPanelEditModeId === clubPassModalMember.id ? editMemberForm.role : clubPassModalMember.role,
+          )}
+          teamLabel={
+            memberPanelEditModeId === clubPassModalMember.id
+              ? clubTeamNamesFromIds(clubTeams, editMemberTeamIds).join(", ") || editMemberForm.team.trim()
+              : getMemberAssignedTeamNames(clubPassModalMember)
+          }
+          readOnly={memberPanelEditModeId !== clubPassModalMember.id}
+          onGenerateId={
+            memberPanelEditModeId === clubPassModalMember.id
+              ? () => {
+                  const id = `O4T-${Date.now().toString(36).toUpperCase().slice(-6)}${Math.random().toString(36).slice(2, 4).toUpperCase()}`;
+                  setMemberMasterEditDraft((draft) => ({ ...draft, internal_club_number: id }));
+                }
+              : undefined
+          }
+          onDownloadComplete={() => {
+            if (memberPanelEditModeId === clubPassModalMember.id) {
+              setMemberMasterEditDraft((draft) => ({ ...draft, club_pass_generated_at: new Date().toISOString() }));
+            }
+          }}
+          labels={clubPassLabels}
+        />
+      ) : null}
 
       {selectedMember ? (
         <MemberMasterDialog

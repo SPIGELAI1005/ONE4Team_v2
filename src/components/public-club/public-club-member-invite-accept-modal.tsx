@@ -162,58 +162,93 @@ export function PublicClubMemberInviteAcceptModal() {
     [user?.id],
   );
 
+  const clearInviteFromUrl = useCallback(() => {
+    if (!inviteToken) return;
+    const next = new URLSearchParams(searchParams);
+    if (!next.has("invite")) return;
+    next.delete("invite");
+    const query = next.toString();
+    navigate(
+      {
+        pathname: window.location.pathname,
+        search: query ? `?${query}` : "",
+      },
+      { replace: true },
+    );
+  }, [inviteToken, navigate, searchParams]);
+
   const handleDismiss = useCallback(() => {
     if (dismissKey) sessionStorage.setItem(dismissKey, "1");
     setOpen(false);
-  }, [dismissKey]);
+    // Terminal invite states must leave the URL, otherwise every club context refresh reopens the modal.
+    if (step === "error" || step === "success") clearInviteFromUrl();
+  }, [clearInviteFromUrl, dismissKey, step]);
 
   const clubPagePath = preview?.clubSlug ? `/club/${encodeURIComponent(preview.clubSlug)}` : club ? `/club/${encodeURIComponent(club.slug)}` : null;
   const dashboardPath = successRole ? `/dashboard/${encodeURIComponent(successRole)}` : "/dashboard/player";
 
   const handleGoToClubPage = () => {
     if (!clubPagePath) return;
-    handleDismiss();
+    if (dismissKey) sessionStorage.setItem(dismissKey, "1");
+    setOpen(false);
+    clearInviteFromUrl();
     navigate(clubPagePath, { replace: true });
   };
 
   const handleGoToDashboard = () => {
-    handleDismiss();
+    if (dismissKey) sessionStorage.setItem(dismissKey, "1");
+    setOpen(false);
+    clearInviteFromUrl();
     navigate(dashboardPath, { replace: true });
   };
 
+  const clubSlug = club?.slug ?? null;
+
   const loadPreview = useCallback(async () => {
-    if (!club || inviteToken.length < 10) return;
+    if (!clubSlug || inviteToken.length < 10) return;
+
+    const dismissed = dismissKey ? sessionStorage.getItem(dismissKey) === "1" : false;
+    if (dismissed) {
+      setOpen(false);
+      clearInviteFromUrl();
+      return;
+    }
 
     setStep("loading");
     setErrorCode(null);
 
     const result = await fetchClubInvitePreview({
       inviteToken,
-      clubSlug: club.slug,
+      clubSlug,
     });
 
     if (!result.ok) {
       setPreview(null);
       setErrorCode(result.errorCode);
       setStep("error");
+      const stillDismissed = dismissKey ? sessionStorage.getItem(dismissKey) === "1" : false;
+      if (stillDismissed) {
+        setOpen(false);
+        clearInviteFromUrl();
+        return;
+      }
       setOpen(true);
       return;
     }
 
     setPreview(result.preview);
     setStep("review");
-    const dismissed = dismissKey ? sessionStorage.getItem(dismissKey) === "1" : false;
-    setOpen(!dismissed);
-  }, [club, dismissKey, inviteToken]);
+    setOpen(true);
+  }, [clearInviteFromUrl, clubSlug, dismissKey, inviteToken]);
 
   useEffect(() => {
-    if (!club || inviteToken.length < 10) {
+    if (!clubSlug || inviteToken.length < 10) {
       setOpen(false);
       setPreview(null);
       return;
     }
     void loadPreview();
-  }, [club, inviteToken, loadPreview]);
+  }, [clubSlug, inviteToken, loadPreview]);
 
   useEffect(() => {
     if (!open) return;
@@ -274,6 +309,7 @@ export function PublicClubMemberInviteAcceptModal() {
       }
 
       await finishRedeem(inviteToken);
+      if (dismissKey) sessionStorage.setItem(dismissKey, "1");
     } catch (err: unknown) {
       toast({
         title: t.common.error,
@@ -293,6 +329,7 @@ export function PublicClubMemberInviteAcceptModal() {
       const { error } = await signIn(inviteEmail, signInPassword);
       if (error) throw error;
       await finishRedeem(inviteToken);
+      if (dismissKey) sessionStorage.setItem(dismissKey, "1");
     } catch (err: unknown) {
       const description = getRedeemInviteErrorMessage(err, {
         unknown: t.onboarding.inviteRedeemUnknown,
@@ -319,6 +356,7 @@ export function PublicClubMemberInviteAcceptModal() {
     setSubmitting(true);
     try {
       await finishRedeem(inviteToken);
+      if (dismissKey) sessionStorage.setItem(dismissKey, "1");
     } catch (err: unknown) {
       const description = getRedeemInviteErrorMessage(err, {
         unknown: t.onboarding.inviteRedeemUnknown,
@@ -466,7 +504,12 @@ export function PublicClubMemberInviteAcceptModal() {
                 {step === "error" ? (
                   <div className="space-y-4">
                     <p className="text-sm leading-relaxed text-neutral-700">{errorMessage}</p>
-                    <Button type="button" variant="outline" className="w-full" onClick={handleDismiss}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full border-neutral-300 bg-white font-semibold text-neutral-900 hover:bg-neutral-50 hover:text-neutral-900"
+                      onClick={handleDismiss}
+                    >
                       {t.common.close}
                     </Button>
                   </div>
@@ -481,7 +524,12 @@ export function PublicClubMemberInviteAcceptModal() {
                       {t.clubPage.memberInviteModalCheckEmailDesc.replace("{email}", inviteEmail ?? "")}
                     </p>
                     <p className="text-xs text-neutral-500">{t.clubPage.memberInviteModalCheckEmailReturn}</p>
-                    <Button type="button" variant="outline" className="w-full" onClick={handleDismiss}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full border-neutral-300 bg-white font-semibold text-neutral-900 hover:bg-neutral-50 hover:text-neutral-900"
+                      onClick={handleDismiss}
+                    >
                       {t.common.close}
                     </Button>
                   </div>
