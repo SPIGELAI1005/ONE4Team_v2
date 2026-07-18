@@ -174,7 +174,7 @@ export function PublicClubNavbar() {
             onChange={setPublicLanguage}
             className="hidden sm:inline-flex"
           />
-          <PublicClubProfileMenu className="hidden sm:inline-flex" />
+          <PublicClubProfileMenu className="hidden lg:inline-flex" />
           <Button
             size="sm"
             className={`hidden lg:inline-flex shrink-0 font-semibold ${clubCtaFillHoverClass}`}
@@ -187,6 +187,7 @@ export function PublicClubNavbar() {
           </Button>
 
           <div className="flex items-center gap-2 lg:hidden">
+            <PublicClubProfileMenu />
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
               <SheetTrigger asChild>
                 <Button
@@ -244,9 +245,6 @@ export function PublicClubNavbar() {
                       setMenuOpen(false);
                     }}
                   />
-                </div>
-                <div className="mt-4 flex justify-center sm:hidden">
-                  <PublicClubProfileMenu />
                 </div>
                 <div className="mt-6 border-t border-[color:var(--club-border)] pt-4">
                   <Button

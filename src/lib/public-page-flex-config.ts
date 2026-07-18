@@ -424,3 +424,11 @@ export function getHomepageRenderOrder(layout: PublicPageConfig): HomepageModule
     .sort((a, b) => a.order - b.order)
     .map((x) => x.internalId);
 }
+
+/** Whether a homepage flex module is enabled in the published layout. */
+export function isHomepageModuleEnabled(
+  layout: PublicPageConfig,
+  flexId: HomepageFlexModuleId,
+): boolean {
+  return layout.homepageModules[flexId]?.enabled === true;
+}

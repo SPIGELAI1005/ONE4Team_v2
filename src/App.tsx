@@ -62,6 +62,7 @@ const PublicClubContactPage = lazy(() => import("./pages/public-club/public-club
 const PublicClubTournamentPage = lazy(() => import("./pages/public-club/public-club-tournament-page"));
 const PublicClubShopPage = lazy(() => import("./pages/public-club/public-club-shop-page"));
 const PublicClubReportsPage = lazy(() => import("./pages/public-club/public-club-reports-page"));
+const PublicClubMyProgressPage = lazy(() => import("./pages/public-club/public-club-my-progress-page"));
 const PublicClubLiveScoresPage = lazy(() => import("./pages/public-club/public-club-live-scores-page"));
 const PublicClubLegacyTeamRedirect = lazy(() => import("./pages/public-club/public-club-legacy-team-redirect"));
 const Members = lazy(() => import("./pages/Members"));
@@ -305,6 +306,7 @@ const AnimatedRoutes = () => {
           <Route path="contact" element={<Suspense fallback={<RouteFallback />}><PublicClubContactPage /></Suspense>} />
           <Route path="shop" element={<Suspense fallback={<RouteFallback />}><PublicClubShopPage /></Suspense>} />
           <Route path="reports" element={<Suspense fallback={<RouteFallback />}><PublicClubReportsPage /></Suspense>} />
+          <Route path="my-progress" element={<Suspense fallback={<RouteFallback />}><PublicClubMyProgressPage /></Suspense>} />
           <Route path="live-scores" element={<Suspense fallback={<RouteFallback />}><PublicClubLiveScoresPage /></Suspense>} />
         </Route>
 

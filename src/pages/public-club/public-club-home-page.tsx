@@ -22,7 +22,7 @@ import { PublicClubMessagesSection } from "@/components/public-club/public-club-
 import { PublicClubShopSection } from "@/components/public-club/public-club-shop-section";
 import { PublicClubReportsSection } from "@/components/public-club/public-club-reports-section";
 import { PublicClubLiveScoresSection } from "@/components/public-club/public-club-live-scores-section";
-import { PublicClubMyProgressSection } from "@/components/public-club/public-club-my-progress-section";
+import { PublicClubMyProgressTeaser } from "@/components/public-club/public-club-my-progress-teaser";
 import { PublicClubSection } from "@/components/public-club/public-club-section";
 import { PublicClubPageGate } from "@/components/public-club/public-club-page-gate";
 import { PublicClubNewsCarousel } from "@/components/public-club/public-club-news-carousel";
@@ -535,7 +535,7 @@ export default function PublicClubHomePage() {
                 }
 
                 if (moduleId === "my_progress") {
-                  return <PublicClubMyProgressSection key="my_progress" />;
+                  return <PublicClubMyProgressTeaser key="my_progress" />;
                 }
 
                 if (moduleId === "latest_news") {

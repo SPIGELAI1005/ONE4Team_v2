@@ -591,6 +591,7 @@ export const de: Translations = {
     profileMenu: "Profil",
     profileMenuTitle: "Dein Vereinsprofil",
     profileViewMemberCard: "Mitgliedsausweis",
+    profileMyProgress: "Mein Fortschritt",
     profilePageLanguage: "Seitensprache",
     profileAccountSettings: "Kontoeinstellungen",
     profileSettingsModalDesc: "Profil bearbeiten, ohne die Vereinsseite zu verlassen.",
@@ -1135,6 +1136,14 @@ export const de: Translations = {
     reportsDashboardHint: "Volle Berichte, Filter oder Admin-Tools benötigt?",
     openDashboardReports: "Vollständige Berichte im Dashboard öffnen",
     reportsBackToHome: "Zurück zur Vereinsseite",
+    progressBackToHome: "Zurück zur Vereinsseite",
+    progressHomeTeaserTitle: "Mein Fortschritt",
+    progressHomeTeaserDesc: "Steige auf durch Training, Auswahl und Selbsteinschätzung.",
+    progressHomeTeaserBody:
+      "Öffne dein Fortschrittsboard: Anwesenheit, Spielauswahl, Trainingstagebuch und AI-4-T-Tipps.",
+    progressHomeTeaserMemberHint: "Auch über dein Profilmenü erreichbar.",
+    progressHomeTeaserCtaSignedIn: "Fortschritt öffnen",
+    progressHomeTeaserCtaSignedOut: "Anmelden, um Fortschritt zu sehen",
     liveScoresSection: "Live-Ergebnisse",
     liveScoresTitle: "Live-Spielstände",
     liveScoresPublicTitle: "Live-Ergebnisse",
@@ -4333,7 +4342,7 @@ export const de: Translations = {
   clubProgress: {
     sectionTitle: "Mein Fortschritt",
     sectionDesc:
-      "Steige auf durch Trainingsbeteiligung, Spielauswahl und ehrliche Selbsteinschätzung — spielerischer Skill-Wettbewerb, nur für dich sichtbar.",
+      "Steige auf durch Trainingsbeteiligung, Spielauswahl und ehrliche Selbsteinschätzung. Spielerischer Skill-Wettbewerb, nur für dich sichtbar.",
     signInTeaser: "Melde dich an, um Trainings-Serie, Badges und Level auf dieser Vereinsseite zu sehen.",
     signInCta: "Anmelden",
     joinTeaser: "Werde Mitglied, um persönlichen Fortschritt, Serien und Badges freizuschalten.",
@@ -4352,9 +4361,9 @@ export const de: Translations = {
     badgesTitle: "Erfolge",
     pillarsTitle: "So wird dein Fortschritt berechnet",
     pillarsDesc:
-      "XP und Level kommen aus drei Skill-Säulen — nicht aus Popularität. Messt euch spielerisch an Technik und Zuverlässigkeit.",
+      "XP und Level kommen aus drei Skill-Säulen, nicht aus Popularität. Messt euch spielerisch an Technik und Zuverlässigkeit.",
     pillarAttendanceTitle: "Trainingsbeteiligung",
-    pillarAttendanceDesc: "Trainingseinheiten, bei denen du zugesagt und teilgenommen hast — baut Serien und XP auf.",
+    pillarAttendanceDesc: "Trainingseinheiten, bei denen du zugesagt und teilgenommen hast. Baut Serien und XP auf.",
     pillarAttendanceValue: "{attended} / {confirmed} · {rate}%",
     pillarSelectionTitle: "Spielauswahl",
     pillarSelectionDesc: "Einsätze im Kader sowie Tore und Assists, wenn erfasst.",
@@ -4371,7 +4380,7 @@ export const de: Translations = {
     journalImprovements: "Verbesserungen markieren",
     journalImprovementsPh: "z. B. schnellere Entscheidungen, schwacher Fuß, Kommunikation…",
     journalSave: "Trainingseintrag speichern",
-    journalEmpty: "Noch keine Einträge — schreib nach dem nächsten Training deine erste Reflexion.",
+    journalEmpty: "Noch keine Einträge. Schreib nach dem nächsten Training deine erste Reflexion.",
     selfEvalTitle: "Skill-Selbstbewertung (1–5)",
     skillTechnique: "Technik",
     skillFitness: "Fitness",
@@ -4380,7 +4389,7 @@ export const de: Translations = {
     aiCoachCta: "AI 4 T um Tipps bitten",
     teamChallengeTitle: "Team-Trainings-Challenge",
     teamChallengeDesc:
-      "Anonyme Team-Rangliste nach Anwesenheit der letzten 30 Tage — freundlicher Wettbewerb ums Mitmachen.",
+      "Anonyme Team-Rangliste nach Anwesenheit der letzten 30 Tage. Freundlicher Wettbewerb ums Mitmachen.",
     challengeEmpty:
       "Team-Rankings erscheinen, sobald Trainings erfasst sind. Bis dahin baue deine Serie und dein Tagebuch auf.",
     yourTeamRank: "Dein Team ist #{rank} von {total} · {rate}% Anwesenheit",
@@ -4388,16 +4397,16 @@ export const de: Translations = {
     aiNudgeCta: "AI 4 T um einen Reminder bitten",
     messagesNudgeCta: "Team benachrichtigen",
     aiNudgePrompt:
-      "Hilf mir, eine kurze, positive Erinnerung für {team} zur Trainingsbeteiligung zu formulieren (aktuell etwa {rate}%). Ermutigend und jugendgerecht — ohne Bloßstellung.",
+      "Hilf mir, eine kurze, positive Erinnerung für {team} zur Trainingsbeteiligung zu formulieren (aktuell etwa {rate}%). Ermutigend und jugendgerecht, ohne Bloßstellung.",
     awardGoldenBoot: "Torschützenkönig",
     awardPlaymaker: "Vorlagengeber",
     awardReliable: "Mr. Reliable",
-    seasonPersonalHint: "Bleib dran — Saison-Awards zählen Tore, Assists und Einsätze.",
+    seasonPersonalHint: "Bleib dran. Saison-Awards zählen Tore, Assists und Einsätze.",
     publicBadgesOptIn: "Meine Badges auf der öffentlichen Vereinsseite zeigen",
     publicBadgesOptInDesc: "Nur für Erwachsene. Nie für Spieler-Rollen oder bei aktivem Jugendschutz.",
     loadError: "Dein Fortschritt konnte gerade nicht geladen werden.",
     loadSoftNotice:
-      "Live-Vereinsdaten sind gerade nicht verfügbar — dein Fortschrittsboard zeigt Nullen, bis die Daten nachziehen. Trainingstagebuch und AI-4-T-Tipps kannst du trotzdem nutzen.",
+      "Live-Vereinsdaten sind gerade nicht verfügbar. Dein Fortschrittsboard zeigt Nullen, bis die Daten nachziehen. Trainingstagebuch und AI-4-T-Tipps kannst du trotzdem nutzen.",
     publicStripTitle: "Mitglieder-Highlights",
     publicStripDesc: "Badges von erwachsenen Mitgliedern mit Opt-in.",
     levels: {

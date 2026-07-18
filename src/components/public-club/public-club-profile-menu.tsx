@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { IdCard, LogOut, Settings } from "lucide-react";
+import { IdCard, LogOut, Settings, Trophy } from "lucide-react";
 import { usePublicClub } from "@/contexts/public-club-context";
 import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/hooks/use-language";
 import { supabase } from "@/integrations/supabase/client";
 import type { ClubMemberMasterRecord } from "@/lib/member-master-schema";
 import { readableTextOnSolid } from "@/lib/hex-to-rgb";
+import { PUBLIC_CLUB_VISIBILITY_ROUTE_SEGMENTS } from "@/lib/public-club-routes";
+import { isHomepageModuleEnabled } from "@/lib/public-page-flex-config";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -47,6 +49,8 @@ export function PublicClubProfileMenu({ className }: { className?: string }) {
     club,
     membershipId,
     membershipRole,
+    basePath,
+    searchSuffix,
     openDashboardOrAuth,
   } = usePublicClub();
 
@@ -144,6 +148,8 @@ export function PublicClubProfileMenu({ className }: { className?: string }) {
 
   const roleLabel = formatRoleLabel(membershipRole, t);
   const cardValues = masterRecord ?? {};
+  const showMyProgress = isHomepageModuleEnabled(club.publicPageLayout, "myProgress");
+  const progressHref = `${basePath}/${PUBLIC_CLUB_VISIBILITY_ROUTE_SEGMENTS.progress}${searchSuffix}`;
 
   return (
     <>
@@ -175,6 +181,15 @@ export function PublicClubProfileMenu({ className }: { className?: string }) {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
 
+          {showMyProgress ? (
+            <DropdownMenuItem
+              className="cursor-pointer gap-2"
+              onClick={() => navigate(progressHref)}
+            >
+              <Trophy className="h-4 w-4" />
+              {t.clubPage.profileMyProgress ?? t.clubProgress.sectionTitle}
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem
             className="cursor-pointer gap-2"
             disabled={loadingCard}

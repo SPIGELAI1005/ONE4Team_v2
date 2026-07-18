@@ -31,6 +31,8 @@ export const PUBLIC_CLUB_VISIBILITY_ROUTE_SEGMENTS = {
   shop: "shop",
   reports: "reports",
   livescores: "live-scores",
+  /** Member progress / gamification (gated by homepage module `myProgress`). */
+  progress: "my-progress",
 } as const;
 
 export type PublicClubVisibilityRoute = keyof typeof PUBLIC_CLUB_VISIBILITY_ROUTE_SEGMENTS;
