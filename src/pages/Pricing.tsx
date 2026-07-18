@@ -1,9 +1,9 @@
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
 import { useRef, useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import {
-  Check, X as XIcon, ArrowRight, Sparkles, Crown, Rocket, Shield, Star,
+  Check, X as XIcon, ArrowRight, Sparkles, Crown, Rocket, Shield,
   Users, Calendar, Trophy, CreditCard, MessageSquare, Bot, BarChart3,
-  Globe, ShoppingBag, Briefcase, Building2, Zap, Calculator, ChevronDown, Gift, HardDrive,
+  Globe, ShoppingBag, Briefcase, Zap, Calculator, ChevronDown, Gift, HardDrive,
   Copy, CheckCheck, BadgeCheck, ListOrdered, ClipboardList, KeyRound,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -64,7 +64,8 @@ function openBespokeConsultationEmail(subject: string, body: string, replyEmail?
 interface PlanConfig {
   id: string;
   name: string;
-  icon: typeof Star;
+  /** Letter/number mark shown on the price-card logo badge (TEAM → T E A M, Bespoke → 1). */
+  iconMark: string;
   description: string;
   basePrice: { yearly: number; monthly: number };
   memberPrice: { yearly: number; monthly: number };
@@ -76,7 +77,7 @@ interface PlanConfig {
 
 function planFromCatalog(
   catalog: PlanCommercialConfig,
-  extras: Pick<PlanConfig, "name" | "icon" | "description" | "features" | "highlighted" | "badge">,
+  extras: Pick<PlanConfig, "name" | "iconMark" | "description" | "features" | "highlighted" | "badge">,
 ): PlanConfig {
   return {
     id: catalog.id,
@@ -598,7 +599,6 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
   const { clubId } = useClubId();
   const { toast } = useToast();
   const isBespoke = plan.id === "bespoke";
-  const Icon = plan.icon;
 
   async function handlePlanAction() {
     if (isBespoke) {
@@ -716,7 +716,9 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
                   className="h-full w-full rounded-full object-contain"
                 />
                 <div className="absolute -bottom-1 -right-1 flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-gradient-gold shadow-gold ring-2 ring-background">
-                  <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary-foreground" strokeWidth={1.75} />
+                  <span className="font-display text-xs sm:text-sm font-extrabold leading-none text-primary-foreground">
+                    {plan.iconMark}
+                  </span>
                 </div>
               </div>
               <h3 className="font-display text-xl sm:text-2xl font-bold text-gradient-gold">
@@ -796,7 +798,9 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
             className="h-full w-full rounded-full object-contain"
           />
           <div className="absolute -bottom-1 -right-1 flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg bg-gradient-gold shadow-gold ring-2 ring-background">
-            <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary-foreground" strokeWidth={1.75} />
+            <span className="font-display text-[0.65rem] sm:text-xs font-extrabold leading-none text-primary-foreground">
+              {plan.iconMark}
+            </span>
           </div>
         </div>
         <h3 className="font-display text-lg sm:text-xl font-bold text-foreground">{plan.name}</h3>
@@ -1118,8 +1122,8 @@ const Pricing = () => {
 
   const plans: PlanConfig[] = [
     planFromCatalog(PLAN_CATALOG.kickoff, {
-      name: t.pricingPage.kickoff,
-      icon: Star,
+      name: "Kick-off / T",
+      iconMark: "T",
       description: t.pricingPage.kickoffDesc,
       features: [
         formatPlanMarketingLimits("kickoff", locale),
@@ -1128,8 +1132,8 @@ const Pricing = () => {
       badge: t.pricingPage.kickoffFreeBadge ?? "12 MONTHS FREE",
     }),
     planFromCatalog(PLAN_CATALOG.squad, {
-      name: t.pricingPage.squad,
-      icon: Rocket,
+      name: "Squad / E",
+      iconMark: "E",
       description: t.pricingPage.squadDesc,
       features: [
         formatPlanMarketingLimits("squad", locale),
@@ -1137,8 +1141,8 @@ const Pricing = () => {
       ],
     }),
     planFromCatalog(PLAN_CATALOG.pro, {
-      name: t.pricingPage.pro,
-      icon: Trophy,
+      name: "Pro / A",
+      iconMark: "A",
       description: t.pricingPage.proDesc,
       features: [
         formatPlanMarketingLimits("pro", locale),
@@ -1148,8 +1152,8 @@ const Pricing = () => {
       badge: t.pricingPage.mostPopular,
     }),
     planFromCatalog(PLAN_CATALOG.champions, {
-      name: t.pricingPage.champions,
-      icon: Crown,
+      name: "Champions / M",
+      iconMark: "M",
       description: t.pricingPage.championsDesc,
       features: [
         formatPlanMarketingLimits("champions", locale),
@@ -1160,8 +1164,8 @@ const Pricing = () => {
 
   const bespokePlan: PlanConfig = {
     id: "bespoke",
-    name: t.pricingPage.bespoke,
-    icon: Building2,
+    name: "Bespoke / 1 of 1",
+    iconMark: "1",
     description: t.pricingPage.bespokeDesc,
     basePrice: { yearly: 0, monthly: 0 },
     memberPrice: { yearly: 0, monthly: 0 },
