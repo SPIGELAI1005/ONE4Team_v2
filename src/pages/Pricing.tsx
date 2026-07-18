@@ -530,23 +530,21 @@ function PromoBanner() {
   const { t } = useLanguage();
   return (
     <div className="founding-promo-banner fixed top-14 left-0 right-0 z-40">
-      <div className="mx-auto flex max-w-7xl flex-col items-center gap-1 px-3 py-2 sm:flex-row sm:justify-center sm:gap-x-4 sm:px-4 sm:py-2.5">
-        <div className="flex w-full min-w-0 items-center justify-center gap-x-2 sm:w-auto sm:gap-x-4">
-          <span className="founding-promo-banner-pill shrink-0">
-            {t.pricingPage.kickoffFreeBadge ?? "12 MONTHS FREE"}
+      <div className="mx-auto grid max-w-7xl grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 gap-y-1 px-3 py-2 sm:flex sm:justify-center sm:gap-x-4 sm:px-4 sm:py-2.5">
+        <span className="founding-promo-banner-pill col-start-1 row-start-1 shrink-0">
+          {t.pricingPage.kickoffFreeBadge ?? "12 MONTHS FREE"}
+        </span>
+        <span className="founding-promo-banner-copy col-start-2 row-start-1 font-bold tracking-tight">
+          <span className="sm:hidden">
+            {t.pricingPage.foundingBannerMobile ??
+              "First season on us — Kick-off free for 12 months."}
           </span>
-          <span className="founding-promo-banner-copy font-bold tracking-tight text-center">
-            <span className="sm:hidden">
-              {t.pricingPage.foundingBannerMobile ??
-                "Your first season is on us. Kick-off free for 12 months."}
-            </span>
-            <span className="hidden sm:inline">
-              {t.pricingPage.foundingBanner ??
-                "Your first season is on us. Eligible new clubs receive Kick-off free for 12 months."}
-            </span>
+          <span className="hidden sm:inline">
+            {t.pricingPage.foundingBanner ??
+              "Your first season is on us. Eligible new clubs receive Kick-off free for 12 months."}
           </span>
-        </div>
-        <div className="founding-promo-banner-links flex shrink-0 items-center justify-center gap-3 text-xs sm:gap-4 sm:text-sm whitespace-nowrap">
+        </span>
+        <div className="founding-promo-banner-links col-start-1 row-start-2 flex items-center gap-2.5 text-xs whitespace-nowrap sm:gap-4 sm:text-sm">
           <FoundingClubTermsDialog />
           <FoundingClubOfferDetailsDialog />
         </div>

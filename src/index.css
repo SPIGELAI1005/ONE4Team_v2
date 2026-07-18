@@ -724,15 +724,16 @@
 
   .founding-promo-banner-copy {
     min-width: 0;
-    flex: 1 1 auto;
-    line-height: 1.25;
-    font-size: clamp(0.7rem, 2.8vw, 0.875rem);
+    white-space: nowrap;
+    line-height: 1.2;
+    /* Scales to keep the mobile slogan on one line beside the pill */
+    font-size: clamp(0.5rem, 2.45vw, 0.875rem);
   }
 
   @media (min-width: 640px) {
     .founding-promo-banner-copy {
-      flex: 0 1 auto;
-      white-space: nowrap;
+      font-size: 0.875rem;
+      text-align: center;
     }
   }
 

@@ -2280,7 +2280,7 @@ export const de: Translations = {
     bespokePricingHint: "Individuelle Preise für Verbände und komplexe Organisationen.",
     foundingBanner:
       "Die erste Saison geht auf uns. Berechtigte neue Vereine erhalten Kick-off 12 Monate kostenlos.",
-    foundingBannerMobile: "Erste Saison gratis. Kick-off 12 Monate für neue Vereine.",
+    foundingBannerMobile: "Erste Saison gratis — Kick-off 12 Monate gratis.",
     viewOfferDetails: "Angebotsdetails",
     viewOfferTerms: "Angebotsbedingungen",
     foundingDetailsHeadline: "Werde Gründungsverein.",
