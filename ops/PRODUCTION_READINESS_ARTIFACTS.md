@@ -1,6 +1,6 @@
 # ONE4Team Production Readiness Audit + Roadmap
 
-Last updated: 2026-07-07 (doc sync: `CHANGELOG.md` § 2026-07-07 dashboard mobile polish + AI 4 T / Messages UX + chat-bridge CORS; § 2026-07-07 legal audit + marketing polish; § 2026-07-06 Sommerfest kickoff sync + tournament info + mobile club messaging; § 2026-07-06 bug investigation remediation — CI/lint green, communication pagination, auth URL ops, Supabase config gate; § 2026-07-05 public messaging forward/share + microsite polish + Sommerfest mobile refinements; § 2026-07-05 Sommerfest tournament UX + public AI 4 T RBAC; § 2026-07-03 member invite UX; § 2026-07-01 persona data scoping + partner portal migrations `20260731120000`–`20260731220000`)
+Last updated: 2026-07-18 (comprehensive re-score vs mid-July baseline: Operator Control Center health, AI fair-use caps, billing portal / past_due recovery, marketplace engagement + dual-role e2e, weekly digests, join funnel, Members feature modules start, Support FAQ refresh; prior sync 2026-07-07)
 
 This document captures the strict production-readiness review and a comprehensive remediation roadmap for scaling ONE4Team from early usage to multi-tenant SaaS operation.
 
@@ -106,11 +106,11 @@ The platform has meaningful foundations (RLS-centric model, Stripe webhook idemp
 3. Some surfaces still use large caps (`limit(800)` in match detail, etc.); members roster is server-paged with **full-club search** via `search_club_members_page` when 2+ characters (migration `20260330120000_search_club_members_page.sql`).
 4. Residual `.in("match_id", …)` exists for bounded widgets; see `ops/FAN_OUT_AUDIT.md`.
 5. Realtime chat subscription pattern can become costly under high concurrent usage.
-6. Platform admin is enforced with `is_platform_admin()`; client allowlist (if any) is UX-only.
+6. Platform / operator admin is server-gated (`platform_users` / operator RPCs); client UI must not be treated as the security boundary.
 7. Edge CORS fails closed outside allowlist when `EDGE_ALLOWED_ORIGINS` is configured; deploy must set it in prod.
-8. Health probes Auth + PostgREST root (publishable key); full DB depth still optional via synthetic checks.
-9. Edge and DB observability are not yet complete for rapid incident diagnosis.
-10. Cost risk from repeated live-table reads and client fan-out at dashboard level.
+8. Health probes and Operator system health improve signal; full DB depth + synthetic Stripe/Resend checks remain optional.
+9. Edge/DB **code** observability improved (correlation, operator probes, AI meters); **SRE dashboards/pager (Section L)** still incomplete for rapid incident diagnosis.
+10. Cost risk from AI/LLM and live-table reads is **partially contained** by plan fair-use caps; dashboard fan-out still needs watch.
 
 ### Go-live status
 
@@ -121,14 +121,28 @@ Not ready for uncontrolled high-scale production without the roadmap items below
 
 ## SECTION B. Readiness scoring
 
-| Area | Score | Short justification |
-|---|---:|---|
-| Deployment readiness | 64 | CI solid; Section M checklist and prod templates remain operator-owned (`ops/SECTION_M_GO_LIVE_CHECKLIST.md`). |
-| Scalability readiness | 58 | RPC analytics, keyset lists, guarded index migration, server member search reduce tail risk; caps remain on some detail views. |
-| Security readiness | 66 | RBAC + CORS + RLS test scaffold; staging/prod JWT proof still the gate. |
-| Observability readiness | 48 | Logs/correlation in repo; Section L wiring is external (`ops/SECTION_L_MONITORING_SETUP.md`). |
-| Tenant isolation readiness | 74 | Matrix + integration tests + mutation probe; run with secrets on target env. |
-| Overall production readiness | 61 | Code path credible for controlled rollout; ops verification and monitoring close the loop. |
+### Re-score (2026-07-18)
+
+Prior mid-cycle scores (**Deployment 64 / Scalability 58 / Security 66 / Observability 48 / Tenant 74 / Overall 61**) reflected code foundations with ops wiring still open. Product and platform work since then moves the needle on **cost containment**, **operator visibility**, and **billing recovery**, without closing Section L/M external monitoring and go-live evidence.
+
+| Area | Prior | **Now** | Δ | Short justification |
+|---|---:|---:|---:|---|
+| Deployment readiness | 64 | **70** | +6 | Broader Edge surface (billing portal, weekly digests, health, invite email, chat-bridge verify); Guided setup launch path; Section M still operator-owned. |
+| Scalability readiness | 58 | **64** | +6 | Plan-tier **AI monthly fair-use caps** (Edge + UI meters); `usage_events` + operator usage analytics; prior keyset/RPC work still holds. Residual: god pages, realtime soak unproven, detail caps. |
+| Security readiness | 66 | **72** | +6 | Operator RBAC + audit trail; marketplace RBAC matrix + dual-role Playwright; team-assignment RLS; AI scope + caps; past_due portal is admin-gated. Staging JWT RLS proof still the gate. |
+| Observability readiness | 48 | **58** | +10 | Operator **system health probes** (Auth/Sentry/DB/Edge); AI value metrics + join-funnel analytics; more Edge correlation IDs. **Section L** vendor dashboards/pager still checklist-only. |
+| Tenant isolation readiness | 74 | **78** | +4 | Additional RLS + isolation unit tests; marketplace security coverage. Policy drift / env JWT suite still required on target Supabase. |
+| **Overall production readiness** | **61** | **68** | **+7** | Conditionally ready for **controlled multi-club rollout**; not yet unmanaged high-scale without Section L/M + realtime proof. |
+
+**Go-live status (unchanged class):** Conditionally Ready — stronger than July baseline for pilot expansion; SRE-grade production still blocked on live alerts, drills, and Section M evidence.
+
+### Score history
+
+| When | Overall | Notes |
+|------|--------:|-------|
+| ~2026-03 (initial Section B) | 61 | CI, RLS scaffold, keyset lists, correlation helpers in repo |
+| 2026-07-08 comprehensive doc | 61 | Explicitly held scores pending ops wiring |
+| **2026-07-18 re-audit** | **68** | Operator CC health, AI caps, billing recovery, marketplace hardening, digests |
 
 ---
 
@@ -143,11 +157,11 @@ Not ready for uncontrolled high-scale production without the roadmap items below
 | R5 | High | Governance security | ~~Client-only platform admin~~ **Mitigated:** `platform_admins` + RPC gate + audit RPC | `PlatformAdmin.tsx`, `20260329103000_platform_admin_rbac.sql`, `20260329141000_platform_admin_audit.sql` | Break-glass process | Ops mistakes | Expand audit to more actions if needed | Platform admin JWT tests |
 | R6 | High | Realtime | Per-user realtime scaling risk in communication | `src/pages/Communication.tsx` | High connection and event fan-out pressure | Messaging instability | Channel strategy limits and batching | Realtime connection metrics + load test |
 | R7 | Medium | Edge hardening | ~~Wildcard CORS when unset~~ **Mitigated:** fail-closed unless allowlist/localhost | `supabase/functions/_shared/cors.ts` | Mis-set `EDGE_ALLOWED_ORIGINS` in prod still risky | Abuse risk | Set explicit production allowlist | Deployment config audit |
-| R8 | Medium | Payments resilience | Webhook reliability tied to secret/config correctness | `supabase/functions/stripe-webhook/index.ts` | Billing drift under failures/retries | Revenue and trust risk | Webhook replay drills + alerting | Stripe test event replay |
+| R8 | Medium | Payments resilience | Webhook reliability tied to secret/config correctness | `stripe-webhook`, **`stripe-billing-portal`**, past_due Settings banner | Billing drift under failures/retries | Revenue and trust risk | Portal + `invoice.paid` recovery shipped; still need webhook alert drills | Stripe test event replay + portal smoke |
 | R9 | Medium | Dev/prod separation | Dev bypass flags must remain strictly non-prod | `src/contexts/AuthContext.tsx`, `src/components/auth/require-role.tsx` | Mis-set env could bypass controls | Severe unauthorized access | CI policy checks on production env | Build-time env assertion |
-| R10 | Medium | Observability | Limited tracing + correlation IDs | `src/lib/observability.ts`, Edge logs | Incidents become hard to triage | Long MTTR | Structured logs + request IDs + dashboards | Incident simulation drill |
-| R11 | Medium | Health semantics | `/health` is not complete readiness | `src/pages/Health.tsx` | Can return green despite degraded internals | False confidence | Add backend health probes and synthetic checks | Synthetic monitor gates |
-| R12 | Low | Frontend perf | Heavy bundle/components for some routes | `vite.config.ts`, chart-heavy pages | Mobile perf degrades with usage growth | Slower adoption | Additional route-level splitting and budget gates | Lighthouse + bundle CI |
+| R10 | Medium | Observability | ~~Limited tracing~~ **Partial:** correlation + operator health probes; vendor alerts open | `observability.ts`, `operator-system-health.ts`, Edge `request_context`, Section L | Incidents still hard without pager | Long MTTR | Complete Section L dashboards + drills | Incident simulation drill |
+| R11 | Medium | Health semantics | `/health` + operator probes improve signal; not full readiness | `Health.tsx`, operator Performance health card | Can still look green if Edge secrets wrong | False confidence | Synthetic checks for Stripe/Resend/AI | Synthetic monitor gates |
+| R12 | Low | Frontend perf | Heavy bundle/components; Members still ~5k LOC | `Members.tsx`, chart routes | Mobile perf + maintainability | Slower adoption | Finish members feature split; route budgets | Lighthouse + bundle CI |
 
 ---
 

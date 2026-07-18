@@ -1,26 +1,54 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { motion } from "framer-motion";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
   Plus, Trophy, Dumbbell, Loader2,
-  Calendar, MapPin, Clock, History, Trash2, X, LayoutGrid, AlertTriangle, CheckCircle2, ShieldCheck, Pencil, Layers3, Building2, ChevronDown, UploadCloud, Search,
+  Calendar, MapPin, Clock, History, Trash2, X, LayoutGrid, AlertTriangle, CheckCircle2, ShieldCheck, Pencil, Layers3, Building2, ChevronDown, UploadCloud, Search, ImageIcon, RotateCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useModuleGateRole } from "@/hooks/use-module-gate-role";
+import { resolveTeamAssignmentAccess } from "@/lib/team-assignment-access";
 import { useLanguage } from "@/hooks/use-language";
 import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_INNER_SM, DASHBOARD_PAGE_ROOT, DASHBOARD_TYPE_CAPTION, DASHBOARD_TYPE_MICRO } from "@/lib/dashboard-page-shell";
 import { DashboardIosSegmentTabs } from "@/components/dashboard/DashboardIosSegmentTabs";
 import { DashboardToolbarActions, type DashboardToolbarAction } from "@/components/dashboard/DashboardToolbarActions";
 import { resolveSportId, resolveSportLabel, SPORTS_CATALOG } from "@/lib/sports";
+import { buildDayScheduleItems } from "@/lib/day-schedule-items";
+import {
+  ASSET_MAP_OVERLAY_ACCEPT,
+  clampOverlayOffset,
+  clampOverlayOpacity,
+  clampOverlayRotation,
+  clampOverlayScale,
+  defaultAssetMapOverlay,
+  isAllowedAssetMapOverlayFile,
+  nextOverlayRotation,
+  normalizePitchDisplay,
+  parseAssetMapOverlay,
+  serializeAssetMapOverlay,
+  type AssetMapOverlay,
+  type AssetMapPitchDisplay,
+} from "@/lib/asset-map-overlay";
+import {
+  parsePitchOutline,
+  rotateOutlineByDegrees,
+  serializePitchOutline,
+  type PitchOutlinePolygon,
+} from "@/lib/pitch-outline";
+import { uploadClubImageAsset } from "@/lib/upload-club-image";
+import { AssetMapOverlayUnderlay } from "@/components/teams/asset-map-overlay-underlay";
+import { AssetMapPitchOutlinesLayer } from "@/components/teams/asset-map-pitch-outlines";
 import { useLocation } from "react-router-dom";
 import { trackUsageEvent } from "@/lib/usage-events";
 import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
@@ -159,6 +187,7 @@ type ClubPitch = {
   layer_id: string | null;
   element_type: "pitch" | "clubhouse" | "street" | "garage" | "stadium" | "parking" | "storage" | "other";
   display_color: string | null;
+  outline: PitchOutlinePolygon | null;
   created_at: string;
 };
 
@@ -188,6 +217,7 @@ type PitchBooking = {
   overridden_by_booking_id: string | null;
   reconfirmation_requested_at: string | null;
   created_at: string;
+  activity_id?: string | null;
 };
 
 type EnrichedPitchBooking = PitchBooking & {
@@ -284,16 +314,16 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-function mixedCellBackground(colors: string[]): string {
+function mixedCellBackground(colors: string[], alphaScale = 1): string {
   if (colors.length === 0) return "transparent";
-  if (colors.length === 1) return hexToRgba(colors[0], 0.65);
+  if (colors.length === 1) return hexToRgba(colors[0], 0.65 * alphaScale);
 
   const uniqueColors = [...new Set(colors)];
   const step = 100 / uniqueColors.length;
   const segments = uniqueColors.map((color, index) => {
     const from = Number((index * step).toFixed(2));
     const to = Number(((index + 1) * step).toFixed(2));
-    return `${hexToRgba(color, 0.74)} ${from}% ${to}%`;
+    return `${hexToRgba(color, 0.74 * alphaScale)} ${from}% ${to}%`;
   });
   return `linear-gradient(135deg, ${segments.join(", ")})`;
 }
@@ -396,9 +426,13 @@ const Teams = () => {
   const { clubId, loading: clubLoading } = useClubId();
   const { toast } = useToast();
   const perms = usePermissions();
+  const gateRole = useModuleGateRole();
   const { t } = useLanguage();
-  const canManage = perms.isTrainer || perms.isAdmin;
-  const canManageLayers = perms.isAdmin;
+  const teamAccess = useMemo(() => resolveTeamAssignmentAccess(gateRole), [gateRole]);
+  const canManage = teamAccess.canManageTeams;
+  const canAssignPlayers = teamAccess.canAssignPlayers;
+  const canAssignCoaches = teamAccess.canAssignCoaches;
+  const canManageLayers = perms.isAdmin && (gateRole === "admin" || gateRole === "club_admin");
   const agentPageContext = useMemo(() => ({ source: "teams" as const }), []);
   useRegisterAiAgentContext(agentPageContext);
   const [activeTab, setActiveTab] = useState<"pitches" | "teams" | "sessions" | "history">("pitches");
@@ -428,6 +462,10 @@ const Teams = () => {
   const [pendingPitchDeleteId, setPendingPitchDeleteId] = useState<string | null>(null);
   const [supportsLayerFields, setSupportsLayerFields] = useState(false);
   const [supportsDisplayColorField, setSupportsDisplayColorField] = useState(false);
+  const [supportsOutlineField, setSupportsOutlineField] = useState(false);
+  const [outlineDrawMode, setOutlineDrawMode] = useState(false);
+  const [outlineTargetPitchId, setOutlineTargetPitchId] = useState<string>("");
+  const [outlineSelectedPitchId, setOutlineSelectedPitchId] = useState<string | null>(null);
   const [supportsChangeHistory, setSupportsChangeHistory] = useState(false);
   const [supportsTeamLeagueField, setSupportsTeamLeagueField] = useState(false);
   const [supportsTeamCoachesTable, setSupportsTeamCoachesTable] = useState(false);
@@ -496,7 +534,20 @@ const Teams = () => {
     startsAt: Date;
   } | null>(null);
 
-  const [usageDate, setUsageDate] = useState(new Date().toISOString().slice(0, 10));
+  const [usageDate, setUsageDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
+  const [dayScopedBookings, setDayScopedBookings] = useState<PitchBooking[]>([]);
+  const [dayScopedSessions, setDayScopedSessions] = useState<TrainingSession[]>([]);
+  const [dayScheduleLoading, setDayScheduleLoading] = useState(false);
+  const [selectedDayScheduleKey, setSelectedDayScheduleKey] = useState<string | null>(null);
+  const [assetMapOverlay, setAssetMapOverlay] = useState<AssetMapOverlay>(() => defaultAssetMapOverlay());
+  const [alignOverlayMode, setAlignOverlayMode] = useState(false);
+  const [overlayPanelOpen, setOverlayPanelOpen] = useState(false);
+  const [overlayUploading, setOverlayUploading] = useState(false);
+  const [overlaySaving, setOverlaySaving] = useState(false);
+  const overlayFileInputRef = useRef<HTMLInputElement | null>(null);
+  const overlaySaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const assetMapOverlayRef = useRef(assetMapOverlay);
+  assetMapOverlayRef.current = assetMapOverlay;
   const isAssetLayersPage =
     location.pathname === "/asset-layers" || location.pathname === "/property-layers";
   const currentTab: "pitches" | "teams" | "sessions" | "history" = isAssetLayersPage ? "pitches" : activeTab;
@@ -595,7 +646,7 @@ const Teams = () => {
           .limit(20);
       };
 
-      const [teamsRes, sessionsRes, pitchesRes, bookingsRes, pitchSchemaProbeRes, layerSchemaProbeRes, colorSchemaProbeRes, layersRes, historyProbeRes, historyRes, leagueProbeRes, teamCoachesProbeRes, teamPlayersRes, teamCoachesRes, membershipsRes, membershipEmailsRes, teamPublicProbeRes] = await Promise.all([
+      const [teamsRes, sessionsRes, pitchesRes, bookingsRes, pitchSchemaProbeRes, layerSchemaProbeRes, colorSchemaProbeRes, outlineSchemaProbeRes, layersRes, historyProbeRes, historyRes, leagueProbeRes, teamCoachesProbeRes, teamPlayersRes, teamCoachesRes, membershipsRes, membershipEmailsRes, teamPublicProbeRes] = await Promise.all([
         supabase.from("teams").select("*").eq("club_id", clubId).order("name"),
         sessionQuery(),
         supabase.from("club_pitches").select("*").eq("club_id", clubId).order("name"),
@@ -603,6 +654,7 @@ const Teams = () => {
         supabase.from("club_pitches").select("id, parent_pitch_id").eq("club_id", clubId).limit(1),
         supabase.from("club_pitches").select("id, layer_id, element_type").eq("club_id", clubId).limit(1),
         supabase.from("club_pitches").select("id, display_color").eq("club_id", clubId).limit(1),
+        supabase.from("club_pitches").select("id, outline").eq("club_id", clubId).limit(1),
         supabase.from("club_property_layers").select("*").eq("club_id", clubId).order("name"),
         supabase.from("club_training_change_history").select("id").eq("club_id", clubId).limit(1),
         supabase.from("club_training_change_history").select("*").eq("club_id", clubId).order("created_at", { ascending: false }).limit(200),
@@ -635,6 +687,8 @@ const Teams = () => {
       const rawPitches = (pitchesRes.data as unknown as Array<Record<string, unknown>>) || [];
       setSupportsParentPitchField(!pitchSchemaProbeRes.error);
       setSupportsLayerFields(!layerSchemaProbeRes.error);
+      setSupportsDisplayColorField(!colorSchemaProbeRes.error);
+      setSupportsOutlineField(!outlineSchemaProbeRes.error);
       const rawLayers = (layersRes.data as unknown as Array<Record<string, unknown>>) || [];
       setLayers(rawLayers.map((layer) => ({
         id: String(layer.id),
@@ -655,6 +709,7 @@ const Teams = () => {
         layer_id: (pitch.layer_id as string | null) ?? null,
         element_type: ((pitch.element_type as ClubPitch["element_type"]) || "pitch"),
         display_color: (pitch.display_color as string | null) ?? null,
+        outline: parsePitchOutline(pitch.outline),
         created_at: String(pitch.created_at),
       })));
       const rawBookings = (bookingsRes.data as unknown as Array<Record<string, unknown>>) || [];
@@ -835,6 +890,218 @@ const Teams = () => {
       isCancelled = true;
     };
   }, [clubId, currentTab, t.teamsPage.common.error, toast, trainingCalendarDate, trainingCalendarGranularity, trainingCalendarView]);
+
+  // Asset Map Day schedule: fetch bookings + trainings for the selected local day
+  // (global bookings/sessions lists are capped and miss many planned trainings).
+  useEffect(() => {
+    if (!clubId || !usageDate) return;
+
+    let isCancelled = false;
+    setDayScheduleLoading(true);
+
+    const dayAnchor = new Date(`${usageDate}T12:00:00`);
+    const rangeStart = startOfDay(dayAnchor);
+    const rangeEnd = endOfDay(dayAnchor);
+
+    const fetchDaySessions = async () => {
+      const activitiesRes = await supabase
+        .from("activities")
+        .select("id, title, location, starts_at, ends_at, team_id, teams(name)")
+        .eq("club_id", clubId)
+        .eq("type", "training")
+        .gte("starts_at", rangeStart.toISOString())
+        .lte("starts_at", rangeEnd.toISOString())
+        .order("starts_at", { ascending: true })
+        .limit(200);
+      if (!activitiesRes.error) return activitiesRes;
+      if (!isMissingRelationError(activitiesRes.error)) return activitiesRes;
+      return supabase
+        .from("training_sessions")
+        .select("id, title, location, starts_at, ends_at, team_id, teams(name)")
+        .eq("club_id", clubId)
+        .gte("starts_at", rangeStart.toISOString())
+        .lte("starts_at", rangeEnd.toISOString())
+        .order("starts_at", { ascending: true })
+        .limit(200);
+    };
+
+    void Promise.all([
+      supabase
+        .from("pitch_bookings")
+        .select("*")
+        .eq("club_id", clubId)
+        .gte("starts_at", rangeStart.toISOString())
+        .lte("starts_at", rangeEnd.toISOString())
+        .order("starts_at", { ascending: true })
+        .limit(200),
+      fetchDaySessions(),
+    ])
+      .then(([bookingsRes, sessionsRes]) => {
+        if (isCancelled) return;
+        if (bookingsRes.error) {
+          setDayScopedBookings([]);
+        } else {
+          setDayScopedBookings((bookingsRes.data as unknown as PitchBooking[]) ?? []);
+        }
+        if (sessionsRes.error) {
+          setDayScopedSessions([]);
+        } else {
+          setDayScopedSessions((sessionsRes.data as unknown as TrainingSession[]) ?? []);
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) setDayScheduleLoading(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [clubId, usageDate]);
+
+  useEffect(() => {
+    if (!clubId) {
+      setAssetMapOverlay(defaultAssetMapOverlay());
+      return;
+    }
+    let cancelled = false;
+    void supabase
+      .from("clubs")
+      .select("asset_map_overlay")
+      .eq("id", clubId)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error || !data) {
+          setAssetMapOverlay(defaultAssetMapOverlay());
+          return;
+        }
+        setAssetMapOverlay(parseAssetMapOverlay(data.asset_map_overlay));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [clubId]);
+
+  const persistAssetMapOverlay = useCallback(
+    async (next: AssetMapOverlay) => {
+      if (!clubId || !canManageLayers) return;
+      setOverlaySaving(true);
+      const { error } = await supabase
+        .from("clubs")
+        .update({ asset_map_overlay: serializeAssetMapOverlay(next) })
+        .eq("id", clubId);
+      setOverlaySaving(false);
+      if (error) {
+        toast({
+          title: t.teamsPage.common.error,
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    },
+    [canManageLayers, clubId, t.teamsPage.common.error, toast],
+  );
+
+  const schedulePersistAssetMapOverlay = useCallback(
+    (next: AssetMapOverlay) => {
+      if (overlaySaveTimerRef.current) clearTimeout(overlaySaveTimerRef.current);
+      overlaySaveTimerRef.current = setTimeout(() => {
+        void persistAssetMapOverlay(next);
+      }, 500);
+    },
+    [persistAssetMapOverlay],
+  );
+
+  const persistPitchOutline = useCallback(
+    async (pitchId: string, outline: PitchOutlinePolygon | null) => {
+      if (!clubId || !canManageLayers || !supportsOutlineField) return;
+      const serialized = serializePitchOutline(outline);
+      const { error } = await supabase
+        .from("club_pitches")
+        .update({ outline: serialized })
+        .eq("club_id", clubId)
+        .eq("id", pitchId);
+      if (error) {
+        toast({
+          title: t.teamsPage.common.error,
+          description: error.message.includes("outline")
+            ? t.teamsPage.outlineMigrationHint
+            : error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      setPitches((previous) =>
+        previous.map((pitch) => (pitch.id === pitchId ? { ...pitch, outline: serialized } : pitch)),
+      );
+    },
+    [canManageLayers, clubId, supportsOutlineField, t.teamsPage.common.error, t.teamsPage.outlineMigrationHint, toast],
+  );
+
+  const handleOverlayFileChange = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file || !clubId || !canManageLayers) return;
+      const check = isAllowedAssetMapOverlayFile(file);
+      if (!check.ok) {
+        toast({
+          title: t.teamsPage.common.error,
+          description:
+            check.reason === "size" ? t.teamsPage.overlayFileTooLarge : t.teamsPage.overlayFileInvalidType,
+          variant: "destructive",
+        });
+        return;
+      }
+      setOverlayUploading(true);
+      try {
+        const url = await uploadClubImageAsset(clubId, file, "asset-map");
+        const next: AssetMapOverlay = {
+          ...assetMapOverlay,
+          url,
+          opacity: assetMapOverlay.url ? assetMapOverlay.opacity : clampOverlayOpacity(0.45),
+          scale: assetMapOverlay.url ? assetMapOverlay.scale : 1,
+        };
+        setAssetMapOverlay(next);
+        await persistAssetMapOverlay(next);
+        toast({ title: t.teamsPage.overlayUploadSuccess });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : t.teamsPage.common.error;
+        toast({ title: t.teamsPage.common.error, description: message, variant: "destructive" });
+      } finally {
+        setOverlayUploading(false);
+      }
+    },
+    [
+      assetMapOverlay,
+      canManageLayers,
+      clubId,
+      persistAssetMapOverlay,
+      t.teamsPage.common.error,
+      t.teamsPage.overlayFileInvalidType,
+      t.teamsPage.overlayFileTooLarge,
+      t.teamsPage.overlayUploadSuccess,
+      toast,
+    ],
+  );
+
+  const handleRemoveOverlay = useCallback(async () => {
+    if (!canManageLayers) return;
+    const next: AssetMapOverlay = {
+      ...defaultAssetMapOverlay(),
+      pitch_display: normalizePitchDisplay(assetMapOverlay.pitch_display),
+    };
+    setAssetMapOverlay(next);
+    setAlignOverlayMode(false);
+    await persistAssetMapOverlay(next);
+    toast({ title: t.teamsPage.overlayRemoved });
+  }, [
+    assetMapOverlay.pitch_display,
+    canManageLayers,
+    persistAssetMapOverlay,
+    t.teamsPage.overlayRemoved,
+    toast,
+  ]);
 
   const teamNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -1212,6 +1479,20 @@ const Teams = () => {
     return pitches.filter(matchesActiveLayerFilter);
   }, [pitches, matchesActiveLayerFilter]);
 
+  const pitchDisplayMode = normalizePitchDisplay(assetMapOverlay.pitch_display);
+  const showPitchCells = pitchDisplayMode === "cells" || pitchDisplayMode === "both";
+  const showPitchOutlines = pitchDisplayMode === "outlines" || pitchDisplayMode === "both";
+  const outlinePitchesForMap = useMemo(
+    () =>
+      filteredPitches.map((pitch) => ({
+        id: pitch.id,
+        name: pitch.name,
+        color: pitchColorById.get(pitch.id) || "#71717a",
+        outline: pitch.outline,
+      })),
+    [filteredPitches, pitchColorById],
+  );
+
   const activeLayer = useMemo(() => {
     if (activeLayerId === "all") return null;
     if (activeLayerPurposeFilter) return null;
@@ -1311,15 +1592,59 @@ const Teams = () => {
   }, [enrichedBookings, filteredPitches.length, matchesActiveLayerFilter, pitchById, pitchNameById, t.teamsPage.unknownElement]);
 
   const dayBookings = useMemo(() => {
-    const from = new Date(`${usageDate}T00:00:00`);
-    const to = new Date(`${usageDate}T23:59:59`);
-    return enrichedBookings.filter((booking) => {
-      const start = new Date(booking.starts_at);
-      const pitch = pitchById.get(booking.pitch_id);
-      if (!pitch || !matchesActiveLayerFilter(pitch)) return false;
-      return start >= from && start <= to;
+    return dayScopedBookings
+      .filter((booking) => {
+        const pitch = pitchById.get(booking.pitch_id);
+        return Boolean(pitch && matchesActiveLayerFilter(pitch));
+      })
+      .map((booking) => {
+        const bookingPitch = pitchById.get(booking.pitch_id);
+        const hasConflict = dayScopedBookings.some(
+          (candidate) =>
+            candidate.id !== booking.id
+            && candidate.status !== "cancelled"
+            && booking.status !== "cancelled"
+            && (() => {
+              const candidatePitch = pitchById.get(candidate.pitch_id);
+              if (!bookingPitch || !candidatePitch) return candidate.pitch_id === booking.pitch_id;
+              return bookingPitch.grid_cells.some((cell) => candidatePitch.grid_cells.includes(cell));
+            })()
+            && overlaps(booking.starts_at, booking.ends_at, candidate.starts_at, candidate.ends_at),
+        );
+        return {
+          ...booking,
+          pitchName: pitchNameById.get(booking.pitch_id) || t.teamsPage.unknownElement,
+          teamName: booking.team_id ? (teamNameById.get(booking.team_id) || null) : null,
+          hasConflict,
+        } satisfies EnrichedPitchBooking;
+      });
+  }, [
+    dayScopedBookings,
+    matchesActiveLayerFilter,
+    pitchById,
+    pitchNameById,
+    t.teamsPage.unknownElement,
+    teamNameById,
+  ]);
+
+  const dayScheduleItems = useMemo(() => {
+    // Use all day bookings for training↔booking dedupe, then hide booking rows
+    // that fall outside the active layer filter (trainings without pitch stay visible).
+    return buildDayScheduleItems({
+      bookings: dayScopedBookings,
+      sessions: dayScopedSessions,
+    }).filter((item) => {
+      if (item.kind !== "booking" || !item.pitchId) return true;
+      const pitch = pitchById.get(item.pitchId);
+      return Boolean(pitch && matchesActiveLayerFilter(pitch));
     });
-  }, [enrichedBookings, matchesActiveLayerFilter, pitchById, usageDate]);
+  }, [dayScopedBookings, dayScopedSessions, matchesActiveLayerFilter, pitchById]);
+
+  const dayBookingById = useMemo(() => {
+    const map = new Map<string, EnrichedPitchBooking>();
+    for (const booking of dayBookings) map.set(booking.id, booking);
+    return map;
+  }, [dayBookings]);
 
   const combinedPitchCells = useMemo(() => {
     const map = new Map<number, string[]>();
@@ -1337,6 +1662,11 @@ const Teams = () => {
     );
     return filteredPitches.filter((pitch) => bookedIds.has(pitch.id));
   }, [dayBookings, filteredPitches]);
+
+  const outlinePitchesBooked = useMemo(() => {
+    const bookedIds = new Set(pitchesBookedOnSelectedDay.map((p) => p.id));
+    return outlinePitchesForMap.filter((p) => bookedIds.has(p.id));
+  }, [outlinePitchesForMap, pitchesBookedOnSelectedDay]);
 
   const combinedPitchCellsBooked = useMemo(() => {
     const map = new Map<number, string[]>();
@@ -1365,18 +1695,54 @@ const Teams = () => {
 
   const selectedBooking = useMemo(() => {
     if (!selectedBookingId) return null;
-    return enrichedBookings.find((booking) => booking.id === selectedBookingId) || null;
-  }, [enrichedBookings, selectedBookingId]);
+    return (
+      enrichedBookings.find((booking) => booking.id === selectedBookingId)
+      || dayBookings.find((booking) => booking.id === selectedBookingId)
+      || null
+    );
+  }, [dayBookings, enrichedBookings, selectedBookingId]);
 
   const bookingDetails = useMemo(() => {
     if (!bookingDetailsId) return null;
-    return enrichedBookings.find((booking) => booking.id === bookingDetailsId) || null;
-  }, [bookingDetailsId, enrichedBookings]);
+    return (
+      enrichedBookings.find((booking) => booking.id === bookingDetailsId)
+      || dayBookings.find((booking) => booking.id === bookingDetailsId)
+      || null
+    );
+  }, [bookingDetailsId, dayBookings, enrichedBookings]);
 
   const selectedBookingPitchId = selectedBooking?.pitch_id || null;
 
+  const selectedScheduleItem = useMemo(() => {
+    if (!selectedDayScheduleKey) return null;
+    return dayScheduleItems.find((item) => item.key === selectedDayScheduleKey) || null;
+  }, [dayScheduleItems, selectedDayScheduleKey]);
+
+  /** Pitch to emphasize on the map from day schedule / booking selection. */
+  const mapHighlightPitchId =
+    selectedBookingPitchId || selectedScheduleItem?.pitchId || null;
+
+  const mapHighlightCaption = useMemo(() => {
+    if (!mapHighlightPitchId || !selectedScheduleItem) return null;
+    if (selectedScheduleItem.pitchId !== mapHighlightPitchId) return null;
+    const team = selectedScheduleItem.teamId
+      ? teamNameById.get(selectedScheduleItem.teamId) || null
+      : null;
+    const start = format(selectedScheduleItem.startsAt, "HH:mm");
+    const end = selectedScheduleItem.endsAt ? format(selectedScheduleItem.endsAt, "HH:mm") : null;
+    const time = end ? `${start}–${end}` : start;
+    const parts = [time];
+    if (team) parts.push(team);
+    else if (selectedScheduleItem.title) parts.push(selectedScheduleItem.title);
+    return parts.join(" · ");
+  }, [mapHighlightPitchId, selectedScheduleItem, teamNameById]);
+
+  const forceOutlineForHighlight = Boolean(
+    mapHighlightPitchId && pitchById.get(mapHighlightPitchId)?.outline,
+  );
+
   const bookedPitchLabelModels = useMemo(() => {
-    if (selectedBookingPitchId) return [];
+    if (selectedBookingPitchId || mapHighlightPitchId) return [];
     if (pitchViewMode !== "booked") return [];
 
     const rows = pitchesBookedOnSelectedDay
@@ -1414,7 +1780,7 @@ const Teams = () => {
         };
       })
       .sort((a, b) => a.pitchName.localeCompare(b.pitchName));
-  }, [bookedLegendByPitchId, pitchViewMode, pitchesBookedOnSelectedDay, selectedBookingPitchId]);
+  }, [bookedLegendByPitchId, mapHighlightPitchId, pitchViewMode, pitchesBookedOnSelectedDay, selectedBookingPitchId]);
 
   const formattedHistoryEntries = useMemo(() => {
     const formatAction = (action: ChangeHistoryItem["action"]): string => {
@@ -1504,12 +1870,12 @@ const Teams = () => {
   }, [changeHistory, pitchNameById, t.teamsPage.history, t.teamsPage.tabs.sessions, t.teamsPage.tabs.teams, teamNameById, user?.id]);
 
   useEffect(() => {
-    if (!selectedBookingPitchId) return;
+    if (!mapHighlightPitchId) return;
     if (currentTab !== "pitches") return;
     if (pitchViewMode !== "separate") return;
 
     const attemptScroll = () => {
-      const target = pitchCardRefs.current[selectedBookingPitchId];
+      const target = pitchCardRefs.current[mapHighlightPitchId];
       if (!target) return;
       target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
     };
@@ -1519,7 +1885,7 @@ const Teams = () => {
     }, 40);
 
     return () => window.clearTimeout(timer);
-  }, [currentTab, pitchViewMode, selectedBookingPitchId, filteredPitches.length]);
+  }, [currentTab, filteredPitches.length, mapHighlightPitchId, pitchViewMode]);
 
   useEffect(() => {
     if (!showAddTeam || !editingTeamId) return;
@@ -1957,35 +2323,38 @@ const Teams = () => {
   };
 
   const persistTeamAssignments = async (teamId: string) => {
-    const existingPlayerIds = teamPlayerIdsByTeamId[teamId] || [];
-    const nextPlayerIds = Array.from(new Set(selectedPlayerMembershipIds));
-    const playersToAdd = nextPlayerIds.filter((membershipId) => !existingPlayerIds.includes(membershipId));
-    const playersToRemove = existingPlayerIds.filter((membershipId) => !nextPlayerIds.includes(membershipId));
+    if (canAssignPlayers) {
+      const existingPlayerIds = teamPlayerIdsByTeamId[teamId] || [];
+      const nextPlayerIds = Array.from(new Set(selectedPlayerMembershipIds));
+      const playersToAdd = nextPlayerIds.filter((membershipId) => !existingPlayerIds.includes(membershipId));
+      const playersToRemove = existingPlayerIds.filter((membershipId) => !nextPlayerIds.includes(membershipId));
 
-    if (playersToRemove.length > 0) {
-      const { error } = await supabase
-        .from("team_players")
-        .delete()
-        .eq("team_id", teamId)
-        .in("membership_id", playersToRemove);
-      if (error) throw error;
-    }
-    if (playersToAdd.length > 0) {
-      const { error } = await supabase
-        .from("team_players")
-        .insert(playersToAdd.map((membershipId) => ({ team_id: teamId, membership_id: membershipId })));
-      if (error) throw error;
-      if (clubId) {
-        trackUsageEvent({
-          eventName: "player_created",
-          clubId,
-          moduleKey: "trainings",
-          metadata: { count: playersToAdd.length },
-        });
+      if (playersToRemove.length > 0) {
+        const { error } = await supabase
+          .from("team_players")
+          .delete()
+          .eq("team_id", teamId)
+          .in("membership_id", playersToRemove);
+        if (error) throw error;
       }
+      if (playersToAdd.length > 0) {
+        const { error } = await supabase
+          .from("team_players")
+          .insert(playersToAdd.map((membershipId) => ({ team_id: teamId, membership_id: membershipId })));
+        if (error) throw error;
+        if (clubId) {
+          trackUsageEvent({
+            eventName: "player_created",
+            clubId,
+            moduleKey: "trainings",
+            metadata: { count: playersToAdd.length },
+          });
+        }
+      }
+      setTeamPlayerIdsByTeamId((previous) => ({ ...previous, [teamId]: nextPlayerIds }));
     }
 
-    if (supportsTeamCoachesTable) {
+    if (supportsTeamCoachesTable && canAssignCoaches) {
       const existingCoachIds = teamCoachIdsByTeamId[teamId] || [];
       const nextCoachIds = Array.from(new Set(selectedCoachMembershipIds));
       const coachesToAdd = nextCoachIds.filter((membershipId) => !existingCoachIds.includes(membershipId));
@@ -2007,8 +2376,6 @@ const Teams = () => {
       }
       setTeamCoachIdsByTeamId((previous) => ({ ...previous, [teamId]: nextCoachIds }));
     }
-
-    setTeamPlayerIdsByTeamId((previous) => ({ ...previous, [teamId]: nextPlayerIds }));
   };
 
   const handleAddTeam = async () => {
@@ -2157,7 +2524,7 @@ const Teams = () => {
     const updated = data as Team;
     try {
       await persistTeamAssignments(editingTeamId);
-      if (supportsTeamCoachesTable && supportsTeamPublicPrivacy) {
+      if (supportsTeamCoachesTable && supportsTeamPublicPrivacy && canAssignCoaches) {
         for (const membershipId of selectedCoachMembershipIds) {
           const cfg = coachPublicByMembershipId[membershipId] ?? { show: false, email: "" };
           await supabase
@@ -2553,6 +2920,7 @@ const Teams = () => {
       layer_id: (row.layer_id as string | null) ?? null,
       element_type: ((row.element_type as ClubPitch["element_type"]) || "pitch"),
       display_color: (row.display_color as string | null) ?? null,
+      outline: parsePitchOutline(row.outline),
       created_at: String(row.created_at),
     };
     setPitches((previous) => [...previous, nextPitch].sort((a, b) => a.name.localeCompare(b.name)));
@@ -2642,6 +3010,7 @@ const Teams = () => {
     }
 
     const row = data as unknown as Record<string, unknown>;
+    const previousOutline = pitches.find((p) => p.id === editingPitchId)?.outline ?? null;
     const updatedPitch: ClubPitch = {
       id: String(row.id),
       club_id: String(row.club_id),
@@ -2652,6 +3021,7 @@ const Teams = () => {
       layer_id: (row.layer_id as string | null) ?? null,
       element_type: ((row.element_type as ClubPitch["element_type"]) || "pitch"),
       display_color: (row.display_color as string | null) ?? null,
+      outline: parsePitchOutline(row.outline) ?? previousOutline,
       created_at: String(row.created_at),
     };
 
@@ -2914,6 +3284,7 @@ const Teams = () => {
   };
 
   const toggleCoachSelection = (membershipId: string) => {
+    if (!canAssignCoaches) return;
     setSelectedCoachMembershipIds((previous) => {
       if (previous.includes(membershipId)) {
         return previous.filter((id) => id !== membershipId);
@@ -2927,6 +3298,7 @@ const Teams = () => {
   };
 
   const togglePlayerSelection = (membershipId: string) => {
+    if (!canAssignPlayers) return;
     setSelectedPlayerMembershipIds((previous) => (
       previous.includes(membershipId)
         ? previous.filter((id) => id !== membershipId)
@@ -3949,6 +4321,345 @@ const Teams = () => {
                     ]}
                   />
                 </div>
+
+                {(canManageLayers || assetMapOverlay.url) ? (
+                  <div className="mb-4 overflow-hidden rounded-2xl border border-border/60 bg-card/50 backdrop-blur-2xl">
+                    <button
+                      type="button"
+                      onClick={() => setOverlayPanelOpen((open) => !open)}
+                      aria-expanded={overlayPanelOpen}
+                      aria-label={overlayPanelOpen ? t.teamsPage.overlayCollapseAria : t.teamsPage.overlayExpandAria}
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-background/30 sm:px-5"
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/10">
+                        <ImageIcon className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold text-foreground sm:text-base">
+                          {t.teamsPage.overlayTitle}
+                        </div>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          <span
+                            className={`rounded-full border px-2 py-0.5 ${
+                              assetMapOverlay.url
+                                ? "border-primary/30 bg-primary/10 text-primary"
+                                : "border-border/60 bg-background/40"
+                            }`}
+                          >
+                            {assetMapOverlay.url ? t.teamsPage.overlayStatusOn : t.teamsPage.overlayStatusOff}
+                          </span>
+                          {overlaySaving || overlayUploading ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              {t.common.loading}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                      <ChevronDown
+                        className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${overlayPanelOpen ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                    {overlayPanelOpen ? (
+                      <div className="space-y-3 border-t border-border/50 px-4 py-4 sm:px-5 sm:py-5">
+                        <div>
+                          <p className="text-sm leading-relaxed text-foreground/85">
+                            {t.teamsPage.overlayInstructions}
+                          </p>
+                          <p className="mt-2 rounded-lg border border-border/50 bg-background/50 px-3 py-2 text-xs leading-relaxed text-muted-foreground sm:text-[13px]">
+                            {t.teamsPage.overlayTip}
+                          </p>
+                        </div>
+                        {canManageLayers ? (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <input
+                              ref={overlayFileInputRef}
+                              type="file"
+                              accept={ASSET_MAP_OVERLAY_ACCEPT}
+                              className="hidden"
+                              onChange={(e) => void handleOverlayFileChange(e)}
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              disabled={overlayUploading}
+                              onClick={() => overlayFileInputRef.current?.click()}
+                              className="gap-1.5"
+                            >
+                              <UploadCloud className="h-3.5 w-3.5" />
+                              {assetMapOverlay.url ? t.teamsPage.overlayReplace : t.teamsPage.overlayUpload}
+                            </Button>
+                            {assetMapOverlay.url ? (
+                              <>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={overlayUploading}
+                                  title={t.teamsPage.overlayRotate90Hint}
+                                  onClick={() => {
+                                    const next = {
+                                      ...assetMapOverlay,
+                                      rotation: nextOverlayRotation(assetMapOverlay.rotation),
+                                    };
+                                    setAssetMapOverlay(next);
+                                    schedulePersistAssetMapOverlay(next);
+                                  }}
+                                  className="gap-1.5"
+                                >
+                                  <RotateCw className="h-3.5 w-3.5" />
+                                  {t.teamsPage.overlayRotate90}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  disabled={overlayUploading}
+                                  onClick={() => void handleRemoveOverlay()}
+                                >
+                                  {t.teamsPage.overlayRemove}
+                                </Button>
+                              </>
+                            ) : null}
+                          </div>
+                        ) : null}
+                        {canManageLayers ? (
+                          <div className="space-y-3 rounded-xl border border-border/60 bg-background/40 px-3 py-3">
+                            <div>
+                              <div className="text-sm text-foreground">{t.teamsPage.pitchDisplayTitle}</div>
+                              <p className={`${DASHBOARD_TYPE_MICRO}`}>{t.teamsPage.pitchDisplayHint}</p>
+                            </div>
+                            <DashboardIosSegmentTabs
+                              className="w-full min-w-0"
+                              value={pitchDisplayMode}
+                              onChange={(value) => {
+                                const nextMode = normalizePitchDisplay(value) as AssetMapPitchDisplay;
+                                const next = { ...assetMapOverlay, pitch_display: nextMode };
+                                setAssetMapOverlay(next);
+                                schedulePersistAssetMapOverlay(next);
+                                if (nextMode === "cells") {
+                                  setOutlineDrawMode(false);
+                                }
+                              }}
+                              tabs={[
+                                { id: "cells", label: t.teamsPage.pitchDisplayCells },
+                                { id: "outlines", label: t.teamsPage.pitchDisplayOutlines },
+                                { id: "both", label: t.teamsPage.pitchDisplayBoth },
+                              ]}
+                            />
+                            {supportsOutlineField && showPitchOutlines ? (
+                              <div className="space-y-2 border-t border-border/50 pt-3">
+                                <p className={`${DASHBOARD_TYPE_MICRO}`}>{t.teamsPage.outlineDrawHint}</p>
+                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                  <Select
+                                    value={outlineTargetPitchId || "__none"}
+                                    onValueChange={(value) => {
+                                      const nextId = value === "__none" ? "" : value;
+                                      setOutlineTargetPitchId(nextId);
+                                      setOutlineSelectedPitchId(nextId || null);
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-9 w-full bg-background sm:max-w-xs">
+                                      <SelectValue placeholder={t.teamsPage.outlineSelectPitch} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="__none">{t.teamsPage.outlineSelectPitch}</SelectItem>
+                                      {filteredPitches.map((pitch) => (
+                                        <SelectItem key={`outline-target-${pitch.id}`} value={pitch.id}>
+                                          {pitch.name}
+                                          {pitch.outline ? ` · ${t.teamsPage.outlineSet}` : ""}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <div className="flex flex-wrap gap-2">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant={outlineDrawMode ? "default" : "outline"}
+                                      disabled={!outlineTargetPitchId || pitchViewMode === "separate"}
+                                      onClick={() => {
+                                        if (pitchViewMode === "separate") return;
+                                        setAlignOverlayMode(false);
+                                        setOutlineDrawMode((prev) => !prev);
+                                      }}
+                                    >
+                                      {outlineDrawMode ? t.teamsPage.outlineDrawing : t.teamsPage.outlineDraw}
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      disabled={
+                                        !(
+                                          outlineSelectedPitchId &&
+                                          pitchById.get(outlineSelectedPitchId)?.outline
+                                        )
+                                      }
+                                      onClick={() => {
+                                        if (!outlineSelectedPitchId) return;
+                                        void persistPitchOutline(outlineSelectedPitchId, null);
+                                      }}
+                                    >
+                                      {t.teamsPage.outlineClear}
+                                    </Button>
+                                  </div>
+                                </div>
+                                {outlineSelectedPitchId && pitchById.get(outlineSelectedPitchId)?.outline ? (
+                                  <div className="space-y-1.5">
+                                    <Label className="text-xs text-muted-foreground">
+                                      {t.teamsPage.outlineRotation}
+                                    </Label>
+                                    <div className="flex flex-wrap gap-2">
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          const pitch = pitchById.get(outlineSelectedPitchId);
+                                          if (!pitch?.outline) return;
+                                          void persistPitchOutline(
+                                            outlineSelectedPitchId,
+                                            rotateOutlineByDegrees(pitch.outline, -5),
+                                          );
+                                        }}
+                                      >
+                                        {t.teamsPage.outlineRotateLeft}
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          const pitch = pitchById.get(outlineSelectedPitchId);
+                                          if (!pitch?.outline) return;
+                                          void persistPitchOutline(
+                                            outlineSelectedPitchId,
+                                            rotateOutlineByDegrees(pitch.outline, 5),
+                                          );
+                                        }}
+                                      >
+                                        {t.teamsPage.outlineRotateRight}
+                                      </Button>
+                                    </div>
+                                    <p className={`${DASHBOARD_TYPE_MICRO}`}>{t.teamsPage.outlineVertexHint}</p>
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : null}
+                            {!supportsOutlineField ? (
+                              <p className="text-[10px] text-amber-500/90">{t.teamsPage.outlineMigrationHint}</p>
+                            ) : null}
+                          </div>
+                        ) : null}
+                        {assetMapOverlay.url ? (
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">
+                                {t.teamsPage.overlayOpacity}: {Math.round(assetMapOverlay.opacity * 100)}%
+                              </Label>
+                              <Slider
+                                disabled={!canManageLayers}
+                                min={0}
+                                max={100}
+                                step={1}
+                                value={[Math.round(assetMapOverlay.opacity * 100)]}
+                                onValueChange={(values) => {
+                                  const next = {
+                                    ...assetMapOverlay,
+                                    opacity: clampOverlayOpacity((values[0] ?? 45) / 100),
+                                  };
+                                  setAssetMapOverlay(next);
+                                  if (canManageLayers) schedulePersistAssetMapOverlay(next);
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-1.5">
+                              <Label className="text-xs text-muted-foreground">
+                                {t.teamsPage.overlayScale}: {assetMapOverlay.scale.toFixed(2)}×
+                              </Label>
+                              <Slider
+                                disabled={!canManageLayers}
+                                min={50}
+                                max={300}
+                                step={1}
+                                value={[Math.round(assetMapOverlay.scale * 100)]}
+                                onValueChange={(values) => {
+                                  const next = {
+                                    ...assetMapOverlay,
+                                    scale: clampOverlayScale((values[0] ?? 100) / 100),
+                                  };
+                                  setAssetMapOverlay(next);
+                                  if (canManageLayers) schedulePersistAssetMapOverlay(next);
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-1.5 sm:col-span-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <Label className="text-xs text-muted-foreground">
+                                  {t.teamsPage.overlayRotation}: {Math.round(assetMapOverlay.rotation)}°
+                                </Label>
+                                <span className="text-[11px] text-muted-foreground">{t.teamsPage.overlayRotateHint}</span>
+                              </div>
+                              <Slider
+                                disabled={!canManageLayers}
+                                min={0}
+                                max={359}
+                                step={1}
+                                value={[clampOverlayRotation(assetMapOverlay.rotation)]}
+                                onValueChange={(values) => {
+                                  const next = {
+                                    ...assetMapOverlay,
+                                    rotation: clampOverlayRotation(values[0] ?? 0),
+                                  };
+                                  setAssetMapOverlay(next);
+                                  if (canManageLayers) schedulePersistAssetMapOverlay(next);
+                                }}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between gap-3 sm:col-span-2 rounded-xl border border-border/60 bg-background/40 px-3 py-2">
+                              <div>
+                                <div className="text-sm text-foreground">{t.teamsPage.overlayCropFill}</div>
+                                <p className={`${DASHBOARD_TYPE_MICRO}`}>{t.teamsPage.overlayCropFillHint}</p>
+                              </div>
+                              <Switch
+                                checked={assetMapOverlay.fit === "cover"}
+                                disabled={!canManageLayers}
+                                onCheckedChange={(checked) => {
+                                  if (!canManageLayers) return;
+                                  const next = {
+                                    ...assetMapOverlay,
+                                    fit: checked ? ("cover" as const) : ("contain" as const),
+                                  };
+                                  setAssetMapOverlay(next);
+                                  schedulePersistAssetMapOverlay(next);
+                                }}
+                              />
+                            </div>
+                            {canManageLayers ? (
+                              <div className="flex items-center justify-between gap-3 sm:col-span-2 rounded-xl border border-border/60 bg-background/40 px-3 py-2">
+                                <div>
+                                  <div className="text-sm text-foreground">{t.teamsPage.overlayAlign}</div>
+                                  <p className={`${DASHBOARD_TYPE_MICRO}`}>{t.teamsPage.overlayAlignHint}</p>
+                                </div>
+                                <Switch
+                                  checked={alignOverlayMode && (pitchViewMode === "combined" || pitchViewMode === "booked")}
+                                  disabled={pitchViewMode === "separate"}
+                                  onCheckedChange={(checked) => {
+                                    if (pitchViewMode === "separate") return;
+                                    setAlignOverlayMode(checked);
+                                  }}
+                                />
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+
                 {filteredPitches.length === 0 ? (
                   <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-8 text-center text-muted-foreground text-sm">{t.teamsPage.noPitchesHint} {GRID_LABEL}</div>
                 ) : pitchViewMode === "combined" || pitchViewMode === "booked" ? (
@@ -3960,8 +4671,30 @@ const Teams = () => {
                     <div className="min-w-0 overflow-hidden rounded-2xl border border-border/60 bg-card/40 p-3 backdrop-blur-2xl max-lg:p-3 sm:p-4">
                       <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain">
                         <div className="relative mx-auto w-full min-w-0 max-w-full">
+                        <AssetMapOverlayUnderlay
+                          overlay={assetMapOverlay}
+                          alignMode={canManageLayers && alignOverlayMode}
+                          onPanDelta={(dx, dy) => {
+                            setAssetMapOverlay((prev) => {
+                              const next = {
+                                ...prev,
+                                offset_x: clampOverlayOffset(prev.offset_x + dx),
+                                offset_y: clampOverlayOffset(prev.offset_y + dy),
+                              };
+                              assetMapOverlayRef.current = next;
+                              return next;
+                            });
+                          }}
+                          onPanEnd={() => {
+                            if (canManageLayers) schedulePersistAssetMapOverlay(assetMapOverlayRef.current);
+                          }}
+                        />
                         <div
-                          className="grid gap-[4px]"
+                          className={`relative z-10 grid gap-[4px] ${
+                            (alignOverlayMode && canManageLayers) || outlineDrawMode || !showPitchCells
+                              ? "pointer-events-none"
+                              : ""
+                          } ${!showPitchCells ? "opacity-0" : showPitchOutlines ? "opacity-70" : ""}`}
                           style={{
                             gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
                             gridTemplateRows: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
@@ -3972,8 +4705,15 @@ const Teams = () => {
                             const baseOwners = baseOwnersByIndex.get(index) || [];
                             const owners = baseOwners;
                           const ownerColors = owners.map((ownerId) => pitchColorById.get(ownerId) || "#71717a");
-                          const background = mixedCellBackground(ownerColors);
-                          const isSelectedCell = selectedBookingPitchId ? owners.includes(selectedBookingPitchId) : false;
+                          const cellAlpha = assetMapOverlay.url
+                            ? showPitchOutlines
+                              ? 0.4
+                              : 0.55
+                            : showPitchOutlines
+                              ? 0.75
+                              : 1;
+                          const background = mixedCellBackground(ownerColors, cellAlpha);
+                          const isSelectedCell = mapHighlightPitchId ? owners.includes(mapHighlightPitchId) : false;
                           const hasOwners = owners.length > 0;
                           const borderColor = isSelectedCell
                             ? "hsl(var(--primary))"
@@ -4004,17 +4744,49 @@ const Teams = () => {
                           return (
                             <div
                               key={`combined-${pitchViewMode}-${index}`}
-                              className={`aspect-square rounded-[3px] border ${owners.length > 1 ? "ring-1 ring-offset-0 ring-amber-400/80" : ""} ${isSelectedCell ? "ring-2 ring-primary/80" : ""} ${owners.length === 0 ? "bg-background/40 border-border/40" : ""}`}
+                              className={`aspect-square rounded-[3px] border ${owners.length > 1 ? "ring-1 ring-offset-0 ring-amber-400/80" : ""} ${isSelectedCell ? "ring-2 ring-primary/80" : ""} ${owners.length === 0 ? (assetMapOverlay.url ? "bg-transparent border-border/25" : "bg-background/40 border-border/40") : ""}`}
                               style={hasOwners ? { background, borderColor, boxShadow: selectedGlow } : undefined}
                               title={title}
                             />
                           );
                         })}
                         </div>
+                        <AssetMapPitchOutlinesLayer
+                          pitches={(() => {
+                            const base =
+                              pitchViewMode === "booked" ? outlinePitchesBooked : outlinePitchesForMap;
+                            if (!showPitchOutlines && forceOutlineForHighlight && mapHighlightPitchId) {
+                              return base.filter((p) => p.id === mapHighlightPitchId);
+                            }
+                            return base;
+                          })()}
+                          visible={showPitchOutlines || forceOutlineForHighlight}
+                          interactive={
+                            canManageLayers &&
+                            supportsOutlineField &&
+                            !alignOverlayMode &&
+                            !mapHighlightPitchId &&
+                            (pitchViewMode === "combined" || pitchViewMode === "booked")
+                          }
+                          selectedPitchId={outlineSelectedPitchId}
+                          highlightedPitchId={mapHighlightPitchId || outlineSelectedPitchId}
+                          highlightCaption={mapHighlightCaption}
+                          drawPitchId={outlineTargetPitchId || null}
+                          drawMode={outlineDrawMode}
+                          showLabels={showPitchOutlines || Boolean(mapHighlightPitchId)}
+                          onSelectPitch={(pitchId) => {
+                            setOutlineSelectedPitchId(pitchId);
+                            if (pitchId) setOutlineTargetPitchId(pitchId);
+                          }}
+                          onOutlineCommit={(pitchId, outline) => {
+                            void persistPitchOutline(pitchId, outline);
+                            setOutlineDrawMode(false);
+                          }}
+                        />
 
-                        {pitchViewMode === "booked" && !selectedBookingPitchId ? (
+                        {pitchViewMode === "booked" && !mapHighlightPitchId ? (
                           <div
-                            className="pointer-events-none absolute inset-0 grid gap-[4px]"
+                            className="pointer-events-none absolute inset-0 z-20 grid gap-[4px]"
                             style={{
                               gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
                               gridTemplateRows: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
@@ -4061,7 +4833,7 @@ const Teams = () => {
                         ref={(node) => {
                           pitchCardRefs.current[pitch.id] = node;
                         }}
-                        className={`min-w-0 overflow-hidden rounded-2xl border bg-card/40 p-3 backdrop-blur-2xl max-lg:p-3 sm:p-4 ${selectedBookingPitchId === pitch.id ? "border-primary/60 ring-1 ring-primary/50" : "border-border/60"}`}
+                        className={`min-w-0 overflow-hidden rounded-2xl border bg-card/40 p-3 backdrop-blur-2xl max-lg:p-3 sm:p-4 ${mapHighlightPitchId === pitch.id ? "border-primary/60 ring-1 ring-primary/50" : "border-border/60"}`}
                       >
                         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                           <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground">
@@ -4078,6 +4850,11 @@ const Teams = () => {
                               </div>
                             )}
                             <div className={`${DASHBOARD_TYPE_MICRO} shrink-0`}>{pitch.grid_cells.length} {t.teamsPage.cells}</div>
+                            {pitch.outline ? (
+                              <div className="shrink-0 rounded-full border border-border/60 bg-background/70 px-2 py-0.5 text-[10px] text-muted-foreground max-lg:text-xs">
+                                {t.teamsPage.outlineSet}
+                              </div>
+                            ) : null}
                             {canManage && (
                               <div className="flex shrink-0 items-center gap-0.5">
                                 <Button variant="ghost" size="icon" className="h-8 w-8 max-lg:h-9 max-lg:w-9" onClick={() => handleOpenEditPitch(pitch)}><Pencil className="h-3.5 w-3.5" /></Button>
@@ -4087,27 +4864,55 @@ const Teams = () => {
                           </div>
                         </div>
                         <div className="mt-3 w-full min-w-0 overflow-x-auto overscroll-x-contain">
-                          <div
-                            className="grid w-full min-w-0 max-w-full gap-[3px]"
-                            style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))` }}
-                          >
-                            {Array.from({ length: GRID_CELLS }, (_, index) => {
-                              const active = pitch.grid_cells.includes(index);
-                              return (
-                                <div
-                                  key={`${pitch.id}-${index}`}
-                                  className={`aspect-square rounded-[2px] border ${active ? "" : "bg-background/40 border-border/40"}`}
-                                  style={
-                                    active
-                                      ? {
-                                          background: hexToRgba(pitchColorById.get(pitch.id) || "#71717a", 0.7),
-                                          borderColor: hexToRgba(pitchColorById.get(pitch.id) || "#71717a", 0.92),
-                                        }
-                                      : undefined
-                                  }
-                                />
-                              );
-                            })}
+                          <div className="relative mx-auto w-full min-w-0 max-w-full overflow-visible rounded-lg">
+                            <AssetMapOverlayUnderlay overlay={assetMapOverlay} />
+                            <div
+                              className={`relative z-10 grid w-full min-w-0 max-w-full gap-[3px] ${
+                                !showPitchCells ? "opacity-0" : showPitchOutlines && pitch.outline ? "opacity-70" : ""
+                              }`}
+                              style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))` }}
+                            >
+                              {Array.from({ length: GRID_CELLS }, (_, index) => {
+                                const active = pitch.grid_cells.includes(index);
+                                return (
+                                  <div
+                                    key={`${pitch.id}-${index}`}
+                                    className={`aspect-square rounded-[2px] border ${active ? "" : assetMapOverlay.url ? "bg-transparent border-border/25" : "bg-background/40 border-border/40"}`}
+                                    style={
+                                      active
+                                        ? {
+                                            background: hexToRgba(
+                                              pitchColorById.get(pitch.id) || "#71717a",
+                                              assetMapOverlay.url ? 0.55 : 0.7,
+                                            ),
+                                            borderColor: hexToRgba(pitchColorById.get(pitch.id) || "#71717a", 0.92),
+                                          }
+                                        : undefined
+                                    }
+                                  />
+                                );
+                              })}
+                            </div>
+                            <AssetMapPitchOutlinesLayer
+                              pitches={[
+                                {
+                                  id: pitch.id,
+                                  name: pitch.name,
+                                  color: pitchColorById.get(pitch.id) || "#71717a",
+                                  outline: pitch.outline,
+                                },
+                              ]}
+                              visible={(showPitchOutlines || mapHighlightPitchId === pitch.id) && Boolean(pitch.outline)}
+                              interactive={false}
+                              selectedPitchId={null}
+                              highlightedPitchId={mapHighlightPitchId === pitch.id ? pitch.id : null}
+                              highlightCaption={mapHighlightPitchId === pitch.id ? mapHighlightCaption : null}
+                              drawPitchId={null}
+                              drawMode={false}
+                              showLabels
+                              onSelectPitch={() => undefined}
+                              onOutlineCommit={() => undefined}
+                            />
                           </div>
                         </div>
                         {pitch.notes ? <p className={`mt-3 ${DASHBOARD_TYPE_MICRO}`}>{pitch.notes}</p> : null}
@@ -4127,59 +4932,110 @@ const Teams = () => {
                     <Input type="date" value={usageDate} onChange={(event) => setUsageDate(event.target.value)} className="bg-background/50" />
                   </div>
                   <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto">
-                    {dayBookings.length === 0 ? <div className="text-xs text-muted-foreground">{t.teamsPage.noBookingsDay}</div> : dayBookings.map((booking) => (
-                      <button
-                        key={booking.id}
-                        type="button"
-                        onClick={() => setSelectedBookingId((previous) => (previous === booking.id ? null : booking.id))}
-                        className={`w-full text-left rounded-xl border bg-background/50 p-3 transition-colors hover:border-primary/40 ${selectedBookingId === booking.id ? "border-primary/50 ring-1 ring-primary/40" : "border-border/60"}`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex min-w-0 items-center gap-1.5">
-                            <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform ${selectedBookingId === booking.id ? "rotate-180" : ""}`} />
-                            <div className="text-xs font-semibold text-foreground truncate">{booking.title}</div>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${booking.hasConflict ? "bg-accent/15 text-accent border-accent/30" : "bg-primary/15 text-primary border-primary/30"}`}>{booking.hasConflict ? t.teamsPage.conflict : t.teamsPage.ok}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setBookingDetailsId(booking.id);
-                              }}
-                            >
-                              <AlertTriangle className="w-3.5 h-3.5 text-muted-foreground" />
-                            </Button>
-                          </div>
-                        </div>
-                        <div className={`mt-1 ${DASHBOARD_TYPE_MICRO}`}>{booking.pitchName} • {booking.teamName || t.teamsPage.clubWide} • {t.teamsPage.bookingTypes[booking.booking_type]}</div>
-                        {selectedBookingId === booking.id && (
-                          <div className="mt-2 rounded-lg border border-border/60 bg-background/40 p-2.5 space-y-1.5">
-                            <div className={`grid grid-cols-2 gap-2 ${DASHBOARD_TYPE_MICRO}`}>
-                              <div>
-                                <div className="text-muted-foreground">{t.teamsPage.bookingDetails.start}</div>
-                                <div className="text-foreground">{new Date(booking.starts_at).toLocaleString()}</div>
+                    {dayScheduleLoading ? (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        {t.common.loading}
+                      </div>
+                    ) : dayScheduleItems.length === 0 ? (
+                      <div className="text-xs text-muted-foreground">{t.teamsPage.noBookingsDay}</div>
+                    ) : (
+                      dayScheduleItems.map((item) => {
+                        const booking = item.kind === "booking" ? dayBookingById.get(item.id) : null;
+                        const isExpanded = selectedDayScheduleKey === item.key;
+                        const teamName = item.teamId ? (teamNameById.get(item.teamId) || null) : null;
+                        const pitchName = item.pitchId
+                          ? (pitchNameById.get(item.pitchId) || t.teamsPage.unknownElement)
+                          : t.teamsPage.dayScheduleNoPitch;
+                        const typeLabel =
+                          item.kind === "training" && !booking
+                            ? t.teamsPage.dayScheduleTrainingOnly
+                            : t.teamsPage.bookingTypes[item.bookingType || "training"];
+
+                        return (
+                          <button
+                            key={item.key}
+                            type="button"
+                            onClick={() => {
+                              setSelectedDayScheduleKey((previous) => (previous === item.key ? null : item.key));
+                              if (item.kind === "booking") {
+                                setSelectedBookingId((previous) => (previous === item.id ? null : item.id));
+                              } else {
+                                setSelectedBookingId(null);
+                              }
+                            }}
+                            className={`w-full text-left rounded-xl border bg-background/50 p-3 transition-colors hover:border-primary/40 ${isExpanded ? "border-primary/50 ring-1 ring-primary/40" : "border-border/60"}`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex min-w-0 items-center gap-1.5">
+                                <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                                <div className="text-xs font-semibold text-foreground truncate">{item.title}</div>
                               </div>
-                              <div>
-                                <div className="text-muted-foreground">{t.teamsPage.bookingDetails.end}</div>
-                                <div className="text-foreground">{new Date(booking.ends_at).toLocaleString()}</div>
+                              <div className="flex items-center gap-1">
+                                {booking ? (
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full border ${booking.hasConflict ? "bg-accent/15 text-accent border-accent/30" : "bg-primary/15 text-primary border-primary/30"}`}>
+                                    {booking.hasConflict ? t.teamsPage.conflict : t.teamsPage.ok}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full border border-border/60 bg-background/60 text-muted-foreground">
+                                    {t.teamsPage.bookingTypes.training}
+                                  </span>
+                                )}
+                                {booking ? (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      setBookingDetailsId(booking.id);
+                                    }}
+                                  >
+                                    <AlertTriangle className="w-3.5 h-3.5 text-muted-foreground" />
+                                  </Button>
+                                ) : null}
                               </div>
                             </div>
-                            <div className={DASHBOARD_TYPE_MICRO}>
-                              <span className="text-muted-foreground">{t.teamsPage.bookingDetails.contactPerson}: </span>
-                              <span className="text-foreground">
-                                {booking.team_id
-                                  ? (teamCoachById.get(booking.team_id) || t.teamsPage.bookingDetails.noContact)
-                                  : (clubCoachContacts.length > 0 ? clubCoachContacts.join(", ") : t.teamsPage.bookingDetails.noContact)}
-                              </span>
+                            <div className={`mt-1 ${DASHBOARD_TYPE_MICRO}`}>
+                              {pitchName} • {teamName || t.teamsPage.clubWide} • {typeLabel}
                             </div>
-                          </div>
-                        )}
-                      </button>
-                    ))}
+                            {isExpanded ? (
+                              <div className="mt-2 rounded-lg border border-border/60 bg-background/40 p-2.5 space-y-1.5">
+                                <div className={`grid grid-cols-2 gap-2 ${DASHBOARD_TYPE_MICRO}`}>
+                                  <div>
+                                    <div className="text-muted-foreground">{t.teamsPage.bookingDetails.start}</div>
+                                    <div className="text-foreground">{item.startsAt.toLocaleString()}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-muted-foreground">{t.teamsPage.bookingDetails.end}</div>
+                                    <div className="text-foreground">
+                                      {item.endsAt ? item.endsAt.toLocaleString() : "—"}
+                                    </div>
+                                  </div>
+                                </div>
+                                {item.location ? (
+                                  <div className={DASHBOARD_TYPE_MICRO}>
+                                    <span className="text-muted-foreground">{t.teamsPage.location}: </span>
+                                    <span className="text-foreground">{item.location}</span>
+                                  </div>
+                                ) : null}
+                                {booking ? (
+                                  <div className={DASHBOARD_TYPE_MICRO}>
+                                    <span className="text-muted-foreground">{t.teamsPage.bookingDetails.contactPerson}: </span>
+                                    <span className="text-foreground">
+                                      {booking.team_id
+                                        ? (teamCoachById.get(booking.team_id) || t.teamsPage.bookingDetails.noContact)
+                                        : (clubCoachContacts.length > 0 ? clubCoachContacts.join(", ") : t.teamsPage.bookingDetails.noContact)}
+                                    </span>
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </button>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               </div>
@@ -4225,11 +5081,15 @@ const Teams = () => {
 
                 <div className="rounded-xl border border-border/60 bg-background/40 p-3">
                   <div className={`${DASHBOARD_TYPE_CAPTION} font-medium text-foreground mb-2`}>{t.teamsPage.teamModal.membersSectionTitle}</div>
+                  {!canAssignCoaches && canAssignPlayers ? (
+                    <p className="mb-3 text-[11px] text-muted-foreground">{t.teamsPage.teamModal.assignPlayersOnlyHint}</p>
+                  ) : null}
                   <Input
                     placeholder={t.teamsPage.teamModal.memberSearchPlaceholder}
                     value={teamMemberSearch}
                     onChange={(event) => setTeamMemberSearch(event.target.value)}
                     className="bg-background mb-3"
+                    disabled={!canAssignPlayers && !canAssignCoaches}
                   />
                   <div className="grid md:grid-cols-2 gap-3">
                     <div className="rounded-lg border border-border/60 bg-background/50 p-2.5">
@@ -4238,11 +5098,15 @@ const Teams = () => {
                         {filteredCoachOptions.length === 0 ? (
                           <div className="text-xs text-muted-foreground">{t.teamsPage.teamModal.noCoachMembers}</div>
                         ) : filteredCoachOptions.map((membership) => (
-                          <label key={`coach-member-${membership.id}`} className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-background/60">
+                          <label
+                            key={`coach-member-${membership.id}`}
+                            className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${canAssignCoaches ? "hover:bg-background/60" : "opacity-70"}`}
+                          >
                             <input
                               type="checkbox"
                               className="h-4 w-4 rounded border-border bg-background"
                               checked={selectedCoachMembershipIds.includes(membership.id)}
+                              disabled={!canAssignCoaches}
                               onChange={() => toggleCoachSelection(membership.id)}
                             />
                             <span className="min-w-0 flex-1">
@@ -4261,11 +5125,15 @@ const Teams = () => {
                         {filteredPlayerOptions.length === 0 ? (
                           <div className="text-xs text-muted-foreground">{t.teamsPage.teamModal.noPlayerMembers}</div>
                         ) : filteredPlayerOptions.map((membership) => (
-                          <label key={`player-member-${membership.id}`} className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-background/60">
+                          <label
+                            key={`player-member-${membership.id}`}
+                            className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${canAssignPlayers ? "hover:bg-background/60" : "opacity-70"}`}
+                          >
                             <input
                               type="checkbox"
                               className="h-4 w-4 rounded border-border bg-background"
                               checked={selectedPlayerMembershipIds.includes(membership.id)}
+                              disabled={!canAssignPlayers}
                               onChange={() => togglePlayerSelection(membership.id)}
                             />
                             <span className="min-w-0 flex-1">
@@ -4658,45 +5526,72 @@ const Teams = () => {
                 </div>
               )}
               <Input placeholder={t.teamsPage.elementModal.notesOptional} value={pitchNotes} onChange={(event) => setPitchNotes(event.target.value)} className="bg-background" />
+              {editingPitchId && supportsOutlineField ? (
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/40 px-3 py-2">
+                  <div>
+                    <div className="text-sm text-foreground">
+                      {pitchById.get(editingPitchId)?.outline
+                        ? t.teamsPage.outlineSet
+                        : t.teamsPage.outlineNotSet}
+                    </div>
+                    <p className={`${DASHBOARD_TYPE_MICRO}`}>{t.teamsPage.outlineModalHint}</p>
+                  </div>
+                  {pitchById.get(editingPitchId)?.outline ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => void persistPitchOutline(editingPitchId, null)}
+                    >
+                      {t.teamsPage.outlineClear}
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
               <div className="rounded-xl border border-border/60 bg-background/50 p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-xs text-muted-foreground">{mapElementModalCopy.gridHint}</div>
                   <div className="text-xs text-foreground font-medium">{mapElementModalCopy.selectedCounter}</div>
                 </div>
-                <div
-                  className="grid gap-1"
-                  style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))` }}
-                >
-                  {Array.from({ length: GRID_CELLS }, (_, index) => {
-                    const parentCells = pitchParentId ? (pitchById.get(pitchParentId)?.grid_cells || []) : null;
-                    const isAllowed = !parentCells || parentCells.includes(index);
-                    const active = selectedPitchCells.includes(index);
-                    return (
-                      <button
-                        key={`new-grid-${index}`}
-                        type="button"
-                        onClick={() => {
-                          if (!isAllowed) return;
-                          toggleGridCell(index);
-                        }}
-                        className={`aspect-square rounded-[4px] border transition-colors ${
-                          !isAllowed
-                            ? "bg-background/20 border-border/30 opacity-40 cursor-not-allowed"
-                            : active
-                            ? ""
-                            : "bg-background border-border/60 hover:bg-primary/10"
-                        }`}
-                        style={
-                          active && isAllowed
-                            ? {
-                                background: hexToRgba(pitchDisplayColor, 0.82),
-                                borderColor: hexToRgba(pitchDisplayColor, 0.95),
-                              }
-                            : undefined
-                        }
-                      />
-                    );
-                  })}
+                <div className="relative mx-auto w-full min-w-0 max-w-full overflow-visible rounded-lg">
+                  <AssetMapOverlayUnderlay overlay={assetMapOverlay} />
+                  <div
+                    className="relative z-10 grid gap-1"
+                    style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))` }}
+                  >
+                    {Array.from({ length: GRID_CELLS }, (_, index) => {
+                      const parentCells = pitchParentId ? (pitchById.get(pitchParentId)?.grid_cells || []) : null;
+                      const isAllowed = !parentCells || parentCells.includes(index);
+                      const active = selectedPitchCells.includes(index);
+                      return (
+                        <button
+                          key={`new-grid-${index}`}
+                          type="button"
+                          onClick={() => {
+                            if (!isAllowed) return;
+                            toggleGridCell(index);
+                          }}
+                          className={`aspect-square rounded-[4px] border transition-colors ${
+                            !isAllowed
+                              ? "bg-background/20 border-border/30 opacity-40 cursor-not-allowed"
+                              : active
+                              ? ""
+                              : assetMapOverlay.url
+                                ? "bg-background/30 border-border/50 hover:bg-primary/15"
+                                : "bg-background border-border/60 hover:bg-primary/10"
+                          }`}
+                          style={
+                            active && isAllowed
+                              ? {
+                                  background: hexToRgba(pitchDisplayColor, assetMapOverlay.url ? 0.55 : 0.82),
+                                  borderColor: hexToRgba(pitchDisplayColor, 0.95),
+                                }
+                              : undefined
+                          }
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
                 <div className="mt-3 flex gap-2">
                   <Button

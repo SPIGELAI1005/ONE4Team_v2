@@ -1,10 +1,10 @@
 # Backlog: WhatsApp External Bridge setup (club admin)
 
-**Status:** Follow-up — not started in production  
+**Status:** Code ready for Meta verify (BRIDGE-WA-001) — redeploy `chat-bridge` before Meta callback setup  
 **Owner:** Club admin + platform operator  
 **Related UI:** `/communication` → left sidebar → **External Bridge (Beta)** → **WhatsApp**  
 **Edge function:** `supabase/functions/chat-bridge`  
-**Last updated:** 2026-06-25
+**Last updated:** 2026-07-18
 
 ---
 
@@ -12,7 +12,13 @@
 
 ONE4Team can link club chat to **WhatsApp Business API** (not personal WhatsApp / no QR scan like WhatsApp Web). Inbound messages appear in **Club General** (or a team channel). Setup requires Meta Cloud API credentials, ONE4Team connector save, and a **public webhook URL** (localhost cannot receive WhatsApp callbacks).
 
-**Known gap (code follow-up):** Meta webhook **verification** sends a GET with `hub.challenge`; `chat-bridge` currently handles POST only. If Meta shows “Webhook verification failed”, implement GET verify on `/webhook/whatsapp` before continuing.
+**Webhook verification (BRIDGE-WA-001):** `GET /functions/v1/chat-bridge/webhook/whatsapp` accepts Meta’s `hub.mode=subscribe`, `hub.verify_token`, `hub.challenge` and returns the challenge as **plain text** when the token matches:
+
+1. Edge secret **`WHATSAPP_VERIFY_TOKEN`**, or  
+2. A WhatsApp connector’s **`webhook_secret`**, or  
+3. Connector config **`verify_token`** / **`webhook_verify_token`**
+
+Redeploy after pull: `supabase functions deploy chat-bridge`.
 
 ---
 

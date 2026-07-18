@@ -4,6 +4,11 @@ import type { OperatorClubListItem } from "@/lib/operator-club-detail";
 // Billing statuses that represent recognized recurring revenue vs. pipeline.
 const PAYING_BILLING_STATUSES = new Set(["active", "past_due"]);
 const TRIAL_BILLING_STATUSES = new Set(["trialing", "trial"]);
+const PROMOTIONAL_BILLING_STATUSES = new Set(["promotional", "grace"]);
+
+export function isPromotionalBillingStatus(status: string | null | undefined): boolean {
+  return PROMOTIONAL_BILLING_STATUSES.has((status ?? "").trim().toLowerCase());
+}
 
 export interface RevenuePlanRow {
   planKey: string;
@@ -19,9 +24,12 @@ export interface RevenueBreakdown {
   arr: number;
   payingClubs: number;
   trialClubs: number;
+  promotionalClubs: number;
   unmatchedClubs: number;
   arpu: number;
   trialPipelineMrr: number;
+  /** Catalog Kick-off potential if all promotional clubs converted (list price, not charged). */
+  potentialConversionMrr: number;
   byPlan: RevenuePlanRow[];
 }
 
@@ -96,14 +104,26 @@ export function computeRevenue(
 
   let payingClubs = 0;
   let trialClubs = 0;
+  let promotionalClubs = 0;
   let unmatchedClubs = 0;
   let mrr = 0;
   let trialPipelineMrr = 0;
+  let potentialConversionMrr = 0;
 
   for (const club of clubs) {
     const plan = planByName.get(normalizeName(club.plan_name));
     const paying = isPayingBillingStatus(club.billing_status);
     const trialing = isTrialBillingStatus(club.billing_status);
+    const promotional = isPromotionalBillingStatus(club.billing_status);
+
+    // Promotional clubs never contribute to current MRR
+    if (promotional) {
+      promotionalClubs += 1;
+      if (plan) {
+        potentialConversionMrr += plan.price_monthly ?? 0;
+      }
+      continue;
+    }
 
     if (!plan) {
       if (paying || trialing) unmatchedClubs += 1;
@@ -132,9 +152,11 @@ export function computeRevenue(
     arr: mrr * 12,
     payingClubs,
     trialClubs,
+    promotionalClubs,
     unmatchedClubs,
     arpu: payingClubs > 0 ? mrr / payingClubs : 0,
     trialPipelineMrr,
+    potentialConversionMrr,
     byPlan,
   };
 }

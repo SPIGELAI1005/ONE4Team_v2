@@ -334,6 +334,7 @@ export const operatorEn = {
       modules: "Modules",
       plans: "Plans",
       matrix: "Plan Matrix",
+      offers: "Offers",
     },
     shared: {
       actions: "Actions",

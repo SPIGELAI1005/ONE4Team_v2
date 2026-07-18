@@ -32,7 +32,17 @@ export interface SubscriptionRecord {
     | "canceled"
     | "cancelled"
     | "incomplete"
-    | "paused";
+    | "paused"
+    | "promotional"
+    | "grace"
+    | "expired";
+  access_source?:
+    | "stripe"
+    | "standard_trial"
+    | "commercial_offer"
+    | "operator_grant"
+    | "legacy"
+    | null;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   current_period_start: string | null;

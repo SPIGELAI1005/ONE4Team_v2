@@ -1,16 +1,23 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-07-16 (Product Waves A–E, configurable club site banner, matches status UX)
+Last updated: 2026-07-18 (Pricing UX polish · Founding Club marketing + architecture)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **Pricing UX polish (2026-07-18):** `/pricing` — gold Founding promo banner + Offer terms / Offer details modals; Kick-off strikethrough→0 €; logos+corner icons on all cards; Bespoke Enterprise band + mailto consultation to **`contact@one4team.com`**; AI 4 T add-on red **4**, visible-play video; FAQ + comparison labels updated. See **CHANGELOG** § **Pricing UX polish**.
+- **Production readiness re-audit (2026-07-18):** Section B scores updated in **`ops/PRODUCTION_READINESS_ARTIFACTS.md`** + **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**: Overall **61→68**, Scalability **58→64**, Observability **48→58** (Deployment 70, Security 72, Tenant 78). Still **conditionally ready**; Section L/M + realtime soak remain the unlock to ~75. Visual summary: Cursor canvas `production-readiness-reaudit.canvas.tsx`.
+- **Product waves A–H (2026-07-18):** GuidedSetup golden path (import/invite email/publish); Members feature modules; operator system health probes; WhatsApp Meta verify (**redeploy chat-bridge**); AI value metrics card; Stripe `invoice.paid` + billing portal Edge (**deploy**); migration dating README; Playwright dual-role smoke (env-gated). See **CHANGELOG** § Product improvement waves.
+- **Migration dating:** `202608*` filenames are batch order; applied July 2026 — see **`supabase/migrations/README.md`**.
+- **Asset Map pitch outlines (2026-07-18):** Freeform polygon outlines on **`club_pitches.outline`** (legacy rect → polygon on parse); display mode **`pitch_display`** in **`asset_map_overlay`** (`cells` / `outlines` / `both`). Vertex drag + midpoint insert; bookings remain on **`grid_cells`**. Migration **`20260803150000`** applied. Lib **`pitch-outline.ts`**, layer **`asset-map-pitch-outlines.tsx`**.
+- **Asset Map satellite underlay (2026-07-18):** Club admins upload bird’s-eye site photo on `/teams` Combined/Booked; opacity / scale / pan; stored in **`clubs.asset_map_overlay`** (**`20260803140000`** applied). Upload via **`images-clubs`** folder `asset-map`. No Google Maps API.
+- **Public club gamification (2026-07-18, code + linked DB):** Homepage **`my_progress`** module + reports badges/streak; attendance streak + RSVP/match badges via security-definer RPCs; anonymous team attendance challenge + AI 4 T / Messages trainer nudges; levels/XP; season award hint; adult **`public_badges_opt_in`** strip on team pages (privacy + youth gates). Migration **`20260803120000_club_gamification_awards.sql`** applied (also creates **`achievements`** if missing on remote). Lib **`club-member-progress.ts`**. See **`CHANGELOG.md`** § **2026-07-18**.
 - **Product Waves A–E (2026-07-16, code + linked DB):** PROD-005…021 shipped — admin week-at-a-glance; weekly digest Edge + opt-in; invite `master_data` merge; AI usage meters/caps; trainer today-session; member my-dues + payment claims; marketplace filters/engagement/provider SEO/moderation/reviews/`marketplace:*`; join funnel; news draft/schedule; public club PWA; bilingual Club Page Admin UX. Migrations **`20260802120000`**–**`20260802150000`** applied on linked remote (fixes toast `announcements.scheduled_publish_at does not exist`). Still open for Edge: deploy **`process-weekly-digests`** + cron; optional redeploy **`co-trainer`** / **`ai4team-agent`** for AI caps. Backlog unchanged: **PKG-003**, legal address/HRB, partner smoke. See **`CHANGELOG.md`** § **2026-07-16 (Product Waves…)**, **`TASKS.md`**, **`HOLD.md`**.
 - **Configurable public club site banner (2026-07-16):** **`ClubPageAdmin`** Homepage → Site banner — enable/disable, kinds (**promo** / **news** / **event** / **alert** / **sommerfest_live**), headline/subtitle/CTA/href. Stored in public page draft/published JSON (`siteBanner`). Live site updates only after **Publish**. Allach without saved `siteBanner` keeps historical Sommerfest default. Lib: **`club-site-banner.ts`**; chrome: **`PublicSommerfestTournamentBanner`**. Banner hidden on its own destination path.
 - **Matches status UX (2026-07-16):** Match detail editor replaces status **Select** with a responsive **button group** (2×2 mobile / 4-across wider) for Scheduled / In progress / Completed / Cancelled.
 - **Ops verified (2026-07-16, operator):** Auth Site URL / redirects / www; Resend `one4team.com` + invite inbox smoke; pilot smoke — Allach public, Members, Messages/Tasks, Payments, attendance RSVP, financial reports, mobile AI 4 T + Messages; **AI4T-PILOT-001–005** closed. Still open: **PKG-003** Stripe sync, legal address/HRB, partner/marketplace E2E smoke.
-- **Commercial packaging + plan gates (2026-07-16):** Single source **`src/lib/plan-catalog.ts`** drives **`plan-limits`**, Pricing page, and catalog seed. Kick-off / Squad / Pro / Champions: base + per-member EUR pricing (yearly = monthly×12×0.8), volume −15%, aligned member caps (100 / 400 / 1,200 / 5,000). AI add-on **€19/mo** (Kick-off/Squad); Pro+ includes fair-use AI. Migration **`20260801220000`** applied on linked remote. Stripe price IDs may still need Dashboard sync. See **`CHANGELOG.md`** § **2026-07-16**, **`GTM_PRICING_PACKAGING.md`**.
+- **Commercial packaging + plan gates (2026-07-18 overhaul):** SSOT **`src/lib/plan-catalog.ts`** → limits, Pricing, Stripe base+member, DB seed drift test. Caps: Kick-off 500/10/3 admins/1GB; Squad 1000/30/5/50 trainers/10GB; Pro 2000/100/10/200/50GB; Champions 5000/250/25/fair-use trainers/150GB. Founding Club offer **`ONE4Team-Founding-Club-12M`** (12 months Kick-off, announcements-only chat unless Operator override). **AI 4 T** included fair-use on Squad+ (higher on Pro/Champions); Kick-off add-on. Migrations **`20260804120000`**, **`20260804130000`**, **`20260804140000`**. Docs: **`PRICING_AND_ENTITLEMENTS.md`**, **`FOUNDING_CLUB_OFFER.md`**, **`STRIPE_MEMBER_BASED_BILLING.md`**. Deploy: `db push` + `stripe-checkout` + `process-commercial-offers` (see **`HOLD.md`**).
 - **German i18n pass (2026-07-16):** EN/DE key parity; umlaut restoration; leftover English translated (club, partner, marketplace, operator). Fixed blank Members DE key (**`openFullRegistry`**), About hero line 4, supplier portal save strings.
 - **Public club account UX (2026-07-16):** Profile menu glass dropdown; **`public-club-account-settings-modal`** (portaled); invite modal dismiss/`?invite=` cleanup; Close button contrast.
 - **Hero tenant isolation (2026-07-16):** Default hero assets are **neutral** PNGs in **`public/assets/club-hero-defaults/`** — never pilot-club camp photos. Tests cover path isolation.
@@ -165,6 +172,11 @@ Persistent handoff context for future agents so work can continue without re-dis
   - club public join request flow preserves return context when redirecting to auth.
 
 ## Recently Applied Migrations In Supabase
+- **2026-07-18:** `20260803140000_club_asset_map_overlay.sql` (linked remote)
+- **2026-07-18:** `20260803150000_club_pitch_outlines.sql` (linked remote)
+- **2026-07-18:** `20260803130000_team_assignment_rls.sql` (linked remote)
+- **2026-07-18:** `20260803120000_club_gamification_awards.sql` (linked remote)
+- **2026-07-16:** `20260802120000` → `20260802150000` (Waves B–E)
 1. `20260305193000_member_drafts.sql`
 2. `20260305204500_club_public_join_flow.sql`
 3. `20260305220000_invite_join_rate_limits.sql`

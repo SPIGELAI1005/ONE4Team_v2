@@ -573,6 +573,175 @@
     animation: gold-shimmer 5s linear infinite;
   }
 
+  @keyframes founding-offer-code-shine {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  @keyframes founding-offer-code-glow {
+    0%, 100% { box-shadow: 0 0 0 1px hsl(var(--gold) / 0.35), 0 0 18px hsl(var(--gold) / 0.18); }
+    50% { box-shadow: 0 0 0 1px hsl(var(--gold-light) / 0.55), 0 0 28px hsl(var(--gold) / 0.32); }
+  }
+
+  /* Founding Club promotional offer code highlight */
+  .founding-offer-code {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem 0.55rem;
+    width: 100%;
+    padding: 0.85rem 0.85rem;
+    border-radius: 0.95rem;
+    border: 1px solid hsl(var(--gold) / 0.4);
+    background: linear-gradient(
+      115deg,
+      hsl(var(--gold-dark)) 0%,
+      hsl(var(--gold)) 22%,
+      hsl(48, 95%, 78%) 45%,
+      hsl(var(--gold-light)) 60%,
+      hsl(var(--gold)) 78%,
+      hsl(var(--gold-dark)) 100%
+    );
+    background-size: 220% 220%;
+    animation:
+      founding-offer-code-shine 4.5s ease-in-out infinite,
+      founding-offer-code-glow 3.2s ease-in-out infinite;
+    color: hsl(228 22% 10%);
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, filter 0.2s ease;
+  }
+
+  .founding-offer-code:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.03);
+  }
+
+  .founding-offer-code:focus-visible {
+    outline: 2px solid hsl(var(--gold-dark));
+    outline-offset: 2px;
+  }
+
+  .founding-offer-code-label {
+    font-family: Outfit, system-ui, sans-serif;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.78;
+    flex-shrink: 0;
+  }
+
+  .founding-offer-code-value {
+    font-family: Outfit, system-ui, sans-serif;
+    font-size: clamp(0.72rem, 1.9vw, 0.92rem);
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    color: hsl(228 25% 8%);
+    text-shadow: 0 1px 0 hsl(0 0% 100% / 0.35);
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .founding-offer-code-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-left: 0.1rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    background: hsl(228 20% 12% / 0.12);
+    border: 1px solid hsl(228 20% 12% / 0.18);
+    font-family: Outfit, system-ui, sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .founding-offer-code {
+      animation: none;
+      background-position: 40% 50%;
+    }
+  }
+
+  /* Pricing page Founding Club promo strip (under navbar) */
+  .founding-promo-banner {
+    color: hsl(228 22% 10%);
+    border-bottom: 1px solid hsl(var(--gold-dark) / 0.4);
+    background: linear-gradient(
+      90deg,
+      hsl(var(--gold-dark)) 0%,
+      hsl(var(--gold)) 18%,
+      hsl(var(--gold-light)) 36%,
+      hsl(48, 95%, 78%) 50%,
+      hsl(var(--gold-light)) 64%,
+      hsl(var(--gold)) 82%,
+      hsl(var(--gold-dark)) 100%
+    );
+    background-size: 280% 100%;
+    animation:
+      gold-shimmer 12s linear infinite,
+      founding-promo-banner-glow 5.5s ease-in-out infinite;
+    box-shadow:
+      0 10px 28px -12px hsl(var(--gold) / 0.55),
+      inset 0 1px 0 hsl(0 0% 100% / 0.28);
+  }
+
+  @keyframes founding-promo-banner-glow {
+    0%, 100% {
+      box-shadow:
+        0 10px 28px -12px hsl(var(--gold) / 0.45),
+        inset 0 1px 0 hsl(0 0% 100% / 0.22);
+    }
+    50% {
+      box-shadow:
+        0 14px 36px -10px hsl(var(--gold) / 0.7),
+        inset 0 1px 0 hsl(0 0% 100% / 0.35);
+    }
+  }
+
+  .founding-promo-banner-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.28rem 0.7rem;
+    border-radius: 999px;
+    background: #000;
+    color: hsl(48, 95%, 78%);
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    box-shadow: 0 0 0 1px hsl(0 0% 100% / 0.14), 0 4px 12px hsl(0 0% 0% / 0.35);
+  }
+
+  .founding-promo-banner-links button {
+    color: inherit;
+    font-weight: 700;
+    text-underline-offset: 3px;
+    opacity: 0.92;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .founding-promo-banner-links button:hover {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .founding-promo-banner {
+      animation: none;
+      background-position: 40% 50%;
+    }
+  }
+
   /* Static gold gradient (no animation) for elements over complex compositing layers */
   .bg-gradient-gold-static {
     background: linear-gradient(135deg, hsl(var(--gold-dark)), hsl(var(--gold)), hsl(var(--gold-light)));
@@ -1256,6 +1425,26 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  /*
+   * Communication / AI chat shells: lock the page scroll and fill remaining viewport.
+   * Channel list + message thread scroll internally; composer stays pinned.
+   */
+  .dashboard-scroll-area:has([data-dashboard-messages-shell]),
+  .dashboard-scroll-area:has([data-dashboard-chat-shell]) {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  [data-dashboard-messages-shell],
+  [data-dashboard-chat-shell] {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+  }
+
   @media (max-width: 767px) {
     .dashboard-scroll-area {
       padding-bottom: var(--dashboard-bottom-clearance);
@@ -1272,33 +1461,6 @@
   }
 
   @media (max-width: 1023px) {
-    /* AI 4 T chat: fill viewport below top bar; scroll inside message list, not the page */
-    .dashboard-scroll-area:has([data-dashboard-chat-shell]) {
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .dashboard-scroll-area:has([data-dashboard-messages-shell]) {
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    [data-dashboard-chat-shell] {
-      display: flex;
-      flex: 1 1 auto;
-      flex-direction: column;
-      min-height: 0;
-    }
-
-    [data-dashboard-messages-shell] {
-      display: flex;
-      flex: 1 1 auto;
-      flex-direction: column;
-      min-height: 0;
-    }
-
     .ai4t-dashboard-tab-icon {
       width: 1.125rem;
       height: 1.125rem;

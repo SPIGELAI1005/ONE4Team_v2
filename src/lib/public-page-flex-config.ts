@@ -27,6 +27,7 @@ export type PublicPageConfigPages = Record<PublicPageNavId, PublicNavPageSetting
 export type HomepageFlexModuleId =
   | "stats"
   | "nextUp"
+  | "myProgress"
   | "latestNews"
   | "featuredTeams"
   | "upcomingEvents"
@@ -58,6 +59,7 @@ export interface PublicPageConfigPatch {
 const FLEX_TO_INTERNAL: Record<HomepageFlexModuleId, HomepageModuleId> = {
   stats: "stats",
   nextUp: "next_up",
+  myProgress: "my_progress",
   latestNews: "latest_news",
   featuredTeams: "featured_teams",
   upcomingEvents: "upcoming_events",
@@ -70,6 +72,7 @@ const FLEX_TO_INTERNAL: Record<HomepageFlexModuleId, HomepageModuleId> = {
 const INTERNAL_TO_FLEX: Record<HomepageModuleId, HomepageFlexModuleId> = {
   stats: "stats",
   next_up: "nextUp",
+  my_progress: "myProgress",
   latest_news: "latestNews",
   featured_teams: "featuredTeams",
   upcoming_events: "upcomingEvents",
@@ -94,6 +97,7 @@ const DEFAULT_PAGE_ORDERS: Record<PublicPageNavId, number> = {
 const DEFAULT_HOMEPAGE_ORDERS: Record<HomepageFlexModuleId, number> = {
   stats: 10,
   nextUp: 20,
+  myProgress: 25,
   latestNews: 30,
   featuredTeams: 40,
   upcomingEvents: 50,
@@ -119,6 +123,7 @@ export const DEFAULT_PUBLIC_PAGE_CONFIG: PublicPageConfig = {
   homepageModules: {
     stats: { enabled: true, order: 10, maxItems: 8 },
     nextUp: { enabled: true, order: 20, maxItems: 4 },
+    myProgress: { enabled: true, order: 25, maxItems: 8 },
     latestNews: { enabled: true, order: 30, maxItems: 3 },
     featuredTeams: { enabled: true, order: 40, maxItems: 6 },
     upcomingEvents: { enabled: true, order: 50, maxItems: 3 },
@@ -327,6 +332,9 @@ export function shouldRenderHomepageModule(
     case "next_up":
       if (data.nextUpItemsLength > 0) return true;
       return isAdminPreview;
+    case "my_progress":
+      // Always available when enabled; section handles signed-in vs teaser states.
+      return true;
     case "latest_news":
       if (!data.club.sectionVisibility.news) return false;
       if (data.latestNewsCount > 0) return true;

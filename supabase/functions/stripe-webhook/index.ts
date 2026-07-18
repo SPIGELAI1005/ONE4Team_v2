@@ -212,6 +212,37 @@ serve(async (req) => {
         }
         break;
       }
+
+      case "invoice.paid": {
+        const invoice = event.data.object as Stripe.Invoice;
+        const customerId = invoice.customer as string | null;
+        if (customerId) {
+          const { data: existing } = await supabase
+            .from("billing_subscriptions")
+            .select("club_id, status")
+            .eq("stripe_customer_id", customerId)
+            .maybeSingle();
+
+          if (existing?.club_id && existing.status === "past_due") {
+            await supabase
+              .from("billing_subscriptions")
+              .update({
+                status: "active",
+                updated_at: new Date().toISOString(),
+              })
+              .eq("club_id", existing.club_id);
+
+            const { error: evErr } = await supabase.from("billing_events").insert({
+              club_id: existing.club_id,
+              event_type: "payment_recovered",
+              stripe_event_id: event.id,
+              payload: invoice as unknown as Record<string, unknown>,
+            });
+            if (evErr?.code !== "23505" && evErr) throw new Error(evErr.message);
+          }
+        }
+        break;
+      }
     }
 
     return jsonResponse({ received: true }, { status: 200, correlationId });

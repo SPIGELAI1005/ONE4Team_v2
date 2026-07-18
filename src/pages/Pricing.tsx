@@ -1,9 +1,10 @@
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
-import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
 import {
   Check, X as XIcon, ArrowRight, Sparkles, Crown, Rocket, Shield, Star,
   Users, Calendar, Trophy, CreditCard, MessageSquare, Bot, BarChart3,
-  Globe, ShoppingBag, Briefcase, Zap, Calculator, ChevronDown
+  Globe, ShoppingBag, Briefcase, Building2, Zap, Calculator, ChevronDown, Gift, HardDrive,
+  Copy, CheckCheck, BadgeCheck, ListOrdered, ClipboardList, KeyRound,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,14 +19,46 @@ import { getStripe, isValidPlanId } from "@/lib/stripe";
 import {
   PLAN_CATALOG,
   calculateCatalogPrice,
+  suggestPlanForMemberCount,
+  formatPlanMarketingLimits,
+  storageMbToGbLabel,
+  FOUNDING_CLUB_OFFER_CODE,
   type PlanCommercialConfig,
 } from "@/lib/plan-catalog";
+import { COMPARISON_ROWS, resolveComparisonValue, type ComparisonValue } from "@/lib/plan-comparison";
+import type { PlanId } from "@/lib/stripe";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import FootballFieldAnimation from "@/components/landing/FootballFieldAnimation";
 import { Ai4TIntroLogoVideo } from "@/components/ai/Ai4TIntroLogoVideo";
 import { BrandedText } from "@/components/ai/Ai4TBrand";
+import { FoundingClubBadge } from "@/components/billing/FoundingClubBadge";
 import logo from "@/assets/one4team-logo.png";
+
+const BESPOKE_CONSULTATION_EMAIL = "contact@one4team.com";
+
+function buildBespokeConsultationMailto(subject: string, body: string, replyEmail?: string | null): string {
+  let preparedBody = body;
+  if (replyEmail && preparedBody.includes("Email:\n")) {
+    preparedBody = preparedBody.replace("Email:\n", `Email: ${replyEmail}\n`);
+  } else if (replyEmail && preparedBody.includes("E-Mail:\n")) {
+    preparedBody = preparedBody.replace("E-Mail:\n", `E-Mail: ${replyEmail}\n`);
+  }
+  return `mailto:${BESPOKE_CONSULTATION_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(preparedBody)}`;
+}
+
+function openBespokeConsultationEmail(subject: string, body: string, replyEmail?: string | null) {
+  window.location.href = buildBespokeConsultationMailto(subject, body, replyEmail);
+}
 
 /* ─── Pricing Data ─── */
 interface PlanConfig {
@@ -61,68 +94,454 @@ function calculatePrice(plan: PlanConfig, memberCount: number, billing: "yearly"
   return calculateCatalogPrice(plan.id, memberCount, billing);
 }
 
-/* ─── Comparison Table Features (boolean grid - names come from translations) ─── */
-const comparisonGrid: { kickoff: boolean; squad: boolean; pro: boolean; champions: boolean; bespoke: boolean }[] = [
-  { kickoff: true, squad: true, pro: true, champions: true, bespoke: true },
-  { kickoff: true, squad: true, pro: true, champions: true, bespoke: true },
-  { kickoff: true, squad: true, pro: true, champions: true, bespoke: true },
-  { kickoff: true, squad: true, pro: true, champions: true, bespoke: true },
-  { kickoff: true, squad: true, pro: true, champions: true, bespoke: true },
-  { kickoff: false, squad: true, pro: true, champions: true, bespoke: true },
-  { kickoff: false, squad: true, pro: true, champions: true, bespoke: true },
-  { kickoff: false, squad: true, pro: true, champions: true, bespoke: true },
-  { kickoff: false, squad: true, pro: true, champions: true, bespoke: true },
-  { kickoff: false, squad: true, pro: true, champions: true, bespoke: true },
-  { kickoff: false, squad: false, pro: true, champions: true, bespoke: true },
-  { kickoff: false, squad: false, pro: true, champions: true, bespoke: true },
-  { kickoff: false, squad: false, pro: true, champions: true, bespoke: true },
-  { kickoff: false, squad: false, pro: true, champions: true, bespoke: true },
-  { kickoff: false, squad: false, pro: true, champions: true, bespoke: true },
-  { kickoff: false, squad: false, pro: true, champions: true, bespoke: true },
-  { kickoff: false, squad: false, pro: false, champions: true, bespoke: true },
-  { kickoff: false, squad: false, pro: false, champions: true, bespoke: true },
-  { kickoff: false, squad: false, pro: false, champions: true, bespoke: true },
-  { kickoff: false, squad: false, pro: false, champions: true, bespoke: true },
-  { kickoff: false, squad: false, pro: false, champions: true, bespoke: true },
-  { kickoff: false, squad: false, pro: false, champions: true, bespoke: true },
-  { kickoff: false, squad: false, pro: false, champions: false, bespoke: true },
-  { kickoff: false, squad: false, pro: false, champions: false, bespoke: true },
-  { kickoff: false, squad: false, pro: false, champions: false, bespoke: true },
-];
+/* ─── Founding Club Banner + terms / details modals ─── */
+function useFoundingOfferCodeCopy(copy: {
+  foundingTermsCopiedTitle?: string;
+  foundingTermsCopyFailedTitle?: string;
+  foundingTermsCopyFailedDesc?: string;
+}) {
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
 
-/* ─── Promo Banner ─── */
-function PromoBanner() {
-  const { t } = useLanguage();
-  const deadline = useMemo(() => new Date("2026-12-13T23:59:59").getTime(), []);
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-
-  useEffect(() => {
-    const tick = () => {
-      const now = Date.now();
-      const diff = Math.max(0, deadline - now);
-      setTimeLeft({
-        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-        minutes: Math.floor((diff / (1000 * 60)) % 60),
-        seconds: Math.floor((diff / 1000) % 60),
+  const copyOfferCode = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(FOUNDING_CLUB_OFFER_CODE);
+      setCopied(true);
+      toast({
+        title: copy.foundingTermsCopiedTitle ?? "Offer code copied",
+        description: FOUNDING_CLUB_OFFER_CODE,
       });
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [deadline]);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast({
+        title: copy.foundingTermsCopyFailedTitle ?? "Could not copy",
+        description: copy.foundingTermsCopyFailedDesc ?? "Select the code and copy it manually.",
+        variant: "destructive",
+      });
+    }
+  }, [copy.foundingTermsCopiedTitle, copy.foundingTermsCopyFailedTitle, copy.foundingTermsCopyFailedDesc, toast]);
 
-  const pad = (n: number) => String(n).padStart(2, "0");
+  return { copied, copyOfferCode };
+}
+
+function FoundingOfferDialogShell({
+  triggerLabel,
+  headline,
+  lead,
+  children,
+  ctaLabel,
+}: {
+  triggerLabel: string;
+  headline: string;
+  lead: string;
+  children: ReactNode;
+  ctaLabel: string;
+}) {
+  const { t } = useLanguage();
+  const copy = t.pricingPage;
+  const { copied, copyOfferCode } = useFoundingOfferCodeCopy(copy);
+  const offerLabel = (copy.foundingTermsOfferCodeLabel ?? "Offer code").replace(/:?\s*$/, "");
 
   return (
-    <div className="fixed top-14 left-0 right-0 z-40 bg-gradient-to-r from-red-600 via-red-500 to-red-600 text-white">
-      <div className="container mx-auto px-4 py-2 flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-4 text-center">
-        <span className="text-xs sm:text-sm font-semibold">
-          🔥 {t.pricingPage.earlyBird} <span className="font-bold">{t.pricingPage.earlyBirdOff}</span> {t.pricingPage.earlyBirdUntil}
+    <Dialog>
+      <DialogTrigger asChild>
+        <button type="button" className="text-xs sm:text-sm underline underline-offset-2 font-medium">
+          {triggerLabel}
+        </button>
+      </DialogTrigger>
+      <DialogContent
+        className={cn(
+          "flex max-h-[min(94vh,960px)] w-[calc(100%-1.5rem)] max-w-2xl flex-col gap-0 overflow-hidden",
+          "border-border/60 bg-background p-0 shadow-2xl sm:rounded-2xl",
+        )}
+      >
+        <div className="relative shrink-0 overflow-hidden border-b border-border/40 px-5 pb-4 pt-6 sm:px-7 sm:pb-5 sm:pt-7">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,hsl(var(--primary)/0.16),transparent_55%),radial-gradient(ellipse_at_bottom_left,hsl(var(--primary)/0.07),transparent_50%)]"
+          />
+          <DialogHeader className="relative space-y-2.5 text-left">
+            <FoundingClubBadge label={copy.foundingClubBadge ?? "Founding Club"} />
+            <DialogTitle className="font-display text-[1.55rem] sm:text-[1.85rem] font-bold tracking-tight text-foreground leading-[1.15]">
+              {headline}
+            </DialogTitle>
+            <DialogDescription className="text-[15px] sm:text-base leading-relaxed text-muted-foreground">
+              {lead}
+            </DialogDescription>
+          </DialogHeader>
+        </div>
+
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 py-4 sm:px-7 sm:py-5">
+          {children}
+        </div>
+
+        <div className="shrink-0 space-y-3 border-t border-border/40 bg-muted/20 px-5 py-4 sm:px-7">
+          <button
+            type="button"
+            onClick={() => { void copyOfferCode(); }}
+            className="founding-offer-code group"
+            aria-label={`${offerLabel} ${FOUNDING_CLUB_OFFER_CODE}. ${copy.foundingTermsCopyHint ?? "Click to copy"}`}
+          >
+            <span className="founding-offer-code-label">{offerLabel}</span>
+            <span className="founding-offer-code-value">{FOUNDING_CLUB_OFFER_CODE}</span>
+            <span className="founding-offer-code-action">
+              {copied ? (
+                <CheckCheck className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+              ) : (
+                <Copy className="h-4 w-4" strokeWidth={2.25} aria-hidden />
+              )}
+              <span>
+                {copied
+                  ? (copy.foundingTermsCopiedShort ?? "Copied")
+                  : (copy.foundingTermsCopyShort ?? "Copy")}
+              </span>
+            </span>
+          </button>
+          <DialogClose asChild>
+            <a
+              href="#plans"
+              className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-gradient-gold-static px-5 text-base sm:text-[1.05rem] font-semibold text-primary-foreground shadow-gold transition hover:brightness-110"
+            >
+              {ctaLabel}
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </a>
+          </DialogClose>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FoundingClubTermsDialog() {
+  const { t, language } = useLanguage();
+  const copy = t.pricingPage;
+  const kickoff = PLAN_CATALOG.kickoff;
+
+  const benefits = [
+    {
+      icon: Gift,
+      title: copy.foundingTermsBenefitFreeTitle ?? "12 months free",
+      body: copy.foundingTermsBenefitFreeBody ?? "Your first Kick-off season is on us.",
+    },
+    {
+      icon: CreditCard,
+      title: copy.foundingTermsBenefitCardTitle ?? "No credit card",
+      body: copy.foundingTermsBenefitCardBody ?? "Start now. Pay nothing to claim the offer.",
+    },
+    {
+      icon: Shield,
+      title: copy.foundingTermsBenefitOpsTitle ?? "Real club ops",
+      body: copy.foundingTermsBenefitOpsBody ?? "Members, teams, tasks, dues, shop and more included.",
+    },
+  ] as const;
+
+  const limits = [
+    {
+      icon: Users,
+      label: copy.foundingTermsLimitMembers ?? "Member profiles",
+      value: kickoff.maxMembers.toLocaleString(language === "de" ? "de-DE" : "en-US"),
+    },
+    {
+      icon: Trophy,
+      label: copy.foundingTermsLimitTeams ?? "Teams",
+      value: String(kickoff.maxTeams),
+    },
+    {
+      icon: Shield,
+      label: copy.foundingTermsLimitAdmins ?? "Admins",
+      value: String(kickoff.maxAdmins),
+    },
+    {
+      icon: HardDrive,
+      label: copy.foundingTermsLimitStorage ?? "Storage",
+      value: storageMbToGbLabel(kickoff.maxStorageMb),
+    },
+  ] as const;
+
+  return (
+    <FoundingOfferDialogShell
+      triggerLabel={copy.viewOfferTerms ?? "Offer terms"}
+      headline={copy.foundingTermsHeadline ?? "Your first season is on us."}
+      lead={
+        copy.foundingTermsLead ??
+        "Join the Founding Club status and run Kick-off free for a full year while you build your digital club home."
+      }
+      ctaLabel={copy.foundingTermsCta ?? "Claim your free season"}
+    >
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
+        {benefits.map((item) => (
+          <div
+            key={item.title}
+            className="flex h-full flex-col rounded-xl border border-border/60 bg-card/80 p-3.5"
+          >
+            <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-gold-subtle">
+              <item.icon className="h-4 w-4 text-primary" strokeWidth={1.75} />
+            </div>
+            <p className="text-sm font-semibold text-foreground leading-snug">{item.title}</p>
+            <p className="mt-1.5 text-[13px] sm:text-sm leading-snug text-muted-foreground">
+              {item.body}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-2xl border border-border/60 bg-muted/25 p-4">
+        <p className="mb-3 text-center text-[11px] sm:text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground sm:text-left">
+          {copy.foundingTermsPackageLabel ?? "Included Kick-off package"}
+        </p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+          {limits.map((limit) => (
+            <div
+              key={limit.label}
+              className="flex flex-col items-center justify-center rounded-xl border border-border/50 bg-background/80 px-2 py-3 text-center"
+            >
+              <limit.icon className="mb-1.5 h-4 w-4 text-primary" strokeWidth={1.75} />
+              <p className="font-display text-xl font-bold tabular-nums leading-none text-foreground">
+                {limit.value}
+              </p>
+              <p className="mt-2 text-xs sm:text-[13px] leading-tight text-muted-foreground">
+                {limit.label}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-2.5">
+        <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          {copy.foundingTermsAfterLabel ?? "After your free season"}
+        </p>
+        <ul className="space-y-2.5">
+          {[
+            copy.foundingTermsAfterGrace ??
+              "A 30-day read-only grace period keeps your data safe while you decide.",
+            copy.foundingTermsAfterContinue ??
+              "Continue on Kick-off, Squad, Pro or Champions whenever you are ready. Your club history stays intact.",
+            copy.foundingTermsAfterChat ??
+              "Club chat unlocks on paid Kick-off and every higher package.",
+            copy.foundingTermsAfterStatus ??
+              "Your Founding Club status stays with you: VIP support, early access to every new feature before wider release, and a privileged path toward bespoke club customisation.",
+          ].map((line) => (
+            <li key={line} className="flex items-start gap-2.5 text-sm sm:text-[15px] leading-snug text-foreground/85">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                <Check className="h-3 w-3 text-primary" strokeWidth={2.5} />
+              </span>
+              <span>{line}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </FoundingOfferDialogShell>
+  );
+}
+
+function FoundingClubOfferDetailsDialog() {
+  const { t } = useLanguage();
+  const copy = t.pricingPage;
+
+  const benefitCards = [
+    {
+      icon: Gift,
+      title: copy.foundingDetailsBenefitSeasonTitle ?? "A full year of Kick-off, free",
+      body:
+        copy.foundingDetailsBenefitSeasonBody ??
+        "Run members, teams, schedule, attendance, tasks, dues tracking, partners, marketplace and your public club page for twelve months at EUR 0.",
+    },
+    {
+      icon: Zap,
+      title: copy.foundingDetailsBenefitStartTitle ?? "Zero friction to start",
+      body:
+        copy.foundingDetailsBenefitStartBody ??
+        "No credit card. No automatic renewal. Claim during onboarding and go live the same day.",
+    },
+    {
+      icon: Crown,
+      title: copy.foundingDetailsBenefitStatusTitle ?? "Founding Club status that lasts",
+      body:
+        copy.foundingDetailsBenefitStatusBody ??
+        "VIP support, early access to new features before wider release, and a privileged path to bespoke customisation after your free season.",
+    },
+    {
+      icon: Sparkles,
+      title: copy.foundingDetailsBenefitOpsTitle ?? "Real operations from day one",
+      body:
+        copy.foundingDetailsBenefitOpsBody ??
+        "Not a demo sandbox. Your data, history and workflows stay with you when you choose a paid package.",
+    },
+  ] as const;
+
+  const prerequisites = [
+    copy.foundingDetailsPrereqNew ??
+      "You are creating a new club on ONE4Team for the first time.",
+    copy.foundingDetailsPrereqOnce ??
+      "One redemption per club while Founding Club places remain available.",
+    copy.foundingDetailsPrereqKickoff ??
+      "The offer applies to the Kick-off package and its catalogue limits.",
+  ];
+
+  const steps = [
+    {
+      icon: Rocket,
+      title: copy.foundingDetailsStep1Title ?? "Start from Pricing",
+      body:
+        copy.foundingDetailsStep1Body ??
+        "Choose Kick-off and tap “Start your free season”. You are taken into onboarding with the Founding Club offer attached.",
+    },
+    {
+      icon: Users,
+      title: copy.foundingDetailsStep2Title ?? "Create your club",
+      body:
+        copy.foundingDetailsStep2Body ??
+        "Complete club setup as admin. The offer is redeemed automatically after your club is created. No payment step.",
+    },
+    {
+      icon: KeyRound,
+      title: copy.foundingDetailsStep3Title ?? "Activate and invite",
+      body:
+        copy.foundingDetailsStep3Body ??
+        "Confirm your free season is active, invite members and teams, and start running day-to-day club operations immediately.",
+    },
+  ] as const;
+
+  const conditions = [
+    copy.foundingDetailsConditionPrice ??
+      "EUR 0 for 12 months. No payment method required and no automatic paid renewal.",
+    copy.foundingDetailsConditionChat ??
+      "Promotional Kick-off includes announcements. Full club chat unlocks on paid Kick-off or any higher package.",
+    copy.foundingDetailsConditionGrace ??
+      "After the free season, a 30-day read-only grace period protects your data while you decide how to continue.",
+    copy.foundingDetailsConditionContinue ??
+      "Paid continuation requires an explicit plan choice on Pricing (Kick-off, Squad, Pro, Champions or Bespoke).",
+    copy.foundingDetailsConditionLimited ??
+      "Places are limited. ONE4Team may close or adjust the programme; Operator terms prevail if stated otherwise.",
+  ];
+
+  return (
+    <FoundingOfferDialogShell
+      triggerLabel={copy.viewOfferDetails ?? "View offer details"}
+      headline={copy.foundingDetailsHeadline ?? "Become a Founding Club."}
+      lead={
+        copy.foundingDetailsLead ??
+        "Digitise your club for a full season at no cost, keep Founding Club privileges, and build the operating system your teams already need."
+      }
+      ctaLabel={copy.foundingDetailsCta ?? copy.foundingTermsCta ?? "Claim your free season"}
+    >
+      {/* Benefits */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2">
+          <BadgeCheck className="h-4 w-4 text-primary shrink-0" strokeWidth={2} />
+          <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            {copy.foundingDetailsBenefitsLabel ?? "Why clubs claim this offer"}
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3">
+          {benefitCards.map((item) => (
+            <div
+              key={item.title}
+              className="flex h-full flex-col rounded-xl border border-border/60 bg-card/80 p-3.5 sm:p-4"
+            >
+              <div className="mb-2.5 flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-gold-subtle">
+                <item.icon className="h-4 w-4 text-primary" strokeWidth={1.75} />
+              </div>
+              <p className="text-sm sm:text-[15px] font-semibold text-foreground leading-snug">{item.title}</p>
+              <p className="mt-1.5 text-[13px] sm:text-sm leading-snug text-muted-foreground">{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Prerequisites */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2">
+          <ClipboardList className="h-4 w-4 text-primary shrink-0" strokeWidth={2} />
+          <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            {copy.foundingDetailsPrereqLabel ?? "Prerequisites"}
+          </p>
+        </div>
+        <ul className="space-y-2.5 rounded-2xl border border-border/60 bg-muted/25 p-4">
+          {prerequisites.map((line) => (
+            <li key={line} className="flex items-start gap-2.5 text-sm sm:text-[15px] leading-snug text-foreground/85">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                <Check className="h-3 w-3 text-primary" strokeWidth={2.5} />
+              </span>
+              <span>{line}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* How to apply */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2">
+          <ListOrdered className="h-4 w-4 text-primary shrink-0" strokeWidth={2} />
+          <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            {copy.foundingDetailsHowLabel ?? "How to apply"}
+          </p>
+        </div>
+        <ol className="space-y-2.5">
+          {steps.map((step, index) => (
+            <li
+              key={step.title}
+              className="flex gap-3 rounded-xl border border-border/60 bg-card/80 p-3.5 sm:p-4"
+            >
+              <div className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg bg-gradient-gold text-primary-foreground shadow-gold">
+                <span className="font-display text-sm font-bold leading-none">{index + 1}</span>
+              </div>
+              <div className="min-w-0 pt-0.5">
+                <p className="text-sm sm:text-[15px] font-semibold text-foreground leading-snug flex items-center gap-2">
+                  <step.icon className="h-3.5 w-3.5 text-primary shrink-0 hidden sm:inline" strokeWidth={2} />
+                  {step.title}
+                </p>
+                <p className="mt-1.5 text-[13px] sm:text-sm leading-snug text-muted-foreground">{step.body}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <p className="text-[13px] sm:text-sm leading-snug text-muted-foreground">
+          {copy.foundingDetailsHowCodeHint ??
+            "Prefer to keep the code handy? Copy the offer code below and use Kick-off onboarding with the Founding Club offer attached."}
+        </p>
+      </section>
+
+      {/* Conditions */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Shield className="h-4 w-4 text-primary shrink-0" strokeWidth={2} />
+          <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            {copy.foundingDetailsConditionsLabel ?? "Conditions"}
+          </p>
+        </div>
+        <ul className="space-y-2.5">
+          {conditions.map((line) => (
+            <li key={line} className="flex items-start gap-2.5 text-sm sm:text-[15px] leading-snug text-foreground/85">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15">
+                <Check className="h-3 w-3 text-primary" strokeWidth={2.5} />
+              </span>
+              <span>{line}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </FoundingOfferDialogShell>
+  );
+}
+
+function PromoBanner() {
+  const { t } = useLanguage();
+  return (
+    <div className="founding-promo-banner fixed top-14 left-0 right-0 z-40">
+      <div className="container mx-auto px-4 py-2.5 sm:py-3 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-center">
+        <span className="founding-promo-banner-pill">
+          {t.pricingPage.kickoffFreeBadge ?? "12 MONTHS FREE"}
         </span>
-        <span className="flex items-center gap-1 text-[10px] sm:text-xs font-mono font-bold bg-white/15 rounded-lg px-2.5 py-1">
-          {pad(timeLeft.days)}d {pad(timeLeft.hours)}h {pad(timeLeft.minutes)}m {pad(timeLeft.seconds)}s {t.pricingPage.timeLeft}
+        <span className="text-xs sm:text-sm font-bold tracking-tight max-w-2xl">
+          {t.pricingPage.foundingBanner ??
+            "Your first season is on us. Eligible new clubs receive Kick-off free for 12 months."}
         </span>
+        <div className="founding-promo-banner-links flex items-center gap-3 sm:gap-4 text-xs sm:text-sm">
+          <FoundingClubTermsDialog />
+          <FoundingClubOfferDetailsDialog />
+        </div>
       </div>
     </div>
   );
@@ -172,13 +591,23 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
   const { user } = useAuth();
   const { clubId } = useClubId();
   const { toast } = useToast();
-  const { total, discount } = calculatePrice(plan, memberCount, billing);
   const isBespoke = plan.id === "bespoke";
   const Icon = plan.icon;
 
   async function handlePlanAction() {
     if (isBespoke) {
-      navigate("/onboarding?plan=bespoke");
+      openBespokeConsultationEmail(
+        t.pricingPage.bespokeMailtoSubject ?? "ONE4Team Bespoke consultation request",
+        t.pricingPage.bespokeMailtoBody ??
+          "Dear ONE4Team team,\n\nI would like to request a consultation for a Bespoke / Enterprise package.\n",
+        user?.email ?? null,
+      );
+      return;
+    }
+
+    // Founding Club Kick-off: never open Stripe; redeem after club creation.
+    if (plan.id === "kickoff") {
+      navigate(`/onboarding?plan=kickoff&offer=${encodeURIComponent(FOUNDING_CLUB_OFFER_CODE)}`);
       return;
     }
 
@@ -197,22 +626,26 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
           },
         });
 
-        if (error) throw new Error(typeof error === "object" && error.message ? error.message : String(error));
+        if (error) {
+          toast({
+            title: t.pricingPage.checkoutFailedTitle ?? "Checkout failed",
+            description:
+              (typeof error === "object" && error && "message" in error
+                ? String((error as { message?: string }).message)
+                : String(error)) ||
+              (t.pricingPage.checkoutFailedDesc ?? "Stripe could not start. Your plan was not changed. Please retry."),
+            variant: "destructive",
+          });
+          return;
+        }
         const result = data as { url?: string; sessionId?: string; error?: string } | null;
 
         if (result?.error) {
-          await supabaseDynamic
-            .from("billing_subscriptions")
-            .upsert({
-              club_id: clubId,
-              plan_id: plan.id,
-              billing_cycle: billing,
-              status: "trialing",
-              metadata: { member_count: memberCount, source: "pricing_page" },
-              updated_at: new Date().toISOString(),
-            }, { onConflict: "club_id" });
-          toast({ title: "Plan selected", description: `${plan.name} (${billing}) saved. Stripe is not configured, so trial mode is used.` });
-          navigate(`/dashboard/admin`);
+          toast({
+            title: t.pricingPage.checkoutFailedTitle ?? "Checkout failed",
+            description: result.error,
+            variant: "destructive",
+          });
           return;
         }
 
@@ -228,24 +661,101 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
             return;
           }
         }
-      } catch {
-        await supabaseDynamic
-          .from("billing_subscriptions")
-          .upsert({
-            club_id: clubId,
-            plan_id: plan.id,
-            billing_cycle: billing,
-            status: "trialing",
-            metadata: { member_count: memberCount, source: "pricing_page" },
-            updated_at: new Date().toISOString(),
-          }, { onConflict: "club_id" });
-        toast({ title: "Plan selected", description: `${plan.name} (${billing}) saved for your club (trial mode).` });
-        navigate(`/dashboard/admin`);
-        return;
+
+        toast({
+          title: t.pricingPage.checkoutFailedTitle ?? "Checkout failed",
+          description: t.pricingPage.checkoutFailedDesc ?? "No Stripe session returned. Please retry.",
+          variant: "destructive",
+        });
+      } catch (err) {
+        toast({
+          title: t.pricingPage.checkoutFailedTitle ?? "Checkout failed",
+          description: err instanceof Error ? err.message : String(err),
+          variant: "destructive",
+        });
       }
+      return;
     }
 
     navigate(`/onboarding?plan=${plan.id}&members=${memberCount}&billing=${billing}`);
+  }
+
+  if (isBespoke) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        whileHover={{ y: -4 }}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        className="group relative glass-card rounded-2xl border border-primary/35 shadow-gold p-5 sm:p-8 pt-7 sm:pt-9 transition-all duration-300 cursor-default"
+      >
+        <div
+          className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl bg-gradient-to-br from-primary/[0.10] via-transparent to-primary/[0.05] opacity-80 transition-opacity duration-300 group-hover:opacity-100"
+          aria-hidden
+        />
+        {plan.badge ? (
+          <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 inline-flex items-center justify-center rounded-full px-[0.7rem] py-[0.28rem] text-[0.65rem] font-extrabold uppercase tracking-[0.12em] whitespace-nowrap bg-gradient-gold text-primary-foreground shadow-gold">
+            {plan.badge}
+          </div>
+        ) : null}
+
+        <div className="relative grid gap-6 sm:gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] md:items-start">
+          <div className="flex flex-col min-w-0">
+            <div className="mb-3 sm:mb-4">
+              <div className="relative mb-3 h-12 w-12 sm:h-14 sm:w-14">
+                <img
+                  src={logo}
+                  alt="ONE4Team"
+                  className="h-full w-full rounded-full object-contain"
+                />
+                <div className="absolute -bottom-1 -right-1 flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-gradient-gold shadow-gold ring-2 ring-background">
+                  <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary-foreground" strokeWidth={1.75} />
+                </div>
+              </div>
+              <h3 className="font-display text-xl sm:text-2xl font-bold text-gradient-gold">
+                {plan.name}
+              </h3>
+            </div>
+
+            <p className="text-muted-foreground text-sm sm:text-[15px] leading-relaxed">
+              <BrandedText text={plan.description} ai4tOnly />
+            </p>
+          </div>
+
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 md:border-l md:border-border/40 md:pl-8">
+            {plan.features.map((feature, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs sm:text-sm text-foreground/85">
+                <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" strokeWidth={2} />
+                <span className="leading-snug">
+                  <BrandedText text={feature} ai4tOnly />
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="relative mt-8 sm:mt-10 grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] md:items-end">
+          <div className="min-w-0">
+            <div className="text-2xl sm:text-3xl font-display font-bold text-foreground">
+              {t.pricingPage.custom}
+            </div>
+            <div className="text-muted-foreground text-xs sm:text-sm mt-1.5 leading-snug max-w-md">
+              {t.pricingPage.bespokePricingHint ?? "Tailored pricing for federations and complex organisations."}
+            </div>
+          </div>
+          <div className="md:border-l md:border-transparent md:pl-8">
+            <Button
+              onClick={() => { void handlePlanAction(); }}
+              className="w-full sm:w-auto rounded-xl font-semibold text-sm bg-gradient-gold text-primary-foreground hover:brightness-110 shadow-gold"
+            >
+              {t.pricingPage.contactUs}
+              <ArrowRight className="ml-2 w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    );
   }
 
   return (
@@ -260,71 +770,101 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
       }`}
     >
       {plan.badge && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-gold-static text-primary-foreground text-[10px] sm:text-xs font-semibold whitespace-nowrap">
+        <div
+          className={
+            plan.id === "kickoff"
+              ? "founding-promo-banner-pill absolute -top-3 left-1/2 z-10 -translate-x-1/2"
+              : "absolute -top-3 left-1/2 z-10 -translate-x-1/2 inline-flex items-center justify-center rounded-full px-[0.7rem] py-[0.28rem] text-[0.65rem] font-extrabold uppercase tracking-[0.12em] whitespace-nowrap bg-gradient-gold-static text-primary-foreground shadow-gold"
+          }
+        >
           {plan.badge}
         </div>
       )}
 
-      {/* Header - icon + name + description */}
-      <div className="mb-4 min-h-[4.25rem]">
-        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-gold-subtle flex items-center justify-center mb-3">
-          <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" strokeWidth={1.5} />
+      {/* Header: ONE4Team logo + plan icon badge + name */}
+      <div className="shrink-0 mb-2">
+        <div className="relative mb-3 h-10 w-10 sm:h-12 sm:w-12">
+          <img
+            src={logo}
+            alt="ONE4Team"
+            className="h-full w-full rounded-full object-contain"
+          />
+          <div className="absolute -bottom-1 -right-1 flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg bg-gradient-gold shadow-gold ring-2 ring-background">
+            <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary-foreground" strokeWidth={1.75} />
+          </div>
         </div>
         <h3 className="font-display text-lg sm:text-xl font-bold text-foreground">{plan.name}</h3>
-        <p className="text-muted-foreground text-xs sm:text-sm mt-1 leading-relaxed h-[3.6rem] sm:h-[4.2rem] line-clamp-3">{plan.description}</p>
       </div>
 
-      {/* Divider */}
-      <div className="border-t border-border/40 my-3" />
+      {/* Description: min height for row alignment; no clamp so long copy (e.g. Champions) stays readable */}
+      <p className="shrink-0 text-muted-foreground text-sm sm:text-[15px] leading-relaxed min-h-[5.5rem] sm:min-h-[6.5rem]">
+        <BrandedText text={plan.description} ai4tOnly />
+      </p>
 
-      {/* Price */}
-      <div className="mb-4">
-        {isBespoke ? (
+      <div className="border-t border-border/40 my-3 shrink-0" />
+
+      {/* Price: fixed slot (Kick-off promo + afterwards lines set the height) */}
+      <div className="shrink-0 mb-1 h-[7rem] sm:h-[7.5rem] flex flex-col justify-start">
+        {plan.id === "kickoff" ? (
           <>
-            <div className="text-2xl sm:text-3xl font-display font-bold text-foreground">{t.pricingPage.custom}</div>
-            <div className="text-muted-foreground text-[9px] sm:text-[10px] mt-1 leading-snug invisible">
-              EUR 0 base + EUR 0/member/{billing === "yearly" ? "yr" : "mo"}
+            <div className="text-muted-foreground text-xs sm:text-sm mb-0.5 leading-none">
+              <span
+                className="font-semibold line-through decoration-[#e31e24] decoration-2"
+                aria-hidden
+              >
+                {new Intl.NumberFormat(undefined, { style: "currency", currency: "EUR" }).format(plan.basePrice[billing])}
+              </span>
             </div>
-            <div className="text-muted-foreground text-[9px] sm:text-[10px] mt-1 leading-snug invisible">
-              (* {memberCount} members)
+            <div className="flex items-baseline gap-1 flex-wrap">
+              <span className="text-2xl sm:text-3xl font-display font-bold text-foreground leading-none">
+                {new Intl.NumberFormat(undefined, { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(0)}
+              </span>
+            </div>
+            <div className="text-muted-foreground text-xs sm:text-sm mt-1.5 leading-snug">
+              {t.pricingPage.kickoffPromoPeriod ?? "for your first 12 months"}
+            </div>
+            <div className="text-muted-foreground text-xs sm:text-sm mt-1.5 leading-snug">
+              {t.pricingPage.kickoffAfterwards ?? "Afterwards from"}{" "}
+              {new Intl.NumberFormat(undefined, { style: "currency", currency: "EUR" }).format(plan.basePrice[billing])}
+              /{billing === "yearly" ? (t.common.year ?? "year") : (t.common.month ?? "month")}
+              {" + "}
+              {new Intl.NumberFormat(undefined, { style: "currency", currency: "EUR" }).format(plan.memberPrice[billing])}
+              {" "}
+              {t.pricingPage.perActiveMember ?? "per active member"}
             </div>
           </>
         ) : (
           <>
+            <div className="text-muted-foreground text-xs sm:text-sm mb-0.5">
+              {t.pricingPage.fromPrice ?? "From"}
+            </div>
             <div className="flex items-baseline gap-1 flex-wrap">
-              <span className="text-2xl sm:text-3xl font-display font-bold text-foreground">
-                EUR {total < 0 ? "-" : total.toFixed(2)}
+              <span className="text-2xl sm:text-3xl font-display font-bold text-foreground leading-none">
+                {new Intl.NumberFormat(undefined, { style: "currency", currency: "EUR" }).format(plan.basePrice[billing])}
               </span>
-              <span className="relative inline-flex items-baseline text-muted-foreground text-[10px] sm:text-xs leading-none">
-                <span className="leading-none">/{billing === "yearly" ? "yr" : "mo"}</span>
-                <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[9px] sm:text-[10px] leading-none">*</span>
+              <span className="text-muted-foreground text-xs sm:text-sm">
+                /{billing === "yearly" ? (t.common.year ?? "year") : (t.common.month ?? "month")}
               </span>
             </div>
-            <div className="text-muted-foreground text-[9px] sm:text-[10px] mt-1 leading-snug">
-              EUR {plan.basePrice[billing]} base + EUR {plan.memberPrice[billing]}/member/{billing === "yearly" ? "yr" : "mo"}
+            <div className="text-muted-foreground text-xs sm:text-sm mt-1.5 leading-snug">
+              + {new Intl.NumberFormat(undefined, { style: "currency", currency: "EUR" }).format(plan.memberPrice[billing])}{" "}
+              {t.pricingPage.perActiveMember ?? "per active member"}
             </div>
-            <div className="text-muted-foreground text-[9px] sm:text-[10px] mt-1 leading-snug">
-              (* {memberCount} members)
-            </div>
-            {discount && (
-              <div className="text-primary text-[9px] sm:text-[10px] font-medium mt-0.5">
-                {t.pricingPage.volumeDiscountApplied}
-              </div>
-            )}
           </>
         )}
       </div>
 
-      {/* Divider */}
-      <div className="border-t border-border/40 my-3" />
+      <div className="border-t border-border/40 my-3 shrink-0" />
 
-      {/* Features - flex-1 pushes button to bottom */}
-      <div className="flex-1 mb-4">
-        <ul className="space-y-1.5">
+      {/* Features grow with the card; grid stretch keeps row heights even */}
+      <div className="flex-1 mb-4 min-h-0">
+        <ul className="space-y-2">
           {plan.features.map((feature, i) => (
-            <li key={i} className="flex items-start gap-1.5 text-[11px] sm:text-xs text-foreground/80">
-              <Check className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" strokeWidth={2} />
-              <span className="leading-snug">{feature}</span>
+            <li key={i} className="flex items-start gap-2 text-xs sm:text-sm text-foreground/85">
+              <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" strokeWidth={2} />
+              <span className="leading-snug">
+                <BrandedText text={feature} ai4tOnly />
+              </span>
             </li>
           ))}
         </ul>
@@ -332,13 +872,13 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
 
       <Button
         onClick={() => { void handlePlanAction(); }}
-        className={`w-full rounded-xl font-semibold text-sm ${
+        className={`w-full shrink-0 rounded-xl font-semibold text-sm ${
           plan.highlighted
             ? "bg-gradient-gold-static text-primary-foreground hover:brightness-110 shadow-gold"
             : "glass-card bg-gold-on-hover text-foreground"
         }`}
       >
-        {isBespoke ? t.pricingPage.contactUs : t.common.getStarted}
+        {plan.id === "kickoff" ? (t.pricingPage.kickoffCta ?? t.common.getStarted) : t.common.getStarted}
         <ArrowRight className="ml-2 w-4 h-4" />
       </Button>
     </motion.div>
@@ -349,15 +889,33 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
 function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
   const { t } = useLanguage();
   const minMembers = 1;
-  const [selectedPlan, setSelectedPlan] = useState<string>("pro");
   const [members, setMembers] = useState(800);
   const [billing, setBilling] = useState<"yearly" | "monthly">("yearly");
+  const [selectedPlan, setSelectedPlan] = useState<string>(() => suggestPlanForMemberCount(800));
   const sliderMaxMembers = useMemo(() => Math.max(10000, members), [members]);
 
-  const plan = plans.find((p) => p.id === selectedPlan)!;
+  const recommended = suggestPlanForMemberCount(members);
+  const planFits =
+    selectedPlan === "bespoke" ||
+    (isValidPlanId(selectedPlan) &&
+      selectedPlan !== "bespoke" &&
+      members <= (PLAN_CATALOG[selectedPlan as Exclude<PlanId, "bespoke">]?.maxMembers ?? Infinity));
+
+  // If current selection no longer fits, snap to recommended band.
+  useEffect(() => {
+    if (!planFits) {
+      setSelectedPlan(recommended === "bespoke" ? "champions" : recommended);
+    }
+  }, [planFits, recommended]);
+
+  const plan = plans.find((p) => p.id === selectedPlan) ?? plans[0];
   const { total, base, memberCost, discount, discountPct } = calculatePrice(plan, members, billing);
   const periodSuffix = billing === "yearly" ? "yr" : "mo";
-  const pricePerMember = members > 0 ? total / members : 0;
+  const pricePerMember = members > 0 && total >= 0 ? total / members : 0;
+  const foundingPrice =
+    selectedPlan === "kickoff"
+      ? { total: 0, note: t.pricingPage.foundingCalcNote ?? "Founding Club: EUR 0 for 12 months, then catalogue pricing below." }
+      : null;
 
   const normalizeMembers = useCallback((value: number) => {
     if (Number.isNaN(value)) return members;
@@ -380,20 +938,47 @@ function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
       <div className="mb-5">
         <label className="text-xs sm:text-sm font-medium text-foreground mb-2 block">{t.pricingPage.selectPlan}</label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {plans.filter((p) => p.id !== "bespoke").map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setSelectedPlan(p.id)}
-              className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
-                selectedPlan === p.id
-                  ? "bg-gradient-gold-static text-primary-foreground shadow-gold"
-                  : "glass-card text-foreground hover:border-primary/20"
-              }`}
-            >
-              {p.name}
-            </button>
-          ))}
+          {plans.filter((p) => p.id !== "bespoke").map((p) => {
+            const fits =
+              isValidPlanId(p.id) &&
+              p.id !== "bespoke" &&
+              members <= PLAN_CATALOG[p.id as Exclude<PlanId, "bespoke">].maxMembers;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                disabled={!fits}
+                onClick={() => setSelectedPlan(p.id)}
+                className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                  selectedPlan === p.id
+                    ? "bg-gradient-gold-static text-primary-foreground shadow-gold"
+                    : fits
+                      ? "glass-card text-foreground hover:border-primary/20"
+                      : "glass-card text-muted-foreground/50 cursor-not-allowed opacity-60"
+                }`}
+              >
+                {p.name}
+                {recommended === p.id ? (
+                  <span className="block text-[9px] opacity-80 mt-0.5">
+                    {t.pricingPage.recommendedShort ?? "Recommended"}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
+        {!planFits ? (
+          <p className="text-xs text-destructive mt-2">
+            {t.pricingPage.planTooSmall ??
+              "This plan does not support that many member profiles. Choose a higher package or Bespoke."}
+          </p>
+        ) : null}
+        {recommended === "bespoke" ? (
+          <p className="text-xs text-muted-foreground mt-2">
+            {t.pricingPage.bespokeRecommended ??
+              "Above 5,000 profiles we recommend a Bespoke package."}
+          </p>
+        ) : null}
       </div>
 
       {/* Member slider */}
@@ -437,6 +1022,7 @@ function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
           {(["yearly", "monthly"] as const).map((cycle) => (
             <button
               key={cycle}
+              type="button"
               onClick={() => setBilling(cycle)}
               className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
                 billing === cycle
@@ -452,7 +1038,16 @@ function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
 
       {/* Result */}
       <div className="border-t border-border/50 pt-5">
+        {foundingPrice ? (
+          <p className="text-xs text-muted-foreground mb-3">{foundingPrice.note}</p>
+        ) : null}
         <div className="space-y-2 text-sm">
+          {foundingPrice ? (
+            <div className="flex justify-between text-foreground font-display font-bold text-lg">
+              <span>{t.pricingPage.foundingPromoPrice ?? "Founding Club (12 months)"}</span>
+              <span>EUR 0</span>
+            </div>
+          ) : null}
           <div className="flex justify-between text-muted-foreground">
             <span>{t.pricingPage.basePrice}</span>
             <span>EUR {base.toFixed(2)}/{periodSuffix}</span>
@@ -468,7 +1063,7 @@ function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
             </div>
           )}
           <div className="flex justify-between text-foreground font-display font-bold text-lg sm:text-xl pt-2 border-t border-border/50">
-            <span>{t.common.total}</span>
+            <span>{foundingPrice ? (t.pricingPage.afterFounding ?? "Afterwards") : t.common.total}</span>
             <span>EUR {total.toFixed(2)}/{periodSuffix}</span>
           </div>
           <div className="flex justify-between text-muted-foreground text-xs sm:text-sm italic pt-1">
@@ -482,16 +1077,29 @@ function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
 }
 
 /* ─── Comparison Cell ─── */
-function ComparisonCell({ value }: { value: boolean | string }) {
-  if (value === true) return <Check className="w-4 h-4 text-primary mx-auto" strokeWidth={2} />;
-  if (value === false) return <XIcon className="w-4 h-4 text-muted-foreground/40 mx-auto" strokeWidth={2} />;
-  return <span className="text-xs text-primary font-medium">{value}</span>;
+function ComparisonCell({ value }: { value: ComparisonValue }) {
+  if (value === "included" || value === true) {
+    return <Check className="w-4 h-4 text-primary mx-auto" strokeWidth={2} />;
+  }
+  if (value === "not_included" || value === false) {
+    return <XIcon className="w-4 h-4 text-muted-foreground/40 mx-auto" strokeWidth={2} />;
+  }
+  if (typeof value === "number") {
+    return <span className="text-xs text-foreground font-medium">{value.toLocaleString()}</span>;
+  }
+  return <span className="text-xs text-primary font-medium capitalize">{String(value)}</span>;
+}
+
+function comparisonLabel(t: ReturnType<typeof useLanguage>["t"], key: string): string {
+  const map = (t.pricingPage.comparisonFeatureLabels ?? {}) as Record<string, string>;
+  if (map[key]) return map[key];
+  return key.replace(/([A-Z])/g, " $1").replace(/^./, (c) => c.toUpperCase());
 }
 
 /* ─── Main Pricing Page ─── */
 const Pricing = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const heroRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   const bgY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
@@ -500,25 +1108,36 @@ const Pricing = () => {
   const [billing, setBilling] = useState<"yearly" | "monthly">("yearly");
   const [memberCount] = useState(250);
   const [showComparison, setShowComparison] = useState(false);
+  const locale = language === "de" ? "de" : "en";
 
   const plans: PlanConfig[] = [
     planFromCatalog(PLAN_CATALOG.kickoff, {
       name: t.pricingPage.kickoff,
       icon: Star,
       description: t.pricingPage.kickoffDesc,
-      features: [...t.pricingPage.kickoffFeatures],
+      features: [
+        formatPlanMarketingLimits("kickoff", locale),
+        ...t.pricingPage.kickoffFeatures,
+      ],
+      badge: t.pricingPage.kickoffFreeBadge ?? "12 MONTHS FREE",
     }),
     planFromCatalog(PLAN_CATALOG.squad, {
       name: t.pricingPage.squad,
       icon: Rocket,
       description: t.pricingPage.squadDesc,
-      features: [...t.pricingPage.squadFeatures],
+      features: [
+        formatPlanMarketingLimits("squad", locale),
+        ...t.pricingPage.squadFeatures,
+      ],
     }),
     planFromCatalog(PLAN_CATALOG.pro, {
       name: t.pricingPage.pro,
       icon: Trophy,
       description: t.pricingPage.proDesc,
-      features: [...t.pricingPage.proFeatures],
+      features: [
+        formatPlanMarketingLimits("pro", locale),
+        ...t.pricingPage.proFeatures,
+      ],
       highlighted: true,
       badge: t.pricingPage.mostPopular,
     }),
@@ -526,19 +1145,25 @@ const Pricing = () => {
       name: t.pricingPage.champions,
       icon: Crown,
       description: t.pricingPage.championsDesc,
-      features: [...t.pricingPage.championsFeatures],
+      features: [
+        formatPlanMarketingLimits("champions", locale),
+        ...t.pricingPage.championsFeatures,
+      ],
     }),
-    {
-      id: "bespoke",
-      name: t.pricingPage.bespoke,
-      icon: Sparkles,
-      description: t.pricingPage.bespokeDesc,
-      basePrice: { yearly: 0, monthly: 0 },
-      memberPrice: { yearly: 0, monthly: 0 },
-      discountThreshold: 0,
-      features: [...t.pricingPage.bespokeFeatures],
-    },
   ];
+
+  const bespokePlan: PlanConfig = {
+    id: "bespoke",
+    name: t.pricingPage.bespoke,
+    icon: Building2,
+    description: t.pricingPage.bespokeDesc,
+    basePrice: { yearly: 0, monthly: 0 },
+    memberPrice: { yearly: 0, monthly: 0 },
+    discountThreshold: 0,
+    features: [...t.pricingPage.bespokeFeatures],
+    highlighted: true,
+    badge: t.pricingPage.bespokeBadge ?? "ENTERPRISE",
+  };
 
   const addons = [
     {
@@ -668,20 +1293,28 @@ const Pricing = () => {
         </div>
       </section>
 
-      {/* Pricing Cards */}
-      <section className="pb-16 sm:pb-20">
+      {/* Pricing Cards — four standard packages */}
+      <section id="plans" className="pb-10 sm:pb-12">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5 max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 max-w-7xl mx-auto items-stretch">
             {plans.map((plan) => (
               <PricingCard key={plan.id} plan={plan} billing={billing} memberCount={memberCount} />
             ))}
           </div>
 
-          <FadeInSection className="text-center mt-6 sm:mt-8">
-            <p className="text-muted-foreground text-xs sm:text-sm">
-              {t.pricingPage.allPlansInclude} <span className="text-primary font-semibold">{t.pricingPage.freeTrialDays}</span>{t.pricingPage.noCreditCard}
+          <FadeInSection className="text-center mt-6 sm:mt-8 max-w-3xl mx-auto px-2">
+            <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed whitespace-pre-line">
+              {t.pricingPage.offerNotice ??
+                "Kick-off is free for 12 months for eligible Founding Clubs.\nSquad, Pro and Champions include a 41-day trial.\nNo credit card is required for the Kick-off offer."}
             </p>
           </FadeInSection>
+        </div>
+      </section>
+
+      {/* Bespoke enterprise band */}
+      <section className="pb-16 sm:pb-20">
+        <div className="container mx-auto px-4 max-w-5xl pt-3">
+          <PricingCard plan={bespokePlan} billing={billing} memberCount={memberCount} />
         </div>
       </section>
 
@@ -718,19 +1351,19 @@ const Pricing = () => {
                   <div className="relative flex flex-col flex-1 gap-5">
                   {addon.variant === "ai4t" ? (
                     <div className="flex flex-1 gap-3 sm:gap-4 min-h-0">
-                      <div className="relative aspect-[683/1024] w-[4.5rem] sm:w-20 shrink-0 overflow-hidden rounded-xl bg-black">
-                        <Ai4TIntroLogoVideo className="h-full w-full" />
+                      <div className="relative aspect-[683/1024] w-[7.5rem] sm:w-36 shrink-0 overflow-hidden rounded-xl bg-black">
+                        <Ai4TIntroLogoVideo className="h-full w-full" playMode="visible" />
                       </div>
                       <div className="flex-1 min-w-0 flex flex-col">
                         <div className="flex items-start justify-between gap-3">
                           <h3 className="font-display font-bold text-foreground text-sm sm:text-base leading-snug">
-                            {addon.name}
+                            <BrandedText text={addon.name} ai4tOnly />
                           </h3>
                           <span className="text-primary font-semibold text-xs sm:text-sm shrink-0 whitespace-nowrap text-right leading-snug">
                             {addon.price}
                           </span>
                         </div>
-                        <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed mt-2 flex-1">
+                        <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed mt-2 flex-1 whitespace-pre-line">
                           <BrandedText text={addon.desc} ai4tOnly />
                         </p>
                       </div>
@@ -875,22 +1508,35 @@ const Pricing = () => {
                   <thead>
                     <tr className="border-b border-border/50">
                       <th className="text-left py-3 px-3 text-xs sm:text-sm font-semibold text-foreground w-1/4">{t.common.feature}</th>
-                      {plans.map((p) => (
-                        <th key={p.id} className={`text-center py-3 px-2 text-[10px] sm:text-xs font-semibold ${p.highlighted ? "text-primary" : "text-foreground"}`}>
-                          {p.name}
-                        </th>
-                      ))}
+                      {(["kickoff", "squad", "pro", "champions", "bespoke"] as PlanId[]).map((id) => {
+                        const label =
+                          id === "bespoke"
+                            ? t.pricingPage.bespoke
+                            : plans.find((p) => p.id === id)?.name ?? id;
+                        return (
+                          <th
+                            key={id}
+                            className={`text-center py-3 px-2 text-[10px] sm:text-xs font-semibold ${
+                              id === "pro" ? "text-primary" : "text-foreground"
+                            }`}
+                          >
+                            {label}
+                          </th>
+                        );
+                      })}
                     </tr>
                   </thead>
                   <tbody>
-                    {comparisonGrid.map((row, i) => (
-                      <tr key={i} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
-                        <td className="py-2.5 px-3 text-xs sm:text-sm text-foreground/80">{t.pricingPage.comparisonFeatures[i]}</td>
-                        <td className="py-2.5 px-2 text-center"><ComparisonCell value={row.kickoff} /></td>
-                        <td className="py-2.5 px-2 text-center"><ComparisonCell value={row.squad} /></td>
-                        <td className="py-2.5 px-2 text-center"><ComparisonCell value={row.pro} /></td>
-                        <td className="py-2.5 px-2 text-center"><ComparisonCell value={row.champions} /></td>
-                        <td className="py-2.5 px-2 text-center"><ComparisonCell value={row.bespoke} /></td>
+                    {COMPARISON_ROWS.map((row) => (
+                      <tr key={row.key} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
+                        <td className="py-2.5 px-3 text-xs sm:text-sm text-foreground/80">
+                          <BrandedText text={comparisonLabel(t, row.key)} ai4tOnly />
+                        </td>
+                        {(["kickoff", "squad", "pro", "champions", "bespoke"] as PlanId[]).map((id) => (
+                          <td key={id} className="py-2.5 px-2 text-center">
+                            <ComparisonCell value={resolveComparisonValue(row, id)} />
+                          </td>
+                        ))}
                       </tr>
                     ))}
                   </tbody>
@@ -914,8 +1560,12 @@ const Pricing = () => {
             {t.pricingPage.faq.map((faq, i) => (
               <FadeInSection key={i} delay={i * 0.04}>
                 <div className="glass-card rounded-2xl p-4 sm:p-5 hover:border-primary/20 transition-all duration-300">
-                  <h3 className="font-display font-bold text-foreground text-sm sm:text-base mb-1.5">{faq.q}</h3>
-                  <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">{faq.a}</p>
+                  <h3 className="font-display font-bold text-foreground text-sm sm:text-base mb-1.5">
+                    <BrandedText text={faq.q} ai4tOnly />
+                  </h3>
+                  <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
+                    <BrandedText text={faq.a} ai4tOnly />
+                  </p>
                 </div>
               </FadeInSection>
             ))}

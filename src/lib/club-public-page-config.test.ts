@@ -72,6 +72,16 @@ function sampleEditorForm() {
       ctaLabel: "Open",
       href: "/tournament/sommerfest-2026",
     },
+    eventsHighlight: {
+      enabled: true,
+      imageUrl: "https://cdn.example/poster-day.png",
+      badge: "Festival",
+      title: "Sommerfest 2026",
+      eventsLead: "Day program",
+      matchesLead: "Fixtures",
+      location: "Enterstr. 55",
+      posterAlt: "Poster",
+    },
     microPages: {
       ...base.microPages,
       news: { ...base.microPages.news, enabled: true, showInNav: true, label: "News" },
@@ -143,6 +153,7 @@ describe("club-public-page-config", () => {
     expect(output.featured_team_ids).toEqual(input.featured_team_ids);
     expect(output.homepage_show_partners).toBe(input.homepage_show_partners);
     expect(output.siteBanner).toEqual(input.siteBanner);
+    expect(output.eventsHighlight).toEqual(input.eventsHighlight);
     expect(output.microPages.news.label).toBe("News");
     expect(output.privacy.allow_join_requests_public).toBe(true);
   });

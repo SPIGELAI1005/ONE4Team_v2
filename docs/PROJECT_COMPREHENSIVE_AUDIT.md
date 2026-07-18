@@ -1,6 +1,6 @@
 # ONE4Team — Comprehensive project audit
 
-**Audit date:** 2026-07-08 (updated for Operator Control Center — financials, development cost model, Recharts; prior: dashboard mobile polish…)  
+**Audit date:** 2026-07-18 (re-score: Operator CC health, AI fair-use caps, billing recovery, marketplace + digests + guided setup; prior: 2026-07-08 Operator Control Center financials/Recharts)  
 **Scope:** Codebase, architecture, UX/design, production readiness, competitive positioning, market value, and value-growth levers  
 **Primary reference (existing):** [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) — strict production-readiness review with risk register, readiness scores, and remediation sprints  
 
@@ -10,18 +10,18 @@
 
 ## 1. Executive summary
 
-ONE4Team is a **mature-in-code, early-in-market** multi-tenant club management SaaS: Vite + React + TypeScript SPA on Supabase (Postgres RLS, Auth, Storage, Edge Functions), deployed via Vercel. The product spans **internal club ops** (members, teams, schedule, matches, finances, communication, tasks), **external club presence** (configurable public microsites, join flows, tournaments, RSVP), and **partner/supplier portal** (marketplace listings, Partner Page, partner messages/tasks/reports, AI 4 T at `/partner-ai`).
+ONE4Team is a **mature-in-code, early-in-market** multi-tenant club management SaaS: Vite + React + TypeScript SPA on Supabase (Postgres RLS, Auth, Storage, Edge Functions), deployed via Vercel. The product spans **internal club ops** (members, teams, schedule, matches, finances, communication, tasks), **external club presence** (configurable public microsites, join flows, tournaments, RSVP, optional PWA), **partner/supplier portal** (marketplace listings, engagement reviews, Partner Page), and an **Operator Control Center** for platform health, catalog, and audit.
 
-| Dimension | Assessment | Score (1–100) |
-|-----------|------------|:-------------:|
-| **Feature breadth** | Above typical regional club apps; AI agent + public site builder are differentiators | **82** |
-| **Code & architecture** | Strong foundations; some god-components and i18n monoliths need refactor | **68** |
-| **UX & design** | Distinctive glass/iOS-style UI; DE market fit; occasional complexity on admin surfaces | **74** |
-| **Production readiness** | Conditionally ready for controlled rollout (aligns with ops audit **61** overall) | **61** |
-| **Test & quality gates** | CI guardrails, RLS integration tests, k6 scripts; **309 unit tests + ESLint `--max-warnings 0` green (2026-07-06)**; optional RLS workflow | **62** |
-| **Commercial readiness** | Billing/shop wired; invite email pipeline new; domain/DNS ops still operator-heavy | **55** |
+| Dimension | Assessment | Prior | **Now** |
+|-----------|------------|:-----:|:-------:|
+| **Feature breadth** | Above typical regional club apps; AI agent + public site builder + marketplace + digests | 82 | **87** |
+| **Code & architecture** | Strong foundations; Members feature modules started but god pages still large | 68 | **69** |
+| **UX & design** | Distinctive glass UI; Guided setup; Support FAQ refreshed; DE market fit | 74 | **78** |
+| **Production readiness** | Conditionally ready for controlled multi-club rollout (ops audit **68** overall) | 61 | **68** |
+| **Test & quality gates** | ~106 unit test files; 8 e2e specs; CI guardrails + bundle budget | 62 | **73** |
+| **Commercial readiness** | Billing portal + past_due recovery; plan catalog; marketplace monetization path | 55 | **62** |
 
-**Bottom line:** The platform is **technically credible for pilot clubs** (e.g. TSV Allach 09) and **not yet optimized for unmanaged scale** (10k+ concurrent users, full observability, mobile native). Strategic value is in **German amateur-sports depth + AI-assisted ops + club-branded public web**, not in being a generic team chat app.
+**Bottom line:** Credible for **pilot expansion and controlled production**, with clearer billing recovery and AI cost containment than mid-July. Still **not** optimized for unmanaged scale (10k+ concurrent, full SRE observability, native mobile). Strategic value remains **German amateur-sports depth + AI-assisted ops + club-branded public web + marketplace**.
 
 ---
 
@@ -46,26 +46,27 @@ This document **extends** the ops audit with product, UX, competitive, and valua
 
 ## 3. Codebase metrics (snapshot)
 
-| Metric | Value | Notes |
+| Metric | Value (2026-07-18) | Notes |
 |--------|------:|-------|
-| TypeScript/TSX files (`src/`) | ~675 | Includes operator Control Center pages/components |
-| Lines of code (`src/`) | ~139,000 | Excludes tests, config; operator wave adds ~55k since prior audit |
-| SQL migrations | 171+ | Rich domain model; operator migrations `20260801*`; apply order critical |
-| Edge Functions (deployed set) | 6+ active | co-trainer, ai4team-agent, send-club-invite-email, chat-bridge, … |
-| Unit/integration test files | ~28 | Heavy on `src/lib/*`; light on pages |
-| E2E specs | 5 | smoke, protected routes, nav, continuity, error boundary |
-| i18n keys file (`en.ts`) | ~4,200 lines | Single large translation surface |
+| TypeScript/TSX files (`src/`) | ~745 | Includes operator CC, marketplace, public club, features/members |
+| Lines of code (`src/` key surfaces) | i18n EN/DE ~5.8k each; Members ~5.2k | God pages still dominate maintainability risk |
+| SQL migrations | ~163 | Includes `20260801*`–`20260803*` operator, digests, marketplace, asset map |
+| Edge Functions | **13** active dirs | co-trainer, ai4team-agent, chat-bridge, stripe-*, digests, invite email, health, … |
+| Unit/integration test files | **~106** | Heavy on `src/lib/*`; RLS + operator security suites |
+| E2E specs | **8** | + marketplace dual-role / RBAC |
+| i18n keys file (`en.ts`) | ~5,850 lines | Still a translation monolith |
 
 ### Largest files (maintainability hotspots)
 
 | File | ~Lines | Risk |
 |------|-------:|------|
-| `src/pages/Members.tsx` | **5,038** | God page — invites, drafts, bulk import, search, team assignment, audit |
-| `src/i18n/en.ts` / `de.ts` | **4,200+** each | Translation monolith; merge conflict prone |
-| `src/pages/Communication.tsx` | **2,250** | Realtime, attachments, bridge, pagination |
-| `src/pages/ClubPageAdmin.tsx` | **1,495** | Public site CMS complexity |
+| `src/pages/Members.tsx` | **~5,170** | Still a god page (grew since prior audit); `src/features/members/*` panels started |
+| `src/i18n/en.ts` / `de.ts` | **~5,850** each | Translation monolith; merge conflict prone |
+| `src/pages/Communication.tsx` | **~2,460** | Realtime, attachments, bridge, pagination |
+| `src/pages/ClubPageAdmin.tsx` | **~1,780** | Public site CMS complexity |
+| `src/pages/Matches.tsx` | **~1,750** | Competitions + tournaments + standings |
 
-**Recommendation:** Split `Members.tsx` into feature modules (`members/drafts`, `members/invites`, `members/bulk-import`) and colocate i18n by domain (`i18n/members.ts`, etc.) before adding more member features.
+**Recommendation:** Finish splitting `Members.tsx` onto `src/features/members/*` routes/panels; colocate i18n by domain before adding more member features.
 
 ---
 
@@ -150,10 +151,10 @@ flowchart TB
 
 ### UX priority fixes
 
-1. **Wizard for “add first 10 members”** — draft → invite → email sent status per row.
-2. **Settings health dashboard** — Supabase, Resend, Stripe, Edge Functions status in one admin panel.
+1. ~~**Wizard for “add first 10 members”**~~ **Shipped (Guided setup)** — welcome → team → import → invite → publish; deepen per-row invite status next.
+2. **Settings / Operator health** — Operator Performance now probes Auth/Sentry/DB/Edge; club admins still need a simpler “integrations status” strip.
 3. **Empty states** — more guided CTAs on Teams, Communication, Tasks for new clubs.
-4. **Split Members UI** — tabs or sub-routes: Roster | Drafts | Invites | Import.
+4. **Split Members UI** — `src/features/members/*` panels exist; finish extracting logic out of `Members.tsx`.
 
 ---
 
@@ -180,31 +181,33 @@ flowchart TB
 
 ## 7. Production & security (summary from ops audit)
 
-Scores reproduced from [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) Section B (March 2026 baseline; still largely valid):
+Scores from [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) Section B (**2026-07-18 re-score**):
 
-| Area | Score |
-|------|------:|
-| Deployment readiness | 64 |
-| Scalability readiness | 58 |
-| Security readiness | 66 |
-| Observability readiness | 48 |
-| Tenant isolation readiness | 74 |
-| **Overall** | **61** |
+| Area | Prior | **Now** |
+|------|------:|--------:|
+| Deployment readiness | 64 | **70** |
+| Scalability readiness | 58 | **64** |
+| Security readiness | 66 | **72** |
+| Observability readiness | 48 | **58** |
+| Tenant isolation readiness | 74 | **78** |
+| **Overall** | **61** | **68** |
 
-### Recent additions (June 2026 — update ops audit when convenient)
+### What moved the needle (July 2026 wave)
 
-- **`send-club-invite-email`** Edge Function + Resend integration
-- CORS localhost allowance when `EDGE_ALLOWED_ORIGINS` is set
-- Member invite link modal on first send
-- Repair migrations for RPC and avatar bucket
+- **Operator Control Center** — audit trail, usage analytics, **system health probes** (`operator-system-health.ts`)
+- **Billing recovery** — `stripe-billing-portal`, `invoice.paid` clears `past_due`, Settings banner
+- **AI cost containment** — plan monthly fair-use caps (`ai_usage_caps.ts` + UI meters + value metrics card)
+- **Marketplace** — engagement reviews, RBAC tests, dual-role Playwright smoke
+- **Automation** — `process-weekly-digests`; join-funnel analytics; WhatsApp Meta `hub.challenge` verify
+- **Launch path** — Guided setup; Support & FAQ refresh for new surfaces
 
-### Top open risks (from R1–R12)
+### Top open risks (still)
 
-1. **RLS policy drift** across environments — run `npm test` with JWT env + policy drift script.
-2. **Observability not wired** — Sentry/Supabase dashboards/paging still checklist items (Section L).
-3. **Realtime chat at scale** — Communication.tsx optimized but unproven at 500+ concurrent.
-4. **Resend/domain ops** — product depends on operator verifying sending domain.
-5. **God components** — increase bug rate and slow onboarding of new developers.
+1. **RLS policy drift** across environments — run JWT RLS suite + policy drift script on staging/prod.
+2. **Section L observability** — Sentry/Supabase/Stripe dashboards and pager not fully wired (code probes ≠ SRE stack).
+3. **Realtime chat at scale** — Communication optimized but unproven at 500+ concurrent.
+4. **Resend/domain ops** — invite email depends on verified sending domain.
+5. **God components** — Members/Communication still slow developer velocity.
 
 ---
 
@@ -259,17 +262,19 @@ ONE4Team wins on **integrated story**: admin dashboard + public club face + AI a
 |--------|--------|-------------|
 | **Close production go-live** — Vercel prod, Resend verified domain, full checklist | Low (ops) | Unblocks paid pilots |
 | **Convert TSV Allach to paying reference** — case study, testimonial | Low | Sales asset |
-| **Pricing page → live Stripe** — Kickoff/Squad/Pro tiers | Medium | ARR |
-| **Onboarding wizard** — first club, first team, first 5 members | Medium | Activation ↑ churn ↓ |
+| **Pricing page → live Stripe** — Kick-off / Squad / Pro / Champions base+member; Founding Club offer path | Medium | ARR + activation |
+| **Founding Club programme** — redeem + expiry job live (`ONE4Team-Founding-Club-12M`) | Low–Medium | Pilot acquisition |
+| **Onboarding wizard** — first club, first team, first 5 members | ~~Medium~~ **Done (Guided setup)** | Activation ↑ churn ↓ |
 | **Invite email reliability** — monitor Resend bounces, admin delivery status | Low | Trust |
+| **AI 4 T outcomes metrics** — value metrics card shipped; deepen pilot KPIs | Medium | Premium tier proof |
 
 ### Tier 2 — Product differentiation (6–12 months)
 
 | Action | Effort | Value lever |
 |--------|--------|-------------|
-| **AI 4 T outcomes metrics** — complete AI4T-PILOT-001–005 success metrics | Medium | Premium tier proof |
-| **WhatsApp bridge production** — finish Meta webhook verify (BRIDGE-WA-001) | High | Matches Spond expectation in EU |
-| **Mobile PWA install prompts** — public club + dashboard shortcuts | Medium | Perceived “app” |
+| **AI 4 T outcomes metrics** — value metrics card shipped; complete remaining AI4T-PILOT KPIs | Medium | Premium tier proof |
+| **WhatsApp bridge production** — Meta `hub.challenge` in repo; finish prod webhook + soak | Medium | Matches Spond expectation in EU |
+| **Mobile PWA install prompts** — public club install banner shipped; expand dashboard | Low–Medium | Perceived “app” |
 | **Federation-friendly exports** — DFB-style reports, Mitgliederliste v2 | Medium | DE market lock-in |
 | **White-label domains** — `club.example.de` on Vercel | High | Enterprise pricing |
 
@@ -305,4 +310,4 @@ ONE4Team wins on **integrated story**: admin dashboard + public club face + AI a
 | | Engineering | | |
 | | Operations | | |
 
-**Next update trigger:** Production launch on custom domain, first 10 paying clubs, or major refactor of Members/Communication modules.
+**Next update trigger:** Section L alerts live, production custom domain, first 10 paying clubs, or Members/Communication refactor complete.

@@ -5,11 +5,20 @@ import { cn } from "@/lib/utils";
 
 interface Ai4TIntroLogoVideoProps {
   className?: string;
-  /** Fraction of viewport height used as center band (0–1). */
+  /** Fraction of viewport height used as center band (0–1). Used when playMode is `center`. */
   centerBand?: number;
+  /**
+   * `center` — play when the element crosses the viewport mid-band (hero sections).
+   * `visible` — play when enough of the element is on screen (cards / side panels).
+   */
+  playMode?: "center" | "visible";
 }
 
-export function Ai4TIntroLogoVideo({ className, centerBand = 0.22 }: Ai4TIntroLogoVideoProps) {
+export function Ai4TIntroLogoVideo({
+  className,
+  centerBand = 0.22,
+  playMode = "center",
+}: Ai4TIntroLogoVideoProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hasPlayedRef = useRef(false);
@@ -31,6 +40,14 @@ export function Ai4TIntroLogoVideo({ className, centerBand = 0.22 }: Ai4TIntroLo
       video.pause();
     };
 
+    const tryPlay = () => {
+      if (prefersReducedMotion || hasPlayedRef.current || isPlayingRef.current) return;
+      isPlayingRef.current = true;
+      void video.play().catch(() => {
+        isPlayingRef.current = false;
+      });
+    };
+
     const isSectionCentered = () => {
       const rect = container.getBoundingClientRect();
       const sectionCenter = rect.top + rect.height / 2;
@@ -39,19 +56,30 @@ export function Ai4TIntroLogoVideo({ className, centerBand = 0.22 }: Ai4TIntroLo
       return Math.abs(sectionCenter - viewportCenter) <= threshold;
     };
 
-    const maybePlay = () => {
-      if (prefersReducedMotion || hasPlayedRef.current || isPlayingRef.current) return;
-      if (!isSectionCentered()) return;
-
-      isPlayingRef.current = true;
-      void video.play().catch(() => {
-        isPlayingRef.current = false;
-      });
-    };
-
     video.pause();
     video.currentTime = 0;
     video.addEventListener("ended", holdLastFrame);
+
+    if (playMode === "visible") {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.35)) {
+            tryPlay();
+          }
+        },
+        { threshold: [0, 0.35, 0.5, 0.75], rootMargin: "0px 0px -8% 0px" },
+      );
+      observer.observe(container);
+      return () => {
+        video.removeEventListener("ended", holdLastFrame);
+        observer.disconnect();
+      };
+    }
+
+    const maybePlay = () => {
+      if (!isSectionCentered()) return;
+      tryPlay();
+    };
 
     const onScrollOrResize = () => maybePlay();
     window.addEventListener("scroll", onScrollOrResize, { passive: true });
@@ -63,7 +91,7 @@ export function Ai4TIntroLogoVideo({ className, centerBand = 0.22 }: Ai4TIntroLo
       window.removeEventListener("scroll", onScrollOrResize);
       window.removeEventListener("resize", onScrollOrResize);
     };
-  }, [centerBand]);
+  }, [centerBand, playMode]);
 
   return (
     <div ref={containerRef} className={cn("relative h-full w-full min-h-0 overflow-hidden bg-black", className)}>

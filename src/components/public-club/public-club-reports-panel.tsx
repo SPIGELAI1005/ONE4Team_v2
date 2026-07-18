@@ -14,6 +14,11 @@ import { useLanguage } from "@/hooks/use-language";
 import { usePublicClubReportPersona } from "@/hooks/use-public-club-report-persona";
 import { fetchClubReportSnapshot } from "@/lib/club-reports-snapshot";
 import { canAccessFinancialReports, type ClubReportPersona } from "@/lib/club-report-persona";
+import {
+  fetchMemberProgressSnapshot,
+  type MemberProgressSnapshot,
+} from "@/lib/club-member-progress";
+import { getAchievementBadgeIcon } from "@/lib/achievement-badge-icons";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
 
 interface PlayerStatRow {
@@ -64,6 +69,7 @@ export function PublicClubReportsPanel({
   const [snapshot, setSnapshot] = useState<Awaited<ReturnType<typeof fetchClubReportSnapshot>>["snapshot"] | null>(null);
   const [topScorers, setTopScorers] = useState<PlayerStatRow[]>([]);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [progress, setProgress] = useState<MemberProgressSnapshot | null>(null);
 
   const teamFilter = useMemo(() => {
     if (persona === "trainer" && snapshot?.coachTeamIds.length === 1) return snapshot.coachTeamIds[0];
@@ -79,6 +85,9 @@ export function PublicClubReportsPanel({
       setSnapshot(next);
       setSnapshotError(hadError);
       setSnapshotLoading(false);
+    });
+    void fetchMemberProgressSnapshot(clubId, membershipId).then(({ data }) => {
+      if (!cancelled) setProgress(data);
     });
     return () => {
       cancelled = true;
@@ -224,7 +233,30 @@ export function PublicClubReportsPanel({
           <div className="grid gap-3 sm:grid-cols-2">
             <KpiTile label={t.reportsPage.kpiYourTeams} value={snapshot?.playerTeamIds.length ?? 0} />
             <KpiTile label={t.reportsPage.kpiYourUpcomingSessions} value={snapshot?.playerSessions14d ?? "-"} />
+            {progress ? (
+              <>
+                <KpiTile label={t.clubProgress.kpiStreak} value={progress.attendance_streak} />
+                <KpiTile label={t.clubProgress.kpiBadges} value={progress.badge_count} />
+              </>
+            ) : null}
           </div>
+          {progress && progress.badges.length > 0 ? (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {progress.badges.slice(0, 8).map((badge) => {
+                const Icon = getAchievementBadgeIcon(badge.badge_type);
+                const label = t.clubProgress.badgeNames[badge.badge_type] ?? badge.badge_name;
+                return (
+                  <div
+                    key={`${badge.badge_type}-${badge.earned_at ?? badge.id ?? label}`}
+                    className="flex min-w-[68px] flex-col items-center gap-1 rounded-xl border border-[color:var(--club-border)]/40 bg-white/5 px-2 py-2"
+                  >
+                    <Icon className="h-4 w-4 text-[color:var(--club-primary)]" />
+                    <span className="text-center text-[10px] text-[color:var(--club-foreground)]">{label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
         </PublicClubCard>
       ) : null}
 

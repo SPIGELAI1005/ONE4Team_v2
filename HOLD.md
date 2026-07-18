@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-07-16 — Waves A–E migrations applied on linked remote; site banner + matches status UX documented in **`CHANGELOG.md`** / **`MEMORY_BANK.md`**. Cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30, § 2026-05-03, § **2026-06-14** admin + **AI 4 T**, § **2026-06-15** AI 4 T Agent, § **2026-06-24** attendance + pilot Phases 1–4, § **2026-06-25** communication/tasks/attendance, § **2026-06-27** TSV Allach Sommerfest + membership application, § **2026-06-30** member payments + invite email, § **2026-07-01** marketing + public club polish, § **2026-07-01** partner portal + Partner Page + AI 4 T partner, § **2026-07-01** persona data scoping + Live Scores UI, § **2026-07-01** AI 4 T pilot UX P4-002 + Sommerfest banner fix, § **2026-07-03** member invite UX + social previews + Sommerfest banner animation + dashboard club return, § **2026-07-05** Sommerfest tournament UX + public AI 4 T RBAC, § **2026-07-05** public messaging forward/share + microsite polish + Sommerfest mobile refinements, § **2026-07-06** bug investigation remediation, § **2026-07-06** Sommerfest kickoff sync + tournament info + mobile club messaging, § **2026-07-07** legal audit + marketing polish, § **2026-07-07** dashboard mobile polish + AI 4 T / Messages UX + chat-bridge CORS, § **2026-07-08** Operator Control Center + plan gate UX, § **2026-07-16** commercial packaging + German i18n + public club UX, § **2026-07-16** Product Waves A–E + site banner).
+Last updated: 2026-07-18 — Pricing / Founding Club overhaul + UX polish documented; Waves A–E + gamification + Asset Map notes unchanged below. Cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30 … § **2026-07-18** Pricing architecture & UX polish).
 
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 
@@ -65,8 +65,17 @@ See **`DEPLOYMENT.md` § AI 4 T** and **`TASKS.md` AI-OPS-001**.
 
 ## Commercial packaging — plan catalog (2026-07-16)
 - [x] Applied on linked remote: `supabase/migrations/20260801220000_revise_plan_catalog_pricing_limits.sql` (updates `public.plans` base prices + max users/teams).
-- [ ] **Operator:** Sync **Stripe** Dashboard prices / price IDs to match `src/lib/plan-catalog.ts` (Kick-off €19, Squad €39, Pro €79, Champions €149 base monthly + per-member rates). See **`TASKS.md` PKG-003**, **`GTM_PRICING_PACKAGING.md`**.
+- [ ] **Operator:** Sync **Stripe** Dashboard prices / price IDs to match `src/lib/plan-catalog.ts` (Kick-off €19, Squad €39, Pro €79, Champions €149 base monthly + per-member rates). See **`TASKS.md` PKG-003**, **`docs/STRIPE_MEMBER_BASED_BILLING.md`**.
 
+## Pricing architecture & Founding Club (2026-07-18)
+Apply in filename order on the same Supabase project as the app:
+1. [ ] `supabase/migrations/20260804120000_pricing_founding_club_offers.sql` — `commercial_offers`, redemptions, `redeem_commercial_offer`, plan seed sync
+2. [ ] `supabase/migrations/20260804130000_runtime_module_overrides.sql` — `get_my_club_module_overrides`
+3. [ ] `supabase/migrations/20260804140000_rename_founding_club_offer_code.sql` — public code **`ONE4Team-Founding-Club-12M`**
+4. [ ] Deploy Edge: **`stripe-checkout`**, **`stripe-webhook`**, **`process-commercial-offers`** (schedule expiry cron)
+5. [ ] Smoke: `/pricing` Founding banner → Offer details / Offer terms; Kick-off CTA → onboarding redeem (no Stripe); promotional club = announcements only; Bespoke **Contact Us** opens mailto `contact@one4team.com`
+
+See **`docs/FOUNDING_CLUB_OFFER.md`**, **`docs/PRICING_AND_ENTITLEMENTS.md`**, **`CHANGELOG.md`** § Pricing architecture / UX polish.
 ## Product program backlog (not in PROD-005…021 waves)
 Keep operator-owned until scheduled; do **not** block Waves A–E on these:
 1. **PKG-003** — Stripe Dashboard ↔ `plan-catalog.ts`
@@ -85,6 +94,18 @@ Apply in order after Wave B — **all applied** on linked remote (2026-07-16):
 1. ~~`supabase/migrations/20260802130000_redeem_invite_merge_draft_master_data.sql`~~ (PROD-007)
 2. ~~`supabase/migrations/20260802140000_marketplace_engagement_reviews.sql`~~ (PROD-016)
 3. ~~`supabase/migrations/20260802150000_join_funnel_and_news_schedule.sql`~~ (PROD-018/019) — adds **`announcements.scheduled_publish_at`** + **`is_draft`**
+
+## Public club gamification (2026-07-18)
+1. ~~`supabase/migrations/20260803120000_club_gamification_awards.sql`~~ — **applied** on linked remote (creates `achievements` if missing; award/snapshot/team-challenge/opt-in RPCs)
+- Smoke: member on `/club/:slug` My Progress; `/reports` streak/badges; trainer AI 4 T nudge; privacy + opt-in strip on team page.
+
+## Asset Map satellite underlay (2026-07-18)
+1. ~~`supabase/migrations/20260803140000_club_asset_map_overlay.sql`~~ — **applied** on linked remote (`clubs.asset_map_overlay`)
+- Smoke: club admin on `/teams` → Combined → upload bird’s-eye photo → opacity/scale/Align pan → paint element cells over underlay.
+
+## Asset Map pitch outlines (2026-07-18)
+1. ~~`supabase/migrations/20260803150000_club_pitch_outlines.sql`~~ — **applied** on linked remote (`club_pitches.outline`)
+- Smoke: club admin → satellite panel → Pitch display Outlines/Both → select element → Draw outline on Combined → rotate/clear → Separate card shows outline badge.
 
 ## Configurable site banner (no new SQL)
 - Banner lives in public page draft/published JSON (`siteBanner`). Clubs must **Publish** after editing Club Page Admin → Homepage → Site banner.
@@ -222,6 +243,11 @@ Smoke (dual-role QA account — switch persona in **Settings**):
 
 See **`CHANGELOG.md` § 2026-07-01 (Persona data scoping…)**, **`docs/rbac-dashboard-plan.md`** §12, **`TASKS.md` RBAC-PERSONA-*.
 
+## Migration filename dating (`202608*`)
+- Prefixes are **logical release-batch order**, not necessarily the calendar apply day.
+- `202608*` batches were applied on linked remote **2026-07-16 / 2026-07-18**. Do not renumber applied migrations.
+- See [`supabase/migrations/README.md`](supabase/migrations/README.md).
+
 ## WhatsApp External Bridge — operator (follow-up)
 **Not** personal WhatsApp / QR login. Use **WhatsApp Business API** only.
 
@@ -230,7 +256,8 @@ Step-by-step: **`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`**
 Blockers:
 - **`chat-bridge`** must be deployed to the target Supabase project
 - Meta webhook URL must be **public** (not `localhost`)
-- **BRIDGE-WA-001:** Meta GET webhook verification (`hub.challenge`) may need a code change before Meta accepts the callback URL
+- ~~**BRIDGE-WA-001:** Meta GET webhook verification (`hub.challenge`)~~ — **code done** (2026-07-18); **redeploy `chat-bridge`**, set optional `WHATSAPP_VERIFY_TOKEN`, then Meta subscribe
+- Deploy Edge: **`stripe-billing-portal`** (past_due recovery UX); redeploy **`stripe-webhook`** for `invoice.paid`
 
 ## Member invite accept — preview RPC + signup Edge (2026-07-03)
 Apply in the same Supabase project as the app (after partner/marketplace migrations):

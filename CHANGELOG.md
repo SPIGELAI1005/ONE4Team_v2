@@ -3,6 +3,81 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-18 (Pricing UX polish · Founding Club marketing)
+
+- **Pricing cards:** Larger description/feature type; no description clamp; Kick-off catalogue price with red strikethrough above **0 €**; plan logos with gold corner icons; Kick-off / Pro / Enterprise badges uppercase with matching size; Kick-off badge uses black **12 MONTHS FREE** pill (same as promo banner).
+- **Founding promo banner:** Animated gold strip + black pill; Offer terms + **View offer details** modals (benefits, prerequisites, how to apply, conditions, copyable offer code).
+- **Bespoke:** Enterprise band layout; ONE4Team logo + Building2 badge; centered **Contact Us** aligned to feature column → mailto **`contact@one4team.com`** with EN/DE consultation brief.
+- **AI 4 T add-on:** Red **4** in title/body; two-line description; wider video frame; **`Ai4TIntroLogoVideo` `playMode="visible"`** (Intersection Observer) so the clip plays when the card scrolls into view and fills with `object-cover`.
+- **Plan marketing copy:** Squad/Pro/Champions AI lines (`2 X` / `5 X` fair-use + add-on possible); comparison labels (**API**, **AI 4 T**); FAQ rewritten for Founding Club, grace, AI, Bespoke.
+- **Router:** `BrowserRouter` future flags `v7_startTransition` + `v7_relativeSplatPath`.
+- **Hardening:** `BrandedText` tolerates nullish text (fixes Pricing crash when Bespoke description briefly missing).
+
+## 2026-07-18 (Pricing architecture & Founding Club)
+
+- **Catalogue SSOT:** [`plan-catalog.ts`](src/lib/plan-catalog.ts) / [`plan-limits.ts`](src/lib/plan-limits.ts) with locked caps, granular entitlements, deny-by-default `NO_PLAN`.
+- **Effective plan resolver:** [`effective-plan.ts`](src/lib/effective-plan.ts) + runtime Operator overrides via `get_my_club_module_overrides` ([`20260804130000_runtime_module_overrides.sql`](supabase/migrations/20260804130000_runtime_module_overrides.sql)).
+- **Founding Club offer:** `commercial_offers` / redemptions / `redeem_commercial_offer`; public code **`ONE4Team-Founding-Club-12M`** (legacy alias still redeemable); expiry Edge `process-commercial-offers`.
+- **Pricing UX:** four cards + Bespoke, from-pricing, calculator bands, offer terms dialog, catalogue comparison table; Kick-off CTA → onboarding redeem (no Stripe); removed unsafe trial upsert.
+- **Communication:** promotional Kick-off = announcements only; chat gated unless paid / Operator override.
+- **Stripe:** base + member line items; promotional Kick-off blocked; paid Kick-off allowed after offer.
+- **Operator:** Offers tab under Modules & Plans; MRR excludes promotional (`operator-financials`).
+- **Docs:** [`PRICING_AND_ENTITLEMENTS.md`](docs/PRICING_AND_ENTITLEMENTS.md), [`FOUNDING_CLUB_OFFER.md`](docs/FOUNDING_CLUB_OFFER.md), [`STRIPE_MEMBER_BASED_BILLING.md`](docs/STRIPE_MEMBER_BASED_BILLING.md).
+
+## 2026-07-18 (Production readiness re-audit)
+
+- Re-scored ops readiness in [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](ops/PRODUCTION_READINESS_ARTIFACTS.md) Section B and [`docs/PROJECT_COMPREHENSIVE_AUDIT.md`](docs/PROJECT_COMPREHENSIVE_AUDIT.md): **Overall 61 → 68**, Scalability **58 → 64**, Observability **48 → 58** (Deployment 70, Security 72, Tenant 78). Still conditionally ready; Section L/M external wiring remains the main gap to unmanaged production.
+
+## 2026-07-18 (Support & FAQ refresh)
+
+- Support page (`/support`) FAQ copy updated EN/DE for tournaments, Events/Matches highlight, billing recovery, My dues, Marketplace, Asset Map, Guided setup, weekly digests, Role Access, and AI usage/value meters.
+- Category cards: slightly stronger border/contrast for readability (same accordion layout).
+
+## 2026-07-18 (Multi-tournament competitions)
+
+- Competitions support a first-class **Tournament** type (alongside league / cup / friendly), assignable club-wide or per team.
+- Matches → Competitions: type filter chips + scope label on each card.
+- Matches → Standings: competition selector loads all completed fixtures for that competition (not only the paginated matches page).
+
+## 2026-07-18 (Product improvement waves A–H)
+
+- **A Guided launch path:** [`GuidedSetup`](src/pages/GuidedSetup.tsx) steps `welcome → team → import → invite → publish → complete`; import via spreadsheet (cap 10), real invite emails (`send-club-invite-email`), publish via `publishClubPageConfig`. Lib [`guided-setup-launch.ts`](src/lib/guided-setup-launch.ts).
+- **B Members modules:** Feature boundary under [`src/features/members/`](src/features/members/) (tab nav, roles, import panel, roster/invites shells, invite crypto).
+- **C Operator system health:** Live probes card on `/operator/performance` ([`operator-system-health.ts`](src/lib/operator-system-health.ts)).
+- **D WhatsApp BRIDGE-WA-001:** Meta `hub.challenge` GET verify in [`chat-bridge`](supabase/functions/chat-bridge/index.ts); setup doc updated. **Redeploy `chat-bridge`.**
+- **E AI value metrics:** Admin card proposed/executed/failed/declined + top intents ([`Ai4tValueMetricsCard`](src/components/dashboard/Ai4tValueMetricsCard.tsx)).
+- **F Billing recovery:** `invoice.paid` clears `past_due`; Edge [`stripe-billing-portal`](supabase/functions/stripe-billing-portal/index.ts); Settings past-due banner. **Deploy portal + redeploy webhook.**
+- **G Migration dating:** [`supabase/migrations/README.md`](supabase/migrations/README.md) explains `202608*` batch prefixes vs July apply dates.
+- **H Playwright:** [`e2e/marketplace-dual-role.spec.ts`](e2e/marketplace-dual-role.spec.ts) (skips without E2E_* credentials).
+
+## 2026-07-18 (Asset Map pitch outline tracing)
+
+- **Optional vector outlines** (freeform polygons in % of map canvas) on `/teams` Asset Map Combined/Booked; Separate cards show outline thumbnail when set. Legacy rect JSON migrates to 4-point polygons on read.
+- Club display mode **`pitch_display`**: `cells` | `outlines` | `both` (default cells) in **`clubs.asset_map_overlay`**. Bookings stay cell-based.
+- Admin draw → drag individual corners, add corners via edge midpoints, remove corner (double-/right-click), rotate ±5°, clear; persist to **`club_pitches.outline`**.
+- **Migration `20260803150000_club_pitch_outlines.sql`** (applied on linked remote).
+- Lib: **`pitch-outline.ts`** + tests; UI **`asset-map-pitch-outlines.tsx`**; EN/DE labels.
+
+## 2026-07-18 (Asset Map satellite underlay)
+
+- **Club-admin site photo** on `/teams` Asset Map (Combined/Booked): upload bird’s-eye / Google Maps screenshot to `images-clubs/{clubId}/asset-map/…`; opacity, scale, and pan (Align overlay); underlay also behind the element paint grid.
+- **Migration `20260803140000_club_asset_map_overlay.sql`** (applied on linked remote): `clubs.asset_map_overlay` JSON (`url`, `opacity`, `scale`, `offset_x`, `offset_y`).
+- Lib: **`asset-map-overlay.ts`** + tests; EN/DE upload instructions (no Google Maps API pull).
+
+## 2026-07-18 (Public club gamification — My Progress, streaks, team challenges)
+
+### Phases 1–4 on `/club/:slug`
+- **Homepage module `my_progress`:** Member-private progress card (level/XP, streak KPIs, badges, next milestone) with sign-in / join gates; Club Page Admin order/visibility + privacy help.
+- **Reports:** Player branch shows training streak + badge strip via progress snapshot.
+- **Migration `20260803120000_club_gamification_awards.sql` (applied on linked remote):** Ensures `achievements` table; RLS (SELECT for members, no client INSERT); RPCs `award_member_achievements`, `get_member_progress_snapshot`, `get_team_attendance_challenge`, `set_public_badges_opt_in`, `list_public_opt_in_badges`; column `club_memberships.public_badges_opt_in`.
+- **Dashboard:** `AchievementBadges` awards via snapshot RPC (fixes empty badges when players could not INSERT).
+- **Team layer:** Anonymous team attendance ranking; trainers get AI 4 T prefill nudge + Messages CTA on low attendance.
+- **Polish:** Levels Rookie→Legend; season award hint; adult opt-in public badge strip on team detail (gated by privacy + youth mode).
+- **Lib/tests:** `club-member-progress.ts` + unit tests; EN/DE `clubProgress` strings.
+
+### Operator follow-up
+- None for SQL (migration applied). Smoke: sign in as member on `/club/:slug` → My Progress; trainer low-attendance nudge; opt-in strip with privacy flags on.
+
 ## 2026-07-16 (Product Waves A–E · configurable site banner · matches status UX)
 
 ### Product improvements PROD-005…021 (Waves A–E)

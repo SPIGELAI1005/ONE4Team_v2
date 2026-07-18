@@ -338,6 +338,7 @@ export const operatorDe = {
       modules: "Module",
       plans: "Pakete",
       matrix: "Plan-Matrix",
+      offers: "Angebote",
     },
     shared: {
       actions: "Aktionen",

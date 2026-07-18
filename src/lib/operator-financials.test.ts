@@ -76,6 +76,18 @@ describe("computeRevenue", () => {
     plan({ key: "starter", name: "Starter", price_monthly: 40 }),
   ];
 
+  it("excludes promotional clubs from MRR and tracks potential conversion", () => {
+    const clubs = [
+      club({ plan_name: "Club Pro", billing_status: "active" }),
+      club({ plan_name: "Starter", billing_status: "promotional" }),
+      club({ plan_name: "Starter", billing_status: "grace" }),
+    ];
+    const revenue = computeRevenue(plans, clubs);
+    expect(revenue.mrr).toBe(100);
+    expect(revenue.promotionalClubs).toBe(2);
+    expect(revenue.potentialConversionMrr).toBe(80);
+  });
+
   it("sums MRR from paying clubs matched by plan name", () => {
     const clubs = [
       club({ plan_name: "Club Pro", billing_status: "active" }),

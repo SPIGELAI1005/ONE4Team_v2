@@ -1,6 +1,7 @@
 import { CreditCard } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { OperatorCommercialOffersTab } from "@/components/operator/OperatorCommercialOffersTab";
 import { OperatorPlanMatrixTab } from "@/components/operator/OperatorPlanMatrixTab";
 import { OperatorPlatformModulesTab } from "@/components/operator/OperatorPlatformModulesTab";
 import { OperatorPlatformPlansTab } from "@/components/operator/OperatorPlatformPlansTab";
@@ -44,10 +45,11 @@ export default function OperatorModules() {
         <Skeleton className="h-64 w-full rounded-2xl" />
       ) : (
         <Tabs defaultValue="modules" className="w-full">
-          <TabsList className="grid h-auto w-full grid-cols-3">
+          <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="modules">{m.tabs.modules}</TabsTrigger>
             <TabsTrigger value="plans">{m.tabs.plans}</TabsTrigger>
             <TabsTrigger value="matrix">{m.tabs.matrix}</TabsTrigger>
+            <TabsTrigger value="offers">{m.tabs.offers ?? "Offers"}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="modules" className="mt-5">
@@ -58,6 +60,9 @@ export default function OperatorModules() {
           </TabsContent>
           <TabsContent value="matrix" className="mt-5">
             <OperatorPlanMatrixTab matrix={matrix} isLoading={isLoading} canEdit={canManagePlans} />
+          </TabsContent>
+          <TabsContent value="offers" className="mt-5">
+            <OperatorCommercialOffersTab canManage={canManagePlans} />
           </TabsContent>
         </Tabs>
       )}

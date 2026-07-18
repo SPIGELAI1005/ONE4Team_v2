@@ -20,6 +20,10 @@ export const ACHIEVEMENT_BADGE_ICONS: Record<string, LucideIcon> = {
   matches_10: Users,
   matches_25: Star,
   matches_50: Trophy,
+  attendance_streak_5: Flame,
+  attendance_streak_10: Flame,
+  attendance_streak_25: Crown,
+  rsvp_on_time_5: Star,
 };
 
 export function getAchievementBadgeIcon(badgeType: string): LucideIcon {

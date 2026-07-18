@@ -37,9 +37,16 @@ import {
   resolveEffectiveSiteBanner,
   type ClubSiteBannerConfig,
 } from "@/lib/club-site-banner";
+import {
+  EMPTY_CLUB_EVENTS_HIGHLIGHT,
+  normalizeClubEventsHighlight,
+  resolveEffectiveEventsHighlight,
+  type ClubEventsHighlightConfig,
+} from "@/lib/club-events-highlight";
 
 export type { HomepageModuleId, HomepageModuleSetting, MicroPageSettings, PrivacyPack, PublicMicroPageId } from "@/lib/club-page-settings-helpers";
 export type { ClubSiteBannerConfig } from "@/lib/club-site-banner";
+export type { ClubEventsHighlightConfig } from "@/lib/club-events-highlight";
 
 export const CLUB_PUBLIC_PAGE_CONFIG_SCHEMA_VERSION = 1 as const;
 
@@ -142,6 +149,11 @@ export interface ClubPublicPageConfig {
    * `null` / omitted = no saved preference (Allach keeps historical Sommerfest default until first save).
    */
   siteBanner: ClubSiteBannerConfig | null;
+  /**
+   * Dashboard `/events` + `/matches` highlight strip (poster + copy).
+   * `null` / omitted = no saved preference (Allach keeps historical Sommerfest default until first save).
+   */
+  eventsHighlight: ClubEventsHighlightConfig | null;
 }
 
 export interface ClubPublicPageDraftRow {
@@ -333,6 +345,10 @@ export function parseClubPublicPageConfig(raw: unknown): ClubPublicPageConfig | 
       o.siteBanner === undefined
         ? null
         : normalizeClubSiteBanner(o.siteBanner),
+    eventsHighlight:
+      o.eventsHighlight === undefined
+        ? null
+        : normalizeClubEventsHighlight(o.eventsHighlight),
   };
 }
 
@@ -529,6 +545,7 @@ function buildLegacyClubRowPublicPageConfig(row: Record<string, unknown>): ClubP
     privacy,
     publicPageConfig: undefined,
     siteBanner: null,
+    eventsHighlight: null,
   };
 }
 
@@ -571,6 +588,7 @@ export function publicPageConfigToJson(config: ClubPublicPageConfig): Record<str
       ? { publicPageConfig: JSON.parse(JSON.stringify(config.publicPageConfig)) as PublicPageConfigPatch }
       : {}),
     ...(config.siteBanner != null ? { siteBanner: { ...config.siteBanner } } : {}),
+    ...(config.eventsHighlight != null ? { eventsHighlight: { ...config.eventsHighlight } } : {}),
   };
 }
 
@@ -818,6 +836,8 @@ export interface ClubPublicPageEditorFormLike {
   publicPageConfig?: PublicPageConfigPatch;
   /** Top chrome banner on the public club microsite (activate / copy / link). */
   siteBanner: ClubSiteBannerConfig;
+  /** Dashboard events/matches highlight strip (poster + copy). */
+  eventsHighlight: ClubEventsHighlightConfig;
 }
 
 export function publicPageConfigToEditorForm(c: ClubPublicPageConfig): ClubPublicPageEditorFormLike {
@@ -914,6 +934,10 @@ export function publicPageConfigToEditorForm(c: ClubPublicPageConfig): ClubPubli
     homepage_show_partners: c.homepageModules?.partners === true,
     publicPageConfig: c.publicPageConfig ? (JSON.parse(JSON.stringify(c.publicPageConfig)) as PublicPageConfigPatch) : undefined,
     siteBanner: resolveEffectiveSiteBanner(c.siteBanner, {
+      name: c.general.name,
+      slug: c.general.slug,
+    }),
+    eventsHighlight: resolveEffectiveEventsHighlight(c.eventsHighlight, {
       name: c.general.name,
       slug: c.general.slug,
     }),
@@ -1032,6 +1056,7 @@ export function editorFormToPublicPageConfig(
     privacy,
     publicPageConfig: f.publicPageConfig ?? p?.publicPageConfig,
     siteBanner: normalizeClubSiteBanner(f.siteBanner ?? EMPTY_CLUB_SITE_BANNER),
+    eventsHighlight: normalizeClubEventsHighlight(f.eventsHighlight ?? EMPTY_CLUB_EVENTS_HIGHLIGHT),
   };
 }
 
@@ -1126,5 +1151,6 @@ export function emptyClubPublicPageEditorForm(): ClubPublicPageEditorFormLike {
     homepage_show_partners: false,
     publicPageConfig: undefined,
     siteBanner: { ...EMPTY_CLUB_SITE_BANNER },
+    eventsHighlight: { ...EMPTY_CLUB_EVENTS_HIGHLIGHT },
   };
 }

@@ -7,6 +7,12 @@ import {
   type ClubFeatureTrialRow,
   type TrialFeatureKey,
 } from "@/lib/club-feature-trials";
+import { effectivePlanFromSubscription } from "@/lib/subscription-effective";
+import type { EffectivePlanResult, ModuleOverride } from "@/lib/effective-plan";
+import {
+  fetchMyClubModuleOverrides,
+  inferOperatorFullAccess,
+} from "@/lib/club-module-overrides";
 
 interface UseSubscriptionReturn {
   subscription: SubscriptionRecord | null;
@@ -14,6 +20,8 @@ interface UseSubscriptionReturn {
   planId: string | null;
   isActive: boolean;
   trialFeatures: Set<TrialFeatureKey>;
+  effective: EffectivePlanResult;
+  moduleOverrides: ModuleOverride[];
   refresh: () => Promise<void>;
 }
 
@@ -21,23 +29,26 @@ export function useSubscription(): UseSubscriptionReturn {
   const { clubId } = useClubId();
   const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null);
   const [trialFeatures, setTrialFeatures] = useState<Set<TrialFeatureKey>>(new Set());
+  const [moduleOverrides, setModuleOverrides] = useState<ModuleOverride[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     if (!clubId) {
       setSubscription(null);
       setTrialFeatures(new Set());
+      setModuleOverrides([]);
       setLoading(false);
       return;
     }
     setLoading(true);
     try {
-      const [subResult, trialsResult] = await Promise.all([
-        supabaseDynamic.from("billing_subscriptions").select("*").eq("club_id", clubId).single(),
+      const [subResult, trialsResult, overrides] = await Promise.all([
+        supabaseDynamic.from("billing_subscriptions").select("*").eq("club_id", clubId).maybeSingle(),
         supabaseDynamic
           .from("club_feature_trials")
           .select("feature, expires_at, note")
           .eq("club_id", clubId),
+        fetchMyClubModuleOverrides(clubId),
       ]);
 
       if (subResult.error || !subResult.data) {
@@ -51,9 +62,12 @@ export function useSubscription(): UseSubscriptionReturn {
       } else {
         setTrialFeatures(activeTrialFeatures(trialsResult.data as ClubFeatureTrialRow[]));
       }
+
+      setModuleOverrides(overrides);
     } catch {
       setSubscription(null);
       setTrialFeatures(new Set());
+      setModuleOverrides([]);
     } finally {
       setLoading(false);
     }
@@ -63,8 +77,27 @@ export function useSubscription(): UseSubscriptionReturn {
     void refresh();
   }, [refresh]);
 
-  const planId = subscription?.plan_id ?? null;
-  const isActive = subscription?.status === "active" || subscription?.status === "trialing";
+  const effective = effectivePlanFromSubscription(subscription, {
+    moduleOverrides,
+    operatorFullAccess:
+      inferOperatorFullAccess(moduleOverrides) ||
+      Boolean((subscription?.metadata as Record<string, unknown> | undefined)?.operator_full_access),
+  });
+  const planId = effective.planId === "no_plan" ? null : effective.planId;
+  const isActive =
+    effective.status === "active" ||
+    effective.status === "trialing" ||
+    effective.status === "promotional" ||
+    effective.status === "past_due";
 
-  return { subscription, loading, planId, isActive, trialFeatures, refresh };
+  return {
+    subscription,
+    loading,
+    planId,
+    isActive,
+    trialFeatures,
+    effective,
+    moduleOverrides,
+    refresh,
+  };
 }

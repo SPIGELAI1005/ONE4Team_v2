@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/one4team-logo.png";
 import { isErrorWithMessage } from "@/types/dashboard";
 import { getRedeemInviteErrorMessage } from "@/lib/redeem-invite-errors";
+import { isFoundingClubOfferCode } from "@/lib/plan-catalog";
 import {
   buildCreateClubRpcPayload,
   getCreateClubErrorMessage,
@@ -254,6 +255,27 @@ const Onboarding = () => {
       if (error) throw error;
       if (clubId && user) localStorage.setItem(`${ACTIVE_CLUB_KEY_PREFIX}:${user.id}`, clubId);
       localStorage.setItem(ACTIVE_ROLE_KEY, "admin");
+
+      const offerCode = searchParams.get("offer");
+      if (clubId && isFoundingClubOfferCode(offerCode)) {
+        try {
+          const { redeemFoundingClubOffer } = await import("@/lib/founding-club-offer");
+          const redeemed = await redeemFoundingClubOffer(String(clubId));
+          toast({
+            title: t.onboarding.clubCreated,
+            description: `${clubName} · Kick-off until ${redeemed.expiresAt.slice(0, 10)}`,
+          });
+          navigate(`/guided-setup?founding=1&expires=${encodeURIComponent(redeemed.expiresAt)}`);
+          return;
+        } catch (offerErr) {
+          console.error("Founding offer redeem failed", offerErr);
+          toast({
+            title: t.onboarding.clubCreated,
+            description: `${clubName} created. Founding offer could not be applied automatically — contact support.`,
+            variant: "destructive",
+          });
+        }
+      }
 
       toast({ title: t.onboarding.clubCreated, description: `${clubName} ${t.onboarding.clubReadyToGo}` });
       navigate("/guided-setup");

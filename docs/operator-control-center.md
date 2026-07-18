@@ -44,7 +44,7 @@ All routes mount under `OperatorLayout` with nested `RequireOperator` guards in 
 | `/operator/clubs` | Club directory | `operator.clubs.read` |
 | `/operator/clubs/:clubId` | Club detail (tabs) | `operator.clubs.read` |
 | `/operator/users` | Platform-wide users | `operator.users.read` |
-| `/operator/modules` | Module & plan catalog | `operator.modules.read` |
+| `/operator/modules` | Module & plan catalog (+ **Offers** tab for Founding Club / `commercial_offers`) | `operator.modules.read` |
 | `/operator/analytics` | Usage analytics | `operator.analytics.read` |
 | `/operator/financials` | Platform economics & investment model | `operator.analytics.read` |
 | `/operator/marketplace` | Marketplace & partner ecosystem | `operator.analytics.read` |

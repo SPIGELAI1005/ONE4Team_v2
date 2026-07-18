@@ -68,6 +68,11 @@ import {
   normalizeClubSiteBannerKind,
   type ClubSiteBannerConfig,
 } from "@/lib/club-site-banner";
+import {
+  DEFAULT_EVENTS_HIGHLIGHT_IMAGE,
+  defaultSommerfestEventsHighlight,
+  type ClubEventsHighlightConfig,
+} from "@/lib/club-events-highlight";
 import { DEFAULT_CLUB_HERO_ASSETS } from "@/lib/club-hero-default-assets";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -226,6 +231,7 @@ const microPageLabelKeys: Record<PublicMicroPageId, string> = {
 const homepageModuleLabelKeys: Record<HomepageModuleId, string> = {
   stats: "homeModStats",
   next_up: "homeModNextUp",
+  my_progress: "homeModMyProgress",
   latest_news: "homeModNews",
   featured_teams: "homeModTeams",
   upcoming_events: "homeModEvents",
@@ -434,6 +440,13 @@ export default function ClubPageAdmin() {
     setForm((prev) => ({
       ...prev,
       siteBanner: { ...prev.siteBanner, ...patch },
+    }));
+  }, []);
+
+  const updateEventsHighlight = useCallback((patch: Partial<ClubEventsHighlightConfig>) => {
+    setForm((prev) => ({
+      ...prev,
+      eventsHighlight: { ...prev.eventsHighlight, ...patch },
     }));
   }, []);
 
@@ -1423,6 +1436,68 @@ export default function ClubPageAdmin() {
               </div>
             </SectionCard>
 
+            <SectionCard icon={Megaphone} title={t.clubPageAdmin.eventsHighlightTitle}>
+              <p className="mb-3 text-[11px] text-muted-foreground">{t.clubPageAdmin.eventsHighlightIntro}</p>
+              <p className="mb-4 text-[11px] text-muted-foreground">
+                <Link to="/events" className="font-medium text-primary hover:underline">
+                  {t.clubPageAdmin.eventsHighlightOpenEvents}
+                </Link>
+              </p>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/30 px-3 py-2.5">
+                  <div>
+                    <div className="text-sm text-foreground">{t.clubPageAdmin.eventsHighlightEnabled}</div>
+                    <div className="mt-0.5 text-[10px] text-muted-foreground">{t.clubPageAdmin.eventsHighlightEnabledDesc}</div>
+                  </div>
+                  <Switch
+                    checked={form.eventsHighlight.enabled}
+                    onCheckedChange={(c) => updateEventsHighlight({ enabled: Boolean(c) })}
+                  />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <FieldRow
+                    label={t.clubPageAdmin.eventsHighlightBadge}
+                    value={form.eventsHighlight.badge}
+                    onChange={(v) => updateEventsHighlight({ badge: v })}
+                  />
+                  <FieldRow
+                    label={t.clubPageAdmin.eventsHighlightHeadline}
+                    value={form.eventsHighlight.title}
+                    onChange={(v) => updateEventsHighlight({ title: v })}
+                  />
+                  <FieldRow
+                    label={t.clubPageAdmin.eventsHighlightEventsLead}
+                    value={form.eventsHighlight.eventsLead}
+                    onChange={(v) => updateEventsHighlight({ eventsLead: v })}
+                  />
+                  <FieldRow
+                    label={t.clubPageAdmin.eventsHighlightMatchesLead}
+                    value={form.eventsHighlight.matchesLead}
+                    onChange={(v) => updateEventsHighlight({ matchesLead: v })}
+                  />
+                  <FieldRow
+                    label={t.clubPageAdmin.eventsHighlightLocation}
+                    value={form.eventsHighlight.location}
+                    onChange={(v) => updateEventsHighlight({ location: v })}
+                  />
+                  <FieldRow
+                    label={t.clubPageAdmin.eventsHighlightImageUrl}
+                    value={form.eventsHighlight.imageUrl}
+                    onChange={(v) => updateEventsHighlight({ imageUrl: v })}
+                    placeholder={DEFAULT_EVENTS_HIGHLIGHT_IMAGE}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => updateEventsHighlight(defaultSommerfestEventsHighlight())}
+                >
+                  {t.clubPageAdmin.eventsHighlightApplySommerfest}
+                </Button>
+              </div>
+            </SectionCard>
+
             <SectionCard icon={Megaphone} title={t.clubPageAdmin.tabHomepage}>
               <p className="mb-4 text-[11px] text-muted-foreground">{t.clubPageAdmin.homepageModulesIntro}</p>
               <div className="space-y-4">
@@ -1490,6 +1565,7 @@ export default function ClubPageAdmin() {
                 </AlertDescription>
               </Alert>
               <p className="mb-3 text-[11px] text-muted-foreground">{t.clubPageAdmin.privacyJoinApprovalHint}</p>
+              <p className="mb-3 text-[11px] text-muted-foreground">{t.clubPageAdmin.privacyProgressHelp}</p>
               {privacySensitiveWarnings.length > 0 ? (
                 <Alert variant="destructive" className="mb-4 border-amber-500/50 bg-amber-500/10 text-amber-950 dark:text-amber-50">
                   <AlertTitle className="text-sm">{t.clubPageAdmin.privacySensitiveBannerTitle}</AlertTitle>

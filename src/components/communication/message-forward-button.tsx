@@ -74,7 +74,10 @@ export function MessageForwardButton({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button type="button" className={cn("inline-flex items-center gap-1 hover:underline", className)}>
+        <button
+          type="button"
+          className={cn("inline-flex items-center gap-1 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1", className)}
+        >
           <Share2 className="h-3 w-3" aria-hidden />
           {copy.forwardMessage}
         </button>

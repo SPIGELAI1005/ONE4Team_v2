@@ -87,15 +87,17 @@ function getBrandReplacements(ai4tOnly?: boolean) {
   return ai4tOnly ? AI4T_ONLY_REPLACEMENTS : BRAND_REPLACEMENTS;
 }
 
-export function textIncludesBrandToken(text: string, ai4tOnly?: boolean): boolean {
+export function textIncludesBrandToken(text: string | null | undefined, ai4tOnly?: boolean): boolean {
+  if (typeof text !== "string" || text.length === 0) return false;
   return getBrandReplacements(ai4tOnly).some(({ token }) => text.includes(token));
 }
 
 export function withBrandedProductNames(
-  text: string,
+  text: string | null | undefined,
   keyPrefix = "brand",
   ai4tOnly?: boolean,
 ): ReactNode {
+  if (typeof text !== "string" || text.length === 0) return text ?? "";
   const replacements = getBrandReplacements(ai4tOnly);
   if (!textIncludesBrandToken(text, ai4tOnly)) return text;
 
@@ -146,12 +148,13 @@ export function BrandedText({
   /** When true, only "AI 4 T" gets the red digit; ONE4Team stays plain text. */
   ai4tOnly,
 }: {
-  text: string;
+  text: string | null | undefined;
   className?: string;
   ai4tOnly?: boolean;
 }) {
-  if (!textIncludesBrandToken(text, ai4tOnly)) {
-    return className ? <span className={className}>{text}</span> : <>{text}</>;
+  const safeText = typeof text === "string" ? text : "";
+  if (!textIncludesBrandToken(safeText, ai4tOnly)) {
+    return className ? <span className={className}>{safeText}</span> : <>{safeText}</>;
   }
-  return <span className={className}>{withBrandedProductNames(text, "brand", ai4tOnly)}</span>;
+  return <span className={className}>{withBrandedProductNames(safeText, "brand", ai4tOnly)}</span>;
 }

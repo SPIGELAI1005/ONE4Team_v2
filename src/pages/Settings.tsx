@@ -32,7 +32,6 @@ import {
   DASHBOARD_PAGE_INNER_SM,
   DASHBOARD_PAGE_MAX_INNER,
   DASHBOARD_PAGE_ROOT,
-  DASHBOARD_TYPE_CAPTION,
   DASHBOARD_TYPE_MICRO,
 } from "@/lib/dashboard-page-shell";
 import { DashboardIosSegmentTabs } from "@/components/dashboard/DashboardIosSegmentTabs";
@@ -41,10 +40,34 @@ import { persistDashboardPersona } from "@/lib/switch-dashboard-persona";
 import { useActiveDashboardPersonaSlug } from "@/hooks/use-active-dashboard-persona-slug";
 import { useSubscription } from "@/hooks/use-subscription";
 import { buildAiUsageMeterState } from "@/lib/ai-usage-meter";
+import { PastDueBillingBanner } from "@/components/billing/PastDueBillingBanner";
+import { FoundingClubStatusCard } from "@/components/billing/FoundingClubStatusCard";
+import { GraceWriteBanner } from "@/components/billing/GraceWriteBanner";
+import { cn } from "@/lib/utils";
 
 const LS_NOTIF_KEY = "one4team.notifications";
 const PROFILE_AVATAR_BUCKET = "images-avatars";
 const CLUB_ROLE_LADDER = ["admin", "trainer", "player", "member"];
+
+function personaSwitchButtonClass(isSelected: boolean): string {
+  return cn(
+    "min-h-11 rounded-xl border px-2.5 py-2.5 text-center transition-all",
+    isSelected
+      ? "border-primary/60 bg-primary text-primary-foreground shadow-sm ring-1 ring-primary/30"
+      : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-primary/5",
+  );
+}
+
+function personaSwitchLabelClass(isSelected: boolean): string {
+  return cn(
+    "text-xs font-semibold leading-snug max-lg:text-[13px]",
+    isSelected ? "text-primary-foreground" : "text-foreground",
+  );
+}
+
+function personaSwitchActiveTagClass(): string {
+  return "mt-1 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground/95";
+}
 
 type SettingsTab = "profile" | "club" | "partner" | "notifications" | "account";
 
@@ -718,6 +741,9 @@ export default function Settings() {
       </div>
 
       <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-2xl py-4 sm:py-6`}>
+        <PastDueBillingBanner />
+        <GraceWriteBanner className="mb-4" />
+        <FoundingClubStatusCard className="mb-4" />
         {/* ── Profile ── */}
         {tab === "profile" && (
           <div className="space-y-4">
@@ -785,26 +811,28 @@ export default function Settings() {
                     <Input value={user?.email || ""} readOnly className="opacity-60" />
                     <div className="text-[10px] text-muted-foreground mt-1">{t.settingsPage.emailReadOnly}</div>
                   </div>
-                  <div className="rounded-2xl border border-border/60 bg-background/30 p-4 space-y-3">
+                  <div className="space-y-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
                     <div>
                       <div className="text-sm font-semibold text-foreground">
                         {isPartnerPersona ? t.settingsPage.partnerRoleTitle : t.settingsPage.roleAccessTitle}
                       </div>
-                      <p className={DASHBOARD_TYPE_MICRO}>
+                      <p className="mt-1 text-xs leading-snug text-muted-foreground">
                         {isPartnerPersona ? t.settingsPage.partnerRoleDesc : t.settingsPage.roleAccessDesc}
                       </p>
                     </div>
 
                     {isPartnerPersona ? (
                       <div className="space-y-3">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs px-2 py-1 rounded-full border border-primary/25 bg-primary/10 text-primary">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full border border-primary/40 bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary">
                             {formatDashboardRoleLabel(gateRole)}
                           </span>
                         </div>
-                        <div className="rounded-xl border border-border/60 bg-background/30 p-3 space-y-2">
-                          <div className={DASHBOARD_TYPE_MICRO}>{t.settingsPage.roleSwitchDashboardTitle}</div>
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <div className="space-y-2 rounded-xl border border-border bg-background/80 p-3">
+                          <div className="text-xs font-medium text-foreground">
+                            {t.settingsPage.roleSwitchDashboardTitle}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                             {dashboardPersonaOptions.map((role) => {
                               const currentActive =
                                 activePersonaSlug || gateRole || "supplier";
@@ -815,14 +843,14 @@ export default function Settings() {
                                   key={role}
                                   type="button"
                                   onClick={() => switchDashboardPersona(role)}
-                                  className={`min-h-11 rounded-xl border px-2.5 py-2 text-center transition-all ${
-                                    isSelected
-                                      ? "border-primary bg-gradient-gold-static text-primary-foreground shadow-gold"
-                                      : "border-border/60 bg-card/30 text-foreground hover:border-primary/30 hover:bg-primary/5"
-                                  }`}
+                                  className={personaSwitchButtonClass(isSelected)}
                                 >
-                                  <div className={`${DASHBOARD_TYPE_CAPTION} font-semibold`}>{formatDashboardRoleLabel(role)}</div>
-                                  {isSelected && <div className="text-[9px] mt-0.5 opacity-90">{t.common.active}</div>}
+                                  <div className={personaSwitchLabelClass(isSelected)}>
+                                    {formatDashboardRoleLabel(role)}
+                                  </div>
+                                  {isSelected ? (
+                                    <div className={personaSwitchActiveTagClass()}>{t.common.active}</div>
+                                  ) : null}
                                 </button>
                               );
                             })}
@@ -831,20 +859,22 @@ export default function Settings() {
                       </div>
                     ) : activeClubRoleSummary ? (
                       <div className="space-y-3">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={DASHBOARD_TYPE_MICRO}>{t.settingsPage.roleActiveClub}</span>
-                          <span className="text-xs px-2 py-1 rounded-full border border-border/60 bg-card/40 text-foreground">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-medium text-foreground">{t.settingsPage.roleActiveClub}</span>
+                          <span className="rounded-full border border-border bg-muted/60 px-2.5 py-1 text-xs font-medium text-foreground">
                             {activeClub?.name || activeClubRoleSummary.clubName}
                           </span>
-                          <span className="text-xs px-2 py-1 rounded-full border border-primary/25 bg-primary/10 text-primary">
+                          <span className="rounded-full border border-primary/40 bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary">
                             {t.settingsPage.roleBaseRole}: {formatRoleLabel(activeClubRoleSummary.baseRole)}
                           </span>
                         </div>
 
                         {/* Active dashboard role switcher */}
-                        <div className="rounded-xl border border-border/60 bg-background/30 p-3 space-y-2">
-                          <div className={DASHBOARD_TYPE_MICRO}>{t.settingsPage.roleSwitchDashboardTitle}</div>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div className="space-y-2 rounded-xl border border-border bg-background/80 p-3">
+                          <div className="text-xs font-medium text-foreground">
+                            {t.settingsPage.roleSwitchDashboardTitle}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
                             {clubPersonaSwitchOptions.map((role) => {
                               const currentActive =
                                 activePersonaSlug || activeClubRoleSummary.baseRole;
@@ -855,14 +885,14 @@ export default function Settings() {
                                   key={role}
                                   type="button"
                                   onClick={() => switchDashboardPersona(role)}
-                                  className={`min-h-11 rounded-xl border px-2.5 py-2 text-center transition-all ${
-                                    isSelected
-                                      ? "border-primary bg-gradient-gold-static text-primary-foreground shadow-gold"
-                                      : "border-border/60 bg-card/30 text-foreground hover:border-primary/30 hover:bg-primary/5"
-                                  }`}
+                                  className={personaSwitchButtonClass(isSelected)}
                                 >
-                                  <div className={`${DASHBOARD_TYPE_CAPTION} font-semibold`}>{formatDashboardRoleLabel(role)}</div>
-                                  {isSelected && <div className="text-[9px] mt-0.5 opacity-90">{t.common.active}</div>}
+                                  <div className={personaSwitchLabelClass(isSelected)}>
+                                    {formatDashboardRoleLabel(role)}
+                                  </div>
+                                  {isSelected ? (
+                                    <div className={personaSwitchActiveTagClass()}>{t.common.active}</div>
+                                  ) : null}
                                 </button>
                               );
                             })}
@@ -871,9 +901,9 @@ export default function Settings() {
 
                         {/* Change DB role (admin only) */}
                         {perms.isAdmin && activeClubId && (
-                          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-2">
-                            <div className={DASHBOARD_TYPE_MICRO}>{t.settingsPage.roleDbChangeTitle}</div>
-                            <div className="flex items-center gap-2 flex-wrap">
+                          <div className="space-y-2 rounded-xl border border-amber-600/35 bg-amber-500/10 p-3 dark:border-amber-400/30 dark:bg-amber-500/15">
+                            <div className="text-xs font-medium text-foreground">{t.settingsPage.roleDbChangeTitle}</div>
+                            <div className="flex flex-wrap items-center gap-2">
                               <Select
                                 value={activeClubRoleSummary.baseRole}
                                 onValueChange={async (newRole) => {
@@ -893,7 +923,7 @@ export default function Settings() {
                                   setTimeout(() => window.location.reload(), 800);
                                 }}
                               >
-                                <SelectTrigger className="h-9 w-[180px] rounded-xl border-border/60 bg-background/50 text-sm">
+                                <SelectTrigger className="h-9 w-[180px] rounded-xl border-border bg-background text-sm text-foreground">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -902,37 +932,52 @@ export default function Settings() {
                                   ))}
                                 </SelectContent>
                               </Select>
-                              <span className="text-[10px] text-amber-600">{t.settingsPage.roleDbChangeHint}</span>
+                              <span className="text-[11px] font-medium text-amber-800 dark:text-amber-200">
+                                {t.settingsPage.roleDbChangeHint}
+                              </span>
                             </div>
                           </div>
                         )}
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                           {CLUB_ROLE_LADDER.map((role) => {
                             const hasRole = activeClubRoleSummary.effectiveRoles.includes(role);
                             const isBaseRole = activeClubRoleSummary.baseRole === role;
                             return (
                               <div
                                 key={role}
-                                className={`rounded-xl border px-2.5 py-2 text-center ${
+                                className={cn(
+                                  "rounded-xl border px-2.5 py-2.5 text-center",
                                   hasRole
-                                    ? "border-primary/30 bg-primary/10 text-primary"
-                                    : "border-border/60 bg-card/30 text-muted-foreground"
-                                }`}
+                                    ? "border-primary/40 bg-primary/12 text-primary"
+                                    : "border-border bg-muted/40 text-muted-foreground",
+                                )}
                               >
-                                <div className={`${DASHBOARD_TYPE_CAPTION} font-medium`}>{formatRoleLabel(role)}</div>
-                                <div className="text-[10px] mt-0.5 opacity-80">
-                                  {isBaseRole ? t.settingsPage.roleAssigned : hasRole ? t.settingsPage.roleInherited : t.settingsPage.roleNotGranted}
+                                <div className="text-xs font-semibold leading-snug">{formatRoleLabel(role)}</div>
+                                <div
+                                  className={cn(
+                                    "mt-0.5 text-[10px] font-medium",
+                                    hasRole ? "text-primary/90" : "text-muted-foreground",
+                                  )}
+                                >
+                                  {isBaseRole
+                                    ? t.settingsPage.roleAssigned
+                                    : hasRole
+                                      ? t.settingsPage.roleInherited
+                                      : t.settingsPage.roleNotGranted}
                                 </div>
                               </div>
                             );
                           })}
                         </div>
 
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className={DASHBOARD_TYPE_MICRO}>{t.settingsPage.roleEffectiveRoles}</span>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-medium text-foreground">{t.settingsPage.roleEffectiveRoles}</span>
                           {activeClubRoleSummary.effectiveRoles.map((role) => (
-                            <span key={role} className="text-xs px-2 py-1 rounded-full border border-primary/20 bg-primary/10 text-primary">
+                            <span
+                              key={role}
+                              className="rounded-full border border-primary/35 bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary"
+                            >
                               {formatRoleLabel(role)}
                             </span>
                           ))}
@@ -943,20 +988,20 @@ export default function Settings() {
                     )}
 
                     {roleMemberships.length > 1 && (
-                      <div className="pt-1 border-t border-border/60">
-                        <div className={`${DASHBOARD_TYPE_MICRO} mb-2`}>{t.settingsPage.roleMembershipsOverview}</div>
+                      <div className="border-t border-border pt-3">
+                        <div className="mb-2 text-xs font-medium text-foreground">{t.settingsPage.roleMembershipsOverview}</div>
                         <div className="space-y-2">
                           {roleMemberships.map((membership) => (
-                            <div key={membership.clubId} className="rounded-xl border border-border/60 bg-card/30 px-3 py-2">
+                            <div key={membership.clubId} className="rounded-xl border border-border bg-background/80 px-3 py-2.5">
                               <div className="flex items-center justify-between gap-2">
-                                <div className="text-xs text-foreground truncate">{membership.clubName}</div>
+                                <div className="truncate text-xs font-semibold text-foreground">{membership.clubName}</div>
                                 {membership.isActiveClub && (
-                                  <span className="text-[10px] px-2 py-0.5 rounded-full border border-primary/25 bg-primary/10 text-primary">
+                                  <span className="rounded-full border border-primary/40 bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary">
                                     {t.settingsPage.roleActiveTag}
                                   </span>
                                 )}
                               </div>
-                              <div className={`${DASHBOARD_TYPE_MICRO} mt-1`}>
+                              <div className="mt-1 text-[11px] font-medium text-muted-foreground">
                                 {t.settingsPage.roleBaseRole}: {formatRoleLabel(membership.baseRole)} {"->"} {membership.effectiveRoles.map(formatRoleLabel).join(" / ")}
                               </div>
                             </div>

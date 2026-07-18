@@ -25,10 +25,12 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ### Backlog (out of scope for PROD-005…021 program)
 
-- [ ] **PKG-003** Sync Stripe Dashboard price IDs / amounts to new catalog (operator)
+- [ ] **PKG-003** Sync Stripe Dashboard **base + member** Price IDs (`STRIPE_PRICE_{PLAN}_{CYCLE}_{BASE|MEMBER}`) — operator
+- [x] **PKG-004** Pricing / Founding Club overhaul (catalogue, offers, resolver, Pricing UX, Stripe dual line-items, Operator Offers tab, runtime module overrides) — **2026-07-18**
+- [x] **PKG-005** Pricing UX polish (Founding banner/modals, Kick-off strikethrough, Bespoke mailto, AI 4 T video playMode, FAQ/comparison) — **2026-07-18**
 - [ ] **LEGAL-OPS-001** / **LEGAL-OPS-002** — Impressum street address + HRB
 - [ ] **Marketplace → Partners bridge** polish / Phase 3 remainders — see **PARTNER-OPS-003** + `docs/marketplace-implementation-plan.md`
-- [ ] **PARTNER-OPS-001-SMOKE** / **PARTNER-OPS-002-SMOKE** — persona + offer-loop manual smoke
+- [ ] **PARTNER-OPS-001-SMOKE** / **PARTNER-OPS-002-SMOKE** — persona + offer-loop manual smoke (Playwright shell: `e2e/marketplace-dual-role.spec.ts` with E2E_* env)
 
 ### Product improvements PROD-005…021
 
@@ -69,6 +71,9 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 - [x] **WAVE-MIG-001** Linked remote: apply **`20260802120000`** → **`20260802150000`** *(operator 2026-07-16)*
 - [ ] **WAVE-EDGE-001** Deploy **`process-weekly-digests`** + schedule cron; redeploy AI Edges for caps (see **`HOLD.md`**)
+- [x] **GAME-MIG-001** Linked remote: apply **`20260803120000_club_gamification_awards.sql`** *(2026-07-18)*
+- [x] **GAME-UI-001** Public club My Progress + reports badges/streak + team challenge nudges + opt-in strip *(2026-07-18)*
+- [x] **MAP-OVERLAY-001** Asset Map satellite underlay — migration **`20260803140000`** + Combined/Booked UI *(2026-07-18)*
 
 ---
 
@@ -307,7 +312,12 @@ Reference: **`docs/PRODUCTION_RELEASE_CHECKLIST.md`** §B Auth, §C Custom domai
 ### WhatsApp External Bridge — operator follow-up (2026-06-25)
 See [`docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md`](docs/backlog/WHATSAPP_EXTERNAL_BRIDGE_SETUP.md)
 
-- [ ] **BRIDGE-WA-001** Implement Meta webhook GET verification (`hub.challenge`) in `chat-bridge/webhook/whatsapp`
+- [x] **BRIDGE-WA-001** Meta webhook GET verification (`hub.challenge`) in `chat-bridge/webhook/whatsapp` *(2026-07-18 — redeploy Edge)*
+- [x] **GUIDED-LAUNCH-001** GuidedSetup import + invite emails + publish *(2026-07-18)*
+- [x] **MEM-MOD-001** Members feature modules under `src/features/members/` *(2026-07-18 — incremental)*
+- [x] **OPS-HEALTH-001** Operator system health live probes *(2026-07-18)*
+- [x] **AI-VALUE-001** AI 4 T value metrics card *(2026-07-18)*
+- [x] **BILL-RECOVERY-001** `invoice.paid` + billing portal banner *(2026-07-18 — deploy Edge)*
 - [ ] **BRIDGE-WA-002** Operator: deploy `chat-bridge`; save WhatsApp connector on `/communication`; Meta webhook + inbound smoke test
 - [ ] **BRIDGE-WA-003** Confirm outbound ONE4Team → WhatsApp for pilot club (optional Phase 2)
 

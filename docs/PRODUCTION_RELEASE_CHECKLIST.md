@@ -225,6 +225,9 @@ Configured at [resend.com/domains](https://resend.com/domains) — **separate fr
 - [ ] Teams page
 - [ ] Activities + RSVP
 - [ ] Communication / messages (if used)
+- [ ] **Founding Club:** Kick-off CTA on `/pricing` → onboarding with `offer=ONE4Team-Founding-Club-12M` (no Stripe); Offer terms + Offer details modals; promotional clubs see announcements only; after season → 30-day read-only grace
+- [ ] **Bespoke:** Contact Us opens mailto to `contact@one4team.com` with consultation brief
+- [ ] **Billing:** Stripe checkout uses base + member Price IDs; failure does not grant trial access; apply migrations `20260804120000`–`20260804140000` + deploy `process-commercial-offers`
 - [ ] Club card download (PNG)
 - [ ] Public club page loads (if enabled for a club)
 - [ ] Share club URL in WhatsApp — preview shows club branding (after Facebook Debugger cache refresh)

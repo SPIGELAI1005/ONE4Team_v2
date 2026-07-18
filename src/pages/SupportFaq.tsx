@@ -161,18 +161,18 @@ export default function SupportFaq() {
             {p.categories.map((cat, ci) => (
               <div
                 key={ci}
-                className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4 sm:p-5"
+                className="rounded-2xl border border-border/80 bg-card/50 backdrop-blur-2xl p-4 sm:p-5 shadow-sm"
               >
-                <h3 className="font-display text-sm font-semibold text-foreground mb-2">
+                <h3 className="font-display text-sm font-semibold tracking-tight text-foreground mb-2">
                   <BrandedText text={cat.title} />
                 </h3>
                 <Accordion type="single" collapsible className="w-full">
                   {cat.faqs.map((faq, fi) => (
-                    <AccordionItem key={fi} value={`${ci}-${fi}`} className="border-border/60">
-                      <AccordionTrigger className="text-left text-sm hover:no-underline">
+                    <AccordionItem key={fi} value={`${ci}-${fi}`} className="border-border/70">
+                      <AccordionTrigger className="text-left text-sm font-medium text-foreground hover:no-underline">
                         <BrandedText text={faq.q} />
                       </AccordionTrigger>
-                      <AccordionContent className="text-muted-foreground text-sm leading-relaxed whitespace-pre-line">
+                      <AccordionContent className="text-foreground/80 text-sm leading-relaxed whitespace-pre-line">
                         <BrandedText text={faq.a} />
                       </AccordionContent>
                     </AccordionItem>
@@ -185,7 +185,7 @@ export default function SupportFaq() {
 
         <section
           id="report"
-          className="scroll-mt-24 rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4 sm:p-6 space-y-4"
+          className="scroll-mt-24 rounded-2xl border border-border/80 bg-card/50 backdrop-blur-2xl p-4 sm:p-6 space-y-4 shadow-sm"
         >
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">

@@ -10,7 +10,6 @@ import {
   X,
   Hash,
   MessageSquare,
-  BotMessageSquare,
   Paperclip,
   RotateCcw,
   Search,
@@ -34,10 +33,17 @@ import {
 } from "@/lib/communication-pagination";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { useToast } from "@/hooks/use-toast";
-import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT, DASHBOARD_TYPE_CAPTION, DASHBOARD_TYPE_MICRO } from "@/lib/dashboard-page-shell";
+import {
+  DASHBOARD_PAGE_INNER_SM,
+  DASHBOARD_PAGE_ROOT,
+  DASHBOARD_TYPE_MICRO,
+} from "@/lib/dashboard-page-shell";
 import { DashboardToolbarActions } from "@/components/dashboard/DashboardToolbarActions";
 import { usePermissions } from "@/hooks/use-permissions";
+import { usePlanGuard } from "@/hooks/use-plan-guard";
 import { useLanguage } from "@/hooks/use-language";
+import { canMutateClubData } from "@/lib/write-access-guard";
+import { GraceWriteBanner } from "@/components/billing/GraceWriteBanner";
 import { correlationHeaders } from "@/lib/observability";
 import { supabaseErrorMessage } from "@/lib/supabase-error-message";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -50,6 +56,7 @@ import { useModuleGateRole } from "@/hooks/use-module-gate-role";
 import { useClubAdmin } from "@/hooks/use-club-admin";
 import { uploadClubImageAsset } from "@/lib/upload-club-image";
 import { AnnouncementDetailView } from "@/components/communication/announcement-detail-view";
+import { ExternalBridgePanel } from "@/components/communication/external-bridge-panel";
 import { MessageForwardButton } from "@/components/communication/message-forward-button";
 import { canDeleteMessage, canEditMessage, canManageAnnouncements } from "@/lib/club-message-moderation";
 
@@ -166,13 +173,6 @@ const embeddedPriorityColors: Record<string, string> = {
   urgent: "bg-red-100 text-red-800",
 };
 
-const connectorStatusColor: Record<BridgeConnector["status"], string> = {
-  pending: "bg-muted text-muted-foreground",
-  connected: "bg-emerald-500/15 text-emerald-400",
-  error: "bg-accent/15 text-accent",
-  disabled: "bg-muted text-muted-foreground",
-};
-
 function toAttachmentList(value: unknown): AttachmentMeta[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -259,6 +259,10 @@ export function CommunicationWorkspace({
   const clubId = clubIdOverride ?? hookClubId;
   const { toast } = useToast();
   const perms = usePermissions();
+  const { canUseFeature, effective, writeAccess } = usePlanGuard();
+  const canUseChat = canUseFeature("chat");
+  const canUseAnnouncements = canUseFeature("announcements") || canUseFeature("communication");
+  const canMutate = writeAccess && canMutateClubData(effective);
   const gateRole = useModuleGateRole();
   const { isClubAdmin } = useClubAdmin(clubId);
   const { t } = useLanguage();
@@ -288,7 +292,7 @@ export function CommunicationWorkspace({
   const [newMessage, setNewMessage] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [messageSearch, setMessageSearch] = useState("");
-  const [selectedChannelId, setSelectedChannelId] = useState("club-general");
+  const [selectedChannelId, setSelectedChannelId] = useState("announcements");
   const [bridgeBusy, setBridgeBusy] = useState(false);
   const [missingMessagesTable, setMissingMessagesTable] = useState(false);
   const [missingAnnouncementsTable, setMissingAnnouncementsTable] = useState(false);
@@ -396,32 +400,46 @@ export function CommunicationWorkspace({
   }, []);
 
   const channels = useMemo<Channel[]>(
-    () =>
-      filterMessageChannelsForUser(
-        [
-          { id: "announcements", label: t.communicationPage.announcementsChannel, kind: "announcements", teamId: null },
-          { id: "club-general", label: t.communicationPage.clubGeneralChannel, kind: "chat", teamId: null },
-          ...(supportsTrainersChannel
-            ? [
-                {
-                  id: TRAINERS_CHANNEL_ID,
-                  label: t.communicationPage.trainersChannel,
-                  kind: "chat" as const,
-                  teamId: null,
-                  isTrainersChannel: true,
-                },
-              ]
-            : []),
-          ...teams.map((team) => ({
+    () => {
+      const base: Channel[] = [];
+      if (canUseAnnouncements) {
+        base.push({
+          id: "announcements",
+          label: t.communicationPage.announcementsChannel,
+          kind: "announcements",
+          teamId: null,
+        });
+      }
+      if (canUseChat) {
+        base.push({
+          id: "club-general",
+          label: t.communicationPage.clubGeneralChannel,
+          kind: "chat",
+          teamId: null,
+        });
+        if (supportsTrainersChannel) {
+          base.push({
+            id: TRAINERS_CHANNEL_ID,
+            label: t.communicationPage.trainersChannel,
+            kind: "chat",
+            teamId: null,
+            isTrainersChannel: true,
+          });
+        }
+        for (const team of teams) {
+          base.push({
             id: `team-${team.id}`,
             label: team.name,
-            kind: "chat" as const,
+            kind: "chat",
             teamId: team.id,
-          })),
-        ],
-        messageAccess,
-      ),
+          });
+        }
+      }
+      return filterMessageChannelsForUser(base, messageAccess);
+    },
     [
+      canUseAnnouncements,
+      canUseChat,
       messageAccess,
       supportsTrainersChannel,
       t.communicationPage.announcementsChannel,
@@ -449,6 +467,13 @@ export function CommunicationWorkspace({
 
   const selectedChannel =
     channels.find((channel) => channel.id === selectedChannelId) ?? channels[0];
+
+  useEffect(() => {
+    if (channels.length === 0) return;
+    if (!channels.some((channel) => channel.id === selectedChannelId)) {
+      setSelectedChannelId(channels[0].id);
+    }
+  }, [channels, selectedChannelId]);
 
   useEffect(() => {
     const fromUrl = searchParams.get("channel");
@@ -560,14 +585,38 @@ export function CommunicationWorkspace({
     [t.communicationPage.telegram, t.communicationPage.whatsApp]
   );
 
-  const connectorStatusLabel = useCallback(
-    (status: BridgeConnector["status"]) => {
-      if (status === "pending") return t.communicationPage.pending;
-      if (status === "connected") return t.communicationPage.connected;
-      if (status === "error") return t.common.error;
-      return t.communicationPage.disabled;
-    },
-    [t.common.error, t.communicationPage.connected, t.communicationPage.disabled, t.communicationPage.pending]
+  const externalBridgeLabels = useMemo(
+    () => ({
+      title: t.communicationPage.externalBridgeBeta,
+      beta: t.communicationPage.externalBridgeBetaBadge,
+      lead: t.communicationPage.connectSelectedChannels,
+      whatsApp: t.communicationPage.whatsApp,
+      telegram: t.communicationPage.telegram,
+      configureAction: t.communicationPage.externalBridgeConfigure,
+      emptyTitle: t.communicationPage.externalBridgeEmptyTitle,
+      emptyBody: t.communicationPage.externalBridgeEmptyBody,
+      statusSection: t.communicationPage.externalBridgeStatus,
+      processedCount: t.communicationPage.processedCount,
+      failedCount: t.communicationPage.failedCount,
+      pending: t.communicationPage.pending,
+      connected: t.communicationPage.connected,
+      disabled: t.communicationPage.disabled,
+      error: t.common.error,
+    }),
+    [t.common.error, t.communicationPage],
+  );
+
+  const externalBridgeHealth = useMemo(
+    () =>
+      providerHealth.map(({ connector, processed, failed }) => ({
+        id: connector.id,
+        provider: connector.provider,
+        status: connector.status,
+        displayName: connector.display_name || "",
+        processed,
+        failed,
+      })),
+    [providerHealth],
   );
 
   const loadBaseData = useCallback(async () => {
@@ -883,6 +932,26 @@ export function CommunicationWorkspace({
 
   const sendMessage = async (input: { content: string; attachments: AttachmentMeta[]; clientId: string }) => {
     if (!clubId || !user || selectedChannel.kind !== "chat") return;
+    if (!canUseChat) {
+      toast({
+        title: t.pricingPage.chatLockedTitle ?? "Chat not included",
+        description:
+          t.pricingPage.chatLockedDesc ??
+          "Your Founding Club package includes announcements. Upgrade or ask your Operator to unlock chat.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!canMutate) {
+      toast({
+        title: t.pricingPage.writeLockedTitle ?? "Read-only access",
+        description:
+          t.pricingPage.foundingGraceMessage ??
+          "Your club is in a read-only period. Choose a paid plan to send messages.",
+        variant: "destructive",
+      });
+      return;
+    }
     const { content, attachments, clientId } = input;
     const finalContent = content.trim() || (attachments.length ? attachmentPlaceholder : "");
     setPendingMessages((previous) => [
@@ -1351,9 +1420,10 @@ export function CommunicationWorkspace({
 
   return (
     <div
-      className={embedded ? "flex h-full min-h-0 flex-col" : cn(DASHBOARD_PAGE_ROOT, "flex min-h-0 flex-col")}
+      className={embedded ? "flex h-full min-h-0 flex-col" : cn(DASHBOARD_PAGE_ROOT, "flex h-full min-h-0 flex-col")}
       data-dashboard-messages-shell={embedded ? undefined : true}
     >
+      {!embedded ? <GraceWriteBanner className="mx-4 mt-3 sm:mx-6" /> : null}
       {!embedded ? (
         <DashboardHeaderSlot
           title={t.communicationPage.title}
@@ -1366,8 +1436,8 @@ export function CommunicationWorkspace({
       <div
         className={
           embedded
-            ? "flex flex-1 flex-col min-h-0"
-            : `${DASHBOARD_PAGE_INNER} flex min-h-0 flex-1 flex-col max-lg:py-3`
+            ? "flex min-h-0 flex-1 flex-col"
+            : `${DASHBOARD_PAGE_INNER_SM} flex min-h-0 flex-1 flex-col`
         }
       >
         {(clubLoading || loading) ? (
@@ -1391,7 +1461,7 @@ export function CommunicationWorkspace({
         ) : (
           <>
             {baseDataLoadError ? (
-              <Alert variant="destructive" className="mb-4 max-lg:mb-2">
+              <Alert variant="destructive" className="mb-3 shrink-0 max-lg:mb-2">
                 <AlertTitle>{t.common.error}</AlertTitle>
                 <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-sm">{baseDataLoadError}</span>
@@ -1412,14 +1482,14 @@ export function CommunicationWorkspace({
               className={
                 embedded
                   ? "flex h-full min-h-0 flex-1 flex-col gap-2 sm:grid sm:grid-cols-[minmax(0,200px)_minmax(0,1fr)] sm:gap-3 lg:grid-cols-[220px_minmax(0,1fr)]"
-                  : "flex min-h-0 flex-1 flex-col lg:grid lg:h-[calc(100vh-180px)] lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-4"
+                  : "flex min-h-0 flex-1 flex-col lg:grid lg:grid-cols-[280px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:gap-4"
               }
             >
             <aside
               className={
                 embedded
-                  ? "hidden min-h-0 overflow-y-auto rounded-2xl border border-neutral-200/80 bg-neutral-50/80 p-2 sm:block sm:p-3"
-                  : "hidden min-h-0 overflow-y-auto rounded-2xl border border-border/70 bg-card/50 p-3 backdrop-blur-xl lg:block"
+                  ? "hidden min-h-0 overflow-y-auto overscroll-contain rounded-2xl border border-neutral-200/80 bg-neutral-50/80 p-2 sm:block sm:p-3"
+                  : "hidden min-h-0 overflow-y-auto overscroll-contain rounded-2xl border border-border/70 bg-card/50 p-3 backdrop-blur-xl lg:block"
               }
             >
               <div
@@ -1459,41 +1529,12 @@ export function CommunicationWorkspace({
               </div>
 
               {!embedded ? (
-                <div className="mt-4 rounded-xl border border-border/70 bg-background/50 p-3">
-                  <div className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1.5">
-                    <BotMessageSquare className="w-3.5 h-3.5 text-primary" /> {t.communicationPage.externalBridgeBeta}
-                  </div>
-                  <div className={`${DASHBOARD_TYPE_MICRO} mb-2`}>
-                    {t.communicationPage.connectSelectedChannels}
-                  </div>
-                  <div className="flex gap-2 mb-2">
-                    <Button size="sm" variant="outline" className={`h-8 ${DASHBOARD_TYPE_CAPTION}`} onClick={() => openBridgeSettings("whatsapp")}>
-                      {t.communicationPage.whatsApp}
-                    </Button>
-                    <Button size="sm" variant="outline" className={`h-8 ${DASHBOARD_TYPE_CAPTION}`} onClick={() => openBridgeSettings("telegram")}>
-                      {t.communicationPage.telegram}
-                    </Button>
-                  </div>
-                  <div className="space-y-2">
-                    {providerHealth.length === 0 ? (
-                      <div className={DASHBOARD_TYPE_MICRO}>{t.communicationPage.noConnectorsConfigured}</div>
-                    ) : (
-                      providerHealth.map(({ connector, processed, failed }) => (
-                        <div key={connector.id} className="rounded-lg border border-border/60 px-2 py-1.5">
-                          <div className="flex items-center justify-between">
-                            <div className={`${DASHBOARD_TYPE_CAPTION} font-medium`}>{providerLabel(connector.provider)}</div>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${connectorStatusColor[connector.status]}`}>
-                              {connectorStatusLabel(connector.status)}
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-muted-foreground mt-1">
-                            {t.communicationPage.processedCount.replace("{count}", String(processed))} · {t.communicationPage.failedCount.replace("{count}", String(failed))}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
+                <ExternalBridgePanel
+                  className="mt-4"
+                  labels={externalBridgeLabels}
+                  health={externalBridgeHealth}
+                  onOpenProvider={openBridgeSettings}
+                />
               ) : null}
             </aside>
 
@@ -1509,7 +1550,7 @@ export function CommunicationWorkspace({
                   "shrink-0 border-b",
                   embedded
                     ? "flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3"
-                    : "flex flex-col gap-2 px-3 py-2 lg:flex-row lg:items-center lg:justify-between lg:px-4 lg:py-3",
+                    : "flex items-center justify-between gap-2 px-3 py-2 lg:px-4 lg:py-3",
                   embedded ? "border-neutral-200/80" : "border-border/70",
                 )}
               >
@@ -1541,7 +1582,7 @@ export function CommunicationWorkspace({
                       "h-10 w-full text-sm",
                       embedded
                         ? "rounded-xl border-neutral-200/80 bg-neutral-50 text-neutral-900 sm:hidden"
-                        : "rounded-xl border-border/70 bg-background/70 lg:hidden",
+                        : "min-w-0 flex-1 rounded-xl border-border/70 bg-background/70 lg:hidden",
                     )}
                   >
                     <SelectValue />
@@ -1561,6 +1602,31 @@ export function CommunicationWorkspace({
                   <div className="shrink-0 self-end sm:self-auto">{announceButton}</div>
                 ) : null}
               </div>
+              {!embedded && perms.isAdmin ? (
+                <div className="flex shrink-0 items-center gap-2 border-b border-border/70 px-3 py-2 lg:hidden">
+                  <span className="mr-auto text-[11px] font-medium text-muted-foreground">
+                    {t.communicationPage.externalBridgeBeta}
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8"
+                    onClick={() => openBridgeSettings("whatsapp")}
+                  >
+                    {t.communicationPage.whatsApp}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8"
+                    onClick={() => openBridgeSettings("telegram")}
+                  >
+                    {t.communicationPage.telegram}
+                  </Button>
+                </div>
+              ) : null}
 
               {selectedChannel.kind === "announcements" ? (
                 <>
@@ -1597,7 +1663,7 @@ export function CommunicationWorkspace({
                 ) : (
                 <div
                   className={cn(
-                    "min-h-0 flex-1 overflow-y-auto p-4 space-y-3",
+                    "min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 space-y-3",
                     embedded ? "bg-neutral-50/80" : undefined,
                   )}
                 >
@@ -1834,7 +1900,7 @@ export function CommunicationWorkspace({
                   </div>
                   <div
                     className={cn(
-                      "min-h-0 flex-1 overflow-y-auto p-3 space-y-2 sm:p-4",
+                      "min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 space-y-2 sm:p-4",
                       embedded
                         ? "bg-neutral-50/80"
                         : "bg-[radial-gradient(circle_at_10%_20%,hsl(var(--primary)/0.08),transparent_35%),radial-gradient(circle_at_90%_80%,hsl(var(--accent)/0.08),transparent_35%)]",
@@ -1892,7 +1958,7 @@ export function CommunicationWorkspace({
                                   isMe
                                     ? embedded
                                       ? "rounded-br-md bg-[color:var(--club-primary)] text-white"
-                                      : "bg-emerald-500/85 text-emerald-950 rounded-br-md"
+                                      : "rounded-br-md border border-primary/35 bg-primary/15 text-foreground dark:bg-primary/20"
                                     : embedded
                                       ? "rounded-bl-md border border-neutral-200 bg-white text-neutral-900"
                                       : "bg-background/90 border border-border text-foreground rounded-bl-md",
@@ -1917,8 +1983,8 @@ export function CommunicationWorkspace({
                                         "min-h-[72px] w-full resize-none rounded-lg border px-2.5 py-2 text-sm focus-visible:outline-none focus-visible:ring-2",
                                         isMe
                                           ? embedded
-                                            ? "border-white/30 bg-white/10 text-white placeholder:text-white/60 focus-visible:ring-white/40"
-                                            : "border-emerald-900/20 bg-white/80 text-emerald-950 focus-visible:ring-emerald-700/30"
+                                            ? "border-white/35 bg-white/15 text-white placeholder:text-white/65 focus-visible:ring-white/45"
+                                            : "border-primary/30 bg-background/80 text-foreground focus-visible:ring-primary/40"
                                           : embedded
                                             ? cn(clubGlassInputClass, "focus-visible:ring-[color:var(--club-primary)]")
                                             : "border-border bg-background focus-visible:ring-ring",
@@ -1932,6 +1998,7 @@ export function CommunicationWorkspace({
                                         className={cn(
                                           "h-7 px-2 text-xs",
                                           isMe && embedded && "bg-white text-[color:var(--club-primary)] hover:bg-white/90",
+                                          isMe && !embedded && "bg-gradient-gold-static text-primary-foreground hover:brightness-110",
                                         )}
                                         onClick={() => void handleSaveMessageEdit(message.id)}
                                       >
@@ -1943,7 +2010,7 @@ export function CommunicationWorkspace({
                                         variant="ghost"
                                         className={cn(
                                           "h-7 px-2 text-xs",
-                                          isMe && embedded && "text-white hover:bg-white/10 hover:text-white",
+                                          isMe && embedded && "text-white hover:bg-white/15 hover:text-white",
                                         )}
                                         onClick={() => {
                                           setEditingMessageId(null);
@@ -1955,7 +2022,9 @@ export function CommunicationWorkspace({
                                     </div>
                                   </div>
                                 ) : (
-                                  <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                                  <p className={cn("leading-relaxed whitespace-pre-wrap", isMe && embedded && "font-medium text-white")}>
+                                    {message.content}
+                                  </p>
                                 )}
                                 {message.attachments.length ? (
                                   <div className="mt-2 space-y-1">
@@ -1965,7 +2034,11 @@ export function CommunicationWorkspace({
                                         href={attachment.signed_url || "#"}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className={`block ${DASHBOARD_TYPE_MICRO} underline decoration-dotted hover:opacity-80`}
+                                        className={cn(
+                                          "block underline decoration-dotted hover:opacity-90",
+                                          DASHBOARD_TYPE_MICRO,
+                                          isMe && embedded ? "text-white/90" : isMe ? "text-primary" : undefined,
+                                        )}
                                       >
                                         {attachment.file_name}
                                       </a>
@@ -1974,17 +2047,17 @@ export function CommunicationWorkspace({
                                 ) : null}
                                 <div
                                   className={cn(
-                                    "text-[10px] mt-1 flex items-center gap-1.5",
+                                    "mt-1.5 flex flex-wrap items-center gap-1.5 border-t pt-1.5 text-[10px]",
                                     isMe
                                       ? embedded
-                                        ? "text-white/80"
-                                        : "text-emerald-900/70"
+                                        ? "border-white/25 text-white/90"
+                                        : "border-primary/25 text-muted-foreground"
                                       : embedded
-                                        ? "text-neutral-500"
-                                        : "text-muted-foreground",
+                                        ? "border-neutral-200/80 text-neutral-500"
+                                        : "border-border/60 text-muted-foreground",
                                   )}
                                 >
-                                  <span>
+                                  <span className={cn("font-medium tabular-nums", isMe && embedded && "text-white/85")}>
                                     {new Date(message.created_at).toLocaleTimeString([], {
                                       hour: "2-digit",
                                       minute: "2-digit",
@@ -1993,10 +2066,19 @@ export function CommunicationWorkspace({
                                   {message.send_state === "sending" ? <span>{t.communicationPage.sending}</span> : null}
                                   {message.send_state === "failed" ? (
                                     <>
-                                      <span>{t.communicationPage.failed}</span>
+                                      <span className={isMe && embedded ? "text-amber-100" : "text-accent"}>
+                                        {t.communicationPage.failed}
+                                      </span>
                                       <button
                                         type="button"
-                                        className="inline-flex items-center gap-1 text-accent hover:underline"
+                                        className={cn(
+                                          "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-semibold transition-colors",
+                                          isMe
+                                            ? embedded
+                                              ? "bg-white/20 text-white hover:bg-white/30"
+                                              : "bg-accent/10 text-accent hover:bg-accent/15"
+                                            : "text-accent hover:underline",
+                                        )}
                                         onClick={() => void retryMessage(message)}
                                       >
                                         <RotateCcw className="w-3 h-3" /> {t.communicationPage.retry}
@@ -2007,8 +2089,14 @@ export function CommunicationWorkspace({
                                     <button
                                       type="button"
                                       className={cn(
-                                        "inline-flex items-center gap-1 hover:underline",
-                                        isMe && embedded ? "text-white/90" : "text-primary",
+                                        "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-semibold transition-colors",
+                                        isMe
+                                          ? embedded
+                                            ? "bg-white/20 text-white hover:bg-white/30"
+                                            : "bg-primary/15 text-primary hover:bg-primary/25"
+                                          : embedded
+                                            ? "text-[color:var(--club-primary)] hover:underline"
+                                            : "bg-primary/10 text-primary hover:bg-primary/15",
                                       )}
                                       onClick={() => {
                                         setEditingMessageId(message.id);
@@ -2027,7 +2115,14 @@ export function CommunicationWorkspace({
                                       channelLabel={selectedChannel.label}
                                       menuAlign={isMe ? "end" : "start"}
                                       className={cn(
-                                        isMe && embedded ? "text-white/90" : "text-primary",
+                                        "rounded-md px-1.5 py-0.5 font-semibold transition-colors",
+                                        isMe
+                                          ? embedded
+                                            ? "bg-white/20 text-white hover:bg-white/30"
+                                            : "bg-primary/15 text-primary hover:bg-primary/25"
+                                          : embedded
+                                            ? "text-[color:var(--club-primary)] hover:underline"
+                                            : "bg-primary/10 text-primary hover:bg-primary/15",
                                       )}
                                     />
                                   ) : null}
@@ -2035,8 +2130,14 @@ export function CommunicationWorkspace({
                                     <button
                                       type="button"
                                       className={cn(
-                                        "inline-flex items-center gap-1 hover:underline",
-                                        isMe && embedded ? "text-white/90" : "text-destructive",
+                                        "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-semibold transition-colors",
+                                        isMe
+                                          ? embedded
+                                            ? "bg-white/20 text-white hover:bg-white/30"
+                                            : "bg-destructive/15 text-destructive hover:bg-destructive/25"
+                                          : embedded
+                                            ? "text-red-700 hover:underline"
+                                            : "bg-destructive/10 text-destructive hover:bg-destructive/15",
                                       )}
                                       onClick={() => void handleDeleteMessage(message.id)}
                                     >

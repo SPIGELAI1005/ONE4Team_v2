@@ -25,7 +25,10 @@ import { TasksSummaryCard } from "@/components/dashboard/TasksSummaryCard";
 import { MarketplaceDashboardCards } from "@/components/dashboard/MarketplaceDashboardCards";
 import AdminNotificationSender from "@/components/dashboard/AdminNotificationSender";
 import { Ai4tAdminUsageCard } from "@/components/dashboard/Ai4tAdminUsageCard";
+import { Ai4tValueMetricsCard } from "@/components/dashboard/Ai4tValueMetricsCard";
 import { MyDuesCard } from "@/components/dashboard/MyDuesCard";
+import { FoundingClubStatusCard } from "@/components/billing/FoundingClubStatusCard";
+import { GraceWriteBanner } from "@/components/billing/GraceWriteBanner";
 import { AdminWeekAtAGlanceCard } from "@/components/dashboard/AdminWeekAtAGlanceCard";
 import { TrainerTodaySessionCard } from "@/components/dashboard/TrainerTodaySessionCard";
 import FinancialSummary from "@/components/dashboard/FinancialSummary";
@@ -719,6 +722,9 @@ const DashboardContent = () => {
 
         {sections.liveMatchTicker ? <LiveMatchTicker /> : null}
 
+        <GraceWriteBanner />
+        <FoundingClubStatusCard />
+
         {sections.weekAtAGlance && isClubAdminPersona ? <AdminWeekAtAGlanceCard /> : null}
 
         {sections.trainerToday && (role === "trainer" || role === "team_staff") ? (
@@ -797,7 +803,12 @@ const DashboardContent = () => {
 
         {sections.adminNotificationSender ? <AdminNotificationSender /> : null}
 
-        {isClubAdminPersona && activeClubId ? <Ai4tAdminUsageCard /> : null}
+        {isClubAdminPersona && activeClubId ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Ai4tAdminUsageCard />
+            <Ai4tValueMetricsCard />
+          </div>
+        ) : null}
 
         {sections.upcomingAndAi ? (
         <div className="grid lg:grid-cols-3 gap-5">

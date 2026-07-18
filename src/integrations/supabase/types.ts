@@ -1480,6 +1480,7 @@ export type Database = {
           created_at: string
           id: string
           position: string | null
+          public_badges_opt_in: boolean
           role: Database["public"]["Enums"]["app_role"]
           status: string
           team: string | null
@@ -1493,6 +1494,7 @@ export type Database = {
           created_at?: string
           id?: string
           position?: string | null
+          public_badges_opt_in?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           status?: string
           team?: string | null
@@ -1506,6 +1508,7 @@ export type Database = {
           created_at?: string
           id?: string
           position?: string | null
+          public_badges_opt_in?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           status?: string
           team?: string | null
@@ -1586,6 +1589,7 @@ export type Database = {
           layer_id: string | null
           name: string
           notes: string | null
+          outline: Json | null
           parent_pitch_id: string | null
           updated_at: string
         }
@@ -1600,6 +1604,7 @@ export type Database = {
           layer_id?: string | null
           name: string
           notes?: string | null
+          outline?: Json | null
           parent_pitch_id?: string | null
           updated_at?: string
         }
@@ -1614,6 +1619,7 @@ export type Database = {
           layer_id?: string | null
           name?: string
           notes?: string | null
+          outline?: Json | null
           parent_pitch_id?: string | null
           updated_at?: string
         }
@@ -2072,6 +2078,7 @@ export type Database = {
       clubs: {
         Row: {
           address: string | null
+          asset_map_overlay: Json
           club_category: string | null
           cover_image_url: string | null
           created_at: string
@@ -2122,6 +2129,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          asset_map_overlay?: Json
           club_category?: string | null
           cover_image_url?: string | null
           created_at?: string
@@ -2172,6 +2180,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          asset_map_overlay?: Json
           club_category?: string | null
           cover_image_url?: string | null
           created_at?: string
@@ -4071,6 +4080,10 @@ export type Database = {
         }
         Returns: string
       }
+      award_member_achievements: {
+        Args: { p_club_id: string; p_membership_id: string }
+        Returns: Json
+      }
       apply_abuse_escalation_policy: {
         Args: {
           _blocked_attempts: number
@@ -4174,6 +4187,10 @@ export type Database = {
         Args: { _club_id: string; _enabled: boolean }
         Returns: string
       }
+      set_public_badges_opt_in: {
+        Args: { p_club_id: string; p_opt_in: boolean }
+        Returns: boolean
+      }
       set_weekly_digest_opt_in: {
         Args: { _club_id: string; _opt_in: boolean }
         Returns: undefined
@@ -4267,6 +4284,10 @@ export type Database = {
           membership_id: string
         }[]
       }
+      get_member_progress_snapshot: {
+        Args: { p_club_id: string; p_membership_id: string }
+        Returns: Json
+      }
       get_membership_activity_heatmap:
         | {
             Args: { _club_id: string; _days?: number }
@@ -4333,6 +4354,10 @@ export type Database = {
           reliable_membership_id: string
         }[]
       }
+      get_team_attendance_challenge: {
+        Args: { p_club_id: string; p_window_days?: number }
+        Returns: Json
+      }
       get_team_chemistry_pairs: {
         Args: {
           _club_id: string
@@ -4349,6 +4374,10 @@ export type Database = {
         }[]
       }
       get_team_trainers_for_agent: { Args: { _team_id: string }; Returns: Json }
+      list_public_opt_in_badges: {
+        Args: { p_club_id: string }
+        Returns: Json
+      }
       is_club_admin: {
         Args: { _club_id: string; _user_id: string }
         Returns: boolean

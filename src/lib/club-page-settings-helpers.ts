@@ -201,6 +201,7 @@ export function applyMicroPagesToSections(
 export type HomepageModuleId =
   | "stats"
   | "next_up"
+  | "my_progress"
   | "latest_news"
   | "featured_teams"
   | "upcoming_events"
@@ -219,6 +220,7 @@ export interface HomepageModuleSetting {
 export const HOMEPAGE_MODULE_IDS: HomepageModuleId[] = [
   "stats",
   "next_up",
+  "my_progress",
   "latest_news",
   "featured_teams",
   "upcoming_events",
@@ -232,6 +234,7 @@ export function defaultHomepageModules(): Record<HomepageModuleId, HomepageModul
   const defaults: Record<HomepageModuleId, { order: number; max: number }> = {
     stats: { order: 10, max: 8 },
     next_up: { order: 20, max: 4 },
+    my_progress: { order: 25, max: 8 },
     latest_news: { order: 30, max: 6 },
     featured_teams: { order: 40, max: 6 },
     upcoming_events: { order: 50, max: 6 },

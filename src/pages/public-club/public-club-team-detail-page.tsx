@@ -28,6 +28,7 @@ import { publicNewsExcerpt } from "@/lib/public-club-news";
 import type { NewsRowLite } from "@/lib/public-club-models";
 import { readableTextOnSolid } from "@/lib/hex-to-rgb";
 import { clubCtaAccentHoverClass, clubCtaFillHoverClass, clubCtaOutlineButtonClass } from "@/lib/public-club-cta-classes";
+import { PublicClubOptInBadgesStrip } from "@/components/public-club/public-club-opt-in-badges-strip";
 
 interface PublicTeamPayloadTeam {
   id: string;
@@ -522,6 +523,8 @@ export default function PublicClubTeamDetailPage() {
                 </div>
               </section>
             ) : null}
+
+            <PublicClubOptInBadgesStrip />
           </div>
         )}
       </div>

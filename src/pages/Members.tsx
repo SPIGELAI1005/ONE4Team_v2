@@ -21,8 +21,17 @@ import { useToast } from "@/hooks/use-toast";
 import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useModuleDataScope } from "@/hooks/use-module-data-scope";
-import { RoleManager } from "@/components/members/role-manager";
 import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
+import {
+  generateInviteToken,
+  hashInviteToken,
+  MembersImportPanel,
+  MembersInvitesPanel,
+  MembersRolesPanel,
+  MembersRosterPanel,
+  MembersTabNav,
+  type MembersPageTab,
+} from "@/features/members";
 import { useRegisterAiAgentContext } from "@/hooks/use-register-ai-agent-context";
 import { trackEvent } from "@/lib/telemetry";
 import { trackJoinFunnelEvent } from "@/lib/track-join-funnel";
@@ -53,9 +62,6 @@ import { cn } from "@/lib/utils";
 import {
   DASHBOARD_PAGE_INNER,
   DASHBOARD_PAGE_ROOT,
-  DASHBOARD_TAB_BUTTON,
-  DASHBOARD_TABS_INNER_SCROLL,
-  DASHBOARD_TABS_ROW,
 } from "@/lib/dashboard-page-shell";
 import { supabaseErrorMessage } from "@/lib/supabase-error-message";
 import {
@@ -454,7 +460,7 @@ const Members = () => {
   const memberDataScope = useModuleDataScope("members");
   const agentPageContext = useMemo(() => ({ source: "members" as const }), []);
   useRegisterAiAgentContext(agentPageContext);
-  const [tab, setTab] = useState<"members" | "invites" | "roles">("members");
+  const [tab, setTab] = useState<MembersPageTab>("members");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -682,20 +688,8 @@ const Members = () => {
     setInviteReqFilter("pending");
   }, [clubId]);
 
-  const toHex = (buf: ArrayBuffer) => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
-
-  const hashToken = async (token: string) => {
-    const bytes = new TextEncoder().encode(token);
-    const digest = await crypto.subtle.digest("SHA-256", bytes);
-    return toHex(digest);
-  };
-
-  const generateToken = () => {
-    const bytes = new Uint8Array(24);
-    crypto.getRandomValues(bytes);
-    // base64url-ish
-    return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-  };
+  const hashToken = hashInviteToken;
+  const generateToken = generateInviteToken;
 
   const normalizeRole = (value: string) => {
     const normalized = value.trim().toLowerCase().replace(/\s+/g, "_");
@@ -3251,40 +3245,16 @@ const Members = () => {
         }
       />
 
-      {/* Tabs */}
-      <div className={DASHBOARD_TABS_ROW}>
-        <div className={DASHBOARD_TABS_INNER_SCROLL}>
-          <button
-            type="button"
-            onClick={() => setTab("members")}
-            className={`${DASHBOARD_TAB_BUTTON} ${
-              tab === "members" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Users className="w-4 h-4" /> {t.membersPage.title}
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("invites")}
-            className={`${DASHBOARD_TAB_BUTTON} ${
-              tab === "invites" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Inbox className="w-4 h-4" /> {t.membersPage.invites}
-          </button>
-          {perms.isAdmin && (
-            <button
-              type="button"
-              onClick={() => setTab("roles")}
-              className={`${DASHBOARD_TAB_BUTTON} ${
-                tab === "roles" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Shield className="w-4 h-4" /> {t.membersPage.roles.tabLabel}
-            </button>
-          )}
-        </div>
-      </div>
+      <MembersTabNav
+        tab={tab}
+        onTabChange={setTab}
+        showRoles={perms.isAdmin}
+        labels={{
+          members: t.membersPage.title,
+          invites: t.membersPage.invites,
+          roles: t.membersPage.roles.tabLabel,
+        }}
+      />
 
       <div className={DASHBOARD_PAGE_INNER}>
         {(clubLoading || (loading && !hasMembersHydrated)) ? (
@@ -3307,9 +3277,7 @@ const Members = () => {
           </div>
         ) : (
           <>
-            {tab === "roles" && perms.isAdmin && (
-              <RoleManager />
-            )}
+            {tab === "roles" && perms.isAdmin && <MembersRolesPanel />}
             {tab === "members" ? (
               !canManageMembers ? (
                 <div className="rounded-xl bg-card border border-border p-8 text-center">
@@ -3318,7 +3286,40 @@ const Members = () => {
                   <Button variant="outline" onClick={() => setTab("invites")}>{t.membersPage.switchToInvites}</Button>
                 </div>
               ) : (
-              <>
+              <MembersRosterPanel
+                toolbar={
+                  <>
+            {clubId && perms.isAdmin ? (
+              <div className="mb-4">
+                <MembersImportPanel
+                  clubId={clubId}
+                  labels={{
+                    title: t.guidedSetupPage.importStepTitle,
+                    hint: t.guidedSetupPage.importHint,
+                    upload: t.guidedSetupPage.importUpload,
+                    save: t.guidedSetupPage.importContinue,
+                    preview: t.guidedSetupPage.importPreviewCount,
+                    truncated: t.guidedSetupPage.importTruncatedHint,
+                  }}
+                  onSaved={(saved, skipped) => {
+                    toast({
+                      title: t.guidedSetupPage.importSavedTitle,
+                      description: t.guidedSetupPage.importSavedDesc
+                        .replace("{saved}", String(saved))
+                        .replace("{skipped}", String(skipped)),
+                    });
+                    void fetchMemberDrafts();
+                  }}
+                  onError={(message) => {
+                    toast({
+                      title: t.common.error,
+                      description: message === "empty" ? t.guidedSetupPage.importEmptyDesc : message,
+                      variant: "destructive",
+                    });
+                  }}
+                />
+              </div>
+            ) : null}
             {/* Search & Filter */}
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
               <div className="flex-1">
@@ -3355,7 +3356,9 @@ const Members = () => {
                 ))}
               </div>
             </div>
-
+                  </>
+                }
+              >
             {/* Stats (club-wide via RPC; search-aware when filtering) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
               {[
@@ -4367,10 +4370,10 @@ const Members = () => {
                 </>
               )}
             </div>
-          </>
+              </MembersRosterPanel>
               )
             ) : (
-              <>
+              <MembersInvitesPanel>
                 {!canReviewJoinRequests ? (
                   <div className="rounded-xl bg-card border border-border p-8 text-center">
                     <h2 className="font-display text-lg font-bold text-foreground mb-2">{t.membersPage.invitesTabRestrictedTitle}</h2>
@@ -4858,7 +4861,7 @@ const Members = () => {
                     </motion.div>
                   </div>
                 )}
-              </>
+              </MembersInvitesPanel>
             )}
           </>
         )}

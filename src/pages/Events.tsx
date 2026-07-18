@@ -21,7 +21,13 @@ import { isTsvAllachClub } from "@/lib/is-tsv-allach-club";
 import { SommerfestHero } from "@/components/sommerfest/sommerfest-hero";
 import { SommerfestEventsHub } from "@/components/sommerfest/sommerfest-events-hub";
 import { ClubFootballCampAdmin } from "@/components/events/club-football-camp-admin";
+import { EventsHighlightAdmin } from "@/components/events/events-highlight-admin";
 import { isCampEvent, type ClubCampEventRow } from "@/lib/club-football-camp-api";
+import {
+  EMPTY_CLUB_EVENTS_HIGHLIGHT,
+  type ClubEventsHighlightConfig,
+} from "@/lib/club-events-highlight";
+import { loadClubEventsHighlight } from "@/lib/club-events-highlight-api";
 // logo is rendered by AppHeader
 import type { EventRow, MembershipWithProfile, ParticipantWithMembershipProfile } from "@/types/supabase";
 
@@ -52,10 +58,12 @@ const Events = () => {
   const { toast } = useToast();
   const { t } = useLanguage();
   const { activeClub } = useActiveClub();
-  const showSommerfest = isTsvAllachClub(activeClub);
+  const showAllachExtras = isTsvAllachClub(activeClub);
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [eventsHighlight, setEventsHighlight] = useState<ClubEventsHighlightConfig>(EMPTY_CLUB_EVENTS_HIGHLIGHT);
+  const showHighlight = eventsHighlight.enabled;
   const [showAdd, setShowAdd] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -102,6 +110,7 @@ const Events = () => {
     setSelectedEvent(null);
     setParticipants([]);
     setMembers([]);
+    setEventsHighlight(EMPTY_CLUB_EVENTS_HIGHLIGHT);
     setLoading(true);
     setLoadingDetail(false);
   }, [clubId]);
@@ -120,6 +129,17 @@ const Events = () => {
     };
     fetchEvents();
   }, [clubId]);
+
+  useEffect(() => {
+    if (!clubId) return;
+    let cancelled = false;
+    void loadClubEventsHighlight(supabase, clubId, activeClub).then(({ data }) => {
+      if (!cancelled) setEventsHighlight(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [clubId, activeClub]);
 
   const openEventDetail = async (event: Event) => {
     setSelectedEvent(event);
@@ -236,10 +256,18 @@ const Events = () => {
           <div className="text-center py-20 text-muted-foreground">{t.communicationPage.noClubFound}</div>
         ) : (
           <div className="mx-auto max-w-5xl space-y-6">
-            {showSommerfest ? (
+            {showHighlight || perms.isAdmin ? (
               <>
-                <SommerfestHero variant="events" />
-                {perms.isTrainer && user && clubId ? (
+                {showHighlight ? <SommerfestHero variant="events" highlight={eventsHighlight} /> : null}
+                {perms.isAdmin && user && clubId ? (
+                  <EventsHighlightAdmin
+                    clubId={clubId}
+                    userId={user.id}
+                    value={eventsHighlight}
+                    onSaved={setEventsHighlight}
+                  />
+                ) : null}
+                {showAllachExtras && perms.isTrainer && user && clubId ? (
                   <ClubFootballCampAdmin
                     clubId={clubId}
                     userId={user.id}
@@ -247,13 +275,13 @@ const Events = () => {
                     onPublished={mergePublishedCamps}
                   />
                 ) : null}
-                <SommerfestEventsHub campEvents={campEvents} />
+                {showAllachExtras ? <SommerfestEventsHub campEvents={campEvents} /> : null}
               </>
             ) : null}
 
             {regularEvents.length > 0 ? (
               <div className="space-y-3 border-t border-border pt-4">
-                {showSommerfest ? (
+                {showHighlight || showAllachExtras ? (
                   <h3 className="font-display text-base font-semibold text-foreground">{t.eventsPage.title}</h3>
                 ) : null}
                 <div className="max-w-3xl mx-auto space-y-4">
@@ -294,7 +322,7 @@ const Events = () => {
             ))}
                 </div>
               </div>
-            ) : !showSommerfest ? (
+            ) : !showHighlight && !showAllachExtras ? (
               <div className="rounded-xl bg-card border border-border p-8 text-center text-muted-foreground text-sm">{t.eventsPage.emptyState}</div>
             ) : null}
           </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import {
@@ -36,6 +36,19 @@ import { isTsvAllachClub } from "@/lib/is-tsv-allach-club";
 import { resolveCanonicalYouthTeamName } from "@/lib/youth-team-label";
 import { SommerfestHero } from "@/components/sommerfest/sommerfest-hero";
 import { SommerfestMatchSchedule } from "@/components/sommerfest/sommerfest-match-schedule";
+import { EventsHighlightAdmin } from "@/components/events/events-highlight-admin";
+import {
+  EMPTY_CLUB_EVENTS_HIGHLIGHT,
+  type ClubEventsHighlightConfig,
+} from "@/lib/club-events-highlight";
+import { loadClubEventsHighlight } from "@/lib/club-events-highlight-api";
+import {
+  COMPETITION_TYPE_FILTERS,
+  computeMatchStandings,
+  filterCompetitionsByType,
+  type CompetitionTypeFilter,
+  type MatchStandingRow,
+} from "@/lib/match-standings";
 import { SOMMERFEST_MATCHES, type SommerfestMatch } from "@/lib/tsv-allach-sommerfest-2026";
 import { resolveShowcaseTeamId } from "@/lib/tsv-allach-public-matches";
 import {
@@ -61,6 +74,7 @@ import MatchTimeline from "@/components/matches/MatchTimeline";
 import FormStreak from "@/components/matches/FormStreak";
 import AIMatchAnalysis from "@/components/ai/AIMatchAnalysis";
 import { BrandedText } from "@/components/ai/Ai4TBrand";
+import { cn } from "@/lib/utils";
 import type { MembershipWithProfile } from "@/types/supabase";
 
 type Team = { id: string; name: string };
@@ -141,7 +155,8 @@ const Matches = () => {
   const { toast } = useToast();
   const { t } = useLanguage();
   const { activeClub } = useActiveClub();
-  const showSommerfest = isTsvAllachClub(activeClub);
+  const showAllachExtras = isTsvAllachClub(activeClub);
+  const showSommerfest = showAllachExtras;
 
   const [tab, setTab] = useState<"matches" | "competitions" | "standings">("matches");
   const [matches, setMatches] = useState<Match[]>([]);
@@ -157,6 +172,8 @@ const Matches = () => {
   const [sommerfestDbMatches, setSommerfestDbMatches] = useState<Map<string, Match>>(new Map());
   const [openingSommerfestId, setOpeningSommerfestId] = useState<string | null>(null);
   const [publishingSommerfest, setPublishingSommerfest] = useState(false);
+  const [eventsHighlight, setEventsHighlight] = useState<ClubEventsHighlightConfig>(EMPTY_CLUB_EVENTS_HIGHLIGHT);
+  const showHighlight = eventsHighlight.enabled;
 
   // Modals
   const [showAddMatch, setShowAddMatch] = useState(false);
@@ -181,9 +198,21 @@ const Matches = () => {
     setLineup([]);
     setSommerfestDbMatches(new Map());
     setOpeningSommerfestId(null);
+    setEventsHighlight(EMPTY_CLUB_EVENTS_HIGHLIGHT);
     setLoading(true);
     setLoadingDetail(false);
   }, [clubId]);
+
+  useEffect(() => {
+    if (!clubId) return;
+    let cancelled = false;
+    void loadClubEventsHighlight(supabase, clubId, activeClub).then(({ data }) => {
+      if (!cancelled) setEventsHighlight(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [clubId, activeClub]);
 
   const [openPanels, setOpenPanels] = useState({
     details: true,
@@ -210,6 +239,10 @@ const Matches = () => {
   const [compName, setCompName] = useState("");
   const [compSeason, setCompSeason] = useState("2025/2026");
   const [compType, setCompType] = useState("league");
+  const [competitionTypeFilter, setCompetitionTypeFilter] = useState<CompetitionTypeFilter>("all");
+  const [standingCompetitionId, setStandingCompetitionId] = useState<string>("__all");
+  const [standingMatches, setStandingMatches] = useState<Match[]>([]);
+  const [standingLoading, setStandingLoading] = useState(false);
   const [compTeamId, setCompTeamId] = useState("");
 
   // Result form
@@ -232,6 +265,37 @@ const Matches = () => {
   const [evMemberId, setEvMemberId] = useState("");
   const [evMinute, setEvMinute] = useState("");
 
+  const filteredCompetitions = useMemo(
+    () => filterCompetitionsByType(competitions, competitionTypeFilter),
+    [competitions, competitionTypeFilter],
+  );
+
+  const competitionTypeLabel = useCallback(
+    (type: string) => {
+      if (type === "league") return t.matchesPage.typeLeague;
+      if (type === "cup") return t.matchesPage.typeCup;
+      if (type === "tournament") return t.matchesPage.typeTournament;
+      if (type === "friendly") return t.matchesPage.typeFriendly;
+      return type;
+    },
+    [t.matchesPage],
+  );
+
+  const competitionScopeLabel = useCallback(
+    (teamId: string | null) => {
+      if (!teamId) return t.matchesPage.scopeAllTeams;
+      return teams.find((team) => team.id === teamId)?.name || t.matchesPage.scopeAllTeams;
+    },
+    [t.matchesPage.scopeAllTeams, teams],
+  );
+
+  const standings = useMemo(
+    (): MatchStandingRow[] =>
+      computeMatchStandings(standingMatches, {
+        clubLabel: t.matchesPage.clubStandingLabel,
+      }),
+    [standingMatches, t.matchesPage.clubStandingLabel],
+  );
   const matchAccess = useMemo(
     (): MatchManagementAccessInput => ({
       legacyRole: perms.role,
@@ -409,6 +473,42 @@ const Matches = () => {
       cancelled = true;
     };
   }, [clubId, showSommerfest, matchesRetryTick]);
+
+  useEffect(() => {
+    if (!clubId || tab !== "standings") {
+      return;
+    }
+    let cancelled = false;
+    setStandingLoading(true);
+    void (async () => {
+      let query = supabase
+        .from("matches")
+        .select(
+          "id, opponent, is_home, match_date, location, status, home_score, away_score, competition_id, team_id, notes, opponent_logo_url, competitions(name), teams(name)",
+        )
+        .eq("club_id", clubId)
+        .eq("status", "completed")
+        .order("match_date", { ascending: false });
+      if (standingCompetitionId !== "__all") {
+        query = query.eq("competition_id", standingCompetitionId);
+      }
+      if (matchDataScope.teamIds.length > 0) {
+        query = query.in("team_id", matchDataScope.teamIds);
+      }
+      const { data, error } = await query;
+      if (cancelled) return;
+      if (error) {
+        setStandingMatches([]);
+        setStandingLoading(false);
+        return;
+      }
+      setStandingMatches((data as unknown as Match[]) ?? []);
+      setStandingLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [clubId, tab, standingCompetitionId, matchDataScope.teamIds, matchesRetryTick]);
 
   const upsertSommerfestDbMatch = async (template: SommerfestMatch): Promise<Match | null> => {
     if (!clubId) return null;
@@ -811,27 +911,6 @@ const Matches = () => {
     setLineup(prev => prev.map(l => l.id === player.id ? { ...l, is_starter: !l.is_starter } : l));
   };
 
-  // Standings calculation
-  const getStandings = () => {
-    const completed = matches.filter(m => m.status === "completed");
-    const stats: Record<string, { team: string; p: number; w: number; d: number; l: number; gf: number; ga: number; pts: number }> = {};
-    // Group by team
-    completed.forEach(m => {
-      const teamKey = m.team_id || "club";
-      const teamName = m.teams?.name || "Club";
-      if (!stats[teamKey]) stats[teamKey] = { team: teamName, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
-      const s = stats[teamKey];
-      s.p++;
-      const gf = m.is_home ? (m.home_score || 0) : (m.away_score || 0);
-      const ga = m.is_home ? (m.away_score || 0) : (m.home_score || 0);
-      s.gf += gf; s.ga += ga;
-      if (gf > ga) { s.w++; s.pts += 3; }
-      else if (gf === ga) { s.d++; s.pts += 1; }
-      else { s.l++; }
-    });
-    return Object.values(stats).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga));
-  };
-
   return (
     <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot
@@ -885,9 +964,19 @@ const Matches = () => {
           <div className="text-center py-20 text-muted-foreground">{t.communicationPage.noClubFound}</div>
         ) : tab === "matches" ? (
           <div className="mx-auto max-w-4xl space-y-6">
-            {showSommerfest ? (
+            {showHighlight || showSommerfest || perms.isAdmin ? (
               <>
-                <SommerfestHero variant="matches" />
+                {showHighlight ? <SommerfestHero variant="matches" highlight={eventsHighlight} /> : null}
+                {perms.isAdmin && user && clubId ? (
+                  <EventsHighlightAdmin
+                    clubId={clubId}
+                    userId={user.id}
+                    value={eventsHighlight}
+                    onSaved={setEventsHighlight}
+                  />
+                ) : null}
+                {showSommerfest ? (
+                <>
                 <div className="space-y-3">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
@@ -951,6 +1040,8 @@ const Matches = () => {
                     {t.sommerfest2026.regularMatchesTitle}
                   </h3>
                 </div>
+                </>
+                ) : null}
               </>
             ) : null}
             <div className="max-w-3xl mx-auto space-y-4">
@@ -1048,55 +1139,139 @@ const Matches = () => {
             </div>
           </div>
         ) : tab === "competitions" ? (
-          <div className="max-w-2xl mx-auto space-y-4">
-            {competitions.length === 0 ? (
-              <div className="rounded-xl bg-card border border-border p-8 text-center text-muted-foreground text-sm">No competitions yet.</div>
-            ) : competitions.map((c, i) => (
-              <motion.div key={c.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-                className="rounded-xl bg-card border border-border p-5">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-display font-semibold text-foreground">{c.name}</h3>
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary capitalize">{c.competition_type}</span>
-                </div>
-                {c.season && <p className="text-xs text-muted-foreground mt-1">Season: {c.season}</p>}
-              </motion.div>
-            ))}
+          <div className="mx-auto max-w-2xl space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {COMPETITION_TYPE_FILTERS.map((filter) => {
+                const label =
+                  filter === "all"
+                    ? t.matchesPage.filterAllTypes
+                    : competitionTypeLabel(filter);
+                const active = competitionTypeFilter === filter;
+                return (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() => setCompetitionTypeFilter(filter)}
+                    className={cn(
+                      "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                      active
+                        ? "border-primary/40 bg-primary/15 text-primary"
+                        : "border-border bg-card/60 text-muted-foreground hover:bg-muted/40 hover:text-foreground",
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            {filteredCompetitions.length === 0 ? (
+              <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+                {competitions.length === 0
+                  ? t.matchesPage.emptyCompetitions
+                  : t.matchesPage.emptyCompetitionsFilter}
+              </div>
+            ) : (
+              filteredCompetitions.map((c, i) => (
+                <motion.div
+                  key={c.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="rounded-xl border border-border bg-card p-5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="font-display font-semibold text-foreground">{c.name}</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">{competitionScopeLabel(c.team_id)}</p>
+                    </div>
+                    <span
+                      className={cn(
+                        "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium capitalize",
+                        c.competition_type === "tournament"
+                          ? "bg-primary/15 text-primary ring-1 ring-primary/25"
+                          : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {competitionTypeLabel(c.competition_type)}
+                    </span>
+                  </div>
+                  {c.season ? (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {t.matchesPage.seasonLabel.replace("{season}", c.season)}
+                    </p>
+                  ) : null}
+                </motion.div>
+              ))
+            )}
           </div>
         ) : (
           /* Standings */
-          <div className="max-w-2xl mx-auto">
-            {(() => {
-              const standings = getStandings();
-              if (standings.length === 0) return <div className="rounded-xl bg-card border border-border p-8 text-center text-muted-foreground text-sm">No completed matches yet.</div>;
-              return (
-                <div className="rounded-xl bg-card border border-border overflow-hidden">
-                  <table className="w-full text-sm">
-                    <thead><tr className="border-b border-border text-xs text-muted-foreground">
-                      <th className="text-left px-4 py-3">Team</th>
-                      <th className="text-center px-2 py-3">P</th><th className="text-center px-2 py-3">W</th>
-                      <th className="text-center px-2 py-3">D</th><th className="text-center px-2 py-3">L</th>
-                      <th className="text-center px-2 py-3">GF</th><th className="text-center px-2 py-3">GA</th>
-                      <th className="text-center px-2 py-3">GD</th><th className="text-center px-2 py-3 font-semibold text-primary">PTS</th>
-                    </tr></thead>
-                    <tbody>
-                      {standings.map((s, i) => (
-                        <tr key={i} className="border-b border-border last:border-0">
-                          <td className="px-4 py-3 font-medium text-foreground">{s.team}</td>
-                          <td className="text-center px-2 py-3 text-muted-foreground">{s.p}</td>
-                          <td className="text-center px-2 py-3 text-muted-foreground">{s.w}</td>
-                          <td className="text-center px-2 py-3 text-muted-foreground">{s.d}</td>
-                          <td className="text-center px-2 py-3 text-muted-foreground">{s.l}</td>
-                          <td className="text-center px-2 py-3 text-muted-foreground">{s.gf}</td>
-                          <td className="text-center px-2 py-3 text-muted-foreground">{s.ga}</td>
-                          <td className="text-center px-2 py-3 text-muted-foreground">{s.gf - s.ga}</td>
-                          <td className="text-center px-2 py-3 font-bold text-primary">{s.pts}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              );
-            })()}
+          <div className="mx-auto max-w-2xl space-y-4">
+            <div>
+              <label className="mb-1.5 block text-[10px] text-muted-foreground">
+                {t.matchesPage.standingsCompetition}
+              </label>
+              <Select value={standingCompetitionId} onValueChange={setStandingCompetitionId}>
+                <SelectTrigger className="h-10 w-full rounded-xl border-border bg-card px-3 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all">{t.matchesPage.standingsAllCompetitions}</SelectItem>
+                  {competitions.map((competition) => (
+                    <SelectItem key={competition.id} value={competition.id}>
+                      {competition.name}
+                      {competition.competition_type
+                        ? ` · ${competitionTypeLabel(competition.competition_type)}`
+                        : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {standingLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              </div>
+            ) : standings.length === 0 ? (
+              <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+                {t.matchesPage.standingsEmpty}
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-xl border border-border bg-card">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-xs text-muted-foreground">
+                      <th className="px-4 py-3 text-left">{t.matchesPage.standingsColTeam}</th>
+                      <th className="px-2 py-3 text-center">{t.matchesPage.standingsColP}</th>
+                      <th className="px-2 py-3 text-center">{t.matchesPage.standingsColW}</th>
+                      <th className="px-2 py-3 text-center">{t.matchesPage.standingsColD}</th>
+                      <th className="px-2 py-3 text-center">{t.matchesPage.standingsColL}</th>
+                      <th className="px-2 py-3 text-center">{t.matchesPage.standingsColGF}</th>
+                      <th className="px-2 py-3 text-center">{t.matchesPage.standingsColGA}</th>
+                      <th className="px-2 py-3 text-center">{t.matchesPage.standingsColGD}</th>
+                      <th className="px-2 py-3 text-center font-semibold text-primary">
+                        {t.matchesPage.standingsColPts}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {standings.map((s) => (
+                      <tr key={s.key} className="border-b border-border last:border-0">
+                        <td className="px-4 py-3 font-medium text-foreground">{s.team}</td>
+                        <td className="px-2 py-3 text-center text-muted-foreground">{s.p}</td>
+                        <td className="px-2 py-3 text-center text-muted-foreground">{s.w}</td>
+                        <td className="px-2 py-3 text-center text-muted-foreground">{s.d}</td>
+                        <td className="px-2 py-3 text-center text-muted-foreground">{s.l}</td>
+                        <td className="px-2 py-3 text-center text-muted-foreground">{s.gf}</td>
+                        <td className="px-2 py-3 text-center text-muted-foreground">{s.ga}</td>
+                        <td className="px-2 py-3 text-center text-muted-foreground">{s.gd}</td>
+                        <td className="px-2 py-3 text-center font-bold text-primary">{s.pts}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1155,7 +1330,7 @@ const Matches = () => {
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
             className="w-full max-w-[95vw] sm:max-w-md rounded-2xl bg-card border border-border p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display font-bold text-foreground">New Competition</h3>
+              <h3 className="font-display font-bold text-foreground">{t.matchesPage.modalNewCompetition}</h3>
               <Button variant="ghost" size="icon" onClick={() => setShowAddComp(false)}><X className="w-4 h-4" /></Button>
             </div>
             <div className="space-y-3">
@@ -1166,9 +1341,10 @@ const Matches = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="league">League</SelectItem>
-                  <SelectItem value="cup">Cup</SelectItem>
-                  <SelectItem value="friendly">Friendly</SelectItem>
+                  <SelectItem value="league">{t.matchesPage.typeLeague}</SelectItem>
+                  <SelectItem value="cup">{t.matchesPage.typeCup}</SelectItem>
+                  <SelectItem value="tournament">{t.matchesPage.typeTournament}</SelectItem>
+                  <SelectItem value="friendly">{t.matchesPage.typeFriendly}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={compTeamId || "__all"} onValueChange={(value) => setCompTeamId(value === "__all" ? "" : value)}>
@@ -1176,12 +1352,12 @@ const Matches = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__all">All teams</SelectItem>
+                  <SelectItem value="__all">{t.matchesPage.scopeAllTeams}</SelectItem>
                   {teams.map((team) => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Button onClick={handleCreateComp} disabled={!compName.trim()}
-                className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110">Create Competition</Button>
+                className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110">{t.matchesPage.createCompetition}</Button>
             </div>
           </motion.div>
         </div>

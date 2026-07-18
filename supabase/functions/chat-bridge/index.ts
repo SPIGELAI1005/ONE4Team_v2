@@ -470,6 +470,54 @@ serve(async (req) => {
       return await processWebhook(serviceClient, "whatsapp", req);
     }
 
+    // Meta Cloud API webhook verification (BRIDGE-WA-001)
+    if (route === "webhook.whatsapp" && req.method === "GET") {
+      const url = new URL(req.url);
+      const mode = url.searchParams.get("hub.mode") || url.searchParams.get("hub_mode");
+      const verifyToken =
+        url.searchParams.get("hub.verify_token") || url.searchParams.get("hub_verify_token");
+      const challenge =
+        url.searchParams.get("hub.challenge") || url.searchParams.get("hub_challenge");
+
+      if (mode || verifyToken || challenge) {
+        if (mode !== "subscribe" || !verifyToken || !challenge) {
+          return new Response("Forbidden", { status: 403, headers: corsHeaders });
+        }
+
+        const envToken = Deno.env.get("WHATSAPP_VERIFY_TOKEN")?.trim() || "";
+        let tokenOk = Boolean(envToken) && envToken === verifyToken;
+
+        if (!tokenOk) {
+          const { data: connectors } = await serviceClient
+            .from("chat_bridge_connectors")
+            .select("webhook_secret, config")
+            .eq("provider", "whatsapp")
+            .limit(50);
+          for (const row of connectors || []) {
+            const secret = String((row as { webhook_secret?: string }).webhook_secret || "");
+            const cfg = ((row as { config?: Record<string, unknown> }).config || {}) as Record<
+              string,
+              unknown
+            >;
+            const configToken = String(cfg.verify_token || cfg.webhook_verify_token || "");
+            if ((secret && secret === verifyToken) || (configToken && configToken === verifyToken)) {
+              tokenOk = true;
+              break;
+            }
+          }
+        }
+
+        if (!tokenOk) {
+          return new Response("Forbidden", { status: 403, headers: corsHeaders });
+        }
+
+        return new Response(challenge, {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "text/plain" },
+        });
+      }
+    }
+
     if (req.method === "GET") {
       return json({
         ok: true,
@@ -477,8 +525,10 @@ serve(async (req) => {
         routes: [
           "POST /functions/v1/chat-bridge (action: connector.upsert | connector.list | dispatch)",
           "POST /functions/v1/chat-bridge/webhook/telegram",
-          "POST /functions/v1/chat-bridge/webhook/whatsapp",
+          "GET|POST /functions/v1/chat-bridge/webhook/whatsapp",
         ],
+        whatsapp_verify:
+          "GET with hub.mode=subscribe&hub.verify_token=...&hub.challenge=... returns plain-text challenge",
       });
     }
 

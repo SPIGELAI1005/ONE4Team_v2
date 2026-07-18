@@ -6,7 +6,10 @@ import { useOptionalPublicClub } from "@/contexts/public-club-context";
 import { useLanguage } from "@/hooks/use-language";
 import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
-import { SOMMERFEST_LOCATION } from "@/lib/tsv-allach-sommerfest-2026";
+import {
+  DEFAULT_EVENTS_HIGHLIGHT_IMAGE,
+  type ClubEventsHighlightConfig,
+} from "@/lib/club-events-highlight";
 import { cn } from "@/lib/utils";
 import defaultLogo from "@/assets/one4team-logo.png";
 
@@ -19,6 +22,8 @@ interface SommerfestHeroProps {
   isLive?: boolean;
   clubLogoUrl?: string | null;
   clubName?: string | null;
+  /** Club-configured highlight (image + copy). Empty text fields fall back to i18n. */
+  highlight?: ClubEventsHighlightConfig | null;
 }
 
 export function SommerfestHero({
@@ -28,6 +33,7 @@ export function SommerfestHero({
   isLive = false,
   clubLogoUrl,
   clubName,
+  highlight = null,
 }: SommerfestHeroProps) {
   const { t } = useLanguage();
   const copy = t.sommerfest2026;
@@ -63,9 +69,18 @@ export function SommerfestHero({
   const resolvedLogoUrl =
     clubLogoUrl?.trim() || publicClub?.club?.logo_url?.trim() || fetchedClubBranding?.logoUrl || defaultLogo;
   const resolvedClubName = clubName?.trim() || publicClub?.club?.name?.trim() || fetchedClubBranding?.name || "";
+  const badge = highlight?.badge?.trim() || copy.badge;
+  const title = highlight?.title?.trim() || copy.title;
+  const lead =
+    (variant === "matches"
+      ? highlight?.matchesLead?.trim() || copy.matchesLead
+      : highlight?.eventsLead?.trim() || copy.eventsLead);
+  const location = highlight?.location?.trim() || "";
+  const posterSrc = highlight?.imageUrl?.trim() || DEFAULT_EVENTS_HIGHLIGHT_IMAGE;
+  const posterAlt = highlight?.posterAlt?.trim() || copy.posterAlt;
   const logoAlt = resolvedClubName
     ? t.clubPage.clubLogoAlt.replace("{name}", resolvedClubName)
-    : copy.posterAlt;
+    : posterAlt;
 
   return (
     <section
@@ -80,21 +95,23 @@ export function SommerfestHero({
       <div className="relative flex min-h-[140px] items-stretch sm:min-h-[168px] lg:grid lg:min-h-[17rem] lg:grid-cols-[1fr_0.95fr] lg:items-stretch">
         <div className="flex min-w-0 flex-1 flex-col items-start justify-center gap-2 p-4 pr-2 text-left sm:gap-2.5 sm:p-6 sm:pr-4 lg:py-6">
           <div className="inline-flex max-w-full items-center self-start rounded-full bg-white/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#d9f99d] ring-1 ring-white/15 sm:px-2.5 sm:py-1 sm:text-[10px] lg:px-3 lg:text-[11px]">
-            <span className="truncate">{copy.badge}</span>
+            <span className="truncate">{badge}</span>
           </div>
-          <h2 className="w-full text-left font-display text-base font-bold leading-tight sm:text-xl md:text-2xl lg:text-3xl">{copy.title}</h2>
+          <h2 className="w-full text-left font-display text-base font-bold leading-tight sm:text-xl md:text-2xl lg:text-3xl">{title}</h2>
           <p className="line-clamp-3 w-full max-w-xl text-left text-[12px] leading-snug text-white/85 sm:line-clamp-none sm:text-sm sm:leading-relaxed md:text-[15px]">
-            {variant === "matches" ? copy.matchesLead : copy.eventsLead}
+            {lead}
           </p>
-          <div className="flex w-full flex-col items-start gap-1.5 text-[10px] text-white/90 sm:gap-2 sm:text-xs">
-            <span className="inline-flex min-w-0 items-start gap-1 rounded-full bg-black/20 px-2 py-1 sm:items-center sm:gap-1.5 sm:px-3 sm:py-1.5">
-              <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-[#86efac] sm:mt-0 sm:h-3.5 sm:w-3.5" />
-              <span className="line-clamp-2 sm:truncate">{SOMMERFEST_LOCATION}</span>
-            </span>
-          </div>
+          {location ? (
+            <div className="flex w-full flex-col items-start gap-1.5 text-[10px] text-white/90 sm:gap-2 sm:text-xs">
+              <span className="inline-flex min-w-0 items-start gap-1 rounded-full bg-black/20 px-2 py-1 sm:items-center sm:gap-1.5 sm:px-3 sm:py-1.5">
+                <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-[#86efac] sm:mt-0 sm:h-3.5 sm:w-3.5" />
+                <span className="line-clamp-2 sm:truncate">{location}</span>
+              </span>
+            </div>
+          ) : null}
           {shareUrl ? (
             <div className="flex flex-wrap items-center gap-2">
-              <SommerfestShareButton url={shareUrl} title={copy.title} message={copy.shareMessage} />
+              <SommerfestShareButton url={shareUrl} title={title} message={copy.shareMessage} />
               <SommerfestRegulationsInfoButton />
             </div>
           ) : null}
@@ -126,8 +143,8 @@ export function SommerfestHero({
         >
           <div className="relative z-[1] h-full overflow-hidden rounded-l-2xl bg-[#14532d] lg:rounded-l-3xl lg:rounded-r-none">
             <img
-              src="/images/sommerfest/poster-day.png"
-              alt={copy.posterAlt}
+              src={posterSrc}
+              alt={posterAlt}
               className="relative z-[1] h-full w-full object-cover object-right"
               loading="lazy"
             />
