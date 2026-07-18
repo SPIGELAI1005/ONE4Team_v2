@@ -530,21 +530,23 @@ function PromoBanner() {
   const { t } = useLanguage();
   return (
     <div className="founding-promo-banner fixed top-14 left-0 right-0 z-40">
-      <div className="mx-auto flex max-w-7xl items-center justify-center gap-x-1.5 sm:gap-x-4 px-2 sm:px-4 py-1.5 sm:py-2.5">
-        <span className="founding-promo-banner-pill shrink-0">
-          {t.pricingPage.kickoffFreeBadge ?? "12 MONTHS FREE"}
-        </span>
-        <span className="founding-promo-banner-copy font-bold tracking-tight text-center">
-          <span className="sm:hidden">
-            {t.pricingPage.foundingBannerMobile ??
-              "Your first season is on us. Kick-off free for 12 months."}
+      <div className="mx-auto flex max-w-7xl flex-col items-center gap-1 px-3 py-2 sm:flex-row sm:justify-center sm:gap-x-4 sm:px-4 sm:py-2.5">
+        <div className="flex w-full min-w-0 items-center justify-center gap-x-2 sm:w-auto sm:gap-x-4">
+          <span className="founding-promo-banner-pill shrink-0">
+            {t.pricingPage.kickoffFreeBadge ?? "12 MONTHS FREE"}
           </span>
-          <span className="hidden sm:inline">
-            {t.pricingPage.foundingBanner ??
-              "Your first season is on us. Eligible new clubs receive Kick-off free for 12 months."}
+          <span className="founding-promo-banner-copy font-bold tracking-tight text-center">
+            <span className="sm:hidden">
+              {t.pricingPage.foundingBannerMobile ??
+                "Your first season is on us. Kick-off free for 12 months."}
+            </span>
+            <span className="hidden sm:inline">
+              {t.pricingPage.foundingBanner ??
+                "Your first season is on us. Eligible new clubs receive Kick-off free for 12 months."}
+            </span>
           </span>
-        </span>
-        <div className="founding-promo-banner-links flex shrink-0 items-center gap-1.5 sm:gap-4 text-[0.65rem] sm:text-sm whitespace-nowrap">
+        </div>
+        <div className="founding-promo-banner-links flex shrink-0 items-center justify-center gap-3 text-xs sm:gap-4 sm:text-sm whitespace-nowrap">
           <FoundingClubTermsDialog />
           <FoundingClubOfferDetailsDialog />
         </div>
@@ -1203,7 +1205,7 @@ const Pricing = () => {
       <PromoBanner />
 
       {/* Hero */}
-      <section ref={heroRef} className="relative min-h-[60vh] flex items-center justify-center overflow-hidden pt-[7.25rem] sm:pt-28">
+      <section ref={heroRef} className="relative min-h-[60vh] flex items-center justify-center overflow-hidden pt-[8.75rem] sm:pt-28">
         <motion.div className="absolute inset-0" style={{ y: bgY }}>
           <FootballFieldAnimation />
           <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-transparent to-background/70 dark:from-background/80 dark:via-background/40 dark:to-background" />
