@@ -48,26 +48,34 @@ import { cn } from "@/lib/utils";
 
 /** Light inset surface for interactive forms on club glass cards. */
 const progressFormSurfaceClass = [
-  "min-w-0 overflow-hidden rounded-2xl border border-neutral-200/80 bg-white",
+  "min-w-0 rounded-2xl border border-neutral-200/80 bg-white",
   "shadow-[0_8px_28px_rgba(15,23,42,0.08)]",
 ].join(" ");
 
 /** Secondary copy on club-tinted glass — avoid brand `--club-muted` (often low contrast). */
 const progressGlassBodyClass =
   "text-base leading-relaxed text-[color:var(--club-foreground)]/90";
-const progressGlassHintClass =
-  "text-base leading-relaxed text-[color:var(--club-foreground)]/85";
 
 const progressFieldClass = cn(
   "box-border h-12 w-full min-w-0 max-w-full rounded-xl text-base text-neutral-900 [color-scheme:light]",
   clubModalFormInputClass,
 );
 
+/**
+ * iOS Safari breaks `flex` date inputs (value/icon misalign, clipped top).
+ * Keep block layout, left-align, and avoid overflow clipping around the control.
+ */
 const progressDateFieldClass = cn(
   progressFieldClass,
-  // Mobile WebKit/Chromium date inputs have a large intrinsic min-width; force them into the frame.
-  "block",
-  "[&::-webkit-date-and-time-value]:min-w-0 [&::-webkit-datetime-edit]:max-w-[100%]",
+  "!flex !h-12 !min-h-12 w-full items-center justify-start gap-0",
+  "px-3 py-0 text-left text-[16px] leading-normal",
+  "[&::-webkit-date-and-time-value]:min-h-[2.75rem]",
+  "[&::-webkit-date-and-time-value]:text-left",
+  "[&::-webkit-calendar-picker-indicator]:ml-auto",
+  "[&::-webkit-calendar-picker-indicator]:shrink-0",
+  "[&::-webkit-datetime-edit]:min-w-0",
+  "[&::-webkit-datetime-edit]:flex-1",
+  "[&::-webkit-datetime-edit]:p-0",
 );
 
 const progressTextareaClass = cn(
@@ -81,6 +89,16 @@ const progressOptInSwitchClass = cn(
   "data-[state=unchecked]:bg-neutral-200",
   "focus-visible:ring-[color:var(--club-primary)]",
 );
+
+/** White AI 4 T CTA — matches public club AI button chrome. */
+const progressAi4tButtonClass = [
+  "box-border h-11 gap-2 rounded-full border-[3px] border-black/10 bg-white px-4",
+  "text-base font-semibold text-neutral-900 shadow-md",
+  "hover:!border-[#e31e24] hover:!bg-white hover:!text-neutral-900",
+  "active:!scale-100",
+].join(" ");
+
+const progressAi4tLogoClass = "!h-[1.4375rem] !w-[1.4375rem]";
 
 function KpiTile({ label, value }: { label: string; value: string | number }) {
   return (
@@ -157,7 +175,10 @@ function RatingRow({
                 ? "bg-[color:var(--club-primary)] text-white shadow-sm"
                 : "bg-transparent text-neutral-500 hover:bg-white hover:text-neutral-800",
             )}
-            onClick={() => onChange(n)}
+            onClick={() => {
+              // Tap current top level to step down; tap any other level to set it.
+              onChange(n === value ? Math.max(1, n - 1) : n);
+            }}
             aria-label={`${label} ${n}`}
             aria-pressed={value >= n}
           >
@@ -202,8 +223,9 @@ export function PublicClubMyProgressSection() {
   const reportsHref = `${basePath}/reports${searchSuffix}`;
   const isStaff =
     membershipRole === "trainer" ||
+    membershipRole === "admin" ||
     membershipRole === "club_admin" ||
-    membershipRole === "admin";
+    membershipRole === "staff";
 
   useEffect(() => {
     if (!club?.id || !membershipId || !isMember) {
@@ -292,7 +314,7 @@ export function PublicClubMyProgressSection() {
   }
 
   function openNudge() {
-    const teamLabel = myTeamRank?.team_name || myTeamRank?.anonymous_label || "the team";
+    const teamLabel = myTeamRank?.team_name || myTeamRank?.anonymous_label || t.clubProgress.teamFallback;
     const rate = myTeamRank?.rate_pct ?? challenge?.teams[0]?.rate_pct;
     openAi4tModal(
       t.clubProgress.aiNudgePrompt
@@ -331,6 +353,18 @@ export function PublicClubMyProgressSection() {
         xp: displaySnapshot.xp,
         streak: displaySnapshot.attendance_streak,
         matches: displaySnapshot.matches,
+        copy: {
+          intro: t.clubProgress.aiCoachIntro,
+          stats: t.clubProgress.aiCoachStats,
+          journalHeader: t.clubProgress.aiCoachJournalHeader,
+          emptyJournal: t.clubProgress.aiCoachEmptyJournal,
+          entryLine: t.clubProgress.aiCoachEntryLine,
+          outro: t.clubProgress.aiCoachOutro,
+          techniqueLabel: t.clubProgress.skillTechnique,
+          fitnessLabel: t.clubProgress.skillFitness,
+          tacticsLabel: t.clubProgress.skillTactics,
+          mindsetLabel: t.clubProgress.skillMindset,
+        },
       }),
     );
   }
@@ -340,20 +374,20 @@ export function PublicClubMyProgressSection() {
   return (
     <PublicClubSection
       id="my-progress"
-      className="!border-t-0 !pt-6 sm:!pt-10"
+      className="!border-t-0 !pt-4 sm:!pt-8"
       title={t.clubProgress.sectionTitle}
-      titleClassName="!text-3xl sm:!text-4xl !mb-3"
+      titleClassName="!text-3xl sm:!text-4xl !mb-2"
       subtitle={
         <span className="block space-y-1.5">
-          <span className="block text-base font-semibold text-[color:var(--club-foreground)] sm:text-lg">
+          <span className="block whitespace-pre-line text-base font-bold text-white sm:text-lg">
             {t.clubProgress.heroTagline}
           </span>
-          <span className="block text-base leading-relaxed text-[color:var(--club-foreground)]/85">
+          <span className="mt-1 block whitespace-pre-line border-l-[3px] border-[#e31e24] pl-3 text-base font-semibold leading-relaxed text-white/95">
             <BrandedText text={t.clubProgress.sectionDesc} ai4tOnly />
           </span>
         </span>
       }
-      subtitleClassName="!text-base !text-[color:var(--club-foreground)]/85 !max-w-3xl !mb-6 sm:!mb-8"
+      subtitleClassName="!text-base !text-white !max-w-3xl !mb-4 sm:!mb-6"
     >
       {checkingMembership || loading ? (
         <PublicClubCard className="flex items-center gap-2 py-6 text-base text-[color:var(--club-foreground)]/80">
@@ -399,12 +433,8 @@ export function PublicClubMyProgressSection() {
             </PublicClubCard>
           ) : null}
 
-          <PublicClubCard className="relative overflow-hidden space-y-5 p-5 sm:p-7">
-            <div
-              className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-[color:var(--club-primary)]/20 blur-2xl"
-              aria-hidden
-            />
-            <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <PublicClubCard padding="sm" className="relative overflow-hidden space-y-4 sm:space-y-5 sm:p-6">
+            <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
               <div className="flex min-w-0 items-start gap-3.5">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-[color:var(--club-primary)] shadow-md ring-1 ring-black/10">
                   <Trophy className="h-7 w-7" />
@@ -440,7 +470,7 @@ export function PublicClubMyProgressSection() {
               <div className="relative space-y-2">
                 <div className="flex items-center justify-between gap-3 text-sm font-semibold text-[color:var(--club-foreground)]/80">
                   <span>
-                    {(t.clubProgress.xpToNext ?? "{pct}% to the next level").replace(
+                    {(t.clubProgress.xpToNext).replace(
                       "{pct}",
                       String(Math.round(levelMeta.progress01 * 100)),
                     )}
@@ -461,14 +491,14 @@ export function PublicClubMyProgressSection() {
               <KpiTile label={t.clubProgress.kpiMatches} value={displaySnapshot.matches} />
             </div>
             {hint ? (
-              <p className={cn("relative flex items-start gap-2.5 rounded-2xl bg-white/90 px-3.5 py-3 shadow-sm", progressGlassHintClass)}>
-                <Flame className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--club-support)]" />
+              <p className="relative flex items-start gap-2.5 rounded-2xl border border-neutral-200/80 bg-white px-3.5 py-3 text-base font-medium leading-relaxed text-neutral-800 shadow-sm">
+                <Flame className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--club-primary)]" />
                 {t.clubProgress.nextBadgeHint
                   .replace("{count}", String(hint.remaining))
                   .replace("{badge}", t.clubProgress.badgeNames[hint.badgeType] ?? hint.badgeType)}
               </p>
             ) : (
-              <p className={cn("relative rounded-2xl bg-white/90 px-3.5 py-3 shadow-sm", progressGlassHintClass)}>
+              <p className="relative rounded-2xl border border-neutral-200/80 bg-white px-3.5 py-3 text-base font-medium leading-relaxed text-neutral-800 shadow-sm">
                 {t.clubProgress.emptyStartHint}
               </p>
             )}
@@ -511,7 +541,7 @@ export function PublicClubMyProgressSection() {
             </div>
           </PublicClubCard>
 
-          <PublicClubCard className="space-y-0 overflow-hidden p-0">
+          <PublicClubCard padding="none" className="space-y-0">
             <div className="flex flex-col gap-3.5 border-b border-white/20 px-4 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-6 sm:py-6">
               <div className="flex min-w-0 items-start gap-3.5">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[color:var(--club-primary)] shadow-md ring-1 ring-black/10">
@@ -528,34 +558,33 @@ export function PublicClubMyProgressSection() {
               </div>
               <Button
                 type="button"
-                className={cn("h-11 w-full shrink-0 gap-1.5 text-base sm:mt-0.5 sm:w-auto", clubCtaFillHoverClass)}
+                variant="outline"
+                className={cn("w-full shrink-0 sm:mt-0.5 sm:w-auto", progressAi4tButtonClass)}
                 onClick={openCoachTips}
               >
                 <Ai4TInlineLabel
                   text={t.clubProgress.aiCoachCta}
-                  logoClassName="h-5 w-5"
-                  textClassName="font-semibold"
+                  logoClassName={progressAi4tLogoClass}
+                  textClassName="font-semibold text-neutral-900"
                 />
               </Button>
             </div>
 
-            <div className={cn(progressFormSurfaceClass, "m-3 space-y-5 p-4 sm:m-4 sm:p-5")}>
+            <div className={cn(progressFormSurfaceClass, "m-3 space-y-5 p-4 pt-5 sm:m-4 sm:p-5")}>
               <div className="grid min-w-0 gap-4">
-                <div className="min-w-0">
-                  <label className={cn(clubModalFormLabelClass, "mb-1.5 block text-sm")}>
+                <div className="min-w-0 space-y-2">
+                  <label className={cn(clubModalFormLabelClass, "block text-sm font-semibold")}>
                     {t.clubProgress.journalDate}
                   </label>
-                  <div className="w-full min-w-0 max-w-full overflow-hidden rounded-xl sm:max-w-[12rem]">
-                    <Input
-                      type="date"
-                      value={sessionDate}
-                      onChange={(e) => setSessionDate(e.target.value)}
-                      className={progressDateFieldClass}
-                    />
-                  </div>
+                  <Input
+                    type="date"
+                    value={sessionDate}
+                    onChange={(e) => setSessionDate(e.target.value)}
+                    className={cn(progressDateFieldClass, "max-w-full sm:max-w-[13.5rem]")}
+                  />
                 </div>
-                <div className="min-w-0">
-                  <label className={cn(clubModalFormLabelClass, "mb-1.5 block text-sm")}>
+                <div className="min-w-0 space-y-2">
+                  <label className={cn(clubModalFormLabelClass, "block text-sm font-semibold")}>
                     {t.clubProgress.journalWhatIDid}
                   </label>
                   <Textarea
@@ -566,8 +595,8 @@ export function PublicClubMyProgressSection() {
                     className={progressTextareaClass}
                   />
                 </div>
-                <div className="min-w-0">
-                  <label className={cn(clubModalFormLabelClass, "mb-1.5 block text-sm")}>
+                <div className="min-w-0 space-y-2">
+                  <label className={cn(clubModalFormLabelClass, "block text-sm font-semibold")}>
                     {t.clubProgress.journalImprovements}
                   </label>
                   <Textarea
@@ -710,18 +739,23 @@ export function PublicClubMyProgressSection() {
                 ))}
               </ul>
               {isStaff && lowAttendance ? (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <Button type="button" className={cn("h-11 gap-1.5 text-base", clubCtaFillHoverClass)} onClick={openNudge}>
+                <div className="mx-auto flex w-full max-w-md flex-col gap-2 pt-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={cn(progressAi4tButtonClass, "w-full justify-center")}
+                    onClick={openNudge}
+                  >
                     <Ai4TInlineLabel
                       text={t.clubProgress.aiNudgeCta}
-                      logoClassName="h-5 w-5"
-                      textClassName="font-semibold"
+                      logoClassName={progressAi4tLogoClass}
+                      textClassName="font-semibold text-neutral-900"
                     />
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
-                    className={cn("h-11 gap-1.5 text-base", clubCtaOutlineButtonClass)}
+                    className={cn("h-11 w-full justify-center gap-1.5 text-base", clubCtaOutlineButtonClass)}
                     onClick={() => openCommunicationModal()}
                   >
                     <MessageSquare className="h-4 w-4" />

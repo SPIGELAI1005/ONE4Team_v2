@@ -193,8 +193,11 @@ export function PublicClubNavbar() {
                 <Button
                   type="button"
                   size="sm"
-                  variant="ghost"
-                  className="h-10 w-10 shrink-0 p-0 text-[color:var(--club-foreground)] hover:bg-white/10"
+                  className={cn(
+                    "h-9 w-9 shrink-0 rounded-md p-0 font-semibold",
+                    clubCtaFillHoverClass,
+                  )}
+                  style={dashboardFillStyle}
                   aria-label={t.appHeader.openMenu}
                 >
                   <Menu className="h-5 w-5" />
@@ -267,7 +270,10 @@ export function PublicClubNavbar() {
             <Button
               type="button"
               size="sm"
-              className={`shrink-0 px-2.5 font-semibold sm:px-3 ${clubCtaFillHoverClass}`}
+              className={cn(
+                "h-9 w-9 shrink-0 rounded-md p-0 font-semibold sm:w-auto sm:px-3",
+                clubCtaFillHoverClass,
+              )}
               style={dashboardFillStyle}
               onClick={() => void openDashboardOrAuth()}
               disabled={checkingMembership}

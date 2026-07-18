@@ -295,29 +295,59 @@ export function saveTrainingJournal(
   localStorage.setItem(journalStorageKey(clubId, membershipId), JSON.stringify(entries.slice(0, 40)));
 }
 
+export interface TrainingCoachPromptCopy {
+  intro: string;
+  stats: string;
+  journalHeader: string;
+  emptyJournal: string;
+  entryLine: string;
+  outro: string;
+  techniqueLabel: string;
+  fitnessLabel: string;
+  tacticsLabel: string;
+  mindsetLabel: string;
+}
+
 export function buildTrainingCoachPrompt(input: {
   entries: TrainingJournalEntry[];
   levelLabel: string;
   xp: number;
   streak: number;
   matches: number;
+  copy: TrainingCoachPromptCopy;
 }): string {
+  const { copy } = input;
   const latest = input.entries.slice(0, 3);
   const journalBlock =
     latest.length === 0
-      ? "(No training notes yet — suggest a first session reflection template.)"
+      ? copy.emptyJournal
       : latest
-          .map(
-            (e, i) =>
-              `${i + 1}. ${e.sessionDate}\nWhat I did: ${e.whatIDid || "-"}\nImprovements: ${e.improvements || "-"}\nSelf-ratings (1-5): technique ${e.selfRatings.technique}, fitness ${e.selfRatings.fitness}, tactics ${e.selfRatings.tactics}, mindset ${e.selfRatings.mindset}`,
+          .map((e, i) =>
+            copy.entryLine
+              .replace("{n}", String(i + 1))
+              .replace("{date}", e.sessionDate)
+              .replace("{did}", e.whatIDid || "-")
+              .replace("{improvements}", e.improvements || "-")
+              .replace("{techniqueLabel}", copy.techniqueLabel)
+              .replace("{fitnessLabel}", copy.fitnessLabel)
+              .replace("{tacticsLabel}", copy.tacticsLabel)
+              .replace("{mindsetLabel}", copy.mindsetLabel)
+              .replace("{technique}", String(e.selfRatings.technique))
+              .replace("{fitness}", String(e.selfRatings.fitness))
+              .replace("{tactics}", String(e.selfRatings.tactics))
+              .replace("{mindset}", String(e.selfRatings.mindset)),
           )
           .join("\n\n");
   return [
-    "You are AI 4 T, the club training coach. Review this player's progress notes and give playful, skill-focused tips (no body-shaming).",
-    `Level: ${input.levelLabel}. XP: ${input.xp}. Training streak: ${input.streak}. Match appearances: ${input.matches}.`,
-    "Recent journal:",
+    copy.intro,
+    copy.stats
+      .replace("{level}", input.levelLabel)
+      .replace("{xp}", String(input.xp))
+      .replace("{streak}", String(input.streak))
+      .replace("{matches}", String(input.matches)),
+    copy.journalHeader,
     journalBlock,
-    "Reply with: (1) 3 concrete strengths to keep, (2) 2 improvement focuses, (3) 3 short exercises or drills for the next training week to reach the next level, (4) one friendly challenge they can track.",
+    copy.outro,
   ].join("\n\n");
 }
 

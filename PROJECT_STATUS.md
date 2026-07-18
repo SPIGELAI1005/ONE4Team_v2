@@ -1,10 +1,11 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-07-16 (Commercial packaging, German i18n, public club UX, hero isolation)
+Last updated: 2026-07-18 (Member ID skills back · My Progress · Pricing / Founding Club)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
-- **Commercial packaging (2026-07-16):** **`plan-catalog.ts`** is the source of truth for Kick-off / Squad / Pro / Champions prices, limits, and feature flags; Pricing UI + **`plan-limits`** + remote **`public.plans`** (migration **`20260801220000`**) aligned. Example: ~800-member club → **Pro** (~€255–319/mo depending on yearly vs monthly). See **`CHANGELOG.md`** § **2026-07-16**, **`GTM_PRICING_PACKAGING.md`**.
+- **Member ID + My Progress (2026-07-18):** Flippable Member ID — players get progress-derived skills + AI 4 T estimate (or **—** when empty); non-players get club crest. Parity on public club modal and **`/members`** Club Card. My Progress taglines use two-line EN/DE breaks. Progress RPC enum fix migration **`20260804150000`**. See **`CHANGELOG.md`** § **Member ID card skills**.
+- **Commercial packaging (2026-07-16 / overhaul 2026-07-18):** **`plan-catalog.ts`** is the source of truth for Kick-off / Squad / Pro / Champions prices, limits, and feature flags; Pricing UI + Founding Club offer + dual Stripe line items. See **`CHANGELOG.md`** § **2026-07-18** Pricing sections, **`GTM_PRICING_PACKAGING.md`**.
 - **German i18n (2026-07-16):** Comprehensive DE pass (parity, umlauts, leftover English) across club, partner, marketplace, and operator strings.
 - **Public club UX (2026-07-16):** Account settings modal; profile menu glass styling; invite modal fixes; **neutral** default hero assets (tenant isolation from pilot photography).
 - **Teams / AI branding (2026-07-16):** Full-club member picker on Edit Team; AI 4 T red-**4** branding on dashboard surfaces; Allach membership fee display; Features cards larger type.

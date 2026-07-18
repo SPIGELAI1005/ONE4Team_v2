@@ -310,7 +310,7 @@ begin
   ) and not exists (
     select 1 from public.club_memberships m
     where m.club_id = p_club_id and m.user_id = v_uid and m.status = 'active'
-      and m.role in ('trainer', 'club_admin', 'admin')
+      and m.role::text in ('trainer', 'admin', 'staff')
   ) then
     raise exception 'not_authorized';
   end if;
@@ -391,7 +391,7 @@ begin
   select exists (
     select 1 from public.club_memberships m
     where m.club_id = p_club_id and m.user_id = v_uid and m.status = 'active'
-      and m.role in ('trainer', 'club_admin', 'admin')
+      and m.role::text in ('trainer', 'admin', 'staff')
   ) into v_is_staff;
 
   select coalesce(array_agg(distinct tp.team_id), '{}'::uuid[])

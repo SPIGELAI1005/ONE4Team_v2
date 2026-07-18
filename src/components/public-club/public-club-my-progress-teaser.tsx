@@ -27,9 +27,7 @@ export function PublicClubMyProgressTeaser() {
     navigate(progressHref);
   }
 
-  const teaserBody =
-    t.clubPage.progressHomeTeaserBody ??
-    "Training attendance, match selection, self-evaluation, and AI 4 T tips. Open your full progress board.";
+  const teaserBody = t.clubPage.progressHomeTeaserBody;
 
   return (
     <PublicClubSection
@@ -37,7 +35,7 @@ export function PublicClubMyProgressTeaser() {
       title={t.clubProgress.sectionTitle}
       subtitle={
         <BrandedText
-          text={t.clubPage.progressHomeTeaserDesc ?? t.clubProgress.sectionDesc}
+          text={t.clubPage.progressHomeTeaserDesc}
           ai4tOnly
         />
       }
@@ -48,22 +46,21 @@ export function PublicClubMyProgressTeaser() {
         </div>
         <div className="min-w-0 flex-1 space-y-2">
           <h3 className="font-display text-base font-semibold text-[color:var(--club-foreground)]">
-            {t.clubPage.progressHomeTeaserTitle ?? t.clubProgress.sectionTitle}
+            {t.clubPage.progressHomeTeaserTitle}
           </h3>
           <p className="text-sm leading-relaxed text-[color:var(--club-muted)]">
             <BrandedText text={teaserBody} ai4tOnly />
           </p>
           {user && isMember ? (
             <p className="text-xs text-[color:var(--club-muted)]">
-              {t.clubPage.progressHomeTeaserMemberHint ??
-                "Also available from your profile menu."}
+              {t.clubPage.progressHomeTeaserMemberHint}
             </p>
           ) : null}
         </div>
         <PublicClubButton appearance="primary" className="w-full shrink-0 sm:w-auto" onClick={openProgress}>
           {user
-            ? t.clubPage.progressHomeTeaserCtaSignedIn ?? t.clubProgress.sectionTitle
-            : t.clubPage.progressHomeTeaserCtaSignedOut ?? t.clubProgress.signInCta}
+            ? t.clubPage.progressHomeTeaserCtaSignedIn
+            : t.clubPage.progressHomeTeaserCtaSignedOut}
         </PublicClubButton>
       </PublicClubCard>
     </PublicClubSection>

@@ -3753,8 +3753,23 @@ const Members = () => {
                               clubName={clubName}
                               logoSrc={clubLogoUrl ?? ""}
                               membershipRole={getRoleLabel(editingDraftForm.role)}
+                              isPlayer={isPlayerRole(editingDraftForm.role)}
                               teamLabel={draftTeamLabelForCard}
                               email={editingDraftForm.email.trim() || null}
+                              clubId={clubId}
+                              membershipId={
+                                (typeof draftMergedMasterForTabs.membership_id === "string"
+                                  ? draftMergedMasterForTabs.membership_id
+                                  : null) ||
+                                (() => {
+                                  const emailKey = normalizeEmail(editingDraftForm.email);
+                                  if (!emailKey) return null;
+                                  const hit = Object.entries(membershipEmails).find(
+                                    ([, email]) => normalizeEmail(email) === emailKey,
+                                  );
+                                  return hit?.[0] ?? null;
+                                })()
+                              }
                               avatarUpload={{
                                 uploading: draftAvatarUploading,
                                 onUpload: (file) => void uploadDraftMemberAvatar(file),
@@ -4237,6 +4252,9 @@ const Members = () => {
                                 membershipRole={getRoleLabel(
                                   memberPanelEditModeId === member.id ? editMemberForm.role : member.role,
                                 )}
+                                isPlayer={isPlayerRole(
+                                  memberPanelEditModeId === member.id ? editMemberForm.role : member.role,
+                                )}
                                 teamLabel={
                                   memberPanelEditModeId === member.id
                                     ? clubTeamNamesFromIds(clubTeams, editMemberTeamIds).join(", ") ||
@@ -4244,6 +4262,8 @@ const Members = () => {
                                     : getMemberAssignedTeamNames(member)
                                 }
                                 email={membershipEmails[member.id] ?? null}
+                                clubId={clubId}
+                                membershipId={member.id}
                                 avatarUpload={
                                   memberPanelEditModeId === member.id && perms.isAdmin
                                     ? {
@@ -5205,6 +5225,7 @@ const Members = () => {
                             clubName={clubName}
                             logoSrc={clubLogoUrl ?? ""}
                             membershipRole={row.role ? getRoleLabel(row.role) : undefined}
+                            isPlayer={isPlayerRole(row.role)}
                             teamLabel={row.team.trim()}
                             email={row.email.trim() || null}
                             avatarUpload={{
@@ -5266,6 +5287,9 @@ const Members = () => {
           membershipRole={getRoleLabel(
             memberPanelEditModeId === clubPassModalMember.id ? editMemberForm.role : clubPassModalMember.role,
           )}
+          isPlayer={isPlayerRole(
+            memberPanelEditModeId === clubPassModalMember.id ? editMemberForm.role : clubPassModalMember.role,
+          )}
           teamLabel={
             memberPanelEditModeId === clubPassModalMember.id
               ? clubTeamNamesFromIds(clubTeams, editMemberTeamIds).join(", ") || editMemberForm.team.trim()
@@ -5285,6 +5309,13 @@ const Members = () => {
               setMemberMasterEditDraft((draft) => ({ ...draft, club_pass_generated_at: new Date().toISOString() }));
             }
           }}
+          clubId={
+            clubId ||
+            (typeof masterByMembershipId[clubPassModalMember.id]?.club_id === "string"
+              ? masterByMembershipId[clubPassModalMember.id]!.club_id
+              : null)
+          }
+          membershipId={clubPassModalMember.id}
           labels={clubPassLabels}
         />
       ) : null}

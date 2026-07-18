@@ -160,7 +160,7 @@ export function PublicClubProfileMenu({ className }: { className?: string }) {
             size="sm"
             variant="outline"
             className={cn(
-              "h-9 w-9 shrink-0 rounded-full border p-0 font-semibold shadow-sm hover:brightness-110",
+              "h-9 w-9 shrink-0 rounded-md border p-0 font-semibold shadow-sm hover:brightness-110",
               className,
             )}
             style={triggerStyle}
@@ -225,9 +225,12 @@ export function PublicClubProfileMenu({ className }: { className?: string }) {
         clubName={club.name}
         logoSrc={club.logo_url ?? ""}
         membershipRole={roleLabel}
+        isPlayer={(membershipRole || "").trim().toLowerCase() === "player"}
         teamLabel={teamLabel}
         readOnly
         appearance="publicClub"
+        clubId={club.id}
+        membershipId={membershipId}
         labels={clubPassLabels}
       />
 

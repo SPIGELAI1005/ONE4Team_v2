@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 import { ClubMemberPassCard } from "@/components/members/club-member-pass-card";
 import { ClubMemberPassModal, buildClubMemberPassLabels } from "@/components/members/club-member-pass-modal";
 import { useLanguage } from "@/hooks/use-language";
+import { useClubId } from "@/hooks/use-club-id";
+import { useClubPassSkills } from "@/hooks/use-club-pass-skills";
 
 const FIELD_TABS = [
   { key: "identity",    icon: User,        accent: "text-violet-400",  activeBg: "data-[state=active]:bg-violet-500/15 data-[state=active]:text-violet-300" },
@@ -67,8 +69,13 @@ interface MasterDataTabsProps {
   clubName?: string | null;
   logoSrc?: string;
   membershipRole?: string;
+  /** Player role gets skills back; other roles get club crest back. */
+  isPlayer?: boolean;
   teamLabel?: string;
   email?: string | null;
+  clubId?: string | null;
+  /** Enables skills back + AI market value on the club card preview. */
+  membershipId?: string | null;
   avatarUpload?: MasterDataTabsAvatarUpload;
   /** When false (default), `safetyTabExtra` is ignored - use only on the live roster member detail panel. */
   safetyTabExtraEnabled?: boolean;
@@ -101,14 +108,41 @@ function isLongTextField(key: string): boolean {
 
 export function MasterDataTabs({
   values, labels, readOnly, onChange, compact,
-  displayName, clubName, logoSrc, membershipRole, teamLabel, avatarUpload,
+  displayName, clubName, logoSrc, membershipRole, isPlayer = false, teamLabel, clubId, membershipId, avatarUpload,
   safetyTabExtraEnabled = false,
   safetyTabExtra,
 }: MasterDataTabsProps) {
   const { t } = useLanguage();
+  const { clubId: activeClubId } = useClubId();
+  const resolvedClubId =
+    clubId ||
+    (typeof values.club_id === "string" ? values.club_id : null) ||
+    activeClubId ||
+    null;
+  const resolvedMembershipId =
+    membershipId ||
+    (typeof values.membership_id === "string" ? values.membership_id : null) ||
+    null;
   const [activeTab, setActiveTab] = useState<string>("identity");
   const [clubPassModalOpen, setClubPassModalOpen] = useState(false);
   const clubPassLabels = buildClubMemberPassLabels(t);
+
+  const {
+    skillsSummary,
+    levelLabel,
+    xpValue,
+    estimateGeneratedAt,
+    estimateRefreshing,
+    refreshEstimate,
+  } = useClubPassSkills({
+    clubId: resolvedClubId,
+    membershipId: resolvedMembershipId,
+    enabled: isPlayer,
+    masterHints: {
+      goalsCount:
+        typeof values.goals_count === "number" ? values.goals_count : null,
+    },
+  });
 
   const memberNameFromMaster =
     `${values.first_name || ""} ${values.last_name || ""}`.trim();
@@ -393,8 +427,8 @@ export function MasterDataTabs({
       })}
 
       <TabsContent value="clubcard" className="mt-0 w-full min-w-0 outline-none">
-        <div className={cn("flex w-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border/40 bg-muted/10 p-3 max-lg:p-4", panelHeightClass)}>
-          <p className="text-sm text-muted-foreground mb-4">{labels.clubCardHint}</p>
+        <div className="flex w-full min-w-0 flex-col overflow-visible rounded-2xl border border-border/40 bg-muted/10 p-3 max-lg:p-4">
+          <p className="mb-4 text-sm text-muted-foreground">{labels.clubCardHint}</p>
 
           {memberIdNo ? (
             <button
@@ -414,12 +448,23 @@ export function MasterDataTabs({
             clubName={clubName}
             logoSrc={logoSrc}
             membershipRole={membershipRole}
+            isPlayer={isPlayer}
             teamLabel={teamLabel}
             readOnly={readOnly}
             showControls={!readOnly}
             onGenerateId={readOnly ? undefined : handleGenerateId}
             onMemberIdClick={memberIdNo ? openClubPassModal : undefined}
             onDownloadComplete={() => onChange?.("club_pass_generated_at", new Date().toISOString())}
+            skillsSummary={isPlayer ? skillsSummary : null}
+            levelLabel={isPlayer ? levelLabel : undefined}
+            xpValue={isPlayer ? xpValue : undefined}
+            estimateGeneratedAt={isPlayer ? estimateGeneratedAt : null}
+            estimateRefreshing={estimateRefreshing}
+            onRefreshEstimate={
+              isPlayer && resolvedClubId && resolvedMembershipId
+                ? () => void refreshEstimate()
+                : undefined
+            }
             labels={clubPassLabels}
           />
         </div>
@@ -432,10 +477,13 @@ export function MasterDataTabs({
           clubName={clubName}
           logoSrc={logoSrc}
           membershipRole={membershipRole}
+          isPlayer={isPlayer}
           teamLabel={teamLabel}
           readOnly={readOnly}
           onGenerateId={readOnly ? undefined : handleGenerateId}
           onDownloadComplete={() => onChange?.("club_pass_generated_at", new Date().toISOString())}
+          clubId={resolvedClubId}
+          membershipId={resolvedMembershipId}
           labels={clubPassLabels}
         />
       </TabsContent>

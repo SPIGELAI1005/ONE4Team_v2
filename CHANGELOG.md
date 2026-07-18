@@ -3,6 +3,20 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-18 (Member ID card skills · Club Card parity · My Progress copy)
+
+### Member ID card (flip / skills / crest)
+- **3D flip** on Member ID card (Safari-safe stage height + backface visibility).
+- **Players:** back shows My Progress–derived FUT-style scores (TEC/FIT/TAC/MND/ATT/CMP + OVR), level/XP, and **AI 4 T** market estimate with info popover + refresh control (stacked under ⓘ).
+- **No My Progress recording yet:** numeric scores, level/XP, and market value render as **—** (not synthetic floors); confidence copy points to My Progress.
+- **Non-player roles** (trainer, admin, staff, …): back shows **club crest/logo** only (assigned club).
+- **Surfaces:** public club profile Member ID modal; **`/members`** IdCard modal; Club Card tab in **`MasterDataTabs`** (roster + drafts with membership when resolvable). Club Card panel grows with content (no inner scrollbar clipping flip).
+- **Lib/hook/tests:** `club-member-pass-skills.ts` (+ tests), `use-club-pass-skills.ts`; EN/DE `clubPass*` labels including refresh / club-crest flip hint.
+- **SQL:** `20260804150000_fix_progress_rpc_app_role_enum.sql` — `get_member_progress_snapshot` / challenge RPCs use valid `app_role` enum literals (fixes HTTP 400 when `club_admin` was cast incorrectly). Apply on linked remote if progress snapshot fails.
+
+### My Progress public copy
+- Hero tagline and support line use intentional **two-line breaks** (EN + DE) via `\n` + `whitespace-pre-line` on `/club/:slug/my-progress`.
+
 ## 2026-07-18 (Pricing UX polish · Founding Club marketing)
 
 - **Pricing cards:** Larger description/feature type; no description clamp; Kick-off catalogue price with red strikethrough above **0 €**; plan logos with gold corner icons; Kick-off / Pro / Enterprise badges uppercase with matching size; Kick-off badge uses black **12 MONTHS FREE** pill (same as promo banner).

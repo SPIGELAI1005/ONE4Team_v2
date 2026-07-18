@@ -3,6 +3,7 @@ import { Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -18,6 +19,8 @@ import {
   clubReadableModalPanelClass,
 } from "@/lib/public-club-glass-classes";
 import { cn } from "@/lib/utils";
+import { useClubId } from "@/hooks/use-club-id";
+import { useClubPassSkills } from "@/hooks/use-club-pass-skills";
 
 export interface ClubMemberPassModalProps {
   open: boolean;
@@ -27,12 +30,17 @@ export interface ClubMemberPassModalProps {
   clubName?: string | null;
   logoSrc?: string;
   membershipRole?: string;
+  /** Player role gets skills back; other roles get club crest back. */
+  isPlayer?: boolean;
   teamLabel?: string;
   readOnly?: boolean;
   onGenerateId?: () => void;
   onDownloadComplete?: () => void;
   /** Public club microsite: white readable chrome + light pass card. */
   appearance?: "default" | "publicClub";
+  /** Enables skills back + AI market value when membership is known. */
+  clubId?: string | null;
+  membershipId?: string | null;
   labels: ClubMemberPassCardLabels & {
     title: string;
     close: string;
@@ -47,15 +55,45 @@ export function ClubMemberPassModal({
   clubName,
   logoSrc,
   membershipRole,
+  isPlayer = false,
   teamLabel,
   readOnly = true,
   onGenerateId,
   onDownloadComplete,
   appearance = "default",
+  clubId: clubIdProp,
+  membershipId: membershipIdProp,
   labels,
 }: ClubMemberPassModalProps) {
   const cardRef = useRef<ClubMemberPassCardHandle>(null);
   const isPublicClub = appearance === "publicClub";
+  const { clubId: activeClubId } = useClubId();
+
+  const resolvedClubId =
+    clubIdProp ||
+    (typeof values.club_id === "string" ? values.club_id : null) ||
+    activeClubId ||
+    null;
+  const resolvedMembershipId =
+    membershipIdProp ||
+    (typeof values.membership_id === "string" ? values.membership_id : null) ||
+    null;
+
+  const {
+    skillsSummary,
+    levelLabel,
+    xpValue,
+    estimateGeneratedAt,
+    estimateRefreshing,
+    refreshEstimate,
+  } = useClubPassSkills({
+    clubId: resolvedClubId,
+    membershipId: resolvedMembershipId,
+    enabled: open && isPlayer,
+    masterHints: {
+      goalsCount: typeof values.goals_count === "number" ? values.goals_count : null,
+    },
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -82,32 +120,42 @@ export function ClubMemberPassModal({
           >
             {labels.title}
           </DialogTitle>
-          {displayName ? (
-            <p
-              className={cn(
-                "mt-1 truncate text-sm",
-                isPublicClub ? "text-neutral-600" : "text-muted-foreground",
-              )}
-            >
-              {displayName}
-            </p>
-          ) : null}
+          <DialogDescription
+            className={cn(
+              displayName ? "mt-1 truncate" : "sr-only",
+              isPublicClub ? "text-neutral-600" : "text-muted-foreground",
+            )}
+          >
+            {displayName || labels.memberIdCard}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
           <ClubMemberPassCard
+            key={`${resolvedClubId ?? "club"}-${resolvedMembershipId ?? "member"}`}
             ref={cardRef}
             values={values}
             displayName={displayName}
             clubName={clubName}
             logoSrc={logoSrc}
             membershipRole={membershipRole}
+            isPlayer={isPlayer}
             teamLabel={teamLabel}
             readOnly={readOnly}
             showControls={!readOnly || Boolean(onGenerateId)}
             theme={isPublicClub ? "light" : undefined}
             onGenerateId={onGenerateId}
             onDownloadComplete={onDownloadComplete}
+            skillsSummary={isPlayer ? skillsSummary : null}
+            levelLabel={isPlayer ? levelLabel : undefined}
+            xpValue={isPlayer ? xpValue : undefined}
+            estimateGeneratedAt={isPlayer ? estimateGeneratedAt : null}
+            estimateRefreshing={estimateRefreshing}
+            onRefreshEstimate={
+              isPlayer && resolvedClubId && resolvedMembershipId
+                ? () => void refreshEstimate()
+                : undefined
+            }
             labels={labels}
           />
         </div>
@@ -124,7 +172,7 @@ export function ClubMemberPassModal({
             variant="outline"
             className={
               isPublicClub
-                ? "border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-50 hover:text-neutral-900"
+                ? "border-neutral-300 bg-white text-neutral-900 hover:bg-white hover:text-neutral-900"
                 : undefined
             }
             onClick={() => onOpenChange(false)}
@@ -163,6 +211,37 @@ export function buildClubMemberPassLabels(t: {
     clubPassThemeGold: string;
     clubPassDownloadFailed: string;
     clubPassModalTitle: string;
+    clubPassSkillsTitle: string;
+    clubPassSkillsOverview: string;
+    clubPassFlipHint: string;
+    clubPassFlipClubHint: string;
+    clubPassFlipBackHint: string;
+    clubPassOverall: string;
+    clubPassOverallFull: string;
+    clubPassSkillTec: string;
+    clubPassSkillFit: string;
+    clubPassSkillTac: string;
+    clubPassSkillMnd: string;
+    clubPassSkillAtt: string;
+    clubPassSkillCmp: string;
+    clubPassSkillTecFull: string;
+    clubPassSkillFitFull: string;
+    clubPassSkillTacFull: string;
+    clubPassSkillMndFull: string;
+    clubPassSkillAttFull: string;
+    clubPassSkillCmpFull: string;
+    clubPassMarketValue: string;
+    clubPassMarketValueAi: string;
+    clubPassMarketInfoTitle: string;
+    clubPassMarketInfoBody: string;
+    clubPassMarketEstimatedOn: string;
+    clubPassMarketRefresh: string;
+    clubPassMarketConfidenceLow: string;
+    clubPassMarketConfidenceMedium: string;
+    clubPassMarketConfidenceHigh: string;
+    clubPassNoProgress: string;
+    clubPassLevel: string;
+    clubPassXp: string;
   };
   common: { close: string };
 }): ClubMemberPassCardLabels & { title: string; close: string } {
@@ -181,6 +260,37 @@ export function buildClubMemberPassLabels(t: {
     themeDark: t.membersPage.clubPassThemeDark,
     themeGold: t.membersPage.clubPassThemeGold,
     downloadFailed: t.membersPage.clubPassDownloadFailed,
+    skillsTitle: t.membersPage.clubPassSkillsTitle,
+    skillsOverview: t.membersPage.clubPassSkillsOverview,
+    flipHint: t.membersPage.clubPassFlipHint,
+    flipClubHint: t.membersPage.clubPassFlipClubHint,
+    flipBackHint: t.membersPage.clubPassFlipBackHint,
+    overall: t.membersPage.clubPassOverall,
+    overallFull: t.membersPage.clubPassOverallFull,
+    skillTec: t.membersPage.clubPassSkillTec,
+    skillFit: t.membersPage.clubPassSkillFit,
+    skillTac: t.membersPage.clubPassSkillTac,
+    skillMnd: t.membersPage.clubPassSkillMnd,
+    skillAtt: t.membersPage.clubPassSkillAtt,
+    skillCmp: t.membersPage.clubPassSkillCmp,
+    skillTecFull: t.membersPage.clubPassSkillTecFull,
+    skillFitFull: t.membersPage.clubPassSkillFitFull,
+    skillTacFull: t.membersPage.clubPassSkillTacFull,
+    skillMndFull: t.membersPage.clubPassSkillMndFull,
+    skillAttFull: t.membersPage.clubPassSkillAttFull,
+    skillCmpFull: t.membersPage.clubPassSkillCmpFull,
+    marketValue: t.membersPage.clubPassMarketValue,
+    marketValueAi: t.membersPage.clubPassMarketValueAi,
+    marketInfoTitle: t.membersPage.clubPassMarketInfoTitle,
+    marketInfoBody: t.membersPage.clubPassMarketInfoBody,
+    marketEstimatedOn: t.membersPage.clubPassMarketEstimatedOn,
+    marketRefresh: t.membersPage.clubPassMarketRefresh,
+    marketConfidenceLow: t.membersPage.clubPassMarketConfidenceLow,
+    marketConfidenceMedium: t.membersPage.clubPassMarketConfidenceMedium,
+    marketConfidenceHigh: t.membersPage.clubPassMarketConfidenceHigh,
+    noProgress: t.membersPage.clubPassNoProgress,
+    level: t.membersPage.clubPassLevel,
+    xp: t.membersPage.clubPassXp,
     title: t.membersPage.clubPassModalTitle,
     close: t.common.close,
   };

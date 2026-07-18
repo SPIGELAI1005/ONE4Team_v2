@@ -240,8 +240,10 @@ export function MemberMasterDialog({
                 clubName={clubName}
                 logoSrc={logoSrc}
                 membershipRole={roleDisplayLabel}
+                isPlayer={(membershipRole || "").trim().toLowerCase() === "player"}
                 teamLabel={teamLabel}
                 email={email}
+                membershipId={membershipId}
                 avatarUpload={{
                   uploading: avatarUploading,
                   onUpload: (file) => void uploadRegistryAvatar(file),

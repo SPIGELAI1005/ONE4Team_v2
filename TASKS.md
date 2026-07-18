@@ -73,6 +73,8 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [ ] **WAVE-EDGE-001** Deploy **`process-weekly-digests`** + schedule cron; redeploy AI Edges for caps (see **`HOLD.md`**)
 - [x] **GAME-MIG-001** Linked remote: apply **`20260803120000_club_gamification_awards.sql`** *(2026-07-18)*
 - [x] **GAME-UI-001** Public club My Progress + reports badges/streak + team challenge nudges + opt-in strip *(2026-07-18)*
+- [x] **GAME-CARD-001** Member ID flip: player skills + AI 4 T estimate (empty → —); non-player club crest; `/members` Club Card parity; progress RPC role-enum fix **`20260804150000`** *(2026-07-18)*
+- [x] **GAME-COPY-001** My Progress hero/support two-line EN/DE taglines *(2026-07-18)*
 - [x] **MAP-OVERLAY-001** Asset Map satellite underlay — migration **`20260803140000`** + Combined/Booked UI *(2026-07-18)*
 
 ---

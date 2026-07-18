@@ -133,6 +133,19 @@ describe("club-member-progress", () => {
       xp: 0,
       streak: 0,
       matches: 0,
+      copy: {
+        intro: "You are AI 4 T, the club training coach.",
+        stats: "Level: {level}. XP: {xp}. Training streak: {streak}. Match appearances: {matches}.",
+        journalHeader: "Recent journal:",
+        emptyJournal: "(No training notes yet)",
+        entryLine:
+          "{n}. {date}\nWhat I did: {did}\nImprovements: {improvements}\nSelf-ratings (1-5): {techniqueLabel} {technique}, {fitnessLabel} {fitness}, {tacticsLabel} {tactics}, {mindsetLabel} {mindset}",
+        outro: "Reply with tips.",
+        techniqueLabel: "technique",
+        fitnessLabel: "fitness",
+        tacticsLabel: "tactics",
+        mindsetLabel: "mindset",
+      },
     });
     expect(prompt).toContain("AI 4 T");
     expect(prompt).toContain("Passing under pressure");

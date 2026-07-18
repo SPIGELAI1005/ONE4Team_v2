@@ -1,11 +1,13 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-07-18 (Pricing UX polish · Founding Club marketing + architecture)
+Last updated: 2026-07-18 (Member ID card skills back · My Progress copy · Club Card parity)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **Member ID card flip + AI 4 T estimate (2026-07-18):** Club Member ID card flips on tap. **Players** see My Progress–derived skills (TEC/FIT/TAC/MND/ATT/CMP), OVR, level/XP, and AI 4 T market estimate with info + refresh; empty My Progress shows **—**. **Non-players** see club crest only on the back. Wired on public club profile modal, **`/members`** list modal, and Club Card tab (`MasterDataTabs`). Lib: **`club-member-pass-skills.ts`**, hook **`use-club-pass-skills.ts`**. Migration **`20260804150000_fix_progress_rpc_app_role_enum.sql`** fixes progress RPC `app_role` cast (apply if snapshot 400s). See **CHANGELOG** § **Member ID card skills**.
+- **My Progress copy (2026-07-18):** Hero/support taglines use intentional two-line breaks (EN/DE) with `whitespace-pre-line` on **`public-club-my-progress-section`**.
 - **Pricing UX polish (2026-07-18):** `/pricing` — gold Founding promo banner + Offer terms / Offer details modals; Kick-off strikethrough→0 €; logos+corner icons on all cards; Bespoke Enterprise band + mailto consultation to **`contact@one4team.com`**; AI 4 T add-on red **4**, visible-play video; FAQ + comparison labels updated. See **CHANGELOG** § **Pricing UX polish**.
 - **Production readiness re-audit (2026-07-18):** Section B scores updated in **`ops/PRODUCTION_READINESS_ARTIFACTS.md`** + **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**: Overall **61→68**, Scalability **58→64**, Observability **48→58** (Deployment 70, Security 72, Tenant 78). Still **conditionally ready**; Section L/M + realtime soak remain the unlock to ~75. Visual summary: Cursor canvas `production-readiness-reaudit.canvas.tsx`.
 - **Product waves A–H (2026-07-18):** GuidedSetup golden path (import/invite email/publish); Members feature modules; operator system health probes; WhatsApp Meta verify (**redeploy chat-bridge**); AI value metrics card; Stripe `invoice.paid` + billing portal Edge (**deploy**); migration dating README; Playwright dual-role smoke (env-gated). See **CHANGELOG** § Product improvement waves.

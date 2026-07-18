@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-07-18 — Pricing / Founding Club overhaul + UX polish documented; Waves A–E + gamification + Asset Map notes unchanged below. Cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30 … § **2026-07-18** Pricing architecture & UX polish).
+Last updated: 2026-07-18 — Member ID / My Progress card work + progress RPC fix migration noted; Pricing / Founding Club + Waves A–E + gamification + Asset Map notes unchanged below. Cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30 … § **2026-07-18** Member ID card skills).
 
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 
@@ -97,7 +97,8 @@ Apply in order after Wave B — **all applied** on linked remote (2026-07-16):
 
 ## Public club gamification (2026-07-18)
 1. ~~`supabase/migrations/20260803120000_club_gamification_awards.sql`~~ — **applied** on linked remote (creates `achievements` if missing; award/snapshot/team-challenge/opt-in RPCs)
-- Smoke: member on `/club/:slug` My Progress; `/reports` streak/badges; trainer AI 4 T nudge; privacy + opt-in strip on team page.
+2. `supabase/migrations/20260804150000_fix_progress_rpc_app_role_enum.sql` — **apply if** `get_member_progress_snapshot` / team challenge return HTTP 400 (`club_admin` invalid for `app_role`). Fixes enum literals to `admin`/`trainer`/`staff`.
+- Smoke: member on `/club/:slug` My Progress; `/reports` streak/badges; trainer AI 4 T nudge; privacy + opt-in strip on team page; Member ID flip (player skills / non-player crest) on club profile + `/members` Club Card.
 
 ## Asset Map satellite underlay (2026-07-18)
 1. ~~`supabase/migrations/20260803140000_club_asset_map_overlay.sql`~~ — **applied** on linked remote (`clubs.asset_map_overlay`)
