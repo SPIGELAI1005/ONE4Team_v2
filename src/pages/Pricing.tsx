@@ -531,14 +531,19 @@ function PromoBanner() {
   const { t } = useLanguage();
   return (
     <div className="founding-promo-banner fixed top-14 left-0 right-0 z-40">
-      <div className="mx-auto grid max-w-7xl grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 gap-y-1 px-3 py-2 sm:flex sm:justify-center sm:gap-x-4 sm:px-4 sm:py-2.5">
+      <div className="mx-auto grid max-w-7xl grid-cols-[auto_minmax(0,1fr)] items-start gap-x-2 gap-y-1 px-3 py-2 sm:flex sm:items-center sm:justify-center sm:gap-x-4 sm:px-4 sm:py-2.5">
         <span className="founding-promo-banner-pill col-start-1 row-start-1 shrink-0">
           {t.pricingPage.kickoffFreeBadge ?? "12 MONTHS FREE"}
         </span>
         <span className="founding-promo-banner-copy col-start-2 row-start-1 font-bold tracking-tight">
-          <span className="sm:hidden">
-            {t.pricingPage.foundingBannerMobile ??
-              "First season on us — Kick-off free for 12 months."}
+          <span className="founding-promo-banner-copy-mobile sm:hidden">
+            <span>
+              {t.pricingPage.foundingBannerMobileLine1 ?? "Your first season is on us."}
+            </span>
+            <span>
+              {t.pricingPage.foundingBannerMobileLine2 ??
+                "Eligible new clubs receive Kick-off free for 12 months."}
+            </span>
           </span>
           <span className="hidden sm:inline">
             {t.pricingPage.foundingBanner ??

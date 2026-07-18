@@ -2260,7 +2260,8 @@ export const en = {
     bespokePricingHint: "Tailored pricing for federations and complex organisations.",
     foundingBanner:
       "Your first season is on us. Eligible new clubs receive Kick-off free for 12 months.",
-    foundingBannerMobile: "First season on us — Kick-off free for 12 months.",
+    foundingBannerMobileLine1: "Your first season is on us.",
+    foundingBannerMobileLine2: "Eligible new clubs receive Kick-off free for 12 months.",
     viewOfferDetails: "View offer details",
     viewOfferTerms: "Offer terms",
     foundingDetailsHeadline: "Become a Founding Club.",

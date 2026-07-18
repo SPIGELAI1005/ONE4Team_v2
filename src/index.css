@@ -724,16 +724,32 @@
 
   .founding-promo-banner-copy {
     min-width: 0;
-    white-space: nowrap;
+    container-type: inline-size;
+    container-name: founding-banner-copy;
+  }
+
+  .founding-promo-banner-copy-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.12rem;
     line-height: 1.2;
-    /* Scales to keep the mobile slogan on one line beside the pill */
-    font-size: clamp(0.5rem, 2.45vw, 0.875rem);
+    /* Scale to the column between the pill and the right edge */
+    font-size: clamp(0.5rem, 4.8cqi, 0.78rem);
+  }
+
+  .founding-promo-banner-copy-mobile > span {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
   }
 
   @media (min-width: 640px) {
     .founding-promo-banner-copy {
       font-size: 0.875rem;
       text-align: center;
+      white-space: nowrap;
+      line-height: 1.2;
     }
   }
 
