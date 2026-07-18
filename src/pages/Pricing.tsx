@@ -1,5 +1,5 @@
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
-import { useRef, useState, useEffect, useCallback, useMemo, type ReactNode } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo, type MouseEvent, type ReactNode } from "react";
 import {
   Check, X as XIcon, ArrowRight, Sparkles, Crown, Rocket, Shield,
   Users, Calendar, Trophy, CreditCard, MessageSquare, Bot, BarChart3,
@@ -527,33 +527,69 @@ function FoundingClubOfferDetailsDialog() {
   );
 }
 
+const KICKOFF_PLAN_ANCHOR = "plan-kickoff";
+
+function scrollToKickoffPlan(event: MouseEvent<HTMLAnchorElement>) {
+  event.preventDefault();
+  const target = document.getElementById(KICKOFF_PLAN_ANCHOR);
+  if (!target) return;
+  target.scrollIntoView({ behavior: "smooth", block: "start" });
+  window.history.replaceState(null, "", `#${KICKOFF_PLAN_ANCHOR}`);
+}
+
+function KickoffPlanBannerLink({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <a
+      href={`#${KICKOFF_PLAN_ANCHOR}`}
+      onClick={scrollToKickoffPlan}
+      className={cn("founding-promo-banner-kickoff-link", className)}
+    >
+      {children}
+    </a>
+  );
+}
+
 function PromoBanner() {
   const { t } = useLanguage();
+  const pillLabel = t.pricingPage.kickoffFreeBadge ?? "12 MONTHS FREE";
+  const kickoffLinkLabel =
+    t.pricingPage.foundingBannerMobileLine3 ?? "Kick-off free for 12 months.";
+  const beforeLink =
+    t.pricingPage.foundingBannerBeforeLink ??
+    "Your first season is on us. Eligible new clubs receive ";
+
   return (
     <div className="founding-promo-banner fixed top-14 left-0 right-0 z-40">
-      <div className="mx-auto grid max-w-7xl grid-cols-[auto_minmax(0,1fr)] items-start gap-x-2 gap-y-1 px-3 py-2 sm:flex sm:items-center sm:justify-center sm:gap-x-4 sm:px-4 sm:py-2.5">
-        <span className="founding-promo-banner-pill col-start-1 row-start-1 shrink-0">
-          {t.pricingPage.kickoffFreeBadge ?? "12 MONTHS FREE"}
+      {/* Mobile: pill + multi-line copy; links under the pill */}
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-[minmax(12.25rem,max-content)_minmax(0,1fr)] items-start gap-x-2.5 gap-y-1 px-3 py-2 sm:hidden">
+        <span className="founding-promo-banner-pill col-start-1 row-start-1 max-w-full justify-self-start self-center">
+          {pillLabel}
         </span>
-        <span className="founding-promo-banner-copy col-start-2 row-start-1 font-bold tracking-tight">
-          <span className="founding-promo-banner-copy-mobile sm:hidden">
+        <span className="founding-promo-banner-copy col-start-2 row-start-1 min-w-0 self-center text-left font-bold tracking-tight">
+          <span className="founding-promo-banner-copy-mobile">
             <span>
               {t.pricingPage.foundingBannerMobileLine1 ?? "Your first season is on us."}
             </span>
             <span>
-              {t.pricingPage.foundingBannerMobileLine2 ??
-                "Eligible new clubs receive Kick-off free for"}
+              {t.pricingPage.foundingBannerMobileLine2 ?? "Eligible new clubs receive"}
             </span>
-            <span>
-              {t.pricingPage.foundingBannerMobileLine3 ?? "12 months."}
-            </span>
-          </span>
-          <span className="hidden sm:inline">
-            {t.pricingPage.foundingBanner ??
-              "Your first season is on us. Eligible new clubs receive Kick-off free for 12 months."}
+            <KickoffPlanBannerLink>{kickoffLinkLabel}</KickoffPlanBannerLink>
           </span>
         </span>
-        <div className="founding-promo-banner-links col-start-1 row-start-2 flex items-center gap-2.5 text-xs whitespace-nowrap sm:gap-4 sm:text-sm">
+        <div className="founding-promo-banner-links col-span-2 row-start-2 flex items-center justify-center gap-2.5 text-xs whitespace-nowrap">
+          <FoundingClubTermsDialog />
+          <FoundingClubOfferDetailsDialog />
+        </div>
+      </div>
+
+      {/* Desktop: single non-shrinking row — pill | text | links */}
+      <div className="mx-auto hidden max-w-7xl items-center justify-center gap-x-4 px-4 py-2.5 sm:flex">
+        <span className="founding-promo-banner-pill shrink-0">{pillLabel}</span>
+        <span className="founding-promo-banner-copy-desktop shrink-0 font-bold tracking-tight">
+          {beforeLink}
+          <KickoffPlanBannerLink>{kickoffLinkLabel}</KickoffPlanBannerLink>
+        </span>
+        <div className="founding-promo-banner-links flex shrink-0 items-center gap-4 text-sm whitespace-nowrap">
           <FoundingClubTermsDialog />
           <FoundingClubOfferDetailsDialog />
         </div>
@@ -776,14 +812,15 @@ function PricingCard({ plan, billing, memberCount }: { plan: PlanConfig; billing
 
   return (
     <motion.div
+      id={plan.id === "kickoff" ? KICKOFF_PLAN_ANCHOR : undefined}
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       whileHover={{ y: -6 }}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
       className={`relative glass-card rounded-2xl p-4 sm:p-5 flex flex-col h-full transition-all duration-300 cursor-default ${
-        plan.highlighted ? "border-primary/40 shadow-gold" : "hover:border-primary/20"
-      }`}
+        plan.id === "kickoff" ? "scroll-mt-36 sm:scroll-mt-32" : ""
+      } ${plan.highlighted ? "border-primary/40 shadow-gold" : "hover:border-primary/20"}`}
     >
       {plan.badge && (
         <div
@@ -908,7 +945,7 @@ function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
   const { t } = useLanguage();
   const minMembers = 1;
   const [members, setMembers] = useState(800);
-  const [billing, setBilling] = useState<"yearly" | "monthly">("yearly");
+  const [billing, setBilling] = useState<"yearly" | "monthly">("monthly");
   const [selectedPlan, setSelectedPlan] = useState<string>(() => suggestPlanForMemberCount(800));
   const sliderMaxMembers = useMemo(() => Math.max(10000, members), [members]);
 
@@ -1123,7 +1160,7 @@ const Pricing = () => {
   const bgY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
   const contentOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
-  const [billing, setBilling] = useState<"yearly" | "monthly">("yearly");
+  const [billing, setBilling] = useState<"yearly" | "monthly">("monthly");
   const [memberCount] = useState(250);
   const [showComparison, setShowComparison] = useState(false);
   const locale = language === "de" ? "de" : "en";
@@ -1280,7 +1317,7 @@ const Pricing = () => {
       <section className="py-8 sm:py-10">
         <div className="container mx-auto px-4">
           <FadeInSection className="flex justify-center">
-            <div className="glass-card rounded-2xl p-1.5 flex gap-1">
+            <div className="glass-card relative overflow-visible rounded-2xl p-1.5 flex gap-1">
               <button
                 onClick={() => setBilling("yearly")}
                 className={`relative px-5 sm:px-8 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
@@ -1290,11 +1327,15 @@ const Pricing = () => {
                 }`}
               >
                 {t.common.yearly}
-                {billing === "yearly" && (
-                  <span className="absolute -top-2 -right-2 px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[9px] font-bold">
-                    -20%
-                  </span>
-                )}
+                <span
+                  className={`pointer-events-none absolute left-1/2 -top-1.5 z-10 -translate-x-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded-full text-[9px] font-bold leading-none ${
+                    billing === "yearly"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-gradient-gold-static text-primary-foreground shadow-gold"
+                  }`}
+                >
+                  -20%
+                </span>
               </button>
               <button
                 onClick={() => setBilling("monthly")}

@@ -674,6 +674,8 @@
   .founding-promo-banner {
     color: hsl(228 22% 10%);
     border-bottom: 1px solid hsl(var(--gold-dark) / 0.4);
+    container-type: inline-size;
+    container-name: founding-promo-banner;
     background: linear-gradient(
       90deg,
       hsl(var(--gold-dark)) 0%,
@@ -741,39 +743,61 @@
     letter-spacing: 0.12em;
     text-transform: uppercase;
     white-space: nowrap;
+    box-sizing: border-box;
     box-shadow:
       0 0 0 1px hsl(0 0% 100% / 0.85),
       0 4px 14px hsl(var(--gold) / 0.28),
       inset 0 1px 0 hsl(0 0% 100% / 0.9);
   }
 
+  /* Mobile: size the free-pill slot for the longer DE label so copy never sits under it */
+  @media (max-width: 639.98px) {
+    .founding-promo-banner-pill {
+      font-size: 0.58rem;
+      letter-spacing: 0.08em;
+      padding: 0.26rem 0.55rem;
+    }
+  }
+
   .founding-promo-banner-copy {
     min-width: 0;
-    container-type: inline-size;
-    container-name: founding-banner-copy;
+  }
+
+  @media (max-width: 639.98px) {
+    .founding-promo-banner-copy {
+      /* Nudge slogan ~10% of banner width further left toward the free-pill */
+      margin-left: -10cqi;
+    }
   }
 
   .founding-promo-banner-copy-mobile {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 0.08rem;
     line-height: 1.25;
-    /* Scale to the column between the pill and the right edge */
-    font-size: clamp(0.55rem, 5.2cqi, 0.8rem);
+    text-align: left;
+    /* Relative to full banner width so EN/DE share the same size (not the text column) */
+    font-size: clamp(0.65rem, 2.85cqi, 0.78rem);
   }
 
   .founding-promo-banner-copy-mobile > span {
     display: block;
+    text-align: left;
     white-space: nowrap;
   }
 
-  @media (min-width: 640px) {
-    .founding-promo-banner-copy {
-      font-size: 0.875rem;
-      text-align: center;
-      white-space: nowrap;
-      line-height: 1.2;
-    }
+  .founding-promo-banner-copy-desktop {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    line-height: 1.2;
+    font-size: clamp(0.75rem, 1.05vw, 0.875rem);
+  }
+
+  .founding-promo-banner-links {
+    position: relative;
+    z-index: 1;
+    flex: 0 0 auto;
   }
 
   .founding-promo-banner-links button {
@@ -787,6 +811,19 @@
   .founding-promo-banner-links button:hover {
     opacity: 1;
     transform: translateY(-1px);
+  }
+
+  .founding-promo-banner-kickoff-link {
+    color: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    opacity: 0.92;
+    transition: opacity 0.2s ease;
+  }
+
+  .founding-promo-banner-kickoff-link:hover {
+    opacity: 1;
   }
 
   @media (prefers-reduced-motion: reduce) {
