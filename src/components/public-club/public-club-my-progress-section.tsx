@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   Award,
@@ -7,12 +7,12 @@ import {
   Loader2,
   LogIn,
   MessageSquare,
-  Sparkles,
   Target,
   Trophy,
   UserPlus,
   Users,
 } from "lucide-react";
+import { Ai4TInlineLabel, BrandedText } from "@/components/ai/Ai4TBrand";
 import { PublicClubSection } from "@/components/public-club/public-club-section";
 import { PublicClubCard } from "@/components/public-club/public-club-card";
 import { Button } from "@/components/ui/button";
@@ -48,26 +48,45 @@ import { cn } from "@/lib/utils";
 
 /** Light inset surface for interactive forms on club glass cards. */
 const progressFormSurfaceClass = [
-  "rounded-2xl border border-white/70 bg-white/92",
-  "shadow-[0_8px_28px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.95)]",
-  "backdrop-blur-sm",
+  "min-w-0 overflow-hidden rounded-2xl border border-neutral-200/80 bg-white",
+  "shadow-[0_8px_28px_rgba(15,23,42,0.08)]",
 ].join(" ");
 
+/** Secondary copy on club-tinted glass — avoid brand `--club-muted` (often low contrast). */
+const progressGlassBodyClass =
+  "text-base leading-relaxed text-[color:var(--club-foreground)]/90";
+const progressGlassHintClass =
+  "text-base leading-relaxed text-[color:var(--club-foreground)]/85";
+
 const progressFieldClass = cn(
-  "h-11 rounded-xl text-sm text-neutral-900 [color-scheme:light]",
+  "box-border h-12 w-full min-w-0 max-w-full rounded-xl text-base text-neutral-900 [color-scheme:light]",
   clubModalFormInputClass,
 );
 
+const progressDateFieldClass = cn(
+  progressFieldClass,
+  // Mobile WebKit/Chromium date inputs have a large intrinsic min-width; force them into the frame.
+  "block",
+  "[&::-webkit-date-and-time-value]:min-w-0 [&::-webkit-datetime-edit]:max-w-[100%]",
+);
+
 const progressTextareaClass = cn(
-  "min-h-[88px] rounded-xl text-sm text-neutral-900 resize-y",
+  "box-border min-h-[100px] w-full min-w-0 max-w-full rounded-xl text-base text-neutral-900 resize-y",
   clubModalFormInputClass,
+);
+
+const progressOptInSwitchClass = cn(
+  "h-7 w-12 border border-neutral-300/90 shadow-inner",
+  "data-[state=checked]:border-[color:var(--club-primary)] data-[state=checked]:bg-[color:var(--club-primary)]",
+  "data-[state=unchecked]:bg-neutral-200",
+  "focus-visible:ring-[color:var(--club-primary)]",
 );
 
 function KpiTile({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-2xl border border-white/50 bg-white/85 px-3.5 py-3.5 shadow-sm">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.06em] text-neutral-500">{label}</div>
-      <div className="mt-1.5 font-display text-2xl font-bold tabular-nums leading-none text-neutral-900">
+    <div className="rounded-2xl border border-neutral-200/80 bg-white px-3.5 py-4 shadow-sm">
+      <div className="text-xs font-semibold uppercase tracking-[0.06em] text-neutral-600">{label}</div>
+      <div className="mt-2 font-display text-[1.75rem] font-bold tabular-nums leading-none tracking-tight text-neutral-900 sm:text-2xl">
         {value}
       </div>
     </div>
@@ -82,19 +101,22 @@ function PillarCard({
 }: {
   icon: typeof Target;
   title: string;
-  description: string;
+  description: ReactNode;
   value: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/50 bg-white/85 p-4 shadow-sm">
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[color:var(--club-primary)] shadow-sm ring-1 ring-black/5">
-          <Icon className="h-4 w-4" />
+    <div className="relative overflow-hidden rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-sm sm:p-5">
+      <div className="absolute inset-y-0 left-0 w-1 bg-[color:var(--club-primary)]" aria-hidden />
+      <div className="flex items-start gap-3.5 pl-1.5">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-neutral-50 text-[color:var(--club-primary)] shadow-sm ring-1 ring-black/5">
+          <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold text-neutral-900">{title}</div>
-          <p className="mt-1 text-xs leading-relaxed text-neutral-600">{description}</p>
-          <div className="mt-2.5 font-display text-lg font-bold tabular-nums text-neutral-900">{value}</div>
+          <div className="text-base font-semibold text-neutral-900">{title}</div>
+          <p className="mt-1.5 text-base leading-relaxed text-neutral-600">{description}</p>
+          <div className="mt-3 font-display text-xl font-bold tabular-nums tracking-tight text-neutral-900">
+            {value}
+          </div>
         </div>
       </div>
     </div>
@@ -118,10 +140,10 @@ function RatingRow({
   onChange: (next: number) => void;
 }) {
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <span className="shrink-0 text-xs font-semibold text-neutral-700">{label}</span>
+    <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+      <span className="shrink-0 text-sm font-semibold text-neutral-800">{label}</span>
       <div
-        className="flex w-full sm:w-auto sm:shrink-0 justify-between sm:justify-end gap-1.5 rounded-xl bg-neutral-100/90 p-1 sm:gap-1"
+        className="flex w-full sm:w-auto sm:shrink-0 justify-between sm:justify-end gap-1.5 rounded-xl bg-neutral-100 p-1.5 sm:gap-1"
         role="group"
         aria-label={label}
       >
@@ -130,7 +152,7 @@ function RatingRow({
             key={n}
             type="button"
             className={cn(
-              "inline-flex h-10 w-10 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg text-sm sm:text-xs font-semibold leading-none transition-all",
+              "inline-flex h-11 w-11 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg text-base sm:text-sm font-semibold leading-none transition-all",
               value >= n
                 ? "bg-[color:var(--club-primary)] text-white shadow-sm"
                 : "bg-transparent text-neutral-500 hover:bg-white hover:text-neutral-800",
@@ -318,35 +340,51 @@ export function PublicClubMyProgressSection() {
   return (
     <PublicClubSection
       id="my-progress"
+      className="!border-t-0 !pt-6 sm:!pt-10"
       title={t.clubProgress.sectionTitle}
-      subtitle={t.clubProgress.sectionDesc}
+      titleClassName="!text-3xl sm:!text-4xl !mb-3"
+      subtitle={
+        <span className="block space-y-1.5">
+          <span className="block text-base font-semibold text-[color:var(--club-foreground)] sm:text-lg">
+            {t.clubProgress.heroTagline}
+          </span>
+          <span className="block text-base leading-relaxed text-[color:var(--club-foreground)]/85">
+            <BrandedText text={t.clubProgress.sectionDesc} ai4tOnly />
+          </span>
+        </span>
+      }
+      subtitleClassName="!text-base !text-[color:var(--club-foreground)]/85 !max-w-3xl !mb-6 sm:!mb-8"
     >
       {checkingMembership || loading ? (
-        <PublicClubCard className="flex items-center gap-2 py-6 text-sm text-[color:var(--club-muted)]">
-          <Loader2 className="h-4 w-4 animate-spin" />
+        <PublicClubCard className="flex items-center gap-2 py-6 text-base text-[color:var(--club-foreground)]/80">
+          <Loader2 className="h-5 w-5 animate-spin" />
           {t.common.loading}
         </PublicClubCard>
       ) : !user ? (
-        <PublicClubCard className="space-y-3 p-5">
-          <p className="text-sm text-[color:var(--club-muted)]">{t.clubProgress.signInTeaser}</p>
+        <PublicClubCard className="space-y-4 p-5 sm:p-6">
+          <p className="text-base leading-relaxed text-[color:var(--club-foreground)]/90">
+            {t.clubProgress.signInTeaser}
+          </p>
           <Button
             type="button"
-            className={cn("gap-2", clubCtaFillHoverClass)}
+            className={cn("h-11 gap-2 text-base", clubCtaFillHoverClass)}
             onClick={() => goToAuthWithReturn(`${basePath}${searchSuffix}`)}
           >
             <LogIn className="h-4 w-4" />
             {t.clubProgress.signInCta}
           </Button>
           {showAdminDraftEmptyHints ? (
-            <p className="text-[11px] text-[color:var(--club-muted)]">{t.clubProgress.draftHint}</p>
+            <p className="text-sm text-[color:var(--club-foreground)]/70">{t.clubProgress.draftHint}</p>
           ) : null}
         </PublicClubCard>
       ) : !isMember || !membershipId || !displaySnapshot ? (
-        <PublicClubCard className="space-y-3 p-5">
-          <p className="text-sm text-[color:var(--club-muted)]">{t.clubProgress.joinTeaser}</p>
+        <PublicClubCard className="space-y-4 p-5 sm:p-6">
+          <p className="text-base leading-relaxed text-[color:var(--club-foreground)]/90">
+            {t.clubProgress.joinTeaser}
+          </p>
           <Button
             type="button"
-            className={cn("gap-2", clubCtaFillHoverClass)}
+            className={cn("h-11 gap-2 text-base", clubCtaFillHoverClass)}
             onClick={() => setShowRequestInvite(true)}
           >
             <UserPlus className="h-4 w-4" />
@@ -354,27 +392,37 @@ export function PublicClubMyProgressSection() {
           </Button>
         </PublicClubCard>
       ) : (
-        <div className="space-y-4 pb-24 sm:pb-4">
+        <div className="space-y-5 pb-24 sm:space-y-6 sm:pb-4">
           {loadSoftError ? (
-            <PublicClubCard className="border-dashed p-4 text-sm text-[color:var(--club-muted)]">
-              {t.clubProgress.loadSoftNotice}
+            <PublicClubCard className="border-dashed p-4 text-base text-[color:var(--club-foreground)]/85">
+              <BrandedText text={t.clubProgress.loadSoftNotice} ai4tOnly />
             </PublicClubCard>
           ) : null}
 
-          <PublicClubCard className="space-y-5 p-4 sm:p-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-3">
-              <div className="flex min-w-0 items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-[color:var(--club-primary)] shadow-md ring-1 ring-black/10">
-                  <Trophy className="h-5 w-5" />
+          <PublicClubCard className="relative overflow-hidden space-y-5 p-5 sm:p-7">
+            <div
+              className="pointer-events-none absolute -right-8 -top-10 h-36 w-36 rounded-full bg-[color:var(--club-primary)]/20 blur-2xl"
+              aria-hidden
+            />
+            <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3.5">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-[color:var(--club-primary)] shadow-md ring-1 ring-black/10">
+                  <Trophy className="h-7 w-7" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-base font-semibold tracking-tight text-[color:var(--club-foreground)]">
+                  <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[color:var(--club-foreground)]/70">
                     {t.clubProgress.levelLabel.replace(
                       "{level}",
                       t.clubProgress.levels[displaySnapshot.level] ?? displaySnapshot.level,
                     )}
+                  </p>
+                  <div className="mt-1 font-display text-3xl font-bold tracking-tight text-[color:var(--club-foreground)] sm:text-4xl">
+                    {(t.clubProgress.levelNameOnly ?? "{level}").replace(
+                      "{level}",
+                      t.clubProgress.levels[displaySnapshot.level] ?? displaySnapshot.level,
+                    )}
                   </div>
-                  <p className="mt-1 text-xs leading-relaxed text-[color:var(--club-muted)]">
+                  <p className="mt-2 text-base font-medium text-[color:var(--club-foreground)]/85">
                     {t.clubProgress.xpLabel
                       .replace("{xp}", String(displaySnapshot.xp))
                       .replace("{next}", String(displaySnapshot.next_level_xp))}
@@ -383,47 +431,59 @@ export function PublicClubMyProgressSection() {
               </div>
               <Link
                 to={reportsHref}
-                className="text-sm font-semibold text-[color:var(--club-primary)] hover:underline"
+                className="text-base font-semibold text-[color:var(--club-primary)] hover:underline"
               >
                 {t.clubProgress.openReports}
               </Link>
             </div>
             {levelMeta ? (
-              <div className="h-2.5 overflow-hidden rounded-full bg-black/10 ring-1 ring-black/5">
-                <div
-                  className="h-full rounded-full bg-[color:var(--club-primary)] transition-[width]"
-                  style={{ width: `${Math.round(levelMeta.progress01 * 100)}%` }}
-                />
+              <div className="relative space-y-2">
+                <div className="flex items-center justify-between gap-3 text-sm font-semibold text-[color:var(--club-foreground)]/80">
+                  <span>
+                    {(t.clubProgress.xpToNext ?? "{pct}% to the next level").replace(
+                      "{pct}",
+                      String(Math.round(levelMeta.progress01 * 100)),
+                    )}
+                  </span>
+                </div>
+                <div className="h-3 overflow-hidden rounded-full bg-black/10 ring-1 ring-black/5">
+                  <div
+                    className="h-full rounded-full bg-[color:var(--club-primary)] transition-[width] duration-500"
+                    style={{ width: `${Math.round(levelMeta.progress01 * 100)}%` }}
+                  />
+                </div>
               </div>
             ) : null}
-            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+            <div className="relative grid grid-cols-2 gap-3 lg:grid-cols-4">
               <KpiTile label={t.clubProgress.kpiStreak} value={displaySnapshot.attendance_streak} />
               <KpiTile label={t.clubProgress.kpiBestStreak} value={displaySnapshot.attendance_best_streak} />
               <KpiTile label={t.clubProgress.kpiBadges} value={displaySnapshot.badge_count} />
               <KpiTile label={t.clubProgress.kpiMatches} value={displaySnapshot.matches} />
             </div>
             {hint ? (
-              <p className="flex items-start gap-2 text-xs text-[color:var(--club-muted)]">
-                <Flame className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[color:var(--club-support)]" />
+              <p className={cn("relative flex items-start gap-2.5 rounded-2xl bg-white/90 px-3.5 py-3 shadow-sm", progressGlassHintClass)}>
+                <Flame className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--club-support)]" />
                 {t.clubProgress.nextBadgeHint
                   .replace("{count}", String(hint.remaining))
                   .replace("{badge}", t.clubProgress.badgeNames[hint.badgeType] ?? hint.badgeType)}
               </p>
             ) : (
-              <p className="text-xs text-[color:var(--club-muted)]">{t.clubProgress.emptyStartHint}</p>
+              <p className={cn("relative rounded-2xl bg-white/90 px-3.5 py-3 shadow-sm", progressGlassHintClass)}>
+                {t.clubProgress.emptyStartHint}
+              </p>
             )}
           </PublicClubCard>
 
-          <PublicClubCard className="space-y-4 p-4 sm:p-6">
+          <PublicClubCard className="space-y-4 p-5 sm:p-6">
             <div>
-              <div className="text-base font-semibold tracking-tight text-[color:var(--club-foreground)]">
+              <div className="font-display text-xl font-bold tracking-tight text-[color:var(--club-foreground)] sm:text-2xl">
                 {t.clubProgress.pillarsTitle}
               </div>
-              <p className="mt-1.5 text-xs leading-relaxed text-[color:var(--club-muted)] sm:text-sm">
+              <p className={cn("mt-2", progressGlassBodyClass)}>
                 {t.clubProgress.pillarsDesc}
               </p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+            <div className="grid gap-3.5 sm:grid-cols-2 md:grid-cols-3">
               <PillarCard
                 icon={ClipboardList}
                 title={t.clubProgress.pillarAttendanceTitle}
@@ -445,53 +505,57 @@ export function PublicClubMyProgressSection() {
               <PillarCard
                 icon={Target}
                 title={t.clubProgress.pillarSelfEvalTitle}
-                description={t.clubProgress.pillarSelfEvalDesc}
+                description={<BrandedText text={t.clubProgress.pillarSelfEvalDesc} ai4tOnly />}
                 value={t.clubProgress.pillarSelfEvalValue.replace("{count}", String(journal.length))}
               />
             </div>
           </PublicClubCard>
 
           <PublicClubCard className="space-y-0 overflow-hidden p-0">
-            <div className="flex flex-col gap-3 border-b border-white/20 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6 sm:py-5">
-              <div className="flex min-w-0 items-start gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-[color:var(--club-primary)] shadow-md ring-1 ring-black/10">
-                  <ClipboardList className="h-5 w-5" />
+            <div className="flex flex-col gap-3.5 border-b border-white/20 px-4 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-6 sm:py-6">
+              <div className="flex min-w-0 items-start gap-3.5">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[color:var(--club-primary)] shadow-md ring-1 ring-black/10">
+                  <ClipboardList className="h-6 w-6" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-base font-semibold tracking-tight text-[color:var(--club-foreground)]">
+                  <div className="font-display text-xl font-bold tracking-tight text-[color:var(--club-foreground)]">
                     {t.clubProgress.journalTitle}
                   </div>
-                  <p className="mt-1 text-xs leading-relaxed text-[color:var(--club-muted)] sm:text-sm">
-                    {t.clubProgress.journalDesc}
+                  <p className="mt-1.5 text-base leading-relaxed text-[color:var(--club-foreground)]/85">
+                    <BrandedText text={t.clubProgress.journalDesc} ai4tOnly />
                   </p>
                 </div>
               </div>
               <Button
                 type="button"
-                size="sm"
-                className={cn("w-full shrink-0 gap-1.5 sm:mt-0.5 sm:w-auto", clubCtaFillHoverClass)}
+                className={cn("h-11 w-full shrink-0 gap-1.5 text-base sm:mt-0.5 sm:w-auto", clubCtaFillHoverClass)}
                 onClick={openCoachTips}
               >
-                <Sparkles className="h-3.5 w-3.5" />
-                {t.clubProgress.aiCoachCta}
+                <Ai4TInlineLabel
+                  text={t.clubProgress.aiCoachCta}
+                  logoClassName="h-5 w-5"
+                  textClassName="font-semibold"
+                />
               </Button>
             </div>
 
             <div className={cn(progressFormSurfaceClass, "m-3 space-y-5 p-4 sm:m-4 sm:p-5")}>
-              <div className="grid gap-4">
-                <div>
-                  <label className={cn(clubModalFormLabelClass, "mb-1.5 block text-xs")}>
+              <div className="grid min-w-0 gap-4">
+                <div className="min-w-0">
+                  <label className={cn(clubModalFormLabelClass, "mb-1.5 block text-sm")}>
                     {t.clubProgress.journalDate}
                   </label>
-                  <Input
-                    type="date"
-                    value={sessionDate}
-                    onChange={(e) => setSessionDate(e.target.value)}
-                    className={cn(progressFieldClass, "max-w-full sm:max-w-[12rem]")}
-                  />
+                  <div className="w-full min-w-0 max-w-full overflow-hidden rounded-xl sm:max-w-[12rem]">
+                    <Input
+                      type="date"
+                      value={sessionDate}
+                      onChange={(e) => setSessionDate(e.target.value)}
+                      className={progressDateFieldClass}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className={cn(clubModalFormLabelClass, "mb-1.5 block text-xs")}>
+                <div className="min-w-0">
+                  <label className={cn(clubModalFormLabelClass, "mb-1.5 block text-sm")}>
                     {t.clubProgress.journalWhatIDid}
                   </label>
                   <Textarea
@@ -502,8 +566,8 @@ export function PublicClubMyProgressSection() {
                     className={progressTextareaClass}
                   />
                 </div>
-                <div>
-                  <label className={cn(clubModalFormLabelClass, "mb-1.5 block text-xs")}>
+                <div className="min-w-0">
+                  <label className={cn(clubModalFormLabelClass, "mb-1.5 block text-sm")}>
                     {t.clubProgress.journalImprovements}
                   </label>
                   <Textarea
@@ -516,8 +580,8 @@ export function PublicClubMyProgressSection() {
                 </div>
               </div>
 
-              <div className="space-y-3 rounded-2xl border border-neutral-200/90 bg-neutral-50/90 p-3.5 sm:p-4">
-                <div className="text-xs font-semibold uppercase tracking-[0.05em] text-neutral-600">
+              <div className="space-y-3.5 rounded-2xl border border-neutral-200/90 bg-neutral-50 p-4 sm:p-5">
+                <div className="text-sm font-semibold uppercase tracking-[0.05em] text-neutral-700">
                   {t.clubProgress.selfEvalTitle}
                 </div>
                 <RatingRow
@@ -544,7 +608,7 @@ export function PublicClubMyProgressSection() {
 
               <Button
                 type="button"
-                className={cn("h-11 w-full gap-2 rounded-xl text-sm font-semibold sm:w-auto sm:min-w-[10rem]", clubCtaFillHoverClass)}
+                className={cn("h-12 w-full gap-2 rounded-xl text-base font-semibold sm:w-auto sm:min-w-[11rem]", clubCtaFillHoverClass)}
                 onClick={saveJournalEntry}
                 disabled={!whatIDid.trim() && !improvements.trim()}
               >
@@ -556,20 +620,20 @@ export function PublicClubMyProgressSection() {
                   {journal.slice(0, 5).map((entry) => (
                     <li
                       key={entry.id}
-                      className="rounded-xl border border-neutral-200/90 bg-white px-3.5 py-3 text-sm shadow-sm"
+                      className="rounded-xl border border-neutral-200/90 bg-white px-3.5 py-3.5 text-base shadow-sm"
                     >
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.05em] text-neutral-500">
+                      <div className="text-xs font-semibold uppercase tracking-[0.05em] text-neutral-600">
                         {entry.sessionDate}
                       </div>
                       {entry.whatIDid ? (
-                        <p className="mt-1.5 font-medium text-neutral-900">{entry.whatIDid}</p>
+                        <p className="mt-1.5 text-base font-medium leading-snug text-neutral-900">{entry.whatIDid}</p>
                       ) : null}
                       {entry.improvements ? (
-                        <p className="mt-1 text-xs leading-relaxed text-neutral-600">
+                        <p className="mt-1 text-base leading-relaxed text-neutral-700">
                           {t.clubProgress.journalImprovements}: {entry.improvements}
                         </p>
                       ) : null}
-                      <p className="mt-2 text-[11px] tabular-nums text-neutral-500">
+                      <p className="mt-2 text-sm tabular-nums text-neutral-600">
                         {t.clubProgress.skillTechnique} {entry.selfRatings.technique} ·{" "}
                         {t.clubProgress.skillFitness} {entry.selfRatings.fitness} ·{" "}
                         {t.clubProgress.skillTactics} {entry.selfRatings.tactics} ·{" "}
@@ -579,29 +643,31 @@ export function PublicClubMyProgressSection() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-xs leading-relaxed text-neutral-500">{t.clubProgress.journalEmpty}</p>
+                <p className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-3.5 py-3.5 text-base font-medium leading-relaxed text-neutral-700">
+                  {t.clubProgress.journalEmpty}
+                </p>
               )}
             </div>
           </PublicClubCard>
 
           {displaySnapshot.badges.length > 0 ? (
-            <PublicClubCard className="space-y-3 p-5">
-              <div className="flex items-center gap-2 text-sm font-semibold text-[color:var(--club-foreground)]">
-                <Award className="h-4 w-4 text-[color:var(--club-primary)]" />
+            <PublicClubCard className="space-y-4 p-5 sm:p-6">
+              <div className="flex items-center gap-2 font-display text-xl font-bold tracking-tight text-[color:var(--club-foreground)]">
+                <Award className="h-5 w-5 text-[color:var(--club-primary)]" />
                 {t.clubProgress.badgesTitle}
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2.5">
                 {displaySnapshot.badges.slice(0, 8).map((badge) => {
                   const Icon = getAchievementBadgeIcon(badge.badge_type);
                   const label = t.clubProgress.badgeNames[badge.badge_type] ?? badge.badge_name;
                   return (
                     <div
                       key={`${badge.badge_type}-${badge.earned_at ?? badge.id ?? label}`}
-                      className="flex min-w-[72px] flex-col items-center gap-1 rounded-xl border border-[color:var(--club-border)]/40 bg-white/5 px-2 py-2"
+                      className="flex min-w-[84px] flex-col items-center gap-1.5 rounded-xl border border-neutral-200/90 bg-white px-3 py-3 shadow-sm"
                       title={label}
                     >
-                      <Icon className="h-5 w-5 text-[color:var(--club-primary)]" strokeWidth={1.5} />
-                      <span className="text-center text-[10px] font-medium leading-tight text-[color:var(--club-foreground)]">
+                      <Icon className="h-6 w-6 text-[color:var(--club-primary)]" strokeWidth={1.5} />
+                      <span className="text-center text-sm font-medium leading-tight text-neutral-800">
                         {label}
                       </span>
                     </div>
@@ -612,86 +678,93 @@ export function PublicClubMyProgressSection() {
           ) : null}
 
           {challenge && challenge.teams.length > 0 ? (
-            <PublicClubCard className="space-y-3 p-5">
-              <div className="flex items-center gap-2 text-sm font-semibold text-[color:var(--club-foreground)]">
-                <Sparkles className="h-4 w-4 text-[color:var(--club-primary)]" />
+            <PublicClubCard className="space-y-3 p-5 sm:p-6">
+              <div className="font-display text-xl font-bold tracking-tight text-[color:var(--club-foreground)]">
                 {t.clubProgress.teamChallengeTitle}
               </div>
-              <p className="text-xs text-[color:var(--club-muted)]">{t.clubProgress.teamChallengeDesc}</p>
+              <p className={progressGlassBodyClass}>{t.clubProgress.teamChallengeDesc}</p>
               {myTeamRank ? (
-                <p className="text-sm text-[color:var(--club-foreground)]">
+                <p className="text-base font-semibold text-[color:var(--club-foreground)]">
                   {t.clubProgress.yourTeamRank
                     .replace("{rank}", String(myTeamRank.rank))
                     .replace("{total}", String(challenge.teams.length))
                     .replace("{rate}", String(myTeamRank.rate_pct))}
                 </p>
               ) : null}
-              <ul className="space-y-1.5">
+              <ul className="space-y-2">
                 {challenge.teams.slice(0, 6).map((row) => (
                   <li
                     key={row.team_id}
                     className={cn(
-                      "flex items-center justify-between rounded-xl border border-[color:var(--club-border)]/30 px-3 py-2 text-sm",
-                      row.is_mine && "bg-white/5",
+                      "flex items-center justify-between rounded-xl border border-white/40 bg-white px-3.5 py-3 text-base text-neutral-900 shadow-sm",
+                      row.is_mine && "ring-2 ring-[color:var(--club-primary)]/35",
                     )}
                   >
-                    <span className="text-[color:var(--club-foreground)]">
+                    <span>
                       #{row.rank}{" "}
                       {challenge.is_staff && row.team_name ? row.team_name : row.anonymous_label}
                       {row.is_mine ? ` · ${t.clubProgress.yourTeam}` : ""}
                     </span>
-                    <span className="tabular-nums text-[color:var(--club-muted)]">{row.rate_pct}%</span>
+                    <span className="tabular-nums font-semibold text-neutral-700">{row.rate_pct}%</span>
                   </li>
                 ))}
               </ul>
               {isStaff && lowAttendance ? (
                 <div className="flex flex-wrap gap-2 pt-1">
-                  <Button type="button" size="sm" className={cn("gap-1.5", clubCtaFillHoverClass)} onClick={openNudge}>
-                    <Sparkles className="h-3.5 w-3.5" />
-                    {t.clubProgress.aiNudgeCta}
+                  <Button type="button" className={cn("h-11 gap-1.5 text-base", clubCtaFillHoverClass)} onClick={openNudge}>
+                    <Ai4TInlineLabel
+                      text={t.clubProgress.aiNudgeCta}
+                      logoClassName="h-5 w-5"
+                      textClassName="font-semibold"
+                    />
                   </Button>
                   <Button
                     type="button"
-                    size="sm"
                     variant="outline"
-                    className={cn("gap-1.5", clubCtaOutlineButtonClass)}
+                    className={cn("h-11 gap-1.5 text-base", clubCtaOutlineButtonClass)}
                     onClick={() => openCommunicationModal()}
                   >
-                    <MessageSquare className="h-3.5 w-3.5" />
+                    <MessageSquare className="h-4 w-4" />
                     {t.clubProgress.messagesNudgeCta}
                   </Button>
                 </div>
               ) : null}
             </PublicClubCard>
           ) : (
-            <PublicClubCard className="space-y-2 p-5">
-              <div className="flex items-center gap-2 text-sm font-semibold text-[color:var(--club-foreground)]">
-                <Sparkles className="h-4 w-4 text-[color:var(--club-primary)]" />
+            <PublicClubCard className="space-y-2 p-5 sm:p-6">
+              <div className="font-display text-xl font-bold tracking-tight text-[color:var(--club-foreground)]">
                 {t.clubProgress.teamChallengeTitle}
               </div>
-              <p className="text-xs text-[color:var(--club-muted)]">{t.clubProgress.challengeEmpty}</p>
+              <p className={progressGlassBodyClass}>{t.clubProgress.challengeEmpty}</p>
             </PublicClubCard>
           )}
 
           {seasonLine ? (
-            <PublicClubCard className="p-4 text-sm text-[color:var(--club-muted)]">{seasonLine}</PublicClubCard>
+            <PublicClubCard className={cn("p-5", progressGlassBodyClass)}>{seasonLine}</PublicClubCard>
           ) : null}
 
           {canOptIn ? (
-            <PublicClubCard className="flex items-center justify-between gap-3 p-4">
-              <div>
-                <div className="text-sm font-medium text-[color:var(--club-foreground)]">
-                  {t.clubProgress.publicBadgesOptIn}
+            <PublicClubCard className="p-3 sm:p-4">
+              <div className="flex items-center justify-between gap-4 rounded-2xl border border-neutral-200/90 bg-white px-4 py-4 shadow-sm">
+                <div className="min-w-0 flex-1">
+                  <div className="text-base font-semibold leading-snug text-neutral-900">
+                    {t.clubProgress.publicBadgesOptIn}
+                  </div>
+                  <p className="mt-1.5 text-sm leading-relaxed text-neutral-600 sm:text-base">
+                    {t.clubProgress.publicBadgesOptInDesc}
+                  </p>
                 </div>
-                <p className="mt-0.5 text-[11px] text-[color:var(--club-muted)]">
-                  {t.clubProgress.publicBadgesOptInDesc}
-                </p>
+                <Switch
+                  checked={displaySnapshot.public_badges_opt_in}
+                  disabled={optInBusy}
+                  onCheckedChange={(c) => void toggleOptIn(Boolean(c))}
+                  className={cn(
+                    progressOptInSwitchClass,
+                    "[&>span]:h-6 [&>span]:w-6 [&>span]:bg-white [&>span]:shadow-md [&>span]:ring-1 [&>span]:ring-black/10",
+                  )}
+                  aria-label={t.clubProgress.publicBadgesOptIn}
+                />
               </div>
-              <Switch
-                checked={displaySnapshot.public_badges_opt_in}
-                disabled={optInBusy}
-                onCheckedChange={(c) => void toggleOptIn(Boolean(c))}
-              />
             </PublicClubCard>
           ) : null}
         </div>

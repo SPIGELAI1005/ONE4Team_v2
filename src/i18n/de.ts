@@ -4342,7 +4342,8 @@ export const de: Translations = {
   clubProgress: {
     sectionTitle: "Mein Fortschritt",
     sectionDesc:
-      "Steige auf durch Trainingsbeteiligung, Spielauswahl und ehrliche Selbsteinschätzung. Spielerischer Skill-Wettbewerb, nur für dich sichtbar.",
+      "Erscheine. Verdiene deinen Platz. Reflektiere. Jedes Training und jeder ehrliche Eintrag bringt dich zum nächsten Level.",
+    heroTagline: "Dein Platz. Dein Wachstum. Dein nächstes Level.",
     signInTeaser: "Melde dich an, um Trainings-Serie, Badges und Level auf dieser Vereinsseite zu sehen.",
     signInCta: "Anmelden",
     joinTeaser: "Werde Mitglied, um persönlichen Fortschritt, Serien und Badges freizuschalten.",
@@ -4350,12 +4351,14 @@ export const de: Translations = {
     draftHint: "Entwurfsvorschau: Mitglieder sehen hier ihren Fortschritt, wenn sie angemeldet sind.",
     openReports: "Berichte öffnen",
     levelLabel: "Stufe · {level}",
+    levelNameOnly: "{level}",
     xpLabel: "{xp} XP · nächstes Level ab {next}",
+    xpToNext: "{pct}% bis zum nächsten Level",
     kpiStreak: "Trainings-Serie",
     kpiBestStreak: "Beste Serie",
     kpiBadges: "Badges",
     kpiMatches: "Spiele",
-    nextBadgeHint: "Noch {count} bis „{badge}“.",
+    nextBadgeHint: "Noch {count} bis „{badge}“. Weiter so.",
     emptyStartHint:
       "Dein Weg beginnt als Einsteiger. Komm zum Training, verdiene Einsätze und logge Selbsteinschätzungen, um Level aufzusteigen.",
     badgesTitle: "Erfolge",
@@ -4369,7 +4372,7 @@ export const de: Translations = {
     pillarSelectionDesc: "Einsätze im Kader sowie Tore und Assists, wenn erfasst.",
     pillarSelectionValue: "{matches} Spiele · {goals} T · {assists} A",
     pillarSelfEvalTitle: "Selbsteinschätzung",
-    pillarSelfEvalDesc: "Dein Trainingstagebuch und Skill-Ratings füttern AI-4-T-Tipps.",
+    pillarSelfEvalDesc: "Dein Trainingstagebuch und Skill-Ratings füttern AI 4 T Tipps.",
     pillarSelfEvalValue: "{count} Tagebuch-Einträge",
     journalTitle: "Trainingstagebuch",
     journalDesc:

@@ -13,6 +13,11 @@ import {
   type ClubMemberPassCardHandle,
   type ClubMemberPassCardLabels,
 } from "@/components/members/club-member-pass-card";
+import {
+  clubReadableModalOverlayClass,
+  clubReadableModalPanelClass,
+} from "@/lib/public-club-glass-classes";
+import { cn } from "@/lib/utils";
 
 export interface ClubMemberPassModalProps {
   open: boolean;
@@ -26,6 +31,8 @@ export interface ClubMemberPassModalProps {
   readOnly?: boolean;
   onGenerateId?: () => void;
   onDownloadComplete?: () => void;
+  /** Public club microsite: white readable chrome + light pass card. */
+  appearance?: "default" | "publicClub";
   labels: ClubMemberPassCardLabels & {
     title: string;
     close: string;
@@ -44,17 +51,46 @@ export function ClubMemberPassModal({
   readOnly = true,
   onGenerateId,
   onDownloadComplete,
+  appearance = "default",
   labels,
 }: ClubMemberPassModalProps) {
   const cardRef = useRef<ClubMemberPassCardHandle>(null);
+  const isPublicClub = appearance === "publicClub";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[92vh] w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden border-border/80 bg-card/95 p-0 backdrop-blur-xl sm:w-full">
-        <DialogHeader className="space-y-0 border-b border-border/60 px-4 py-4 text-left sm:px-5">
-          <DialogTitle className="font-display text-lg">{labels.title}</DialogTitle>
+      <DialogContent
+        overlayClassName={isPublicClub ? clubReadableModalOverlayClass : undefined}
+        className={cn(
+          "flex max-h-[92vh] w-[calc(100vw-1.5rem)] max-w-lg flex-col gap-0 overflow-hidden p-0 sm:w-full",
+          isPublicClub
+            ? cn(clubReadableModalPanelClass, "text-neutral-900")
+            : "border-border/80 bg-card/95 backdrop-blur-xl",
+        )}
+      >
+        <DialogHeader
+          className={cn(
+            "space-y-0 px-4 py-4 text-left sm:px-5",
+            isPublicClub ? "border-b border-neutral-200/80" : "border-b border-border/60",
+          )}
+        >
+          <DialogTitle
+            className={cn(
+              "font-display text-lg",
+              isPublicClub && "text-neutral-900",
+            )}
+          >
+            {labels.title}
+          </DialogTitle>
           {displayName ? (
-            <p className="mt-1 truncate text-sm text-muted-foreground">{displayName}</p>
+            <p
+              className={cn(
+                "mt-1 truncate text-sm",
+                isPublicClub ? "text-neutral-600" : "text-muted-foreground",
+              )}
+            >
+              {displayName}
+            </p>
           ) : null}
         </DialogHeader>
 
@@ -69,14 +105,30 @@ export function ClubMemberPassModal({
             teamLabel={teamLabel}
             readOnly={readOnly}
             showControls={!readOnly || Boolean(onGenerateId)}
+            theme={isPublicClub ? "light" : undefined}
             onGenerateId={onGenerateId}
             onDownloadComplete={onDownloadComplete}
             labels={labels}
           />
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-border/60 bg-background/80 px-4 py-4 sm:px-5">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <div
+          className={cn(
+            "flex justify-end gap-2 px-4 py-4 sm:px-5",
+            isPublicClub
+              ? "border-t border-neutral-200/80 bg-white/80"
+              : "border-t border-border/60 bg-background/80",
+          )}
+        >
+          <Button
+            variant="outline"
+            className={
+              isPublicClub
+                ? "border-neutral-300 bg-white text-neutral-900 hover:bg-neutral-50 hover:text-neutral-900"
+                : undefined
+            }
+            onClick={() => onOpenChange(false)}
+          >
             {labels.close}
           </Button>
           <Button

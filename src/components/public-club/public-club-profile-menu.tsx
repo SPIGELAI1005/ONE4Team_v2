@@ -227,6 +227,7 @@ export function PublicClubProfileMenu({ className }: { className?: string }) {
         membershipRole={roleLabel}
         teamLabel={teamLabel}
         readOnly
+        appearance="publicClub"
         labels={clubPassLabels}
       />
 

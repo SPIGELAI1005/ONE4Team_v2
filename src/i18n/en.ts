@@ -4315,7 +4315,8 @@ export const en = {
   clubProgress: {
     sectionTitle: "My progress",
     sectionDesc:
-      "Level up through training attendance, match selection, and honest self-evaluation. Playful skill competition, private to you.",
+      "Show up. Earn your shirt. Reflect. Every training and honest note pushes you to the next level.",
+    heroTagline: "Your pitch. Your growth. Your next level.",
     signInTeaser: "Sign in to see your training streak, badges, and level on this club page.",
     signInCta: "Sign in",
     joinTeaser: "Join this club to unlock personal progress, streaks, and badges.",
@@ -4323,12 +4324,14 @@ export const en = {
     draftHint: "Draft preview: members will see their progress here when signed in.",
     openReports: "Open reports",
     levelLabel: "Level · {level}",
+    levelNameOnly: "{level}",
     xpLabel: "{xp} XP · next at {next}",
+    xpToNext: "{pct}% to the next level",
     kpiStreak: "Training streak",
     kpiBestStreak: "Best streak",
     kpiBadges: "Badges",
     kpiMatches: "Matches",
-    nextBadgeHint: "{count} more to unlock “{badge}”.",
+    nextBadgeHint: "{count} more to unlock “{badge}”. Keep going.",
     emptyStartHint:
       "Your journey starts at Rookie. Show up to training, earn selection, and log self-evals to climb levels.",
     badgesTitle: "Achievements",

@@ -42,12 +42,12 @@ export default function PublicClubMyProgressPage() {
   }
 
   return (
-    <div className="space-y-4 pb-28 sm:pb-12">
+    <div className="space-y-5 pb-28 sm:pb-12">
       <PublicClubMyProgressSection />
       <div className={`${publicClubDetailStackClass} px-4 sm:px-6`}>
         <Link
           to={homeHref}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[color:var(--club-primary)] hover:underline"
+          className="inline-flex items-center gap-1.5 text-base font-semibold text-[color:var(--club-primary)] hover:underline"
         >
           <ArrowLeft className="h-4 w-4" />
           {t.clubPage.progressBackToHome ?? t.clubPage.reportsBackToHome}

@@ -1,5 +1,6 @@
 import { Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { BrandedText } from "@/components/ai/Ai4TBrand";
 import { PublicClubSection } from "@/components/public-club/public-club-section";
 import { PublicClubCard } from "@/components/public-club/public-club-card";
 import { PublicClubButton } from "@/components/public-club/public-club-button";
@@ -26,11 +27,20 @@ export function PublicClubMyProgressTeaser() {
     navigate(progressHref);
   }
 
+  const teaserBody =
+    t.clubPage.progressHomeTeaserBody ??
+    "Training attendance, match selection, self-evaluation, and AI 4 T tips. Open your full progress board.";
+
   return (
     <PublicClubSection
       id="my-progress"
       title={t.clubProgress.sectionTitle}
-      subtitle={t.clubPage.progressHomeTeaserDesc ?? t.clubProgress.sectionDesc}
+      subtitle={
+        <BrandedText
+          text={t.clubPage.progressHomeTeaserDesc ?? t.clubProgress.sectionDesc}
+          ai4tOnly
+        />
+      }
     >
       <PublicClubCard className="flex flex-col gap-5 px-6 py-7 sm:flex-row sm:items-center">
         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white shadow-md ring-1 ring-black/10">
@@ -41,8 +51,7 @@ export function PublicClubMyProgressTeaser() {
             {t.clubPage.progressHomeTeaserTitle ?? t.clubProgress.sectionTitle}
           </h3>
           <p className="text-sm leading-relaxed text-[color:var(--club-muted)]">
-            {t.clubPage.progressHomeTeaserBody ??
-              "Training attendance, match selection, self-evaluation, and AI 4 T tips. Open your full progress board."}
+            <BrandedText text={teaserBody} ai4tOnly />
           </p>
           {user && isMember ? (
             <p className="text-xs text-[color:var(--club-muted)]">
