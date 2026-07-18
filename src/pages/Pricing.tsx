@@ -542,7 +542,10 @@ function PromoBanner() {
             </span>
             <span>
               {t.pricingPage.foundingBannerMobileLine2 ??
-                "Eligible new clubs receive Kick-off free for 12 months."}
+                "Eligible new clubs receive Kick-off free for"}
+            </span>
+            <span>
+              {t.pricingPage.foundingBannerMobileLine3 ?? "12 months."}
             </span>
           </span>
           <span className="hidden sm:inline">
@@ -1212,7 +1215,7 @@ const Pricing = () => {
       <PromoBanner />
 
       {/* Hero */}
-      <section ref={heroRef} className="relative min-h-[60vh] flex items-center justify-center overflow-hidden pt-[8.75rem] sm:pt-28">
+      <section ref={heroRef} className="relative min-h-[60vh] flex items-center justify-center overflow-hidden pt-[9.5rem] sm:pt-28">
         <motion.div className="absolute inset-0" style={{ y: bgY }}>
           <FootballFieldAnimation />
           <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-transparent to-background/70 dark:from-background/80 dark:via-background/40 dark:to-background" />
