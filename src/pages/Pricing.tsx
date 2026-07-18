@@ -530,15 +530,21 @@ function PromoBanner() {
   const { t } = useLanguage();
   return (
     <div className="founding-promo-banner fixed top-14 left-0 right-0 z-40">
-      <div className="container mx-auto px-4 py-2.5 sm:py-3 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-center">
-        <span className="founding-promo-banner-pill">
+      <div className="mx-auto flex max-w-7xl items-center justify-center gap-x-1.5 sm:gap-x-4 px-2 sm:px-4 py-1.5 sm:py-2.5">
+        <span className="founding-promo-banner-pill shrink-0">
           {t.pricingPage.kickoffFreeBadge ?? "12 MONTHS FREE"}
         </span>
-        <span className="text-xs sm:text-sm font-bold tracking-tight max-w-2xl">
-          {t.pricingPage.foundingBanner ??
-            "Your first season is on us. Eligible new clubs receive Kick-off free for 12 months."}
+        <span className="founding-promo-banner-copy font-bold tracking-tight text-center">
+          <span className="sm:hidden">
+            {t.pricingPage.foundingBannerMobile ??
+              "Your first season is on us. Kick-off free for 12 months."}
+          </span>
+          <span className="hidden sm:inline">
+            {t.pricingPage.foundingBanner ??
+              "Your first season is on us. Eligible new clubs receive Kick-off free for 12 months."}
+          </span>
         </span>
-        <div className="founding-promo-banner-links flex items-center gap-3 sm:gap-4 text-xs sm:text-sm">
+        <div className="founding-promo-banner-links flex shrink-0 items-center gap-1.5 sm:gap-4 text-[0.65rem] sm:text-sm whitespace-nowrap">
           <FoundingClubTermsDialog />
           <FoundingClubOfferDetailsDialog />
         </div>
@@ -1197,7 +1203,7 @@ const Pricing = () => {
       <PromoBanner />
 
       {/* Hero */}
-      <section ref={heroRef} className="relative min-h-[60vh] flex items-center justify-center overflow-hidden pt-24 sm:pt-26">
+      <section ref={heroRef} className="relative min-h-[60vh] flex items-center justify-center overflow-hidden pt-[7.25rem] sm:pt-28">
         <motion.div className="absolute inset-0" style={{ y: bgY }}>
           <FootballFieldAnimation />
           <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-transparent to-background/70 dark:from-background/80 dark:via-background/40 dark:to-background" />

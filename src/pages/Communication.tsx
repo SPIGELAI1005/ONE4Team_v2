@@ -259,10 +259,17 @@ export function CommunicationWorkspace({
   const clubId = clubIdOverride ?? hookClubId;
   const { toast } = useToast();
   const perms = usePermissions();
-  const { canUseFeature, effective, writeAccess } = usePlanGuard();
-  const canUseChat = canUseFeature("chat");
-  const canUseAnnouncements = canUseFeature("announcements") || canUseFeature("communication");
-  const canMutate = writeAccess && canMutateClubData(effective);
+  const { canUseFeature, effective } = usePlanGuard();
+  /**
+   * Public club modal uses `clubIdOverride` while plan/subscription still follows the
+   * user's active dashboard club (often null on /c/:slug). Gate features by membership
+   * on the club being viewed so channel lists are never empty → `.kind` crash.
+   */
+  const embeddedClubSession = Boolean(embedded && clubIdOverride);
+  const canUseChat = embeddedClubSession || canUseFeature("chat");
+  const canUseAnnouncements =
+    embeddedClubSession || canUseFeature("announcements") || canUseFeature("communication");
+  const canMutate = embeddedClubSession || canMutateClubData(effective);
   const gateRole = useModuleGateRole();
   const { isClubAdmin } = useClubAdmin(clubId);
   const { t } = useLanguage();
@@ -465,7 +472,7 @@ export function CommunicationWorkspace({
     [announcements, viewingAnnouncementId],
   );
 
-  const selectedChannel =
+  const selectedChannel: Channel | undefined =
     channels.find((channel) => channel.id === selectedChannelId) ?? channels[0];
 
   useEffect(() => {
@@ -702,7 +709,7 @@ export function CommunicationWorkspace({
 
   useEffect(() => {
     const fetchMessages = async () => {
-      if (!clubId || selectedChannel.kind !== "chat") {
+      if (!clubId || !selectedChannel || selectedChannel.kind !== "chat") {
         setMessages([]);
         setPendingMessages([]);
         setMessageTotalCount(0);
@@ -931,7 +938,7 @@ export function CommunicationWorkspace({
   };
 
   const sendMessage = async (input: { content: string; attachments: AttachmentMeta[]; clientId: string }) => {
-    if (!clubId || !user || selectedChannel.kind !== "chat") return;
+    if (!clubId || !user || !selectedChannel || selectedChannel.kind !== "chat") return;
     if (!canUseChat) {
       toast({
         title: t.pricingPage.chatLockedTitle ?? "Chat not included",
@@ -1027,7 +1034,7 @@ export function CommunicationWorkspace({
   };
 
   const handleSendMessage = async () => {
-    if (!clubId || !user || selectedChannel.kind !== "chat") return;
+    if (!clubId || !user || !selectedChannel || selectedChannel.kind !== "chat") return;
     if (!newMessage.trim() && selectedFiles.length === 0) return;
     if (!supportsAttachments && selectedFiles.length > 0) {
       toast({
@@ -1367,7 +1374,7 @@ export function CommunicationWorkspace({
   const canPostAnnouncements = canManageAnnouncements(isClubAdmin) && !missingAnnouncementsTable;
 
   const announceButton =
-    !embedded && selectedChannel.kind === "announcements" && canPostAnnouncements ? (
+    !embedded && selectedChannel?.kind === "announcements" && canPostAnnouncements ? (
       <DashboardToolbarActions
         maxVisibleMobile={1}
         actions={[
@@ -1385,7 +1392,7 @@ export function CommunicationWorkspace({
       />
     ) : null;
 
-  const announcementComposeBar = canPostAnnouncements && selectedChannel.kind === "announcements" ? (
+  const announcementComposeBar = canPostAnnouncements && selectedChannel?.kind === "announcements" ? (
     <div
       className={cn(
         "shrink-0 border-t p-3",
@@ -1428,7 +1435,7 @@ export function CommunicationWorkspace({
         <DashboardHeaderSlot
           title={t.communicationPage.title}
           subtitle={compactMobileChrome ? undefined : t.communicationPage.subtitle}
-          toolbarRevision={`${selectedChannel.kind}-${perms.isAdmin}-${missingAnnouncementsTable}`}
+          toolbarRevision={`${selectedChannel?.kind ?? "none"}-${perms.isAdmin}-${missingAnnouncementsTable}`}
           rightSlot={announceButton}
         />
       ) : null}
@@ -1457,6 +1464,15 @@ export function CommunicationWorkspace({
             )}
           >
             {t.communicationPage.noClubFound}
+          </div>
+        ) : !selectedChannel ? (
+          <div
+            className={cn(
+              "px-4 py-16 text-center text-sm",
+              embedded ? "text-neutral-600" : "text-muted-foreground",
+            )}
+          >
+            {t.communicationPage.noChannelsAvailable}
           </div>
         ) : (
           <>

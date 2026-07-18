@@ -176,17 +176,151 @@ export function parseMemberProgressSnapshot(raw: unknown): MemberProgressSnapsho
   };
 }
 
+export function emptyMemberProgressSnapshot(
+  membershipId: string,
+  role = "member",
+): MemberProgressSnapshot {
+  const levelMeta = levelFromXp(0);
+  return {
+    membership_id: membershipId,
+    goals: 0,
+    assists: 0,
+    matches: 0,
+    attended_trainings: 0,
+    confirmed_trainings: 0,
+    attendance_streak: 0,
+    attendance_best_streak: 0,
+    badges: [],
+    xp: 0,
+    level: levelMeta.level,
+    level_index: levelMeta.levelIndex,
+    level_xp_floor: levelMeta.floor,
+    next_level_xp: levelMeta.next,
+    badge_count: 0,
+    public_badges_opt_in: false,
+    role,
+  };
+}
+
 export async function fetchMemberProgressSnapshot(
   clubId: string,
   membershipId: string,
-): Promise<{ data: MemberProgressSnapshot | null; error: Error | null }> {
+  role = "member",
+): Promise<{ data: MemberProgressSnapshot; error: Error | null }> {
   const { data, error } = await supabase.rpc("get_member_progress_snapshot", {
     p_club_id: clubId,
     p_membership_id: membershipId,
   });
-  if (error) return { data: null, error: new Error(error.message) };
-  return { data: parseMemberProgressSnapshot(data), error: null };
+  if (error) {
+    return {
+      data: emptyMemberProgressSnapshot(membershipId, role),
+      error: new Error(error.message),
+    };
+  }
+  const parsed = parseMemberProgressSnapshot(data);
+  if (!parsed) {
+    return {
+      data: emptyMemberProgressSnapshot(membershipId, role),
+      error: null,
+    };
+  }
+  return { data: parsed, error: null };
 }
+
+/* ─── Local training journal (client-side until server sync ships) ─── */
+
+export interface TrainingJournalSelfRatings {
+  technique: number;
+  fitness: number;
+  tactics: number;
+  mindset: number;
+}
+
+export interface TrainingJournalEntry {
+  id: string;
+  createdAt: string;
+  sessionDate: string;
+  whatIDid: string;
+  improvements: string;
+  selfRatings: TrainingJournalSelfRatings;
+}
+
+function journalStorageKey(clubId: string, membershipId: string): string {
+  return `one4team.trainingJournal.v1.${clubId}.${membershipId}`;
+}
+
+export function loadTrainingJournal(clubId: string, membershipId: string): TrainingJournalEntry[] {
+  try {
+    const raw = localStorage.getItem(journalStorageKey(clubId, membershipId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((item) => {
+        if (!item || typeof item !== "object") return null;
+        const o = item as Record<string, unknown>;
+        const id = typeof o.id === "string" ? o.id : "";
+        const whatIDid = typeof o.whatIDid === "string" ? o.whatIDid : "";
+        const improvements = typeof o.improvements === "string" ? o.improvements : "";
+        if (!id) return null;
+        const ratings =
+          o.selfRatings && typeof o.selfRatings === "object"
+            ? (o.selfRatings as Record<string, unknown>)
+            : {};
+        return {
+          id,
+          createdAt: typeof o.createdAt === "string" ? o.createdAt : new Date().toISOString(),
+          sessionDate: typeof o.sessionDate === "string" ? o.sessionDate : new Date().toISOString().slice(0, 10),
+          whatIDid,
+          improvements,
+          selfRatings: {
+            technique: Math.min(5, Math.max(1, asNumber(ratings.technique, 3))),
+            fitness: Math.min(5, Math.max(1, asNumber(ratings.fitness, 3))),
+            tactics: Math.min(5, Math.max(1, asNumber(ratings.tactics, 3))),
+            mindset: Math.min(5, Math.max(1, asNumber(ratings.mindset, 3))),
+          },
+        } satisfies TrainingJournalEntry;
+      })
+      .filter(Boolean) as TrainingJournalEntry[];
+  } catch {
+    return [];
+  }
+}
+
+export function saveTrainingJournal(
+  clubId: string,
+  membershipId: string,
+  entries: TrainingJournalEntry[],
+): void {
+  localStorage.setItem(journalStorageKey(clubId, membershipId), JSON.stringify(entries.slice(0, 40)));
+}
+
+export function buildTrainingCoachPrompt(input: {
+  entries: TrainingJournalEntry[];
+  levelLabel: string;
+  xp: number;
+  streak: number;
+  matches: number;
+}): string {
+  const latest = input.entries.slice(0, 3);
+  const journalBlock =
+    latest.length === 0
+      ? "(No training notes yet — suggest a first session reflection template.)"
+      : latest
+          .map(
+            (e, i) =>
+              `${i + 1}. ${e.sessionDate}\nWhat I did: ${e.whatIDid || "-"}\nImprovements: ${e.improvements || "-"}\nSelf-ratings (1-5): technique ${e.selfRatings.technique}, fitness ${e.selfRatings.fitness}, tactics ${e.selfRatings.tactics}, mindset ${e.selfRatings.mindset}`,
+          )
+          .join("\n\n");
+  return [
+    "You are AI 4 T, the club training coach. Review this player's progress notes and give playful, skill-focused tips (no body-shaming).",
+    `Level: ${input.levelLabel}. XP: ${input.xp}. Training streak: ${input.streak}. Match appearances: ${input.matches}.`,
+    "Recent journal:",
+    journalBlock,
+    "Reply with: (1) 3 concrete strengths to keep, (2) 2 improvement focuses, (3) 3 short exercises or drills for the next training week to reach the next level, (4) one friendly challenge they can track.",
+  ].join("\n\n");
+}
+
 
 export async function fetchTeamAttendanceChallenge(
   clubId: string,

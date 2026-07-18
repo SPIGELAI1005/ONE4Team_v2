@@ -722,6 +722,25 @@
     box-shadow: 0 0 0 1px hsl(0 0% 100% / 0.14), 0 4px 12px hsl(0 0% 0% / 0.35);
   }
 
+  .founding-promo-banner-copy {
+    min-width: 0;
+    white-space: nowrap;
+    line-height: 1.2;
+    font-size: clamp(0.58rem, 2.35vw, 0.875rem);
+  }
+
+  @media (max-width: 639.98px) {
+    .founding-promo-banner-pill {
+      font-size: 0.52rem;
+      padding: 0.18rem 0.45rem;
+      letter-spacing: 0.08em;
+    }
+
+    .founding-promo-banner-links button {
+      font-size: 0.62rem;
+    }
+  }
+
   .founding-promo-banner-links button {
     color: inherit;
     font-weight: 700;

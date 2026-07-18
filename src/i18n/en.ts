@@ -1561,6 +1561,7 @@ export const en = {
     subtitle: "Channels, announcements and club chat",
     announce: "Announce",
     noClubFound: "No club found.",
+    noChannelsAvailable: "No message channels are available for your role right now.",
     channels: "Channels",
     announcementsChannel: "Announcements",
     clubGeneralChannel: "Club General",
@@ -2259,6 +2260,7 @@ export const en = {
     bespokePricingHint: "Tailored pricing for federations and complex organisations.",
     foundingBanner:
       "Your first season is on us. Eligible new clubs receive Kick-off free for 12 months.",
+    foundingBannerMobile: "Your first season is on us. Kick-off free for 12 months.",
     viewOfferDetails: "View offer details",
     viewOfferTerms: "Offer terms",
     foundingDetailsHeadline: "Become a Founding Club.",
@@ -4300,7 +4302,8 @@ export const en = {
   // ─── Public club member progress / gamification ───
   clubProgress: {
     sectionTitle: "My progress",
-    sectionDesc: "Your badges, training streak, and club level — private to you.",
+    sectionDesc:
+      "Level up through training attendance, match selection, and honest self-evaluation — playful skill competition, private to you.",
     signInTeaser: "Sign in to see your training streak, badges, and level on this club page.",
     signInCta: "Sign in",
     joinTeaser: "Join this club to unlock personal progress, streaks, and badges.",
@@ -4314,9 +4317,41 @@ export const en = {
     kpiBadges: "Badges",
     kpiMatches: "Matches",
     nextBadgeHint: "{count} more to unlock “{badge}”.",
+    emptyStartHint:
+      "Your journey starts at Rookie. Show up to training, earn selection, and log self-evals to climb levels.",
     badgesTitle: "Achievements",
+    pillarsTitle: "How your progress is calculated",
+    pillarsDesc:
+      "XP and levels come from three skill pillars — not popularity. Compete playfully on technique and reliability.",
+    pillarAttendanceTitle: "Training attendance",
+    pillarAttendanceDesc: "Sessions you attended after confirming — builds streaks and XP.",
+    pillarAttendanceValue: "{attended} / {confirmed} · {rate}%",
+    pillarSelectionTitle: "Match selection",
+    pillarSelectionDesc: "Appearances in the squad, plus goals and assists when tracked.",
+    pillarSelectionValue: "{matches} matches · {goals} G · {assists} A",
+    pillarSelfEvalTitle: "Self-evaluation",
+    pillarSelfEvalDesc: "Your training journal and skill ratings feed AI 4 T coaching tips.",
+    pillarSelfEvalValue: "{count} journal notes",
+    journalTitle: "Training journal",
+    journalDesc:
+      "Log what you worked on and what to improve. AI 4 T can turn notes into drills for your next level.",
+    journalDate: "Session date",
+    journalWhatIDid: "What I did",
+    journalWhatIDidPh: "e.g. first touch under pressure, 1v1 defending, set pieces…",
+    journalImprovements: "Improvements to mark",
+    journalImprovementsPh: "e.g. quicker decisions, weaker foot, communication…",
+    journalSave: "Save training note",
+    journalEmpty: "No notes yet — add your first session reflection after the next training.",
+    selfEvalTitle: "Skill self-rating (1–5)",
+    skillTechnique: "Technique",
+    skillFitness: "Fitness",
+    skillTactics: "Tactics",
+    skillMindset: "Mindset",
+    aiCoachCta: "Ask AI 4 T for tips",
     teamChallengeTitle: "Team training challenge",
-    teamChallengeDesc: "Anonymous team ranking by attendance over the last 30 days.",
+    teamChallengeDesc: "Anonymous team ranking by attendance over the last 30 days — friendly competition on showing up.",
+    challengeEmpty:
+      "Team rankings appear once trainings are tracked. Until then, build your own streak and journal.",
     yourTeamRank: "Your team is #{rank} of {total} · {rate}% attendance",
     yourTeam: "you",
     aiNudgeCta: "Ask AI 4 T for a nudge",
@@ -4330,6 +4365,8 @@ export const en = {
     publicBadgesOptIn: "Show my badges on the public club page",
     publicBadgesOptInDesc: "Adults only. Never shown for player roles or when youth protection is on.",
     loadError: "Could not load your progress right now.",
+    loadSoftNotice:
+      "Live club stats are temporarily unavailable — showing your progress board with zeros until data syncs. You can still use the training journal and AI 4 T tips.",
     publicStripTitle: "Member highlights",
     publicStripDesc: "Badges shared by adult members who opted in.",
     levels: {

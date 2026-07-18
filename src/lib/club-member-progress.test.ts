@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildTrainingCoachPrompt,
   canOptInPublicBadges,
   computeProgressXp,
+  emptyMemberProgressSnapshot,
   levelFromXp,
   nextBadgeHint,
   parseMemberProgressSnapshot,
@@ -104,5 +106,37 @@ describe("club-member-progress", () => {
     expect(canOptInPublicBadges("club_admin")).toBe(true);
     expect(canOptInPublicBadges("player")).toBe(false);
     expect(canOptInPublicBadges(null)).toBe(false);
+  });
+
+  it("builds an empty progress snapshot for soft-fail UI", () => {
+    const empty = emptyMemberProgressSnapshot("m-empty", "player");
+    expect(empty.membership_id).toBe("m-empty");
+    expect(empty.xp).toBe(0);
+    expect(empty.level).toBe("rookie");
+    expect(empty.role).toBe("player");
+    expect(empty.badges).toEqual([]);
+  });
+
+  it("builds an AI coach prompt from journal entries", () => {
+    const prompt = buildTrainingCoachPrompt({
+      entries: [
+        {
+          id: "1",
+          createdAt: "2026-07-18T10:00:00.000Z",
+          sessionDate: "2026-07-17",
+          whatIDid: "Passing under pressure",
+          improvements: "Weaker foot",
+          selfRatings: { technique: 3, fitness: 4, tactics: 2, mindset: 5 },
+        },
+      ],
+      levelLabel: "Rookie",
+      xp: 0,
+      streak: 0,
+      matches: 0,
+    });
+    expect(prompt).toContain("AI 4 T");
+    expect(prompt).toContain("Passing under pressure");
+    expect(prompt).toContain("Weaker foot");
+    expect(prompt).toContain("technique 3");
   });
 });
