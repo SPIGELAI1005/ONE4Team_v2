@@ -1256,7 +1256,7 @@ export const operatorEn = {
     developmentMethodEffort: "By effort (man-days)",
     developmentLinesLabel: "Lines of code",
     developmentUnitLines: "lines",
-    developmentLinesHint: "Estimated total lines written (~84,000 documented in src/).",
+    developmentLinesHint: "Estimated total lines written (~157,592 currently measured in src/).",
     developmentCostPerLineLabel: "Cost per line",
     developmentUnitEurPerLine: "€ / line",
     developmentCostPerLineHint: "Industry estimates vary widely; tune to your context.",

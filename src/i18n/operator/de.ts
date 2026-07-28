@@ -1266,7 +1266,7 @@ export const operatorDe = {
     developmentMethodEffort: "Nach Aufwand (Manntage)",
     developmentLinesLabel: "Codezeilen",
     developmentUnitLines: "Zeilen",
-    developmentLinesHint: "Geschätzte Gesamtzeilen (~84.000 in src/ dokumentiert).",
+    developmentLinesHint: "Geschätzte Gesamtzeilen (~157.592 aktuell in src/ gemessen).",
     developmentCostPerLineLabel: "Kosten pro Zeile",
     developmentUnitEurPerLine: "€ / Zeile",
     developmentCostPerLineHint: "Branchenschätzungen variieren stark; an Ihren Kontext anpassen.",

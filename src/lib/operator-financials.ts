@@ -189,12 +189,16 @@ export interface CostModel {
   development: DevelopmentModel;
 }
 
-// Defaults are anchored on documented codebase metrics (see
-// docs/PROJECT_COMPREHENSIVE_AUDIT.md § "Codebase metrics": ~84,000 LOC in src/,
-// development ongoing since early 2025). Cost/line and daily rate are chosen so
-// both methods land in a comparable range and can be tuned by the operator.
+// Current source-code baseline used for Operator financial estimation.
+// Measured on 2026-07-28 from repository `src/` (excluding generated/build output).
+export const CURRENT_ESTIMATED_APP_LOC = 157592;
+const LEGACY_BASELINE_LOC = 84000;
+
+// Defaults are anchored on the current codebase baseline.
+// Cost/line and daily rate are chosen so both methods land in a comparable range
+// and can be tuned by the operator.
 export const DEFAULT_DEVELOPMENT_MODEL: DevelopmentModel = {
-  linesOfCode: 84000,
+  linesOfCode: CURRENT_ESTIMATED_APP_LOC,
   costPerLine: 3,
   personDays: 400,
   dailyRate: 600,
@@ -357,13 +361,26 @@ function normalizeDevelopment(input: unknown): DevelopmentModel {
   const record = input as Record<string, unknown>;
   const readNumber = (key: keyof DevelopmentModel, fallback: number): number =>
     key in record ? Math.max(0, safeNumber(Number(record[key]))) : fallback;
-  return {
+  const normalized: DevelopmentModel = {
     linesOfCode: readNumber("linesOfCode", DEFAULT_DEVELOPMENT_MODEL.linesOfCode),
     costPerLine: readNumber("costPerLine", DEFAULT_DEVELOPMENT_MODEL.costPerLine),
     personDays: readNumber("personDays", DEFAULT_DEVELOPMENT_MODEL.personDays),
     dailyRate: readNumber("dailyRate", DEFAULT_DEVELOPMENT_MODEL.dailyRate),
     method: record.method === "effort" ? "effort" : "loc",
   };
+
+  // Soft-migrate untouched legacy defaults to the current measured baseline.
+  // If operators explicitly customized the LOC value, keep their value.
+  const isLegacyDefaultLoc =
+    normalized.linesOfCode === LEGACY_BASELINE_LOC &&
+    normalized.costPerLine === DEFAULT_DEVELOPMENT_MODEL.costPerLine &&
+    normalized.personDays === DEFAULT_DEVELOPMENT_MODEL.personDays &&
+    normalized.dailyRate === DEFAULT_DEVELOPMENT_MODEL.dailyRate;
+  if (isLegacyDefaultLoc) {
+    normalized.linesOfCode = CURRENT_ESTIMATED_APP_LOC;
+  }
+
+  return normalized;
 }
 
 export function normalizeCostModel(input: Partial<CostModel> | Record<string, unknown> | null | undefined): CostModel {
