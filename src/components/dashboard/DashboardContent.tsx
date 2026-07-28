@@ -64,9 +64,6 @@ import {
 import { isExternalRole, normalizeDashboardRole } from "@/lib/rbac-config";
 import { usePermissions } from "@/hooks/use-permissions";
 import {
-  readActiveDashboardPersonaSlug,
-} from "@/lib/switch-dashboard-persona";
-import {
   fetchClubFinancialSnapshot,
   formatMoneyFromCents,
 } from "@/lib/club-financial-snapshot";
@@ -247,17 +244,7 @@ const DashboardContent = () => {
     if (!role || perms.activeClubLoading || perms.assignmentsLoading) return;
     const urlRole = normalizeDashboardRole(role);
     if (!urlRole) return;
-    const storedPersona = normalizeDashboardRole(readActiveDashboardPersonaSlug());
     const personaCtx = { treatAsClubAdmin: perms.isAdmin };
-
-    if (
-      storedPersona &&
-      storedPersona !== urlRole &&
-      isDashboardPersonaAllowed(storedPersona, perms.role, perms.assignments, personaCtx)
-    ) {
-      navigate(`/dashboard/${storedPersona}`, { replace: true });
-      return;
-    }
 
     if (isDashboardPersonaAllowed(urlRole, perms.role, perms.assignments, personaCtx)) {
       localStorage.setItem("one4team.activeRole", urlRole);

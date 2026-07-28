@@ -24,7 +24,7 @@ export function RequireModule({
   module,
   children,
   fallbackPath,
-  deniedMode = "redirect",
+  deniedMode = "lock",
 }: RequireModuleProps) {
   const { user, loading: authLoading } = useAuth();
   const perms = usePermissions();

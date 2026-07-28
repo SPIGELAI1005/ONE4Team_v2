@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useModuleGateRole } from "@/hooks/use-module-gate-role";
 import { dashboardPathForPersona } from "@/lib/switch-dashboard-persona";
 import { normalizeDashboardRole } from "@/lib/rbac-config";
+import { ModuleAccessDenied } from "@/components/auth/module-access-denied";
 
 const DEV_BYPASS_GUARDS =
   import.meta.env.DEV &&
@@ -15,17 +16,30 @@ interface RequireRoleProps {
   requireAdmin?: boolean;
   requireTrainer?: boolean;
   fallbackPath?: string;
+  deniedMode?: "redirect" | "lock";
 }
 
-export function RequireAdmin({ children, fallbackPath }: { children: React.ReactNode; fallbackPath?: string }) {
-  return <RequireRole requireAdmin>{children}</RequireRole>;
+export function RequireAdmin({
+  children,
+  fallbackPath,
+}: {
+  children: React.ReactNode;
+  fallbackPath?: string;
+}) {
+  return <RequireRole requireAdmin fallbackPath={fallbackPath} deniedMode="lock">{children}</RequireRole>;
 }
 
 export function RequireTrainer({ children, fallbackPath }: { children: React.ReactNode; fallbackPath?: string }) {
-  return <RequireRole requireTrainer>{children}</RequireRole>;
+  return <RequireRole requireTrainer fallbackPath={fallbackPath} deniedMode="lock">{children}</RequireRole>;
 }
 
-function RequireRole({ children, requireAdmin, requireTrainer, fallbackPath }: RequireRoleProps) {
+function RequireRole({
+  children,
+  requireAdmin,
+  requireTrainer,
+  fallbackPath,
+  deniedMode = "lock",
+}: RequireRoleProps) {
   const { user, loading: authLoading } = useAuth();
   const perms = usePermissions();
   const gateRole = useModuleGateRole();
@@ -45,11 +59,17 @@ function RequireRole({ children, requireAdmin, requireTrainer, fallbackPath }: R
   if (DEV_BYPASS_GUARDS) return <>{children}</>;
 
   if (requireAdmin && !perms.isAdmin) {
+    if (deniedMode === "lock") {
+      return <ModuleAccessDenied />;
+    }
     const redirectRole = gateRole ?? normalizeDashboardRole(perms.role) ?? "member";
     return <Navigate to={fallbackPath || dashboardPathForPersona(redirectRole)} replace />;
   }
 
   if (requireTrainer && !perms.isTrainer) {
+    if (deniedMode === "lock") {
+      return <ModuleAccessDenied />;
+    }
     const redirectRole = gateRole ?? normalizeDashboardRole(perms.role) ?? "member";
     return <Navigate to={fallbackPath || dashboardPathForPersona(redirectRole)} replace />;
   }

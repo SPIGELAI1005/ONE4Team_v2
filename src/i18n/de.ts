@@ -59,6 +59,12 @@ export const de: Translations = {
     upgradeToUnlock: "Upgrade, um diese Funktion freizuschalten",
     limitReached: "Limit erreicht",
     notPermitted: "Keine Berechtigung für diese Aktion",
+    accessRestrictedTitle: "Zugriff eingeschränkt",
+    accessRestrictedBody: "Diese Seite ist für Ihre aktuell zugewiesene Rolle nicht freigegeben.",
+    accessRestrictedContactClubAdmin:
+      "Wenn Sie Zugriff auf diesen Bereich benötigen, wenden Sie sich bitte an Ihren Vereinsadmin und lassen Sie sich die passende Rolle oder Berechtigung zuweisen.",
+    reviewMyAccess: "Meinen Zugriff prüfen",
+    openSupport: "Support öffnen",
   },
 
   // ─── Navbar ───

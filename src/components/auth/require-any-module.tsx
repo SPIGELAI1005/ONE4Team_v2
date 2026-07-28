@@ -22,7 +22,7 @@ export function RequireAnyModule({
   modules,
   children,
   fallbackPath,
-  deniedMode = "redirect",
+  deniedMode = "lock",
 }: RequireAnyModuleProps) {
   const { user, loading: authLoading } = useAuth();
   const perms = usePermissions();

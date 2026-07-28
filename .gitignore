@@ -41,3 +41,10 @@ scripts/tmp_*
 # Test artifacts
 /test-results/
 /playwright-report/
+
+# Local generated image artifacts (repo root)
+/ai-4-t-*.png
+/one4team-logo-*.png
+
+# Supabase local CLI cache
+/supabase/.temp/

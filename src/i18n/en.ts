@@ -58,6 +58,12 @@ export const en = {
     upgradeToUnlock: "Upgrade to unlock this feature",
     limitReached: "Limit reached",
     notPermitted: "You don't have permission for this action",
+    accessRestrictedTitle: "Access restricted",
+    accessRestrictedBody: "This page is not approved for your currently assigned role.",
+    accessRestrictedContactClubAdmin:
+      "If you need access to this area, please contact your club admin and ask them to grant the required role or permission.",
+    reviewMyAccess: "Review my access",
+    openSupport: "Open support",
   },
 
   // ─── Navbar ───

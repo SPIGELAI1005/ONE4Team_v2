@@ -46,7 +46,7 @@ export function useDashboardNav(labels: DashboardNavLabels): UseDashboardNavResu
   }, [urlRole]);
 
   const personaFromUrl = urlRole ? normalizeDashboardRole(urlRole) : null;
-  const personaSlug = personaFromUrl ?? storedSlug ?? menuRole ?? "member";
+  const personaSlug = personaFromUrl ?? menuRole ?? storedSlug ?? "member";
 
   const sidebarModules = useMemo(
     () => getSidebarMenuItems(menuRole),
@@ -68,7 +68,7 @@ export function useDashboardNav(labels: DashboardNavLabels): UseDashboardNavResu
     [mobileModules, labels, personaSlug, menuRole],
   );
 
-  const roleLabel = formatDashboardRoleLabel(storedSlug ?? menuRole);
+  const roleLabel = formatDashboardRoleLabel(personaFromUrl ?? menuRole ?? storedSlug);
 
   return {
     menuRole,
