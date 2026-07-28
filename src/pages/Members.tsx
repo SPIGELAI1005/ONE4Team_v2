@@ -70,6 +70,8 @@ import {
 import { supabaseErrorMessage } from "@/lib/supabase-error-message";
 import {
   clubTeamNamesFromIds,
+  membershipDisplayTeamLabel,
+  reconcileMemberTeamEditState,
   resolveClubTeamIdFromLabel,
   syncMembershipTeamAssignments,
   type ClubTeamOption,
@@ -1331,13 +1333,7 @@ const Members = () => {
         return;
       }
       const [teamRowsRes, playersRes, coachesRes, masterRes, guardianRes, emailRes] = await Promise.all([
-        (() => {
-          let q = supabase.from("teams").select("id, name").eq("club_id", clubId);
-          if (teamScope !== "all" && teamScope.length > 0) {
-            q = q.in("id", teamScope);
-          }
-          return q;
-        })(),
+        supabase.from("teams").select("id, name").eq("club_id", clubId),
         supabase.from("team_players").select("team_id, membership_id").in("membership_id", membershipIds),
         supabase.from("team_coaches").select("team_id, membership_id").in("membership_id", membershipIds),
         supabase.from("club_member_master_records").select("*").in("membership_id", membershipIds),
@@ -1806,9 +1802,11 @@ const Members = () => {
   );
 
   const getMemberAssignedTeamNames = useCallback((member: MemberRow) => {
-    const assignedTeams = memberTeamNamesById[member.id] || [];
-    if (assignedTeams.length > 0) return assignedTeams.join(", ");
-    return member.team?.trim() || "";
+    return membershipDisplayTeamLabel({
+      assignedTeamNames: memberTeamNamesById[member.id] || [],
+      membershipTeam: member.team,
+      ageGroup: member.age_group,
+    });
   }, [memberTeamNamesById]);
 
   const getMemberTeamLabel = useCallback((member: MemberRow) => {
@@ -1906,8 +1904,12 @@ const Members = () => {
     }
     const getTeam = (m: MemberRow) => {
       const assigned = teamLabelMap[m.id] || [];
-      if (assigned.length > 0) return assigned.join(", ");
-      return m.team || t.membersPage.noTeam;
+      const label = membershipDisplayTeamLabel({
+        assignedTeamNames: assigned,
+        membershipTeam: m.team,
+        ageGroup: m.age_group,
+      });
+      return label || t.membersPage.noTeam;
     };
     const getName = (m: MemberRow) => {
       const master = masterMap[m.id];
@@ -2469,13 +2471,18 @@ const Members = () => {
     setSelectedMember(member);
     setMemberPanelEditModeId(member.id);
     setMemberMasterEditDraft({ ...(masterByMembershipId[member.id] ?? {}) });
-    const playerIds = memberPlayerTeamIdsById[member.id] || [];
-    const coachIds = memberCoachTeamIdsById[member.id] || [];
-    setEditMemberTeamIds(Array.from(new Set([...playerIds, ...coachIds])));
+    const reconciled = reconcileMemberTeamEditState({
+      clubTeams,
+      playerTeamIds: memberPlayerTeamIdsById[member.id] || [],
+      coachTeamIds: memberCoachTeamIdsById[member.id] || [],
+      membershipTeam: member.team,
+      ageGroup: member.age_group,
+    });
+    setEditMemberTeamIds(reconciled.teamIds);
     setEditMemberForm({
       role: member.role || "member",
-      team: member.team || "",
-      ageGroup: member.age_group || "",
+      team: reconciled.team,
+      ageGroup: reconciled.ageGroup,
       position: member.position || "",
       status: member.status || "active",
     });
@@ -2524,14 +2531,30 @@ const Members = () => {
     }
     setMemberPanelSaving(true);
     try {
-      const assignedTeamNames = clubTeamNamesFromIds(clubTeams, editMemberTeamIds);
-      const primaryTeamName = assignedTeamNames[0] || editMemberForm.team.trim() || null;
+      const reconciled = reconcileMemberTeamEditState({
+        clubTeams,
+        playerTeamIds: editMemberTeamIds,
+        coachTeamIds: [],
+        membershipTeam: editMemberForm.team,
+        ageGroup: editMemberForm.ageGroup,
+      });
+      const nextTeamIds =
+        editMemberTeamIds.length > 0
+          ? Array.from(new Set(editMemberTeamIds.filter(Boolean)))
+          : reconciled.teamIds;
+      const assignedTeamNames = clubTeamNamesFromIds(clubTeams, nextTeamIds);
+      const primaryTeamName =
+        assignedTeamNames[0] || reconciled.team.trim() || editMemberForm.team.trim() || null;
+      const nextAgeGroup =
+        editMemberTeamIds.length > 0
+          ? editMemberForm.ageGroup.trim() || null
+          : reconciled.ageGroup.trim() || null;
       const { data, error } = await supabase
         .from("club_memberships")
         .update({
           role: editMemberForm.role,
           team: primaryTeamName,
-          age_group: editMemberForm.ageGroup.trim() || null,
+          age_group: nextAgeGroup,
           position: editMemberForm.position.trim() || null,
           status: editMemberForm.status || "active",
         })
@@ -2571,7 +2594,7 @@ const Members = () => {
       const assignment = await syncMembershipTeamAssignments({
         membershipId: member.id,
         membershipRole: editMemberForm.role,
-        nextTeamIds: editMemberTeamIds,
+        nextTeamIds,
         existingPlayerTeamIds: memberPlayerTeamIdsById[member.id] || [],
         existingCoachTeamIds: memberCoachTeamIdsById[member.id] || [],
         supportsTeamCoachesTable,
@@ -2580,7 +2603,7 @@ const Members = () => {
       setMemberCoachTeamIdsById((previous) => ({ ...previous, [member.id]: assignment.coachTeamIds }));
       setMemberTeamNamesById((previous) => ({
         ...previous,
-        [member.id]: clubTeamNamesFromIds(clubTeams, editMemberTeamIds),
+        [member.id]: clubTeamNamesFromIds(clubTeams, nextTeamIds),
       }));
 
       const savedName = getMemberRosterName(mergedMember);
@@ -2595,8 +2618,9 @@ const Members = () => {
       setMemberPanelEditModeId(null);
       setMemberMasterEditDraft({});
       setEditMemberTeamIds([]);
-    } catch {
-      /* handleSaveMasterRecord already toasts */
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t.common.error;
+      toast({ title: t.common.error, description: message, variant: "destructive" });
     } finally {
       setMemberPanelSaving(false);
     }
@@ -4457,21 +4481,69 @@ const Members = () => {
                                   teams={clubTeams}
                                   selectedTeamIds={editMemberTeamIds}
                                   labels={teamAssignmentLabels}
-                                  onChange={setEditMemberTeamIds}
+                                  onChange={(ids) => {
+                                    setEditMemberTeamIds(ids);
+                                    const names = clubTeamNamesFromIds(clubTeams, ids);
+                                    setEditMemberForm((previous) => ({
+                                      ...previous,
+                                      team: names.join(", ") || previous.team,
+                                      ageGroup:
+                                        previous.ageGroup.trim() ||
+                                        (ids.length === 1
+                                          ? clubTeams.find((team) => team.id === ids[0])?.age_group || ""
+                                          : previous.ageGroup),
+                                    }));
+                                  }}
                                 />
-                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                                  <Input
-                                    value={editMemberForm.ageGroup}
-                                    onChange={(event) => setEditMemberForm((previous) => ({ ...previous, ageGroup: event.target.value }))}
-                                    placeholder={t.membersPage.ageGroupPlaceholder}
-                                    className="h-10 bg-background/60"
-                                  />
-                                  <Input
-                                    value={editMemberForm.position}
-                                    onChange={(event) => setEditMemberForm((previous) => ({ ...previous, position: event.target.value }))}
-                                    placeholder={t.membersPage.positionPlaceholder}
-                                    className="h-10 bg-background/60"
-                                  />
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                  <div>
+                                    <div className="mb-1 text-xs text-muted-foreground">
+                                      {t.membersPage.draftEditLabelTeam}
+                                    </div>
+                                    <Input
+                                      value={editMemberForm.team}
+                                      onChange={(event) =>
+                                        setEditMemberForm((previous) => ({
+                                          ...previous,
+                                          team: event.target.value,
+                                        }))
+                                      }
+                                      placeholder={t.membersPage.teamPlaceholder}
+                                      className="h-10 bg-background/60"
+                                    />
+                                  </div>
+                                  <div>
+                                    <div className="mb-1 text-xs text-muted-foreground">
+                                      {t.membersPage.draftEditLabelAgeGroup}
+                                    </div>
+                                    <Input
+                                      value={editMemberForm.ageGroup}
+                                      onChange={(event) =>
+                                        setEditMemberForm((previous) => ({
+                                          ...previous,
+                                          ageGroup: event.target.value,
+                                        }))
+                                      }
+                                      placeholder={t.membersPage.ageGroupPlaceholder}
+                                      className="h-10 bg-background/60"
+                                    />
+                                  </div>
+                                  <div>
+                                    <div className="mb-1 text-xs text-muted-foreground">
+                                      {t.membersPage.draftEditLabelPosition}
+                                    </div>
+                                    <Input
+                                      value={editMemberForm.position}
+                                      onChange={(event) =>
+                                        setEditMemberForm((previous) => ({
+                                          ...previous,
+                                          position: event.target.value,
+                                        }))
+                                      }
+                                      placeholder={t.membersPage.positionPlaceholder}
+                                      className="h-10 bg-background/60"
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             ) : null}
@@ -4512,7 +4584,8 @@ const Members = () => {
                                 teamLabel={
                                   memberPanelEditModeId === member.id
                                     ? clubTeamNamesFromIds(clubTeams, editMemberTeamIds).join(", ") ||
-                                      editMemberForm.team.trim()
+                                      editMemberForm.team.trim() ||
+                                      editMemberForm.ageGroup.trim()
                                     : getMemberAssignedTeamNames(member)
                                 }
                                 email={membershipEmails[member.id] ?? null}
