@@ -136,6 +136,22 @@ Repair (apply if redeem fails): `20260731130000_repair_redeem_invite_pgcrypto.sq
 
 Client: partner routes (`/partner-*`, `/supplier-page`), PersonaPortalGate, Partner Page admin, `/partner-ai`, persona switch, RBAC sidebar. See `CHANGELOG.md` § 2026-07-01 (Partner portal) and `docs/rbac-dashboard-plan.md` §10.
 
+## Club roles + photo validity + function lint repair (2026-07-28)
+Apply after gamification / pricing migrations above (strict filename order):
+- `20260804160000_club_member_drafts_status_joined.sql` — allow draft status `joined` after invite redeem
+- `20260804170000_repair_stuck_invite_redeems.sql` — one-shot repair + hardened `redeem_club_invite`
+- `20260804180000_club_roles_team_management_fan_supporter.sql` — `team_management`, `fan`, `supporter` roles + RBAC
+- `20260804190000_member_photo_validity_notifications.sql` — `photo_uploaded_at`, renewal notifications RPC
+- `20260804193000_high_impact_auth_join_repairs.sql` — join/register/approve/create-club RPC fixes
+- `20260804194000` / `20260804195000` — join conflict-target experiments (superseded by `196000`)
+- `20260804196000_join_functions_without_on_conflict.sql` — upsert via update-then-insert; unique **`(club_id, user_id, role)`**
+- `20260804197000_remaining_lint_risk_repairs.sql` — heatmap/radar → `activity_attendance`; operator diagnostics fixes
+- `20260804198000_final_lint_cleanup_heatmap_radar.sql` — heatmap overload + radar ambiguity
+- `20260804199000_heatmap_order_by_fix.sql` — `GROUP BY` / `ORDER BY` on heatmap aggregate
+- `20260804200000_unused_variable_warning_cleanup.sql` — remove unused PL/pgSQL variables flagged by lint
+
+**Status (2026-07-28):** All above **applied** on linked remote. Verify with **`supabase db lint --linked`** (expect no schema errors). Manual checklist: **`docs/club-roles-verification-checklist.md`**.
+
 ## Verification artifact
 - Run `supabase/PHASE12_VERIFY.sql` after applying the migrations above.
 - Treat any `ok = false` row as a rollout blocker.

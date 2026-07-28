@@ -927,7 +927,17 @@ export default function Settings() {
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {["admin", "trainer", "player", "staff", "member", "parent"].map((r) => (
+                                  {[
+                                    "admin",
+                                    "trainer",
+                                    "player",
+                                    "staff",
+                                    "team_management",
+                                    "member",
+                                    "parent",
+                                    "fan",
+                                    "supporter",
+                                  ].map((r) => (
                                     <SelectItem key={r} value={r}>{formatRoleLabel(r)}</SelectItem>
                                   ))}
                                 </SelectContent>

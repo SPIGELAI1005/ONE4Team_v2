@@ -5,6 +5,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import logo from "@/assets/one4team-logo.png";
 import { BrandedText } from "@/components/ai/Ai4TBrand";
+import { Ai4TLogo } from "@/components/ai/Ai4TLogo";
 import { useDashboardNav } from "@/hooks/use-dashboard-nav";
 import { useDashboardNavLabels } from "@/hooks/use-dashboard-nav-labels";
 import { pathnameToNavId } from "@/lib/dashboard-nav";
@@ -69,7 +70,11 @@ export default function DashboardSidebar() {
             className={`w-full flex items-center gap-3 px-3 py-2.5 text-[13px] font-medium rounded-xl transition-all duration-200 mb-0.5 ${itemClass} ${collapsed ? "justify-center px-2" : ""}`}
             title={collapsed ? item.label : undefined}
           >
-            <item.icon className="w-[18px] h-[18px] shrink-0" strokeWidth={1.5} />
+            {item.module === "ai4t" ? (
+              <Ai4TLogo alt="AI 4 T" className="h-[27px] w-[27px] shrink-0" />
+            ) : (
+              <item.icon className="w-[18px] h-[18px] shrink-0" strokeWidth={1.5} />
+            )}
             {!collapsed && <span><BrandedText text={item.label} /></span>}
           </motion.button>
           );

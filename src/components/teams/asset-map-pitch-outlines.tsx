@@ -5,6 +5,7 @@ import {
   moveOutlineVertex,
   outlineBounds,
   outlineCenter,
+  outlineLabelAnchor,
   outlinePointsToSvg,
   parsePitchOutline,
   pointerToMapPercent,
@@ -241,7 +242,7 @@ export function AssetMapPitchOutlinesLayer({
         const focused = highlightedPitchId === pitch.id;
         const dimmed = hasFocus && !focused;
         const bounds = outlineBounds(outline);
-        const center = outlineCenter(outline);
+        const center = outlineLabelAnchor(outline);
         const fillAlpha = focused ? 0.48 : editing ? 0.36 : dimmed ? 0.08 : 0.32;
         const strokeWidth = focused ? 1.75 : editing ? 1.2 : dimmed ? 0.35 : 0.95;
         const showPitchLabel = showLabels || focused;

@@ -139,7 +139,7 @@ async function processWeeklyDigestRun(
     .eq("club_id", clubId)
     .eq("status", "active")
     .eq("weekly_digest_opt_in", true)
-    .in("role", ["member", "player", "parent_supporter"]);
+    .in("role", ["member", "player", "parent"]);
 
   if (recipientError) {
     throw new Error(recipientError.message);
@@ -160,7 +160,7 @@ async function processWeeklyDigestRun(
     const membershipIds = [membershipId];
     const wardLabels = new Map<string, string>();
 
-    if (role === "parent_supporter") {
+    if (role === "parent" || role === "parent_supporter") {
       const { data: guardianLinks } = await admin
         .from("club_member_guardian_links")
         .select("ward_membership_id")

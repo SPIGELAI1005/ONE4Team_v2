@@ -23,6 +23,7 @@ import {
   slugifyClubName,
 } from "@/lib/onboarding-club";
 import { notifyMembershipsUpdated } from "@/hooks/use-active-club";
+import { isPublicClubFirstRole } from "@/lib/rbac-config";
 
 type World = "club" | "partner" | null;
 type Step = "world" | "role" | "create-club" | "redeem-invite";
@@ -69,8 +70,11 @@ const Onboarding = () => {
     { id: "trainer", label: t.onboarding.trainer, icon: Dumbbell, desc: t.onboarding.trainerDesc },
     { id: "player", label: t.onboarding.player, icon: Shield, desc: t.onboarding.playerDesc },
     { id: "staff", label: t.onboarding.teamStaff, icon: UserCheck, desc: t.onboarding.teamStaffDesc },
+    { id: "team_management", label: t.onboarding.teamManagement, icon: Users, desc: t.onboarding.teamManagementDesc },
     { id: "member", label: t.onboarding.member, icon: Users, desc: t.onboarding.memberDesc },
-    { id: "parent", label: t.onboarding.parentSupporter, icon: Heart, desc: t.onboarding.parentSupporterDesc },
+    { id: "parent", label: t.onboarding.parent, icon: Heart, desc: t.onboarding.parentDesc },
+    { id: "fan", label: t.onboarding.fan, icon: Heart, desc: t.onboarding.fanDesc },
+    { id: "supporter", label: t.onboarding.supporter, icon: Heart, desc: t.onboarding.supporterDesc },
   ];
 
   const partnerRoles = [
@@ -117,6 +121,19 @@ const Onboarding = () => {
       const nextClubId = hasPreferredClub ? preferredClub! : memberships[0].club_id;
       localStorage.setItem(scopedClubKey, nextClubId);
       localStorage.removeItem(globalClubKey);
+
+      if (isPublicClubFirstRole(nextRole)) {
+        const { data: clubRow } = await supabase
+          .from("clubs")
+          .select("slug")
+          .eq("id", nextClubId)
+          .maybeSingle();
+        const slug = clubRow?.slug ? String(clubRow.slug) : null;
+        if (slug) {
+          navigate(`/club/${encodeURIComponent(slug)}`, { replace: true });
+          return;
+        }
+      }
 
       navigate(`/dashboard/${nextRole}`, { replace: true });
     };

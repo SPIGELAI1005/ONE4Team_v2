@@ -14,6 +14,8 @@ export interface ClubMemberMasterRecord {
   birth_date: string | null;
   membership_kind: "active_participant" | "supporting_member";
   photo_url: string | null;
+  /** When `photo_url` was last set; photos should be renewed after 2 years. */
+  photo_uploaded_at: string | null;
   bank_account_holder: string | null;
   bank_name: string | null;
   iban: string | null;

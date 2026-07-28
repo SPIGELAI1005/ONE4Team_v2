@@ -41,6 +41,8 @@ import {
   type AssetMapPitchDisplay,
 } from "@/lib/asset-map-overlay";
 import {
+  gridCellsLabelAnchor,
+  outlineLabelAnchor,
   parsePitchOutline,
   rotateOutlineByDegrees,
   serializePitchOutline,
@@ -1748,22 +1750,21 @@ const Teams = () => {
     const rows = pitchesBookedOnSelectedDay
       .map((pitch) => {
         const bookingsForPitch = bookedLegendByPitchId.get(pitch.id) || [];
-        return { pitchId: pitch.id, pitchName: pitch.name, pitchCells: pitch.grid_cells, bookings: bookingsForPitch };
+        return {
+          pitchId: pitch.id,
+          pitchName: pitch.name,
+          pitchCells: pitch.grid_cells,
+          outline: pitch.outline,
+          bookings: bookingsForPitch,
+        };
       })
-      .filter((row) => row.bookings.length > 0 && row.pitchCells.length > 0);
-
-    const toRowCol = (cellIndex: number) => ({
-      row: Math.floor(cellIndex / GRID_SIZE),
-      col: cellIndex % GRID_SIZE,
-    });
+      .filter((row) => row.bookings.length > 0 && (row.pitchCells.length > 0 || Boolean(row.outline)));
 
     return rows
       .map((row) => {
-        const coords = row.pitchCells.map(toRowCol);
-        const minRow = Math.min(...coords.map((c) => c.row));
-        const maxRow = Math.max(...coords.map((c) => c.row));
-        const minCol = Math.min(...coords.map((c) => c.col));
-        const maxCol = Math.max(...coords.map((c) => c.col));
+        const anchor = row.outline
+          ? outlineLabelAnchor(row.outline)
+          : gridCellsLabelAnchor(row.pitchCells, GRID_SIZE);
         const lines = row.bookings.map((booking) => {
           const range = `${format(new Date(booking.starts_at), "HH:mm")}–${format(new Date(booking.ends_at), "HH:mm")}`;
           const team = booking.teamName ? ` · ${booking.teamName}` : "";
@@ -1772,10 +1773,8 @@ const Teams = () => {
         return {
           pitchId: row.pitchId,
           pitchName: row.pitchName,
-          gridRowStart: minRow + 1,
-          gridRowEnd: maxRow + 2,
-          gridColStart: minCol + 1,
-          gridColEnd: maxCol + 2,
+          cx: anchor.cx,
+          cy: anchor.cy,
           lines,
         };
       })
@@ -4785,30 +4784,24 @@ const Teams = () => {
                         />
 
                         {pitchViewMode === "booked" && !mapHighlightPitchId ? (
-                          <div
-                            className="pointer-events-none absolute inset-0 z-20 grid gap-[4px]"
-                            style={{
-                              gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
-                              gridTemplateRows: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
-                            }}
-                          >
+                          <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
                             {bookedPitchLabelModels.map((m) => (
                               <div
                                 key={`label-${m.pitchId}`}
-                                className="flex items-start justify-start p-1.5"
+                                className="absolute max-w-[42%] -translate-x-1/2 -translate-y-1/2 px-0.5"
                                 style={{
-                                  gridRow: `${m.gridRowStart} / ${m.gridRowEnd}`,
-                                  gridColumn: `${m.gridColStart} / ${m.gridColEnd}`,
+                                  left: `${m.cx}%`,
+                                  top: `${m.cy}%`,
                                 }}
                               >
                                 <div
-                                  className="max-w-full rounded-md border border-border/60 bg-background/80 px-2 py-1 text-[10px] text-foreground shadow-sm backdrop-blur"
+                                  className="max-w-full rounded-md border border-border/60 bg-background/90 px-2 py-1 text-[10px] text-foreground shadow-sm backdrop-blur"
                                   style={{ borderColor: hexToRgba(pitchColorById.get(m.pitchId) || "#71717a", 0.92) }}
                                 >
-                                  <div className="font-semibold truncate">{m.pitchName}</div>
-                                  <div className="mt-0.5 max-h-full overflow-y-auto pr-0.5">
+                                  <div className="truncate font-semibold">{m.pitchName}</div>
+                                  <div className="mt-0.5 max-h-16 overflow-y-auto pr-0.5">
                                     {m.lines.map((line) => (
-                                      <div key={`${m.pitchId}-${line}`} className="text-muted-foreground tabular-nums leading-snug">
+                                      <div key={`${m.pitchId}-${line}`} className="tabular-nums leading-snug text-muted-foreground">
                                         {line}
                                       </div>
                                     ))}
@@ -4953,9 +4946,20 @@ const Teams = () => {
                             : t.teamsPage.bookingTypes[item.bookingType || "training"];
 
                         return (
-                          <button
+                          <div
                             key={item.key}
-                            type="button"
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(event) => {
+                              if (event.key !== "Enter" && event.key !== " ") return;
+                              event.preventDefault();
+                              setSelectedDayScheduleKey((previous) => (previous === item.key ? null : item.key));
+                              if (item.kind === "booking") {
+                                setSelectedBookingId((previous) => (previous === item.id ? null : item.id));
+                              } else {
+                                setSelectedBookingId(null);
+                              }
+                            }}
                             onClick={() => {
                               setSelectedDayScheduleKey((previous) => (previous === item.key ? null : item.key));
                               if (item.kind === "booking") {
@@ -4964,7 +4968,7 @@ const Teams = () => {
                                 setSelectedBookingId(null);
                               }
                             }}
-                            className={`w-full text-left rounded-xl border bg-background/50 p-3 transition-colors hover:border-primary/40 ${isExpanded ? "border-primary/50 ring-1 ring-primary/40" : "border-border/60"}`}
+                            className={`w-full text-left rounded-xl border bg-background/50 p-3 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${isExpanded ? "border-primary/50 ring-1 ring-primary/40" : "border-border/60"}`}
                           >
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex min-w-0 items-center gap-1.5">
@@ -5032,7 +5036,7 @@ const Teams = () => {
                                 ) : null}
                               </div>
                             ) : null}
-                          </button>
+                          </div>
                         );
                       })
                     )}

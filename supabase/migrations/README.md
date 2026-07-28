@@ -14,7 +14,7 @@ YYYYMMDDHHMMSS_short_description.sql
 
 ## `202608*` batches (applied July 2026)
 
-Several migrations are prefixed `20260801…` / `20260802…` / `20260803…` even though they were applied to the linked remote on **2026-07-16** and **2026-07-18**. That skew is intentional for ordering within the Wave B–E / Asset Map / gamification release trains.
+Several migrations are prefixed `20260801…` / `20260802…` / `20260803…` / `20260804…` even though they were applied to the linked remote on **2026-07-16**, **2026-07-18**, and **2026-07-28**. That skew is intentional for ordering within the Wave B–E / Asset Map / gamification / roles / lint-repair release trains.
 
 Do **not** rename those files to “fix” the calendar date — doing so would break migration history on remotes that already applied them.
 

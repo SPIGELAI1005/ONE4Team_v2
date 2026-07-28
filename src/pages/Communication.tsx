@@ -1504,49 +1504,51 @@ export function CommunicationWorkspace({
             <aside
               className={
                 embedded
-                  ? "hidden min-h-0 overflow-y-auto overscroll-contain rounded-2xl border border-neutral-200/80 bg-neutral-50/80 p-2 sm:block sm:p-3"
-                  : "hidden min-h-0 overflow-y-auto overscroll-contain rounded-2xl border border-border/70 bg-card/50 p-3 backdrop-blur-xl lg:block"
+                  ? "hidden min-h-0 rounded-2xl border border-neutral-200/80 bg-neutral-50/80 p-2 sm:block sm:p-3"
+                  : "hidden min-h-0 rounded-2xl border border-border/70 bg-card/50 p-3 backdrop-blur-xl lg:flex lg:flex-col"
               }
             >
-              <div
-                className={cn(
-                  "text-xs font-semibold px-2 mb-2",
-                  embedded ? "text-neutral-500" : "text-muted-foreground",
-                )}
-              >
-                {t.communicationPage.channels}
-              </div>
-              <div className="space-y-1">
-                {channels.map((channel) => (
-                  <button
-                    key={channel.id}
-                    onClick={() => setSelectedChannelId(channel.id)}
-                    className={cn(
-                      "w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors",
-                      selectedChannel.id === channel.id
-                        ? embedded
-                          ? "border border-[color:var(--club-primary)]/30 bg-[color:var(--club-primary)]/10 font-medium text-[color:var(--club-primary)]"
-                          : "bg-primary/12 text-primary border border-primary/20"
-                        : embedded
-                          ? "text-neutral-600 hover:bg-neutral-100/90"
-                          : "hover:bg-muted/40 text-muted-foreground",
-                    )}
-                  >
-                    {channel.kind === "announcements" ? (
-                      <Megaphone className="w-4 h-4 shrink-0" />
-                    ) : channel.isTrainersChannel ? (
-                      <Users className="w-4 h-4 shrink-0" />
-                    ) : (
-                      <Hash className="w-4 h-4 shrink-0" />
-                    )}
-                    <span className="truncate">{channel.label}</span>
-                  </button>
-                ))}
+              <div className={cn("min-h-0", !embedded && "flex min-h-0 flex-1 flex-col overflow-hidden")}>
+                <div
+                  className={cn(
+                    "text-xs font-semibold px-2 mb-2",
+                    embedded ? "text-neutral-500" : "text-muted-foreground",
+                  )}
+                >
+                  {t.communicationPage.channels}
+                </div>
+                <div className={cn("space-y-1", !embedded && "min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1")}>
+                  {channels.map((channel) => (
+                    <button
+                      key={channel.id}
+                      onClick={() => setSelectedChannelId(channel.id)}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors",
+                        selectedChannel.id === channel.id
+                          ? embedded
+                            ? "border border-[color:var(--club-primary)]/30 bg-[color:var(--club-primary)]/10 font-medium text-[color:var(--club-primary)]"
+                            : "bg-primary/12 text-primary border border-primary/20"
+                          : embedded
+                            ? "text-neutral-600 hover:bg-neutral-100/90"
+                            : "hover:bg-muted/40 text-muted-foreground",
+                      )}
+                    >
+                      {channel.kind === "announcements" ? (
+                        <Megaphone className="w-4 h-4 shrink-0" />
+                      ) : channel.isTrainersChannel ? (
+                        <Users className="w-4 h-4 shrink-0" />
+                      ) : (
+                        <Hash className="w-4 h-4 shrink-0" />
+                      )}
+                      <span className="truncate">{channel.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {!embedded ? (
                 <ExternalBridgePanel
-                  className="mt-4"
+                  className="mt-3 shrink-0"
                   labels={externalBridgeLabels}
                   health={externalBridgeHealth}
                   onOpenProvider={openBridgeSettings}

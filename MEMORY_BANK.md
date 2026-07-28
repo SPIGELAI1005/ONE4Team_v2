@@ -1,11 +1,14 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-07-18 (Member ID card skills back · My Progress copy · Club Card parity)
+Last updated: 2026-07-28 (Supabase lint repair · Communication UX · AI 4 T nav branding)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **Supabase function lint repair (2026-07-28):** `supabase db lint --linked` errors cleared via migrations **`20260804160000`**–**`20260804170000`** (draft `joined` status + stuck invite repair), **`20260804193000`** (join/register/approve/create-club RPC fixes), **`20260804196000`** (join upsert without invalid `ON CONFLICT` — unique key is **`(club_id, user_id, role)`**), **`20260804197000`**–**`20260804199000`** (heatmap/radar → **`activity_attendance`**), **`20260804200000`** (unused-variable warning cleanup). **Lint status: clean.** See **CHANGELOG** § **Supabase function lint repair**.
+- **Communication + AI 4 T chrome (2026-07-28):** `/communication` sidebar — channels scroll, External Bridge fixed at bottom; bridge panel uses **`Ai4TLogo`**; dashboard sidebar + mobile nav AI 4 T icon uses **`Ai4TLogo`** (enlarged). **`/club-page-admin`** tabs: 5+5 grid, no horizontal scroll. See **CHANGELOG** § **Communication · AI 4 T branding**.
+- **Club roles optimization (2026-07-28):** New membership roles **`team_management`**, **`fan`**, **`supporter`**. Fan/Supporter land on `/club/:slug` (no ops dashboard). Staff/Team Management edit ops without payments. Trainer match/roster writes are assigned-team only (`is_trainer_for_team`). Parent split from Supporter; dues/digest use DB `parent`. Under-18 guardian link UX on Members Safety tab. Migration **`20260804180000`**. Checklist **`docs/club-roles-verification-checklist.md`**. See **CHANGELOG** § **Club roles optimization**.
 - **Member ID card flip + AI 4 T estimate (2026-07-18):** Club Member ID card flips on tap. **Players** see My Progress–derived skills (TEC/FIT/TAC/MND/ATT/CMP), OVR, level/XP, and AI 4 T market estimate with info + refresh; empty My Progress shows **—**. **Non-players** see club crest only on the back. Wired on public club profile modal, **`/members`** list modal, and Club Card tab (`MasterDataTabs`). Lib: **`club-member-pass-skills.ts`**, hook **`use-club-pass-skills.ts`**. Migration **`20260804150000_fix_progress_rpc_app_role_enum.sql`** fixes progress RPC `app_role` cast (apply if snapshot 400s). See **CHANGELOG** § **Member ID card skills**.
 - **My Progress copy (2026-07-18):** Hero/support taglines use intentional two-line breaks (EN/DE) with `whitespace-pre-line` on **`public-club-my-progress-section`**.
 - **Pricing UX polish (2026-07-18):** `/pricing` — gold Founding promo banner + Offer terms / Offer details modals; Kick-off strikethrough→0 €; logos+corner icons on all cards; Bespoke Enterprise band + mailto consultation to **`contact@one4team.com`**; AI 4 T add-on red **4**, visible-play video; FAQ + comparison labels updated. See **CHANGELOG** § **Pricing UX polish**.
@@ -174,6 +177,8 @@ Persistent handoff context for future agents so work can continue without re-dis
   - club public join request flow preserves return context when redirecting to auth.
 
 ## Recently Applied Migrations In Supabase
+- **2026-07-28:** `20260804160000` → `20260804200000` — draft joined status, invite redeem repair, auth/join RPC fixes, analytics heatmap/radar repairs, lint warning cleanup (linked remote; **`supabase db lint --linked`** clean)
+- **2026-07-28:** `20260804180000_club_roles_team_management_fan_supporter.sql`, `20260804190000_member_photo_validity_notifications.sql` (linked remote)
 - **2026-07-18:** `20260803140000_club_asset_map_overlay.sql` (linked remote)
 - **2026-07-18:** `20260803150000_club_pitch_outlines.sql` (linked remote)
 - **2026-07-18:** `20260803130000_team_assignment_rls.sql` (linked remote)

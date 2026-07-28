@@ -21,11 +21,14 @@ import type { ClubRoleAssignmentRow, ClubRoleKind } from "@/lib/club-role-assign
 export type DashboardRole =
   | "admin"
   | "club_admin"
+  | "team_management"
   | "trainer"
   | "team_staff"
   | "player"
   | "parent_supporter"
   | "member"
+  | "fan"
+  | "supporter"
   | "sponsor"
   | "supplier"
   | "service_provider"
@@ -34,11 +37,14 @@ export type DashboardRole =
 export const DASHBOARD_ROLES: readonly DashboardRole[] = [
   "admin",
   "club_admin",
+  "team_management",
   "trainer",
   "team_staff",
   "player",
   "parent_supporter",
   "member",
+  "fan",
+  "supporter",
   "sponsor",
   "supplier",
   "service_provider",
@@ -49,12 +55,16 @@ export const DASHBOARD_ROLES: readonly DashboardRole[] = [
 export const INTERNAL_CLUB_ROLES: readonly DashboardRole[] = [
   "admin",
   "club_admin",
+  "team_management",
   "trainer",
   "team_staff",
   "player",
   "parent_supporter",
   "member",
 ] as const;
+
+/** Signed-in public-club-first personas (no ops dashboard modules). */
+export const PUBLIC_CLUB_FIRST_ROLES: readonly DashboardRole[] = ["fan", "supporter"] as const;
 
 /** External partner / vendor roles. */
 export const EXTERNAL_ROLES: readonly DashboardRole[] = [
@@ -68,10 +78,12 @@ export const EXTERNAL_ROLES: readonly DashboardRole[] = [
 export const SPORTS_ROLES: readonly DashboardRole[] = [
   "admin",
   "club_admin",
+  "team_management",
   "trainer",
   "team_staff",
   "player",
   "parent_supporter",
+  "member",
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -172,9 +184,28 @@ const FULL_SIDEBAR_MENU: readonly DashboardModule[] = [
  * Role-specific sidebar order and composition.
  * Each list is filtered by {@link canAccessModule} before rendering.
  */
+/** Ops modules excluded from finance for staff / team management. */
+const OPS_NO_FINANCE_SIDEBAR: readonly DashboardModule[] = [
+  "dashboard",
+  "assets",
+  "members",
+  "trainings",
+  "matches",
+  "events",
+  "reports",
+  "messages",
+  "tasks",
+  "ai4t",
+  "club_page",
+  "club_shop",
+  "settings",
+  "support",
+] as const;
+
 export const SIDEBAR_MENU_PROFILES: Record<DashboardRole, readonly DashboardModule[]> = {
   admin: FULL_SIDEBAR_MENU,
   club_admin: FULL_SIDEBAR_MENU,
+  team_management: OPS_NO_FINANCE_SIDEBAR,
   trainer: [
     "dashboard",
     "members",
@@ -196,6 +227,7 @@ export const SIDEBAR_MENU_PROFILES: Record<DashboardRole, readonly DashboardModu
     "trainings",
     "matches",
     "events",
+    "reports",
     "messages",
     "tasks",
     "assets",
@@ -231,6 +263,8 @@ export const SIDEBAR_MENU_PROFILES: Record<DashboardRole, readonly DashboardModu
   ],
   member: [
     "dashboard",
+    "trainings",
+    "matches",
     "events",
     "messages",
     "tasks",
@@ -239,6 +273,8 @@ export const SIDEBAR_MENU_PROFILES: Record<DashboardRole, readonly DashboardModu
     "settings",
     "support",
   ],
+  fan: ["settings", "support"],
+  supporter: ["events", "club_shop", "settings", "support"],
   sponsor: [
     "dashboard",
     "marketplace",
@@ -287,8 +323,6 @@ export const SIDEBAR_MENU_PROFILES: Record<DashboardRole, readonly DashboardModu
 
 /** Safe minimal sidebar when role cannot be resolved. */
 export const UNKNOWN_SIDEBAR_MENU: readonly DashboardModule[] = [
-  "dashboard",
-  "messages",
   "settings",
   "support",
 ] as const;
@@ -383,7 +417,7 @@ const FULL_ACCESS = Object.fromEntries(
 
 /** Safe fallback when role string cannot be normalized - lowest privilege, never admin. */
 const UNKNOWN_ROLE_ACCESS: Record<DashboardModule, ModuleAccessLevel> = {
-  dashboard: "own",
+  dashboard: "none",
   assets: "none",
   members: "none",
   invites: "none",
@@ -393,7 +427,7 @@ const UNKNOWN_ROLE_ACCESS: Record<DashboardModule, ModuleAccessLevel> = {
   events: "none",
   reports: "none",
   payments: "none",
-  messages: "read",
+  messages: "none",
   tasks: "none",
   marketplace: "none",
   partners: "none",
@@ -405,6 +439,17 @@ const UNKNOWN_ROLE_ACCESS: Record<DashboardModule, ModuleAccessLevel> = {
   support: "read",
 };
 
+/** Public-club-first personas: profile/settings only (no ops dashboard). */
+const PUBLIC_CLUB_FIRST_ACCESS: Record<DashboardModule, ModuleAccessLevel> = {
+  ...UNKNOWN_ROLE_ACCESS,
+};
+
+const SUPPORTER_ACCESS: Record<DashboardModule, ModuleAccessLevel> = {
+  ...PUBLIC_CLUB_FIRST_ACCESS,
+  events: "read",
+  club_shop: "read",
+};
+
 // ---------------------------------------------------------------------------
 // Role × module matrix (product baseline)
 // ---------------------------------------------------------------------------
@@ -413,6 +458,29 @@ const RBAC_MATRIX: Record<DashboardRole, Record<DashboardModule, ModuleAccessLev
   admin: { ...FULL_ACCESS, supplier_page: "none" },
 
   club_admin: { ...FULL_ACCESS, supplier_page: "none" },
+
+  team_management: {
+    dashboard: "full",
+    assets: "full",
+    members: "full",
+    invites: "full",
+    roles: "full",
+    trainings: "full",
+    matches: "full",
+    events: "full",
+    reports: "full",
+    payments: "none",
+    messages: "full",
+    tasks: "full",
+    marketplace: "none",
+    partners: "none",
+    ai4t: "full",
+    club_page: "full",
+    supplier_page: "none",
+    club_shop: "full",
+    settings: "limited",
+    support: "read",
+  },
 
   trainer: {
     dashboard: "team",
@@ -438,25 +506,25 @@ const RBAC_MATRIX: Record<DashboardRole, Record<DashboardModule, ModuleAccessLev
   },
 
   team_staff: {
-    dashboard: "team",
-    assets: "team",
-    members: "limited",
-    invites: "none",
+    dashboard: "full",
+    assets: "full",
+    members: "full",
+    invites: "limited",
     roles: "none",
-    trainings: "assigned",
-    matches: "assigned",
-    events: "assigned",
-    reports: "none",
+    trainings: "full",
+    matches: "full",
+    events: "full",
+    reports: "full",
     payments: "none",
-    messages: "team",
-    tasks: "assigned",
+    messages: "full",
+    tasks: "full",
     marketplace: "none",
     partners: "none",
     ai4t: "limited",
     club_page: "none",
     supplier_page: "none",
     club_shop: "read",
-    settings: "own",
+    settings: "limited",
     support: "read",
   },
 
@@ -466,11 +534,11 @@ const RBAC_MATRIX: Record<DashboardRole, Record<DashboardModule, ModuleAccessLev
     members: "none",
     invites: "none",
     roles: "none",
-    trainings: "team",
-    matches: "team",
+    trainings: "limited",
+    matches: "limited",
     events: "read",
     reports: "none",
-    payments: "none",
+    payments: "own",
     messages: "team",
     tasks: "own",
     marketplace: "none",
@@ -512,12 +580,12 @@ const RBAC_MATRIX: Record<DashboardRole, Record<DashboardModule, ModuleAccessLev
     members: "none",
     invites: "none",
     roles: "none",
-    trainings: "none",
-    matches: "none",
+    trainings: "limited",
+    matches: "limited",
     events: "read",
     reports: "none",
     payments: "none",
-    messages: "read",
+    messages: "team",
     tasks: "own",
     marketplace: "none",
     partners: "none",
@@ -528,6 +596,10 @@ const RBAC_MATRIX: Record<DashboardRole, Record<DashboardModule, ModuleAccessLev
     settings: "own",
     support: "read",
   },
+
+  fan: { ...PUBLIC_CLUB_FIRST_ACCESS },
+
+  supporter: { ...SUPPORTER_ACCESS },
 
   sponsor: {
     dashboard: "own",
@@ -631,6 +703,9 @@ const ROLE_ALIASES: Record<string, DashboardRole> = {
   admin: "club_admin",
   club_admin: "club_admin",
   "club admin": "club_admin",
+  team_management: "team_management",
+  "team management": "team_management",
+  management: "team_management",
   trainer: "trainer",
   staff: "team_staff",
   team_staff: "team_staff",
@@ -642,7 +717,8 @@ const ROLE_ALIASES: Record<string, DashboardRole> = {
   parent_supporter: "parent_supporter",
   "parent / supporter": "parent_supporter",
   "parent/supporter": "parent_supporter",
-  supporter: "parent_supporter",
+  supporter: "supporter",
+  fan: "fan",
   member: "member",
   sponsor: "sponsor",
   supplier: "supplier",
@@ -662,7 +738,10 @@ const KIND_TO_DASHBOARD: Record<ClubRoleKind, DashboardRole> = {
   player_adult: "player",
   parent: "parent_supporter",
   staff: "team_staff",
+  team_management: "team_management",
   member: "member",
+  fan: "fan",
+  supporter: "supporter",
   sponsor: "sponsor",
   supplier: "supplier",
   service_provider: "service_provider",
@@ -671,6 +750,8 @@ const KIND_TO_DASHBOARD: Record<ClubRoleKind, DashboardRole> = {
 
 /** Role precedence when merging legacy membership + assignments (higher index = higher privilege). */
 const ROLE_PRECEDENCE: DashboardRole[] = [
+  "fan",
+  "supporter",
   "member",
   "consultant",
   "supplier",
@@ -680,6 +761,7 @@ const ROLE_PRECEDENCE: DashboardRole[] = [
   "player",
   "team_staff",
   "trainer",
+  "team_management",
   "club_admin",
   "admin",
 ];
@@ -866,11 +948,21 @@ export function getDataScopeForModule(
       if (normalized && (EXTERNAL_ROLES as readonly string[]).includes(normalized)) {
         return "partner";
       }
+      // Player / member team schedule read is team-scoped without write.
+      if (module === "trainings" || module === "matches" || module === "messages" || module === "assets") {
+        return "team";
+      }
       return "limited";
     }
     default:
       return "none";
   }
+}
+
+/** True when the role should land on the public club site instead of ops dashboard. */
+export function isPublicClubFirstRole(role: DashboardRole | string | null | undefined): boolean {
+  const normalized = typeof role === "string" ? normalizeDashboardRole(role) : role;
+  return Boolean(normalized && (PUBLIC_CLUB_FIRST_ROLES as readonly string[]).includes(normalized));
 }
 
 export function isExternalRole(role: DashboardRole | string | null | undefined): boolean {

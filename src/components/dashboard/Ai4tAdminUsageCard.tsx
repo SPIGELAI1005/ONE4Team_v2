@@ -77,9 +77,9 @@ export function Ai4tAdminUsageCard() {
           <div className="font-display font-bold">
             <Ai4TInlineLabel text={t.dashboard.ai4tUsageTitle} logoClassName="h-4 w-4" />
           </div>
-          <p className="text-xs text-muted-foreground mt-1">{t.dashboard.ai4tUsageSubtitleMonthly}</p>
+          <p className="text-sm text-muted-foreground mt-1">{t.dashboard.ai4tUsageSubtitleMonthly}</p>
         </div>
-        <Link to="/co-trainer?tab=history" className="text-xs text-primary hover:underline shrink-0">
+        <Link to="/co-trainer?tab=history" className="text-sm text-primary hover:underline shrink-0">
           {t.dashboard.ai4tUsageViewHistory}
         </Link>
       </div>
@@ -92,19 +92,19 @@ export function Ai4tAdminUsageCard() {
           {meter ? <AiUsageMeter meter={meter} className="mt-4" /> : null}
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageAgentRuns}</div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageAgentRuns}</div>
               <div className="text-xl font-semibold mt-1">{total}</div>
             </div>
             <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageExecuted}</div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageExecuted}</div>
               <div className="text-xl font-semibold mt-1">{executed}</div>
             </div>
             <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageSuccessRate}</div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageSuccessRate}</div>
               <div className="text-xl font-semibold mt-1">{successRate != null ? `${successRate}%` : "-"}</div>
             </div>
             <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageChats}</div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageChats}</div>
               <div className="text-xl font-semibold mt-1">{stats?.conversations_updated ?? 0}</div>
             </div>
           </div>

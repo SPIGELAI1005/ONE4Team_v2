@@ -76,6 +76,11 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 - [x] **GAME-CARD-001** Member ID flip: player skills + AI 4 T estimate (empty → —); non-player club crest; `/members` Club Card parity; progress RPC role-enum fix **`20260804150000`** *(2026-07-18)*
 - [x] **GAME-COPY-001** My Progress hero/support two-line EN/DE taglines *(2026-07-18)*
 - [x] **MAP-OVERLAY-001** Asset Map satellite underlay — migration **`20260803140000`** + Combined/Booked UI *(2026-07-18)*
+- [x] **ROLES-001** Club roles optimization — `team_management` / `fan` / `supporter`; RBAC rewrite; trainer team scope; parent/supporter split; under-18 guardian UX — migration **`20260804180000`** *(2026-07-28)*
+- [x] **PHOTO-001** Member photo 2-year validity + renewal notifications — migration **`20260804190000`** *(2026-07-28)*
+- [x] **DB-LINT-001** Supabase function lint repair — migrations **`20260804160000`**–**`20260804200000`**; `supabase db lint --linked` clean *(2026-07-28)*
+- [x] **COMM-UX-001** Communication sidebar scroll + fixed External Bridge panel; **`Ai4TLogo`** on bridge + dashboard AI nav *(2026-07-28)*
+- [x] **CLUB-ADMIN-TABS-001** Club Page Admin 5+5 tab grid (no horizontal scroll) *(2026-07-28)*
 
 ---
 

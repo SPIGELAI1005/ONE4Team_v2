@@ -1344,6 +1344,7 @@ export type Database = {
           nationality: string | null
           onboarding_progress: string | null
           photo_url: string | null
+          photo_uploaded_at: string | null
           player_passport_number: string | null
           postal_code: string | null
           role_development_notes: string | null
@@ -1392,6 +1393,7 @@ export type Database = {
           nationality?: string | null
           onboarding_progress?: string | null
           photo_url?: string | null
+          photo_uploaded_at?: string | null
           player_passport_number?: string | null
           postal_code?: string | null
           role_development_notes?: string | null
@@ -1440,6 +1442,7 @@ export type Database = {
           nationality?: string | null
           onboarding_progress?: string | null
           photo_url?: string | null
+          photo_uploaded_at?: string | null
           player_passport_number?: string | null
           postal_code?: string | null
           role_development_notes?: string | null
@@ -4433,6 +4436,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      ensure_photo_renewal_notifications: {
+        Args: { _club_id: string }
+        Returns: number
+      }
       redeem_club_invite: {
         Args: { _token: string }
         Returns: {
@@ -4529,8 +4536,11 @@ export type Database = {
         | "trainer"
         | "player"
         | "staff"
+        | "team_management"
         | "member"
         | "parent"
+        | "fan"
+        | "supporter"
         | "sponsor"
         | "supplier"
         | "service_provider"
@@ -4668,8 +4678,11 @@ export const Constants = {
         "trainer",
         "player",
         "staff",
+        "team_management",
         "member",
         "parent",
+        "fan",
+        "supporter",
         "sponsor",
         "supplier",
         "service_provider",

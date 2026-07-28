@@ -1,9 +1,12 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-07-18 (Member ID skills back · My Progress · Pricing / Founding Club)
+Last updated: 2026-07-28 (Supabase lint repair · club roles · photo validity · Communication UX)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
+- **Supabase function health (2026-07-28):** Linked remote migrations **`20260804160000`**–**`20260804200000`** repair join/register/approve/create-club RPCs, draft `joined` status, stuck invite redemptions, analytics heatmap/radar (`activity_attendance`), and unused-variable lint warnings. **`supabase db lint --linked`** → no schema errors. See **`CHANGELOG.md`** § **Supabase function lint repair**.
+- **Club roles + photo validity (2026-07-28):** New roles **`team_management`**, **`fan`**, **`supporter`**; RBAC rewrite; member photo 2-year validity + renewal notifications. Migrations **`20260804180000`**, **`20260804190000`**. Checklist **`docs/club-roles-verification-checklist.md`**.
+- **Communication + AI 4 T chrome (2026-07-28):** `/communication` channel list scrolls; External Bridge fixed at sidebar bottom; **`Ai4TLogo`** on bridge + dashboard nav; Club Page Admin 5+5 tab grid.
 - **Member ID + My Progress (2026-07-18):** Flippable Member ID — players get progress-derived skills + AI 4 T estimate (or **—** when empty); non-players get club crest. Parity on public club modal and **`/members`** Club Card. My Progress taglines use two-line EN/DE breaks. Progress RPC enum fix migration **`20260804150000`**. See **`CHANGELOG.md`** § **Member ID card skills**.
 - **Commercial packaging (2026-07-16 / overhaul 2026-07-18):** **`plan-catalog.ts`** is the source of truth for Kick-off / Squad / Pro / Champions prices, limits, and feature flags; Pricing UI + Founding Club offer + dual Stripe line items. See **`CHANGELOG.md`** § **2026-07-18** Pricing sections, **`GTM_PRICING_PACKAGING.md`**.
 - **German i18n (2026-07-16):** Comprehensive DE pass (parity, umlauts, leftover English) across club, partner, marketplace, and operator strings.

@@ -19,6 +19,9 @@ describe("normalizeDashboardRole", () => {
     expect(normalizeDashboardRole("staff")).toBe("team_staff");
     expect(normalizeDashboardRole("parent")).toBe("parent_supporter");
     expect(normalizeDashboardRole("Parent / Supporter")).toBe("parent_supporter");
+    expect(normalizeDashboardRole("supporter")).toBe("supporter");
+    expect(normalizeDashboardRole("fan")).toBe("fan");
+    expect(normalizeDashboardRole("team_management")).toBe("team_management");
     expect(normalizeDashboardRole("service")).toBe("service_provider");
     expect(normalizeDashboardRole("service_provider")).toBe("service_provider");
     expect(normalizeDashboardRole("club_admin")).toBe("club_admin");
@@ -28,7 +31,7 @@ describe("normalizeDashboardRole", () => {
     expect(normalizeDashboardRole("superuser")).toBeNull();
     expect(normalizeDashboardRole("")).toBeNull();
     expect(getModuleAccess("superuser", "matches")).toBe("none");
-    expect(getModuleAccess("superuser", "dashboard")).toBe("own");
+    expect(getModuleAccess("superuser", "dashboard")).toBe("none");
   });
 });
 
@@ -39,7 +42,7 @@ describe("role classification helpers", () => {
     expect(isInternalClubRole("player")).toBe(true);
     expect(isInternalClubRole("supplier")).toBe(false);
     expect(isSportsRole("team_staff")).toBe(true);
-    expect(isSportsRole("member")).toBe(false);
+    expect(isSportsRole("member")).toBe(true);
     expect(isSportsRole("sponsor")).toBe(false);
   });
 });
@@ -72,24 +75,53 @@ describe("module access baseline", () => {
     expect(getModuleAccess("parent_supporter", "matches")).toBe("team");
   });
 
-  it("restricts generic member from sports ops unless linked", () => {
-    expect(getModuleAccess("member", "trainings")).toBe("none");
-    expect(getModuleAccess("member", "matches")).toBe("none");
-    expect(getModuleAccess("member", "events")).toBe("read");
-    expect(getModuleAccess("member", "members")).toBe("none");
-    expect(getModuleAccess("member", "payments")).toBe("none");
-    expect(getModuleAccess("member", "messages")).toBe("read");
-    expect(getModuleAccess("member", "tasks")).toBe("own");
+  it("restricts player trainings/matches to limited (no team write)", () => {
+    expect(getModuleAccess("player", "trainings")).toBe("limited");
+    expect(getModuleAccess("player", "matches")).toBe("limited");
+    expect(canWriteModule("player", "trainings")).toBe(false);
+    expect(canWriteModule("player", "matches")).toBe(false);
+    expect(getModuleAccess("player", "messages")).toBe("team");
+    expect(getModuleAccess("player", "tasks")).toBe("own");
+    expect(getDataScopeForModule("player", "trainings")).toBe("team");
   });
 
-  it("member sidebar is club-wide only (no trainings, matches, payments, members)", () => {
+  it("grants member team schedule read + messaging when scoped", () => {
+    expect(getModuleAccess("member", "trainings")).toBe("limited");
+    expect(getModuleAccess("member", "matches")).toBe("limited");
+    expect(getModuleAccess("member", "messages")).toBe("team");
+    expect(getModuleAccess("member", "events")).toBe("read");
+    expect(getModuleAccess("member", "payments")).toBe("none");
+    expect(canWriteModule("member", "trainings")).toBe(false);
+  });
+
+  it("member sidebar includes team schedule modules without payments", () => {
     const menu = getSidebarMenuItems("member");
     expect(menu).toContain("events");
     expect(menu).toContain("messages");
-    expect(menu).not.toContain("trainings");
-    expect(menu).not.toContain("matches");
+    expect(menu).toContain("trainings");
+    expect(menu).toContain("matches");
     expect(menu).not.toContain("payments");
     expect(menu).not.toContain("members");
+  });
+
+  it("denies finance for staff and team_management", () => {
+    expect(getModuleAccess("team_staff", "payments")).toBe("none");
+    expect(getModuleAccess("team_management", "payments")).toBe("none");
+    expect(getModuleAccess("team_staff", "members")).toBe("full");
+    expect(getModuleAccess("team_management", "members")).toBe("full");
+    expect(getModuleAccess("team_management", "roles")).toBe("full");
+    expect(getModuleAccess("team_management", "club_page")).toBe("full");
+    expect(getModuleAccess("team_staff", "club_page")).toBe("none");
+  });
+
+  it("keeps fan and supporter off ops dashboard", () => {
+    expect(getModuleAccess("fan", "dashboard")).toBe("none");
+    expect(getModuleAccess("fan", "members")).toBe("none");
+    expect(getModuleAccess("supporter", "dashboard")).toBe("none");
+    expect(getModuleAccess("supporter", "events")).toBe("read");
+    expect(getSidebarMenuItems("fan")).toEqual(["settings", "support"]);
+    expect(getSidebarMenuItems("supporter")).toContain("events");
+    expect(getSidebarMenuItems("supporter")).not.toContain("dashboard");
   });
 });
 
@@ -157,7 +189,7 @@ describe("getSidebarMenuItems", () => {
 
   it("unknown role gets minimal safe menu", () => {
     const menu = getSidebarMenuItems("not-a-real-role");
-    expect(menu).toEqual(["dashboard", "messages", "settings", "support"]);
+    expect(menu).toEqual(["settings", "support"]);
   });
 });
 

@@ -16,7 +16,8 @@ export function collectMembershipIdsForDuesView(input: {
   wardMembershipIds: string[];
 }): string[] {
   const ids = [input.membershipId];
-  if (input.role === "parent_supporter") {
+  const role = (input.role || "").trim().toLowerCase();
+  if (role === "parent" || role === "parent_supporter") {
     for (const wardId of input.wardMembershipIds) {
       if (!ids.includes(wardId)) ids.push(wardId);
     }

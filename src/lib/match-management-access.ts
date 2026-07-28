@@ -1,6 +1,6 @@
 import type { ClubRoleAssignmentRow } from "@/lib/club-role-assignments";
 import { extractSommerfestMatchIdFromNotes } from "@/lib/tsv-allach-sommerfest-match-sync";
-import { teamAdminTeamIds } from "@/lib/permissions";
+import { hasClubWideTrainerAssignment, scopedAssignmentTeamIds, teamAdminTeamIds } from "@/lib/permissions";
 
 export interface MatchManagementAccessInput {
   legacyRole: string | null;
@@ -22,15 +22,14 @@ function teamScopedTrainerTeamIds(assignments: ClubRoleAssignmentRow[]): string[
     .map((assignment) => assignment.scope_team_id as string);
 }
 
-/** Club admins and club-wide trainers can manage all matches. */
+/**
+ * Club admins and explicitly club-scoped trainers/management can manage all matches.
+ * Bare legacy `trainer` membership is NOT club-wide — use coached / assignment teams.
+ */
 export function isClubWideMatchManager(input: MatchManagementAccessInput): boolean {
   if (input.isAdmin) return true;
-  if (input.legacyRole === "admin" || input.legacyRole === "trainer") return true;
-  return input.assignments.some(
-    (assignment) =>
-      (assignment.role_kind === "club_admin" || assignment.role_kind === "trainer") &&
-      assignment.scope === "club",
-  );
+  if (input.legacyRole === "admin" || input.legacyRole === "team_management") return true;
+  return hasClubWideTrainerAssignment(input.assignments);
 }
 
 export function manageableTeamIds(input: MatchManagementAccessInput): string[] | "all" {
@@ -41,6 +40,7 @@ export function manageableTeamIds(input: MatchManagementAccessInput): string[] |
     ...input.coachedTeamIds,
     ...teamScopedTrainerTeamIds(input.assignments),
     ...teamAdminTeamIds(input.assignments),
+    ...scopedAssignmentTeamIds(input.assignments),
   ]);
   return [...ids];
 }
@@ -64,6 +64,21 @@ export function canManageMatchForTeam(
   return manageable.includes(teamId);
 }
 
+/**
+ * Backward-compatible helper for call-sites that pass a full match object.
+ * Uses `team_id` / `teamId` when available.
+ */
+export function canManageMatch(
+  input: MatchManagementAccessInput,
+  match:
+    | { team_id?: string | null; teamId?: string | null }
+    | null
+    | undefined,
+): boolean {
+  const teamId = match?.team_id ?? match?.teamId ?? null;
+  return canManageMatchForTeam(input, teamId);
+}
+
 export function isSommerfestLinkedMatch(
   match: { notes?: string | null; sommerfestTemplateId?: string } | null | undefined,
 ): boolean {
@@ -76,13 +91,4 @@ export function isSommerfestLinkedMatch(
 export function canManageSommerfestSchedule(input: MatchManagementAccessInput): boolean {
   if (!input.hasMatchesWrite) return false;
   return isClubWideMatchManager(input) || canCreateMatches(input);
-}
-
-export function canManageMatch(
-  input: MatchManagementAccessInput,
-  match: { team_id?: string | null; notes?: string | null; sommerfestTemplateId?: string } | null | undefined,
-): boolean {
-  if (!match) return false;
-  if (isSommerfestLinkedMatch(match)) return canManageSommerfestSchedule(input);
-  return canManageMatchForTeam(input, match.team_id);
 }

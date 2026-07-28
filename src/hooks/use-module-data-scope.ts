@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useActiveClub } from "@/hooks/use-active-club";
+import { useUserTeamIds } from "@/hooks/use-user-team-ids";
 import {
   getDataScopeForModule,
   getModuleAccess,
@@ -8,7 +10,7 @@ import {
   type DataScope,
   type ModuleAccessLevel,
 } from "@/lib/rbac-config";
-import { teamAdminTeamIds } from "@/lib/permissions";
+import { scopedAssignmentTeamIds } from "@/lib/permissions";
 
 export interface ModuleDataScope {
   role: ReturnType<typeof resolveDashboardRole>;
@@ -20,22 +22,26 @@ export interface ModuleDataScope {
 }
 
 /**
- * Recommended query scope for a dashboard module - derived from RBAC matrix + assignments.
+ * Recommended query scope for a dashboard module - derived from RBAC matrix + assignments
+ * + team_players / team_coaches membership.
  */
 export function useModuleDataScope(module: DashboardModule): ModuleDataScope {
   const perms = usePermissions();
+  const { activeClub } = useActiveClub();
+  const { teamIds: membershipTeamIds } = useUserTeamIds(activeClub?.id ?? null);
 
   return useMemo(() => {
     const role = resolveDashboardRole(perms.role, perms.assignments);
     const accessLevel = getModuleAccess(role, module);
     const scope = getDataScopeForModule(role, module);
-    const assignmentTeamIds = teamAdminTeamIds(perms.assignments);
+    const assignmentTeamIds = scopedAssignmentTeamIds(perms.assignments);
+    const combinedTeamIds = [...new Set([...assignmentTeamIds, ...membershipTeamIds])];
 
     let teamIds: string[] | "all" = [];
     if (scope === "club" || accessLevel === "full" || accessLevel === "read") {
       teamIds = "all";
     } else if (scope === "team" || accessLevel === "team" || accessLevel === "limited") {
-      teamIds = assignmentTeamIds.length > 0 ? assignmentTeamIds : [];
+      teamIds = combinedTeamIds.length > 0 ? combinedTeamIds : [];
     }
 
     return {
@@ -45,7 +51,7 @@ export function useModuleDataScope(module: DashboardModule): ModuleDataScope {
       teamIds,
       isClubWide: teamIds === "all",
     };
-  }, [module, perms.role, perms.assignments]);
+  }, [module, perms.role, perms.assignments, membershipTeamIds]);
 }
 
 /** Apply team scope to a list of rows with a `team_id` field (client-side filter). */

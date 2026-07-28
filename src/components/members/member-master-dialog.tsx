@@ -104,7 +104,15 @@ export function MemberMasterDialog({
   const pct = useMemo(() => masterRecordCompletenessPct(form, membershipRole), [form, membershipRole]);
 
   const setField = (key: keyof ClubMemberMasterRecord, value: string | number | null) => {
-    setForm((previous) => ({ ...previous, [key]: value }));
+    setForm((f) => {
+      const next = { ...f, [key]: value } as Partial<ClubMemberMasterRecord>;
+      if (key === "photo_url") {
+        next.photo_uploaded_at = value
+          ? (f.photo_uploaded_at ?? new Date().toISOString())
+          : null;
+      }
+      return next;
+    });
   };
 
   const handleSave = async () => {
@@ -134,7 +142,11 @@ export function MemberMasterDialog({
         .upload(filePath, file, { upsert: true, contentType: file.type || undefined });
       if (error) throw error;
       const { data } = supabase.storage.from(PROFILE_AVATAR_BUCKET).getPublicUrl(filePath);
-      setForm((f) => ({ ...f, photo_url: data.publicUrl }));
+      setForm((f) => ({
+        ...f,
+        photo_url: data.publicUrl,
+        photo_uploaded_at: new Date().toISOString(),
+      }));
       toast({ title: t.settingsPage.avatarUploadSuccess });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t.settingsPage.uploadFailed;
@@ -247,7 +259,9 @@ export function MemberMasterDialog({
                 avatarUpload={{
                   uploading: avatarUploading,
                   onUpload: (file) => void uploadRegistryAvatar(file),
-                  onRemove: () => setField("photo_url", null),
+                  onRemove: () => {
+                    setForm((f) => ({ ...f, photo_url: null, photo_uploaded_at: null }));
+                  },
                 }}
                 onChange={(key, value) => setField(key, value)}
               />

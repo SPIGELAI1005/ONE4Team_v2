@@ -47,7 +47,7 @@ export function MyDuesCard() {
       setMembershipRole(role);
 
       let wardIds: string[] = [];
-      if (role === "parent_supporter") {
+      if (role === "parent" || role === "parent_supporter") {
         const { data: links } = await supabase
           .from("club_member_guardian_links")
           .select("ward_membership_id")
@@ -176,7 +176,7 @@ export function MyDuesCard() {
               className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-2xl border border-border/60 bg-background/40 p-3"
             >
               <div>
-                {due.wardLabel && membershipRole === "parent_supporter" ? (
+                {due.wardLabel && (membershipRole === "parent" || membershipRole === "parent_supporter") ? (
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{due.wardLabel}</div>
                 ) : null}
                 <div className="text-sm font-medium">{formatDueAmount(due.amountCents, due.currency, locale)}</div>

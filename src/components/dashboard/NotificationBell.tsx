@@ -55,6 +55,11 @@ const NotificationBell = () => {
       setOpen(false);
       return;
     }
+    if (notification.notification_type === "photo_renewal") {
+      navigate("/members");
+      setOpen(false);
+      return;
+    }
     openCommunication();
   };
 

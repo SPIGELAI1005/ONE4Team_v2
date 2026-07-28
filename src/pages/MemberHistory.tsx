@@ -52,7 +52,7 @@ type DraftSummary = {
   name: string | null;
   email: string;
   role: string;
-  status: "draft" | "invited";
+  status: "draft" | "invited" | "joined";
   invited_at: string | null;
   created_at: string;
 };
@@ -110,10 +110,16 @@ function MemberHistory() {
           return t.onboarding.player;
         case "staff":
           return t.onboarding.teamStaff;
+        case "team_management":
+          return t.onboarding.teamManagement;
         case "member":
           return t.onboarding.member;
         case "parent":
-          return t.onboarding.parentSupporter;
+          return t.onboarding.parent;
+        case "fan":
+          return t.onboarding.fan;
+        case "supporter":
+          return t.onboarding.supporter;
         case "sponsor":
           return t.onboarding.sponsor;
         case "supplier":

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef, Fragment } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, Fragment, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/hooks/use-language";
 import { motion } from "framer-motion";
@@ -36,6 +36,8 @@ import { useRegisterAiAgentContext } from "@/hooks/use-register-ai-agent-context
 import { trackEvent } from "@/lib/telemetry";
 import { trackJoinFunnelEvent } from "@/lib/track-join-funnel";
 import { trackUsageEvent } from "@/lib/usage-events";
+import { isUnder18 } from "@/lib/under-18";
+import { photoValidUntil } from "@/lib/member-photo-validity";
 import type { ClubMemberMasterRecord } from "@/lib/member-master-schema";
 import {
   DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY,
@@ -55,6 +57,8 @@ import { MemberMasterDialog } from "@/components/members/member-master-dialog";
 import { MasterDataTabs } from "@/components/members/master-data-tabs";
 import { ClubMemberPassModal, buildClubMemberPassLabels } from "@/components/members/club-member-pass-modal";
 import { Badge } from "@/components/ui/badge";
+import { badgeVariants } from "@/components/ui/badge-variants";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { appendMemberAuditEvent } from "@/lib/member-audit";
 import { sendClubInviteEmail, type SendClubInviteEmailResult } from "@/lib/send-club-invite-email";
 import { buildClubInviteLandingUrl } from "@/lib/club-invite-links";
@@ -144,12 +148,56 @@ type MemberDraftRow = {
   team: string | null;
   age_group: string | null;
   position: string | null;
-  status: "draft" | "invited";
+  status: "draft" | "invited" | "joined";
   invite_id: string | null;
   invited_at: string | null;
   created_at: string;
   master_data: Record<string, unknown> | null;
 };
+
+/** Metric-card filter for Saved Member List (and roster role chips where relevant). */
+type MembersStatsFilter = "total" | "active" | "players" | "trainers" | "pending";
+
+function draftMatchesStatsFilter(draft: MemberDraftRow, filter: MembersStatsFilter | null): boolean {
+  if (!filter || filter === "total") return true;
+  if (filter === "pending") return draft.status === "draft";
+  if (filter === "active") return draft.status === "invited";
+  if (filter === "players") return draft.role === "player";
+  if (filter === "trainers") return draft.role === "trainer";
+  return true;
+}
+
+/** Hover tip on roster pills — button trigger (Badge has no ref) and no help cursor. */
+function RosterPillTooltip({
+  tip,
+  className,
+  children,
+}: {
+  tip: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Tooltip delayDuration={150}>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "inline-flex shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+            className,
+          )}
+          onClick={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          {children}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="z-[80] max-w-[18rem] text-xs leading-snug">
+        {tip}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 type MemberSearchMatchField =
   | "display_name"
@@ -263,8 +311,11 @@ const SUPPORTED_ROLES = [
   "trainer",
   "player",
   "staff",
+  "team_management",
   "member",
   "parent",
+  "fan",
+  "supporter",
   "sponsor",
   "supplier",
   "service_provider",
@@ -277,7 +328,10 @@ const MEMBERSHIP_ROLE_SELECT_ORDER = [
   "player",
   "trainer",
   "staff",
+  "team_management",
   "parent",
+  "fan",
+  "supporter",
   "sponsor",
   "supplier",
   "service_provider",
@@ -290,8 +344,11 @@ const roleIcons: Record<string, React.ElementType> = {
   trainer: Dumbbell,
   player: Shield,
   staff: UserCheck,
+  team_management: Users,
   member: Users,
   parent: Heart,
+  fan: Heart,
+  supporter: Heart,
 };
 
 const roleColors: Record<string, string> = {
@@ -299,8 +356,11 @@ const roleColors: Record<string, string> = {
   trainer: "bg-accent/10 text-accent",
   player: "bg-blue-500/10 text-blue-400",
   staff: "bg-emerald-500/10 text-emerald-400",
+  team_management: "bg-teal-500/10 text-teal-400",
   member: "bg-muted text-muted-foreground",
   parent: "bg-pink-500/10 text-pink-400",
+  fan: "bg-sky-500/10 text-sky-400",
+  supporter: "bg-amber-500/10 text-amber-400",
   sponsor: "bg-primary/10 text-primary",
   supplier: "bg-orange-500/10 text-orange-400",
   service_provider: "bg-violet-500/10 text-violet-400",
@@ -535,6 +595,8 @@ const Members = () => {
   const [bulkAvatarUploadingRowId, setBulkAvatarUploadingRowId] = useState<string | null>(null);
   const [draftMasterExpanded, setDraftMasterExpanded] = useState(false);
   const [showAllDrafts, setShowAllDrafts] = useState(false);
+  const [statsFilter, setStatsFilter] = useState<MembersStatsFilter | null>(null);
+  const savedMemberListRef = useRef<HTMLDivElement | null>(null);
   const [joinReviewerPolicy, setJoinReviewerPolicy] = useState<"admin_only" | "admin_trainer">("admin_only");
   const [clubSlug, setClubSlug] = useState<string | null>(null);
   const [clubName, setClubName] = useState<string | null>(null);
@@ -626,10 +688,16 @@ const Members = () => {
         return t.onboarding.player;
       case "staff":
         return t.onboarding.teamStaff;
+      case "team_management":
+        return t.onboarding.teamManagement;
       case "member":
         return t.onboarding.member;
       case "parent":
-        return t.onboarding.parentSupporter;
+        return t.onboarding.parent;
+      case "fan":
+        return t.onboarding.fan;
+      case "supporter":
+        return t.onboarding.supporter;
       case "sponsor":
         return t.onboarding.sponsor;
       case "supplier":
@@ -642,6 +710,42 @@ const Members = () => {
         return role.replace("_", " ");
     }
   }, [t]);
+
+  const getRoleTooltip = useCallback(
+    (role: string) => {
+      switch (role) {
+        case "admin":
+          return t.membersPage.roleTooltipAdmin;
+        case "trainer":
+          return t.membersPage.roleTooltipTrainer;
+        case "player":
+          return t.membersPage.roleTooltipPlayer;
+        case "staff":
+          return t.membersPage.roleTooltipStaff;
+        case "team_management":
+          return t.membersPage.roleTooltipTeamManagement;
+        case "member":
+          return t.membersPage.roleTooltipMember;
+        case "parent":
+          return t.membersPage.roleTooltipParent;
+        case "fan":
+          return t.membersPage.roleTooltipFan;
+        case "supporter":
+          return t.membersPage.roleTooltipSupporter;
+        case "sponsor":
+          return t.membersPage.roleTooltipSponsor;
+        case "supplier":
+          return t.membersPage.roleTooltipSupplier;
+        case "service_provider":
+          return t.membersPage.roleTooltipServiceProvider;
+        case "consultant":
+          return t.membersPage.roleTooltipConsultant;
+        default:
+          return t.membersPage.roleTooltipGeneric;
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     if (historyPreview) setCopied(false);
@@ -923,12 +1027,14 @@ const Members = () => {
         .from("club_member_drafts")
         .select("*")
         .eq("club_id", clubId)
+        .in("status", ["draft", "invited"])
         .order("created_at", { ascending: false })
         .limit(500),
       supabase
         .from("club_member_drafts")
         .select("id", { count: "exact", head: true })
-        .eq("club_id", clubId),
+        .eq("club_id", clubId)
+        .in("status", ["draft", "invited"]),
     ]);
     if (listRes.error) {
       toast({ title: t.common.error, description: listRes.error.message, variant: "destructive" });
@@ -1142,6 +1248,9 @@ const Members = () => {
     uploadingAvatar: t.settingsPage.uploadingAvatar,
     removeAvatar: t.settingsPage.removeAvatar,
     avatarUrl: t.settingsPage.avatarUrl,
+    photoValidityHint: t.membersPage.photoValidityHint,
+    photoRenewalDue: t.membersPage.photoRenewalDue,
+    photoValidUntilLabel: t.membersPage.photoValidUntilLabel,
   }), [t]);
   const clubPassLabels = useMemo(() => buildClubMemberPassLabels(t), [t]);
   const canReviewJoinRequests = perms.isAdmin || (perms.isTrainer && joinReviewerPolicy === "admin_trainer");
@@ -1466,6 +1575,7 @@ const Members = () => {
         .from("club_member_drafts")
         .select("*")
         .eq("club_id", clubId)
+        .in("status", ["draft", "invited"])
         .or(`name.ilike.${pattern},email.ilike.${pattern},team.ilike.${pattern}`)
         .order("created_at", { ascending: false })
         .limit(100);
@@ -1623,16 +1733,35 @@ const Members = () => {
   }, [filtered, isSearchActive, rosterSearchQuery, masterByMembershipId, membershipEmails]);
 
   const filteredDrafts = useMemo(() => {
-    if (!isSearchActive) return memberDrafts;
-    if (debouncedSearch.trim().length >= 2) return searchMatchedDrafts;
-    return memberDrafts.filter((draft) => draftMatchesMemberSearch(trimmedSearch, draft));
-  }, [memberDrafts, isSearchActive, trimmedSearch, debouncedSearch, searchMatchedDrafts]);
-
-  const visibleDrafts = isSearchActive
-    ? filteredDrafts
-    : showAllDrafts
+    const base = !isSearchActive
       ? memberDrafts
-      : memberDrafts.slice(0, 8);
+      : debouncedSearch.trim().length >= 2
+        ? searchMatchedDrafts
+        : memberDrafts.filter((draft) => draftMatchesMemberSearch(trimmedSearch, draft));
+    return base.filter((draft) => draftMatchesStatsFilter(draft, statsFilter));
+  }, [memberDrafts, isSearchActive, trimmedSearch, debouncedSearch, searchMatchedDrafts, statsFilter]);
+
+  const visibleDrafts =
+    isSearchActive || statsFilter
+      ? filteredDrafts
+      : showAllDrafts
+        ? memberDrafts
+        : memberDrafts.slice(0, 8);
+
+  const applyStatsFilter = useCallback(
+    (next: MembersStatsFilter) => {
+      const nextFilter = statsFilter === next ? null : next;
+      setStatsFilter(nextFilter);
+      if (nextFilter === "players") setRoleFilter("player");
+      else if (nextFilter === "trainers") setRoleFilter("trainer");
+      else if (nextFilter === null || nextFilter === "total") setRoleFilter("all");
+      if (nextFilter && nextFilter !== "total") setShowAllDrafts(true);
+      requestAnimationFrame(() => {
+        savedMemberListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    },
+    [statsFilter],
+  );
 
   const getSearchMatchFieldLabel = useCallback(
     (field: MemberSearchMatchField) => {
@@ -2170,10 +2299,17 @@ const Members = () => {
   const renderGuardiansSafetyTabExtra = (ward: MemberRow, effectiveRole: string) => {
     if (!isPlayerRole(effectiveRole)) return null;
     const wardLinks = guardianLinks.filter((g) => g.ward_membership_id === ward.id);
-    if (wardLinks.length === 0 && !canManageMembers) return null;
+    const birthDate = masterByMembershipId[ward.id]?.birth_date ?? null;
+    const needsUnder18Guardian = isUnder18(birthDate) && wardLinks.length === 0;
+    if (wardLinks.length === 0 && !canManageMembers && !needsUnder18Guardian) return null;
     return (
       <>
         <div className="text-sm font-semibold text-foreground">{t.membersPage.guardians}</div>
+        {needsUnder18Guardian ? (
+          <div className="text-sm rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-200">
+            {t.membersPage.under18GuardianHint}
+          </div>
+        ) : null}
         {wardLinks.length > 0 ? (
           <div className="space-y-1.5">
             {wardLinks.map((link) => {
@@ -2196,7 +2332,9 @@ const Members = () => {
         )}
         {canManageMembers ? (
           <div className="mt-1 space-y-2">
-            <div className="text-sm text-muted-foreground">{t.membersPage.linkGuardian}</div>
+            <div className="text-sm text-muted-foreground">
+              {needsUnder18Guardian ? t.membersPage.linkGuardianUnder18 : t.membersPage.linkGuardian}
+            </div>
             <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
               <Select value={guardianPickId || undefined} onValueChange={setGuardianPickId}>
                 <SelectTrigger className="h-10 text-sm flex-1">
@@ -2360,7 +2498,11 @@ const Members = () => {
         .upload(filePath, file, { upsert: true, contentType: file.type || undefined });
       if (error) throw error;
       const { data } = supabase.storage.from(PROFILE_AVATAR_BUCKET).getPublicUrl(filePath);
-      setMemberMasterEditDraft((d) => ({ ...d, photo_url: data.publicUrl }));
+      setMemberMasterEditDraft((d) => ({
+        ...d,
+        photo_url: data.publicUrl,
+        photo_uploaded_at: new Date().toISOString(),
+      }));
       toast({ title: t.settingsPage.avatarUploadSuccess });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t.settingsPage.uploadFailed;
@@ -2969,7 +3111,7 @@ const Members = () => {
       const { data } = supabase.storage.from(PROFILE_AVATAR_BUCKET).getPublicUrl(filePath);
       setEditingDraftForm((f) => ({
         ...f,
-        masterData: { ...f.masterData, photo_url: data.publicUrl },
+        masterData: { ...f.masterData, photo_url: data.publicUrl, photo_uploaded_at: new Date().toISOString() },
       }));
       toast({ title: t.settingsPage.avatarUploadSuccess });
     } catch (err: unknown) {
@@ -3340,12 +3482,13 @@ const Members = () => {
                   </p>
                 ) : null}
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="flex min-w-0 gap-2 overflow-x-auto pb-1 sm:max-w-[min(100%,28rem)] sm:shrink-0 lg:max-w-none">
                 {allRoles.map((r) => (
                   <button
                     key={r}
+                    type="button"
                     onClick={() => setRoleFilter(r)}
-                    className={`text-xs font-medium px-3 py-1.5 rounded-full whitespace-nowrap transition-colors ${
+                    className={`inline-flex h-8 shrink-0 items-center justify-center px-3.5 text-xs font-medium leading-none rounded-full whitespace-nowrap transition-colors ${
                       roleFilter === r
                         ? "bg-primary text-primary-foreground"
                         : "bg-card border border-border text-muted-foreground hover:text-foreground"
@@ -3359,56 +3502,106 @@ const Members = () => {
                   </>
                 }
               >
-            {/* Stats (club-wide via RPC; search-aware when filtering) */}
+            {/* Stats (club-wide via RPC; tap to filter Saved Member List) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
-              {[
-                {
-                  label:
-                    isSearchActive && debouncedSearch.trim().length >= 2
-                      ? t.membersPage.searchStatsMatches
-                      : t.membersPage.total,
-                  value:
-                    isSearchActive && debouncedSearch.trim().length >= 2
-                      ? (membersDbTotalCount ?? rosterSearchResults.length)
-                      : clubMemberStats?.total ?? members.length,
-                  color: "text-foreground",
-                },
-                {
-                  label: t.membersPage.active,
-                  value:
-                    isSearchActive && debouncedSearch.trim().length >= 2
-                      ? rosterSearchResults.filter(({ member }) => member.status === "active").length
-                      : clubMemberStats?.active ?? members.filter((m) => m.status === "active").length,
-                  color: "text-primary",
-                },
-                {
-                  label: t.common.players,
-                  value: clubMemberStats?.players ?? members.filter((m) => m.role === "player").length,
-                  color: "text-blue-400",
-                },
-                {
-                  label: t.common.trainers,
-                  value: clubMemberStats?.trainers ?? members.filter((m) => m.role === "trainer").length,
-                  color: "text-accent",
-                },
-                {
-                  label: t.membersPage.pendingImport,
-                  value: isSearchActive ? filteredDrafts.length : memberDraftTotalCount,
-                  color: "text-violet-400",
-                },
-              ].map((s, i) => (
-                <div key={i} className="p-4 rounded-xl bg-card border border-border text-center">
-                  <div className={`text-2xl font-display font-bold ${s.color}`}>{s.value}</div>
-                  <div className="text-xs text-muted-foreground mt-1">{s.label}</div>
-                </div>
-              ))}
+              {(
+                [
+                  {
+                    key: "total" as const,
+                    label:
+                      isSearchActive && debouncedSearch.trim().length >= 2
+                        ? t.membersPage.searchStatsMatches
+                        : t.membersPage.total,
+                    value:
+                      isSearchActive && debouncedSearch.trim().length >= 2
+                        ? (membersDbTotalCount ?? rosterSearchResults.length)
+                        : clubMemberStats?.total ?? members.length,
+                    color: "text-foreground",
+                  },
+                  {
+                    key: "active" as const,
+                    label: t.membersPage.active,
+                    value:
+                      isSearchActive && debouncedSearch.trim().length >= 2
+                        ? rosterSearchResults.filter(({ member }) => member.status === "active").length
+                        : clubMemberStats?.active ?? members.filter((m) => m.status === "active").length,
+                    color: "text-primary",
+                  },
+                  {
+                    key: "players" as const,
+                    label: t.common.players,
+                    value: clubMemberStats?.players ?? members.filter((m) => m.role === "player").length,
+                    color: "text-blue-400",
+                  },
+                  {
+                    key: "trainers" as const,
+                    label: t.common.trainers,
+                    value: clubMemberStats?.trainers ?? members.filter((m) => m.role === "trainer").length,
+                    color: "text-accent",
+                  },
+                  {
+                    key: "pending" as const,
+                    label: t.membersPage.pendingImport,
+                    value: isSearchActive ? filteredDrafts.length : memberDraftTotalCount,
+                    color: "text-violet-400",
+                  },
+                ] as const
+              ).map((s) => {
+                const isSelected = statsFilter === s.key;
+                return (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => applyStatsFilter(s.key)}
+                    aria-pressed={isSelected}
+                    title={t.membersPage.statsFilterSavedHint.replace("{count}", String(filteredDrafts.length))}
+                    className={cn(
+                      "p-4 rounded-xl bg-card border text-center transition-colors",
+                      "hover:border-primary/50 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                      isSelected ? "border-primary ring-2 ring-primary/30 bg-primary/5" : "border-border",
+                    )}
+                  >
+                    <div className={`text-2xl font-display font-bold ${s.color}`}>{s.value}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{s.label}</div>
+                  </button>
+                );
+              })}
             </div>
+            {statsFilter ? (
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span>
+                  {t.membersPage.statsFilterSavedHint.replace("{count}", String(filteredDrafts.length))}
+                </span>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-xs"
+                  onClick={() => {
+                    setStatsFilter(null);
+                    setRoleFilter("all");
+                  }}
+                >
+                  {t.membersPage.statsFilterClear}
+                </Button>
+              </div>
+            ) : null}
 
             <div className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/12 via-card/90 to-accent/10 p-5 sm:p-6 mb-6 shadow-[0_12px_40px_rgba(0,0,0,0.12)]">
               <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-6">
                 <div className="flex items-start gap-3 flex-1">
-                  <div className="rounded-xl bg-primary/15 p-2.5 text-primary shrink-0">
-                    <Sparkles className="w-5 h-5" />
+                  <div className="shrink-0">
+                    {clubLogoUrl ? (
+                      <img
+                        src={clubLogoUrl}
+                        alt={clubName ? `${clubName} logo` : "Club logo"}
+                        className="h-10 w-10 rounded-xl border border-primary/20 bg-background/70 object-cover"
+                      />
+                    ) : (
+                      <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-sm font-semibold text-primary">
+                        {clubName?.trim()?.[0]?.toUpperCase() ?? "C"}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <h2 className="font-display text-lg sm:text-xl font-bold text-foreground tracking-tight">{t.membersPage.registryHeroTitle}</h2>
@@ -3433,7 +3626,10 @@ const Members = () => {
               </div>
             </div>
 
-            <div className="rounded-xl bg-card border border-border p-4 mb-6">
+            <div
+              ref={savedMemberListRef}
+              className="rounded-xl bg-card border border-border p-4 mb-6"
+            >
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
                 <div>
                   <div className="text-sm font-display font-bold text-foreground tracking-tight">
@@ -3451,15 +3647,17 @@ const Members = () => {
                 {!isSearchActive ? (
                 <div className="flex items-center gap-3">
                   <div className="text-xs text-muted-foreground">
-                    {t.membersPage.savedMemberCount
-                      .replace("{draftCount}", String(memberDraftTotalCount || memberDrafts.filter((row) => row.status === "draft").length))
-                      .replace("{invitedCount}", String(memberDrafts.filter((row) => row.status === "invited").length))}
+                    {statsFilter
+                      ? t.membersPage.statsFilterSavedHint.replace("{count}", String(filteredDrafts.length))
+                      : t.membersPage.savedMemberCount
+                          .replace("{draftCount}", String(memberDraftTotalCount || memberDrafts.filter((row) => row.status === "draft").length))
+                          .replace("{invitedCount}", String(memberDrafts.filter((row) => row.status === "invited").length))}
                   </div>
-                  {memberDrafts.length > 8 && !showAllDrafts ? (
+                  {!statsFilter && memberDrafts.length > 8 && !showAllDrafts ? (
                     <Button variant="link" size="sm" className="h-auto p-0 text-[11px]" onClick={() => setShowAllDrafts(true)}>
                       {t.membersPage.showAllDrafts}
                     </Button>
-                  ) : memberDrafts.length > 8 && showAllDrafts ? (
+                  ) : !statsFilter && memberDrafts.length > 8 && showAllDrafts ? (
                     <Button variant="link" size="sm" className="h-auto p-0 text-[11px]" onClick={() => setShowAllDrafts(false)}>
                       {t.membersPage.showLessDrafts}
                     </Button>
@@ -3534,6 +3732,8 @@ const Members = () => {
                 </div>
               ) : memberDrafts.length === 0 ? (
                 <div className="text-xs text-muted-foreground py-4">{t.membersPage.savedMemberListEmpty}</div>
+              ) : statsFilter && filteredDrafts.length === 0 && !isSearchActive ? (
+                <div className="text-xs text-muted-foreground py-4">{t.membersPage.statsFilterSavedEmpty}</div>
               ) : isSearchActive && filteredDrafts.length === 0 ? (
                 null
               ) : (
@@ -3628,20 +3828,40 @@ const Members = () => {
                                 </span>
                               </label>
                               {editingDraftForm.masterData.photo_url ? (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  className="h-9 text-xs"
-                                  onClick={() =>
-                                    setEditingDraftForm((f) => ({
-                                      ...f,
-                                      masterData: { ...f.masterData, photo_url: null },
-                                    }))
-                                  }
-                                  disabled={draftAvatarUploading}
-                                >
-                                  {t.settingsPage.removeAvatar}
-                                </Button>
+                                <>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="h-9 text-xs"
+                                    onClick={() =>
+                                      setEditingDraftForm((f) => ({
+                                        ...f,
+                                        masterData: { ...f.masterData, photo_url: null, photo_uploaded_at: null },
+                                      }))
+                                    }
+                                    disabled={draftAvatarUploading}
+                                  >
+                                    {t.settingsPage.removeAvatar}
+                                  </Button>
+                                  {(() => {
+                                    const validUntil = photoValidUntil(
+                                      editingDraftForm.masterData.photo_uploaded_at ?? new Date().toISOString(),
+                                    );
+                                    if (!validUntil) return null;
+                                    return (
+                                      <span className="inline-flex h-9 items-center text-xs font-medium text-muted-foreground">
+                                        {t.membersPage.photoValidUntilLabel.replace(
+                                          "{date}",
+                                          validUntil.toLocaleDateString(undefined, {
+                                            year: "numeric",
+                                            month: "short",
+                                            day: "numeric",
+                                          }),
+                                        )}
+                                      </span>
+                                    );
+                                  })()}
+                                </>
                               ) : null}
                             </div>
                           </div>
@@ -3653,7 +3873,13 @@ const Members = () => {
                               onChange={(e) =>
                                 setEditingDraftForm((f) => ({
                                   ...f,
-                                  masterData: { ...f.masterData, photo_url: e.target.value || null },
+                                  masterData: {
+                                    ...f.masterData,
+                                    photo_url: e.target.value || null,
+                                    photo_uploaded_at: e.target.value
+                                      ? (f.masterData.photo_uploaded_at ?? new Date().toISOString())
+                                      : null,
+                                  },
                                 }))
                               }
                               placeholder="https://..."
@@ -3776,7 +4002,7 @@ const Members = () => {
                                 onRemove: () =>
                                   setEditingDraftForm((f) => ({
                                     ...f,
-                                    masterData: { ...f.masterData, photo_url: null },
+                                    masterData: { ...f.masterData, photo_url: null, photo_uploaded_at: null },
                                   })),
                               }}
                               onChange={(key, value) =>
@@ -3963,7 +4189,7 @@ const Members = () => {
                       </div>
                     )
                   ))}
-                  {memberDrafts.length > 8 && !showAllDrafts && !isSearchActive ? (
+                  {memberDrafts.length > 8 && !showAllDrafts && !isSearchActive && !statsFilter ? (
                     <button className="text-[11px] text-primary hover:underline pt-1" onClick={() => setShowAllDrafts(true)}>
                       {t.membersPage.savedMemberListMore.replace("{count}", String(memberDrafts.length - 8))}
                     </button>
@@ -4078,17 +4304,31 @@ const Members = () => {
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <Badge variant="secondary" className="text-xs font-normal px-2.5 py-0.5 h-6">
-                              {masterRecordCompletenessPct(masterByMembershipId[member.id], member.role)}%
-                            </Badge>
+                            <RosterPillTooltip tip={t.membersPage.completenessTooltip}>
+                              <span
+                                className={cn(
+                                  badgeVariants({ variant: "secondary" }),
+                                  "h-6 px-2.5 py-0.5 text-xs font-normal",
+                                )}
+                              >
+                                {masterRecordCompletenessPct(masterByMembershipId[member.id], member.role)}%
+                              </span>
+                            </RosterPillTooltip>
                             {masterByMembershipId[member.id]?.membership_kind === "supporting_member" ? (
                               <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-violet-500/10 text-violet-300">
                                 {t.membersPage.supportingMember}
                               </span>
                             ) : null}
-                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${roleColors[member.role] || "bg-muted text-muted-foreground"}`}>
-                              {getRoleLabel(member.role)}
-                            </span>
+                            <RosterPillTooltip tip={getRoleTooltip(member.role)}>
+                              <span
+                                className={cn(
+                                  "rounded-full px-2.5 py-1 text-xs font-medium",
+                                  roleColors[member.role] || "bg-muted text-muted-foreground",
+                                )}
+                              >
+                                {getRoleLabel(member.role)}
+                              </span>
+                            </RosterPillTooltip>
                             {masterByMembershipId[member.id]?.internal_club_number ? (
                               <button
                                 type="button"
@@ -4103,13 +4343,24 @@ const Members = () => {
                                 {String(masterByMembershipId[member.id]?.internal_club_number)}
                               </button>
                             ) : null}
-                            <span
-                              className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                                member.status === "active" ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"
-                              }`}
+                            <RosterPillTooltip
+                              tip={
+                                member.status === "active"
+                                  ? t.membersPage.statusActiveTooltip
+                                  : t.membersPage.statusInactiveTooltip
+                              }
                             >
-                              {member.status === "active" ? t.common.active : member.status}
-                            </span>
+                              <span
+                                className={cn(
+                                  "rounded-full px-2.5 py-1 text-xs font-medium",
+                                  member.status === "active"
+                                    ? "bg-emerald-500/10 text-emerald-400"
+                                    : "bg-muted text-muted-foreground",
+                                )}
+                              >
+                                {member.status === "active" ? t.common.active : member.status}
+                              </span>
+                            </RosterPillTooltip>
                           </div>
                         </div>
                       </motion.div>
@@ -4232,7 +4483,10 @@ const Members = () => {
                               <MasterDataTabs
                                 values={
                                   memberPanelEditModeId === member.id
-                                    ? memberMasterEditDraft
+                                    ? {
+                                        ...(masterByMembershipId[member.id] ?? {}),
+                                        ...memberMasterEditDraft,
+                                      }
                                     : (masterByMembershipId[member.id] ?? {})
                                 }
                                 labels={masterTabLabels}
@@ -4270,14 +4524,28 @@ const Members = () => {
                                         uploading: memberPanelAvatarUploading,
                                         onUpload: (file) => void uploadMemberPanelAvatar(member.id, file),
                                         onRemove: () =>
-                                          setMemberMasterEditDraft((d) => ({ ...d, photo_url: null })),
+                                          setMemberMasterEditDraft((d) => ({
+                                            ...d,
+                                            photo_url: null,
+                                            photo_uploaded_at: null,
+                                          })),
                                       }
                                     : undefined
                                 }
                                 onChange={
                                   memberPanelEditModeId === member.id
                                     ? (key, value) =>
-                                        setMemberMasterEditDraft((d) => ({ ...d, [key]: value }))
+                                        setMemberMasterEditDraft((d) => ({
+                                          ...d,
+                                          [key]: value,
+                                          ...(key === "photo_url"
+                                            ? {
+                                                photo_uploaded_at: value
+                                                  ? (d.photo_uploaded_at ?? new Date().toISOString())
+                                                  : null,
+                                              }
+                                            : {}),
+                                        }))
                                     : undefined
                                 }
                                 safetyTabExtraEnabled={isPlayerRole(rosterGuardianRole)}

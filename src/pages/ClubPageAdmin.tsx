@@ -862,7 +862,12 @@ export default function ClubPageAdmin() {
                 </SelectContent>
               </Select>
             </div>
-            <div className={cn(DASHBOARD_TABS_INNER_SCROLL, "hidden touch-manipulation md:flex")}>
+            <div
+              className={cn(
+                "hidden min-w-0 touch-manipulation md:grid md:grid-cols-5 md:gap-x-1 md:overflow-visible",
+                DASHBOARD_PAGE_MAX_INNER,
+              )}
+            >
               {clubPageAdminTabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -873,6 +878,7 @@ export default function ClubPageAdmin() {
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
                       DASHBOARD_TAB_BUTTON,
+                      "min-h-[44px] w-full justify-center whitespace-normal px-3 text-center leading-tight sm:px-3.5",
                       isActive
                         ? "border-primary text-primary"
                         : "border-transparent text-muted-foreground hover:text-foreground",
@@ -1658,7 +1664,10 @@ export default function ClubPageAdmin() {
                         <SelectItem value="player">{t.onboarding.player}</SelectItem>
                         <SelectItem value="trainer">{t.onboarding.trainer}</SelectItem>
                         <SelectItem value="staff">{t.onboarding.teamStaff}</SelectItem>
-                        <SelectItem value="parent">{t.onboarding.parentSupporter}</SelectItem>
+                        <SelectItem value="team_management">{t.onboarding.teamManagement}</SelectItem>
+                        <SelectItem value="parent">{t.onboarding.parent}</SelectItem>
+                        <SelectItem value="fan">{t.onboarding.fan}</SelectItem>
+                        <SelectItem value="supporter">{t.onboarding.supporter}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

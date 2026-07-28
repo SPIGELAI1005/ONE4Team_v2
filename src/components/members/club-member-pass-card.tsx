@@ -1,4 +1,4 @@
-﻿import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+﻿import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Crown, Download, Info, Loader2, Moon, RefreshCw, RotateCcw, Sun, UserCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -19,10 +19,43 @@ const CLUB_PASS_FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif
 const CARD_THEME_STORAGE_KEY = "one4team.clubCardTheme";
 /** Fixed stage height so front/back flip does not resize the modal. */
 const CARD_FLIP_MIN_HEIGHT = 460;
-const cardFaceHiddenStyle = {
-  backfaceVisibility: "hidden" as const,
-  WebkitBackfaceVisibility: "hidden" as const,
-};
+/** Half of the card rotate transition — used to hide inactive faces mid-flip (Safari). */
+const CARD_FLIP_MS = 650;
+const CARD_FLIP_HALF_MS = Math.round(CARD_FLIP_MS / 2);
+
+/**
+ * Safari/iOS often ignores `backface-visibility` when a face has filtered
+ * descendants (e.g. blur). Hard-hide the inactive face after mid-flip and
+ * force a compositor layer with translate3d so mirrored front text cannot bleed.
+ */
+function clubPassFaceStyle(opts: {
+  side: "front" | "back";
+  flipped: boolean;
+  shell: { background: string; border: string; fontFamily: string };
+}): CSSProperties {
+  const isFront = opts.side === "front";
+  const isActive = isFront ? !opts.flipped : opts.flipped;
+  const transform = isFront
+    ? "rotateY(0deg) translate3d(0, 0, 0)"
+    : "rotateY(180deg) translate3d(0, 0, 1px)";
+
+  return {
+    ...opts.shell,
+    backfaceVisibility: "hidden",
+    WebkitBackfaceVisibility: "hidden",
+    transform,
+    WebkitTransform: transform,
+    // Own stacking context — reduces WebKit bleed-through during rotateY
+    isolation: "isolate",
+    zIndex: isActive ? 2 : 1,
+    opacity: isActive ? 1 : 0,
+    visibility: isActive ? "visible" : "hidden",
+    pointerEvents: isActive ? "auto" : "none",
+    transition: isActive
+      ? "opacity 0s linear 0s, visibility 0s linear 0s"
+      : `opacity 0s linear ${CARD_FLIP_HALF_MS}ms, visibility 0s linear ${CARD_FLIP_HALF_MS}ms`,
+  };
+}
 
 function clubPassHeaderLineStyle(
   color: string,
@@ -343,6 +376,7 @@ export const ClubMemberPassCard = forwardRef<ClubMemberPassCardHandle, ClubMembe
       fontFamily: CLUB_PASS_FONT,
     } as const;
 
+    // Soft orbs without CSS blur when flippable — `filter: blur()` breaks Safari backface culling.
     const decoration = (
       <div
         data-club-pass-decoration
@@ -350,11 +384,17 @@ export const ClubMemberPassCard = forwardRef<ClubMemberPassCardHandle, ClubMembe
         aria-hidden
       >
         <div
-          className="absolute -bottom-16 -right-16 h-40 w-40 rounded-full blur-3xl"
+          className={cn(
+            "absolute -bottom-16 -right-16 h-40 w-40 rounded-full",
+            canFlip ? "opacity-50" : "blur-3xl",
+          )}
           style={{ background: "rgba(34,197,94,0.16)" }}
         />
         <div
-          className="absolute -bottom-20 left-8 h-32 w-32 rounded-full blur-3xl"
+          className={cn(
+            "absolute -bottom-20 left-8 h-32 w-32 rounded-full",
+            canFlip ? "opacity-50" : "blur-3xl",
+          )}
           style={{ background: "rgba(196,149,42,0.14)" }}
         />
       </div>
@@ -463,7 +503,7 @@ export const ClubMemberPassCard = forwardRef<ClubMemberPassCardHandle, ClubMembe
                       minHeight: CARD_FLIP_MIN_HEIGHT,
                       transformStyle: "preserve-3d",
                       WebkitTransformStyle: "preserve-3d",
-                      transition: "transform 0.65s cubic-bezier(0.4, 0.2, 0.2, 1)",
+                      transition: `transform ${CARD_FLIP_MS}ms cubic-bezier(0.4, 0.2, 0.2, 1)`,
                       transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
                       WebkitTransform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
                     }
@@ -473,20 +513,18 @@ export const ClubMemberPassCard = forwardRef<ClubMemberPassCardHandle, ClubMembe
             <div
               ref={passRef}
               data-club-pass-root
+              data-club-pass-face="front"
+              data-face-active={canFlip ? (!flipped).toString() : undefined}
               aria-hidden={flipped && canFlip ? true : undefined}
               className={cn(
                 "rounded-3xl text-left shadow-xl select-none",
-                canFlip ? "absolute inset-0 flex flex-col" : "relative",
+                canFlip ? "absolute inset-0 flex flex-col overflow-hidden" : "relative",
               )}
-              style={{
-                ...cardShellStyle,
-                ...(canFlip
-                  ? {
-                      ...cardFaceHiddenStyle,
-                      pointerEvents: flipped ? "none" : "auto",
-                    }
-                  : null),
-              }}
+              style={
+                canFlip
+                  ? clubPassFaceStyle({ side: "front", flipped, shell: cardShellStyle })
+                  : cardShellStyle
+              }
             >
               {decoration}
               <div className={cn("relative z-10 flex flex-col rounded-3xl", canFlip && "h-full min-h-0")}>
@@ -675,14 +713,10 @@ export const ClubMemberPassCard = forwardRef<ClubMemberPassCardHandle, ClubMembe
             {canFlipSkills && skillsSummary ? (
               <div
                 aria-hidden={!flipped}
-                className="absolute inset-0 flex flex-col rounded-3xl text-left shadow-xl select-none"
-                style={{
-                  ...cardShellStyle,
-                  ...cardFaceHiddenStyle,
-                  transform: "rotateY(180deg)",
-                  WebkitTransform: "rotateY(180deg)",
-                  pointerEvents: flipped ? "auto" : "none",
-                }}
+                data-club-pass-face="back"
+                data-face-active={flipped.toString()}
+                className="absolute inset-0 flex flex-col overflow-hidden rounded-3xl text-left shadow-xl select-none"
+                style={clubPassFaceStyle({ side: "back", flipped, shell: cardShellStyle })}
               >
                 {decoration}
                 <div className="relative z-10 flex h-full min-h-0 flex-col rounded-3xl">
@@ -915,14 +949,10 @@ export const ClubMemberPassCard = forwardRef<ClubMemberPassCardHandle, ClubMembe
             ) : canFlipClubCrest ? (
               <div
                 aria-hidden={!flipped}
-                className="absolute inset-0 flex flex-col rounded-3xl text-left shadow-xl select-none"
-                style={{
-                  ...cardShellStyle,
-                  ...cardFaceHiddenStyle,
-                  transform: "rotateY(180deg)",
-                  WebkitTransform: "rotateY(180deg)",
-                  pointerEvents: flipped ? "auto" : "none",
-                }}
+                data-club-pass-face="back"
+                data-face-active={flipped.toString()}
+                className="absolute inset-0 flex flex-col overflow-hidden rounded-3xl text-left shadow-xl select-none"
+                style={clubPassFaceStyle({ side: "back", flipped, shell: cardShellStyle })}
               >
                 {decoration}
                 <div className="relative z-10 flex h-full min-h-0 flex-col items-center justify-center gap-5 rounded-3xl px-6 py-8">

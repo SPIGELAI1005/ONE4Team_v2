@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/hooks/use-language";
 import { BrandedText } from "@/components/ai/Ai4TBrand";
+import { Ai4TLogo } from "@/components/ai/Ai4TLogo";
 import { useDashboardNav } from "@/hooks/use-dashboard-nav";
 import { pathnameToNavId } from "@/lib/dashboard-nav";
 
@@ -116,7 +117,11 @@ const MobileBottomNav = ({ active, onNavigate }: MobileBottomNavProps) => {
               className={`flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all duration-200 min-w-[60px] min-h-[52px] touch-manipulation ${itemClass}`}
             >
               <div className="relative">
-                <item.icon className="w-[26px] h-[26px]" strokeWidth={isActive ? 2 : 1.5} />
+                {item.module === "ai4t" ? (
+                  <Ai4TLogo alt="AI 4 T" className="h-[39px] w-[39px]" />
+                ) : (
+                  <item.icon className="w-[26px] h-[26px]" strokeWidth={isActive ? 2 : 1.5} />
+                )}
                 {isActive && (
                   <motion.div
                     layoutId="tab-glow"

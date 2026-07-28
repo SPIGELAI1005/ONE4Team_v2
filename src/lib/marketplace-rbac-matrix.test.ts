@@ -27,7 +27,17 @@ import {
 } from "@/lib/rbac-config";
 import { effectivePermissions } from "@/lib/permissions";
 
-const INTERNAL_DENIED_ROLES = ["trainer", "team_staff", "player", "parent", "parent_supporter", "member"] as const;
+const INTERNAL_DENIED_ROLES = [
+  "trainer",
+  "team_staff",
+  "team_management",
+  "player",
+  "parent",
+  "parent_supporter",
+  "member",
+  "fan",
+  "supporter",
+] as const;
 const PROVIDER_ROLES = ["sponsor", "supplier", "service_provider", "consultant"] as const;
 
 describe("marketplace RBAC matrix - sidebar & route", () => {

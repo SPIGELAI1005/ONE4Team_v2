@@ -36,6 +36,7 @@ import { supabase } from "@/integrations/supabase/client";
 import FootballFieldAnimation from "@/components/landing/FootballFieldAnimation";
 import { trackEvent } from "@/lib/telemetry";
 import { trackUsageEvent } from "@/lib/usage-events";
+import { isPublicClubFirstRole } from "@/lib/rbac-config";
 import logo from "@/assets/one4team-logo.png";
 
 type RegistrationTrack = "club_admin" | "partner";
@@ -245,6 +246,19 @@ const Auth = () => {
       const nextClubId = hasPreferredClub ? preferredClub! : memberships[0].club_id;
       localStorage.setItem(scopedClubKey, nextClubId);
       localStorage.removeItem(globalClubKey);
+
+      if (isPublicClubFirstRole(nextRole)) {
+        const { data: clubRow } = await supabase
+          .from("clubs")
+          .select("slug")
+          .eq("id", nextClubId)
+          .maybeSingle();
+        const slug = clubRow?.slug ? String(clubRow.slug) : null;
+        if (slug) {
+          navigate(`/club/${encodeURIComponent(slug)}`, { replace: true });
+          return;
+        }
+      }
 
       navigate(`/dashboard/${nextRole}`, { replace: true });
     };

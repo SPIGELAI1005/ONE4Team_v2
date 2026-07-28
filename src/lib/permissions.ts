@@ -52,6 +52,7 @@ export {
   isAccessAtLeast,
   isExternalRole,
   isInternalClubRole,
+  isPublicClubFirstRole,
   isSportsRole,
   normalizeDashboardRole,
   normalizeRole,
@@ -64,6 +65,7 @@ export {
   MENU_MODULE_ORDER,
   MODULE_ROUTES,
   MOBILE_NAV_MAX_ITEMS,
+  PUBLIC_CLUB_FIRST_ROLES,
   SIDEBAR_MENU_PROFILES,
   SPORTS_ROLES,
   UNKNOWN_SIDEBAR_MENU,
@@ -74,8 +76,11 @@ export type AppRole =
   | "trainer"
   | "player"
   | "staff"
+  | "team_management"
   | "member"
   | "parent"
+  | "fan"
+  | "supporter"
   | "sponsor"
   | "supplier"
   | "service_provider"
@@ -273,6 +278,43 @@ export function teamAdminTeamIds(assignments: ClubRoleAssignmentRow[] | null | u
   return assignments
     .filter((a) => a.role_kind === "team_admin" && a.scope === "team" && a.scope_team_id)
     .map((a) => a.scope_team_id as string);
+}
+
+/** Team ids from team-scoped trainer / team_admin / staff assignments. */
+export function scopedAssignmentTeamIds(
+  assignments: ClubRoleAssignmentRow[] | null | undefined,
+): string[] {
+  if (!assignments?.length) return [];
+  return [
+    ...new Set(
+      assignments
+        .filter(
+          (a) =>
+            a.scope === "team" &&
+            a.scope_team_id &&
+            (a.role_kind === "team_admin" ||
+              a.role_kind === "trainer" ||
+              a.role_kind === "staff" ||
+              a.role_kind === "player" ||
+              a.role_kind === "member" ||
+              a.role_kind === "parent"),
+        )
+        .map((a) => a.scope_team_id as string),
+    ),
+  ];
+}
+
+/** True when the user has an explicit club-wide trainer/admin assignment (not bare legacy trainer). */
+export function hasClubWideTrainerAssignment(
+  assignments: ClubRoleAssignmentRow[] | null | undefined,
+): boolean {
+  return (
+    assignments?.some(
+      (a) =>
+        a.scope === "club" &&
+        (a.role_kind === "trainer" || a.role_kind === "club_admin" || a.role_kind === "team_management"),
+    ) ?? false
+  );
 }
 
 /** Minimum legacy permissions that grant access to a dashboard module (any non-`none` level). */

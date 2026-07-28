@@ -1681,3 +1681,18 @@
     scrollbar-color: hsl(var(--scrollbar-thumb)) transparent;
   }
 }
+
+/* Member ID card flip — Safari/iOS ignores backface-visibility with filtered children.
+   Inline styles handle opacity; this reinforces WebKit face culling. */
+[data-club-pass-face] {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+@supports (-webkit-touch-callout: none) {
+  [data-club-pass-face][data-face-active="false"] {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+}

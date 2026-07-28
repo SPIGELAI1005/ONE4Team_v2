@@ -778,21 +778,21 @@ const DashboardContent = () => {
         {sections.seasonProgression ? <SeasonProgressionChart /> : null}
         {sections.teamChemistry ? <TeamChemistry /> : null}
         {sections.achievementBadges ? <AchievementBadges /> : null}
-        {sections.naturalLanguageStats ? <NaturalLanguageStats /> : null}
+        {sections.naturalLanguageStats && !isClubAdminPersona ? <NaturalLanguageStats /> : null}
 
-        {sections.ai4teamWeeklyDigest ? (
+        {sections.ai4teamWeeklyDigest && !isClubAdminPersona ? (
           <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <div className="text-sm font-semibold text-foreground">
                 <Ai4TInlineLabel text={t.dashboard.ai4teamWeeklySummary} logoClassName="h-4 w-4" />
               </div>
-              <div className="text-xs text-muted-foreground mt-0.5">{t.dashboard.ai4teamWeeklySummaryDesc}</div>
+              <div className="text-sm text-muted-foreground mt-0.5">{t.dashboard.ai4teamWeeklySummaryDesc}</div>
             </div>
             <Link
               to={`/co-trainer?tab=chat&prompt=${encodeURIComponent(
                 "Create a weekly leadership digest for our club with top priorities, risks, and owner actions for the next 7 days.",
               )}`}
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-gold-static px-4 py-2 text-xs font-semibold text-primary-foreground hover:brightness-110 shrink-0"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-gold-static px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110 shrink-0"
             >
               <Ai4TInlineLabel text={t.dashboard.ai4teamWeeklySummary} showLogo={false} />
             </Link>
@@ -801,19 +801,81 @@ const DashboardContent = () => {
 
         {sections.seasonAwards ? <SeasonAwards /> : null}
 
-        {sections.adminNotificationSender ? <AdminNotificationSender /> : null}
+        {sections.adminNotificationSender && !isClubAdminPersona ? <AdminNotificationSender /> : null}
 
         {isClubAdminPersona && activeClubId ? (
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Ai4tAdminUsageCard />
-            <Ai4tValueMetricsCard />
+          <div className="space-y-4 rounded-3xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
+            <div className="flex flex-col gap-1">
+              <div className="text-sm font-semibold text-foreground">
+                <Ai4TInlineLabel text={t.dashboard.ai4tControlCenterTitle} logoClassName="h-4 w-4" />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {t.dashboard.ai4tControlCenterDesc}
+              </p>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className={`lg:col-span-2 ${DASHBOARD_CARD}`}>
+                <NaturalLanguageStats />
+              </div>
+              <div className={`${DASHBOARD_CARD} relative overflow-hidden`}>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
+                <h2 className={`${DASHBOARD_TYPE_SECTION_TITLE} mb-4 relative`}>
+                  <Ai4TInlineLabel
+                    text={t.dashboard.aiInsights}
+                    logoClassName="h-4 w-4"
+                    textClassName="font-display font-bold"
+                  />
+                </h2>
+                <div className="space-y-2.5 relative">
+                  {(aiInsights.length ? aiInsights : [t.dashboard.aiTip1, t.dashboard.aiTip2, t.dashboard.aiTip3]).map((s, i) => (
+                    <motion.div
+                      key={i}
+                      whileTap={{ scale: 0.98 }}
+                      className="text-[13px] text-muted-foreground p-3 rounded-xl bg-primary/5 border border-primary/8 leading-relaxed cursor-default"
+                    >
+                      {s}
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-3">
+              {sections.ai4teamWeeklyDigest ? (
+                <div className="rounded-2xl border border-primary/20 bg-background/80 p-4 lg:col-span-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold text-foreground">
+                      <Ai4TInlineLabel text={t.dashboard.ai4teamWeeklySummary} logoClassName="h-4 w-4" />
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-0.5">{t.dashboard.ai4teamWeeklySummaryDesc}</div>
+                  </div>
+                  <Link
+                    to={`/co-trainer?tab=chat&prompt=${encodeURIComponent(
+                      "Create a weekly leadership digest for our club with top priorities, risks, and owner actions for the next 7 days.",
+                    )}`}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-gold-static px-4 py-2 text-sm font-semibold text-primary-foreground hover:brightness-110 shrink-0"
+                  >
+                    <Ai4TInlineLabel text={t.dashboard.ai4teamWeeklySummary} showLogo={false} />
+                  </Link>
+                </div>
+              ) : (
+                <div className="lg:col-span-2" />
+              )}
+              {sections.adminNotificationSender ? <AdminNotificationSender /> : null}
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Ai4tAdminUsageCard />
+              <Ai4tValueMetricsCard />
+            </div>
           </div>
         ) : null}
 
         {sections.upcomingAndAi ? (
-        <div className="grid lg:grid-cols-3 gap-5">
+        <div className={isClubAdminPersona ? "grid grid-cols-1 gap-5" : "grid lg:grid-cols-3 gap-5"}>
           {/* Upcoming */}
-          <div className={`lg:col-span-2 ${DASHBOARD_CARD}`}>
+          <div className={isClubAdminPersona ? DASHBOARD_CARD : `lg:col-span-2 ${DASHBOARD_CARD}`}>
             <h2 className={`${DASHBOARD_TYPE_SECTION_TITLE} mb-4 flex items-center gap-2`}>
               <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Calendar className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
@@ -851,31 +913,33 @@ const DashboardContent = () => {
             </div>
           </div>
 
-          {/* AI Suggestions */}
-          <div className={`${DASHBOARD_CARD} relative overflow-hidden`}>
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
-            <h2 className={`${DASHBOARD_TYPE_SECTION_TITLE} mb-4 flex items-center gap-2 relative`}>
-              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Bot className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
+          {!isClubAdminPersona ? (
+            <div className={`${DASHBOARD_CARD} relative overflow-hidden`}>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
+              <h2 className={`${DASHBOARD_TYPE_SECTION_TITLE} mb-4 relative`}>
+                <Ai4TInlineLabel
+                  text={t.dashboard.aiInsights}
+                  logoClassName="h-4 w-4"
+                  textClassName="font-display font-bold"
+                />
+              </h2>
+              <div className="space-y-2.5 relative">
+                {(aiInsights.length ? aiInsights : [t.dashboard.aiTip1, t.dashboard.aiTip2, t.dashboard.aiTip3]).map((s, i) => (
+                  <motion.div
+                    key={i}
+                    whileTap={{ scale: 0.98 }}
+                    className="text-[13px] text-muted-foreground p-3 rounded-xl bg-primary/5 border border-primary/8 leading-relaxed cursor-default"
+                  >
+                    {s}
+                  </motion.div>
+                ))}
               </div>
-              <span className="text-gradient-gold">{t.dashboard.aiInsights}</span>
-            </h2>
-            <div className="space-y-2.5 relative">
-              {(aiInsights.length ? aiInsights : [t.dashboard.aiTip1, t.dashboard.aiTip2, t.dashboard.aiTip3]).map((s, i) => (
-                <motion.div
-                  key={i}
-                  whileTap={{ scale: 0.98 }}
-                  className="text-[13px] text-muted-foreground p-3 rounded-xl bg-primary/5 border border-primary/8 leading-relaxed cursor-default"
-                >
-                  {s}
-                </motion.div>
-              ))}
             </div>
-          </div>
+          ) : null}
         </div>
         ) : null}
 
-        <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+        <div className="text-xs text-muted-foreground flex items-center gap-1">
           <Clock className="w-3.5 h-3.5" />{" "}
           {activeClubId ? t.dashboard.liveClubData : t.dashboard.bestEffort}
         </div>

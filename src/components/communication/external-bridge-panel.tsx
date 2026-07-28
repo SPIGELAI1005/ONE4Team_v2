@@ -1,6 +1,7 @@
-import { BotMessageSquare, Cable, CheckCircle2, CircleAlert, MessageCircle, Send } from "lucide-react";
+import { Cable, CheckCircle2, CircleAlert, MessageCircle, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Ai4TLogo } from "@/components/ai/Ai4TLogo";
 
 export type ExternalBridgeProvider = "whatsapp" | "telegram";
 
@@ -76,8 +77,8 @@ export function ExternalBridgePanel({
       aria-label={labels.title}
     >
       <header className={cn("flex items-start gap-3", compact ? "mb-2.5" : "mb-3")}>
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-gold-static text-primary-foreground shadow-sm">
-          <BotMessageSquare className="h-5 w-5" aria-hidden />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+          <Ai4TLogo size="xs" alt="AI 4 T" className="h-9 w-9" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">

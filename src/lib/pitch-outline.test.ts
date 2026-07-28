@@ -7,7 +7,9 @@ import {
   insertOutlineVertex,
   moveOutlineVertex,
   outlineCenter,
+  outlineLabelAnchor,
   outlinePointsToSvg,
+  gridCellsLabelAnchor,
   parsePitchOutline,
   pointerToMapPercent,
   rectFromDrag,
@@ -76,7 +78,30 @@ describe("pitch-outline", () => {
     })!;
     expect(serializePitchOutline(outline)).toEqual(outline);
     expect(outlineCenter(outline)).toEqual({ cx: 10, cy: 10 });
+    expect(outlineLabelAnchor(outline)).toEqual({ cx: 10, cy: 10 });
     expect(outlinePointsToSvg(outline)).toBe("0,0 20,0 20,20 0,20");
+  });
+
+  it("anchors irregular outlines to bbox center for labels", () => {
+    const outline = parsePitchOutline({
+      type: "polygon",
+      points: [
+        { x: 0, y: 0 },
+        { x: 40, y: 0 },
+        { x: 40, y: 10 },
+        { x: 10, y: 10 },
+        { x: 10, y: 40 },
+        { x: 0, y: 40 },
+      ],
+    })!;
+    // Vertex average is skewed; label anchor uses bbox mid (20, 20).
+    expect(outlineLabelAnchor(outline)).toEqual({ cx: 20, cy: 20 });
+    expect(outlineCenter(outline).cy).not.toBe(20);
+  });
+
+  it("anchors grid cells to map percent center", () => {
+    // 2x2 block in top-left of 10x10 grid → center at 10%, 10%
+    expect(gridCellsLabelAnchor([0, 1, 10, 11], 10)).toEqual({ cx: 10, cy: 10 });
   });
 
   it("maps pointer to percent and translates outline", () => {

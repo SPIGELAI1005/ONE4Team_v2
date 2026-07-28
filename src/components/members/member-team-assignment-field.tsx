@@ -40,7 +40,7 @@ export function MemberTeamAssignmentField({
   };
 
   if (single) {
-    const value = selectedTeamIds[0] ?? "__none__";
+    const value = selectedTeamIds[0] ?? undefined;
     return (
       <div className="rounded-lg border border-border/60 bg-background/40 p-3">
         <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
@@ -57,7 +57,7 @@ export function MemberTeamAssignmentField({
             <SelectValue placeholder={labels.placeholder} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__none__">{labels.none}</SelectItem>
+            {teams.length > 0 ? <SelectItem value="__none__">{labels.none}</SelectItem> : null}
             {teams.map((team) => (
               <SelectItem key={team.id} value={team.id}>
                 {team.name}

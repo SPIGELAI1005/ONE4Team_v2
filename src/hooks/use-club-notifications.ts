@@ -27,6 +27,14 @@ export function useClubNotifications(clubId: string | null) {
       return;
     }
     setLoading(true);
+
+    // Ensure expired club photos create dashboard notifications (parents for under-18).
+    try {
+      await supabase.rpc("ensure_photo_renewal_notifications", { _club_id: clubId });
+    } catch {
+      /* non-fatal: notifications still load if RPC missing/unapplied */
+    }
+
     const { data, error } = await supabase
       .from("notifications")
       .select("id, title, body, notification_type, reference_id, is_read, created_at")

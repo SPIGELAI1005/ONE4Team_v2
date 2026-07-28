@@ -8,7 +8,6 @@ import {
   LogIn,
   MessageSquare,
   Target,
-  Trophy,
   UserPlus,
   Users,
 } from "lucide-react";
@@ -22,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { usePublicClub } from "@/contexts/public-club-context";
 import { useLanguage } from "@/hooks/use-language";
 import { getAchievementBadgeIcon } from "@/lib/achievement-badge-icons";
+import { getProgressAwardIcon } from "@/lib/progress-award-icons";
 import {
   buildTrainingCoachPrompt,
   canOptInPublicBadges,
@@ -290,6 +290,11 @@ export function PublicClubMyProgressSection() {
     return levelFromXp(displaySnapshot.xp);
   }, [displaySnapshot]);
 
+  const awardIcon = useMemo(() => {
+    if (!displaySnapshot) return null;
+    return getProgressAwardIcon(displaySnapshot.xp);
+  }, [displaySnapshot]);
+
   const hint = displaySnapshot ? nextBadgeHint(displaySnapshot) : null;
   const myTeamRank = challenge?.teams.find((row) => row.is_mine) ?? null;
   const lowAttendance =
@@ -437,7 +442,12 @@ export function PublicClubMyProgressSection() {
             <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
               <div className="flex min-w-0 items-start gap-3.5">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-[color:var(--club-primary)] shadow-md ring-1 ring-black/10">
-                  <Trophy className="h-7 w-7" />
+                  {awardIcon ? (
+                    <awardIcon.Icon
+                      className="h-7 w-7"
+                      aria-hidden
+                    />
+                  ) : null}
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[color:var(--club-foreground)]/70">

@@ -162,10 +162,10 @@ const NaturalLanguageStats = () => {
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-1 mb-3">
+      <div className="flex flex-wrap gap-2 mb-3">
         {quickQueries.map((qq, i) => (
           <button key={i} onClick={() => askQuestion(qq)}
-            className="text-[10px] px-2 py-1 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors">
+            className="text-xs px-2.5 py-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors">
             {qq}
           </button>
         ))}

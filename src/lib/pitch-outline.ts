@@ -168,6 +168,44 @@ export function outlineCenter(outline: PitchOutlinePolygon): { cx: number; cy: n
   return { cx: sx / outline.points.length, cy: sy / outline.points.length };
 }
 
+/**
+ * Visual anchor for pitch name / schedule chips — bounding-box center stays inside
+ * the drawn field more reliably than the vertex average on irregular outlines.
+ */
+export function outlineLabelAnchor(outline: PitchOutlinePolygon): { cx: number; cy: number } {
+  const bounds = outlineBounds(outline);
+  return {
+    cx: bounds.x + bounds.w / 2,
+    cy: bounds.y + bounds.h / 2,
+  };
+}
+
+/** Approx. center of a set of grid cells in map % (0–100), ignoring CSS gaps. */
+export function gridCellsLabelAnchor(
+  cellIndexes: number[],
+  gridSize: number,
+): { cx: number; cy: number } {
+  if (cellIndexes.length === 0 || gridSize < 1) return { cx: 50, cy: 50 };
+  let minRow = gridSize;
+  let maxRow = -1;
+  let minCol = gridSize;
+  let maxCol = -1;
+  for (const index of cellIndexes) {
+    if (!Number.isFinite(index) || index < 0) continue;
+    const row = Math.floor(index / gridSize);
+    const col = index % gridSize;
+    minRow = Math.min(minRow, row);
+    maxRow = Math.max(maxRow, row);
+    minCol = Math.min(minCol, col);
+    maxCol = Math.max(maxCol, col);
+  }
+  if (maxRow < 0) return { cx: 50, cy: 50 };
+  return {
+    cx: ((minCol + maxCol + 1) / 2 / gridSize) * 100,
+    cy: ((minRow + maxRow + 1) / 2 / gridSize) * 100,
+  };
+}
+
 /** Bounding box helper for label sizing. */
 export function outlineBounds(outline: PitchOutlinePolygon): { x: number; y: number; w: number; h: number } {
   let minX = 100;

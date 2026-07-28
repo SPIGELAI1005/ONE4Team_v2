@@ -3,6 +3,39 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-07-28 (Supabase function lint repair + warning cleanup)
+
+- **`supabase db lint --linked`** surfaced real errors in join/register/approve/create-club RPCs and analytics/operator diagnostics — all repaired on linked remote.
+- **High-impact auth/join:** **`20260804193000`** — `register_club_join_request` (invalid `club_invites.status`), `approve_club_join_request` ambiguity, `create_club_with_admin` (`author_id` not `created_by`).
+- **Draft + invite redeem:** **`20260804160000`** — allow `club_member_drafts.status = 'joined'`; **`20260804170000`** — repair stuck invite redemptions + harden `redeem_club_invite`.
+- **Join upsert:** **`20260804196000`** — replace invalid `ON CONFLICT (club_id, user_id)` with update-then-insert; unique key is **`(club_id, user_id, role)`**.
+- **Analytics:** **`20260804197000`**–**`20260804199000`** — heatmap/radar use **`activity_attendance` + `activities`** (not missing `event_participants`); fix `GROUP BY` / `ORDER BY` on heatmap overload.
+- **Warning cleanup:** **`20260804200000`** — remove unused PL/pgSQL variables in `create_club_with_admin`, `create_platform_user`, `set_operator_club_status`, `set_platform_setting`.
+- **Verified:** `supabase db lint --linked` → **No schema errors found** (2026-07-28).
+
+## 2026-07-28 (Communication · AI 4 T branding · Club Page Admin tabs)
+
+- **`/communication`:** Channel list scrolls independently; **External Bridge** panel stays fixed at bottom of sidebar (`flex` column + `shrink-0`).
+- **External Bridge:** Replaced Lucide bot with app **`Ai4TLogo`** (~`h-9 w-9`, no frame).
+- **Dashboard nav:** Sidebar + **`MobileBottomNav`** use **`Ai4TLogo`** for AI 4 T entry (enlarged ~50%).
+- **`/club-page-admin`:** Tab bar uses **`md:grid md:grid-cols-5`** (5+5 layout) — no horizontal scroll on desktop.
+
+## 2026-07-28 (Member photo 2-year validity)
+
+- Club registry photos (`club_member_master_records.photo_url`) stamp **`photo_uploaded_at`** on upload/change (trigger + backfill).
+- Validity **2 years**; dashboard notifications type **`photo_renewal`** via RPC **`ensure_photo_renewal_notifications`** (called when the notification bell loads).
+- **Under-18 players:** renewal notifications go to linked **parents/guardians**; adults get their own.
+- Members UI shows valid-until / renewal-due hints. Migration **`20260804190000`** applied on linked remote.
+
+## 2026-07-28 (Club roles optimization)
+
+- **New `app_role` values:** `team_management`, `fan`, `supporter` (migration **`20260804180000_club_roles_team_management_fan_supporter.sql`**).
+- **RBAC rewrite:** Staff = club-wide ops edit without finance; Team Management = broader ops (members/invites/roles/reports/club page) without finance; Fan/Supporter = public-club-first (no ops dashboard); Player trainings/matches = limited (own progress + team read/messaging); Member gets team schedule/messaging when assigned.
+- **Trainer scope hard-fix:** Bare legacy trainer is no longer club-wide for matches; `is_trainer_for_team` + roster RLS; `useModuleDataScope` uses assignment + `team_players`/`team_coaches` ids.
+- **Parent vs supporter split:** UI labels separate Parent / Fan / Supporter; dues + weekly digest accept DB role `parent` (not only `parent_supporter`).
+- **Under-18 guardian UX:** Safety tab hint when birth date &lt; 18; child stays Player.
+- **Checklist:** `docs/club-roles-verification-checklist.md`.
+
 ## 2026-07-18 (Member ID card skills · Club Card parity · My Progress copy)
 
 ### Member ID card (flip / skills / crest)

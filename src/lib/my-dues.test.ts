@@ -16,6 +16,13 @@ describe("my-dues helpers", () => {
         wardMembershipIds: ["w1", "w2"],
       }),
     ).toEqual(["m1", "w1", "w2"]);
+    expect(
+      collectMembershipIdsForDuesView({
+        membershipId: "m1",
+        role: "parent",
+        wardMembershipIds: ["w1"],
+      }),
+    ).toEqual(["m1", "w1"]);
   });
 
   it("maps pending claims and ward labels", () => {

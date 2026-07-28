@@ -208,6 +208,24 @@ export function getDashboardSections(role: string | undefined): DashboardSection
       return PARENT_SECTIONS;
     case "member":
       return MEMBER_SECTIONS;
+    case "team_management":
+      return { ...CLUB_ADMIN_SECTIONS, financialSummary: false, myDues: false };
+    case "fan":
+    case "supporter":
+      return {
+        ...DEFAULT_SECTIONS,
+        clubSetup: false,
+        liveMatchTicker: false,
+        financialSummary: false,
+        weekAtAGlance: false,
+        trainerToday: false,
+        myDues: false,
+        upcomingAndAi: false,
+        marketplaceCards: false,
+        tasksSummary: false,
+        adminNotificationSender: false,
+        ai4teamWeeklyDigest: false,
+      };
     case "sponsor":
       return SPONSOR_SECTIONS;
     case "supplier":

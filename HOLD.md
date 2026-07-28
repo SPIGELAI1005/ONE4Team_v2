@@ -1,6 +1,8 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-07-18 — Member ID / My Progress card work + progress RPC fix migration noted; Pricing / Founding Club + Waves A–E + gamification + Asset Map notes unchanged below. Cross-reference: full ordered migration and deploy guidance is in `CHANGELOG.md` (§ 2026-03-30 … § **2026-07-18** Member ID card skills).
+Last updated: 2026-07-28 — Linked remote through **`20260804200000`**; **`supabase db lint --linked`** clean. Still redeploy **`process-weekly-digests`** after parent-role fix. Cross-reference: `CHANGELOG.md` § **Supabase function lint repair**, § **Club roles optimization**.
+
+**Applied (2026-07-28):** `20260804160000` → `20260804200000` (draft joined status, invite redeem repair, auth/join RPC fixes, analytics repairs, lint warning cleanup); `20260804180000` (club roles); `20260804190000` (photo validity). Still redeploy Edge **`process-weekly-digests`** (parent role query fix).
 
 This repo is prepared locally-first. The following items are intentionally on hold until you do Supabase Dashboard actions.
 
@@ -69,13 +71,31 @@ See **`DEPLOYMENT.md` § AI 4 T** and **`TASKS.md` AI-OPS-001**.
 
 ## Pricing architecture & Founding Club (2026-07-18)
 Apply in filename order on the same Supabase project as the app:
-1. [ ] `supabase/migrations/20260804120000_pricing_founding_club_offers.sql` — `commercial_offers`, redemptions, `redeem_commercial_offer`, plan seed sync
-2. [ ] `supabase/migrations/20260804130000_runtime_module_overrides.sql` — `get_my_club_module_overrides`
-3. [ ] `supabase/migrations/20260804140000_rename_founding_club_offer_code.sql` — public code **`ONE4Team-Founding-Club-12M`**
+1. [x] ~~`supabase/migrations/20260804120000_pricing_founding_club_offers.sql`~~ — **applied** on linked remote (2026-07-28)
+2. [x] ~~`supabase/migrations/20260804130000_runtime_module_overrides.sql`~~ — **applied** on linked remote (2026-07-28)
+3. [x] ~~`supabase/migrations/20260804140000_rename_founding_club_offer_code.sql`~~ — **applied** on linked remote (2026-07-28)
 4. [ ] Deploy Edge: **`stripe-checkout`**, **`stripe-webhook`**, **`process-commercial-offers`** (schedule expiry cron)
 5. [ ] Smoke: `/pricing` Founding banner → Offer details / Offer terms; Kick-off CTA → onboarding redeem (no Stripe); promotional club = announcements only; Bespoke **Contact Us** opens mailto `contact@one4team.com`
 
 See **`docs/FOUNDING_CLUB_OFFER.md`**, **`docs/PRICING_AND_ENTITLEMENTS.md`**, **`CHANGELOG.md`** § Pricing architecture / UX polish.
+
+## Supabase function lint repair (2026-07-28)
+**Status:** **Done** on linked remote — migrations **`20260804160000`** through **`20260804200000`** applied.
+
+Verify after any new RPC changes:
+```bash
+supabase db lint --linked
+```
+Expect: **No schema errors found**.
+
+Key repairs:
+- Draft status `joined` + stuck invite redeem (`160000`, `170000`)
+- Join/register/approve/create-club RPCs (`193000`, `196000`)
+- Analytics heatmap/radar → `activity_attendance` (`197000`–`199000`)
+- Unused PL/pgSQL variable cleanup (`200000`)
+
+See **`CHANGELOG.md`** § **Supabase function lint repair**, **`supabase/SCHEMA_STATUS.md`**.
+
 ## Product program backlog (not in PROD-005…021 waves)
 Keep operator-owned until scheduled; do **not** block Waves A–E on these:
 1. **PKG-003** — Stripe Dashboard ↔ `plan-catalog.ts`

@@ -126,7 +126,7 @@ const AdminNotificationSender = () => {
                   key={nt.value}
                   type="button"
                   onClick={() => setType(nt.value)}
-                  className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                  className={`inline-flex h-8 items-center gap-1.5 text-xs px-3.5 rounded-full border transition-colors ${
                     isSelected
                       ? "bg-primary/10 border-primary text-primary"
                       : "bg-muted/50 border-border text-muted-foreground hover:text-foreground"
@@ -157,7 +157,7 @@ const AdminNotificationSender = () => {
 
           {/* Send button */}
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
               <Users className="w-3 h-3" />
               Sends to all active club members
             </span>
