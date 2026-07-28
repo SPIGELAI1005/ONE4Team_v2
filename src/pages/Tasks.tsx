@@ -34,6 +34,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { useModuleGateRole } from "@/hooks/use-module-gate-role";
@@ -126,6 +136,8 @@ export default function Tasks() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ClubTaskRow | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [taskPendingDelete, setTaskPendingDelete] = useState<ClubTaskRow | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<ClubTaskPriority>("normal");
@@ -266,13 +278,17 @@ export default function Tasks() {
   };
 
   const handleDelete = async (task: ClubTaskRow) => {
-    if (!clubId || !taskAccess.canDeleteTasks) return;
-    if (!window.confirm(t.tasksPage.confirmDelete)) return;
+    if (!clubId) return;
+    const canDelete = taskAccess.canDeleteTasks || task.created_by === user?.id;
+    if (!canDelete) return;
+    setDeleting(true);
     const { error } = await deleteClubTask(task.id, clubId);
+    setDeleting(false);
     if (error) {
       toast({ title: t.common.error, description: error.message, variant: "destructive" });
       return;
     }
+    setTaskPendingDelete(null);
     selectTask(null);
     toast({ title: t.tasksPage.taskDeleted });
     void reload();
@@ -553,12 +569,12 @@ export default function Tasks() {
                           {t.common.edit}
                         </Button>
                       ) : null}
-                      {taskAccess.canDeleteTasks ? (
+                      {taskAccess.canDeleteTasks || selectedTask.created_by === user?.id ? (
                         <Button
                           size="sm"
                           variant="outline"
                           className="text-destructive hover:text-destructive"
-                          onClick={() => void handleDelete(selectedTask)}
+                          onClick={() => setTaskPendingDelete(selectedTask)}
                         >
                           <Trash2 className="mr-1.5 h-4 w-4" />
                           {t.common.delete}
@@ -685,6 +701,36 @@ export default function Tasks() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={Boolean(taskPendingDelete)}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setTaskPendingDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t.common.delete}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t.tasksPage.confirmDelete}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{t.common.cancel}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting || !taskPendingDelete}
+              onClick={(event) => {
+                event.preventDefault();
+                if (!taskPendingDelete) return;
+                void handleDelete(taskPendingDelete);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : t.common.delete}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
