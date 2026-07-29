@@ -188,7 +188,7 @@ export const de: Translations = {
     sections: [
       {
         title: "1. Geltungsbereich und Anbieter",
-        content: 'Diese Allgemeinen Geschäftsbedingungen ("AGB") regeln die Nutzung der ONE4Team-Plattform ("Dienst"), betrieben von der SPIGEL AI UG (haftungsbeschränkt), vertreten durch George Neacsu, München, Deutschland ("Anbieter", "wir", "uns"). Durch den Zugriff auf oder die Nutzung unseres Dienstes erklären Sie sich mit diesen AGB einverstanden. Wenn Sie nicht einverstanden sind, nutzen Sie den Dienst bitte nicht.',
+        content: 'Diese Allgemeinen Geschäftsbedingungen ("AGB") regeln die Nutzung der ONE4Team-Plattform ("Dienst"), betrieben von ONE4Team, Inhaber: George-Mugurel Neacsu, Maria-Sibylla-Merian-Straße 12, 80999 München, Deutschland ("Anbieter", "wir", "uns"). Durch den Zugriff auf oder die Nutzung unseres Dienstes erklären Sie sich mit diesen AGB einverstanden. Wenn Sie nicht einverstanden sind, nutzen Sie den Dienst bitte nicht.',
       },
       {
         title: "2. Leistungsbeschreibung",
@@ -236,7 +236,7 @@ export const de: Translations = {
       },
       {
         title: "13. Streitbeilegung",
-        content: "Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: https://ec.europa.eu/consumers/odr. Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.",
+        content: "Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.",
       },
       {
         title: "14. KI-gestützte Funktionen (AI 4 T)",
@@ -257,7 +257,7 @@ export const de: Translations = {
     sections: [
       {
         title: "1. Verantwortlicher",
-        content: "Verantwortlich für die Datenverarbeitung ist die SPIGEL AI UG (haftungsbeschränkt), vertreten durch George Neacsu, München, Deutschland. Für Datenschutzanfragen kontaktieren Sie uns bitte unter support@one4team.com.",
+        content: "Verantwortlich für die Datenverarbeitung ist ONE4Team, Inhaber: George-Mugurel Neacsu, Maria-Sibylla-Merian-Straße 12, 80999 München, Deutschland. Für Datenschutzanfragen kontaktieren Sie uns bitte unter support@one4team.com.",
       },
       {
         title: "2. Erhobene Daten",
@@ -314,42 +314,25 @@ export const de: Translations = {
   impressumPage: {
     title: "Impressum",
     titleDe: "Impressum",
-    subtitle: "Angaben gemäß § 5 TMG",
+    subtitle: "Angaben gemäß § 5 DDG",
     companyInfo: {
-      heading: "1. Dienstanbieter",
-      name: "SPIGEL AI UG (haftungsbeschränkt)",
-      represented: "Vertreten durch: George Neacsu",
-      address: "München, Deutschland",
+      heading: "Dienstanbieter",
+      name: "ONE4Team",
+      owner: "Inhaber: George-Mugurel Neacsu",
+      addressLines: [
+        "Maria-Sibylla-Merian-Straße 12",
+        "80999 München",
+        "Deutschland",
+      ],
+    },
+    contact: {
+      heading: "Kontakt",
       email: "E-Mail: support@one4team.com",
-      website: "Webseite: https://www.one4team.com",
-    },
-    registration: {
-      heading: "2. Registrierung",
-      content: "Handelsregister: Amtsgericht München (Eintragung ausstehend)",
-    },
-    vat: {
-      heading: "3. Umsatzsteuer-Identifikationsnummer",
-      content: "USt-IdNr. gemäß § 27a Umsatzsteuergesetz: Eintragung ausstehend",
-    },
-    responsibility: {
-      heading: "4. Inhaltlich Verantwortlicher",
-      content: "George Neacsu (Anschrift wie oben), gemäß § 18 Abs. 2 Medienstaatsvertrag (MStV).",
     },
     disputeResolution: {
-      heading: "5. EU-Streitbeilegung",
-      content: "Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: https://ec.europa.eu/consumers/odr. Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.",
-    },
-    liability: {
-      heading: "6. Haftung für Inhalte",
-      content: "Als Diensteanbieter sind wir gemäß § 7 Abs. 1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen. Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen Gesetzen bleiben hiervon unberührt. Eine diesbezügliche Haftung ist jedoch erst ab dem Zeitpunkt der Kenntnis einer konkreten Rechtsverletzung möglich. Bei Bekanntwerden von entsprechenden Rechtsverletzungen werden wir diese Inhalte umgehend entfernen.",
-    },
-    liabilityLinks: {
-      heading: "7. Haftung für Links",
-      content: "Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich. Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf mögliche Rechtsverstöße überprüft. Rechtswidrige Inhalte waren zum Zeitpunkt der Verlinkung nicht erkennbar. Eine permanente inhaltliche Kontrolle der verlinkten Seiten ist jedoch ohne konkrete Anhaltspunkte einer Rechtsverletzung nicht zumutbar. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Links umgehend entfernen.",
-    },
-    copyright: {
-      heading: "8. Urheberrecht",
-      content: "Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers. Downloads und Kopien dieser Seite sind nur für den privaten, nicht kommerziellen Gebrauch gestattet. Soweit die Inhalte auf dieser Seite nicht vom Betreiber erstellt wurden, werden die Urheberrechte Dritter beachtet. Insbesondere werden Inhalte Dritter als solche gekennzeichnet. Sollten Sie trotzdem auf eine Urheberrechtsverletzung aufmerksam werden, bitten wir um einen entsprechenden Hinweis. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Inhalte umgehend entfernen.",
+      heading: "Verbraucherstreitbeilegung",
+      content:
+        "Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.",
     },
   },
 
@@ -1470,6 +1453,8 @@ export const de: Translations = {
     copyHistoryLink: "Link kopieren",
     openFullHistory: "Vollständigen Verlauf öffnen",
     resendInvite: "Erneut einladen",
+    openInRoster: "Im Kader öffnen",
+    openInRosterDone: "Im aktiven Kader geöffnet. Eintrag in der gespeicherten Liste als beigetreten markiert.",
     sendInviteModalTitle: "Einladungslink",
     sendInviteModalDesc:
       "Eine Einladungs-E-Mail wird an die hinterlegte Adresse gesendet, sofern der Versand konfiguriert ist. Du kannst den Link unten auch als Backup kopieren.",

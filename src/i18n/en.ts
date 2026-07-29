@@ -187,7 +187,7 @@ export const en = {
     sections: [
       {
         title: "1. Scope and Provider",
-        content: 'These Terms of Service ("Terms") govern your use of the ONE4Team platform ("Service"), operated by SPIGEL AI UG (haftungsbeschrankt), represented by George Neacsu, Munich, Germany ("Provider", "we", "us"). By accessing or using our Service, you agree to be bound by these Terms. If you do not agree, please do not use the Service.',
+        content: 'These Terms of Service ("Terms") govern your use of the ONE4Team platform ("Service"), operated by ONE4Team, owner: George-Mugurel Neacsu, Maria-Sibylla-Merian-Straße 12, 80999 Munich, Germany ("Provider", "we", "us"). By accessing or using our Service, you agree to be bound by these Terms. If you do not agree, please do not use the Service.',
       },
       {
         title: "2. Service Description",
@@ -235,7 +235,7 @@ export const en = {
       },
       {
         title: "13. Dispute Resolution",
-        content: "The European Commission provides an online dispute resolution (ODR) platform at https://ec.europa.eu/consumers/odr. We are not obligated and not willing to participate in dispute resolution proceedings before a consumer arbitration board.",
+        content: "We are neither willing nor obliged to participate in dispute resolution proceedings before a consumer arbitration board.",
       },
       {
         title: "14. AI-assisted features (AI 4 T)",
@@ -256,7 +256,7 @@ export const en = {
     sections: [
       {
         title: "1. Controller",
-        content: "The controller responsible for data processing is SPIGEL AI UG (haftungsbeschrankt), represented by George Neacsu, Munich, Germany. For data protection inquiries, please contact us at support@one4team.com.",
+        content: "The controller responsible for data processing is ONE4Team, owner: George-Mugurel Neacsu, Maria-Sibylla-Merian-Straße 12, 80999 Munich, Germany. For data protection inquiries, please contact us at support@one4team.com.",
       },
       {
         title: "2. Data We Collect",
@@ -313,42 +313,25 @@ export const en = {
   impressumPage: {
     title: "Legal Notice",
     titleDe: "Impressum",
-    subtitle: "Information in accordance with Section 5 TMG",
+    subtitle: "Information pursuant to Section 5 DDG (German Digital Services Act)",
     companyInfo: {
-      heading: "1. Service Provider",
-      name: "SPIGEL AI UG (haftungsbeschrankt)",
-      represented: "Represented by: George Neacsu",
-      address: "Munich, Germany",
+      heading: "Service provider",
+      name: "ONE4Team",
+      owner: "Owner: George-Mugurel Neacsu",
+      addressLines: [
+        "Maria-Sibylla-Merian-Straße 12",
+        "80999 Munich",
+        "Germany",
+      ],
+    },
+    contact: {
+      heading: "Contact",
       email: "Email: support@one4team.com",
-      website: "Website: https://www.one4team.com",
-    },
-    registration: {
-      heading: "2. Registration",
-      content: "Commercial Register: Amtsgericht Munchen (registration pending)",
-    },
-    vat: {
-      heading: "3. VAT Identification Number",
-      content: "VAT ID pursuant to Section 27a of the German VAT Act (Umsatzsteuergesetz): pending registration",
-    },
-    responsibility: {
-      heading: "4. Responsible for Content",
-      content: "George Neacsu (address as above), in accordance with Section 18(2) of the German Interstate Media Treaty (Medienstaatsvertrag, MStV).",
     },
     disputeResolution: {
-      heading: "5. EU Dispute Resolution",
-      content: "The European Commission provides an online dispute resolution (ODR) platform: https://ec.europa.eu/consumers/odr. We are not obligated and not willing to participate in dispute resolution proceedings before a consumer arbitration board.",
-    },
-    liability: {
-      heading: "6. Liability for Content",
-      content: "As a service provider, we are responsible for our own content on these pages in accordance with general laws pursuant to Section 7(1) TMG. According to Sections 8 to 10 TMG, however, we are not obligated to monitor transmitted or stored third-party information or to investigate circumstances that indicate illegal activity. Obligations to remove or block the use of information under general law remain unaffected. Liability in this regard is only possible from the time of knowledge of a specific legal violation. Upon becoming aware of corresponding legal violations, we will remove this content immediately.",
-    },
-    liabilityLinks: {
-      heading: "7. Liability for Links",
-      content: "Our offer contains links to external third-party websites, the content of which we have no influence over. Therefore, we cannot assume any liability for this external content. The respective provider or operator of the pages is always responsible for the content of the linked pages. The linked pages were checked for possible legal violations at the time of linking. Illegal content was not recognizable at the time of linking. Permanent monitoring of the content of linked pages is not reasonable without concrete evidence of a legal violation. Upon becoming aware of legal violations, we will remove such links immediately.",
-    },
-    copyright: {
-      heading: "8. Copyright",
-      content: "The content and works created by the site operators on these pages are subject to German copyright law. Duplication, processing, distribution, and any kind of exploitation beyond the limits of copyright law require the written consent of the respective author or creator. Downloads and copies of this site are only permitted for private, non-commercial use. Insofar as the content on this site was not created by the operator, the copyrights of third parties are respected. In particular, third-party content is marked as such. Should you nevertheless become aware of a copyright infringement, please inform us accordingly. Upon becoming aware of legal violations, we will remove such content immediately.",
+      heading: "Consumer dispute resolution",
+      content:
+        "We are neither willing nor obliged to participate in dispute resolution proceedings before a consumer arbitration board.",
     },
   },
 
@@ -1452,6 +1435,8 @@ export const en = {
     copyHistoryLink: "Copy link",
     openFullHistory: "Open full history",
     resendInvite: "Resend invite",
+    openInRoster: "Open in roster",
+    openInRosterDone: "Opened in active roster. Saved-list entry marked as joined.",
     sendInviteModalTitle: "Invite link",
     sendInviteModalDesc:
       "An invite email was sent to the member's address when delivery is configured. You can also copy the link below as a backup.",

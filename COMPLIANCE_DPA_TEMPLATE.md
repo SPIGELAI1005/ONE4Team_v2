@@ -2,7 +2,7 @@
 
 ## Parties
 - Controller (Customer Club/Organization): `<fill>`
-- Processor (Service Provider): `SPIGEL AI UG (ONE4Team)`
+- Processor (Service Provider): `ONE4Team (Inhaber: George-Mugurel Neacsu)`
 - Effective date: `<fill>`
 
 ## Scope of Processing

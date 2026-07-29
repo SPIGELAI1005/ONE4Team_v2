@@ -579,6 +579,10 @@ const Members = () => {
   const [memberDraftTotalCount, setMemberDraftTotalCount] = useState(0);
   const [draftsLoading, setDraftsLoading] = useState(false);
   const [draftActionId, setDraftActionId] = useState<string | null>(null);
+  const [draftInviteMetaById, setDraftInviteMetaById] = useState<
+    Record<string, { inviteUsed: boolean; rosterMembershipId: string | null }>
+  >({});
+  const pendingFocusMembershipIdRef = useRef<string | null>(null);
   const [editingDraftId, setEditingDraftId] = useState<string | null>(null);
   const [editingDraftForm, setEditingDraftForm] = useState<{
     firstName: string;
@@ -1042,11 +1046,51 @@ const Members = () => {
       toast({ title: t.common.error, description: listRes.error.message, variant: "destructive" });
       setMemberDrafts([]);
       setMemberDraftTotalCount(0);
+      setDraftInviteMetaById({});
       setDraftsLoading(false);
       return;
     }
-    setMemberDrafts((listRes.data as unknown as MemberDraftRow[]) ?? []);
-    setMemberDraftTotalCount(countRes.count ?? listRes.data?.length ?? 0);
+    const drafts = (listRes.data as unknown as MemberDraftRow[]) ?? [];
+    setMemberDrafts(drafts);
+    setMemberDraftTotalCount(countRes.count ?? drafts.length);
+
+    const invited = drafts.filter((draft) => draft.status === "invited");
+    const inviteIds = Array.from(
+      new Set(invited.map((draft) => draft.invite_id).filter((id): id is string => Boolean(id))),
+    );
+    const emails = Array.from(
+      new Set(invited.map((draft) => normalizeEmail(draft.email)).filter(Boolean)),
+    );
+    const [invitesRes, resolveRes] = await Promise.all([
+      inviteIds.length > 0
+        ? supabase.from("club_invites").select("id, used_at").eq("club_id", clubId).in("id", inviteIds)
+        : Promise.resolve({ data: [] as Array<{ id: string; used_at: string | null }>, error: null }),
+      emails.length > 0
+        ? supabase.rpc("resolve_club_member_emails_to_memberships", {
+            _club_id: clubId,
+            _emails: emails,
+          })
+        : Promise.resolve({ data: [] as Array<{ email: string; membership_id: string }>, error: null }),
+    ]);
+
+    const usedByInviteId = new Map<string, boolean>();
+    for (const row of (invitesRes.data as Array<{ id: string; used_at: string | null }> | null) ?? []) {
+      usedByInviteId.set(row.id, Boolean(row.used_at));
+    }
+    const membershipByEmail = new Map<string, string>();
+    for (const row of (resolveRes.data as Array<{ email: string; membership_id: string }> | null) ?? []) {
+      if (row.email && row.membership_id) {
+        membershipByEmail.set(normalizeEmail(row.email), String(row.membership_id));
+      }
+    }
+    const nextMeta: Record<string, { inviteUsed: boolean; rosterMembershipId: string | null }> = {};
+    for (const draft of invited) {
+      nextMeta[draft.id] = {
+        inviteUsed: draft.invite_id ? Boolean(usedByInviteId.get(draft.invite_id)) : false,
+        rosterMembershipId: membershipByEmail.get(normalizeEmail(draft.email)) ?? null,
+      };
+    }
+    setDraftInviteMetaById(nextMeta);
     setDraftsLoading(false);
   }, [clubId, perms.isAdmin, t.common.error, toast]);
 
@@ -1795,6 +1839,25 @@ const Members = () => {
       document.getElementById(`roster-member-${member.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
   }, []);
+
+  useEffect(() => {
+    const membershipId = pendingFocusMembershipIdRef.current;
+    if (!membershipId || loading) return;
+    const member = members.find((row) => row.id === membershipId);
+    if (!member) return;
+    pendingFocusMembershipIdRef.current = null;
+    focusRosterMember(member);
+  }, [members, loading, focusRosterMember]);
+
+  const getInvitedDraftPrimaryAction = useCallback(
+    (draft: MemberDraftRow): "resend" | "open_roster" | null => {
+      if (draft.status !== "invited") return null;
+      const meta = draftInviteMetaById[draft.id];
+      if (meta?.inviteUsed && meta.rosterMembershipId) return "open_roster";
+      return "resend";
+    },
+    [draftInviteMetaById],
+  );
 
   const membersServerTotalPages = Math.max(
     1,
@@ -2936,6 +2999,64 @@ const Members = () => {
     setDraftActionId(null);
   };
 
+  const handleOpenRosterFromDraft = async (draft: MemberDraftRow) => {
+    if (!clubId || draftActionId) return;
+    const membershipId =
+      draftInviteMetaById[draft.id]?.rosterMembershipId ||
+      emailToMembershipIdFromEmail(draft.email);
+    if (!membershipId) {
+      toast({
+        title: t.common.error,
+        description: t.membersPage.resendInviteBlockedUsed,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setDraftActionId(draft.id);
+    const { error } = await supabase
+      .from("club_member_drafts")
+      .update({ status: "joined" })
+      .eq("id", draft.id)
+      .eq("club_id", clubId);
+    if (error) {
+      toast({ title: t.common.error, description: error.message, variant: "destructive" });
+      setDraftActionId(null);
+      return;
+    }
+
+    void appendMemberAuditEvent({
+      clubId,
+      draftId: draft.id,
+      correlationEmail: normalizeEmail(draft.email),
+      eventType: "draft_joined_via_roster_open",
+      summary: "Opened used invite in active roster",
+      detail: { membership_id: membershipId, invite_id: draft.invite_id ?? null },
+    });
+
+    setMemberDrafts((previous) => previous.filter((row) => row.id !== draft.id));
+    setSearchMatchedDrafts((previous) => previous.filter((row) => row.id !== draft.id));
+    setDraftInviteMetaById((previous) => {
+      const next = { ...previous };
+      delete next[draft.id];
+      return next;
+    });
+    if (editingDraftId === draft.id) {
+      setEditingDraftId(null);
+    }
+
+    pendingFocusMembershipIdRef.current = membershipId;
+    const searchHint = normalizeEmail(draft.email) || draft.name?.trim() || "";
+    setTab("members");
+    setSearch(searchHint);
+    setDebouncedSearch(searchHint);
+    toast({
+      title: t.membersPage.openInRoster,
+      description: t.membersPage.openInRosterDone,
+    });
+    setDraftActionId(null);
+  };
+
   const handleResendInviteForDraft = async (draft: MemberDraftRow) => {
     if (!clubId || draftActionId) return;
     if (draft.status !== "invited") return;
@@ -2955,13 +3076,31 @@ const Members = () => {
         return;
       }
       if (priorInv?.used_at) {
-        toast({
-          title: t.common.error,
-          description: t.membersPage.resendInviteBlockedUsed,
-          variant: "destructive",
-        });
-        setDraftActionId(null);
-        return;
+        const emailForLookup =
+          editingDraftId === draft.id
+            ? normalizeEmail(editingDraftForm.email)
+            : normalizeEmail(draft.email);
+        let rosterMembershipId = draftInviteMetaById[draft.id]?.rosterMembershipId ?? null;
+        if (!rosterMembershipId && emailForLookup) {
+          const { data: resolved } = await supabase.rpc("resolve_club_member_emails_to_memberships", {
+            _club_id: clubId,
+            _emails: [emailForLookup],
+          });
+          const hit = ((resolved as Array<{ email: string; membership_id: string }> | null) ?? []).find(
+            (row) => normalizeEmail(row.email) === emailForLookup,
+          );
+          rosterMembershipId = hit?.membership_id ? String(hit.membership_id) : null;
+        }
+        if (rosterMembershipId) {
+          setDraftInviteMetaById((previous) => ({
+            ...previous,
+            [draft.id]: { inviteUsed: true, rosterMembershipId },
+          }));
+          setDraftActionId(null);
+          await handleOpenRosterFromDraft({ ...draft, invite_id: draft.invite_id });
+          return;
+        }
+        // Invite was used but person is not on the roster — allow a fresh invite below.
       }
     }
 
@@ -4067,23 +4206,43 @@ const Members = () => {
                             </span>
                           ) : null}
                           {draft.status === "invited" ? (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="h-9 text-sm"
-                              disabled={draftSaving || draftActionId === draft.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                void handleResendInviteForDraft(draft);
-                              }}
-                            >
-                              {draftActionId === draft.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin mr-1" />
-                              ) : (
-                                <RefreshCw className="w-4 h-4 mr-1" />
-                              )}
-                              {t.membersPage.resendInvite}
-                            </Button>
+                            getInvitedDraftPrimaryAction(draft) === "open_roster" ? (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="h-9 text-sm"
+                                disabled={draftSaving || draftActionId === draft.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void handleOpenRosterFromDraft(draft);
+                                }}
+                              >
+                                {draftActionId === draft.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                                ) : (
+                                  <Users className="w-4 h-4 mr-1" />
+                                )}
+                                {t.membersPage.openInRoster}
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="h-9 text-sm"
+                                disabled={draftSaving || draftActionId === draft.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void handleResendInviteForDraft(draft);
+                                }}
+                              >
+                                {draftActionId === draft.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                                ) : (
+                                  <RefreshCw className="w-4 h-4 mr-1" />
+                                )}
+                                {t.membersPage.resendInvite}
+                              </Button>
+                            )
                           ) : null}
                           <Button size="sm" variant="ghost" onClick={handleCancelDraftEdit} className="h-11 w-full text-sm sm:h-9 sm:w-auto" disabled={draftSaving}>
                             {t.common.cancel}
@@ -4159,21 +4318,39 @@ const Members = () => {
                             </Button>
                           ) : null}
                           {draft.status === "invited" ? (
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="secondary"
-                              disabled={draftActionId === draft.id}
-                              onClick={() => void handleResendInviteForDraft(draft)}
-                              className={savedMemberListRowChipClass}
-                            >
-                              {draftActionId === draft.id ? (
-                                <Loader2 className="animate-spin" />
-                              ) : (
-                                <RefreshCw />
-                              )}
-                              {t.membersPage.resendInvite}
-                            </Button>
+                            getInvitedDraftPrimaryAction(draft) === "open_roster" ? (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                disabled={draftActionId === draft.id}
+                                onClick={() => void handleOpenRosterFromDraft(draft)}
+                                className={savedMemberListRowChipClass}
+                              >
+                                {draftActionId === draft.id ? (
+                                  <Loader2 className="animate-spin" />
+                                ) : (
+                                  <Users />
+                                )}
+                                {t.membersPage.openInRoster}
+                              </Button>
+                            ) : (
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                disabled={draftActionId === draft.id}
+                                onClick={() => void handleResendInviteForDraft(draft)}
+                                className={savedMemberListRowChipClass}
+                              >
+                                {draftActionId === draft.id ? (
+                                  <Loader2 className="animate-spin" />
+                                ) : (
+                                  <RefreshCw />
+                                )}
+                                {t.membersPage.resendInvite}
+                              </Button>
+                            )
                           ) : null}
                           <Button
                             type="button"
