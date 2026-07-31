@@ -137,7 +137,7 @@ export async function sendGuidedInviteEmails(params: {
         role: "member",
         token_hash: tokenHash,
         expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-        invite_payload: { source: "guided_setup" },
+        invite_payload: { source: "guided_setup", language: params.language === "de" ? "de" : "en" },
       })
       .select("id")
       .single();

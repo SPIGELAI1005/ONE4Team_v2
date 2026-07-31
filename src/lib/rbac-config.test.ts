@@ -114,6 +114,13 @@ describe("module access baseline", () => {
     expect(getModuleAccess("team_staff", "club_page")).toBe("none");
   });
 
+  it("grants team_management full write on members and invites", () => {
+    expect(canWriteModule("team_management", "members")).toBe(true);
+    expect(canWriteModule("team_management", "invites")).toBe(true);
+    expect(getModuleAccess("team_management", "members")).toBe("full");
+    expect(getModuleAccess("trainer", "members")).toBe("team");
+  });
+
   it("keeps fan and supporter off ops dashboard", () => {
     expect(getModuleAccess("fan", "dashboard")).toBe("none");
     expect(getModuleAccess("fan", "members")).toBe("none");

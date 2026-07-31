@@ -106,7 +106,7 @@ serve(async (req) => {
 
     const { data: inviteRow, error: inviteError } = await supabase
       .from("club_invites")
-      .select("id, club_id, email, token_hash, used_at")
+      .select("id, club_id, email, token_hash, used_at, invite_payload")
       .eq("id", inviteId)
       .eq("club_id", clubId)
       .maybeSingle();
@@ -128,6 +128,24 @@ serve(async (req) => {
     const tokenHash = await hashInviteToken(inviteToken);
     if (tokenHash !== inviteRow.token_hash) {
       return jsonResponse({ error: "Invite token is invalid." }, 400, corsHeaders);
+    }
+
+    const existingPayload =
+      inviteRow.invite_payload && typeof inviteRow.invite_payload === "object"
+        ? (inviteRow.invite_payload as Record<string, unknown>)
+        : {};
+    const { error: payloadUpdateError } = await supabase
+      .from("club_invites")
+      .update({
+        invite_payload: {
+          ...existingPayload,
+          language,
+        },
+      })
+      .eq("id", inviteId)
+      .eq("club_id", clubId);
+    if (payloadUpdateError) {
+      console.warn("invite language persist:", payloadUpdateError.message);
     }
 
     const { data: clubRow, error: clubError } = await supabase

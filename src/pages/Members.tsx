@@ -20,6 +20,8 @@ import { supabaseDynamic } from "@/lib/supabase-dynamic";
 import { useToast } from "@/hooks/use-toast";
 import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useModuleGateRole } from "@/hooks/use-module-gate-role";
+import { canAccessModule, getModuleAccess } from "@/lib/rbac-config";
 import { useModuleDataScope } from "@/hooks/use-module-data-scope";
 import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
 import {
@@ -519,6 +521,9 @@ const Members = () => {
   const { t, language } = useLanguage();
   const { clubId, loading: clubLoading } = useClubId();
   const perms = usePermissions();
+  const gateRole = useModuleGateRole();
+  const canManageMembers = getModuleAccess(gateRole, "members") === "full";
+  const canManageRoles = getModuleAccess(gateRole, "roles") === "full";
   const memberDataScope = useModuleDataScope("members");
   const agentPageContext = useMemo(() => ({ source: "members" as const }), []);
   useRegisterAiAgentContext(agentPageContext);
@@ -961,7 +966,10 @@ const Members = () => {
         role: roleValue,
         token_hash: tokenHash,
         expires_at: expiresAt,
-        invite_payload: payload ?? {},
+        invite_payload: {
+          ...(payload ?? {}),
+          language: language === "de" ? "de" : "en",
+        },
       })
       .select("id")
       .single();
@@ -1026,7 +1034,7 @@ const Members = () => {
   );
 
   const fetchMemberDrafts = useCallback(async () => {
-    if (!clubId || !perms.isAdmin) return;
+    if (!clubId || !canManageMembers) return;
     setDraftsLoading(true);
     const [listRes, countRes] = await Promise.all([
       supabase
@@ -1092,7 +1100,7 @@ const Members = () => {
     }
     setDraftInviteMetaById(nextMeta);
     setDraftsLoading(false);
-  }, [clubId, perms.isAdmin, t.common.error, toast]);
+  }, [clubId, canManageMembers, t.common.error, toast]);
 
   const resolveUnusedInviteIdForInvitedDraft = useCallback(
     async (draft: MemberDraftRow): Promise<string | null> => {
@@ -1232,8 +1240,6 @@ const Members = () => {
     setResolvingAlertId(null);
   }, [t, toast]);
 
-  const canManageMembers = perms.isAdmin;
-
   const teamAssignmentLabels = useMemo(
     () => ({
       title: t.membersPage.teamAssignmentTitle,
@@ -1299,8 +1305,11 @@ const Members = () => {
     photoValidUntilLabel: t.membersPage.photoValidUntilLabel,
   }), [t]);
   const clubPassLabels = useMemo(() => buildClubMemberPassLabels(t), [t]);
-  const canReviewJoinRequests = perms.isAdmin || (perms.isTrainer && joinReviewerPolicy === "admin_trainer");
-  const canAccessMembersPage = perms.isAdmin || perms.isTrainer;
+  const canReviewJoinRequests =
+    canManageMembers ||
+    getModuleAccess(gateRole, "invites") === "full" ||
+    (perms.isTrainer && joinReviewerPolicy === "admin_trainer");
+  const canAccessMembersPage = canAccessModule(gateRole, "members") || canManageMembers || perms.isTrainer;
 
   const fetchMembers = useCallback(async () => {
     if (!clubId) return;
@@ -1591,12 +1600,12 @@ const Members = () => {
   useEffect(() => {
     if (tab !== "members") return;
     if (!clubId) return;
-    if (!perms.isAdmin) return;
+    if (!canManageMembers) return;
     void fetchMemberDrafts();
-  }, [tab, clubId, perms.isAdmin, fetchMemberDrafts]);
+  }, [tab, clubId, canManageMembers, fetchMemberDrafts]);
 
   useEffect(() => {
-    if (!clubId || !perms.isAdmin) {
+    if (!clubId || !canManageMembers) {
       setSearchMatchedDrafts([]);
       return;
     }
@@ -1631,7 +1640,7 @@ const Members = () => {
     return () => {
       cancelled = true;
     };
-  }, [clubId, debouncedSearch, perms.isAdmin]);
+  }, [clubId, debouncedSearch, canManageMembers]);
 
   useEffect(() => {
     if (!clubId) return;
@@ -1647,7 +1656,7 @@ const Members = () => {
       }, debounceMs);
     };
 
-    if (tab === "members" && perms.isAdmin) {
+    if (tab === "members" && canManageMembers) {
       const ch = supabase
         .channel(`club-member-drafts-rt-${clubId}`)
         .on(
@@ -1677,11 +1686,11 @@ const Members = () => {
         void supabase.removeChannel(ch);
       }
     };
-  }, [clubId, tab, perms.isAdmin, canAccessMembersPage, fetchMemberDrafts, fetchInvitesData]);
+  }, [clubId, tab, canManageMembers, canAccessMembersPage, fetchMemberDrafts, fetchInvitesData]);
 
   useEffect(() => {
     const run = async () => {
-      if (!showAddMembers || !clubId || !perms.isAdmin) return;
+      if (!showAddMembers || !clubId || !canManageMembers) return;
       const { data } = await supabase
         .from("club_invites")
         .select("*")
@@ -1691,11 +1700,11 @@ const Members = () => {
       if (data) setInvites(data as unknown as ClubInviteRow[]);
     };
     void run();
-  }, [showAddMembers, clubId, perms.isAdmin]);
+  }, [showAddMembers, clubId, canManageMembers]);
 
   useEffect(() => {
     const run = async () => {
-      if (!showAddMembers || !clubId || !perms.isAdmin) {
+      if (!showAddMembers || !clubId || !canManageMembers) {
         setExistingMemberEmails(new Set());
         return;
       }
@@ -1731,7 +1740,7 @@ const Members = () => {
     };
 
     void run();
-  }, [showAddMembers, clubId, perms.isAdmin, bulkRows]);
+  }, [showAddMembers, clubId, canManageMembers, bulkRows]);
 
   const filtered = useMemo(() => {
     if (debouncedSearch.trim().length >= 2) {
@@ -2010,7 +2019,7 @@ const Members = () => {
       payload: Partial<ClubMemberMasterRecord>,
       options?: { suppressToast?: boolean },
     ) => {
-      if (!clubId || !perms.isAdmin) {
+      if (!clubId || !canManageMembers) {
         toast({ title: t.common.notAuthorized, description: t.membersPage.onlyAdminsMembers, variant: "destructive" });
         return;
       }
@@ -2051,7 +2060,7 @@ const Members = () => {
         detail: { fields: fieldKeys },
       });
     },
-    [clubId, perms.isAdmin, membershipEmails, t, toast],
+    [clubId, canManageMembers, membershipEmails, t, toast],
   );
 
   const emailToMembershipIdFromEmail = useCallback(
@@ -2066,7 +2075,7 @@ const Members = () => {
 
   const handlePrepareRegistryImport = useCallback(
     async (file: File) => {
-      if (!clubId || !perms.isAdmin) return;
+      if (!clubId || !canManageMembers) return;
       setRegistryImportBusy(true);
       try {
         const rows = await parseRegistrySpreadsheetFirstSheet(file);
@@ -2150,11 +2159,11 @@ const Members = () => {
         setRegistryImportBusy(false);
       }
     },
-    [clubId, perms.isAdmin, members, t, toast],
+    [clubId, canManageMembers, members, t, toast],
   );
 
   const handleApplyRegistryImport = useCallback(async () => {
-    if (!clubId || !perms.isAdmin) return;
+    if (!clubId || !canManageMembers) return;
     const applicableMembers = registryImportPreview.filter((row) => row.membershipId);
     const applicableDrafts = registryImportPreview.filter((row) => row.draftId && !row.membershipId);
     if (!applicableMembers.length && !applicableDrafts.length) {
@@ -2253,7 +2262,7 @@ const Members = () => {
     } finally {
       setRegistryImportBusy(false);
     }
-  }, [clubId, perms.isAdmin, registryImportPreview, memberDrafts, emailToMembershipIdFromEmail, t, toast, fetchMembers, fetchMemberDrafts]);
+  }, [clubId, canManageMembers, registryImportPreview, memberDrafts, emailToMembershipIdFromEmail, t, toast, fetchMembers, fetchMemberDrafts]);
 
   const allRoles = ["all", "admin", "trainer", "player", "staff", "member", "parent", "sponsor"];
   const existingInviteEmails = useMemo(
@@ -2318,7 +2327,7 @@ const Members = () => {
   }, [bulkRows, existingDraftEmails, existingInviteEmails, existingMemberEmails]);
 
   const handleDeleteMember = async (membershipId: string) => {
-    if (!perms.isAdmin || !clubId) {
+    if (!canManageMembers || !clubId) {
       toast({ title: t.common.notAuthorized, description: t.membersPage.onlyAdminsMembers, variant: "destructive" });
       return;
     }
@@ -2588,7 +2597,7 @@ const Members = () => {
 
   const saveMemberPanelInline = async (member: MemberRow) => {
     if (!clubId) return;
-    if (!perms.isAdmin) {
+    if (!canManageMembers) {
       toast({ title: t.common.notAuthorized, description: t.membersPage.onlyAdminsMembers, variant: "destructive" });
       return;
     }
@@ -3553,7 +3562,7 @@ const Members = () => {
       <MembersTabNav
         tab={tab}
         onTabChange={setTab}
-        showRoles={perms.isAdmin}
+        showRoles={canManageRoles}
         labels={{
           members: t.membersPage.title,
           invites: t.membersPage.invites,
@@ -3582,7 +3591,7 @@ const Members = () => {
           </div>
         ) : (
           <>
-            {tab === "roles" && perms.isAdmin && <MembersRolesPanel />}
+            {tab === "roles" && canManageRoles && <MembersRolesPanel />}
             {tab === "members" ? (
               !canManageMembers ? (
                 <div className="rounded-xl bg-card border border-border p-8 text-center">
@@ -3594,7 +3603,7 @@ const Members = () => {
               <MembersRosterPanel
                 toolbar={
                   <>
-            {clubId && perms.isAdmin ? (
+            {clubId && canManageMembers ? (
               <div className="mb-4">
                 <MembersImportPanel
                   clubId={clubId}
@@ -4769,7 +4778,7 @@ const Members = () => {
                                 clubId={clubId}
                                 membershipId={member.id}
                                 avatarUpload={
-                                  memberPanelEditModeId === member.id && perms.isAdmin
+                                  memberPanelEditModeId === member.id && canManageMembers
                                     ? {
                                         uploading: memberPanelAvatarUploading,
                                         onUpload: (file) => void uploadMemberPanelAvatar(member.id, file),

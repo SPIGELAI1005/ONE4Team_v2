@@ -19,6 +19,14 @@ describe("resolveTeamAssignmentAccess", () => {
     });
   });
 
+  it("lets team management assign players and coaches", () => {
+    expect(resolveTeamAssignmentAccess("team_management")).toEqual({
+      canManageTeams: true,
+      canAssignPlayers: true,
+      canAssignCoaches: true,
+    });
+  });
+
   it("blocks players and other personas from managing or assigning", () => {
     for (const role of ["player", "member", "parent", "staff", null] as const) {
       expect(resolveTeamAssignmentAccess(role)).toEqual({

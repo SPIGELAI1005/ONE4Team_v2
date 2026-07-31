@@ -11,7 +11,7 @@ export interface TeamAssignmentAccess {
 
 /**
  * Team roster assignment rights from the active dashboard persona (module gate role).
- * - Club admin: manage teams + assign coaches and players
+ * - Club admin / team management: manage teams + assign coaches and players
  * - Trainer: manage teams + assign players only
  * - Player / other: no manage or assign
  */
@@ -20,10 +20,11 @@ export function resolveTeamAssignmentAccess(
 ): TeamAssignmentAccess {
   const role = gateRole ?? null;
   const isAdmin = role === "admin" || role === "club_admin";
+  const isTeamManagement = role === "team_management";
   const isTrainer = role === "trainer";
   return {
-    canManageTeams: isAdmin || isTrainer,
-    canAssignPlayers: isAdmin || isTrainer,
-    canAssignCoaches: isAdmin,
+    canManageTeams: isAdmin || isTeamManagement || isTrainer,
+    canAssignPlayers: isAdmin || isTeamManagement || isTrainer,
+    canAssignCoaches: isAdmin || isTeamManagement,
   };
 }

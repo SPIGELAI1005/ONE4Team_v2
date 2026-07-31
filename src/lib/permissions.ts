@@ -265,10 +265,23 @@ export function isTrainerCapability(
   assignments: ClubRoleAssignmentRow[] | null | undefined,
 ): boolean {
   const resolved = resolveDashboardRole(legacyRole, assignments);
-  if (resolved === "admin" || resolved === "club_admin" || resolved === "trainer") return true;
+  if (
+    resolved === "admin" ||
+    resolved === "club_admin" ||
+    resolved === "trainer" ||
+    resolved === "team_management" ||
+    resolved === "team_staff"
+  ) {
+    return true;
+  }
   return (
     assignments?.some(
-      (a) => a.role_kind === "club_admin" || a.role_kind === "trainer" || a.role_kind === "team_admin",
+      (a) =>
+        a.role_kind === "club_admin" ||
+        a.role_kind === "trainer" ||
+        a.role_kind === "team_admin" ||
+        a.role_kind === "team_management" ||
+        a.role_kind === "staff",
     ) ?? false
   );
 }

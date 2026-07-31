@@ -59,7 +59,7 @@ serve(async (req) => {
     const clubSlug = typeof body.clubSlug === "string" ? body.clubSlug.trim() : "";
     const password = typeof body.password === "string" ? body.password : "";
     const displayName = typeof body.displayName === "string" ? body.displayName.trim() : "";
-    const language = body.language === "de" ? "de" : "en";
+    const requestLanguage = body.language === "de" ? "de" : body.language === "en" ? "en" : null;
     const siteOrigin =
       typeof body.siteOrigin === "string" && body.siteOrigin.trim()
         ? body.siteOrigin.trim().replace(/\/+$/, "")
@@ -105,7 +105,7 @@ serve(async (req) => {
 
     const { data: clubRow, error: clubError } = await supabase
       .from("clubs")
-      .select("name, slug, logo_url, favicon_url, primary_color")
+      .select("name, slug, logo_url, favicon_url, primary_color, default_language")
       .eq("id", inviteRow.club_id)
       .maybeSingle();
     if (clubError || !clubRow) {
@@ -115,6 +115,25 @@ serve(async (req) => {
     if (clubSlug && clubRow.slug !== clubSlug) {
       return jsonResponse({ ok: false, code: "club_mismatch", error: "Invite club mismatch." }, 400, corsHeaders);
     }
+
+    const invitePayload =
+      inviteRow.invite_payload && typeof inviteRow.invite_payload === "object"
+        ? (inviteRow.invite_payload as Record<string, unknown>)
+        : {};
+    const inviteLanguage =
+      invitePayload.language === "de" || invitePayload.language === "en"
+        ? invitePayload.language
+        : null;
+    const clubLanguage = clubRow.default_language === "de" ? "de" : clubRow.default_language === "en" ? "en" : null;
+    // Prefer language stored when the invite was sent, then accept UI, then club default.
+    const language: "en" | "de" =
+      inviteLanguage === "de" || inviteLanguage === "en"
+        ? inviteLanguage
+        : requestLanguage === "de" || requestLanguage === "en"
+          ? requestLanguage
+          : clubLanguage === "de"
+            ? "de"
+            : "en";
 
     const metadata = {
       display_name: displayName || inviteEmail,

@@ -95,7 +95,7 @@ export function buildClubWelcomeEmailContent(input: ClubWelcomeEmailContentInput
         <tr><td style="padding:28px 32px 0 32px;">
           <p style="margin:0 0 8px 0;font-size:15px;line-height:1.6;color:#52525b;text-align:center;">${greeting}</p>
           <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#52525b;text-align:center;">
-            Dein Konto ist bereit. Du bist jetzt Teil von <strong>${escapeHtml(clubName)}</strong> auf ONE4Team — entdecke die Vereinsseite, Termine und dein Dashboard.
+            Dein Konto ist bereit. Du bist jetzt Teil von <strong>${escapeHtml(clubName)}</strong> auf ONE4Team. Entdecke die Vereinsseite, Termine und dein Dashboard.
           </p>
         </td></tr>
         <tr><td align="center" style="padding:0 32px 12px 32px;">
@@ -106,7 +106,7 @@ export function buildClubWelcomeEmailContent(input: ClubWelcomeEmailContentInput
         </td></tr>
         <tr><td style="padding:24px 32px 32px 32px;text-align:center;">
           <p style="margin:0 0 8px 0;font-size:12px;color:#a1a1aa;line-height:1.5;">Du kannst dich jederzeit mit <strong>${escapeHtml(input.recipientEmail)}</strong> anmelden.</p>
-          <p style="margin:0;font-size:11px;color:#a1a1aa;line-height:1.5;">ONE4Team · Smart club management</p>
+          <p style="margin:0;font-size:11px;color:#a1a1aa;line-height:1.5;">ONE4Team · Intelligente Vereinsverwaltung</p>
         </td></tr>
       </table>
     </td></tr>
@@ -135,7 +135,7 @@ export function buildClubWelcomeEmailContent(input: ClubWelcomeEmailContentInput
         <tr><td style="padding:28px 32px 0 32px;">
           <p style="margin:0 0 8px 0;font-size:15px;line-height:1.6;color:#52525b;text-align:center;">${greeting}</p>
           <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#52525b;text-align:center;">
-            Your account is ready. You are now part of <strong>${escapeHtml(clubName)}</strong> on ONE4Team — explore the club page, schedule, and your dashboard.
+            Your account is ready. You are now part of <strong>${escapeHtml(clubName)}</strong> on ONE4Team. Explore the club page, schedule, and your dashboard.
           </p>
         </td></tr>
         <tr><td align="center" style="padding:0 32px 12px 32px;">
