@@ -8,7 +8,10 @@ It records notable changes, features, and hardening steps.
 ### Members — registry import & reconciliation
 - **Smart spreadsheet import:** Header/sheet/column auto-mapping for German registry exports (`member-registry-spreadsheet-import.ts`).
 - **Match by club member number first** — no email-only fallback when number present; name mismatch rejection prevents wrong person merge (`member-registry-import-match.ts`).
-- **Save import** adds **unmatched rows with email** to saved list, then updates matched roster/drafts; clearer success toast (added / roster / drafts / skipped).
+- **Save import** adds **unmatched rows** to saved list (by club member number or name — **email optional**), then updates matched roster/drafts; clearer success toast (added / roster / drafts / skipped).
+- **Optional email on saved list:** Migration **`20260807130000_club_member_drafts_optional_email.sql`** — `club_member_drafts.email` nullable; invites still require email; draft save allowed with name or member number only.
+- **Identity keys:** `resolveNewDraftIdentityKey`, `canAddRegistryRowToSavedList`, `registryImportRowLinkKey` support no-email rows (`num:` / `name:` fallbacks).
+- **Null-safety:** `normalizeImportEmail` and `normalizeContactEmail` accept null; registry file-input reset no longer crashes after async import.
 - **Dedupe** by club member number on re-upload (`member-import-dedupe.ts`).
 - **Comparison workbook** path via **Mitglieder hinzufügen → Import** for bulk missing members (`club-comparison-workbook-import.ts` + generator script).
 - **Shared contact email** groups for families (`member-shared-contact-email.ts`); badges on roster/saved list rows.
@@ -20,12 +23,13 @@ It records notable changes, features, and hardening steps.
 - **Family discount groups** when same contact email + surname + address (`member-household-discount.ts`).
 - **`HouseholdDiscountReviewPanel`** on **`/payments`** to verify/reject before applying family pricing.
 - Migration **`20260807120000_member_household_discount_fields.sql`** — apply with `supabase db push`.
+- Migration **`20260807130000_club_member_drafts_optional_email.sql`** — optional email on saved-list drafts (apply with household discount migration).
 
 ### Member history
 - **`MemberHistory.tsx`** — vertical timeline connector centered on event icons (grid + per-segment lines).
 
 ### Tests
-- `member-registry-import-match.test.ts`, `member-import-dedupe.test.ts`, `member-household-discount.test.ts`, `member-registry-spreadsheet-import.test.ts`, `club-comparison-workbook-import.test.ts`.
+- `member-registry-import-match.test.ts`, `member-import-dedupe.test.ts`, `member-household-discount.test.ts`, `member-registry-spreadsheet-import.test.ts`, `club-comparison-workbook-import.test.ts`, `member-shared-contact-email.test.ts`.
 
 ## 2026-08-01 (AI 4 T GPT Internet · Members export · Roles · CI)
 

@@ -20,7 +20,8 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 - [x] **MEM-REG-001** Smart spreadsheet column/sheet mapping (`member-registry-spreadsheet-import.ts`)
 - [x] **MEM-REG-002** Match by club member number; reject name mismatch; dedupe on re-upload
-- [x] **MEM-REG-003** Save import adds unmatched (with email) to saved list + updates matched roster/drafts
+- [x] **MEM-REG-003** Save import adds unmatched rows to saved list (email optional when club number or name present) + updates matched roster/drafts
+- [x] **MEM-REG-007** Optional email on **`club_member_drafts`** — migration **`20260807130000`**; null-safe email normalization; registry import file-input fix *(operator apply)*
 - [x] **MEM-REG-004** Comparison workbook import path + generator script
 - [x] **MEM-REG-005** Draft search: `master_data` fields, server merge, 5000 draft load cap
 - [x] **MEM-REG-006** **`MemberHistory.tsx`** timeline connector alignment

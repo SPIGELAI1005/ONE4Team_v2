@@ -270,8 +270,8 @@ export function readDraftGuardianMembershipIds(masterData: Record<string, unknow
   return [...new Set(ids)];
 }
 
-export function normalizeImportEmail(value: string): string {
-  return value
+export function normalizeImportEmail(value: string | null | undefined): string {
+  return (value ?? "")
     .trim()
     .normalize("NFKC")
     .toLowerCase()

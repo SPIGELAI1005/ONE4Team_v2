@@ -17,8 +17,8 @@ export interface SharedContactEmailGroup {
   members: SharedContactEmailMember[];
 }
 
-export function normalizeContactEmail(email: string): string {
-  return email.trim().toLowerCase();
+export function normalizeContactEmail(email: string | null | undefined): string {
+  return (email ?? "").trim().toLowerCase();
 }
 
 export function buildSharedContactEmailGroups(
@@ -68,6 +68,10 @@ export function isSharedContactEmail(groups: Map<string, SharedContactEmailGroup
   return sharedContactGroupSize(groups, email) > 1;
 }
 
+function normalizePersonLabel(label: string): string {
+  return label.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
 /** Stable identity for drafts/imports when club member numbers are available. */
 export function memberRegistryIdentityKey(
   email: string,
@@ -77,9 +81,62 @@ export function memberRegistryIdentityKey(
   const num = memberNumber?.trim();
   if (num) return `num:${num}`;
   const normalized = normalizeContactEmail(email);
-  const label = (personLabel ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+  const label = normalizePersonLabel(personLabel ?? "");
   if (normalized && label) return `person:${normalized}:${label}`;
-  return normalized ? `email:${normalized}` : "";
+  if (normalized) return `email:${normalized}`;
+  if (label) return `name:${label}`;
+  return "";
+}
+
+/** Pick a non-colliding identity when adding an unmatched registry row to saved list. */
+export function resolveNewDraftIdentityKey(
+  email: string,
+  memberNumber: string | null | undefined,
+  displayName: string,
+  existingKeys: Set<string>,
+  options?: { clubNumberConflict?: boolean },
+): string | null {
+  const normalized = normalizeContactEmail(email);
+  const num = memberNumber?.trim() ?? "";
+  const numKey = num ? `num:${num}` : "";
+  const label = normalizePersonLabel(displayName);
+  const personKey = normalized && label ? `person:${normalized}:${label}` : "";
+  const nameKey = label ? `name:${label}` : "";
+  const numTaken = numKey ? existingKeys.has(numKey) : false;
+  const forcePerson = Boolean(options?.clubNumberConflict || numTaken);
+
+  if (!forcePerson && numKey && !numTaken) return numKey;
+  if (personKey && !existingKeys.has(personKey)) return personKey;
+  if (nameKey && !existingKeys.has(nameKey)) return nameKey;
+  return null;
+}
+
+export function collectDraftIdentityKeys(
+  email: string,
+  memberNumber: string | null | undefined,
+  displayName: string,
+): string[] {
+  const keys = new Set<string>();
+  const numKey = memberRegistryIdentityKey(email, memberNumber, null);
+  const personKey = memberRegistryIdentityKey(email, null, displayName);
+  const nameKey = memberRegistryIdentityKey("", null, displayName);
+  if (numKey) keys.add(numKey);
+  if (personKey) keys.add(personKey);
+  if (nameKey) keys.add(nameKey);
+  return [...keys];
+}
+
+export function registryImportRowLinkKey(
+  email: string,
+  displayName: string,
+  memberNumber?: string | null,
+): string {
+  const label = normalizePersonLabel(displayName);
+  const normalizedEmail = normalizeContactEmail(email);
+  if (normalizedEmail) return `${normalizedEmail}::${label}`;
+  const num = memberNumber?.trim();
+  if (num) return `num:${num}::${label}`;
+  return `name:${label}`;
 }
 
 export function formatSharedContactGroupLabel(count: number, email: string): string {

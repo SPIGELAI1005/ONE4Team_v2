@@ -1,10 +1,11 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-08-01 (TSV Allach member registry reconciliation · shared contact · household discount)
+Last updated: 2026-08-01 (optional email on saved member list · registry import null-safety)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
-- **TSV Allach member registry reconciliation (2026-08-01):** Smart registry import, club-number matching, saved-list add for unmatched imports, shared-contact linked-account filter, household discount review on **`/payments`**, draft search improvements, **`MemberHistory`** timeline fix. Migration **`20260807120000`**. See **`CHANGELOG.md`** § **TSV Allach member registry reconciliation**.
+- **Saved member list without email (2026-08-01):** Registry import adds unmatched members by club number or name even when spreadsheet rows lack email; **`club_member_drafts.email`** nullable — migration **`20260807130000`**. Invites still require email. See **`CHANGELOG.md`** § **TSV Allach member registry reconciliation**.
+- **TSV Allach member registry reconciliation (2026-08-01):** Smart registry import, club-number matching, saved-list add for unmatched imports, shared-contact linked-account filter, household discount review on **`/payments`**, draft search improvements, **`MemberHistory`** timeline fix. Migrations **`20260807120000`**, **`20260807130000`**. See **`CHANGELOG.md`** § **TSV Allach member registry reconciliation**.
 - **AI 4 T GPT Internet (2026-08-01):** Pro+ Internet research mode on **`/co-trainer`** (Tavily + consent + admin toggle + plan caps + cited sources). Migrations **`20260806130000`**, **`20260806140000`**. Deploy **`co-trainer`** + set **`TAVILY_API_KEY`**. See **`CHANGELOG.md`** § **2026-08-01 (AI 4 T GPT Internet…)** and **`DEPLOYMENT.md`** § AI 4 T.
 - **Members export + Roles UX (2026-08-01):** Registry XLSX includes **`club_member_drafts`**; Roles tab supports inline assignment edits. See **`CHANGELOG.md`** same section.
 - **CI / E2E (2026-08-01):** Supabase env in CI build, onboarding guest paths, Playwright ESLint override, **`role-manager`** build fix. See **`CHANGELOG.md`**.

@@ -99,7 +99,19 @@ const PREVIEW_MASTER_KEYS: Array<keyof ClubMemberMasterRecord> = [
 export function registryImportRowDisplayName(payload: Partial<ClubMemberMasterRecord>, fallbackEmail = ""): string {
   const name = [payload.first_name, payload.last_name].filter(Boolean).join(" ").trim();
   if (name) return name;
-  return fallbackEmail.trim();
+  return (fallbackEmail ?? "").trim();
+}
+
+export function canAddRegistryRowToSavedList(input: {
+  membershipId?: string | null;
+  draftId?: string | null;
+  email?: string;
+  payload: Partial<ClubMemberMasterRecord>;
+}): boolean {
+  if (input.membershipId || input.draftId) return false;
+  if (normalizeEmail(input.email ?? "")) return true;
+  if (input.payload.internal_club_number?.trim()) return true;
+  return Boolean(registryImportRowDisplayName(input.payload, input.email ?? "").trim());
 }
 
 export function summarizeMasterPayloadForDisplay(payload: Partial<ClubMemberMasterRecord>): string {

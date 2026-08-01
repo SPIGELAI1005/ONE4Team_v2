@@ -104,6 +104,7 @@ import {
 import {
   mergeBulkImportRows,
   registryImportRowDisplayName,
+  canAddRegistryRowToSavedList,
   summarizeMasterPayloadForDisplay,
 } from "@/lib/member-import-dedupe";
 import { resolveRegistryImportMatch } from "@/lib/member-registry-import-match";
@@ -111,6 +112,9 @@ import {
   buildSharedContactEmailGroups,
   getSharedContactGroup,
   memberRegistryIdentityKey,
+  collectDraftIdentityKeys,
+  resolveNewDraftIdentityKey,
+  registryImportRowLinkKey,
   type SharedContactEmailMember,
 } from "@/lib/member-shared-contact-email";
 
@@ -181,7 +185,7 @@ type MemberDraftRow = {
   id: string;
   club_id: string;
   name: string;
-  email: string;
+  email: string | null;
   role: string;
   team: string | null;
   age_group: string | null;
@@ -511,7 +515,7 @@ function mergeDraftMasterValuesForTabs(
   };
 }
 
-function normalizeEmail(value: string) {
+function normalizeEmail(value: string | null | undefined) {
   return normalizeImportEmail(value);
 }
 
@@ -2412,7 +2416,7 @@ const Members = () => {
             ageGroup: draft.age_group,
           }) || t.membersPage.noTeam;
         return {
-          email: draft.email.trim(),
+          email: (draft.email ?? "").trim(),
           displayName,
           role: draft.role,
           status: draft.status,
@@ -2638,18 +2642,19 @@ const Members = () => {
 
           const mem = membershipId ? members.find((mm) => mm.id === membershipId) : null;
           const roleParsed = mem?.role || (r.role ? normalizeRole(r.role).role : "member");
+          const displayName = registryImportRowDisplayName(payload, r.email);
+          const canAddToSavedList =
+            !membershipId && !draftId && canAddRegistryRowToSavedList({ membershipId, draftId, email: r.email, payload });
           const missingCodes: string[] = membershipId
             ? getMissingRequiredMasterFields(payload, roleParsed).map(String)
             : draftId
               ? getMissingRequiredMasterFields(payload, r.role ? normalizeRole(r.role).role : "member").map(String)
-              : email
+              : canAddToSavedList
                 ? ["not_in_club_add_to_list"]
                 : ["email_not_in_club"];
           if (resolved.rejectedNameMismatch) missingCodes.unshift("registry_club_number_name_conflict");
-          if (!email && clubNumber) missingCodes.push("missing_email_in_source");
+          if (!email && canAddToSavedList) missingCodes.push("missing_email_in_source");
           const missing = missingCodes;
-
-          const displayName = registryImportRowDisplayName(payload, r.email);
           const extractedSummary = summarizeMasterPayloadForDisplay(payload);
           const matchLabel = membershipId
             ? mem
@@ -2691,8 +2696,8 @@ const Members = () => {
           })),
         );
         const isGerman = rows.some((r) => r.sourceFormat === "german_mitgliederliste");
-        const unmatchedWithEmail = preview.filter(
-          (row) => !row.membershipId && !row.draftId && normalizeEmail(row.email),
+        const unmatchedAddable = preview.filter((row) =>
+          canAddRegistryRowToSavedList(row),
         ).length;
         const parsedDesc = (isGerman ? t.membersPage.registryImportParsedGermanDesc : t.membersPage.registryImportParsedDesc).replace(
           "{count}",
@@ -2701,8 +2706,8 @@ const Members = () => {
         toast({
           title: t.membersPage.registryImportParsed,
           description:
-            unmatchedWithEmail > 0
-              ? `${parsedDesc} ${t.membersPage.registryImportParsedUnmatchedHint.replace("{count}", String(unmatchedWithEmail))}`
+            unmatchedAddable > 0
+              ? `${parsedDesc} ${t.membersPage.registryImportParsedUnmatchedHint.replace("{count}", String(unmatchedAddable))}`
               : parsedDesc,
         });
       } finally {
@@ -2712,11 +2717,8 @@ const Members = () => {
     [clubId, canManageMembers, masterByMembershipId, memberDrafts, members, membershipEmails, t, toast],
   );
 
-  const registryUnmatchedWithEmail = useMemo(
-    () =>
-      registryImportPreview.filter(
-        (row) => !row.membershipId && !row.draftId && normalizeEmail(row.email),
-      ),
+  const registryUnmatchedAddable = useMemo(
+    () => registryImportPreview.filter((row) => canAddRegistryRowToSavedList(row)),
     [registryImportPreview],
   );
 
@@ -2726,18 +2728,19 @@ const Members = () => {
         return { savedCount: 0, skippedCount: 0, firstError: null as string | null, linkedByIdentity: new Map<string, string>() };
       }
 
-      const existingDraftKeySet = new Set(
-        memberDrafts
-          .map((item) => {
-            const master = masterRecordFromDraft(item.master_data, item.name || "");
-            return memberRegistryIdentityKey(
-              item.email,
-              master?.internal_club_number,
-              item.name?.trim() || registryImportRowDisplayName(master ?? {}, item.email),
-            );
-          })
-          .filter(Boolean),
-      );
+      const existingDraftKeySet = new Set<string>();
+      for (const item of memberDrafts) {
+        const master = masterRecordFromDraft(item.master_data, item.name || "");
+        const displayName =
+          item.name?.trim() || registryImportRowDisplayName(master ?? {}, item.email);
+        for (const key of collectDraftIdentityKeys(
+          item.email ?? "",
+          master?.internal_club_number,
+          displayName,
+        )) {
+          existingDraftKeySet.add(key);
+        }
+      }
 
       let savedCount = 0;
       let skippedCount = 0;
@@ -2747,8 +2750,15 @@ const Members = () => {
       for (const row of candidates) {
         const email = normalizeEmail(row.email);
         const displayName = registryImportRowDisplayName(row.payload, row.email);
-        const identityKey = memberRegistryIdentityKey(email, row.payload.internal_club_number, displayName);
-        if (!email || !identityKey || existingDraftKeySet.has(identityKey)) {
+        const clubNumberConflict = row.missing.includes("registry_club_number_name_conflict");
+        const identityKey = resolveNewDraftIdentityKey(
+          email,
+          row.payload.internal_club_number,
+          displayName,
+          existingDraftKeySet,
+          { clubNumberConflict },
+        );
+        if (!identityKey || !canAddRegistryRowToSavedList(row)) {
           skippedCount += 1;
           continue;
         }
@@ -2758,7 +2768,7 @@ const Members = () => {
           .insert({
             club_id: clubId,
             name: displayName || null,
-            email,
+            email: email || null,
             role: row.role || "member",
             team: row.team.trim() || null,
             age_group: row.ageGroup.trim() || null,
@@ -2779,7 +2789,14 @@ const Members = () => {
         }
 
         existingDraftKeySet.add(identityKey);
+        for (const key of collectDraftIdentityKeys(email, row.payload.internal_club_number, displayName)) {
+          existingDraftKeySet.add(key);
+        }
         linkedByIdentity.set(identityKey, String(insertedDraft.id));
+        linkedByIdentity.set(
+          registryImportRowLinkKey(email, displayName, row.payload.internal_club_number),
+          String(insertedDraft.id),
+        );
         savedCount += 1;
         void appendMemberAuditEvent({
           clubId,
@@ -2800,9 +2817,7 @@ const Members = () => {
     if (!clubId || !canManageMembers) return;
     const applicableMembers = registryImportPreview.filter((row) => row.membershipId);
     const applicableDrafts = registryImportPreview.filter((row) => row.draftId && !row.membershipId);
-    const unmatchedCandidates = registryImportPreview.filter(
-      (row) => !row.membershipId && !row.draftId && normalizeEmail(row.email),
-    );
+    const unmatchedCandidates = registryImportPreview.filter((row) => canAddRegistryRowToSavedList(row));
     if (!applicableMembers.length && !applicableDrafts.length && !unmatchedCandidates.length) {
       toast({ title: t.membersPage.registryImportNothingToApply, variant: "destructive" });
       return;
@@ -2821,14 +2836,12 @@ const Members = () => {
         if (added > 0) {
           setRegistryImportPreview((previous) =>
             previous.map((row) => {
-              if (row.membershipId || row.draftId || !normalizeEmail(row.email)) return row;
+              if (row.membershipId || row.draftId || !canAddRegistryRowToSavedList(row)) return row;
               const displayName = registryImportRowDisplayName(row.payload, row.email);
-              const identityKey = memberRegistryIdentityKey(
-                normalizeEmail(row.email),
-                row.payload.internal_club_number,
-                displayName,
-              );
-              const draftId = identityKey ? insertResult.linkedByIdentity.get(identityKey) ?? null : null;
+              const draftId =
+                insertResult.linkedByIdentity.get(
+                  registryImportRowLinkKey(normalizeEmail(row.email), displayName, row.payload.internal_club_number),
+                ) ?? null;
               if (!draftId) return row;
               return {
                 ...row,
@@ -2935,6 +2948,11 @@ const Members = () => {
           description: addError,
           variant: "destructive",
         });
+      } else if (added === 0 && addSkipped > 0 && unmatchedCandidates.length > 0) {
+        toast({
+          title: t.membersPage.registryImportSkippedHintTitle,
+          description: t.membersPage.registryImportSkippedHintDesc,
+        });
       }
       setShowRegistryImport(false);
       setRegistryImportPreview([]);
@@ -2948,7 +2966,7 @@ const Members = () => {
 
   const handleAddUnmatchedRegistryToSavedList = useCallback(async () => {
     if (!clubId || !canManageMembers || registryImportBusy) return;
-    const candidates = registryUnmatchedWithEmail;
+    const candidates = registryUnmatchedAddable;
     if (!candidates.length) {
       toast({ title: t.membersPage.registryAddUnmatchedNone, variant: "destructive" });
       return;
@@ -2961,14 +2979,12 @@ const Members = () => {
       if (savedCount > 0) {
         setRegistryImportPreview((previous) =>
           previous.map((row) => {
-            if (row.membershipId || row.draftId || !normalizeEmail(row.email)) return row;
+            if (row.membershipId || row.draftId || !canAddRegistryRowToSavedList(row)) return row;
             const displayName = registryImportRowDisplayName(row.payload, row.email);
-            const identityKey = memberRegistryIdentityKey(
-              normalizeEmail(row.email),
-              row.payload.internal_club_number,
-              displayName,
-            );
-            const draftId = identityKey ? linkedByIdentity.get(identityKey) ?? null : null;
+            const draftId =
+              linkedByIdentity.get(
+                registryImportRowLinkKey(normalizeEmail(row.email), displayName, row.payload.internal_club_number),
+              ) ?? null;
             if (!draftId) return row;
             return {
               ...row,
@@ -3000,7 +3016,7 @@ const Members = () => {
     fetchMemberDrafts,
     insertUnmatchedRegistryRows,
     registryImportBusy,
-    registryUnmatchedWithEmail,
+    registryUnmatchedAddable,
     t,
     toast,
   ]);
@@ -3023,9 +3039,9 @@ const Members = () => {
           .map((draft) => {
             const master = masterRecordFromDraft(draft.master_data, draft.name || "");
             return memberRegistryIdentityKey(
-              draft.email,
+              draft.email ?? "",
               master?.internal_club_number,
-              draft.name?.trim() || registryImportRowDisplayName(master ?? {}, draft.email),
+              draft.name?.trim() || registryImportRowDisplayName(master ?? {}, draft.email ?? ""),
             );
           })
           .filter(Boolean),
@@ -3679,7 +3695,7 @@ const Members = () => {
       memberDrafts
         .map((item) => {
           const master = masterRecordFromDraft(item.master_data, item.name || "");
-          return memberRegistryIdentityKey(item.email, master?.internal_club_number);
+          return memberRegistryIdentityKey(item.email ?? "", master?.internal_club_number);
         })
         .filter(Boolean),
     );
@@ -4088,7 +4104,7 @@ const Members = () => {
     setEditingDraftForm({
       firstName,
       lastName,
-      email: draft.email,
+      email: draft.email ?? "",
       role: draft.role,
       team: draft.team || "",
       age_group: draft.age_group || "",
@@ -4258,7 +4274,7 @@ const Members = () => {
 
     const draftRowUpdate: Record<string, unknown> = {
       name: combinedName || null,
-      email: editingDraftForm.email.trim(),
+      email: editingDraftForm.email.trim() || null,
       role: editingDraftForm.role,
       team: draftTeamName,
       age_group: editingDraftForm.age_group.trim() || selectedDraftTeam?.age_group || null,
@@ -4297,7 +4313,7 @@ const Members = () => {
       detail: {
         status: currentDraft.status,
         role: editingDraftForm.role,
-        email_changed: currentDraft.email.trim() !== editingDraftForm.email.trim(),
+        email_changed: (currentDraft.email ?? "").trim() !== editingDraftForm.email.trim(),
       },
     });
 
@@ -4340,7 +4356,7 @@ const Members = () => {
     const updatedDraft: MemberDraftRow = {
       ...currentDraft,
       name: combinedName,
-      email: editingDraftForm.email.trim(),
+      email: editingDraftForm.email.trim() || null,
       role: editingDraftForm.role,
       team: editingDraftForm.team || null,
       age_group: editingDraftForm.age_group || null,
@@ -5195,7 +5211,14 @@ const Members = () => {
                             size="sm"
                             type="button"
                             onClick={() => void handleSaveDraftEdit()}
-                            disabled={draftSaving || !editingDraftForm.email.trim()}
+                            disabled={
+                              draftSaving ||
+                              !(
+                                editingDraftForm.email.trim() ||
+                                buildDisplayNameFromParts(editingDraftForm.firstName, editingDraftForm.lastName).trim() ||
+                                String(editingDraftForm.masterData?.internal_club_number ?? "").trim()
+                              )
+                            }
                             className="h-11 w-full bg-gradient-gold-static text-sm font-semibold text-primary-foreground hover:brightness-110 sm:h-9 sm:w-auto sm:min-w-[6.5rem]"
                           >
                             {draftSaving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
@@ -5213,9 +5236,11 @@ const Members = () => {
                         <div className="min-w-0 flex items-center gap-2">
                           <Pencil className="w-3 h-3 text-muted-foreground shrink-0" />
                           <div className="min-w-0">
-                            <div className="text-sm font-medium text-foreground truncate">{draft.name || draft.email}</div>
+                            <div className="text-sm font-medium text-foreground truncate">
+                              {draft.name || draft.email || t.membersPage.noEmail}
+                            </div>
                             <div className="text-xs text-muted-foreground truncate">
-                              {draft.email} · {getRoleLabel(draft.role)}
+                              {draft.email?.trim() ? draft.email : t.membersPage.noEmail} · {getRoleLabel(draft.role)}
                               {draft.team ? ` · ${draft.team}` : ""}
                               {draft.age_group ? ` · ${draft.age_group}` : ""}
                               {draft.position ? ` · ${draft.position}` : ""}
@@ -5330,7 +5355,7 @@ const Members = () => {
                             onClick={() =>
                               setHistoryPreview({
                                 path: `/members/history/draft/${draft.id}`,
-                                displayName: (draft.name?.trim() || draft.email).trim(),
+                                displayName: (draft.name?.trim() || draft.email || t.membersPage.noEmail).trim(),
                                 email: draft.email,
                                 detailLine: [
                                   getRoleLabel(draft.role),
@@ -6623,11 +6648,13 @@ const Members = () => {
                   type="file"
                   accept=".xlsx,.xls,.csv"
                   className="hidden"
-                  onChange={async (event) => {
-                    const file = event.target.files?.[0];
+                  onChange={(event) => {
+                    const input = event.currentTarget;
+                    const file = input.files?.[0];
                     if (!file) return;
-                    await handleImportSpreadsheet(file);
-                    event.currentTarget.value = "";
+                    void handleImportSpreadsheet(file).finally(() => {
+                      input.value = "";
+                    });
                   }}
                 />
                 <span className="inline-flex items-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium cursor-pointer hover:bg-accent hover:text-accent-foreground">
@@ -7003,10 +7030,13 @@ const Members = () => {
                 type="file"
                 accept=".xlsx,.xls,.csv"
                 className="hidden"
-                onChange={async (event) => {
-                  const file = event.target.files?.[0];
-                  if (file) await handlePrepareRegistryImport(file);
-                  event.currentTarget.value = "";
+                onChange={(event) => {
+                  const input = event.currentTarget;
+                  const file = input.files?.[0];
+                  if (!file) return;
+                  void handlePrepareRegistryImport(file).finally(() => {
+                    input.value = "";
+                  });
                 }}
               />
               <span className="inline-flex items-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium cursor-pointer hover:bg-accent hover:text-accent-foreground">
@@ -7025,11 +7055,11 @@ const Members = () => {
                 </p>
               </div>
             ) : null}
-            {registryUnmatchedWithEmail.length > 0 ? (
+            {registryUnmatchedAddable.length > 0 ? (
               <div className="mb-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-3 text-xs">
                 <div className="font-medium text-foreground">{t.membersPage.registryUnmatchedBannerTitle}</div>
                 <p className="text-muted-foreground mt-1">
-                  {t.membersPage.registryUnmatchedBannerDesc.replace("{count}", String(registryUnmatchedWithEmail.length))}
+                  {t.membersPage.registryUnmatchedBannerDesc.replace("{count}", String(registryUnmatchedAddable.length))}
                 </p>
                 <Button
                   size="sm"
@@ -7040,7 +7070,7 @@ const Members = () => {
                 >
                   {t.membersPage.registryAddUnmatchedToSavedList.replace(
                     "{count}",
-                    String(registryUnmatchedWithEmail.length),
+                    String(registryUnmatchedAddable.length),
                   )}
                 </Button>
               </div>
@@ -7107,7 +7137,7 @@ const Members = () => {
             ) : null}
             <div className="mt-4 flex flex-col sm:flex-row sm:justify-end gap-2">
               <Button variant="outline" onClick={() => setShowRegistryImport(false)}>{t.common.cancel}</Button>
-              {registryUnmatchedWithEmail.length > 0 ? (
+              {registryUnmatchedAddable.length > 0 ? (
                 <Button
                   variant="secondary"
                   disabled={registryImportBusy}
@@ -7115,7 +7145,7 @@ const Members = () => {
                 >
                   {t.membersPage.registryAddUnmatchedToSavedList.replace(
                     "{count}",
-                    String(registryUnmatchedWithEmail.length),
+                    String(registryUnmatchedAddable.length),
                   )}
                 </Button>
               ) : null}
@@ -7124,7 +7154,7 @@ const Members = () => {
                 disabled={
                   registryImportBusy ||
                   (!registryImportPreview.some((r) => r.membershipId || r.draftId) &&
-                    registryUnmatchedWithEmail.length === 0)
+                    registryUnmatchedAddable.length === 0)
                 }
                 onClick={() => void handleApplyRegistryImport()}
               >

@@ -1627,9 +1627,12 @@ export const de: Translations = {
     registryImportApplied: "Register-Import gespeichert",
     registryImportAppliedDesc:
       "{added} neue Mitglieder zur gespeicherten Liste hinzugefügt (in Suche sichtbar). {rows} Kaderdatensatz/Datensätze und {drafts} bestehende Entwürfe aktualisiert. {skipped} Zeilen übersprungen (Duplikat/Fehler). {links} Betreuer-Verknüpfung(en).",
+    registryImportSkippedHintTitle: "Neue Mitglieder nicht hinzugefügt",
+    registryImportSkippedHintDesc:
+      "Zeilen wurden übersprungen, weil die Mitgliedsnummer bereits einem anderen Eintrag in der gespeicherten Liste gehört (oft andere Person mit derselben Familien-E-Mail) oder weil weder Name noch Mitgliedsnummer zur Identifikation vorhanden sind. Falschen Eintrag korrigieren und erneut versuchen.",
     registryImportTitle: "Mitgliederegister importieren",
     registryImportBody:
-      "Excel oder CSV mit Registerfeldern hochladen. Zuordnung über Mitgliedsnummer (nicht geteilte Kontakt-E-Mail). Nicht zugeordnete Zeilen mit E-Mail können zur gespeicherten Liste hinzugefügt werden — dann sind sie in der Suche sichtbar. Für die Vergleichsmappe: Mitglieder hinzufügen → Import.",
+      "Excel oder CSV mit Registerfeldern hochladen. Zuordnung über Mitgliedsnummer (nicht geteilte Kontakt-E-Mail). Nicht zugeordnete Zeilen können zur gespeicherten Liste hinzugefügt werden — mit oder ohne E-Mail. Einladungen brauchen weiterhin eine E-Mail. Für die Vergleichsmappe: Mitglieder hinzufügen → Import.",
     registryImportNoEmailColumn:
       "Auf dem ersten Tab wurde keine E-Mail-Spalte gefunden. Nutze die ONE4Team-Vorlage, einen deutschen Mitgliederliste-Export oder die Vergleichsmappe über Mitglieder hinzufügen → Import.",
     comparisonImportRoutedTitle: "Vergleichs-Arbeitsmappe erkannt",
@@ -1641,7 +1644,7 @@ export const de: Translations = {
     registryImportMemberColumn: "Mitglied (aus Datei)",
     registryImportEmailColumn: "E-Mail",
     registryImportExtractedFields: "Zugeordnete Registerfelder: {fields}",
-    registryMissingEmailInSource: "Keine E-Mail in der Zeile (andere Felder übernommen)",
+    registryMissingEmailInSource: "Keine E-Mail in der Zeile (kann trotzdem zur gespeicherten Liste hinzugefügt werden)",
     importDedupedTitle: "Doppelte Zeilen zusammengeführt",
     importDedupedDesc: "{added} neu, {updated} aktualisiert, {skipped} unveränderte Duplikate übersprungen.",
     registryMatchRoster: "Kader",
@@ -1650,12 +1653,12 @@ export const de: Translations = {
     registryMissingAddToSavedList: "Neues Mitglied — zur gespeicherten Liste hinzufügen (Suche)",
     registryUnmatchedBannerTitle: "Neue Mitglieder noch nicht in ONE4Team",
     registryUnmatchedBannerDesc:
-      "{count} Zeile(n) mit Mitgliedsnummer ohne Kader-/Listen-Treffer. Bei vorhandener Nummer wird keine geteilte Kontakt-E-Mail zum Zuordnen verwendet. Zur gespeicherten Liste hinzufügen, damit Suche und Einladung funktionieren.",
+      "{count} Zeile(n) ohne Kader- oder Listen-Treffer. Geteilte Kontakt-E-Mails werden bei vorhandener Mitgliedsnummer nicht zum Abgleich genutzt. Zur gespeicherten Liste hinzufügen, um zu suchen; E-Mail später ergänzen für Einladungen.",
     registryAddUnmatchedToSavedList: "{count} zur gespeicherten Liste hinzufügen",
     registryAddUnmatchedComplete: "Gespeicherte Liste aktualisiert",
     registryAddUnmatchedCompleteDesc:
       "{saved} Mitglied(er) zur gespeicherten Liste hinzugefügt. {skipped} übersprungen (Duplikat oder Fehler).",
-    registryAddUnmatchedNone: "Keine nicht zugeordneten Zeilen mit E-Mail zum Hinzufügen",
+    registryAddUnmatchedNone: "Keine nicht zugeordneten Zeilen für die gespeicherte Liste",
     registryAddUnmatchedInsertFailed: "Zeile konnte nicht in der gespeicherten Liste gespeichert werden.",
     registryClubNumberNameConflict:
       "Mitgliedsnummer gehört zu anderer Person — nicht zugeordnet (als neues Mitglied zur Liste hinzufügen)",

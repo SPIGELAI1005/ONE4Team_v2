@@ -1605,9 +1605,12 @@ export const en = {
     registryImportApplied: "Registry import saved",
     registryImportAppliedDesc:
       "Added {added} new member(s) to saved list (searchable). Updated {rows} roster record(s) and {drafts} existing saved draft(s). Skipped {skipped} duplicate/error row(s). Linked {links} guardian relationship(s).",
+    registryImportSkippedHintTitle: "New members not added",
+    registryImportSkippedHintDesc:
+      "Rows were skipped because the club member number is already on another saved-list entry (often a different person with the same family email), or the row has no name or member number to identify it. Fix the wrong saved-list entry and try again.",
     registryImportTitle: "Import member registry",
     registryImportBody:
-      "Upload Excel or CSV with registry fields. Rows match the active roster or saved list by club member number (not shared contact email). Unmatched rows with email can be added to the saved list so they appear in search. For the comparison workbook, use Add member → Import.",
+      "Upload Excel or CSV with registry fields. Rows match the active roster or saved list by club member number (not shared contact email). Unmatched rows can be added to the saved list so they appear in search — with or without email. Invites still require an email. For the comparison workbook, use Add member → Import.",
     registryImportNoEmailColumn:
       "No email column found on the first sheet. Use the ONE4Team import template, a German Mitgliederliste export, or the comparison workbook via Add member → Import.",
     comparisonImportRoutedTitle: "Comparison workbook detected",
@@ -1619,7 +1622,7 @@ export const en = {
     registryImportMemberColumn: "Member (from file)",
     registryImportEmailColumn: "Email",
     registryImportExtractedFields: "Mapped master fields: {fields}",
-    registryMissingEmailInSource: "No email in file row (other fields imported)",
+    registryMissingEmailInSource: "No email in file row (can still add to saved list)",
     importDedupedTitle: "Duplicate rows merged",
     importDedupedDesc: "{added} new, {updated} updated, {skipped} unchanged duplicates skipped.",
     registryMatchRoster: "Roster",
@@ -1628,11 +1631,11 @@ export const en = {
     registryMissingAddToSavedList: "New member — add to saved list to find in search",
     registryUnmatchedBannerTitle: "New members not in ONE4Team yet",
     registryUnmatchedBannerDesc:
-      "{count} row(s) have a club member number but no roster/saved-list match. Shared contact emails are not used for matching when a member number is present. Add them to the saved list to search and invite.",
+      "{count} row(s) have no roster/saved-list match. Shared contact emails are not used for matching when a member number is present. Add them to the saved list to search; add an email later to send invites.",
     registryAddUnmatchedToSavedList: "Add {count} to saved list",
     registryAddUnmatchedComplete: "Saved list updated",
     registryAddUnmatchedCompleteDesc: "Added {saved} member(s) to the saved list. Skipped {skipped} (duplicate or error).",
-    registryAddUnmatchedNone: "No unmatched rows with email to add",
+    registryAddUnmatchedNone: "No unmatched rows to add to the saved list",
     registryAddUnmatchedInsertFailed: "Could not save row to the saved member list.",
     registryClubNumberNameConflict:
       "Member number already used by another person — not matched (add as new member to saved list)",

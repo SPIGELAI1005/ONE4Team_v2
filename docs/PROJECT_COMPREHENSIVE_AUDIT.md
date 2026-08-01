@@ -1,6 +1,6 @@
 # ONE4Team — Comprehensive project audit
 
-**Audit date:** 2026-08-01 (TSV Allach member registry reconciliation; prior re-score: 2026-07-18 Operator CC health, AI fair-use caps, billing recovery, marketplace + digests + guided setup)  
+**Audit date:** 2026-08-01 (optional email on saved member list; TSV Allach member registry reconciliation; prior re-score: 2026-07-18 Operator CC health, AI fair-use caps, billing recovery, marketplace + digests + guided setup)  
 **Scope:** Codebase, architecture, UX/design, production readiness, competitive positioning, market value, and value-growth levers  
 **Primary reference (existing):** [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) — strict production-readiness review with risk register, readiness scores, and remediation sprints  
 
@@ -134,7 +134,7 @@ flowchart TB
 - **Role-based dashboard** — admin sees finances/setup; trainer/player see sports widgets (`dashboard-section-visibility.ts`).
 - **Public club microsite** — mobile header, team filter (`?team=`), RSVP on schedule/matches, Messages hub (**Open Messages**), embedded Communication with forward-to-WhatsApp, readable composer, **mobile channel dropdown + scrollable chat thread** (2026-07-06), **accurate pagination footer** (2026-07-06), Sommerfest live board with team logos/goals KPI/mobile live bar, **Info** duration popover + **persisted kickoff times** (2026-07-06), mobile hero club logo + pulse (2026-07-05).
 - **AI 4 T Agent** — contextual entry from Members/Teams/Activities; propose → confirm → execute reduces admin busywork.
-- **Member ops** — Excel/CSV import, draft → invite workflow, club card PNG export, team assignment from members and teams.
+- **Member ops** — Excel/CSV import, draft → invite workflow (saved list accepts members **without email** when club number or name is present; invites still need email), club card PNG export, team assignment from members and teams; TSV Allach registry reconciliation with shared-contact and household discount review (2026-08-01).
 - **Cookie consent** — GDPR-oriented preference centre (v2 schema in localStorage); AI 4 T explicitly outside cookie categories (2026-07-07).
 - **Legal pages** — Privacy **13** sections incl. **§5 Sub-processors & integrations** and **§11 AI 4 T**; Terms **§14 AI 4 T**; stable **`.legal-panel`** rendering without glass flicker (2026-07-07). Operator still owes full street address + HRB (**LEGAL-OPS-001** / **002**).
 
