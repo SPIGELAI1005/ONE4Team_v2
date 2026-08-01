@@ -23,6 +23,7 @@ import { dashboardRouteTransitionKey } from "@/lib/dashboard-nav";
 import { operatorRouteTransitionKey } from "@/lib/operator-nav";
 import { SupabaseConfigBanner, SupabaseConfigErrorScreen } from "@/components/SupabaseConfigBanner";
 import { isSupabaseConfigured } from "@/integrations/supabase/client";
+import CrashPage from "./pages/Crash";
 
 // Route-level code splitting (reduces initial bundle size)
 const Index = lazy(() => import("./pages/Index"));
@@ -101,7 +102,6 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const Impressum = lazy(() => import("./pages/Impressum"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Health = lazy(() => import("./pages/Health"));
-const Crash = lazy(() => import("./pages/Crash"));
 const GuidedSetup = lazy(() => import("./pages/GuidedSetup"));
 const TrainingPlanImport = lazy(() => import("./pages/TrainingPlanImport"));
 const CoachPlaceholderResolution = lazy(() => import("./pages/CoachPlaceholderResolution"));
@@ -240,13 +240,11 @@ const AnimatedRoutes = () => {
         <Route
           path="/onboarding"
           element={
-            <RequireAuth>
-              <PageTransition>
-                <Suspense fallback={<RouteFallback />}>
-                  <Onboarding />
-                </Suspense>
-              </PageTransition>
-            </RequireAuth>
+            <PageTransition>
+              <Suspense fallback={<RouteFallback />}>
+                <Onboarding />
+              </Suspense>
+            </PageTransition>
           }
         />
         <Route
@@ -816,10 +814,7 @@ const AnimatedRoutes = () => {
           path="/__crash"
           element={
             <PageTransition>
-              <Suspense fallback={<RouteFallback />}>
-                {/* Always available for Playwright error-boundary checks (CI uses vite preview). */}
-                <Crash />
-              </Suspense>
+              <CrashPage />
             </PageTransition>
           }
         />

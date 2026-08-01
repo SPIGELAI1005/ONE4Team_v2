@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures/test";
 
 test.describe("pricing founding club", () => {
   test("pricing page shows packages and founding CTA", async ({ page }) => {
@@ -20,12 +20,14 @@ test.describe("pricing founding club", () => {
     const terms = page.getByRole("button", { name: /offer terms|angebotsbedingungen/i }).first();
     await expect(terms).toBeVisible({ timeout: 20_000 });
     await terms.click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
     await expect(
-      page.getByText(/your first season is on us|die erste saison geht auf uns/i).first(),
+      dialog.getByText(/your first season is on us|die erste saison geht auf uns/i),
     ).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText("ONE4Team-Founding-Club-12M").first()).toBeVisible();
+    await expect(dialog.getByText("ONE4Team-Founding-Club-12M")).toBeVisible();
     await expect(
-      page.getByRole("link", { name: /claim your free season|kostenlose saison sichern/i }),
+      dialog.getByRole("link", { name: /claim your free season|kostenlose saison sichern/i }),
     ).toBeVisible();
   });
 });

@@ -38,6 +38,12 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://e2e-placeholder.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImUydGUtplaceholderIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDUxOTI4MDAsImV4cCI6MTk2MDc2ODgwMH0.e2e-placeholder-signature
+          VITE_DEV_UNLOCK_ALL_FEATURES: "false"
+          VITE_DEV_AUTO_LOGIN_EMAIL: ""
+          VITE_DEV_AUTO_LOGIN_PASSWORD: ""
 
       - name: Bundle budget (ST-012)
         run: npm run budget:bundle

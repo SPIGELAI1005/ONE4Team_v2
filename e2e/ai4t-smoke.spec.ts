@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures/test";
 import { hasE2eAuthCredentials, loginAsE2eUser } from "./fixtures/auth";
 
 test.describe("AI 4 T smoke", () => {
