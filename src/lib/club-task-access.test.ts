@@ -40,9 +40,10 @@ describe("club-task-access", () => {
     expect(visible.map((r) => r.id)).toEqual(["1", "2", "3"]);
   });
 
-  it("team_staff assigned scope only sees tasks assigned to them", () => {
+  it("team_staff with full tasks access can browse all club tasks", () => {
     const access = buildTaskAccessFromGateRole("team_staff", "user-b", ["team-1"]);
+    expect(canBrowseAllClubTasks(access)).toBe(true);
     const visible = filterClubTasksForUser(rows, access);
-    expect(visible.map((r) => r.id)).toEqual(["2"]);
+    expect(visible.map((r) => r.id)).toEqual(["1", "2", "3", "4"]);
   });
 });

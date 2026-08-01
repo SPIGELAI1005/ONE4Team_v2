@@ -30,6 +30,7 @@ describe("operator permissions", () => {
       role: "SUPPORT",
       permissions: ["operator.clubs.read", "operator.support.use"],
       email: "support@one4team.test",
+      displayName: null,
       status: "ACTIVE",
     });
   });

@@ -56,6 +56,7 @@ describe("marketplace-access", () => {
       "offers",
       "providers",
       "reviews",
+      "moderation",
     ]);
     expect(getClubMarketplaceTabs("admin")).toContain("moderation");
   });

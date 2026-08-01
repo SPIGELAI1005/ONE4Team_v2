@@ -82,10 +82,10 @@ describe("marketplace RBAC matrix - admin", () => {
 });
 
 describe("marketplace RBAC matrix - club admin", () => {
-  it("can browse, create requests, and review offers without moderation", () => {
+  it("can browse, create requests, review offers, and moderate listings", () => {
     expect(marketplacePageExperience("club_admin", [])).toBe("club_marketplace");
     expect(canManageClubMarketplace("club_admin", [])).toBe(true);
-    expect(canModerateMarketplaceListings("club_admin", [])).toBe(false);
+    expect(canModerateMarketplaceListings("club_admin", [])).toBe(true);
     expect(canCreateMarketplaceRequest("club_admin", [])).toBe(true);
     expect(canAcceptMarketplaceOffer("club_admin", [])).toBe(true);
 
@@ -93,7 +93,7 @@ describe("marketplace RBAC matrix - club admin", () => {
     expect(tabs).toContain("discover");
     expect(tabs).toContain("requests");
     expect(tabs).toContain("offers");
-    expect(tabs).not.toContain("moderation");
+    expect(tabs).toContain("moderation");
   });
 });
 

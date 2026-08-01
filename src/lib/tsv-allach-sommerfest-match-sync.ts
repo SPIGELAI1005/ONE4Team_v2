@@ -29,10 +29,11 @@ export function extractSommerfestMatchIdFromNotes(notes: string | null | undefin
 }
 
 export function sommerfestMatchDateIso(time: string): string {
-  const [hours, minutes] = time.split(":").map((part) => Number(part));
-  const date = new Date(`${SOMMERFEST_DATE}T00:00:00${SOMMERFEST_UTC_OFFSET}`);
-  date.setHours(hours, minutes ?? 0, 0, 0);
-  return date.toISOString();
+  const [hours, minutes = "0"] = time.split(":");
+  const hh = String(Number(hours)).padStart(2, "0");
+  const mm = String(Number(minutes)).padStart(2, "0");
+  // Build offset datetime directly — never use Date#setHours (machine-local TZ).
+  return new Date(`${SOMMERFEST_DATE}T${hh}:${mm}:00${SOMMERFEST_UTC_OFFSET}`).toISOString();
 }
 
 function berlinTimeParts(iso: string) {
@@ -67,9 +68,7 @@ export function sommerfestDatetimeLocalToIso(localValue: string): string {
   const match = localValue.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
   if (!match) return localValue;
   const [, datePart, hours, minutes] = match;
-  const date = new Date(`${datePart}T00:00:00${SOMMERFEST_UTC_OFFSET}`);
-  date.setHours(Number(hours), Number(minutes), 0, 0);
-  return date.toISOString();
+  return new Date(`${datePart}T${hours}:${minutes}:00${SOMMERFEST_UTC_OFFSET}`).toISOString();
 }
 
 /** Convert stored ISO to `<input type="datetime-local">` in Europe/Berlin. */

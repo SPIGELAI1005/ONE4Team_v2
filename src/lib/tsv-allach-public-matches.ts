@@ -2,7 +2,6 @@ import { CLUB_FOOTBALL_CAMP_TEMPLATES } from "@/lib/club-football-camp-templates
 import { isTsvAllachClub } from "@/lib/is-tsv-allach-club";
 import type { PublicMatchLite } from "@/lib/public-club-models";
 import {
-  SOMMERFEST_DATE,
   SOMMERFEST_LOCATION,
   SOMMERFEST_MATCHES,
   type SommerfestMatch,
@@ -11,6 +10,7 @@ import { resolveTeamByYouthLabel, resolveCanonicalYouthTeamName } from "@/lib/yo
 import {
   extractSommerfestMatchIdFromNotes,
   normalizeSommerfestTemplateId,
+  sommerfestMatchDateIso,
 } from "@/lib/tsv-allach-sommerfest-match-sync";
 import {
   buildPublicMatchOpponentLogoLookup,
@@ -72,10 +72,7 @@ export function resolveShowcaseTeamId(teams: PublicClubTeamLite[], label: string
 }
 
 function sommerfestMatchDate(time: string): string {
-  const [hours, minutes] = time.split(":").map((part) => Number(part));
-  const date = new Date(`${SOMMERFEST_DATE}T00:00:00+02:00`);
-  date.setHours(hours, minutes ?? 0, 0, 0);
-  return date.toISOString();
+  return sommerfestMatchDateIso(time);
 }
 
 function sommerfestToPublicMatch(match: SommerfestMatch, teams: PublicClubTeamLite[]): PublicMatchLite {

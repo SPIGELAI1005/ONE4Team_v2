@@ -5,14 +5,14 @@ import {
 } from "@/lib/marketplace-permissions";
 
 describe("marketplace-permissions", () => {
-  it("grants full club-side permissions to club_admin without moderation", () => {
+  it("grants full club-side permissions to club_admin including moderation", () => {
     const perms = marketplacePermissionsFor("club_admin", []);
     expect(perms).toContain("marketplace:view");
     expect(perms).toContain("marketplace:discover");
     expect(perms).toContain("marketplace:create_request");
     expect(perms).toContain("marketplace:review_offers");
     expect(perms).toContain("marketplace:accept_offer");
-    expect(perms).not.toContain("marketplace:moderate");
+    expect(perms).toContain("marketplace:moderate");
     expect(perms).not.toContain("marketplace:manage_own_listing");
   });
 
