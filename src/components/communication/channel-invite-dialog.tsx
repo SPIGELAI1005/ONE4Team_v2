@@ -16,6 +16,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { supabaseErrorMessage } from "@/lib/supabase-error-message";
 import { useToast } from "@/hooks/use-toast";
 import type { SystemChannelKey } from "@/lib/club-message-access";
+import {
+  clubModalFormInputClass,
+  clubReadableModalOverlayClass,
+  clubReadableModalPanelClass,
+} from "@/lib/public-club-glass-classes";
+import { cn } from "@/lib/utils";
 
 export interface ChannelInviteMemberOption {
   id: string;
@@ -32,6 +38,8 @@ interface ChannelInviteDialogProps {
   customChannelId?: string | null;
   systemChannelKey?: SystemChannelKey | null;
   channelLabel: string;
+  /** Light glass panel for public club / embedded communication. */
+  light?: boolean;
   labels: {
     title: string;
     description: string;
@@ -55,6 +63,7 @@ export function ChannelInviteDialog({
   customChannelId = null,
   systemChannelKey = null,
   channelLabel,
+  light = false,
   labels,
   onInvited,
 }: ChannelInviteDialogProps) {
@@ -181,53 +190,129 @@ export function ChannelInviteDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="h-4 w-4" />
+      <DialogContent
+        overlayClassName={light ? clubReadableModalOverlayClass : undefined}
+        className={cn(
+          "sm:max-w-md",
+          light &&
+            cn(
+              clubReadableModalPanelClass,
+              "gap-0 overflow-hidden p-0 text-neutral-900",
+              "[&>button]:rounded-full [&>button]:text-neutral-500 [&>button]:opacity-100 [&>button]:hover:bg-neutral-100 [&>button]:hover:text-neutral-800",
+            ),
+        )}
+      >
+        <DialogHeader
+          className={cn(light && "space-y-1 border-b border-neutral-200/80 px-5 py-4 text-left sm:text-left")}
+        >
+          <DialogTitle
+            className={cn(
+              "flex items-center gap-2",
+              light && "font-display text-base font-semibold text-neutral-900",
+            )}
+          >
+            <UserPlus className={cn("h-4 w-4", light && "text-[color:var(--club-primary)]")} />
             {labels.title}
           </DialogTitle>
-          <DialogDescription>{labels.description.replace("{channel}", channelLabel)}</DialogDescription>
+          <DialogDescription className={cn(light && "text-sm leading-relaxed text-neutral-600")}>
+            {labels.description.replace("{channel}", channelLabel)}
+          </DialogDescription>
         </DialogHeader>
 
-        <Input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder={labels.searchPlaceholder}
-          className="mb-2"
-        />
+        <div className={cn(light ? "space-y-2 px-5 py-4" : undefined)}>
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={labels.searchPlaceholder}
+            className={cn(
+              light ? cn("mb-0 rounded-full", clubModalFormInputClass) : "mb-2",
+            )}
+          />
 
-        <ScrollArea className="h-56 rounded-md border border-border/60 p-2">
-          {loading ? (
-            <div className="flex h-full items-center justify-center text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-            </div>
-          ) : candidates.length === 0 ? (
-            <p className="px-2 py-6 text-center text-sm text-muted-foreground">
-              {members.length === 0 ? labels.empty : labels.noneLeft}
-            </p>
-          ) : (
-            <ul className="space-y-1">
-              {candidates.map((member) => {
-                const checked = selected.has(member.id);
-                return (
-                  <li key={member.id}>
-                    <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted/50">
-                      <Checkbox checked={checked} onCheckedChange={() => toggle(member.id)} />
-                      <span className="truncate text-sm">{member.display_name}</span>
-                    </label>
-                  </li>
-                );
-              })}
-            </ul>
+          <ScrollArea
+            className={cn(
+              "h-56 rounded-md border p-2",
+              light
+                ? "rounded-xl border-neutral-200/90 bg-neutral-50"
+                : "border-border/60",
+            )}
+          >
+            {loading ? (
+              <div
+                className={cn(
+                  "flex h-full items-center justify-center",
+                  light ? "text-neutral-500" : "text-muted-foreground",
+                )}
+              >
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </div>
+            ) : candidates.length === 0 ? (
+              <p
+                className={cn(
+                  "px-2 py-6 text-center text-sm",
+                  light ? "text-neutral-500" : "text-muted-foreground",
+                )}
+              >
+                {members.length === 0 ? labels.empty : labels.noneLeft}
+              </p>
+            ) : (
+              <ul className="space-y-1">
+                {candidates.map((member) => {
+                  const checked = selected.has(member.id);
+                  return (
+                    <li key={member.id}>
+                      <label
+                        className={cn(
+                          "flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5",
+                          light
+                            ? "text-neutral-900 hover:bg-white"
+                            : "hover:bg-muted/50",
+                        )}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={() => toggle(member.id)}
+                          className={
+                            light
+                              ? "rounded-full border-[color:var(--club-primary)] data-[state=checked]:bg-[color:var(--club-primary)] data-[state=checked]:text-[color:var(--club-primary-foreground)]"
+                              : undefined
+                          }
+                        />
+                        <span className="truncate text-sm">{member.display_name}</span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </ScrollArea>
+        </div>
+
+        <DialogFooter
+          className={cn(
+            light && "gap-2 border-t border-neutral-200/80 bg-white/70 px-5 py-3 sm:justify-end sm:gap-2",
           )}
-        </ScrollArea>
-
-        <DialogFooter>
-          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={submitting}>
+        >
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+            className={cn(
+              light && "rounded-full text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900",
+            )}
+          >
             {labels.cancel}
           </Button>
-          <Button type="button" onClick={() => void submit()} disabled={submitting || selected.size === 0}>
+          <Button
+            type="button"
+            onClick={() => void submit()}
+            disabled={submitting || selected.size === 0}
+            className={cn(
+              light &&
+                "rounded-full bg-[color:var(--club-primary)] text-[color:var(--club-primary-foreground)] shadow-sm hover:brightness-110",
+            )}
+          >
             {submitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

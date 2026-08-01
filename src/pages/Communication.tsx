@@ -2907,6 +2907,7 @@ export function CommunicationWorkspace({
               customChannelId={selectedChannel.customChannelId ?? null}
               systemChannelKey={inviteSystemKey}
               channelLabel={selectedChannel.label}
+              light={embedded}
               labels={inviteChannelLabels}
               onInvited={() => {
                 void loadBaseData();
