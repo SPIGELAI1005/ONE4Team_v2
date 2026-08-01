@@ -17,6 +17,10 @@ import {
   checkClubAiFairUse,
 } from "../_shared/ai_usage_caps.ts";
 import {
+  streamInternetResearchChat,
+  userHasInternetConsent,
+} from "../_shared/ai_internet_research.ts";
+import {
   buildCoTrainerSystemPromptForRole,
   detectObviousOffScope,
   extractLatestUserMessage,
@@ -29,6 +33,24 @@ import { assertClubTrainer } from "../_shared/ai4team_agent_tools.ts";
 import { logStructured, resolveCorrelationId } from "../_shared/request_context.ts";
 
 const MAX_BODY_BYTES = 600_000;
+
+type ChatMode = "club" | "internet";
+
+function parseChatMode(value: unknown): ChatMode {
+  return value === "internet" ? "internet" : "club";
+}
+
+function internetConsentRequiredMessage(lang: "en" | "de"): string {
+  return lang === "de"
+    ? "Bitte bestätige in AI 4 T, dass **GPT Internet** eine externe KI mit Websuche nutzt, bevor du fortfährst."
+    : "Please confirm in AI 4 T that **GPT Internet** uses external AI with web search before continuing.";
+}
+
+function internetDisabledMessage(lang: "en" | "de"): string {
+  return lang === "de"
+    ? "Der Vereins-Admin hat **AI 4 T GPT Internet** für diesen Verein deaktiviert."
+    : "Your club admin has disabled **AI 4 T GPT Internet** for this club.";
+}
 
 serve(async (req) => {
   const corsHeaders = edgeCorsHeaders(req);
@@ -133,26 +155,56 @@ serve(async (req) => {
     const messages = body.messages;
     const context = typeof body.context === "string" ? body.context : "";
     const lang = parseAiLanguage(body.language, context);
+    const chatMode = parseChatMode(body.chat_mode);
+    const clubName = typeof body.club_name === "string" ? body.club_name : null;
 
-    const fairUse = await checkClubAiFairUse(admin, clubId);
+    const fairUse = await checkClubAiFairUse(admin, clubId, chatMode);
     if (!fairUse.allowed) {
       return streamScopeRefusal(buildAiFairUseRefusalMessage(lang, fairUse), corsHeaders);
     }
 
     const latestUser = extractLatestUserMessage(messages);
-    const offScope = detectObviousOffScope(latestUser);
-    if (offScope.blocked) {
-      logStructured("warn", "ai4team off-scope request (heuristic)", {
-        correlationId,
-        facet: "co_trainer",
-        clubId,
-        category: offScope.category ?? "unrelated",
-        preview: latestUser.slice(0, 120),
-      });
-      return streamScopeRefusal(
-        getScopeRefusalMessage(lang, offScope.category ?? "unrelated"),
-        corsHeaders,
-      );
+
+    if (chatMode === "internet") {
+      const internetPlan = await clubHasPlanFeature(admin, clubId, "ai_internet");
+      if (!internetPlan.allowed) {
+        return streamScopeRefusal(buildAiFairUseRefusalMessage(lang, {
+          ...fairUse,
+          allowed: false,
+          reason: "internet_research",
+          caps: { ...fairUse.caps, internetResearch: 0 },
+        }), corsHeaders);
+      }
+
+      const clubRowEarly = await fetchClubLlmSettings(admin, clubId);
+      if (clubRowEarly?.internet_research_enabled === false) {
+        return streamScopeRefusal(internetDisabledMessage(lang), corsHeaders);
+      }
+
+      const hasConsent = await userHasInternetConsent(admin, userId, clubId);
+      if (!hasConsent) {
+        return streamScopeRefusal(internetConsentRequiredMessage(lang), corsHeaders);
+      }
+
+      const abuse = detectObviousOffScope(latestUser);
+      if (abuse.blocked && abuse.category === "prompt_abuse") {
+        return streamScopeRefusal(getScopeRefusalMessage(lang, "prompt_abuse"), corsHeaders);
+      }
+    } else {
+      const offScope = detectObviousOffScope(latestUser);
+      if (offScope.blocked) {
+        logStructured("warn", "ai4team off-scope request (heuristic)", {
+          correlationId,
+          facet: "co_trainer",
+          clubId,
+          category: offScope.category ?? "unrelated",
+          preview: latestUser.slice(0, 120),
+        });
+        return streamScopeRefusal(
+          getScopeRefusalMessage(lang, offScope.category ?? "unrelated"),
+          corsHeaders,
+        );
+      }
     }
 
     const clubRow = await fetchClubLlmSettings(admin, clubId);
@@ -187,6 +239,30 @@ serve(async (req) => {
       if (legacyRole === "player") aiRole = "player";
       else if (legacyRole === "parent") aiRole = "parent";
       else if (legacyRole === "staff") aiRole = "staff";
+    }
+
+    logStructured("info", "co-trainer chat", {
+      correlationId,
+      facet: chatMode === "internet" ? "co_trainer_internet" : "co_trainer",
+      clubId,
+      chatMode,
+    });
+
+    if (chatMode === "internet") {
+      return await streamInternetResearchChat({
+        admin,
+        creds,
+        clubId,
+        userId,
+        clubName,
+        aiRole,
+        context,
+        lang,
+        clubInstructions: clubRow?.club_ai_instructions ?? null,
+        messages: Array.isArray(messages) ? messages : [],
+        userQuery: latestUser,
+        corsHeaders,
+      });
     }
 
     const systemPrompt = buildCoTrainerSystemPromptForRole(

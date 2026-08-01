@@ -34,9 +34,22 @@ import { useActiveClub } from "@/hooks/use-active-club";
 import {
   buildClubContext,
   formatClubContextForPrompt,
+  formatClubContextForInternetResearch,
   mergeQuickPrompts,
   type ClubQuickPrompt,
 } from "@/lib/ai-context";
+import {
+  fetchInternetResearchEnabled,
+  hasAiInternetConsent,
+  parseInternetMetaFromSse,
+  planIncludesAiInternet,
+  recordAiInternetConsent,
+  type Ai4TChatMode,
+  type InternetSourceLink,
+} from "@/lib/ai-internet-research";
+import { useSubscription } from "@/hooks/use-subscription";
+import { Ai4tChatModeToggle, Ai4tInternetModeBanner } from "@/components/ai/Ai4tInternetModeControls";
+import { Ai4tInternetConsentDialog } from "@/components/ai/Ai4tInternetConsentDialog";
 import {
   buildAi4TRoleQuickPrompts,
   getAi4TRoleWelcomeMessage,
@@ -308,6 +321,13 @@ const CoTrainer = () => {
   const [toolDuesUnpaid, setToolDuesUnpaid] = useState<number | null>(null);
 
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [chatMode, setChatMode] = useState<Ai4TChatMode>("club");
+  const [internetResearchEnabled, setInternetResearchEnabled] = useState(true);
+  const [internetConsentReady, setInternetConsentReady] = useState(false);
+  const [internetConsentOpen, setInternetConsentOpen] = useState(false);
+  const [internetConsentSaving, setInternetConsentSaving] = useState(false);
+  const [pendingChatMode, setPendingChatMode] = useState<Ai4TChatMode | null>(null);
+  const [internetSourcesByIndex, setInternetSourcesByIndex] = useState<Record<number, InternetSourceLink[]>>({});
   const [feedbackRatings, setFeedbackRatings] = useState<Record<number, AiMessageFeedbackRating>>({});
   const [aiLog, setAiLog] = useState<AiRequestRow[]>([]);
   const [conversations, setConversations] = useState<AiConversationRow[]>([]);
@@ -325,6 +345,9 @@ const CoTrainer = () => {
   const [compactMobileChrome, setCompactMobileChrome] = useState(false);
 
   const gateRole = useModuleGateRole();
+  const { planId } = useSubscription();
+  const internetPlanAvailable = planIncludesAiInternet(planId);
+  const internetModeAvailable = internetPlanAvailable && internetResearchEnabled && !isPartnerPortal;
   const { teamIds: userTeamIds } = useUserTeamIds(clubId);
   const showAgentTab = isPartnerPortal || canUseClubAgentWorkflows(gateRole);
   const roleKey = (
@@ -467,6 +490,70 @@ const CoTrainer = () => {
       cancelled = true;
     };
   }, [clubId, clubName, language, perms.isAdmin, toast, isPartnerPortal, gateRole, userTeamIds, user]);
+
+  useEffect(() => {
+    if (!clubId || isPartnerPortal) {
+      setInternetResearchEnabled(true);
+      setInternetConsentReady(false);
+      if (chatMode === "internet") setChatMode("club");
+      return;
+    }
+    let cancelled = false;
+    void Promise.all([fetchInternetResearchEnabled(clubId), hasAiInternetConsent(clubId)]).then(
+      ([enabled, consented]) => {
+        if (cancelled) return;
+        setInternetResearchEnabled(enabled);
+        setInternetConsentReady(consented);
+        if (!enabled && chatMode === "internet") setChatMode("club");
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [clubId, isPartnerPortal, chatMode]);
+
+  const handleChatModeChange = useCallback(
+    (next: Ai4TChatMode) => {
+      if (next === "club") {
+        setChatMode("club");
+        return;
+      }
+      if (!internetModeAvailable) {
+        toast({
+          title: t.coTrainerPage.internetMode.unavailableTitle,
+          description: t.coTrainerPage.internetMode.unavailableHint,
+          variant: "destructive",
+        });
+        return;
+      }
+      if (internetConsentReady) {
+        setChatMode("internet");
+        return;
+      }
+      setPendingChatMode("internet");
+      setInternetConsentOpen(true);
+    },
+    [internetConsentReady, internetModeAvailable, t.coTrainerPage.internetMode, toast],
+  );
+
+  const handleConfirmInternetConsent = useCallback(async () => {
+    if (!clubId) return;
+    setInternetConsentSaving(true);
+    const ok = await recordAiInternetConsent(clubId);
+    setInternetConsentSaving(false);
+    if (!ok) {
+      toast({
+        title: t.common.error,
+        description: t.coTrainerPage.internetMode.consentFailed,
+        variant: "destructive",
+      });
+      return;
+    }
+    setInternetConsentReady(true);
+    setInternetConsentOpen(false);
+    setChatMode(pendingChatMode ?? "internet");
+    setPendingChatMode(null);
+  }, [clubId, pendingChatMode, t.common.error, t.coTrainerPage.internetMode.consentFailed, toast]);
 
   const loadHistoryData = useCallback(async () => {
     if (!user || !clubId) return;
@@ -637,10 +724,17 @@ const CoTrainer = () => {
           return;
         }
 
-        const contextPayload = formatClubContextForPrompt(
-          clubContextText || `Club ID: ${clubId ?? "unknown"} | Language: ${language}`,
-          extraUrlContextRef.current,
-        );
+        const contextPayload =
+          chatMode === "internet"
+            ? formatClubContextForInternetResearch(
+                clubContextText || `Club ID: ${clubId ?? "unknown"} | Language: ${language}`,
+                clubName,
+                language,
+              )
+            : formatClubContextForPrompt(
+                clubContextText || `Club ID: ${clubId ?? "unknown"} | Language: ${language}`,
+                extraUrlContextRef.current,
+              );
 
         let bodyStr: string;
         try {
@@ -649,6 +743,8 @@ const CoTrainer = () => {
             messages: prepareChatMessagesForApi(allMessages),
             context: contextPayload,
             language,
+            chat_mode: chatMode,
+            club_name: clubName,
           });
         } catch (stringifyErr) {
           console.error(stringifyErr);
@@ -685,6 +781,7 @@ const CoTrainer = () => {
         }
 
         let streamModelError: string | null = null;
+        let pendingInternetSources: InternetSourceLink[] | null = null;
 
         const processSseLine = (line: string) => {
           if (streamModelError) return;
@@ -696,7 +793,13 @@ const CoTrainer = () => {
             const parsed = JSON.parse(jsonStr) as {
               choices?: Array<{ delta?: { content?: string } }>;
               error?: { message?: string; code?: string; type?: string } | string;
+              one4team_meta?: unknown;
             };
+            const internetMeta = parseInternetMetaFromSse(parsed as Record<string, unknown>);
+            if (internetMeta?.length) {
+              pendingInternetSources = internetMeta;
+              return;
+            }
             if (parsed.error != null) {
               const em =
                 typeof parsed.error === "string"
@@ -758,6 +861,9 @@ const CoTrainer = () => {
 
         if (!assistantSoFar.trim()) {
           showChatError(t.coTrainerPage.chatErrorEmptyResponse, true);
+        } else if (pendingInternetSources?.length) {
+          const assistantIndex = allMessages.length;
+          setInternetSourcesByIndex((prev) => ({ ...prev, [assistantIndex]: pendingInternetSources! }));
         }
       } catch (e) {
         console.error(e);
@@ -813,6 +919,8 @@ const CoTrainer = () => {
       t.coTrainerPage.demoIntro,
       t.coTrainerPage.demoNote,
       clubContextText,
+      chatMode,
+      clubName,
       schedulePersistMessages,
       toolActivities,
       t.coTrainerPage.chatErrorRateLimit,
@@ -948,6 +1056,7 @@ const CoTrainer = () => {
     setConversationId(null);
     conversationIdRef.current = null;
     setFeedbackRatings({});
+    setInternetSourcesByIndex({});
     setInput("");
     setPendingWorkflow(null);
     dismissProposal();
@@ -1135,6 +1244,11 @@ const CoTrainer = () => {
               <div className="max-lg:[&_.rounded-2xl]:rounded-xl max-lg:[&_.rounded-2xl]:py-2.5">
                 <Ai4tPersonaHint />
               </div>
+              {chatMode === "internet" ? (
+                <div className="hidden lg:block">
+                  <Ai4tInternetModeBanner />
+                </div>
+              ) : null}
               <div className="hidden rounded-2xl border border-border/60 bg-card/40 p-4 backdrop-blur-2xl lg:block">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-2">
@@ -1201,9 +1315,23 @@ const CoTrainer = () => {
                         DE
                       </button>
                     </div>
+                    {!isPartnerPortal ? (
+                      <Ai4tChatModeToggle
+                        mode={chatMode}
+                        disabled={isLoading}
+                        internetAvailable={internetModeAvailable}
+                        onChange={handleChatModeChange}
+                      />
+                    ) : null}
                   </div>
                 </div>
               </div>
+
+              {chatMode === "internet" ? (
+                <div className="lg:hidden">
+                  <Ai4tInternetModeBanner />
+                </div>
+              ) : null}
 
               {messages.length > 0 && (
                 <div className="hidden rounded-2xl border border-border/60 bg-card/40 p-3 backdrop-blur-2xl lg:block">
@@ -1342,17 +1470,41 @@ const CoTrainer = () => {
                         }`}
                       >
                         {msg.role === "assistant" ? (
-                          <Ai4tAssistantMessage
-                            content={msg.content}
-                            clubId={clubId ?? ""}
-                            conversationId={conversationId}
-                            messageIndex={i}
-                            feedbackRating={feedbackRatings[i] ?? null}
-                            showFeedback={Boolean(clubId)}
-                            onRated={(rating) =>
-                              setFeedbackRatings((prev) => ({ ...prev, [i]: rating }))
-                            }
-                          />
+                          <>
+                            <Ai4tAssistantMessage
+                              content={msg.content}
+                              clubId={clubId ?? ""}
+                              conversationId={conversationId}
+                              messageIndex={i}
+                              feedbackRating={feedbackRatings[i] ?? null}
+                              showFeedback={Boolean(clubId)}
+                              onRated={(rating) =>
+                                setFeedbackRatings((prev) => ({ ...prev, [i]: rating }))
+                              }
+                            />
+                            {internetSourcesByIndex[i]?.length ? (
+                              <div className="mt-3 border-t border-border/60 pt-2">
+                                <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                  {t.coTrainerPage.feedback.sourcesTitle}
+                                </div>
+                                <ul className="mt-1 space-y-1">
+                                  {internetSourcesByIndex[i].map((source) => (
+                                    <li key={source.url}>
+                                      <a
+                                        href={source.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                                      >
+                                        <ExternalLink className="h-3 w-3" />
+                                        {source.title || source.url}
+                                      </a>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ) : null}
+                          </>
                         ) : (
                           <p className="text-sm">{msg.content}</p>
                         )}
@@ -1394,7 +1546,17 @@ const CoTrainer = () => {
             </div>
           </div>
 
-          <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl shrink-0`}>
+          <div className={`${DASHBOARD_PAGE_MAX_INNER} max-w-3xl shrink-0 space-y-2`}>
+            {!isPartnerPortal ? (
+              <div className="flex flex-wrap items-center justify-between gap-2 px-1 lg:hidden">
+                <Ai4tChatModeToggle
+                  mode={chatMode}
+                  disabled={isLoading}
+                  internetAvailable={internetModeAvailable}
+                  onChange={handleChatModeChange}
+                />
+              </div>
+            ) : null}
             <Ai4tChatComposer
               variant="dashboard"
               value={input}
@@ -1569,6 +1731,12 @@ const CoTrainer = () => {
           if (prompt) setInput(prompt);
           window.requestAnimationFrame(() => inputRef.current?.focus());
         }}
+      />
+      <Ai4tInternetConsentDialog
+        open={internetConsentOpen}
+        onOpenChange={setInternetConsentOpen}
+        onConfirm={() => void handleConfirmInternetConsent()}
+        loading={internetConsentSaving}
       />
     </div>
   );

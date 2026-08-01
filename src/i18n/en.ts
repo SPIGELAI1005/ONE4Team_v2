@@ -1471,6 +1471,9 @@ export const en = {
     importRegistry: "Import registry",
     registryExportTitle: "Export started",
     registryExportDesc: "Your multi-sheet workbook includes instructions and the full member registry.",
+    registryExportDescCounts: "Exported {rosterCount} roster members and {draftCount} pending import rows.",
+    registryExportDescCapped:
+      "Exported {rosterCount} roster members and {draftCount} pending import rows (capped at {cap} total rows).",
     registryTemplateDownloaded: "Downloaded the import template with all registry columns and one example row.",
     registrySaved: "Member registry saved.",
     registryCompleteness: "Profile",
@@ -1599,7 +1602,12 @@ export const en = {
       empty: "No role assignments yet",
       failedToLoad: "Failed to load role assignments.",
       toastAssigned: "Role assigned",
+      toastUpdated: "Role updated",
       toastRemoved: "Role removed",
+      removeRole: "Remove role assignment",
+      editHint: "Change role, scope, or team directly from each row.",
+      teamRequiredTitle: "Team required",
+      teamRequiredDesc: "Choose a team for team-scoped roles.",
       roleKinds: {
         clubAdmin: "Club Admin",
         teamAdmin: "Team Admin",
@@ -4111,6 +4119,11 @@ export const en = {
     aiUsageAtCap: "Monthly AI 4 T fair-use limit reached. Usage resets next calendar month.",
     aiUsageConversations: "Chat conversations updated",
     aiUsageAgentRuns: "Agent workflow runs",
+    aiUsageInternetResearch: "GPT Internet research sessions",
+    internetResearchTitle: "AI 4 T GPT Internet",
+    internetResearchDesc:
+      "Allow coaches to switch AI 4 T to Internet mode (web research with cited sources). Requires Pro plan or higher.",
+    internetResearchPlanHint: "Upgrade to Pro or Champions to enable GPT Internet for your club.",
     aiUsageExecuted: "Executed successfully",
     aiUsageLoadFailed: "Could not load usage stats.",
     llmProviderOpenai: "OpenAI",
@@ -6100,6 +6113,26 @@ export const en = {
       speechOn: "Enable spoken replies from AI 4 T",
       speechOff: "Disable spoken replies",
       hint: "Mic for voice commands · Speaker for spoken answers",
+    },
+    internetMode: {
+      toggleLabel: "AI 4 T chat mode",
+      modeClub: "Club",
+      modeInternet: "Internet",
+      modeInternetHint: "Web research with cited sources (ONE4Team GPT Internet)",
+      unavailableTitle: "Internet mode unavailable",
+      unavailableHint:
+        "GPT Internet requires Pro plan or higher and must be enabled by a club admin under Settings → AI provider.",
+      bannerTitle: "GPT Internet mode",
+      bannerBody:
+        "Answers may use live web research. Club roster names are not sent. Verify important facts against cited sources.",
+      consentTitle: "Enable GPT Internet?",
+      consentBody:
+        "Internet mode sends your question and limited club context (team names, schedule summaries — not member names) to our AI provider and a web search service. Each session is logged for fair-use limits and admin audit.",
+      consentNotice:
+        "Do not paste passwords, medical data, or other sensitive personal information into Internet mode.",
+      consentCancel: "Not now",
+      consentConfirm: "I understand — enable Internet",
+      consentFailed: "Could not save your consent. Try again or contact your club admin.",
     },
     suggestedDuringChat: "Suggested starts (available during chat)",
     suggestedStartsTitle: "Suggested starts",

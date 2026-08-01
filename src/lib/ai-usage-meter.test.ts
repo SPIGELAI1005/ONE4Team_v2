@@ -19,6 +19,7 @@ describe("ai-usage-meter", () => {
     const near = buildAiUsageMeterState("pro", {
       agentRuns: Math.floor(proCaps.agentRuns * AI_USAGE_WARN_RATIO),
       conversations: 10,
+      internetResearch: 0,
     });
     expect(near.isNearCap).toBe(true);
     expect(near.isAtCap).toBe(false);
@@ -26,6 +27,7 @@ describe("ai-usage-meter", () => {
     const atCap = buildAiUsageMeterState("pro", {
       agentRuns: proCaps.agentRuns,
       conversations: 0,
+      internetResearch: 0,
     });
     expect(atCap.isAtCap).toBe(true);
     expect(atCap.isNearCap).toBe(false);

@@ -48,6 +48,7 @@ export async function buildMemberRegistryWorkbook(options: {
     [],
     ["How to read this file"],
     ["• Sheet \"Registry\": one row per club member with app role + extended master data."],
+    ["• Includes active roster rows plus saved pending imports (status draft = not invited yet, invited = invite sent)."],
     ["• Column headers use stable snake_case names so imports map reliably."],
     ["• German club exports (Mitgliederliste CSV with Mitglieds-Nr / Nachname / Vorname) are auto-detected on import."],
     ["• Mandatory columns (must be present for a complete record): first_name, last_name, sex, membership_kind."],

@@ -595,3 +595,37 @@ export function formatClubContextForPrompt(
   if (!extraFromUrl?.trim()) return contextText;
   return `${contextText}\n\n## Additional context (from app link)\n${extraFromUrl.trim()}`;
 }
+
+/** Minimal club summary for external GPT Internet mode — avoids full roster dumps. */
+export function formatClubContextForInternetResearch(
+  contextText: string,
+  clubName: string,
+  language: "en" | "de",
+): string {
+  const lines = contextText.split("\n");
+  const kept: string[] = [];
+  let inRoster = false;
+
+  for (const line of lines) {
+    if (/^## Members/i.test(line) || /^### Roster/i.test(line)) {
+      inRoster = true;
+      kept.push(language === "de" ? "## Mitglieder (aggregiert — keine Namensliste)" : "## Members (aggregated — no name list)");
+      continue;
+    }
+    if (inRoster && /^## /.test(line)) {
+      inRoster = false;
+    }
+    if (inRoster && (/^-\s/.test(line) || /^### /.test(line))) {
+      continue;
+    }
+    kept.push(line);
+  }
+
+  const trimmed = kept.join("\n").slice(0, 4500);
+  const notice =
+    language === "de"
+      ? "## Hinweis\nDiese Zusammenfassung wird an eine externe KI mit Websuche gesendet. Keine vollständige Namensliste."
+      : "## Notice\nThis summary is sent to external AI with web search. Full member name lists are omitted.";
+
+  return `${notice}\n\n## Club\n${clubName}\n\n${trimmed}`;
+}

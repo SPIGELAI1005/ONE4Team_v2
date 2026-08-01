@@ -4,13 +4,15 @@
  */
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-export type BillablePlanFeature = "ai" | "shop" | "chat" | "partners";
+export type BillablePlanFeature = "ai" | "ai_internet" | "shop" | "chat" | "partners";
 
 /** Kick-off+ include shop/partners (commercial ladder 2026-07). */
 const SHOP_PLANS = new Set(["kickoff", "squad", "pro", "champions", "bespoke"]);
 const PARTNER_PLANS = new Set(["kickoff", "squad", "pro", "champions", "bespoke"]);
 /** Plans that include AI 4 T (Squad+). */
 const AI_PLANS = new Set(["squad", "pro", "champions", "bespoke"]);
+/** AI 4 T GPT Internet (Pro+). */
+const AI_INTERNET_PLANS = new Set(["pro", "champions", "bespoke"]);
 /** Chat: paid kickoff+, not promotional kickoff (resolver handles promo). */
 const CHAT_PLANS = new Set(["kickoff", "squad", "pro", "champions", "bespoke"]);
 
@@ -20,6 +22,7 @@ function planAllows(planId: string | null | undefined, feature: BillablePlanFeat
   if (feature === "shop") return SHOP_PLANS.has(id);
   if (feature === "partners") return PARTNER_PLANS.has(id);
   if (feature === "chat") return CHAT_PLANS.has(id);
+  if (feature === "ai_internet") return AI_INTERNET_PLANS.has(id);
   return AI_PLANS.has(id);
 }
 
@@ -98,6 +101,7 @@ export async function clubHasPlanFeature(
       return { allowed: true };
     }
     if (feature === "ai" && keys.has("ai")) return { allowed: true };
+    if (feature === "ai_internet" && (keys.has("ai_internet") || keys.has("ai"))) return { allowed: true };
     if (feature === "shop" && keys.has("shop")) return { allowed: true };
     if (feature === "partners" && (keys.has("partners") || keys.has("marketplace"))) {
       return { allowed: true };

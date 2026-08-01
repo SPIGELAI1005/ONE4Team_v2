@@ -37,6 +37,15 @@ export function AiUsageMeter({ meter, className }: AiUsageMeterProps) {
           cap={meter.caps.conversations}
           pct={meter.conversationsPct}
         />
+        {meter.caps.internetResearch > 0 ? (
+          <UsageBar
+            label={t.settingsPage.aiUsageInternetResearch}
+            used={meter.usage.internetResearch}
+            cap={meter.caps.internetResearch}
+            pct={meter.internetResearchPct}
+            className="sm:col-span-2"
+          />
+        ) : null}
       </div>
     </div>
   );
@@ -47,14 +56,16 @@ function UsageBar({
   used,
   cap,
   pct,
+  className,
 }: {
   label: string;
   used: number;
   cap: number;
   pct: number;
+  className?: string;
 }) {
   return (
-    <div className="rounded-xl border border-border/50 bg-background/30 p-3">
+    <div className={cn("rounded-xl border border-border/50 bg-background/30 p-3", className)}>
       <div className="flex items-center justify-between text-xs mb-2">
         <span className="text-muted-foreground">{label}</span>
         <span className="font-medium text-foreground">{formatAiCapLabel(used, cap)}</span>

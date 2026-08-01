@@ -46,6 +46,7 @@ import {
   getMissingRequiredMasterFields,
   masterFieldsFromFlatImport,
   masterRecordCompletenessPct,
+  masterRecordFromDraft,
   normalizeImportEmail,
   parseMembershipKind,
   readDraftGuardianMembershipIds,
@@ -1913,17 +1914,31 @@ const Members = () => {
   const handleExportMemberRegistry = useCallback(async () => {
     if (!clubId) return;
     const EXPORT_CAP = 5000;
-    const { data: allRows, error: memErr } = await supabase
-      .from("club_memberships")
-      .select("id, club_id, user_id, role, position, age_group, team, status, created_at")
-      .eq("club_id", clubId)
-      .order("created_at", { ascending: false })
-      .limit(EXPORT_CAP);
-    if (memErr) {
-      toast({ title: t.common.error, description: memErr.message, variant: "destructive" });
+    const [memRes, draftRes] = await Promise.all([
+      supabase
+        .from("club_memberships")
+        .select("id, club_id, user_id, role, position, age_group, team, status, created_at")
+        .eq("club_id", clubId)
+        .order("created_at", { ascending: false })
+        .limit(EXPORT_CAP),
+      supabase
+        .from("club_member_drafts")
+        .select("id, email, name, role, team, age_group, position, status, created_at, master_data")
+        .eq("club_id", clubId)
+        .in("status", ["draft", "invited"])
+        .order("created_at", { ascending: false })
+        .limit(EXPORT_CAP),
+    ]);
+    if (memRes.error) {
+      toast({ title: t.common.error, description: memRes.error.message, variant: "destructive" });
       return;
     }
-    const exportMembers = (allRows as unknown as MemberRow[]) || [];
+    if (draftRes.error) {
+      toast({ title: t.common.error, description: draftRes.error.message, variant: "destructive" });
+      return;
+    }
+    const exportMembers = (memRes.data as unknown as MemberRow[]) || [];
+    const pendingDrafts = (draftRes.data as unknown as MemberDraftRow[]) || [];
     const userIds = Array.from(new Set(exportMembers.map((item) => item.user_id))).filter(Boolean);
     const membershipIds = exportMembers.map((item) => item.id);
     let profileByUserId = new Map<string, MemberRow["profiles"]>();
@@ -1998,26 +2013,67 @@ const Members = () => {
       if (fn || ln) return [fn, ln].filter(Boolean).join(" ");
       return m.profiles?.display_name || t.membersPage.unknownMember;
     };
+    const rosterSnapshot = withProfiles.map((m) => ({
+      email: emailMap[m.id] || "",
+      displayName: getName(m),
+      role: m.role,
+      status: m.status,
+      team: getTeam(m),
+      ageGroup: m.age_group || "",
+      position: m.position || "",
+      joinedAt: new Date(m.created_at).toISOString().slice(0, 10),
+      master: masterMap[m.id] || null,
+    }));
+    const rosterEmails = new Set(
+      rosterSnapshot.map((row) => normalizeEmail(row.email)).filter(Boolean),
+    );
+    const draftSnapshot = pendingDrafts
+      .filter((draft) => {
+        const email = normalizeEmail(draft.email);
+        if (email && rosterEmails.has(email)) return false;
+        return Boolean(email || draft.name.trim() || masterRecordFromDraft(draft.master_data, draft.name));
+      })
+      .map((draft) => {
+        const master = masterRecordFromDraft(draft.master_data, draft.name);
+        const fn = master?.first_name?.trim();
+        const ln = master?.last_name?.trim();
+        const displayName =
+          [fn, ln].filter(Boolean).join(" ") || draft.name.trim() || t.membersPage.unknownMember;
+        const teamLabel =
+          membershipDisplayTeamLabel({
+            assignedTeamNames: [],
+            membershipTeam: draft.team,
+            ageGroup: draft.age_group,
+          }) || t.membersPage.noTeam;
+        return {
+          email: draft.email.trim(),
+          displayName,
+          role: draft.role,
+          status: draft.status,
+          team: teamLabel,
+          ageGroup: draft.age_group || "",
+          position: draft.position || "",
+          joinedAt: "",
+          master,
+        };
+      });
+    const membersSnapshot = [...rosterSnapshot, ...draftSnapshot].slice(0, EXPORT_CAP);
     await buildMemberRegistryWorkbook({
       clubName: clubName || "Club",
-      membersSnapshot: withProfiles.map((m) => ({
-        email: emailMap[m.id] || "",
-        displayName: getName(m),
-        role: m.role,
-        status: m.status,
-        team: getTeam(m),
-        ageGroup: m.age_group || "",
-        position: m.position || "",
-        joinedAt: new Date(m.created_at).toISOString().slice(0, 10),
-        master: masterMap[m.id] || null,
-      })),
+      membersSnapshot,
     });
+    const capped = rosterSnapshot.length + draftSnapshot.length > EXPORT_CAP;
+    const description = capped
+      ? t.membersPage.registryExportDescCapped
+          .replace("{rosterCount}", String(rosterSnapshot.length))
+          .replace("{draftCount}", String(draftSnapshot.length))
+          .replace("{cap}", String(EXPORT_CAP))
+      : t.membersPage.registryExportDescCounts
+          .replace("{rosterCount}", String(rosterSnapshot.length))
+          .replace("{draftCount}", String(draftSnapshot.length));
     toast({
       title: t.membersPage.registryExportTitle,
-      description:
-        exportMembers.length >= EXPORT_CAP
-          ? `${t.membersPage.registryExportDesc} (capped at ${EXPORT_CAP} rows)`
-          : t.membersPage.registryExportDesc,
+      description,
     });
   }, [clubId, clubName, membershipEmails, t, toast]);
 

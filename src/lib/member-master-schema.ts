@@ -439,3 +439,29 @@ export function masterFieldsFromFlatImport(raw: Record<string, string>): Partial
   }
   return out;
 }
+
+/** Build export-ready master fields from a saved draft row (club_member_drafts.master_data). */
+export function masterRecordFromDraft(
+  masterData: Record<string, unknown> | null | undefined,
+  draftName: string,
+): Partial<ClubMemberMasterRecord> | null {
+  const base = { ...(masterData ?? {}) } as Partial<ClubMemberMasterRecord>;
+  if (!base.first_name?.trim() && !base.last_name?.trim() && draftName.trim()) {
+    const parts = draftName.trim().split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      base.first_name = parts[0];
+      base.last_name = parts.slice(1).join(" ");
+    } else if (parts.length === 1) {
+      base.first_name = parts[0];
+    }
+  }
+  const hasContent = Boolean(
+    base.first_name?.trim() ||
+      base.last_name?.trim() ||
+      MEMBER_MASTER_FIELDS.some((field) => {
+        const value = base[field.key];
+        return value !== null && value !== undefined && String(value).trim() !== "";
+      }),
+  );
+  return hasContent ? base : null;
+}

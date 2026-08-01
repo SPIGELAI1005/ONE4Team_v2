@@ -14,6 +14,7 @@ interface AiUsageStats {
   agent_runs_executed?: number;
   agent_runs_failed?: number;
   conversations_updated?: number;
+  internet_research_sessions?: number;
 }
 
 export function Ai4tAdminUsageCard() {
@@ -61,6 +62,7 @@ export function Ai4tAdminUsageCard() {
     return buildAiUsageMeterState(planId, {
       agentRuns: stats.agent_runs_total ?? 0,
       conversations: stats.conversations_updated ?? 0,
+      internetResearch: stats.internet_research_sessions ?? 0,
     });
   }, [planId, stats]);
 

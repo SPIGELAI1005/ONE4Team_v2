@@ -40,6 +40,7 @@ import { persistDashboardPersona } from "@/lib/switch-dashboard-persona";
 import { useActiveDashboardPersonaSlug } from "@/hooks/use-active-dashboard-persona-slug";
 import { useSubscription } from "@/hooks/use-subscription";
 import { buildAiUsageMeterState } from "@/lib/ai-usage-meter";
+import { planIncludesAiInternet } from "@/lib/ai-internet-research";
 import { PastDueBillingBanner } from "@/components/billing/PastDueBillingBanner";
 import { FoundingClubStatusCard } from "@/components/billing/FoundingClubStatusCard";
 import { GraceWriteBanner } from "@/components/billing/GraceWriteBanner";
@@ -174,10 +175,12 @@ export default function Settings() {
   const [llmAzureApiVersion, setLlmAzureApiVersion] = useState("2024-02-15-preview");
   const [llmHasSavedKey, setLlmHasSavedKey] = useState(false);
   const [clubAiInstructions, setClubAiInstructions] = useState("");
+  const [internetResearchEnabled, setInternetResearchEnabled] = useState(true);
   const [aiUsageStats, setAiUsageStats] = useState<{
     conversations_updated?: number;
     agent_runs_total?: number;
     agent_runs_executed?: number;
+    internet_research_sessions?: number;
   } | null>(null);
 
   type LlmHealthUi = "idle" | "checking" | "connected" | "not_configured" | "error";
@@ -338,7 +341,9 @@ export default function Settings() {
       try {
         const { data, error } = await supabase
           .from("club_llm_settings")
-          .select("provider, model, azure_endpoint, azure_api_version, api_key, club_ai_instructions")
+          .select(
+            "provider, model, azure_endpoint, azure_api_version, api_key, club_ai_instructions, internet_research_enabled",
+          )
           .eq("club_id", activeClubId)
           .maybeSingle();
         if (cancelled) return;
@@ -350,9 +355,11 @@ export default function Settings() {
           setLlmAzureApiVersion(data.azure_api_version ?? "2024-02-15-preview");
           setLlmHasSavedKey(Boolean((data.api_key as string)?.trim()));
           setClubAiInstructions((data.club_ai_instructions as string) ?? "");
+          setInternetResearchEnabled(data.internet_research_enabled !== false);
         } else {
           setLlmHasSavedKey(false);
           setClubAiInstructions("");
+          setInternetResearchEnabled(true);
           setLlmModel("");
           setLlmAzureEndpoint("");
           setLlmAzureApiVersion("2024-02-15-preview");
@@ -489,6 +496,7 @@ export default function Settings() {
             azure_endpoint: llmProvider === "azure_openai" ? (llmAzureEndpoint.trim() || null) : null,
             azure_api_version: llmProvider === "azure_openai" ? (llmAzureApiVersion.trim() || "2024-02-15-preview") : null,
             club_ai_instructions: clubAiInstructions.trim() || null,
+            internet_research_enabled: internetResearchEnabled,
           },
           { onConflict: "club_id" },
         );
@@ -502,6 +510,7 @@ export default function Settings() {
             azure_endpoint: llmProvider === "azure_openai" ? (llmAzureEndpoint.trim() || null) : null,
             azure_api_version: llmProvider === "azure_openai" ? (llmAzureApiVersion.trim() || "2024-02-15-preview") : null,
             club_ai_instructions: clubAiInstructions.trim() || null,
+            internet_research_enabled: internetResearchEnabled,
           })
           .eq("club_id", activeClubId);
         if (error) throw error;
@@ -618,6 +627,7 @@ export default function Settings() {
     return buildAiUsageMeterState(planId, {
       agentRuns: aiUsageStats.agent_runs_total ?? 0,
       conversations: aiUsageStats.conversations_updated ?? 0,
+      internetResearch: aiUsageStats.internet_research_sessions ?? 0,
     });
   }, [aiUsageStats, planId]);
 
@@ -1391,6 +1401,16 @@ export default function Settings() {
                       />
                       <p className="text-[10px] text-muted-foreground mt-1">{t.settingsPage.llmInstructionsHint}</p>
                     </div>
+                    {planIncludesAiInternet(planId) ? (
+                      <Toggle
+                        checked={internetResearchEnabled}
+                        onChange={() => setInternetResearchEnabled((v) => !v)}
+                        label={t.settingsPage.internetResearchTitle}
+                        description={t.settingsPage.internetResearchDesc}
+                      />
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground">{t.settingsPage.internetResearchPlanHint}</p>
+                    )}
                     {aiUsageMeter ? (
                       <div className="rounded-xl border border-border/50 bg-background/30 p-3 text-xs space-y-2">
                         <div className="font-medium text-foreground">{t.settingsPage.aiUsageTitleMonthly}</div>

@@ -4,25 +4,28 @@ import type { PlanId } from "@/lib/stripe";
 export interface AiMonthlyCaps {
   agentRuns: number;
   conversations: number;
+  internetResearch: number;
 }
 
 export const AI_USAGE_WARN_RATIO = 0.85;
 
 export const AI_MONTHLY_CAPS: Record<Exclude<PlanId, "bespoke">, AiMonthlyCaps> = {
-  kickoff: { agentRuns: 40, conversations: 150 },
-  squad: { agentRuns: 80, conversations: 350 },
-  pro: { agentRuns: 250, conversations: 1200 },
-  champions: { agentRuns: 800, conversations: 4000 },
+  kickoff: { agentRuns: 40, conversations: 150, internetResearch: 0 },
+  squad: { agentRuns: 80, conversations: 350, internetResearch: 0 },
+  pro: { agentRuns: 250, conversations: 1200, internetResearch: 40 },
+  champions: { agentRuns: 800, conversations: 4000, internetResearch: 150 },
 };
 
 export const BESPOKE_AI_MONTHLY_CAPS: AiMonthlyCaps = {
   agentRuns: 999_999,
   conversations: 999_999,
+  internetResearch: 999_999,
 };
 
 export interface AiUsageSnapshot {
   agentRuns: number;
   conversations: number;
+  internetResearch: number;
 }
 
 export interface AiUsageMeterState {
@@ -30,6 +33,7 @@ export interface AiUsageMeterState {
   usage: AiUsageSnapshot;
   agentRunsPct: number;
   conversationsPct: number;
+  internetResearchPct: number;
   highestPct: number;
   isNearCap: boolean;
   isAtCap: boolean;
@@ -54,14 +58,19 @@ export function buildAiUsageMeterState(
   const caps = getAiMonthlyCaps(planId);
   const agentRunsPct = pct(usage.agentRuns, caps.agentRuns);
   const conversationsPct = pct(usage.conversations, caps.conversations);
-  const highestPct = Math.max(agentRunsPct, conversationsPct);
-  const isAtCap = usage.agentRuns >= caps.agentRuns || usage.conversations >= caps.conversations;
+  const internetResearchPct = pct(usage.internetResearch, caps.internetResearch);
+  const highestPct = Math.max(agentRunsPct, conversationsPct, internetResearchPct);
+  const isAtCap =
+    usage.agentRuns >= caps.agentRuns ||
+    usage.conversations >= caps.conversations ||
+    (caps.internetResearch > 0 && usage.internetResearch >= caps.internetResearch);
   const isNearCap = !isAtCap && highestPct >= Math.round(warnRatio * 100);
   return {
     caps,
     usage,
     agentRunsPct,
     conversationsPct,
+    internetResearchPct,
     highestPct,
     isNearCap,
     isAtCap,

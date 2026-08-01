@@ -1490,6 +1490,9 @@ export const de: Translations = {
     importRegistry: "Register importieren",
     registryExportTitle: "Export gestartet",
     registryExportDesc: "Die Arbeitsmappe enthält eine Anleitung und das vollständige Mitgliederregister.",
+    registryExportDescCounts: "{rosterCount} Kader-Mitglieder und {draftCount} ausstehende Import-Zeilen exportiert.",
+    registryExportDescCapped:
+      "{rosterCount} Kader-Mitglieder und {draftCount} ausstehende Import-Zeilen exportiert (max. {cap} Zeilen).",
     registryTemplateDownloaded: "Import-Vorlage mit allen Spalten und einer Beispielzeile heruntergeladen.",
     registrySaved: "Mitgliederegister gespeichert.",
     registryCompleteness: "Profil",
@@ -1619,7 +1622,12 @@ export const de: Translations = {
       empty: "Noch keine Rollen-Zuweisungen",
       failedToLoad: "Rollen-Zuweisungen konnten nicht geladen werden.",
       toastAssigned: "Rolle zugewiesen",
+      toastUpdated: "Rolle aktualisiert",
       toastRemoved: "Rolle entfernt",
+      removeRole: "Rollen-Zuweisung entfernen",
+      editHint: "Rolle, Geltungsbereich oder Team direkt in jeder Zeile ändern.",
+      teamRequiredTitle: "Team erforderlich",
+      teamRequiredDesc: "Wähle ein Team für team-bezogene Rollen.",
       roleKinds: {
         clubAdmin: "Vereinsadmin",
         teamAdmin: "Teamadmin",
@@ -4141,6 +4149,11 @@ export const de: Translations = {
     aiUsageAtCap: "Monatliches AI-4-T-Fair-Use-Limit erreicht. Reset zum nächsten Kalendermonat.",
     aiUsageConversations: "Aktualisierte Chat-Unterhaltungen",
     aiUsageAgentRuns: "Agent-Workflow-Läufe",
+    aiUsageInternetResearch: "GPT-Internet-Recherche-Sitzungen",
+    internetResearchTitle: "AI 4 T GPT Internet",
+    internetResearchDesc:
+      "Erlaubt Trainern, AI 4 T auf Internet-Modus umzustellen (Web-Recherche mit Quellenangaben). Erfordert Pro-Tarif oder höher.",
+    internetResearchPlanHint: "Upgrade auf Pro oder Champions, um GPT Internet für euren Verein freizuschalten.",
     aiUsageExecuted: "Erfolgreich ausgeführt",
     aiUsageLoadFailed: "Nutzungsstatistik konnte nicht geladen werden.",
     llmProviderOpenai: "OpenAI",
@@ -6124,6 +6137,26 @@ export const de: Translations = {
       speechOn: "Gesprochene Antworten aktivieren",
       speechOff: "Gesprochene Antworten deaktivieren",
       hint: "Mikrofon für Sprachbefehle · Lautsprecher für gesprochene Antworten",
+    },
+    internetMode: {
+      toggleLabel: "AI-4-T-Chat-Modus",
+      modeClub: "Verein",
+      modeInternet: "Internet",
+      modeInternetHint: "Web-Recherche mit Quellenangaben (ONE4Team GPT Internet)",
+      unavailableTitle: "Internet-Modus nicht verfügbar",
+      unavailableHint:
+        "GPT Internet erfordert Pro-Tarif oder höher und muss von einem Vereinsadmin unter Einstellungen → KI-Anbieter aktiviert werden.",
+      bannerTitle: "GPT-Internet-Modus",
+      bannerBody:
+        "Antworten können Live-Web-Recherche nutzen. Vereins-Mitgliedernamen werden nicht übermittelt. Wichtige Fakten an den Quellen prüfen.",
+      consentTitle: "GPT Internet aktivieren?",
+      consentBody:
+        "Im Internet-Modus werden eure Frage und begrenzter Vereinskontext (Teamnamen, Terminübersichten — keine Mitgliedernamen) an unseren KI-Anbieter und einen Web-Suchdienst gesendet. Jede Sitzung wird für Fair-Use-Limits und Admin-Audit protokolliert.",
+      consentNotice:
+        "Keine Passwörter, medizinischen oder anderen sensiblen personenbezogenen Daten in den Internet-Modus einfügen.",
+      consentCancel: "Nicht jetzt",
+      consentConfirm: "Verstanden — Internet aktivieren",
+      consentFailed: "Einwilligung konnte nicht gespeichert werden. Erneut versuchen oder Admin kontaktieren.",
     },
     suggestedDuringChat: "Schnellstarts (auch während des Chats nutzbar)",
     suggestedStartsTitle: "Vorgeschlagene Starts",
