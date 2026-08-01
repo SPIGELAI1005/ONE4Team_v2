@@ -101,7 +101,9 @@ function RoleAssignmentEditor({
       scope: next.scope ?? scope,
       scope_team_id:
         (next.scope ?? scope) === "team"
-          ? next.scope_team_id ?? (next.scope === "team" ? teamId : assignment.scope_team_id) ?? teamId || null
+          ? (next.scope_team_id ??
+              (next.scope === "team" ? teamId : assignment.scope_team_id) ??
+              teamId) || null
           : null,
     };
 
