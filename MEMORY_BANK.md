@@ -1,11 +1,16 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-08-01 (Operator LOC auto-measure · club PWA home screen · Invites CTA)
+Last updated: 2026-08-01 (AI 4 T GPT Internet · Members export · Roles editing · workspace UX)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **AI 4 T GPT Internet (2026-08-01):** Pro+ **Internet mode** on **`/co-trainer`** — Tavily web search + dedicated system prompt (replicates ONE4Team Custom GPT behavior; ChatGPT.com GPT URL is **not** callable via API). **Club / Internet** toggle, user **consent** (`record_ai_internet_consent` RPC), admin **`internet_research_enabled`** in Settings → AI provider, monthly caps (Pro **40**, Champions **150**), cited **Sources** under replies. Edge: **`co-trainer`** `chat_mode=internet`; secrets **`TAVILY_API_KEY`**. Migrations **`20260806130000`**, **`20260806140000`** (consent upsert RLS). Phase 3 RAG/knowledge files **skipped**. See **CHANGELOG** § **AI 4 T GPT Internet**.
+- **Members registry export (2026-08-01):** XLSX export merges joined roster + **`club_member_drafts`** (`draft` / `invited`), deduped by email. Lib: **`masterRecordFromDraft()`** in **`member-master-schema.ts`**.
+- **Roles tab inline edit (2026-08-01):** **`/members` → Roles** — edit role kind, scope, and team per assignment row (not delete-only). **`role-manager.tsx`**.
+- **Co-Trainer workspace UX (2026-08-01):** Internet mode updates **scope hint in place** (no extra banner block); fixed-width Club/Internet toggle; removed redundant empty **assistant role** pill; mobile reserved hint height to avoid layout jump.
+- **CI / E2E (2026-08-01):** Playwright **`e2e/fixtures/test.ts`** ESLint override for `use` callback; CI build embeds **`VITE_SUPABASE_*`**; onboarding guest access for invite/pricing deep-links; production build fix for **`??`/`||`** in **`role-manager.tsx`**. Commits **`66cae63`**, **`5b692c7`**, **`26be8d6`**.
 - **Operator LOC auto-measure (2026-08-01):** `scripts/count-app-loc.cjs` writes **`src/generated/app-loc.json`** on **`prebuild`** / **`npm run loc:count`**. `/operator/financials` uses that measured LOC (currently ~160k). Stale phone `localStorage` values for known baselines (84k / 157k) auto-refresh; manual LOC overrides remain. See **CHANGELOG** § **Operator LOC auto-measure**.
 - **Public club install-to-home-screen (2026-08-01):** Club-scoped PWA manifest + iOS standalone meta so Add to Home Screen opens `/club/{slug}/` like an app; iOS still requires Share → Add to Home Screen (no programmatic API).
 - **Members Invites page CTA (2026-08-01):** Create-invite button on the Invites tab body (plus empty state), not only the dashboard header.

@@ -37,7 +37,7 @@ Previously, the ad-hoc matrix in `permissions.ts` granted sponsors `matches:read
 | `src/lib/permissions.ts` | Legacy `Permission` bridge + `effectivePermissions()` for `usePermissions()` |
 | `src/lib/rbac-config.test.ts` | Unit tests for normalization, matrix baseline, legacy bridge |
 | `src/integrations/supabase/types.ts` | Generated `app_role` enum mirror |
-| `src/components/members/role-manager.tsx` | Admin UI to manage assignment rows |
+| `src/components/members/role-manager.tsx` | Admin UI to manage assignment rows (inline edit role/scope/team, 2026-08-01) |
 | `src/i18n/en.ts` / `de.ts` | Human-readable role labels |
 
 **Product role → code mapping**

@@ -3,6 +3,28 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-08-01 (AI 4 T GPT Internet · Members export · Roles · CI)
+
+### AI 4 T GPT Internet (Phases 1, 2, 4; Phase 3 RAG deferred)
+- **Internet mode** on **`/co-trainer`**: Club vs Internet toggle, one-time user consent, admin enable/disable in **Settings → AI provider** (Pro+ only).
+- **Backend:** `co-trainer` accepts `chat_mode: "internet"`; Tavily search via **`TAVILY_API_KEY`** Supabase secret; fair-use caps in **`ai_usage_caps.ts`** (Pro **40**/mo, Champions **150**; Kick-off/Squad **0**).
+- **Privacy:** Limited club context to Edge (team names, schedule summaries; no member names); **`ai_internet_usage_log`** audit; consent in **`ai_internet_consents`**.
+- **UI:** Scope hint swaps in the workspace card (stable layout, no separate banner jump); cited **Sources** links under assistant messages; EN/DE **`coTrainerPage.internetMode.*`** (no em dash in consent copy).
+- **SQL:** **`20260806130000_ai_internet_research.sql`**, **`20260806140000_fix_ai_internet_consent_upsert.sql`** (`record_ai_internet_consent` RPC + UPDATE RLS for upsert).
+- **Note:** Custom GPT at chatgpt.com cannot be invoked programmatically; behavior is replicated via prompt + Tavily + existing LLM pipeline (Phase 3 knowledge files not shipped).
+
+### Members · Roles
+- **Registry XLSX export** includes pending **`club_member_drafts`** (`draft` + `invited`), merged and deduped by email with joined roster.
+- **Roles tab:** Inline edit of role kind, scope, and team per **`club_role_assignments`** row on **`/members`**.
+
+### CI · E2E · build
+- CI build embeds **`VITE_SUPABASE_*`** placeholders for Playwright; onboarding allows guest access for invite/pricing deep-links; cookie consent pre-set in E2E fixture.
+- ESLint override for Playwright **`use`** callback in **`e2e/**/*.ts`**.
+- Production build fix: mixed **`??`** / **`||`** in **`role-manager.tsx`** (esbuild).
+
+### Co-Trainer workspace polish
+- Fixed-width Club/Internet toggle; removed empty assistant-role pill; reserved hint height on mobile.
+
 ## 2026-08-01 (Operator LOC auto-measure + home-screen PWA + invites CTA)
 
 - **Operator financials LOC:** Measured automatically from `src/` via **`npm run loc:count`** / **`prebuild`** → **`src/generated/app-loc.json`**. Operator UI reads this snapshot; known old baselines (84k / 157k) soft-migrate on load so phones are not stuck on stale `localStorage`. Manual overrides still supported; **Use measured LOC** resets. Docs/i18n no longer hardcode 84k.

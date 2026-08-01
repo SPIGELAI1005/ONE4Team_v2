@@ -1,11 +1,12 @@
 # AI 4 T release review (pilot → production)
 
-Last updated: 2026-07-01
+Last updated: 2026-08-01
 
 ## Shipped in this batch
 
 | Area | Change |
 |------|--------|
+| GPT Internet (Pro+) | Club/Internet toggle, consent, Tavily search, cited sources, admin toggle + usage caps — migrations **`20260806130000`**, **`20260806140000`** |
 | Player / member safety | Agent tab hidden for player/member personas; chat context scoped by gate role + team IDs |
 | Persona hint | Dual-role users see Settings persona reminder in AI 4 T chat |
 | Chat UX | Thread trim before API (`prepareChatMessagesForApi`), follow-up chips, mapped edge errors (DE/EN) + Settings link |
@@ -32,7 +33,8 @@ Last updated: 2026-07-01
 | Rate limits per role | 4.3 | Protect cost/abuse after pilot metrics |
 | Model routing (cheap classify, strong answer) | 4.x | After usage baseline |
 | Observability dashboard (correlation IDs, latency) | 4.x | `request_context.ts` logging exists; UI TBD |
-| RAG (club docs, FAQ, PDFs) | 5 | Only after pilot passes |
+| RAG (club docs, FAQ, PDFs) | 5 | Only after pilot passes; Custom GPT knowledge files also deferred (2026-08-01) |
+| Custom GPT API integration | N/A | ChatGPT.com Custom GPT URLs are not programmatically invocable; Internet mode uses prompt + Tavily instead |
 
 ## Release gate
 

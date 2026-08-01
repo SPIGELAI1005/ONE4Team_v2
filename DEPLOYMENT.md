@@ -56,7 +56,25 @@ AI 4 T chat runs through the **`co-trainer`** Edge Function. API keys must **nev
    supabase secrets set EDGE_ALLOWED_ORIGINS="https://your-app.vercel.app,http://localhost:8080"
    ```
 
-5. **Verify in the app** — sign in as club admin → **Settings → Club → AI provider** → **Test connection**.  
+#### GPT Internet mode (Pro+ — Tavily web research)
+
+Internet mode is **not** a call to the ChatGPT.com Custom GPT URL. It uses the same **`co-trainer`** pipeline with `chat_mode: "internet"`, a dedicated system prompt, and Tavily search.
+
+1. **Plan:** Pro, Champions, or bespoke (Kick-off/Squad caps are **0**).
+2. **Secret** (platform operator):
+   ```bash
+   supabase secrets set TAVILY_API_KEY="tvly-..."
+   ```
+3. **Database** (if not applied):
+   - `supabase/migrations/20260806130000_ai_internet_research.sql`
+   - `supabase/migrations/20260806140000_fix_ai_internet_consent_upsert.sql`
+4. **Redeploy** `co-trainer` after Edge or secret changes (see step 4 above).
+5. **Club admin:** Settings → AI provider → enable **AI 4 T GPT Internet** (when on Pro+).
+6. **User:** `/co-trainer` → switch **Internet** → accept consent → ask a question that needs current web info; verify **Sources** links under the reply.
+
+Monthly usage appears in Settings and **`Ai4tAdminUsageCard`** as **GPT Internet research sessions**.
+
+7. **Verify club chat** — sign in as club admin → **Settings → Club → AI provider** → **Test connection**.  
    Success shows **Connected** (club key or platform `OPENAI_API_KEY`). Then open **`/co-trainer`** (AI 4 T) and send a chat message.
 
 #### Supported providers (club settings)
@@ -73,6 +91,8 @@ OpenAI, Anthropic (Claude), Google Gemini, Azure OpenAI, GitHub Models — confi
 | **Plan does not include AI** | Subscription tier | Upgrade plan, grant a **club feature trial** (see below), or enable `VITE_DEV_UNLOCK_ALL_FEATURES=true` locally only |
 | **401 / invalid JWT** | Session expired | Sign out/in; Settings refresh uses `refreshSession` automatically |
 | Provider error in detail | Bad key, wrong model, or Azure endpoint missing | Re-check key, model name, Azure resource URL in Settings |
+| **Internet mode unavailable** | Plan below Pro, admin disabled, or missing consent | Upgrade plan; enable in Settings → AI provider; accept consent dialog |
+| **Web search not configured** | Missing **`TAVILY_API_KEY`** secret | `supabase secrets set TAVILY_API_KEY=...`; redeploy **`co-trainer`** |
 
 The Settings **Test connection** and AI 4 T chat require the app’s `VITE_*` URLs to reach this project and a successful deploy of `co-trainer` (including `mode: "health"` support).
 

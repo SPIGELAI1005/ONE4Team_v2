@@ -320,6 +320,8 @@ Add to `buildClubContext()` **only when data exists** (never fabricate):
 
 **Tie to pricing:** document in `plan-limits.ts` + Pricing page FAQ.
 
+**Shipped (2026-08-01, AI4T-P4-003 / AI4T-INT-*):** **GPT Internet mode** (Pro+) — Tavily web research, user consent, admin toggle, monthly caps, cited sources in chat. Custom GPT URL not used (API unavailable); Phase 3 RAG deferred. Migrations **`20260806130000`**, **`20260806140000`**; secret **`TAVILY_API_KEY`**; redeploy **`co-trainer`**. See **`CHANGELOG.md`**, **`DEPLOYMENT.md`**, **`TASKS.md`** Sprint 2026-08-01.
+
 ---
 
 ## Phase 5 — Long-term (after pilot confidence)

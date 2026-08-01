@@ -149,6 +149,8 @@ Apply after gamification / pricing migrations above (strict filename order):
 - `20260804198000_final_lint_cleanup_heatmap_radar.sql` — heatmap overload + radar ambiguity
 - `20260804199000_heatmap_order_by_fix.sql` — `GROUP BY` / `ORDER BY` on heatmap aggregate
 - `20260804200000_unused_variable_warning_cleanup.sql` — remove unused PL/pgSQL variables flagged by lint
+- `20260806130000_ai_internet_research.sql` — GPT Internet: consent, usage log, `internet_research_enabled`, extended usage RPCs
+- `20260806140000_fix_ai_internet_consent_upsert.sql` — consent UPDATE RLS + `record_ai_internet_consent` RPC
 
 **Status (2026-07-28):** All above **applied** on linked remote. Verify with **`supabase db lint --linked`** (expect no schema errors). Manual checklist: **`docs/club-roles-verification-checklist.md`**.
 

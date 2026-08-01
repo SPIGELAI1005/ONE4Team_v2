@@ -6125,13 +6125,15 @@ export const en = {
       bannerTitle: "GPT Internet mode",
       bannerBody:
         "Answers may use live web research. Club roster names are not sent. Verify important facts against cited sources.",
+      workspaceScopeHint:
+        "Internet mode: live web research with cited sources. Limited club context only (no member names). Verify facts against sources.",
       consentTitle: "Enable GPT Internet?",
       consentBody:
-        "Internet mode sends your question and limited club context (team names, schedule summaries — not member names) to our AI provider and a web search service. Each session is logged for fair-use limits and admin audit.",
+        "Internet mode sends your question and limited club context (team names and schedule summaries, not member names) to our AI provider and a web search service. Each session is logged for fair-use limits and admin audit.",
       consentNotice:
         "Do not paste passwords, medical data, or other sensitive personal information into Internet mode.",
       consentCancel: "Not now",
-      consentConfirm: "I understand — enable Internet",
+      consentConfirm: "I understand, enable Internet",
       consentFailed: "Could not save your consent. Try again or contact your club admin.",
     },
     suggestedDuringChat: "Suggested starts (available during chat)",

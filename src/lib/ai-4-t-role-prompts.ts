@@ -72,7 +72,7 @@ export function getAi4TRoleWelcomeMessage(
     : `Welcome to AI 4 T. As ${persona} for ${clubName}. Ask anything about your club.`;
 }
 
-export function getAi4TAssistantRoleName(role: Ai4TRoleKey): string {
+export function getAi4TAssistantRoleName(role: Ai4TRoleKey | string): string {
   const roleNames: Record<Ai4TRoleKey, string> = {
     admin: "Co-Admin",
     trainer: "Co-Trainer",
@@ -85,7 +85,10 @@ export function getAi4TAssistantRoleName(role: Ai4TRoleKey): string {
     service_provider: "Co-Service",
     consultant: "Co-Consultant",
   };
-  return roleNames[role];
+  if (role in roleNames) return roleNames[role as Ai4TRoleKey];
+  const normalized = role.replace(/_/g, " ").trim();
+  if (!normalized) return "AI 4 T";
+  return `Co-${normalized.charAt(0).toUpperCase()}${normalized.slice(1)}`;
 }
 
 export function buildAi4TRoleQuickPrompts(role: Ai4TRoleKey, language: "en" | "de"): Ai4TQuickPrompt[] {

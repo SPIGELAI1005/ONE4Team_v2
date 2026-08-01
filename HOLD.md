@@ -1,6 +1,8 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-07-28 — Linked remote through **`20260804200000`**; **`supabase db lint --linked`** clean. Still redeploy **`process-weekly-digests`** after parent-role fix. Cross-reference: `CHANGELOG.md` § **Supabase function lint repair**, § **Club roles optimization**.
+Last updated: 2026-08-01 — Linked remote through **`20260806140000`**; **`co-trainer`** redeployed with GPT Internet; **`TAVILY_API_KEY`** set on linked project. Still redeploy **`process-weekly-digests`** after parent-role fix. Cross-reference: `CHANGELOG.md` § **AI 4 T GPT Internet**, § **Supabase function lint repair**, § **Club roles optimization**.
+
+**Applied (2026-08-01):** `20260806130000` (GPT Internet consent/log/settings), `20260806140000` (consent upsert RLS + `record_ai_internet_consent` RPC). Edge: **`co-trainer`** redeployed; **`TAVILY_API_KEY`** secret set.
 
 **Applied (2026-07-28):** `20260804160000` → `20260804200000` (draft joined status, invite redeem repair, auth/join RPC fixes, analytics repairs, lint warning cleanup); `20260804180000` (club roles); `20260804190000` (photo validity). Still redeploy Edge **`process-weekly-digests`** (parent role query fix).
 
@@ -106,7 +108,7 @@ Keep operator-owned until scheduled; do **not** block Waves A–E on these:
 ## Wave B digests / dues claims / AI caps (2026-07-16)
 Apply after plan catalog migration:
 1. ~~`supabase/migrations/20260802120000_wave_b_weekly_digest_ai_caps_dues_claims.sql`~~ — **applied** on linked remote (2026-07-16)
-2. Deploy Edge: **`process-weekly-digests`** (and redeploy **`co-trainer`**, **`ai4team-agent`** for AI caps) — **still open**
+2. Deploy Edge: **`process-weekly-digests`** (and redeploy **`co-trainer`**, **`ai4team-agent`** for AI caps) — **`co-trainer`** redeployed **2026-08-01** for GPT Internet + caps; **`process-weekly-digests`** still open
 3. Schedule cron POST to `process-weekly-digests` (service role or `WEEKLY_DIGEST_CRON_SECRET`) — **still open**
 
 ## Product Waves A–E migrations (2026-07-16)

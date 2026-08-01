@@ -6149,13 +6149,15 @@ export const de: Translations = {
       bannerTitle: "GPT-Internet-Modus",
       bannerBody:
         "Antworten können Live-Web-Recherche nutzen. Vereins-Mitgliedernamen werden nicht übermittelt. Wichtige Fakten an den Quellen prüfen.",
+      workspaceScopeHint:
+        "Internet-Modus: Live-Web-Recherche mit Quellenangaben. Nur begrenzter Vereinskontext (keine Mitgliedernamen). Fakten an den Quellen prüfen.",
       consentTitle: "GPT Internet aktivieren?",
       consentBody:
-        "Im Internet-Modus werden eure Frage und begrenzter Vereinskontext (Teamnamen, Terminübersichten — keine Mitgliedernamen) an unseren KI-Anbieter und einen Web-Suchdienst gesendet. Jede Sitzung wird für Fair-Use-Limits und Admin-Audit protokolliert.",
+        "Im Internet-Modus werden eure Frage und begrenzter Vereinskontext (Teamnamen und Terminübersichten, keine Mitgliedernamen) an unseren KI-Anbieter und einen Web-Suchdienst gesendet. Jede Sitzung wird für Fair-Use-Limits und Admin-Audit protokolliert.",
       consentNotice:
         "Keine Passwörter, medizinischen oder anderen sensiblen personenbezogenen Daten in den Internet-Modus einfügen.",
       consentCancel: "Nicht jetzt",
-      consentConfirm: "Verstanden — Internet aktivieren",
+      consentConfirm: "Verstanden, Internet aktivieren",
       consentFailed: "Einwilligung konnte nicht gespeichert werden. Erneut versuchen oder Admin kontaktieren.",
     },
     suggestedDuringChat: "Schnellstarts (auch während des Chats nutzbar)",

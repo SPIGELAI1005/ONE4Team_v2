@@ -48,7 +48,7 @@ import {
   type InternetSourceLink,
 } from "@/lib/ai-internet-research";
 import { useSubscription } from "@/hooks/use-subscription";
-import { Ai4tChatModeToggle, Ai4tInternetModeBanner } from "@/components/ai/Ai4tInternetModeControls";
+import { Ai4tChatModeToggle } from "@/components/ai/Ai4tInternetModeControls";
 import { Ai4tInternetConsentDialog } from "@/components/ai/Ai4tInternetConsentDialog";
 import {
   buildAi4TRoleQuickPrompts,
@@ -361,6 +361,11 @@ const CoTrainer = () => {
     ? t.coTrainerPage.subtitleForPartner.replace("{role}", assistantRoleName)
     : t.coTrainerPage.subtitleForClub.replace("{role}", assistantRoleName).replace("{club}", clubName);
   const isPartnerPersona = isPartnerPortal || isPartnerAiRole(roleKey);
+  const workspaceScopeHint = useMemo(() => {
+    if (isPartnerPersona) return t.coTrainerPage.scopeHintPartner;
+    if (chatMode === "internet") return t.coTrainerPage.internetMode.workspaceScopeHint;
+    return t.coTrainerPage.scopeHint;
+  }, [chatMode, isPartnerPersona, t.coTrainerPage.internetMode.workspaceScopeHint, t.coTrainerPage.scopeHint, t.coTrainerPage.scopeHintPartner]);
   const roleWelcome = useMemo(
     () => getAi4TRoleWelcomeMessage(roleKey, language, clubName),
     [roleKey, language, clubName],
@@ -1244,34 +1249,35 @@ const CoTrainer = () => {
               <div className="max-lg:[&_.rounded-2xl]:rounded-xl max-lg:[&_.rounded-2xl]:py-2.5">
                 <Ai4tPersonaHint />
               </div>
-              {chatMode === "internet" ? (
-                <div className="hidden lg:block">
-                  <Ai4tInternetModeBanner />
-                </div>
-              ) : null}
               <div className="hidden rounded-2xl border border-border/60 bg-card/40 p-4 backdrop-blur-2xl lg:block">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                      <MessageSquare className="w-4 h-4 text-primary" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-foreground">
-                        <BrandedText text={t.coTrainerPage.workspaceTitle} />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-9 h-9 shrink-0 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                        <MessageSquare className="w-4 h-4 text-primary" />
                       </div>
-                      <div className="text-[11px] text-muted-foreground flex items-center gap-2">
-                        {isPartnerPersona ? t.coTrainerPage.workspaceSubtitlePartner : t.coTrainerPage.workspaceSubtitle}
-                        {!isPartnerPortal && contextLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-foreground">
+                          <BrandedText text={t.coTrainerPage.workspaceTitle} />
+                        </div>
+                        <div className="text-[11px] text-muted-foreground flex items-center gap-2">
+                          {isPartnerPersona ? t.coTrainerPage.workspaceSubtitlePartner : t.coTrainerPage.workspaceSubtitle}
+                          {!isPartnerPortal && contextLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                        </div>
                       </div>
-                      <p className="text-[10px] text-muted-foreground/90 mt-0.5 max-w-md leading-snug">
-                        {isPartnerPersona ? t.coTrainerPage.scopeHintPartner : t.coTrainerPage.scopeHint}
-                      </p>
                     </div>
+                    <p
+                      className={cn(
+                        "mt-2 max-w-md text-[10px] leading-snug min-h-[2.75rem]",
+                        chatMode === "internet" && !isPartnerPersona
+                          ? "text-amber-800/90 dark:text-amber-200/90"
+                          : "text-muted-foreground/90",
+                      )}
+                    >
+                      {workspaceScopeHint}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] px-2 py-1 rounded-full border border-primary/20 bg-primary/10 text-primary">
-                      {assistantRoleName}
-                    </span>
+                  <div className="flex max-w-[min(100%,22rem)] shrink-0 flex-col items-end gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
                     <span className="text-[10px] px-2 py-1 rounded-full border border-border/60 bg-background/50 text-foreground/80">
                       {isPartnerPersona ? (
                         <>
@@ -1326,12 +1332,6 @@ const CoTrainer = () => {
                   </div>
                 </div>
               </div>
-
-              {chatMode === "internet" ? (
-                <div className="lg:hidden">
-                  <Ai4tInternetModeBanner />
-                </div>
-              ) : null}
 
               {messages.length > 0 && (
                 <div className="hidden rounded-2xl border border-border/60 bg-card/40 p-3 backdrop-blur-2xl lg:block">
@@ -1556,6 +1556,15 @@ const CoTrainer = () => {
                   onChange={handleChatModeChange}
                 />
               </div>
+            ) : null}
+            {!isPartnerPortal ? (
+              chatMode === "internet" ? (
+                <p className="min-h-[2.5rem] px-1 text-[10px] leading-snug text-amber-800/90 dark:text-amber-200/90 lg:hidden">
+                  {t.coTrainerPage.internetMode.workspaceScopeHint}
+                </p>
+              ) : (
+                <div className="min-h-[2.5rem] lg:hidden" aria-hidden />
+              )
             ) : null}
             <Ai4tChatComposer
               variant="dashboard"

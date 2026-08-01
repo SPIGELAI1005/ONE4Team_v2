@@ -6,6 +6,36 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ---
 
+## SPRINT 2026-08-01 — AI 4 T GPT Internet · Members · Roles · CI
+
+**Goal:** Ship GPT Internet mode (without Custom GPT API), improve member export and role admin UX, keep CI green.
+
+| Track | Focus | Task IDs |
+|-------|--------|----------|
+| **A** | AI 4 T GPT Internet | AI4T-INT-001 … AI4T-INT-004 |
+| **B** | Members / Roles | MEM-EXPORT-001, ROLES-EDIT-001 |
+| **C** | CI / E2E / build | CI-E2E-001, CI-BUILD-001 |
+
+### AI 4 T GPT Internet (Phases 1, 2, 4)
+
+- [x] **AI4T-INT-001** DB: `ai_internet_consents`, `ai_internet_usage_log`, `internet_research_enabled`, usage RPC extensions — migrations **`20260806130000`**, **`20260806140000`**
+- [x] **AI4T-INT-002** Edge: Tavily search, internet prompt, `chat_mode=internet` on **`co-trainer`**, plan caps — deploy + **`TAVILY_API_KEY`** *(operator 2026-08-01)*
+- [x] **AI4T-INT-003** Client: Club/Internet toggle, consent dialog, Settings admin toggle, usage meter line, cited sources
+- [x] **AI4T-INT-004** Co-Trainer workspace UX: stable header layout, scope hint swap (no banner jump), no em dash in consent copy
+- [ ] **AI4T-INT-OPS** Operator smoke: Pro club → consent → Internet question with **Sources**; verify monthly cap in Settings meter
+
+### Members · Roles
+
+- [x] **MEM-EXPORT-001** Registry XLSX export includes **`club_member_drafts`** (draft + invited), deduped by email
+- [x] **ROLES-EDIT-001** **`/members` → Roles** inline edit role/scope/team per assignment
+
+### CI · E2E
+
+- [x] **CI-E2E-001** E2E: Supabase env in CI build, onboarding guest access, cookie consent fixture; Playwright ESLint override for **`use`**
+- [x] **CI-BUILD-001** Fix production build: **`??`/`||`** parentheses in **`role-manager.tsx`**
+
+---
+
 ## SPRINT 2026-07-16 — Packaging · i18n · public club UX
 
 **Goal:** Align commercial packaging with product gates; complete German UI copy; harden public club account + hero defaults.
@@ -406,6 +436,7 @@ See [`docs/AI4T_ROADMAP.md`](docs/AI4T_ROADMAP.md) · Golden harness [`docs/AI4T
 #### Phase 4 — Admin control (Pro+)
 - [x] **AI4T-P4-001** Club AI instructions (`club_llm_settings.club_ai_instructions`) + usage RPC `get_club_ai_usage_stats` + Settings UI.
 - [x] **AI4T-P4-002** Pilot UX batch: persona-scoped context, hide Agent for player/member, follow-up chips, error mapping, public guide limits, history filters, admin usage widget, partner marketplace context, ops SQL + [`docs/AI4T_RELEASE_REVIEW.md`](docs/AI4T_RELEASE_REVIEW.md).
+- [x] **AI4T-P4-003** **GPT Internet mode** (Pro+): Tavily research, consent, admin toggle, plan caps, cited sources — see **AI4T-INT-*** in Sprint 2026-08-01 *(2026-08-01)*.
 
 #### Pilot gate — Phase 5 entry (8-week TSV Allach)
 

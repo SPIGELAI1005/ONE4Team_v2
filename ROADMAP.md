@@ -9,6 +9,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Recently shipped (2026-03-28):** ONE4AI (`/co-trainer`) with club LLM settings, edge health check, chat persistence (`ai_conversations`), and member audit timeline migrations — see `CHANGELOG.md` § 2026-03-28 and `MEMORY_BANK.md`.
 
+**AI 4 T GPT Internet + Members/Roles (2026-08-01):** Pro+ Internet research mode (Tavily, consent, cited sources); registry XLSX includes member drafts; Roles tab inline edits; CI/E2E fixes — see `CHANGELOG.md` § **2026-08-01 (AI 4 T GPT Internet…)**, `MEMORY_BANK.md`, `TASKS.md` Sprint 2026-08-01.
+
 **Production readiness / scale (2026-03-30):** Analytics RPCs, guarded hotspot indexes, Members server search + server-paged roster, keyset pagination (matches/messages), platform-admin RBAC/audit, RLS integration tests, CI guardrails/bundle budget, Edge correlation logging, ops templates and runbooks — doc sync: `CHANGELOG.md` § 2026-03-30, `MEMORY_BANK.md`, `ops/PRODUCTION_READINESS_ARTIFACTS.md`, `PROJECT_STATUS.md`, `TASKS.md`, `DEPLOYMENT.md`.
 
 **Club reporting + RBAC polish (2026-05-01):** `/reports` admin KPI dashboard (Recharts: weekly activity, coach coverage, member growth, trainings by weekday/month), `usePermissions` fallback via `is_club_admin` RPC when role-assignment reads fail, migration `20260430173000` for safer `club_role_assignments` SELECT, marketing footer dedupe + cookie dialog height fix — see `CHANGELOG.md` § 2026-05-01, `MEMORY_BANK.md`, `TASKS.md`.
