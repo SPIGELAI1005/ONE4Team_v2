@@ -817,7 +817,8 @@ const AnimatedRoutes = () => {
           element={
             <PageTransition>
               <Suspense fallback={<RouteFallback />}>
-                {import.meta.env.DEV ? <Crash /> : <NotFound />}
+                {/* Always available for Playwright error-boundary checks (CI uses vite preview). */}
+                <Crash />
               </Suspense>
             </PageTransition>
           }

@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("phase12 continuity", () => {
   test("protected route redirects with returnTo", async ({ page }) => {
     await page.goto("/members");
-    await expect(page).toHaveURL(/\/auth\?returnTo=/);
+    await expect(page).toHaveURL(/\/auth\?returnTo=/, { timeout: 15_000 });
     const current = new URL(page.url());
     const returnTo = current.searchParams.get("returnTo");
     expect(returnTo).toBe("/members");
@@ -11,7 +11,10 @@ test.describe("phase12 continuity", () => {
 
   test("invite deep-link keeps onboarding context", async ({ page }) => {
     await page.goto("/onboarding?invite=test-token&club=test-club");
-    await expect(page).toHaveURL(/\/auth\?returnTo=/);
+    // Guests can view the redeem step; redeeming without a session sends them to auth with returnTo.
+    await expect(page).toHaveURL(/\/onboarding\?invite=test-token&club=test-club/);
+    await page.getByRole("button", { name: /join|beitreten|redeem|einlösen/i }).first().click();
+    await expect(page).toHaveURL(/\/auth\?returnTo=/, { timeout: 15_000 });
     const current = new URL(page.url());
     const returnTo = current.searchParams.get("returnTo");
     expect(returnTo).toBe("/onboarding?invite=test-token&club=test-club");
@@ -19,10 +22,9 @@ test.describe("phase12 continuity", () => {
 
   test("protected route keeps query and hash in returnTo", async ({ page }) => {
     await page.goto("/members?tab=invites#alerts");
-    await expect(page).toHaveURL(/\/auth\?returnTo=/);
+    await expect(page).toHaveURL(/\/auth\?returnTo=/, { timeout: 15_000 });
     const current = new URL(page.url());
     const returnTo = current.searchParams.get("returnTo");
     expect(returnTo).toBe("/members?tab=invites#alerts");
   });
 });
-

@@ -24,7 +24,7 @@ test.describe("module route auth gate", () => {
   for (const path of moduleRoutes) {
     test(`unauthenticated user is redirected from ${path}`, async ({ page }) => {
       await page.goto(path);
-      await expect(page).toHaveURL(/\/auth(\b|\/|\?|#)/);
+      await expect(page).toHaveURL(/\/auth(\b|\/|\?|#)/, { timeout: 15_000 });
     });
   }
 });

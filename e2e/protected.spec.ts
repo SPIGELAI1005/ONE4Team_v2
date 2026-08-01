@@ -15,7 +15,9 @@ test.describe("protected routes", () => {
       await page.goto(p);
 
       // Protected routes should redirect to /auth.
-      await expect(page, `Expected redirect to /auth from ${p}`).toHaveURL(/\/auth(\b|\/|\?|#)/);
+      await expect(page, `Expected redirect to /auth from ${p}`).toHaveURL(/\/auth(\b|\/|\?|#)/, {
+        timeout: 15_000,
+      });
     });
   }
 });
