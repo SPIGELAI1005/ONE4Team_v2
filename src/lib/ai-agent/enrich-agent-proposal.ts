@@ -50,7 +50,11 @@ async function loadUpcomingTrainings(clubId: string): Promise<UpcomingTrainingRo
   const teamIds = [...new Set(activities.map((a) => a.team_id).filter(Boolean))] as string[];
   const teamNameById = new Map<string, string>();
   if (teamIds.length > 0) {
-    const { data: teams } = await supabase.from("teams").select("id, name").in("id", teamIds);
+    const { data: teams } = await supabase
+      .from("teams")
+      .select("id, name")
+      .eq("club_id", clubId)
+      .in("id", teamIds);
     for (const team of teams ?? []) {
       teamNameById.set(team.id, team.name);
     }
@@ -127,7 +131,12 @@ export async function enrichAgentProposalDisplay(
       if (activity) {
         let teamName: string | null = null;
         if (activity.team_id) {
-          const { data: team } = await supabase.from("teams").select("name").eq("id", activity.team_id).maybeSingle();
+          const { data: team } = await supabase
+            .from("teams")
+            .select("name")
+            .eq("id", activity.team_id)
+            .eq("club_id", clubId)
+            .maybeSingle();
           teamName = team?.name ?? null;
         }
         params = {

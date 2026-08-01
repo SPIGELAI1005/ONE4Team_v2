@@ -105,7 +105,10 @@ function hasClubScope(chain) {
 }
 
 function hasUserScope(chain) {
-  return /\.eq\(\s*["']user_id["']\s*,/.test(chain);
+  return [
+    /\.eq\(\s*["']user_id["']\s*,/,
+    /\.in\(\s*["']user_id["']\s*,/,
+  ].some((r) => r.test(chain));
 }
 
 function auditFile(file) {

@@ -1265,10 +1265,17 @@ const Members = () => {
       return;
     }
     void (async () => {
-      const [teamsRes, coachesProbe] = await Promise.all([
-        supabase.from("teams").select("id, name, age_group").eq("club_id", clubId).order("name"),
-        supabase.from("team_coaches").select("id").limit(1),
-      ]);
+      const teamsRes = await supabase
+        .from("teams")
+        .select("id, name, age_group")
+        .eq("club_id", clubId)
+        .order("name");
+      const teamIds = ((teamsRes.data as Array<{ id: string }> | null) ?? []).map((team) => team.id);
+      const coachesProbe = await supabase
+        .from("team_coaches")
+        .select("id")
+        .in("team_id", teamIds.length > 0 ? teamIds : ["00000000-0000-0000-0000-000000000000"])
+        .limit(1);
       setSupportsTeamCoachesTable(!coachesProbe.error);
       setClubTeams(
         ((teamsRes.data as Array<{ id: string; name: string; age_group: string | null }> | null) ?? [])

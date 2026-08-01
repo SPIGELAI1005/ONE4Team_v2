@@ -477,8 +477,12 @@ export default function ClubPartnersWorkflow({ embedded = false }: ClubPartnersW
   };
 
   const setPartnerPublicVisibility = async (id: string, value: boolean) => {
-    if (!canManagePartners) return;
-    const { error } = await supabase.from("partners").update({ show_on_public_club_page: value }).eq("id", id);
+    if (!canManagePartners || !clubId) return;
+    const { error } = await supabase
+      .from("partners")
+      .update({ show_on_public_club_page: value })
+      .eq("id", id)
+      .eq("club_id", clubId);
     if (error) {
       toast({ title: t.common.error, description: error.message, variant: "destructive" });
       return;

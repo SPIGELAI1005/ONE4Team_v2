@@ -504,14 +504,17 @@ const PlayerStats = () => {
           setTrainingsByMonth(monthBuckets);
         }
 
-        const [teamsRes, coachesRes] = await Promise.all([
-          supabase.from("teams").select("id").eq("club_id", clubId),
-          supabase.from("team_coaches").select("team_id"),
-        ]);
+        const teamsRes = await supabase.from("teams").select("id").eq("club_id", clubId);
+        const teamIds = !teamsRes.error
+          ? (teamsRes.data ?? []).map((r) => String((r as { id?: string }).id || "")).filter(Boolean)
+          : [];
+        const coachesRes =
+          teamIds.length > 0
+            ? await supabase.from("team_coaches").select("team_id").in("team_id", teamIds)
+            : { data: [] as Array<{ team_id?: string }>, error: null };
 
         if (!cancelled) {
           if (!teamsRes.error) {
-            const teamIds = (teamsRes.data ?? []).map((r) => String((r as { id?: string }).id || "")).filter(Boolean);
             const coachesTeamIdsRaw = !coachesRes.error
               ? (coachesRes.data ?? []).map((r) => String((r as { team_id?: string }).team_id || "")).filter(Boolean)
               : [];
