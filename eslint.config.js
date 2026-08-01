@@ -29,6 +29,14 @@ export default tseslint.config(
     },
   },
   {
+    files: ["e2e/**/*.ts"],
+    rules: {
+      // Playwright fixtures use a `use` callback — not React hooks.
+      "react-hooks/rules-of-hooks": "off",
+      "react-hooks/exhaustive-deps": "off",
+    },
+  },
+  {
     files: ["src/contexts/**/*.{ts,tsx}", "src/components/ai/**/*.{ts,tsx}", "src/components/public-club/club-theme-provider.tsx", "src/components/public-club/public-club-section.tsx"],
     rules: {
       "react-refresh/only-export-components": "off",
