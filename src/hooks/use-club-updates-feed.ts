@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useClubNotifications } from "@/hooks/use-club-notifications";
 import {
   buildClubUpdatesFeed,
+  filterUnreadClubUpdates,
   type ClubAnnouncementUpdate,
   type ClubUpdateFeedItem,
 } from "@/lib/club-updates-feed";
@@ -24,7 +25,8 @@ export function useClubUpdatesFeed(options: {
     loading: notificationsLoading,
     reload: reloadNotifications,
     markAsRead,
-    markAllRead,
+    markReferenceRead,
+    markAllRead: markAllNotificationsRead,
     dismiss,
   } = useClubNotifications(clubId);
 
@@ -125,20 +127,29 @@ export function useClubUpdatesFeed(options: {
     [announcements, isAdmin, notifications, teamFilterId, userTeamIds],
   );
 
-  const unreadCount = items.filter((item) => !item.is_read).length;
+  const unreadItems = useMemo(() => filterUnreadClubUpdates(items), [items]);
+  const unreadCount = unreadItems.length;
   const loading = notificationsLoading || announcementsLoading;
 
   const markFeedItemRead = useCallback(
     async (item: ClubUpdateFeedItem) => {
-      if (item.notification_id) {
-        await markAsRead(item.notification_id);
+      if (item.kind === "announcement" && item.reference_id) {
+        return markReferenceRead(item.reference_id, "announcement");
       }
+      if (!item.notification_id) return false;
+      return markAsRead(item.notification_id);
     },
-    [markAsRead],
+    [markAsRead, markReferenceRead],
   );
 
+  const markAllRead = useCallback(async () => {
+    if (unreadCount === 0) return true;
+    return markAllNotificationsRead();
+  }, [markAllNotificationsRead, unreadCount]);
+
   return {
-    items,
+    items: unreadItems,
+    allItems: items,
     announcements,
     loading,
     unreadCount,

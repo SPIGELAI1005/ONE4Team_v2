@@ -3,6 +3,12 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-08-01 (Operator LOC auto-measure + home-screen PWA + invites CTA)
+
+- **Operator financials LOC:** Measured automatically from `src/` via **`npm run loc:count`** / **`prebuild`** → **`src/generated/app-loc.json`**. Operator UI reads this snapshot; known old baselines (84k / 157k) soft-migrate on load so phones are not stuck on stale `localStorage`. Manual overrides still supported; **Use measured LOC** resets. Docs/i18n no longer hardcode 84k.
+- **Public club PWA:** Per-club web manifest (`start_url` = `/club/{slug}/`), iOS standalone meta, clearer Add-to-Home-Screen steps (Apple still blocks programmatic install).
+- **Members Invites tab:** Page-level **Create invite** CTA (not only header).
+
 ## 2026-07-28 (Supabase function lint repair + warning cleanup)
 
 - **`supabase db lint --linked`** surfaced real errors in join/register/approve/create-club RPCs and analytics/operator diagnostics — all repaired on linked remote.
@@ -204,7 +210,7 @@ It records notable changes, features, and hardening steps.
 
 ### Operator Control Center — `/operator`
 - **Financials (`/operator/financials`):** Revenue (MRR/ARR/ARPU), profitability, and **development investment** sections with editable **cost model** (itemized subscriptions, usage drivers, save + comment history in `localStorage`).
-- **Development build cost model:** Estimate one-time app build investment by **lines of code × cost/line** (default ~84,000 LOC × €3 from `docs/PROJECT_COMPREHENSIVE_AUDIT.md`) or **man-days × daily rate** (default 400 × €600); method toggle in cost model card; feeds **Total invested** and net position.
+- **Development build cost model:** Estimate one-time app build investment by **lines of code × cost/line** (measured LOC from `src/generated/app-loc.json`, historically documented ~84k then ~157k) or **man-days × daily rate** (default 400 × €600); method toggle in cost model card; feeds **Total invested** and net position.
 - **Charts (Recharts):** Cumulative **Investment vs revenue** timeline (operating spend, **purple development** line, revenue, sign-colored net); **Monthly cost breakdown** pie; **Revenue by plan** stacked bar (paying MRR + trial pipeline); **Club growth** area + **Club status** pie on Overview; **Active users** + **Module usage** bars on Analytics.
 - **Chart UX:** Interactive legends (click to highlight/dim series); **series visibility toggles** on investment timeline (show/hide operating, development, revenue, net — net recalculates from visible cost lines only); high-contrast tooltips (`--popover` / `--popover-foreground`); legend label text forced to **`--foreground`** (not slice color) on all operator charts.
 - **Metric cards:** Info bubbles (ⓘ) with calculation hints; **Euro** icons for currency metrics (DE/EU market).

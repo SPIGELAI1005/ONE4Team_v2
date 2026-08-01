@@ -1,5 +1,6 @@
 import type { PlatformPlan } from "@/lib/platform-catalog";
 import type { OperatorClubListItem } from "@/lib/operator-club-detail";
+import appLocSnapshot from "@/generated/app-loc.json";
 
 // Billing statuses that represent recognized recurring revenue vs. pipeline.
 const PAYING_BILLING_STATUSES = new Set(["active", "past_due"]);
@@ -179,6 +180,11 @@ export interface DevelopmentModel {
   personDays: number;
   dailyRate: number;
   method: DevelopmentCostMethod;
+  /**
+   * When false/undefined, LOC is refreshed from the build-time measured snapshot.
+   * Set true only when an operator manually overrides the LOC field.
+   */
+  locCustomized?: boolean;
 }
 
 export interface CostModel {
@@ -189,10 +195,22 @@ export interface CostModel {
   development: DevelopmentModel;
 }
 
-// Current source-code baseline used for Operator financial estimation.
-// Measured on 2026-07-28 from repository `src/` (excluding generated/build output).
-export const CURRENT_ESTIMATED_APP_LOC = 157592;
-const LEGACY_BASELINE_LOC = 84000;
+/** Build-time measured LOC from `npm run loc:count` / prebuild (`src/generated/app-loc.json`). */
+export const CURRENT_ESTIMATED_APP_LOC = Number(appLocSnapshot.linesOfCode) || 0;
+export const APP_LOC_MEASURED_AT =
+  typeof appLocSnapshot.measuredAt === "string" ? appLocSnapshot.measuredAt : null;
+export const APP_LOC_FILE_COUNT = Number(appLocSnapshot.fileCount) || 0;
+export const APP_LOC_SCOPE =
+  typeof appLocSnapshot.scope === "string" ? appLocSnapshot.scope : "src/**/*";
+
+const KNOWN_AUTO_LOC_BASELINES = new Set<number>([
+  84000,
+  157592,
+  CURRENT_ESTIMATED_APP_LOC,
+  ...(Array.isArray(appLocSnapshot.previousBaselines)
+    ? appLocSnapshot.previousBaselines.map((value) => Number(value)).filter((value) => Number.isFinite(value))
+    : []),
+]);
 
 // Defaults are anchored on the current codebase baseline.
 // Cost/line and daily rate are chosen so both methods land in a comparable range
@@ -203,6 +221,7 @@ export const DEFAULT_DEVELOPMENT_MODEL: DevelopmentModel = {
   personDays: 400,
   dailyRate: 600,
   method: "loc",
+  locCustomized: false,
 };
 
 export const DEFAULT_FIXED_ITEMS: readonly CostLineItem[] = [
@@ -361,26 +380,41 @@ function normalizeDevelopment(input: unknown): DevelopmentModel {
   const record = input as Record<string, unknown>;
   const readNumber = (key: keyof DevelopmentModel, fallback: number): number =>
     key in record ? Math.max(0, safeNumber(Number(record[key]))) : fallback;
-  const normalized: DevelopmentModel = {
-    linesOfCode: readNumber("linesOfCode", DEFAULT_DEVELOPMENT_MODEL.linesOfCode),
+  const locCustomized = record.locCustomized === true;
+  let linesOfCode = readNumber("linesOfCode", DEFAULT_DEVELOPMENT_MODEL.linesOfCode);
+
+  // Keep manual overrides. Otherwise refresh from the measured build snapshot so
+  // phones/desktops do not stay stuck on an old localStorage LOC (e.g. 84k).
+  if (!locCustomized) {
+    const shouldAutoSync =
+      record.locCustomized === false ||
+      !("linesOfCode" in record) ||
+      KNOWN_AUTO_LOC_BASELINES.has(linesOfCode);
+    if (shouldAutoSync) {
+      linesOfCode = CURRENT_ESTIMATED_APP_LOC;
+    }
+  }
+
+  return {
+    linesOfCode,
     costPerLine: readNumber("costPerLine", DEFAULT_DEVELOPMENT_MODEL.costPerLine),
     personDays: readNumber("personDays", DEFAULT_DEVELOPMENT_MODEL.personDays),
     dailyRate: readNumber("dailyRate", DEFAULT_DEVELOPMENT_MODEL.dailyRate),
     method: record.method === "effort" ? "effort" : "loc",
+    locCustomized,
   };
+}
 
-  // Soft-migrate untouched legacy defaults to the current measured baseline.
-  // If operators explicitly customized the LOC value, keep their value.
-  const isLegacyDefaultLoc =
-    normalized.linesOfCode === LEGACY_BASELINE_LOC &&
-    normalized.costPerLine === DEFAULT_DEVELOPMENT_MODEL.costPerLine &&
-    normalized.personDays === DEFAULT_DEVELOPMENT_MODEL.personDays &&
-    normalized.dailyRate === DEFAULT_DEVELOPMENT_MODEL.dailyRate;
-  if (isLegacyDefaultLoc) {
-    normalized.linesOfCode = CURRENT_ESTIMATED_APP_LOC;
-  }
-
-  return normalized;
+/** Apply the measured LOC baseline and clear the customized flag. */
+export function withMeasuredDevelopmentLoc(model: CostModel): CostModel {
+  return {
+    ...model,
+    development: {
+      ...model.development,
+      linesOfCode: CURRENT_ESTIMATED_APP_LOC,
+      locCustomized: false,
+    },
+  };
 }
 
 export function normalizeCostModel(input: Partial<CostModel> | Record<string, unknown> | null | undefined): CostModel {
@@ -634,7 +668,8 @@ export function areCostModelsEqual(a: CostModel, b: CostModel): boolean {
     a.development.linesOfCode === b.development.linesOfCode &&
     a.development.costPerLine === b.development.costPerLine &&
     a.development.personDays === b.development.personDays &&
-    a.development.dailyRate === b.development.dailyRate;
+    a.development.dailyRate === b.development.dailyRate &&
+    Boolean(a.development.locCustomized) === Boolean(b.development.locCustomized);
 
   return (
     fixedEqual &&

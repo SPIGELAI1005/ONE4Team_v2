@@ -18,6 +18,7 @@ import {
   Upload,
   Pencil,
   Trash2,
+  UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,7 +49,16 @@ import { correlationHeaders } from "@/lib/observability";
 import { supabaseErrorMessage } from "@/lib/supabase-error-message";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PUBLIC_NEWS_CATEGORIES } from "@/lib/public-club-news";
-import { filterAnnouncementsForUser, filterMessageChannelsForUser, buildMessageAccessFromGateRole, TRAINERS_CHANNEL_ID } from "@/lib/club-message-access";
+import {
+  filterAnnouncementsForUser,
+  filterMessageChannelsForUser,
+  buildMessageAccessFromGateRole,
+  canManageChannelInvites,
+  customChannelUiId,
+  systemChannelKeyForChannel,
+  TRAINERS_CHANNEL_ID,
+  type SystemChannelKey,
+} from "@/lib/club-message-access";
 import { clubAi4tModalOverlayClass, clubAi4tModalPanelClass, clubEmbeddedLightInputFieldClass, clubEmbeddedLightInputShellClass, clubGlassInputClass } from "@/lib/public-club-glass-classes";
 import { cn } from "@/lib/utils";
 import { useUserTeamIds } from "@/hooks/use-user-team-ids";
@@ -56,6 +66,8 @@ import { useModuleGateRole } from "@/hooks/use-module-gate-role";
 import { useClubAdmin } from "@/hooks/use-club-admin";
 import { uploadClubImageAsset } from "@/lib/upload-club-image";
 import { AnnouncementDetailView } from "@/components/communication/announcement-detail-view";
+import { ChannelInviteDialog } from "@/components/communication/channel-invite-dialog";
+import { CreateChannelDialog } from "@/components/communication/create-channel-dialog";
 import { ExternalBridgePanel } from "@/components/communication/external-bridge-panel";
 import { MessageForwardButton } from "@/components/communication/message-forward-button";
 import { canDeleteMessage, canEditMessage, canManageAnnouncements } from "@/lib/club-message-moderation";
@@ -82,6 +94,7 @@ type Message = {
   sender_id: string;
   team_id: string | null;
   is_trainers_channel?: boolean;
+  custom_channel_id?: string | null;
   created_at: string;
   attachments: AttachmentMeta[];
   profiles?: { display_name: string | null };
@@ -95,6 +108,7 @@ type MessageBase = {
   sender_id: string;
   team_id: string | null;
   is_trainers_channel?: boolean;
+  custom_channel_id?: string | null;
   created_at: string;
   attachments?: unknown;
 };
@@ -120,6 +134,12 @@ type Channel = {
   kind: ChannelKind;
   teamId: string | null;
   isTrainersChannel?: boolean;
+  customChannelId?: string | null;
+};
+
+type CustomChannelRow = {
+  id: string;
+  name: string;
 };
 
 type BridgeProvider = "telegram" | "whatsapp";
@@ -205,6 +225,10 @@ function messagesKeysetOrFilter(created_at: string, id: string) {
 
 function messageMatchesChannel(message: MessageBase, channel: Channel): boolean {
   if (channel.kind !== "chat") return false;
+  if (channel.customChannelId) {
+    return message.custom_channel_id === channel.customChannelId;
+  }
+  if (message.custom_channel_id) return false;
   const isTrainers = Boolean(message.is_trainers_channel);
   if (channel.isTrainersChannel) return isTrainers && message.team_id === null;
   if (isTrainers) return false;
@@ -216,20 +240,28 @@ function applyChannelToMessageQuery<T extends { is: (col: string, val: null | bo
   query: T,
   channel: Channel,
   supportsTrainersColumn: boolean,
+  supportsCustomChannelColumn: boolean,
 ): T {
+  if (channel.customChannelId && supportsCustomChannelColumn) {
+    return query.eq("custom_channel_id", channel.customChannelId);
+  }
+  let scoped = query;
+  if (supportsCustomChannelColumn) {
+    scoped = scoped.is("custom_channel_id", null);
+  }
   if (channel.isTrainersChannel && supportsTrainersColumn) {
-    return query.is("team_id", null).eq("is_trainers_channel", true);
+    return scoped.is("team_id", null).eq("is_trainers_channel", true);
   }
   if (channel.teamId === null) {
     if (supportsTrainersColumn) {
-      return query.is("team_id", null).eq("is_trainers_channel", false);
+      return scoped.is("team_id", null).eq("is_trainers_channel", false);
     }
-    return query.is("team_id", null);
+    return scoped.is("team_id", null);
   }
   if (supportsTrainersColumn) {
-    return query.eq("team_id", channel.teamId).eq("is_trainers_channel", false);
+    return scoped.eq("team_id", channel.teamId).eq("is_trainers_channel", false);
   }
-  return query.eq("team_id", channel.teamId);
+  return scoped.eq("team_id", channel.teamId);
 }
 
 export interface CommunicationWorkspaceProps {
@@ -284,18 +316,23 @@ export function CommunicationWorkspace({
       ),
     [embedded, gateRole, teamFilterId, userTeamIds],
   );
+  const canInviteToChannels = canManageChannelInvites(gateRole);
   const attachmentPlaceholder = t.communicationPage.attachmentPlaceholder;
 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [pendingMessages, setPendingMessages] = useState<Message[]>([]);
   const [teams, setTeams] = useState<TeamChannel[]>([]);
+  const [customChannels, setCustomChannels] = useState<CustomChannelRow[]>([]);
+  const [invitedSystemKeys, setInvitedSystemKeys] = useState<string[]>([]);
   const [clubName, setClubName] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(true);
   const [messagePage, setMessagePage] = useState(1);
   const [messageTotalCount, setMessageTotalCount] = useState(0);
   const [showAddAnnouncement, setShowAddAnnouncement] = useState(false);
+  const [showCreateChannel, setShowCreateChannel] = useState(false);
+  const [showInviteChannel, setShowInviteChannel] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [messageSearch, setMessageSearch] = useState("");
@@ -306,6 +343,7 @@ export function CommunicationWorkspace({
   const [baseDataLoadError, setBaseDataLoadError] = useState<string | null>(null);
   const [supportsAttachments, setSupportsAttachments] = useState(true);
   const [supportsTrainersChannel, setSupportsTrainersChannel] = useState(true);
+  const [supportsCustomChannels, setSupportsCustomChannels] = useState(true);
   const [connectors, setConnectors] = useState<BridgeConnector[]>([]);
   const [connectorEvents, setConnectorEvents] = useState<BridgeEvent[]>([]);
   const [showBridgeSettings, setShowBridgeSettings] = useState(false);
@@ -441,13 +479,30 @@ export function CommunicationWorkspace({
             teamId: team.id,
           });
         }
+        if (supportsCustomChannels) {
+          for (const channel of customChannels) {
+            base.push({
+              id: customChannelUiId(channel.id),
+              label: channel.name,
+              kind: "chat",
+              teamId: null,
+              customChannelId: channel.id,
+            });
+          }
+        }
       }
-      return filterMessageChannelsForUser(base, messageAccess);
+      return filterMessageChannelsForUser(base, {
+        ...messageAccess,
+        invitedSystemKeys,
+      });
     },
     [
       canUseAnnouncements,
       canUseChat,
+      customChannels,
+      invitedSystemKeys,
       messageAccess,
+      supportsCustomChannels,
       supportsTrainersChannel,
       t.communicationPage.announcementsChannel,
       t.communicationPage.clubGeneralChannel,
@@ -463,8 +518,17 @@ export function CommunicationWorkspace({
         isAdmin: messageAccess.isAdmin,
         teamFilterId: embedded ? teamFilterId : undefined,
         clubWideOnly: messageAccess.clubWideOnly,
+        invitedToAnnouncements: invitedSystemKeys.includes("announcements"),
       }),
-    [announcements, embedded, messageAccess.clubWideOnly, messageAccess.isAdmin, messageAccess.userTeamIds, teamFilterId],
+    [
+      announcements,
+      embedded,
+      invitedSystemKeys,
+      messageAccess.clubWideOnly,
+      messageAccess.isAdmin,
+      messageAccess.userTeamIds,
+      teamFilterId,
+    ],
   );
 
   const viewingAnnouncement = useMemo(
@@ -630,7 +694,7 @@ export function CommunicationWorkspace({
     if (!clubId) return;
     setLoading(true);
     setBaseDataLoadError(null);
-    const [annRes, teamsRes, clubRes] = await Promise.all([
+    const [annRes, teamsRes, clubRes, customChannelsRes, inviteRes] = await Promise.all([
       supabase
         .from("announcements")
         .select("*")
@@ -638,6 +702,17 @@ export function CommunicationWorkspace({
         .order("created_at", { ascending: false }),
       supabase.from("teams").select("id, name").eq("club_id", clubId).order("name"),
       supabase.from("clubs").select("name").eq("id", clubId).maybeSingle(),
+      supabase
+        .from("message_channels")
+        .select("id, name")
+        .eq("club_id", clubId)
+        .order("name"),
+      supabase
+        .from("message_channel_members")
+        .select("system_channel_key, club_memberships!inner(user_id)")
+        .eq("club_id", clubId)
+        .not("system_channel_key", "is", null)
+        .eq("club_memberships.user_id", user?.id ?? ""),
     ]);
 
     let combinedErr: string | null = null;
@@ -660,6 +735,35 @@ export function CommunicationWorkspace({
     if (clubRes.error) {
       combinedErr = combinedErr || supabaseErrorMessage(clubRes.error);
     }
+    if (customChannelsRes.error) {
+      if (
+        customChannelsRes.error.message.includes("Could not find the table 'public.message_channels'")
+        || customChannelsRes.error.message.includes("schema cache")
+      ) {
+        setSupportsCustomChannels(false);
+        setCustomChannels([]);
+      } else {
+        combinedErr = combinedErr || supabaseErrorMessage(customChannelsRes.error);
+      }
+    } else {
+      setSupportsCustomChannels(true);
+      setCustomChannels((customChannelsRes.data as CustomChannelRow[]) || []);
+    }
+    if (inviteRes.error) {
+      if (
+        inviteRes.error.message.includes("Could not find the table 'public.message_channel_members'")
+        || inviteRes.error.message.includes("schema cache")
+      ) {
+        setInvitedSystemKeys([]);
+      } else {
+        combinedErr = combinedErr || supabaseErrorMessage(inviteRes.error);
+      }
+    } else {
+      const keys = (inviteRes.data || [])
+        .map((row) => row.system_channel_key)
+        .filter((key): key is string => typeof key === "string");
+      setInvitedSystemKeys(keys);
+    }
 
     if (combinedErr) {
       setBaseDataLoadError(combinedErr);
@@ -676,6 +780,7 @@ export function CommunicationWorkspace({
     t.common.error,
     t.communicationPage.announcementsTableMissingDesc,
     t.communicationPage.announcementsTableMissingTitle,
+    user?.id,
   ]);
 
   useEffect(() => {
@@ -684,6 +789,8 @@ export function CommunicationWorkspace({
     setMessages([]);
     setPendingMessages([]);
     setTeams([]);
+    setCustomChannels([]);
+    setInvitedSystemKeys([]);
     setClubName("");
     setLoading(true);
     setLoadingMessages(true);
@@ -691,6 +798,7 @@ export function CommunicationWorkspace({
     setMissingAnnouncementsTable(false);
     setSupportsAttachments(true);
     setSupportsTrainersChannel(true);
+    setSupportsCustomChannels(true);
     setMessagePage(1);
     setMessageTotalCount(0);
     setBaseDataLoadError(null);
@@ -728,21 +836,31 @@ export function CommunicationWorkspace({
         }
       }
 
-      const runQuery = async (withAttachments: boolean, withTrainersColumn: boolean) => {
+      const runQuery = async (
+        withAttachments: boolean,
+        withTrainersColumn: boolean,
+        withCustomChannelColumn: boolean,
+      ) => {
         const trainersSelect = withTrainersColumn ? ", is_trainers_channel" : "";
+        const customSelect = withCustomChannelColumn ? ", custom_channel_id" : "";
         let query = supabase
           .from("messages")
           .select(
             withAttachments
-              ? `id, content, sender_id, team_id, created_at, attachments${trainersSelect}`
-              : `id, content, sender_id, team_id, created_at${trainersSelect}`,
+              ? `id, content, sender_id, team_id, created_at, attachments${trainersSelect}${customSelect}`
+              : `id, content, sender_id, team_id, created_at${trainersSelect}${customSelect}`,
             { count: "exact" },
           )
           .eq("club_id", clubId)
           .order("created_at", { ascending: false })
           .order("id", { ascending: false })
           .limit(MESSAGE_PAGE_SIZE);
-        query = applyChannelToMessageQuery(query, selectedChannel, withTrainersColumn);
+        query = applyChannelToMessageQuery(
+          query,
+          selectedChannel,
+          withTrainersColumn,
+          withCustomChannelColumn,
+        );
         if (messagePage > 1) {
           const before = messageKeysetRef.current[messagePage - 1];
           if (before) query = query.or(messagesKeysetOrFilter(before.created_at, before.id));
@@ -750,22 +868,31 @@ export function CommunicationWorkspace({
         return query;
       };
 
-      const runCountQuery = async (withTrainersColumn: boolean) => {
+      const runCountQuery = async (withTrainersColumn: boolean, withCustomChannelColumn: boolean) => {
         const query = supabase
           .from("messages")
           .select("id", { count: "exact", head: true })
           .eq("club_id", clubId);
-        return applyChannelToMessageQuery(query, selectedChannel, withTrainersColumn);
+        return applyChannelToMessageQuery(
+          query,
+          selectedChannel,
+          withTrainersColumn,
+          withCustomChannelColumn,
+        );
       };
 
-      let response = await runQuery(true, true);
+      let response = await runQuery(true, true, true);
       if (response.error?.message.includes("column messages.attachments does not exist")) {
         setSupportsAttachments(false);
-        response = await runQuery(false, true);
+        response = await runQuery(false, true, true);
       }
       if (response.error?.message.includes("column messages.is_trainers_channel does not exist")) {
         setSupportsTrainersChannel(false);
-        response = await runQuery(supportsAttachments, false);
+        response = await runQuery(supportsAttachments, false, true);
+      }
+      if (response.error?.message.includes("column messages.custom_channel_id does not exist")) {
+        setSupportsCustomChannels(false);
+        response = await runQuery(supportsAttachments, supportsTrainersChannel, false);
       }
       const { data, error } = response;
       if (error) {
@@ -793,7 +920,7 @@ export function CommunicationWorkspace({
 
       let totalCount = response.count ?? 0;
       if (totalCount === 0 && rawRows.length > 0) {
-        const countResponse = await runCountQuery(supportsTrainersChannel);
+        const countResponse = await runCountQuery(supportsTrainersChannel, supportsCustomChannels);
         if (!countResponse.error && countResponse.count != null) {
           totalCount = countResponse.count;
         }
@@ -816,6 +943,7 @@ export function CommunicationWorkspace({
     messagePage,
     selectedChannel,
     supportsAttachments,
+    supportsCustomChannels,
     supportsTrainersChannel,
     t.common.error,
     t.communicationPage.messagesTableMissingDesc,
@@ -967,8 +1095,9 @@ export function CommunicationWorkspace({
         id: `local-${clientId}`,
         content: finalContent,
         sender_id: user.id,
-        team_id: selectedChannel.teamId,
+        team_id: selectedChannel.customChannelId ? null : selectedChannel.teamId,
         is_trainers_channel: Boolean(selectedChannel.isTrainersChannel),
+        custom_channel_id: selectedChannel.customChannelId ?? null,
         created_at: new Date().toISOString(),
         attachments,
         profiles: { display_name: t.communicationPage.you },
@@ -980,9 +1109,12 @@ export function CommunicationWorkspace({
     const payload = {
       club_id: clubId,
       sender_id: user.id,
-      team_id: selectedChannel.teamId,
+      team_id: selectedChannel.customChannelId ? null : selectedChannel.teamId,
       content: finalContent,
     } as Record<string, unknown>;
+    if (supportsCustomChannels && selectedChannel.customChannelId) {
+      payload.custom_channel_id = selectedChannel.customChannelId;
+    }
     if (supportsTrainersChannel && selectedChannel.isTrainersChannel) {
       payload.is_trainers_channel = true;
     }
@@ -996,9 +1128,10 @@ export function CommunicationWorkspace({
     }
 
     const trainersSelect = supportsTrainersChannel ? ", is_trainers_channel" : "";
+    const customSelect = supportsCustomChannels ? ", custom_channel_id" : "";
     const selectColumns = supportsAttachments
-      ? `id, content, sender_id, team_id, created_at, attachments${trainersSelect}`
-      : `id, content, sender_id, team_id, created_at${trainersSelect}`;
+      ? `id, content, sender_id, team_id, created_at, attachments${trainersSelect}${customSelect}`
+      : `id, content, sender_id, team_id, created_at${trainersSelect}${customSelect}`;
 
     const { data, error } = await supabase
       .from("messages")
@@ -1372,6 +1505,42 @@ export function CommunicationWorkspace({
   };
 
   const canPostAnnouncements = canManageAnnouncements(isClubAdmin) && !missingAnnouncementsTable;
+  const canCreateChannels =
+    canInviteToChannels && canUseChat && supportsCustomChannels && Boolean(user?.id) && canMutate;
+  const canInviteSelectedChannel =
+    canInviteToChannels && supportsCustomChannels && Boolean(user?.id) && canMutate && Boolean(selectedChannel);
+  const inviteSystemKey = selectedChannel
+    ? (systemChannelKeyForChannel(selectedChannel) as SystemChannelKey | null)
+    : null;
+
+  const createChannelLabels = {
+    title: t.communicationPage.createChannelTitle,
+    description: t.communicationPage.createChannelDescription,
+    nameLabel: t.communicationPage.createChannelNameLabel,
+    namePlaceholder: t.communicationPage.createChannelNamePlaceholder,
+    membersLabel: t.communicationPage.createChannelMembersLabel,
+    searchPlaceholder: t.communicationPage.channelInviteSearchPlaceholder,
+    create: t.communicationPage.createChannelSubmit,
+    creating: t.communicationPage.createChannelSubmitting,
+    empty: t.communicationPage.channelInviteEmpty,
+    success: t.communicationPage.createChannelSuccess,
+    failed: t.communicationPage.createChannelFailed,
+    nameRequired: t.communicationPage.createChannelNameRequired,
+    cancel: t.common.cancel,
+  };
+
+  const inviteChannelLabels = {
+    title: t.communicationPage.channelInviteTitle,
+    description: t.communicationPage.channelInviteDescription,
+    searchPlaceholder: t.communicationPage.channelInviteSearchPlaceholder,
+    invite: t.communicationPage.channelInviteSubmit,
+    inviting: t.communicationPage.channelInviteSubmitting,
+    empty: t.communicationPage.channelInviteEmpty,
+    noneLeft: t.communicationPage.channelInviteNoneLeft,
+    success: t.communicationPage.channelInviteSuccess,
+    failed: t.communicationPage.channelInviteFailed,
+    cancel: t.common.cancel,
+  };
 
   const announceButton =
     !embedded && selectedChannel?.kind === "announcements" && canPostAnnouncements ? (
@@ -1511,37 +1680,75 @@ export function CommunicationWorkspace({
               <div className={cn("min-h-0", !embedded && "flex min-h-0 flex-1 flex-col overflow-hidden")}>
                 <div
                   className={cn(
-                    "text-xs font-semibold px-2 mb-2",
-                    embedded ? "text-neutral-500" : "text-muted-foreground",
+                    "mb-2 flex items-center justify-between gap-2 px-2",
                   )}
                 >
-                  {t.communicationPage.channels}
+                  <div
+                    className={cn(
+                      "text-xs font-semibold",
+                      embedded ? "text-neutral-500" : "text-muted-foreground",
+                    )}
+                  >
+                    {t.communicationPage.channels}
+                  </div>
+                  {canCreateChannels ? (
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      aria-label={t.communicationPage.createChannelTitle}
+                      onClick={() => setShowCreateChannel(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  ) : null}
                 </div>
                 <div className={cn("space-y-1", !embedded && "min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1")}>
                   {channels.map((channel) => (
-                    <button
-                      key={channel.id}
-                      onClick={() => setSelectedChannelId(channel.id)}
-                      className={cn(
-                        "w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors",
-                        selectedChannel.id === channel.id
-                          ? embedded
-                            ? "border border-[color:var(--club-primary)]/30 bg-[color:var(--club-primary)]/10 font-medium text-[color:var(--club-primary)]"
-                            : "bg-primary/12 text-primary border border-primary/20"
-                          : embedded
-                            ? "text-neutral-600 hover:bg-neutral-100/90"
-                            : "hover:bg-muted/40 text-muted-foreground",
-                      )}
-                    >
-                      {channel.kind === "announcements" ? (
-                        <Megaphone className="w-4 h-4 shrink-0" />
-                      ) : channel.isTrainersChannel ? (
-                        <Users className="w-4 h-4 shrink-0" />
-                      ) : (
-                        <Hash className="w-4 h-4 shrink-0" />
-                      )}
-                      <span className="truncate">{channel.label}</span>
-                    </button>
+                    <div key={channel.id} className="group relative">
+                      <button
+                        onClick={() => setSelectedChannelId(channel.id)}
+                        className={cn(
+                          "w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors",
+                          selectedChannel.id === channel.id
+                            ? embedded
+                              ? "border border-[color:var(--club-primary)]/30 bg-[color:var(--club-primary)]/10 font-medium text-[color:var(--club-primary)]"
+                              : "bg-primary/12 text-primary border border-primary/20"
+                            : embedded
+                              ? "text-neutral-600 hover:bg-neutral-100/90"
+                              : "hover:bg-muted/40 text-muted-foreground",
+                        )}
+                      >
+                        {channel.kind === "announcements" ? (
+                          <Megaphone className="w-4 h-4 shrink-0" />
+                        ) : channel.isTrainersChannel ? (
+                          <Users className="w-4 h-4 shrink-0" />
+                        ) : (
+                          <Hash className="w-4 h-4 shrink-0" />
+                        )}
+                        <span className="truncate pr-6">{channel.label}</span>
+                      </button>
+                      {canInviteToChannels && supportsCustomChannels && canMutate ? (
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className={cn(
+                            "absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100",
+                            selectedChannel.id === channel.id && "opacity-100",
+                          )}
+                          aria-label={t.communicationPage.channelInviteTitle}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setSelectedChannelId(channel.id);
+                            setShowInviteChannel(true);
+                          }}
+                        >
+                          <UserPlus className="h-3.5 w-3.5" />
+                        </Button>
+                      ) : null}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1592,27 +1799,65 @@ export function CommunicationWorkspace({
                         ? `# ${selectedChannel.label}`
                         : `# ${selectedChannel.label}`}
                   </div>
+                  {canInviteSelectedChannel ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="ml-1 h-8 shrink-0"
+                      onClick={() => setShowInviteChannel(true)}
+                    >
+                      <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+                      {t.communicationPage.channelInviteAction}
+                    </Button>
+                  ) : null}
                 </div>
-                <Select value={selectedChannelId} onValueChange={setSelectedChannelId}>
-                  <SelectTrigger
-                    aria-label={t.communicationPage.channels}
-                    className={cn(
-                      "h-10 w-full text-sm",
-                      embedded
-                        ? "rounded-xl border-neutral-200/80 bg-neutral-50 text-neutral-900 sm:hidden"
-                        : "min-w-0 flex-1 rounded-xl border-border/70 bg-background/70 lg:hidden",
-                    )}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {channels.map((channel) => (
-                      <SelectItem key={channel.id} value={channel.id}>
-                        {channel.kind === "announcements" ? channel.label : `# ${channel.label}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className={cn("flex w-full items-center gap-2", embedded ? "sm:hidden" : "lg:hidden")}>
+                  <Select value={selectedChannelId} onValueChange={setSelectedChannelId}>
+                    <SelectTrigger
+                      aria-label={t.communicationPage.channels}
+                      className={cn(
+                        "h-10 min-w-0 flex-1 text-sm",
+                        embedded
+                          ? "rounded-xl border-neutral-200/80 bg-neutral-50 text-neutral-900"
+                          : "rounded-xl border-border/70 bg-background/70",
+                      )}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {channels.map((channel) => (
+                        <SelectItem key={channel.id} value={channel.id}>
+                          {channel.kind === "announcements" ? channel.label : `# ${channel.label}`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {canCreateChannels ? (
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="outline"
+                      className="h-10 w-10 shrink-0"
+                      aria-label={t.communicationPage.createChannelTitle}
+                      onClick={() => setShowCreateChannel(true)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  ) : null}
+                  {canInviteSelectedChannel ? (
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="outline"
+                      className="h-10 w-10 shrink-0"
+                      aria-label={t.communicationPage.channelInviteTitle}
+                      onClick={() => setShowInviteChannel(true)}
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </Button>
+                  ) : null}
+                </div>
                 {selectedChannel.kind === "chat" && !embedded ? (
                   <div className={cn(DASHBOARD_TYPE_MICRO, "hidden lg:block")}>{t.communicationPage.chatManagementPlatform}</div>
                 ) : null}
@@ -2635,6 +2880,40 @@ export function CommunicationWorkspace({
             </div>
           </motion.div>
         </div>
+      ) : null}
+
+      {clubId && user?.id ? (
+        <>
+          <CreateChannelDialog
+            open={showCreateChannel}
+            onOpenChange={setShowCreateChannel}
+            clubId={clubId}
+            currentUserId={user.id}
+            labels={createChannelLabels}
+            onCreated={(channel) => {
+              setCustomChannels((previous) => {
+                if (previous.some((row) => row.id === channel.id)) return previous;
+                return [...previous, channel].sort((a, b) => a.name.localeCompare(b.name));
+              });
+              setSelectedChannelId(customChannelUiId(channel.id));
+            }}
+          />
+          {selectedChannel ? (
+            <ChannelInviteDialog
+              open={showInviteChannel}
+              onOpenChange={setShowInviteChannel}
+              clubId={clubId}
+              currentUserId={user.id}
+              customChannelId={selectedChannel.customChannelId ?? null}
+              systemChannelKey={inviteSystemKey}
+              channelLabel={selectedChannel.label}
+              labels={inviteChannelLabels}
+              onInvited={() => {
+                void loadBaseData();
+              }}
+            />
+          ) : null}
+        </>
       ) : null}
     </div>
   );

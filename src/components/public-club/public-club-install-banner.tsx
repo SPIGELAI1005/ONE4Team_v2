@@ -1,31 +1,39 @@
 import { useEffect, useState } from "react";
-import { Download, X } from "lucide-react";
+import { Download, Share, SquarePlus, X } from "lucide-react";
 import { useLanguage } from "@/hooks/use-language";
 import { Button } from "@/components/ui/button";
+import { isIosSafariLike, isStandaloneDisplayMode } from "@/lib/public-club-pwa-manifest";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-const DISMISS_KEY = "one4team.pwaInstallDismissed";
+function dismissStorageKey(clubSlug: string): string {
+  return `one4team.pwaInstallDismissed.${clubSlug || "club"}`;
+}
 
 /** Soft install banner for public club microsites only. */
-export function PublicClubInstallBanner({ clubName }: { clubName: string }) {
+export function PublicClubInstallBanner({
+  clubName,
+  clubSlug,
+}: {
+  clubName: string;
+  clubSlug: string;
+}) {
   const { t } = useLanguage();
   const copy = t.publicClubPwa;
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
   const [iosHint, setIosHint] = useState(false);
+  const [showIosSteps, setShowIosSteps] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (localStorage.getItem(DISMISS_KEY) === "1") return;
+    if (isStandaloneDisplayMode()) return;
+    if (localStorage.getItem(dismissStorageKey(clubSlug)) === "1") return;
 
-    const isIos =
-      /iphone|ipad|ipod/i.test(navigator.userAgent) &&
-      !(window.navigator as Navigator & { standalone?: boolean }).standalone;
-    if (isIos) {
+    if (isIosSafariLike()) {
       setIosHint(true);
       setVisible(true);
       return;
@@ -38,12 +46,12 @@ export function PublicClubInstallBanner({ clubName }: { clubName: string }) {
     };
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
     return () => window.removeEventListener("beforeinstallprompt", onBeforeInstall);
-  }, []);
+  }, [clubSlug]);
 
   if (!visible) return null;
 
   const dismiss = () => {
-    localStorage.setItem(DISMISS_KEY, "1");
+    localStorage.setItem(dismissStorageKey(clubSlug), "1");
     setVisible(false);
   };
 
@@ -64,12 +72,47 @@ export function PublicClubInstallBanner({ clubName }: { clubName: string }) {
             {copy.title.replace("{club}", clubName)}
           </div>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            {iosHint ? copy.iosHint : copy.desc}
+            {(iosHint ? copy.iosHint : copy.desc).replace("{club}", clubName)}
           </p>
+
+          {iosHint && showIosSteps ? (
+            <ol className="mt-2 space-y-1.5 rounded-xl border border-border/60 bg-muted/30 p-2.5 text-[11px] text-foreground">
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary">
+                  1
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Share className="h-3.5 w-3.5 text-primary" />
+                  {copy.iosStepShare}
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary">
+                  2
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <SquarePlus className="h-3.5 w-3.5 text-primary" />
+                  {copy.iosStepAdd}
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-semibold text-primary">
+                  3
+                </span>
+                <span>{copy.iosStepConfirm.replace("{club}", clubName)}</span>
+              </li>
+            </ol>
+          ) : null}
+
           <div className="mt-2 flex flex-wrap gap-2">
             {!iosHint && deferred ? (
               <Button size="sm" onClick={() => void install()}>
                 {copy.install}
+              </Button>
+            ) : null}
+            {iosHint ? (
+              <Button size="sm" onClick={() => setShowIosSteps((open) => !open)}>
+                {showIosSteps ? copy.iosHideSteps : copy.iosShowSteps}
               </Button>
             ) : null}
             <Button size="sm" variant="ghost" onClick={dismiss}>
@@ -83,12 +126,4 @@ export function PublicClubInstallBanner({ clubName }: { clubName: string }) {
       </div>
     </div>
   );
-}
-
-export function registerPublicClubServiceWorker(): void {
-  if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
-  if (!window.location.pathname.startsWith("/club/")) return;
-  void navigator.serviceWorker.register("/club-pwa-sw.js").catch(() => {
-    // ignore
-  });
 }

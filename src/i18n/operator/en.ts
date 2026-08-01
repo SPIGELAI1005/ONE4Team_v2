@@ -1162,7 +1162,7 @@ export const operatorEn = {
       developmentBuildCost:
         "One-time build investment for developing the app. Estimated from either lines of code × cost per line, or man-days × daily rate — whichever method is selected in the cost model.",
       linesOfCode:
-        "Estimated lines of code written for the app (default anchored on the documented ~84,000 lines in src/). Editable in the cost model.",
+        "Measured lines of code in src/ from the latest build snapshot (auto-updated unless you override the value in the cost model).",
       developmentEffort:
         "Estimated development effort in man-days and the assumed blended daily rate. Editable in the cost model.",
       operatingSpend: "Sum of fixed monthly subscriptions from the cost model, accumulated month by month since the start month.",
@@ -1256,7 +1256,8 @@ export const operatorEn = {
     developmentMethodEffort: "By effort (man-days)",
     developmentLinesLabel: "Lines of code",
     developmentUnitLines: "lines",
-    developmentLinesHint: "Estimated total lines written (~157,592 currently measured in src/).",
+    developmentLinesHint: "Measured total lines in src/ (currently {loc}). Updates automatically on each deploy unless you override.",
+    developmentUseMeasuredLoc: "Use measured LOC",
     developmentCostPerLineLabel: "Cost per line",
     developmentUnitEurPerLine: "€ / line",
     developmentCostPerLineHint: "Industry estimates vary widely; tune to your context.",

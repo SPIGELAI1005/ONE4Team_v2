@@ -1172,7 +1172,7 @@ export const operatorDe = {
       developmentBuildCost:
         "Einmalige Investition in die Entwicklung der App. Geschätzt entweder aus Codezeilen × Kosten pro Zeile oder Manntagen × Tagessatz — je nach im Kostenmodell gewählter Methode.",
       linesOfCode:
-        "Geschätzte für die App geschriebene Codezeilen (Standard basiert auf den dokumentierten ~84.000 Zeilen in src/). Im Kostenmodell bearbeitbar.",
+        "Gemessene Codezeilen in src/ aus dem aktuellen Build-Snapshot (wird automatisch aktualisiert, sofern Sie den Wert im Kostenmodell nicht überschreiben).",
       developmentEffort:
         "Geschätzter Entwicklungsaufwand in Manntagen und der angenommene gemischte Tagessatz. Im Kostenmodell bearbeitbar.",
       operatingSpend: "Summe der fixen monatlichen Abos aus dem Kostenmodell, monatlich kumuliert seit dem Startmonat.",
@@ -1266,7 +1266,8 @@ export const operatorDe = {
     developmentMethodEffort: "Nach Aufwand (Manntage)",
     developmentLinesLabel: "Codezeilen",
     developmentUnitLines: "Zeilen",
-    developmentLinesHint: "Geschätzte Gesamtzeilen (~157.592 aktuell in src/ gemessen).",
+    developmentLinesHint: "Gemessene Gesamtzeilen in src/ (aktuell {loc}). Wird bei jedem Deploy automatisch aktualisiert, sofern nicht manuell überschrieben.",
+    developmentUseMeasuredLoc: "Gemessene LOC verwenden",
     developmentCostPerLineLabel: "Kosten pro Zeile",
     developmentUnitEurPerLine: "€ / Zeile",
     developmentCostPerLineHint: "Branchenschätzungen variieren stark; an Ihren Kontext anpassen.",

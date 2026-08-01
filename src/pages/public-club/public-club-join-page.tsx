@@ -253,7 +253,7 @@ export default function PublicClubJoinPage() {
         setSubmitting(false);
       }
     },
-    [canRequestInvite, club, companyWebsite, handleSubmitError, navigate, role, t, toast, user],
+    [basePath, canRequestInvite, club, companyWebsite, handleSubmitError, navigate, role, t, toast, user],
   );
 
   const submit = useCallback(async () => {
@@ -347,6 +347,7 @@ export default function PublicClubJoinPage() {
       setSubmitting(false);
     }
   }, [
+    basePath,
     canRequestInvite,
     club,
     companyWebsite,

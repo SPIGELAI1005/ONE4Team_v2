@@ -219,7 +219,7 @@ Scores from [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINES
 
 | Factor | Estimate |
 |--------|----------|
-| ~84k LOC production TS + 114 migrations + Edge Functions | **12–24 person-months** |
+| ~160k+ LOC production TS/TSX under `src/` (measured via `npm run loc:count` → `src/generated/app-loc.json`) + migrations + Edge Functions | **12–24 person-months** |
 | At €80–120k fully loaded dev cost / year equivalent | **~€250k–€600k** replacement cost |
 | Plus design, QA, ops docs, pilot iteration (TSV Allach) | **+€50k–€150k** |
 

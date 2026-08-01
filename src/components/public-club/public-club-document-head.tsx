@@ -101,6 +101,9 @@ function upsertAppleTouchIcon(href: string, clubName: string, state: HeadRestore
   }
 
   upsertMeta("name", "apple-mobile-web-app-title", clubName.slice(0, 32), state);
+  upsertMeta("name", "apple-mobile-web-app-capable", "yes", state);
+  upsertMeta("name", "apple-mobile-web-app-status-bar-style", "black-translucent", state);
+  upsertMeta("name", "mobile-web-app-capable", "yes", state);
 }
 
 function getMetaBy(attr: "name" | "property", value: string): HTMLMetaElement | null {
@@ -311,6 +314,7 @@ export function PublicClubDocumentHead() {
 
     upsertMeta("name", "description", description, state);
     upsertMeta("name", "robots", noindex ? "noindex, nofollow" : "index, follow", state);
+    upsertMeta("name", "theme-color", (club.primary_color || "#0b1220").trim() || "#0b1220", state);
 
     upsertMeta("property", "og:title", title, state);
     upsertMeta("property", "og:description", description, state);

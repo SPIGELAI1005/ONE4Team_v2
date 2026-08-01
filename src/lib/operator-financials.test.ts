@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { PlatformPlan } from "@/lib/platform-catalog";
 import type { OperatorClubListItem } from "@/lib/operator-club-detail";
 import {
+  CURRENT_ESTIMATED_APP_LOC,
   DEFAULT_COST_MODEL,
   DEFAULT_DEVELOPMENT_MODEL,
   COST_MODEL_HISTORY_STORAGE_KEY,
@@ -198,11 +199,38 @@ describe("computeDevelopmentCost", () => {
   });
 
   it("clamps negative development inputs to zero", () => {
-    const model = normalizeCostModel({ development: { linesOfCode: -10, costPerLine: -1, method: "loc" } });
+    const model = normalizeCostModel({
+      development: { linesOfCode: -10, costPerLine: -1, method: "loc", locCustomized: true },
+    });
     const dev = computeDevelopmentCost(model);
     expect(dev.linesOfCode).toBe(0);
     expect(dev.costPerLine).toBe(0);
     expect(dev.total).toBe(0);
+  });
+
+  it("auto-refreshes known legacy LOC baselines to the measured snapshot", () => {
+    const legacy = normalizeCostModel({
+      development: { ...DEFAULT_DEVELOPMENT_MODEL, linesOfCode: 84000, locCustomized: false },
+    });
+    expect(legacy.development.linesOfCode).toBe(CURRENT_ESTIMATED_APP_LOC);
+    expect(legacy.development.locCustomized).toBe(false);
+
+    const prior = normalizeCostModel({
+      development: { ...DEFAULT_DEVELOPMENT_MODEL, linesOfCode: 157592 },
+    });
+    expect(prior.development.linesOfCode).toBe(CURRENT_ESTIMATED_APP_LOC);
+  });
+
+  it("keeps a manually customized LOC value", () => {
+    const model = normalizeCostModel({
+      development: {
+        ...DEFAULT_DEVELOPMENT_MODEL,
+        linesOfCode: 123456,
+        locCustomized: true,
+      },
+    });
+    expect(model.development.linesOfCode).toBe(123456);
+    expect(model.development.locCustomized).toBe(true);
   });
 });
 

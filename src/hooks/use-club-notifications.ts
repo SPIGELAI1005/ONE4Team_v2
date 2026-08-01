@@ -122,27 +122,60 @@ export function useClubNotifications(clubId: string | null) {
 
   const markAsRead = useCallback(
     async (id: string) => {
-      if (!clubId || !user) return;
-      await supabase
+      if (!clubId || !user) return false;
+      const { error } = await supabase
         .from("notifications")
         .update({ is_read: true })
         .eq("club_id", clubId)
         .eq("user_id", user.id)
         .eq("id", id);
+      if (error) return false;
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
+      return true;
+    },
+    [clubId, user],
+  );
+
+  /** Mark every notification for a reference (e.g. all rows for one announcement). */
+  const markReferenceRead = useCallback(
+    async (referenceId: string, notificationType?: string) => {
+      if (!clubId || !user) return false;
+      let query = supabase
+        .from("notifications")
+        .update({ is_read: true })
+        .eq("club_id", clubId)
+        .eq("user_id", user.id)
+        .eq("reference_id", referenceId)
+        .eq("is_read", false);
+      if (notificationType) {
+        query = query.eq("notification_type", notificationType);
+      }
+      const { error } = await query;
+      if (error) return false;
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.reference_id === referenceId &&
+          (!notificationType || n.notification_type === notificationType)
+            ? { ...n, is_read: true }
+            : n,
+        ),
+      );
+      return true;
     },
     [clubId, user],
   );
 
   const markAllRead = useCallback(async () => {
-    if (!clubId || !user || unreadCount === 0) return;
-    await supabase
+    if (!clubId || !user || unreadCount === 0) return true;
+    const { error } = await supabase
       .from("notifications")
       .update({ is_read: true })
       .eq("club_id", clubId)
       .eq("user_id", user.id)
       .eq("is_read", false);
+    if (error) return false;
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    return true;
   }, [clubId, unreadCount, user]);
 
   const dismiss = useCallback(
@@ -165,6 +198,7 @@ export function useClubNotifications(clubId: string | null) {
     unreadCount,
     reload,
     markAsRead,
+    markReferenceRead,
     markAllRead,
     dismiss,
   };

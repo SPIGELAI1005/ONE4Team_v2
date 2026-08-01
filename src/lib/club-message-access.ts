@@ -1,7 +1,9 @@
 import {
   getDataScopeForModule,
+  getModuleAccess,
   normalizeDashboardRole,
   type DashboardRole,
+  type ModuleAccessLevel,
 } from "@/lib/rbac-config";
 
 /** Whether the user may read/write a chat channel (null team id = club-wide). */
@@ -17,11 +19,18 @@ export function canAccessTeamChannel(
 
 export const TRAINERS_CHANNEL_ID = "trainers";
 
+export type SystemChannelKey =
+  | "announcements"
+  | "club-general"
+  | "trainers"
+  | `team:${string}`;
+
 export interface MessageChannelLike {
   id: string;
   kind: "announcements" | "chat";
   teamId: string | null;
   isTrainersChannel?: boolean;
+  customChannelId?: string | null;
 }
 
 export interface MessageChannelFilterOptions {
@@ -41,6 +50,35 @@ export interface MessageChannelFilterOptions {
    * Club General, no team channels or trainers channel.
    */
   clubWideOnly?: boolean;
+  /** System channel keys the user was explicitly invited to. */
+  invitedSystemKeys?: ReadonlySet<string> | readonly string[];
+}
+
+function hasInvitedSystemKey(
+  key: string,
+  invited: MessageChannelFilterOptions["invitedSystemKeys"],
+): boolean {
+  if (!invited) return false;
+  if (invited instanceof Set) return invited.has(key);
+  return invited.includes(key);
+}
+
+/** Stable system-channel key used for invites (DB + UI). */
+export function systemChannelKeyForChannel(channel: MessageChannelLike): SystemChannelKey | null {
+  if (channel.customChannelId) return null;
+  if (channel.kind === "announcements") return "announcements";
+  if (channel.isTrainersChannel) return "trainers";
+  if (channel.teamId === null) return "club-general";
+  return `team:${channel.teamId}`;
+}
+
+export function customChannelUiId(customChannelId: string): string {
+  return `custom-${customChannelId}`;
+}
+
+export function parseCustomChannelId(channelId: string): string | null {
+  if (!channelId.startsWith("custom-")) return null;
+  return channelId.slice("custom-".length) || null;
 }
 
 /**
@@ -62,9 +100,20 @@ export function buildMessageAccessFromGateRole(
     isAdmin,
     isTrainer,
     teamFilterId,
-    teamScopedOnly: scope === "team" && !isAdmin,
+    // Member persona uses clubWideOnly instead of team scoping.
+    teamScopedOnly: scope === "team" && !isAdmin && role !== "member",
     clubWideOnly: role === "member",
   };
+}
+
+/** Club members with messages access other than partner-only (`own`) may create/invite. */
+export function canManageChannelInvites(
+  gateRole: DashboardRole | string | null | undefined,
+): boolean {
+  const role = normalizeDashboardRole(gateRole ?? undefined);
+  if (!role) return false;
+  const level: ModuleAccessLevel = getModuleAccess(role, "messages");
+  return level !== "none" && level !== "own";
 }
 
 /** Sidebar channels visible to the current user (announcements + club general + trainers + their teams). */
@@ -72,17 +121,37 @@ export function filterMessageChannelsForUser<T extends MessageChannelLike>(
   channels: readonly T[],
   options: MessageChannelFilterOptions,
 ): T[] {
-  const { userTeamIds, isAdmin, isTrainer = false, teamFilterId, teamScopedOnly = false, clubWideOnly = false } = options;
+  const {
+    userTeamIds,
+    isAdmin,
+    isTrainer = false,
+    teamFilterId,
+    teamScopedOnly = false,
+    clubWideOnly = false,
+    invitedSystemKeys,
+  } = options;
 
   return channels.filter((channel) => {
+    if (channel.customChannelId) return true;
+
+    const inviteKey = systemChannelKeyForChannel(channel);
+    const invited = inviteKey ? hasInvitedSystemKey(inviteKey, invitedSystemKeys) : false;
+
     if (channel.kind === "announcements") return true;
 
     if (channel.isTrainersChannel) {
+      if (invited) return true;
       return !clubWideOnly && (isTrainer || isAdmin);
     }
 
     if (channel.teamId === null) {
+      if (invited) return true;
       if (teamScopedOnly) return false;
+      return true;
+    }
+
+    if (invited) {
+      if (teamFilterId) return channel.teamId === teamFilterId;
       return true;
     }
 
@@ -106,12 +175,20 @@ export function filterAnnouncementsForUser<T extends AnnouncementLike>(
     isAdmin: boolean;
     teamFilterId?: string | null;
     clubWideOnly?: boolean;
+    invitedToAnnouncements?: boolean;
   },
 ): T[] {
-  const { userTeamIds, isAdmin, teamFilterId, clubWideOnly = false } = options;
+  const {
+    userTeamIds,
+    isAdmin,
+    teamFilterId,
+    clubWideOnly = false,
+    invitedToAnnouncements = false,
+  } = options;
 
   return rows.filter((row) => {
     const teamId = row.team_id ?? null;
+    if (teamId === null && invitedToAnnouncements) return true;
     if (clubWideOnly && teamId !== null) return false;
     if (!canAccessTeamChannel(teamId, userTeamIds, isAdmin)) return false;
     if (teamFilterId && teamId !== null && teamId !== teamFilterId) return false;
@@ -119,7 +196,12 @@ export function filterAnnouncementsForUser<T extends AnnouncementLike>(
   });
 }
 
-export function channelIdForMessage(teamId: string | null, isTrainersChannel = false): string {
+export function channelIdForMessage(
+  teamId: string | null,
+  isTrainersChannel = false,
+  customChannelId?: string | null,
+): string {
+  if (customChannelId) return customChannelUiId(customChannelId);
   if (isTrainersChannel) return TRAINERS_CHANNEL_ID;
   return teamId ? `team-${teamId}` : "club-general";
 }
@@ -131,14 +213,33 @@ export function communicationChannelQuery(channelId: string): string {
 
 /** Whether a chat message row is visible under the same rules as dashboard channels. */
 export function canViewChatMessageRow(
-  row: { team_id: string | null; is_trainers_channel?: boolean },
+  row: {
+    team_id: string | null;
+    is_trainers_channel?: boolean;
+    custom_channel_id?: string | null;
+  },
   options: MessageChannelFilterOptions,
+  memberCustomChannelIds?: ReadonlySet<string> | readonly string[],
 ): boolean {
+  if (row.custom_channel_id) {
+    if (!memberCustomChannelIds) return false;
+    if (memberCustomChannelIds instanceof Set) {
+      return memberCustomChannelIds.has(row.custom_channel_id);
+    }
+    return memberCustomChannelIds.includes(row.custom_channel_id);
+  }
+
   if (row.is_trainers_channel) {
+    if (hasInvitedSystemKey("trainers", options.invitedSystemKeys)) return true;
     return !options.clubWideOnly && Boolean(options.isTrainer || options.isAdmin);
   }
   if (row.team_id === null) {
+    if (hasInvitedSystemKey("club-general", options.invitedSystemKeys)) return true;
     return !options.teamScopedOnly;
+  }
+  if (hasInvitedSystemKey(`team:${row.team_id}`, options.invitedSystemKeys)) {
+    if (options.teamFilterId) return row.team_id === options.teamFilterId;
+    return true;
   }
   if (options.clubWideOnly) return false;
   if (!canAccessTeamChannel(row.team_id, options.userTeamIds, options.isAdmin)) {

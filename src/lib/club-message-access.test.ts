@@ -3,10 +3,13 @@ import { describe, expect, it } from "vitest";
 import {
   buildMessageAccessFromGateRole,
   canAccessTeamChannel,
+  canManageChannelInvites,
   canViewChatMessageRow,
   channelIdForMessage,
+  customChannelUiId,
   filterAnnouncementsForUser,
   filterMessageChannelsForUser,
+  systemChannelKeyForChannel,
   TRAINERS_CHANNEL_ID,
 } from "@/lib/club-message-access";
 
@@ -17,6 +20,12 @@ describe("club-message-access", () => {
     { id: TRAINERS_CHANNEL_ID, kind: "chat" as const, teamId: null, isTrainersChannel: true },
     { id: "team-a", kind: "chat" as const, teamId: "team-a" },
     { id: "team-b", kind: "chat" as const, teamId: "team-b" },
+    {
+      id: customChannelUiId("chan-1"),
+      kind: "chat" as const,
+      teamId: null,
+      customChannelId: "chan-1",
+    },
   ];
 
   it("shows club-wide channels to every member but not trainers", () => {
@@ -25,13 +34,22 @@ describe("club-message-access", () => {
       isAdmin: false,
       isTrainer: false,
     });
-    expect(visible.map((c) => c.id)).toEqual(["announcements", "club-general", "team-a"]);
+    expect(visible.map((c) => c.id)).toEqual([
+      "announcements",
+      "club-general",
+      "team-a",
+      customChannelUiId("chan-1"),
+    ]);
   });
 
   it("hides club-general for team-scoped players", () => {
     const access = buildMessageAccessFromGateRole("player", ["team-a"]);
     const visible = filterMessageChannelsForUser(channels, access);
-    expect(visible.map((c) => c.id)).toEqual(["announcements", "team-a"]);
+    expect(visible.map((c) => c.id)).toEqual([
+      "announcements",
+      "team-a",
+      customChannelUiId("chan-1"),
+    ]);
   });
 
   it("limits team channels when dual-role admin views as player", () => {
@@ -52,6 +70,7 @@ describe("club-message-access", () => {
       "club-general",
       TRAINERS_CHANNEL_ID,
       "team-a",
+      customChannelUiId("chan-1"),
     ]);
   });
 
@@ -61,7 +80,7 @@ describe("club-message-access", () => {
       isAdmin: true,
       isTrainer: true,
     });
-    expect(visible).toHaveLength(5);
+    expect(visible).toHaveLength(6);
   });
 
   it("limits team channels to hero filter on clubs page", () => {
@@ -76,6 +95,7 @@ describe("club-message-access", () => {
       "club-general",
       TRAINERS_CHANNEL_ID,
       "team-a",
+      customChannelUiId("chan-1"),
     ]);
   });
 
@@ -100,6 +120,7 @@ describe("club-message-access", () => {
   it("maps trainers messages to trainers channel id", () => {
     expect(channelIdForMessage(null, true)).toBe(TRAINERS_CHANNEL_ID);
     expect(channelIdForMessage("team-a")).toBe("team-team-a");
+    expect(channelIdForMessage(null, false, "chan-1")).toBe(customChannelUiId("chan-1"));
   });
 
   it("hides club-general message rows for team-scoped players", () => {
@@ -112,7 +133,11 @@ describe("club-message-access", () => {
   it("shows club-general only for generic member persona", () => {
     const access = buildMessageAccessFromGateRole("member", []);
     const visible = filterMessageChannelsForUser(channels, access);
-    expect(visible.map((c) => c.id)).toEqual(["announcements", "club-general"]);
+    expect(visible.map((c) => c.id)).toEqual([
+      "announcements",
+      "club-general",
+      customChannelUiId("chan-1"),
+    ]);
     expect(canViewChatMessageRow({ team_id: null }, access)).toBe(true);
     expect(canViewChatMessageRow({ team_id: "team-a" }, access)).toBe(false);
   });
@@ -128,5 +153,72 @@ describe("club-message-access", () => {
       clubWideOnly: true,
     });
     expect(visible.map((r) => r.id)).toEqual(["1"]);
+  });
+
+  it("shows invited trainers and team channels to member persona", () => {
+    const access = {
+      ...buildMessageAccessFromGateRole("member", []),
+      invitedSystemKeys: ["trainers", "team:team-a"],
+    };
+    const visible = filterMessageChannelsForUser(channels, access);
+    expect(visible.map((c) => c.id)).toEqual([
+      "announcements",
+      "club-general",
+      TRAINERS_CHANNEL_ID,
+      "team-a",
+      customChannelUiId("chan-1"),
+    ]);
+    expect(canViewChatMessageRow({ team_id: null, is_trainers_channel: true }, access)).toBe(true);
+    expect(canViewChatMessageRow({ team_id: "team-a" }, access)).toBe(true);
+  });
+
+  it("shows club-general to players when invited", () => {
+    const access = {
+      ...buildMessageAccessFromGateRole("player", ["team-a"]),
+      invitedSystemKeys: ["club-general"],
+    };
+    const visible = filterMessageChannelsForUser(channels, access);
+    expect(visible.map((c) => c.id)).toContain("club-general");
+    expect(canViewChatMessageRow({ team_id: null }, access)).toBe(true);
+  });
+
+  it("allows create/invite for member messages access but not partner-only", () => {
+    expect(canManageChannelInvites("member")).toBe(true);
+    expect(canManageChannelInvites("player")).toBe(true);
+    expect(canManageChannelInvites("club_admin")).toBe(true);
+    expect(canManageChannelInvites("sponsor")).toBe(false);
+    expect(canManageChannelInvites(null)).toBe(false);
+  });
+
+  it("builds system channel keys for invites", () => {
+    expect(systemChannelKeyForChannel({ id: "announcements", kind: "announcements", teamId: null })).toBe(
+      "announcements",
+    );
+    expect(systemChannelKeyForChannel({ id: "club-general", kind: "chat", teamId: null })).toBe("club-general");
+    expect(
+      systemChannelKeyForChannel({
+        id: TRAINERS_CHANNEL_ID,
+        kind: "chat",
+        teamId: null,
+        isTrainersChannel: true,
+      }),
+    ).toBe("trainers");
+    expect(systemChannelKeyForChannel({ id: "team-a", kind: "chat", teamId: "team-a" })).toBe("team:team-a");
+    expect(
+      systemChannelKeyForChannel({
+        id: customChannelUiId("chan-1"),
+        kind: "chat",
+        teamId: null,
+        customChannelId: "chan-1",
+      }),
+    ).toBeNull();
+  });
+
+  it("hides custom channel messages without membership", () => {
+    const access = buildMessageAccessFromGateRole("member", []);
+    expect(canViewChatMessageRow({ team_id: null, custom_channel_id: "chan-1" }, access)).toBe(false);
+    expect(
+      canViewChatMessageRow({ team_id: null, custom_channel_id: "chan-1" }, access, ["chan-1"]),
+    ).toBe(true);
   });
 });

@@ -2823,12 +2823,100 @@ export type Database = {
           },
         ]
       }
+      message_channel_members: {
+        Row: {
+          club_id: string
+          created_at: string
+          custom_channel_id: string | null
+          id: string
+          invited_by: string | null
+          membership_id: string
+          role: string
+          system_channel_key: string | null
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          custom_channel_id?: string | null
+          id?: string
+          invited_by?: string | null
+          membership_id: string
+          role?: string
+          system_channel_key?: string | null
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          custom_channel_id?: string | null
+          id?: string
+          invited_by?: string | null
+          membership_id?: string
+          role?: string
+          system_channel_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_channel_members_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_channel_members_custom_channel_id_fkey"
+            columns: ["custom_channel_id"]
+            isOneToOne: false
+            referencedRelation: "message_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_channel_members_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "club_memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_channels: {
+        Row: {
+          club_id: string
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_channels_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           attachments: Json
           club_id: string
           content: string
           created_at: string
+          custom_channel_id: string | null
           id: string
           is_trainers_channel: boolean
           sender_id: string
@@ -2839,6 +2927,7 @@ export type Database = {
           club_id: string
           content: string
           created_at?: string
+          custom_channel_id?: string | null
           id?: string
           is_trainers_channel?: boolean
           sender_id: string
@@ -2849,6 +2938,7 @@ export type Database = {
           club_id?: string
           content?: string
           created_at?: string
+          custom_channel_id?: string | null
           id?: string
           is_trainers_channel?: boolean
           sender_id?: string
@@ -2860,6 +2950,13 @@ export type Database = {
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_custom_channel_id_fkey"
+            columns: ["custom_channel_id"]
+            isOneToOne: false
+            referencedRelation: "message_channels"
             referencedColumns: ["id"]
           },
           {

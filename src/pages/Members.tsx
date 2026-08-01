@@ -57,7 +57,8 @@ import {
 } from "@/lib/member-master-xlsx";
 import { MemberMasterDialog } from "@/components/members/member-master-dialog";
 import { MasterDataTabs } from "@/components/members/master-data-tabs";
-import { ClubMemberPassModal, buildClubMemberPassLabels } from "@/components/members/club-member-pass-modal";
+import { ClubMemberPassModal } from "@/components/members/club-member-pass-modal";
+import { buildClubMemberPassLabels } from "@/components/members/club-member-pass-labels";
 import { Badge } from "@/components/ui/badge";
 import { badgeVariants } from "@/components/ui/badge-variants";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -3522,6 +3523,14 @@ const Members = () => {
   const savedMemberListRowChipClass =
     "inline-flex h-8 min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-medium leading-none shadow-none [&_svg]:h-3.5 [&_svg]:w-3.5 [&_svg]:shrink-0";
 
+  const openCreateInvite = () => {
+    setCreatedInviteToken(null);
+    setInviteEmail("");
+    setInviteRole("member");
+    setInviteDays("7");
+    setShowCreateInvite(true);
+  };
+
   return (
     <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot
@@ -3544,13 +3553,7 @@ const Members = () => {
               <Button
                 size="sm"
                 className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"
-                onClick={() => {
-                  setCreatedInviteToken(null);
-                  setInviteEmail("");
-                  setInviteRole("member");
-                  setInviteDays("7");
-                  setShowCreateInvite(true);
-                }}
+                onClick={openCreateInvite}
               >
                 <UserPlus className="w-4 h-4 mr-1" /> {t.membersPage.createInvite}
               </Button>
@@ -4933,6 +4936,25 @@ const Members = () => {
                 ) : (
                   <div className="space-y-6">
                     <div className="rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl p-5 shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                          <div className="text-sm font-display font-bold text-foreground tracking-tight flex items-center gap-2">
+                            <UserPlus className="w-4 h-4 text-primary" /> {t.membersPage.createInviteTitle}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {t.membersPage.createInvitePageDesc}
+                          </div>
+                        </div>
+                        <Button
+                          className="w-full shrink-0 bg-gradient-gold-static font-semibold text-primary-foreground hover:brightness-110 sm:w-auto"
+                          onClick={openCreateInvite}
+                        >
+                          <UserPlus className="w-4 h-4 mr-2" /> {t.membersPage.createInvite}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl p-5 shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
                       <div className="flex items-center justify-between mb-4">
                         <div>
                           <div className="text-sm font-display font-bold text-foreground tracking-tight flex items-center gap-2">
@@ -5250,17 +5272,33 @@ const Members = () => {
 
                     {/* Invites */}
                     <div className="rounded-2xl border border-border/70 bg-card/55 backdrop-blur-xl p-5 shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
                         <div>
                           <div className="text-sm font-display font-bold text-foreground tracking-tight flex items-center gap-2">
                             <Link2 className="w-4 h-4 text-primary" /> {t.membersPage.activeInvites}
                           </div>
                           <div className="text-xs text-muted-foreground">{t.membersPage.tokensHashedHint}</div>
                         </div>
+                        <Button
+                          size="sm"
+                          className="w-full shrink-0 bg-gradient-gold-static font-semibold text-primary-foreground hover:brightness-110 sm:w-auto"
+                          onClick={openCreateInvite}
+                        >
+                          <UserPlus className="w-4 h-4 mr-1" /> {t.membersPage.createInvite}
+                        </Button>
                       </div>
 
                       {invites.length === 0 ? (
-                        <div className="text-sm text-muted-foreground py-8 text-center">{t.membersPage.noInvitesYet}</div>
+                        <div className="py-8 text-center space-y-3">
+                          <p className="text-sm text-muted-foreground">{t.membersPage.noInvitesYet}</p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={openCreateInvite}
+                          >
+                            <UserPlus className="w-4 h-4 mr-1" /> {t.membersPage.createInvite}
+                          </Button>
+                        </div>
                       ) : (
                         <div className="space-y-3">
                           {invites.map((inv) => (

@@ -18,29 +18,50 @@ import { Link } from "react-router-dom";
 import { PublicClubAttendanceProvider } from "@/contexts/public-club-attendance-context";
 import { useLanguage } from "@/hooks/use-language";
 import { usePublicClubUsageTracking } from "@/hooks/use-public-club-usage-tracking";
+import { PublicClubInstallBanner } from "@/components/public-club/public-club-install-banner";
+import { registerPublicClubServiceWorker } from "@/lib/public-club-service-worker";
 import {
-  PublicClubInstallBanner,
-  registerPublicClubServiceWorker,
-} from "@/components/public-club/public-club-install-banner";
+  applyPublicClubWebManifest,
+  buildPublicClubWebManifest,
+} from "@/lib/public-club-pwa-manifest";
 import { useEffect } from "react";
 import { trackJoinFunnelEvent } from "@/lib/track-join-funnel";
 
 function PublicClubLayoutInner() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { loading, club, isPreviewMode, isDraftPreviewMode, draftPreviewBlocked } = usePublicClub();
   usePublicClubUsageTracking(club?.id, isPreviewMode || isDraftPreviewMode);
 
   useEffect(() => {
     registerPublicClubServiceWorker();
-    const linkId = "one4team-club-manifest";
-    if (!document.getElementById(linkId)) {
-      const link = document.createElement("link");
-      link.id = linkId;
-      link.rel = "manifest";
-      link.href = "/club-manifest.webmanifest";
-      document.head.appendChild(link);
-    }
   }, []);
+
+  useEffect(() => {
+    if (!club?.slug || !club.name) return;
+    const manifest = buildPublicClubWebManifest(
+      {
+        name: club.name,
+        slug: club.slug,
+        description: club.description || club.meta_description,
+        primaryColor: club.primary_color,
+        logoUrl: club.logo_url,
+        faviconUrl: club.favicon_url,
+        ogImageUrl: club.og_image_url,
+      },
+      { language },
+    );
+    return applyPublicClubWebManifest(manifest);
+  }, [
+    club?.description,
+    club?.favicon_url,
+    club?.logo_url,
+    club?.meta_description,
+    club?.name,
+    club?.og_image_url,
+    club?.primary_color,
+    club?.slug,
+    language,
+  ]);
 
   useEffect(() => {
     if (!club?.id || isPreviewMode || isDraftPreviewMode) return;
@@ -94,7 +115,7 @@ function PublicClubLayoutInner() {
               <Outlet />
             </main>
             <PublicClubFooter club={club} />
-            <PublicClubInstallBanner clubName={club.name} />
+            <PublicClubInstallBanner clubName={club.name} clubSlug={club.slug} />
             <PublicClubInviteModal />
             <PublicClubAi4tModal />
             <PublicClubCommunicationModal />

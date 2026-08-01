@@ -18,7 +18,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ClubMemberPassModal, buildClubMemberPassLabels } from "@/components/members/club-member-pass-modal";
+import { ClubMemberPassModal } from "@/components/members/club-member-pass-modal";
+import { buildClubMemberPassLabels } from "@/components/members/club-member-pass-labels";
 import { PublicClubAccountSettingsModal } from "@/components/public-club/public-club-account-settings-modal";
 import { clubPublicDropdownContentClass } from "@/lib/public-club-glass-classes";
 import { cn } from "@/lib/utils";

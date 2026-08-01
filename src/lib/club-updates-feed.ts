@@ -37,36 +37,44 @@ export function buildClubUpdatesFeed(
   },
 ): ClubUpdateFeedItem[] {
   const visibleAnnouncements = filterAnnouncementsForUser(announcements, options);
-  const announcementIds = new Set(visibleAnnouncements.map((row) => row.id));
+  const announcementById = new Map(visibleAnnouncements.map((row) => [row.id, row]));
 
   const notificationByAnnouncementId = new Map<string, ClubNotification>();
   for (const notification of notifications) {
     if (notification.notification_type !== "announcement" || !notification.reference_id) continue;
-    notificationByAnnouncementId.set(notification.reference_id, notification);
+    const existing = notificationByAnnouncementId.get(notification.reference_id);
+    // Prefer an unread row when duplicates exist so the badge stays accurate.
+    if (!existing || (existing.is_read && !notification.is_read)) {
+      notificationByAnnouncementId.set(notification.reference_id, notification);
+    }
   }
 
-  const announcementItems: ClubUpdateFeedItem[] = visibleAnnouncements.map((announcement) => {
-    const linked = notificationByAnnouncementId.get(announcement.id);
+  // Updates are notification-driven. Announcements without a personal notification
+  // must not appear as perpetual unread items (Mark as read cannot clear them).
+  const announcementItems: ClubUpdateFeedItem[] = [];
+  for (const [announcementId, linked] of notificationByAnnouncementId) {
+    const announcement = announcementById.get(announcementId);
+    if (!announcement) continue;
     const excerpt = announcement.excerpt?.trim();
-    return {
+    announcementItems.push({
       feedKey: `announcement-${announcement.id}`,
       kind: "announcement",
       title: announcement.title,
       body: excerpt || announcement.content.slice(0, 240),
-      created_at: announcement.created_at,
-      is_read: linked?.is_read ?? false,
+      created_at: linked.created_at || announcement.created_at,
+      is_read: linked.is_read,
       notification_type: "announcement",
       reference_id: announcement.id,
-      notification_id: linked?.id ?? null,
+      notification_id: linked.id,
       announcement,
-    };
-  });
+    });
+  }
 
   const otherNotificationItems: ClubUpdateFeedItem[] = notifications
     .filter((notification) => notification.notification_type !== "announcement")
     .map((notification) => ({
       feedKey: `notification-${notification.id}`,
-      kind: "notification",
+      kind: "notification" as const,
       title: notification.title,
       body: notification.body,
       created_at: notification.created_at,
@@ -79,4 +87,11 @@ export function buildClubUpdatesFeed(
   return [...announcementItems, ...otherNotificationItems]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 25);
+}
+
+/** Unread items for the Messages hub Updates tab and FAB badge. */
+export function filterUnreadClubUpdates(
+  items: readonly ClubUpdateFeedItem[],
+): ClubUpdateFeedItem[] {
+  return items.filter((item) => !item.is_read);
 }

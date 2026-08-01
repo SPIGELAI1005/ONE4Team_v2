@@ -127,6 +127,15 @@ export function PublicClubMessagesHub() {
     enabled: visible,
   });
 
+  const handleMarkAllRead = useCallback(async () => {
+    const ok = await markAllRead();
+    if (!ok) {
+      setHubBanner({ variant: "error", text: t.notifications.markAllReadFailed });
+      return;
+    }
+    setHubBanner({ variant: "success", text: t.notifications.markAllReadDone });
+  }, [markAllRead, t.notifications.markAllReadDone, t.notifications.markAllReadFailed]);
+
   useEffect(() => {
     if (!open) setViewingAnnouncementId(null);
   }, [open]);
@@ -461,20 +470,14 @@ export function PublicClubMessagesHub() {
                               onClick={() => handleUpdateTap(item)}
                               className={cn(
                                 clubMessagesHubCardClass,
-                                "flex w-full gap-3 px-3 py-2.5 text-left",
-                                !item.is_read && "ring-1 ring-[color:var(--club-primary)]/30",
+                                "flex w-full gap-3 px-3 py-2.5 text-left ring-1 ring-[color:var(--club-primary)]/30",
                               )}
                             >
                               <span className={cn("mt-0.5 shrink-0", color)}>
                                 <Icon className="h-4 w-4" />
                               </span>
                               <span className="min-w-0 flex-1">
-                                <span
-                                  className={cn(
-                                    "block text-sm leading-snug text-neutral-900",
-                                    !item.is_read && "font-semibold",
-                                  )}
-                                >
+                                <span className="block text-sm font-semibold leading-snug text-neutral-900">
                                   {item.title}
                                 </span>
                                 {item.body ? (
@@ -547,7 +550,7 @@ export function PublicClubMessagesHub() {
                 {unreadCount > 0 && tab === "updates" ? (
                   <button
                     type="button"
-                    onClick={() => void markAllRead()}
+                    onClick={() => void handleMarkAllRead()}
                     className="flex w-full items-center justify-center gap-1.5 rounded-full py-1.5 text-xs font-medium text-[color:var(--club-primary)] hover:underline"
                   >
                     <Check className="h-3.5 w-3.5" />

@@ -43,7 +43,7 @@ export function isLegacyDivisionTeamLabel(label: string | null | undefined): boo
 export function looksLikeAgeGroupCode(label: string | null | undefined): boolean {
   const trimmed = (label || "").trim();
   if (!trimmed) return false;
-  if (/^u\s*\d{1,2}([/\-]\d{1,2})?$/i.test(trimmed)) return true;
+  if (/^u\s*\d{1,2}([/-]\d{1,2})?$/i.test(trimmed)) return true;
   if (/^(bambini|minis|g-junioren|f-junioren|e-junioren|d-junioren|c-junioren|b-junioren|a-junioren)$/i.test(trimmed)) {
     return true;
   }

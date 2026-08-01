@@ -75,6 +75,8 @@ export function useClubPassSkills({
   }, [canFetch, clubId, membershipId]);
 
   const skillsSummary = useMemo((): ClubPassSkillsSummary | null => {
+    // journalTick forces recompute after refreshEstimate reloads local journal.
+    void journalTick;
     if (!enabled) return null;
 
     // Real membership: wait for My Progress snapshot so scores are not empty defaults.

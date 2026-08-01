@@ -9,11 +9,13 @@ import { OPERATOR_CARD_CLASS } from "@/components/operator/OperatorPageShell";
 import { useLanguage } from "@/hooks/use-language";
 import {
   COST_DRIVER_FIELDS,
+  CURRENT_ESTIMATED_APP_LOC,
   DEFAULT_COST_MODEL,
   areCostModelsEqual,
   computeDevelopmentCost,
   createCostLineItem,
   formatEur,
+  withMeasuredDevelopmentLoc,
   type CostLineItem,
   type CostModel,
   type CostModelChangeLogEntry,
@@ -75,7 +77,15 @@ export function OperatorCostModelCard({
   }
 
   function updateDevelopment(patch: Partial<DevelopmentModel>) {
-    onChange({ ...model, development: { ...model.development, ...patch } });
+    const nextPatch = { ...patch };
+    if ("linesOfCode" in patch && patch.linesOfCode !== model.development.linesOfCode) {
+      nextPatch.locCustomized = true;
+    }
+    onChange({ ...model, development: { ...model.development, ...nextPatch } });
+  }
+
+  function useMeasuredLoc() {
+    onChange(withMeasuredDevelopmentLoc(model));
   }
 
   const development = computeDevelopmentCost(model);
@@ -220,7 +230,18 @@ export function OperatorCostModelCard({
                 value={Number.isFinite(model.development.linesOfCode) ? model.development.linesOfCode : 0}
                 onChange={(event) => updateDevelopment({ linesOfCode: Math.max(0, Number(event.target.value) || 0) })}
               />
-              <p className="text-xs leading-4 text-muted-foreground">{f.developmentLinesHint}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-xs leading-4 text-muted-foreground">
+                  {f.developmentLinesHint
+                    .replace("{loc}", CURRENT_ESTIMATED_APP_LOC.toLocaleString())
+                    .replace("{count}", CURRENT_ESTIMATED_APP_LOC.toLocaleString())}
+                </p>
+                {model.development.locCustomized || model.development.linesOfCode !== CURRENT_ESTIMATED_APP_LOC ? (
+                  <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={useMeasuredLoc}>
+                    {f.developmentUseMeasuredLoc}
+                  </Button>
+                ) : null}
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="dev-cost-per-line" className="flex items-center justify-between gap-2">
