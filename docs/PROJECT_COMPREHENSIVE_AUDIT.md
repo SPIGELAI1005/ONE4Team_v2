@@ -1,6 +1,6 @@
 # ONE4Team — Comprehensive project audit
 
-**Audit date:** 2026-07-18 (re-score: Operator CC health, AI fair-use caps, billing recovery, marketplace + digests + guided setup; prior: 2026-07-08 Operator Control Center financials/Recharts)  
+**Audit date:** 2026-08-01 (TSV Allach member registry reconciliation; prior re-score: 2026-07-18 Operator CC health, AI fair-use caps, billing recovery, marketplace + digests + guided setup)  
 **Scope:** Codebase, architecture, UX/design, production readiness, competitive positioning, market value, and value-growth levers  
 **Primary reference (existing):** [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) — strict production-readiness review with risk register, readiness scores, and remediation sprints  
 
@@ -14,8 +14,8 @@ ONE4Team is a **mature-in-code, early-in-market** multi-tenant club management S
 
 | Dimension | Assessment | Prior | **Now** |
 |-----------|------------|:-----:|:-------:|
-| **Feature breadth** | Above typical regional club apps; AI agent + public site builder + marketplace + digests | 82 | **87** |
-| **Code & architecture** | Strong foundations; Members feature modules started but god pages still large | 68 | **69** |
+| **Feature breadth** | Above typical regional club apps; AI agent + public site builder + marketplace + digests + TSV-scale registry import | 87 | **88** |
+| **Code & architecture** | Strong foundations; Members feature modules started but **`Members.tsx`** still large (~7k lines after reconciliation sprint) | 69 | **69** |
 | **UX & design** | Distinctive glass UI; Guided setup; Support FAQ refreshed; DE market fit | 74 | **78** |
 | **Production readiness** | Conditionally ready for controlled multi-club rollout (ops audit **68** overall) | 61 | **68** |
 | **Test & quality gates** | ~106 unit test files; 8 e2e specs; CI guardrails + bundle budget | 62 | **73** |
@@ -46,11 +46,11 @@ This document **extends** the ops audit with product, UX, competitive, and valua
 
 ## 3. Codebase metrics (snapshot)
 
-| Metric | Value (2026-07-18) | Notes |
+| Metric | Value (2026-08-01) | Notes |
 |--------|------:|-------|
-| TypeScript/TSX files (`src/`) | ~745 | Includes operator CC, marketplace, public club, features/members |
-| Lines of code (`src/` key surfaces) | i18n EN/DE ~5.8k each; Members ~5.2k | God pages still dominate maintainability risk |
-| SQL migrations | ~163 | Includes `20260801*`–`20260803*` operator, digests, marketplace, asset map |
+| TypeScript/TSX files (`src/`) | ~750 | Includes member reconciliation libs + shared-contact UI |
+| Lines of code (`src/` key surfaces) | i18n EN/DE ~5.9k each; Members ~7k | Registry reconciliation sprint grew **`Members.tsx`** |
+| SQL migrations | ~164 | Includes **`20260807120000`** household discount fields |
 | Edge Functions | **13** active dirs | co-trainer, ai4team-agent, chat-bridge, stripe-*, digests, invite email, health, … |
 | Unit/integration test files | **~106** | Heavy on `src/lib/*`; RLS + operator security suites |
 | E2E specs | **8** | + marketplace dual-role / RBAC |
@@ -60,7 +60,7 @@ This document **extends** the ops audit with product, UX, competitive, and valua
 
 | File | ~Lines | Risk |
 |------|-------:|------|
-| `src/pages/Members.tsx` | **~5,170** | Still a god page (grew since prior audit); `src/features/members/*` panels started |
+| `src/pages/Members.tsx` | **~7,000** | God page (grew with TSV reconciliation import UX); extract to `src/features/members/*` remains priority |
 | `src/i18n/en.ts` / `de.ts` | **~5,850** each | Translation monolith; merge conflict prone |
 | `src/pages/Communication.tsx` | **~2,460** | Realtime, attachments, bridge, pagination |
 | `src/pages/ClubPageAdmin.tsx` | **~1,780** | Public site CMS complexity |

@@ -23,3 +23,5 @@ Do **not** rename those files to “fix” the calendar date — doing so would 
 Prefer a real UTC timestamp when creating new files (`supabase migration new …`). If you must hand-name a file, keep it **after** the latest applied prefix so `db push` stays linear.
 
 Example (2026-08-01): **`20260806130000_ai_internet_research.sql`** was initially dated earlier in the batch; renamed to **`20260806130000`** so it sorts after **`20260806120000_message_channels_and_invites.sql`** on remotes that had already applied later migrations.
+
+Example (2026-08-01): **`20260807120000_member_household_discount_fields.sql`** — household discount verification fields on member master records for **`/payments`** (apply after **`20260806140000`**).

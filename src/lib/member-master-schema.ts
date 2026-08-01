@@ -50,6 +50,9 @@ export interface ClubMemberMasterRecord {
   team_integration_status: string | null;
   squad_status: string | null;
   last_evaluation_date: string | null;
+  /** Shared contact household flagged for family discount verification (Payments). */
+  household_discount_group_id: string | null;
+  household_discount_status: "pending_verification" | "verified" | "rejected" | null;
   created_at: string;
   updated_at: string;
 }
@@ -163,7 +166,7 @@ export const MEMBER_MASTER_FIELDS: MemberMasterFieldMeta[] = [
   {
     key: "club_registration_date",
     column: "club_registration_date",
-    aliases: ["registered_at", "member_since", "vereinsbeitritt", "eintrittsdatum"],
+    aliases: ["registered_at", "member_since", "vereinsbeitritt", "eintrittsdatum", "club_entry_date"],
     required: false,
     recommended: true,
     group: "club",
@@ -187,7 +190,7 @@ export const MEMBER_MASTER_FIELDS: MemberMasterFieldMeta[] = [
   {
     key: "internal_club_number",
     column: "internal_club_number",
-    aliases: ["club_id_number", "member_number", "vereinsnummer", "mitgliedsnummer", "mitglieds_nr"],
+    aliases: ["club_id_number", "member_number", "vereinsnummer", "mitgliedsnummer", "mitglieds_nr", "normalized_member_number", "source_member_number"],
     required: false,
     recommended: true,
     group: "club",

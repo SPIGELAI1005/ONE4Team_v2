@@ -6,6 +6,38 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ---
 
+## SPRINT 2026-08-01 — TSV Allach member registry reconciliation
+
+**Goal:** Reconcile TSV Allach export vs ONE4Team; support shared family emails; household discount verification in Payments.
+
+| Track | Focus | Task IDs |
+|-------|--------|----------|
+| **D** | Registry import / match | MEM-REG-001 … MEM-REG-006 |
+| **E** | Shared contact + linked accounts | MEM-SHARED-001 … MEM-SHARED-003 |
+| **F** | Household discount | PAY-HH-001, PAY-HH-002 |
+
+### Registry import & reconciliation
+
+- [x] **MEM-REG-001** Smart spreadsheet column/sheet mapping (`member-registry-spreadsheet-import.ts`)
+- [x] **MEM-REG-002** Match by club member number; reject name mismatch; dedupe on re-upload
+- [x] **MEM-REG-003** Save import adds unmatched (with email) to saved list + updates matched roster/drafts
+- [x] **MEM-REG-004** Comparison workbook import path + generator script
+- [x] **MEM-REG-005** Draft search: `master_data` fields, server merge, 5000 draft load cap
+- [x] **MEM-REG-006** **`MemberHistory.tsx`** timeline connector alignment
+
+### Shared contact email
+
+- [x] **MEM-SHARED-001** Shared contact email groups + badges (`member-shared-contact-email.ts`)
+- [x] **MEM-SHARED-002** Linked accounts panel with email filter in member/draft detail
+- [x] **MEM-SHARED-003** Filter clears on Cancel/Close; inline **(this member)** label
+
+### Household discount (Payments)
+
+- [x] **PAY-HH-001** Household discount group detection (`member-household-discount.ts`) + badges
+- [x] **PAY-HH-002** **`HouseholdDiscountReviewPanel`** on **`/payments`** — migration **`20260807120000`** *(operator apply)*
+
+---
+
 ## SPRINT 2026-08-01 — AI 4 T GPT Internet · Members · Roles · CI
 
 **Goal:** Ship GPT Internet mode (without Custom GPT API), improve member export and role admin UX, keep CI green.

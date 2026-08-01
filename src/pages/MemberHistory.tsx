@@ -444,79 +444,80 @@ function MemberHistory() {
                 {t.memberHistoryPage.emptyTimeline}
               </div>
             ) : (
-              <div className="relative pl-2">
-                <div className="absolute left-[15px] top-2 bottom-2 w-px bg-border" aria-hidden />
-                <ul className="space-y-0">
-                  {rows.map((row, i) => {
-                    const meta = eventMeta[row.event_type] ?? {
-                      icon: History,
-                      tone: "text-muted-foreground bg-muted",
-                    };
-                    const Icon = meta.icon;
-                    const expanded = expandedId === row.id;
-                    const detailStr = formatJsonPreview(row.detail);
-                    const hasDetail = detailStr.length > 2;
-                    return (
-                      <motion.li
-                        key={row.id}
-                        initial={{ opacity: 0, x: -6 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: Math.min(i * 0.02, 0.3) }}
-                        className="relative pb-8 last:pb-0"
+              <ul className="space-y-0">
+                {rows.map((row, i) => {
+                  const meta = eventMeta[row.event_type] ?? {
+                    icon: History,
+                    tone: "text-muted-foreground bg-muted",
+                  };
+                  const Icon = meta.icon;
+                  const expanded = expandedId === row.id;
+                  const detailStr = formatJsonPreview(row.detail);
+                  const hasDetail = detailStr.length > 2;
+                  return (
+                    <motion.li
+                      key={row.id}
+                      initial={{ opacity: 0, x: -6 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: Math.min(i * 0.02, 0.3) }}
+                      className="relative grid grid-cols-[2rem_minmax(0,1fr)] gap-x-4 pb-8 last:pb-0"
+                    >
+                      {i < rows.length - 1 ? (
+                        <span
+                          className="pointer-events-none absolute bottom-0 left-4 top-8 z-0 w-px -translate-x-1/2 bg-border"
+                          aria-hidden
+                        />
+                      ) : null}
+                      <div
+                        className={`relative z-10 col-start-1 row-start-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/80 ${meta.tone}`}
                       >
-                        <div className="flex gap-4">
-                          <div
-                            className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/80 ${meta.tone}`}
-                          >
-                            <Icon className="h-4 w-4" />
-                          </div>
-                          <div className="min-w-0 flex-1 pt-0.5">
-                            <div className="flex flex-wrap items-center gap-2 gap-y-1">
-                              <span className="font-medium text-foreground text-sm">
-                                {row.summary || eventTypeLabel(row.event_type)}
-                              </span>
-                              <Badge variant="outline" className="text-[10px] font-normal h-5 px-1.5">
-                                {eventTypeLabel(row.event_type)}
-                              </Badge>
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {new Date(row.created_at).toLocaleString()}
-                              {row.actor_user_id ? (
-                                <>
-                                  {" · "}
-                                  {t.memberHistoryPage.by}{" "}
-                                  <span className="text-foreground/80">
-                                    {actorNames[row.actor_user_id] || t.memberHistoryPage.unknownActor}
-                                  </span>
-                                </>
-                              ) : null}
-                            </div>
-                            {hasDetail ? (
-                              <button
-                                type="button"
-                                className="mt-2 flex items-center gap-1 text-xs text-primary hover:underline"
-                                onClick={() => setExpandedId(expanded ? null : row.id)}
-                              >
-                                {expanded ? (
-                                  <ChevronDown className="w-3.5 h-3.5" />
-                                ) : (
-                                  <ChevronRight className="w-3.5 h-3.5" />
-                                )}
-                                {expanded ? t.memberHistoryPage.hideDetails : t.memberHistoryPage.showDetails}
-                              </button>
-                            ) : null}
-                            {expanded && hasDetail ? (
-                              <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-muted/50 border border-border/60 p-3 text-[11px] leading-relaxed text-muted-foreground font-mono">
-                                {detailStr}
-                              </pre>
-                            ) : null}
-                          </div>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="col-start-2 row-start-1 min-w-0 pt-0.5">
+                        <div className="flex flex-wrap items-center gap-2 gap-y-1">
+                          <span className="font-medium text-foreground text-sm">
+                            {row.summary || eventTypeLabel(row.event_type)}
+                          </span>
+                          <Badge variant="outline" className="text-[10px] font-normal h-5 px-1.5">
+                            {eventTypeLabel(row.event_type)}
+                          </Badge>
                         </div>
-                      </motion.li>
-                    );
-                  })}
-                </ul>
-              </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {new Date(row.created_at).toLocaleString()}
+                          {row.actor_user_id ? (
+                            <>
+                              {" · "}
+                              {t.memberHistoryPage.by}{" "}
+                              <span className="text-foreground/80">
+                                {actorNames[row.actor_user_id] || t.memberHistoryPage.unknownActor}
+                              </span>
+                            </>
+                          ) : null}
+                        </div>
+                        {hasDetail ? (
+                          <button
+                            type="button"
+                            className="mt-2 flex items-center gap-1 text-xs text-primary hover:underline"
+                            onClick={() => setExpandedId(expanded ? null : row.id)}
+                          >
+                            {expanded ? (
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            ) : (
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            )}
+                            {expanded ? t.memberHistoryPage.hideDetails : t.memberHistoryPage.showDetails}
+                          </button>
+                        ) : null}
+                        {expanded && hasDetail ? (
+                          <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-muted/50 border border-border/60 p-3 text-[11px] leading-relaxed text-muted-foreground font-mono">
+                            {detailStr}
+                          </pre>
+                        ) : null}
+                      </div>
+                    </motion.li>
+                  );
+                })}
+              </ul>
             )}
 
             <p className="text-[11px] text-muted-foreground text-center pb-8">

@@ -1,11 +1,12 @@
 # ONE4Team — Memory Bank
 
-Last updated: 2026-08-01 (AI 4 T GPT Internet · Members export · Roles editing · workspace UX)
+Last updated: 2026-08-01 (TSV Allach member registry reconciliation · shared contact · household discount)
 
 ## Purpose
 Persistent handoff context for future agents so work can continue without re-discovery.
 
 ## Current Product State
+- **TSV Allach member registry reconciliation (2026-08-01):** **`/members`** — smart Excel/CSV registry import (column mapping, dedupe by club member number), comparison workbook path (**Mitglieder hinzufügen → Import**), registry import (**Mitgliederegister importieren**) that **updates matched roster/drafts** and **adds unmatched rows with email to saved list** on **Save import**. Shared contact email groups (families) with badges; **linked accounts panel** filters saved list + roster by email; filter clears on Cancel/Close. **`memberRegistryIdentityKey`** disambiguates same email + different names. Draft search includes **`master_data`** fields (local + server merge, up to 5000 loaded). **Household discount** groups (same email + surname + address) flagged for **`/payments`** review panel. Lib: **`member-registry-spreadsheet-import.ts`**, **`member-registry-import-match.ts`**, **`member-shared-contact-email.ts`**, **`member-household-discount.ts`**, **`club-comparison-workbook-import.ts`**, **`member-import-dedupe.ts`**. UI: **`shared-contact-accounts-panel.tsx`**, **`shared-contact-email-badge.tsx`**, **`household-discount-badge.tsx`**, **`household-discount-review.tsx`**. Script: **`scripts/generate-tsv-allach-reconciliation-import.mjs`**. Migration **`20260807120000_member_household_discount_fields.sql`**. **`MemberHistory.tsx`** timeline connector alignment fix. See **CHANGELOG** § **TSV Allach member registry reconciliation**.
 - **AI 4 T GPT Internet (2026-08-01):** Pro+ **Internet mode** on **`/co-trainer`** — Tavily web search + dedicated system prompt (replicates ONE4Team Custom GPT behavior; ChatGPT.com GPT URL is **not** callable via API). **Club / Internet** toggle, user **consent** (`record_ai_internet_consent` RPC), admin **`internet_research_enabled`** in Settings → AI provider, monthly caps (Pro **40**, Champions **150**), cited **Sources** under replies. Edge: **`co-trainer`** `chat_mode=internet`; secrets **`TAVILY_API_KEY`**. Migrations **`20260806130000`**, **`20260806140000`** (consent upsert RLS). Phase 3 RAG/knowledge files **skipped**. See **CHANGELOG** § **AI 4 T GPT Internet**.
 - **Members registry export (2026-08-01):** XLSX export merges joined roster + **`club_member_drafts`** (`draft` / `invited`), deduped by email. Lib: **`masterRecordFromDraft()`** in **`member-master-schema.ts`**.
 - **Roles tab inline edit (2026-08-01):** **`/members` → Roles** — edit role kind, scope, and team per assignment row (not delete-only). **`role-manager.tsx`**.
@@ -185,6 +186,8 @@ Persistent handoff context for future agents so work can continue without re-dis
   - club public join request flow preserves return context when redirecting to auth.
 
 ## Recently Applied Migrations In Supabase
+- **2026-08-01 (pending operator apply):** `20260807120000_member_household_discount_fields.sql` — household discount status fields on master records for Payments verification
+- **2026-08-01:** `20260806130000`, `20260806140000` — AI 4 T GPT Internet (consent + usage log)
 - **2026-07-28:** `20260804160000` → `20260804200000` — draft joined status, invite redeem repair, auth/join RPC fixes, analytics heatmap/radar repairs, lint warning cleanup (linked remote; **`supabase db lint --linked`** clean)
 - **2026-07-28:** `20260804180000_club_roles_team_management_fan_supporter.sql`, `20260804190000_member_photo_validity_notifications.sql` (linked remote)
 - **2026-07-18:** `20260803140000_club_asset_map_overlay.sql` (linked remote)

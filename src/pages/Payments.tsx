@@ -25,6 +25,7 @@ import { useClubId } from "@/hooks/use-club-id";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
+import { HouseholdDiscountReviewPanel } from "@/components/payments/household-discount-review";
 import {
   DASHBOARD_PAGE_INNER,
   DASHBOARD_PAGE_ROOT,
@@ -536,6 +537,8 @@ const Payments = () => {
                 </div>
               ))}
             </div>
+
+            <HouseholdDiscountReviewPanel clubId={clubId} canManage={perms.isAdmin} />
 
             <div className="mb-4 space-y-3">
               <div className="flex flex-wrap items-end gap-3 p-3 rounded-xl border border-border bg-card/40">

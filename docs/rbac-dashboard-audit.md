@@ -1,6 +1,6 @@
 # RBAC & dashboard — architecture audit
 
-**Date:** 2026-07-01 (persona data scoping for messages/tasks added)  
+**Date:** 2026-08-01 (Members shared-contact filter + household discount review added)  
 **Status:** Audit snapshot — no functional changes in this pass  
 **Principle:** One intelligent dashboard shell; menu, routes, data scope, and widgets adapt via RBAC — not separate apps per role.
 
@@ -27,6 +27,8 @@ ONE4Team already follows a **single dashboard shell** pattern:
 **Marketplace and Partners remain separate sidebar items** — do not merge them.
 
 **Persona data scoping (2026-07-01):** Messages and tasks visibility in **`Communication.tsx`**, **`Tasks.tsx`**, and public **Messages** hub now follow **`useModuleGateRole`** — player = team channels + own tasks; member = club-wide announcements/general (no team channels). See **`docs/rbac-dashboard-plan.md`** §12 and **`CHANGELOG.md`** § 2026-07-01 (Persona data scoping…).
+
+**Members shared contact + household discount (2026-08-01):** **`/members`** surfaces shared contact email groups (family accounts on one email) with linked-account filter; **`/payments`** household discount verification panel for same email + surname + address groups. Does not change route RBAC — admin/member-management permissions unchanged. See **`CHANGELOG.md`** § **2026-08-01 (TSV Allach member registry reconciliation…)**.
 
 ---
 
