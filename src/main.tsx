@@ -3,8 +3,10 @@ import App from "./App.tsx";
 import "./index.css";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { initClientObservability } from "@/lib/observability";
+import { installVitePreloadErrorHandler } from "@/lib/stale-chunk-reload";
 
 initClientObservability();
+installVitePreloadErrorHandler();
 
 if ("scrollRestoration" in history) {
   history.scrollRestoration = "manual";
