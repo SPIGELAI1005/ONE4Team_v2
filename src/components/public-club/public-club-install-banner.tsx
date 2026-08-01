@@ -117,7 +117,7 @@ export function PublicClubInstallBanner({
               <Button
                 size="sm"
                 onClick={() => void install()}
-                className="h-8 rounded-full bg-[color:var(--club-primary)] px-3.5 text-xs font-semibold text-[color:var(--club-primary-foreground)] shadow-sm hover:brightness-110"
+                className="h-8 rounded-full bg-[color:var(--club-primary)] px-3.5 text-xs font-semibold !text-white shadow-sm hover:brightness-110 hover:!text-white"
               >
                 {copy.install}
               </Button>
@@ -126,7 +126,7 @@ export function PublicClubInstallBanner({
               <Button
                 size="sm"
                 onClick={() => setShowIosSteps((open) => !open)}
-                className="h-8 rounded-full bg-[color:var(--club-primary)] px-3.5 text-xs font-semibold text-[color:var(--club-primary-foreground)] shadow-sm hover:brightness-110"
+                className="h-8 rounded-full bg-[color:var(--club-primary)] px-3.5 text-xs font-semibold !text-white shadow-sm hover:brightness-110 hover:!text-white"
               >
                 {showIosSteps ? copy.iosHideSteps : copy.iosShowSteps}
               </Button>
