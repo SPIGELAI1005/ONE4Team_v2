@@ -143,3 +143,99 @@ export function memberNeedsDuplicateReview(
 export function countMemberDuplicateReviewEntries(map: Map<string, MemberDuplicateReviewFlag>): number {
   return map.size;
 }
+
+function draftRetentionScore(entry: MemberDuplicateReviewEntry): number {
+  const num = entry.memberNumber?.trim() ?? "";
+  let score = 0;
+  if (num && !isPlaceholderClubMemberNumber(num)) score += 100;
+  if (normalizeContactEmail(entry.email)) score += 10;
+  if (entry.name.trim()) score += 1;
+  return score;
+}
+
+export interface DuplicateDraftRemovalPlan {
+  draftIdsToRemove: string[];
+  protectedDraftIds: string[];
+}
+
+/** Choose saved-list drafts to delete when they duplicate roster members or each other. */
+export function planDuplicateDraftRemovals(
+  entries: MemberDuplicateReviewEntry[],
+  options?: { protectedDraftIds?: ReadonlySet<string> },
+): DuplicateDraftRemovalPlan {
+  const protectedDraftIds = new Set(options?.protectedDraftIds ?? []);
+  const drafts = entries.filter((entry) => entry.source === "draft");
+  const roster = entries.filter((entry) => entry.source === "roster");
+  const remove = new Set<string>();
+
+  for (const draft of drafts) {
+    const clubNumber = draft.memberNumber?.trim();
+    if (clubNumber && !isPlaceholderClubMemberNumber(clubNumber)) {
+      const rosterMatch = roster.some((member) => member.memberNumber?.trim() === clubNumber);
+      if (rosterMatch) {
+        remove.add(draft.id);
+        continue;
+      }
+    }
+
+    const email = normalizeContactEmail(draft.email);
+    const name = normalizePersonName(draft.name);
+    if (email && name) {
+      const rosterMatch = roster.some(
+        (member) =>
+          normalizeContactEmail(member.email) === email && normalizePersonName(member.name) === name,
+      );
+      if (rosterMatch) remove.add(draft.id);
+    }
+  }
+
+  const remainingDrafts = drafts.filter((draft) => !remove.has(draft.id));
+
+  const groupAndRemoveExtras = (groups: Iterable<MemberDuplicateReviewEntry[]>) => {
+    for (const group of groups) {
+      if (group.length < 2) continue;
+      const sorted = [...group].sort((a, b) => draftRetentionScore(b) - draftRetentionScore(a));
+      for (let index = 1; index < sorted.length; index += 1) {
+        remove.add(sorted[index].id);
+      }
+    }
+  };
+
+  const byClubNumber = new Map<string, MemberDuplicateReviewEntry[]>();
+  for (const draft of remainingDrafts) {
+    const clubNumber = draft.memberNumber?.trim();
+    if (!clubNumber || isPlaceholderClubMemberNumber(clubNumber)) continue;
+    const list = byClubNumber.get(clubNumber) ?? [];
+    list.push(draft);
+    byClubNumber.set(clubNumber, list);
+  }
+  groupAndRemoveExtras(byClubNumber.values());
+
+  const stillRemaining = remainingDrafts.filter((draft) => !remove.has(draft.id));
+  const byEmailAndName = new Map<string, MemberDuplicateReviewEntry[]>();
+  for (const draft of stillRemaining) {
+    const email = normalizeContactEmail(draft.email);
+    const name = normalizePersonName(draft.name);
+    if (!email || !name) continue;
+    const key = `${email}::${name}`;
+    const list = byEmailAndName.get(key) ?? [];
+    list.push(draft);
+    byEmailAndName.set(key, list);
+  }
+  groupAndRemoveExtras(byEmailAndName.values());
+
+  const draftIdsToRemove: string[] = [];
+  for (const draftId of remove) {
+    if (protectedDraftIds.has(draftId)) continue;
+    draftIdsToRemove.push(draftId);
+  }
+
+  return {
+    draftIdsToRemove,
+    protectedDraftIds: [...protectedDraftIds].filter((draftId) => remove.has(draftId)),
+  };
+}
+
+export function countDuplicateDraftsScheduledForRemoval(plan: DuplicateDraftRemovalPlan): number {
+  return plan.draftIdsToRemove.length;
+}

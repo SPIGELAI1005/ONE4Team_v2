@@ -113,6 +113,7 @@ import {
   countMemberDuplicateReviewEntries,
   getMemberDuplicateReview,
   memberNeedsDuplicateReview,
+  planDuplicateDraftRemovals,
   type MemberDuplicateReviewReason,
 } from "@/lib/member-duplicate-review";
 import { resolveRegistryImportMatch } from "@/lib/member-registry-import-match";
@@ -666,6 +667,7 @@ const Members = () => {
   const [memberDraftsTruncated, setMemberDraftsTruncated] = useState(false);
   const [draftsLoading, setDraftsLoading] = useState(false);
   const [draftActionId, setDraftActionId] = useState<string | null>(null);
+  const [duplicateDraftRemovalBusy, setDuplicateDraftRemovalBusy] = useState(false);
   const [draftInviteMetaById, setDraftInviteMetaById] = useState<
     Record<string, { inviteUsed: boolean; rosterMembershipId: string | null }>
   >({});
@@ -2089,8 +2091,8 @@ const Members = () => {
     [masterByMembershipId, t.membersPage.unknownMember],
   );
 
-  const duplicateReviewMap = useMemo(() => {
-    const entries = [
+  const duplicateReviewEntries = useMemo(
+    () => [
       ...members.map((member) => ({
         id: member.id,
         source: "roster" as const,
@@ -2110,9 +2112,14 @@ const Members = () => {
           memberNumber: master?.internal_club_number,
         };
       }),
-    ];
-    return buildMemberDuplicateReviewMap(entries);
-  }, [getMemberRosterName, masterByMembershipId, memberDrafts, members, membershipEmails]);
+    ],
+    [getMemberRosterName, masterByMembershipId, memberDrafts, members, membershipEmails],
+  );
+
+  const duplicateReviewMap = useMemo(
+    () => buildMemberDuplicateReviewMap(duplicateReviewEntries),
+    [duplicateReviewEntries],
+  );
 
   const duplicateReviewCount = useMemo(
     () => countMemberDuplicateReviewEntries(duplicateReviewMap),
@@ -2129,6 +2136,18 @@ const Members = () => {
     }),
     [t],
   );
+
+  const duplicateDraftRemovalPlan = useMemo(
+    () =>
+      planDuplicateDraftRemovals(duplicateReviewEntries, {
+        protectedDraftIds: new Set(
+          memberDrafts.filter((draft) => draft.status === "invited").map((draft) => draft.id),
+        ),
+      }),
+    [duplicateReviewEntries, memberDrafts],
+  );
+
+  const duplicateDraftsToRemoveCount = duplicateDraftRemovalPlan.draftIdsToRemove.length;
 
   const rosterForDisplay = useMemo(() => {
     if (statsFilter !== "needs_review") return filtered;
@@ -4132,6 +4151,86 @@ const Members = () => {
     setDraftActionId(null);
   };
 
+  const handleRemoveDuplicateDrafts = useCallback(async () => {
+    if (!clubId || !canManageMembers || duplicateDraftRemovalBusy) return;
+    const { draftIdsToRemove, protectedDraftIds } = duplicateDraftRemovalPlan;
+    if (!draftIdsToRemove.length) {
+      toast({
+        title: t.membersPage.duplicateReviewRemoveNone,
+        description:
+          protectedDraftIds.length > 0
+            ? t.membersPage.duplicateReviewRemoveProtectedDesc.replace(
+                "{count}",
+                String(protectedDraftIds.length),
+              )
+            : undefined,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setDuplicateDraftRemovalBusy(true);
+    let removed = 0;
+    let failed = 0;
+
+    for (const draftId of draftIdsToRemove) {
+      const snapshot = memberDrafts.find((draft) => draft.id === draftId);
+      const { error } = await supabase
+        .from("club_member_drafts")
+        .delete()
+        .eq("id", draftId)
+        .eq("club_id", clubId);
+      if (error) {
+        failed += 1;
+        continue;
+      }
+      removed += 1;
+      if (snapshot) {
+        void appendMemberAuditEvent({
+          clubId,
+          draftId,
+          correlationEmail: normalizeEmail(snapshot.email),
+          eventType: "draft_removed",
+          summary: "Removed duplicate saved-list draft",
+          detail: { source: "duplicate_draft_cleanup", status: snapshot.status },
+        });
+      }
+    }
+
+    if (removed > 0) {
+      const removedSet = new Set(draftIdsToRemove);
+      setMemberDrafts((previous) => previous.filter((draft) => !removedSet.has(draft.id)));
+      if (editingDraftId && removedSet.has(editingDraftId)) {
+        setEditingDraftId(null);
+        setEditDraftTeamIds([]);
+      }
+      await fetchMemberDrafts();
+    }
+
+    toast({
+      title: removed > 0 ? t.membersPage.duplicateReviewRemoveComplete : t.common.error,
+      description:
+        removed > 0
+          ? t.membersPage.duplicateReviewRemoveCompleteDesc
+              .replace("{removed}", String(removed))
+              .replace("{protected}", String(protectedDraftIds.length))
+              .replace("{failed}", String(failed))
+          : t.membersPage.duplicateReviewRemoveFailed,
+      variant: removed > 0 ? "default" : "destructive",
+    });
+    setDuplicateDraftRemovalBusy(false);
+  }, [
+    clubId,
+    canManageMembers,
+    duplicateDraftRemovalBusy,
+    duplicateDraftRemovalPlan,
+    editingDraftId,
+    fetchMemberDrafts,
+    memberDrafts,
+    t,
+    toast,
+  ]);
+
   const handleDeleteDraft = async (draftId: string) => {
     if (!clubId || draftActionId) return;
     const snapshot = memberDrafts.find((d) => d.id === draftId);
@@ -4714,21 +4813,43 @@ const Members = () => {
                 );
               })}
             </div>
-            {duplicateReviewCount > 0 && statsFilter !== "needs_review" ? (
+            {duplicateReviewCount > 0 ? (
               <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-100/90">
                 <div className="font-medium text-amber-200">{t.membersPage.duplicateReviewBannerTitle}</div>
                 <p className="mt-1 text-amber-100/80">
                   {t.membersPage.duplicateReviewBannerDesc.replace("{count}", String(duplicateReviewCount))}
                 </p>
-                <Button
-                  type="button"
-                  variant="link"
-                  size="sm"
-                  className="mt-1 h-auto p-0 text-xs text-amber-300 hover:text-amber-200"
-                  onClick={() => applyStatsFilter("needs_review")}
-                >
-                  {t.membersPage.duplicateReviewStat}
-                </Button>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {statsFilter !== "needs_review" ? (
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-8 px-0 text-xs text-amber-300 hover:text-amber-200"
+                      onClick={() => applyStatsFilter("needs_review")}
+                    >
+                      {t.membersPage.duplicateReviewStat}
+                    </Button>
+                  ) : null}
+                  {duplicateDraftsToRemoveCount > 0 ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="h-8 text-xs"
+                      disabled={duplicateDraftRemovalBusy}
+                      onClick={() => void handleRemoveDuplicateDrafts()}
+                    >
+                      {duplicateDraftRemovalBusy ? (
+                        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                      ) : null}
+                      {t.membersPage.duplicateReviewRemoveDrafts.replace(
+                        "{count}",
+                        String(duplicateDraftsToRemoveCount),
+                      )}
+                    </Button>
+                  ) : null}
+                </div>
               </div>
             ) : null}
             {statsFilter ? (

@@ -1496,6 +1496,14 @@ export const en = {
     duplicateReviewReasonClubNumber: "Same club member number on another entry",
     duplicateReviewReasonNameEmail: "Same name and email on another entry",
     duplicateReviewReasonRosterDraft: "On roster and saved list at the same time",
+    duplicateReviewRemoveDrafts: "Remove {count} duplicate draft(s)",
+    duplicateReviewRemoveComplete: "Duplicate drafts removed",
+    duplicateReviewRemoveCompleteDesc:
+      "Removed {removed} duplicate saved-list draft(s). Skipped {protected} invited draft(s). {failed} could not be removed.",
+    duplicateReviewRemoveProtectedDesc:
+      "{count} duplicate invited draft(s) were kept — remove manually if needed.",
+    duplicateReviewRemoveNone: "No duplicate saved-list drafts to remove automatically",
+    duplicateReviewRemoveFailed: "Could not remove duplicate drafts. Try again or remove them manually.",
     householdDiscountBadge: "Family discount · {count}",
     householdDiscountTooltip: "Same email, surname, and address, verify in Payments for family pricing.",
     registryHouseholdDiscountSummaryTitle: "Family discount groups detected",

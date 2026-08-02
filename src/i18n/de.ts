@@ -1515,6 +1515,15 @@ export const de: Translations = {
     duplicateReviewReasonClubNumber: "Gleiche Mitgliedsnummer bei anderem Eintrag",
     duplicateReviewReasonNameEmail: "Gleicher Name und E-Mail bei anderem Eintrag",
     duplicateReviewReasonRosterDraft: "Gleichzeitig im Kader und in der gespeicherten Liste",
+    duplicateReviewRemoveDrafts: "{count} Duplikat-Entwürfe entfernen",
+    duplicateReviewRemoveComplete: "Duplikat-Entwürfe entfernt",
+    duplicateReviewRemoveCompleteDesc:
+      "{removed} doppelte Entwürfe aus der gespeicherten Liste entfernt. {protected} eingeladene Entwürfe übersprungen. {failed} konnten nicht entfernt werden.",
+    duplicateReviewRemoveProtectedDesc:
+      "{count} doppelte eingeladene Entwürfe behalten — bei Bedarf manuell entfernen.",
+    duplicateReviewRemoveNone: "Keine doppelten Entwürfe in der gespeicherten Liste zum automatischen Entfernen",
+    duplicateReviewRemoveFailed:
+      "Duplikat-Entwürfe konnten nicht entfernt werden. Erneut versuchen oder manuell entfernen.",
     householdDiscountBadge: "Familienrabatt · {count}",
     householdDiscountTooltip: "Gleiche E-Mail, Nachname und Adresse, in Zahlungen für Familienpreise prüfen.",
     registryHouseholdDiscountSummaryTitle: "Familienrabatt-Gruppen erkannt",
