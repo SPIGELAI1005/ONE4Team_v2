@@ -84,6 +84,7 @@ import {
   type ClubTeamOption,
 } from "@/lib/member-team-assignments";
 import { MemberTeamAssignmentField } from "@/components/members/member-team-assignment-field";
+import { DuplicateReviewBadge } from "@/components/members/duplicate-review-badge";
 import { SharedContactEmailBadge } from "@/components/members/shared-contact-email-badge";
 import { SharedContactAccountsPanel } from "@/components/members/shared-contact-accounts-panel";
 import { HouseholdDiscountBadge } from "@/components/members/household-discount-badge";
@@ -107,6 +108,13 @@ import {
   canAddRegistryRowToSavedList,
   summarizeMasterPayloadForDisplay,
 } from "@/lib/member-import-dedupe";
+import {
+  buildMemberDuplicateReviewMap,
+  countMemberDuplicateReviewEntries,
+  getMemberDuplicateReview,
+  memberNeedsDuplicateReview,
+  type MemberDuplicateReviewReason,
+} from "@/lib/member-duplicate-review";
 import { resolveRegistryImportMatch } from "@/lib/member-registry-import-match";
 import {
   buildSharedContactEmailGroups,
@@ -198,7 +206,7 @@ type MemberDraftRow = {
 };
 
 /** Metric-card filter for Saved Member List (and roster role chips where relevant). */
-type MembersStatsFilter = "total" | "active" | "players" | "trainers" | "pending";
+type MembersStatsFilter = "total" | "active" | "players" | "trainers" | "pending" | "needs_review";
 
 function draftMatchesStatsFilter(draft: MemberDraftRow, filter: MembersStatsFilter | null): boolean {
   if (!filter || filter === "total") return true;
@@ -2070,6 +2078,63 @@ const Members = () => {
     }));
   }, [filtered, isSearchActive, rosterSearchQuery, masterByMembershipId, membershipEmails]);
 
+  const getMemberRosterName = useCallback(
+    (member: MemberRow) => {
+      const master = masterByMembershipId[member.id];
+      const fn = master?.first_name?.trim();
+      const ln = master?.last_name?.trim();
+      if (fn || ln) return [fn, ln].filter(Boolean).join(" ");
+      return member.profiles?.display_name || t.membersPage.unknownMember;
+    },
+    [masterByMembershipId, t.membersPage.unknownMember],
+  );
+
+  const duplicateReviewMap = useMemo(() => {
+    const entries = [
+      ...members.map((member) => ({
+        id: member.id,
+        source: "roster" as const,
+        email: membershipEmails[member.id] || "",
+        name: getMemberRosterName(member),
+        memberNumber: masterByMembershipId[member.id]?.internal_club_number,
+      })),
+      ...memberDrafts.map((draft) => {
+        const master = masterRecordFromDraft(draft.master_data, draft.name || "");
+        return {
+          id: draft.id,
+          source: "draft" as const,
+          email: draft.email || "",
+          name:
+            draft.name?.trim() ||
+            registryImportRowDisplayName(master ?? {}, draft.email ?? ""),
+          memberNumber: master?.internal_club_number,
+        };
+      }),
+    ];
+    return buildMemberDuplicateReviewMap(entries);
+  }, [getMemberRosterName, masterByMembershipId, memberDrafts, members, membershipEmails]);
+
+  const duplicateReviewCount = useMemo(
+    () => countMemberDuplicateReviewEntries(duplicateReviewMap),
+    [duplicateReviewMap],
+  );
+
+  const duplicateReviewKeys = useMemo(() => new Set(duplicateReviewMap.keys()), [duplicateReviewMap]);
+
+  const duplicateReviewReasonLabels = useMemo(
+    (): Record<MemberDuplicateReviewReason, string> => ({
+      duplicate_club_number: t.membersPage.duplicateReviewReasonClubNumber,
+      duplicate_name_and_email: t.membersPage.duplicateReviewReasonNameEmail,
+      roster_and_draft_overlap: t.membersPage.duplicateReviewReasonRosterDraft,
+    }),
+    [t],
+  );
+
+  const rosterForDisplay = useMemo(() => {
+    if (statsFilter !== "needs_review") return filtered;
+    return filtered.filter((member) => memberNeedsDuplicateReview(duplicateReviewMap, "roster", member.id));
+  }, [duplicateReviewMap, filtered, statsFilter]);
+
   const filteredDrafts = useMemo(() => {
     const base = !isSearchActive
       ? memberDrafts
@@ -2077,7 +2142,7 @@ const Members = () => {
         ? mergedSearchDrafts
         : memberDrafts.filter((draft) => draftMatchesMemberSearch(trimmedSearch, draft));
     return base
-      .filter((draft) => draftMatchesStatsFilter(draft, statsFilter))
+      .filter((draft) => draftMatchesStatsFilter(draft, statsFilter === "needs_review" ? null : statsFilter))
       .filter((draft) =>
         sharedContactFilterEmail ? normalizeEmail(draft.email) === sharedContactFilterEmail : true,
       );
@@ -2093,12 +2158,24 @@ const Members = () => {
 
   const sharedContactFilterActive = Boolean(sharedContactFilterEmail);
 
-  const visibleDrafts =
-    isSearchActive || statsFilter || sharedContactFilterActive
-      ? filteredDrafts
-      : showAllDrafts
-        ? memberDrafts
-        : memberDrafts.slice(0, 8);
+  const visibleDrafts = useMemo(() => {
+    if (statsFilter === "needs_review") {
+      return memberDrafts.filter((draft) => memberNeedsDuplicateReview(duplicateReviewMap, "draft", draft.id));
+    }
+    if (isSearchActive || statsFilter || sharedContactFilterActive) {
+      return filteredDrafts;
+    }
+    if (showAllDrafts) return memberDrafts;
+    return memberDrafts.slice(0, 8);
+  }, [
+    duplicateReviewMap,
+    filteredDrafts,
+    isSearchActive,
+    memberDrafts,
+    sharedContactFilterActive,
+    showAllDrafts,
+    statsFilter,
+  ]);
 
   const applyStatsFilter = useCallback(
     (next: MembersStatsFilter) => {
@@ -2193,17 +2270,6 @@ const Members = () => {
     const fromIds = clubTeamNamesFromIds(clubTeams, editDraftTeamIds).join(", ");
     return fromIds || editingDraftForm.team.trim();
   }, [clubTeams, editDraftTeamIds, editingDraftForm.team]);
-
-  const getMemberRosterName = useCallback(
-    (member: MemberRow) => {
-      const master = masterByMembershipId[member.id];
-      const fn = master?.first_name?.trim();
-      const ln = master?.last_name?.trim();
-      if (fn || ln) return [fn, ln].filter(Boolean).join(" ");
-      return member.profiles?.display_name || t.membersPage.unknownMember;
-    },
-    [masterByMembershipId, t.membersPage.unknownMember],
-  );
 
   const sharedContactGroups = useMemo(() => {
     const entries: Array<{
@@ -4578,7 +4644,7 @@ const Members = () => {
                 }
               >
             {/* Stats (club-wide via RPC; tap to filter Saved Member List) */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
               {(
                 [
                   {
@@ -4620,6 +4686,12 @@ const Members = () => {
                     value: isSearchActive ? filteredDrafts.length : memberDraftTotalCount,
                     color: "text-violet-400",
                   },
+                  {
+                    key: "needs_review" as const,
+                    label: t.membersPage.duplicateReviewStat,
+                    value: duplicateReviewCount,
+                    color: "text-amber-400",
+                  },
                 ] as const
               ).map((s) => {
                 const isSelected = statsFilter === s.key;
@@ -4642,6 +4714,23 @@ const Members = () => {
                 );
               })}
             </div>
+            {duplicateReviewCount > 0 && statsFilter !== "needs_review" ? (
+              <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-100/90">
+                <div className="font-medium text-amber-200">{t.membersPage.duplicateReviewBannerTitle}</div>
+                <p className="mt-1 text-amber-100/80">
+                  {t.membersPage.duplicateReviewBannerDesc.replace("{count}", String(duplicateReviewCount))}
+                </p>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="mt-1 h-auto p-0 text-xs text-amber-300 hover:text-amber-200"
+                  onClick={() => applyStatsFilter("needs_review")}
+                >
+                  {t.membersPage.duplicateReviewStat}
+                </Button>
+              </div>
+            ) : null}
             {statsFilter ? (
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                 <span>
@@ -5076,6 +5165,8 @@ const Members = () => {
                                 openMember: t.membersPage.sharedContactOpenMember,
                                 importPreview: t.membersPage.sharedContactImportPreview,
                               }}
+                              duplicateMemberKeys={duplicateReviewKeys}
+                              duplicateWarning={t.membersPage.duplicateReviewPanelWarning}
                               onShowAll={(email) => applySharedContactFilter(email)}
                               onOpenMember={(member) => applySharedContactFilter(group.email, member)}
                             />
@@ -5255,6 +5346,19 @@ const Members = () => {
                               </div>
                             ) : null}
                             {(() => {
+                              const duplicateFlag = getMemberDuplicateReview(duplicateReviewMap, "draft", draft.id);
+                              return duplicateFlag ? (
+                                <div className="mt-1">
+                                  <DuplicateReviewBadge
+                                    flag={duplicateFlag}
+                                    label={t.membersPage.duplicateReviewBadge}
+                                    tooltipTitle={t.membersPage.duplicateReviewTooltip}
+                                    reasonLabels={duplicateReviewReasonLabels}
+                                  />
+                                </div>
+                              ) : null;
+                            })()}
+                            {(() => {
                               const master = masterRecordFromDraft(draft.master_data, draft.name || "");
                               const hhGroup = findHouseholdGroupForMember(
                                 rosterHouseholdDiscountGroups,
@@ -5395,7 +5499,7 @@ const Members = () => {
             </div>
 
             <div className="rounded-xl bg-card border border-border overflow-hidden">
-              {filtered.length === 0 ? (
+              {rosterForDisplay.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground text-sm">
                   {members.length === 0 ? t.membersPage.noMembersYet : t.membersPage.noMembersFound}
                 </div>
@@ -5404,7 +5508,7 @@ const Members = () => {
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/20">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     {loading ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" aria-hidden /> : null}
-                    {filtered.length} match{filtered.length === 1 ? "" : "es"} on this page ·{" "}
+                    {rosterForDisplay.length} match{rosterForDisplay.length === 1 ? "" : "es"} on this page ·{" "}
                     {membersDbTotalCount != null
                       ? `database page ${membersServerPage}/${membersServerTotalPages} (${membersDbTotalCount} in filter)`
                       : `page ${membersServerPage}`}
@@ -5435,7 +5539,7 @@ const Members = () => {
                     </Button>
                   </div>
                 </div>
-                {filtered.map((member, i) => {
+                {rosterForDisplay.map((member, i) => {
                   const isOpen = selectedMember?.id === member.id;
                   const rosterGuardianRole =
                     memberPanelEditModeId === member.id ? editMemberForm.role : member.role;
@@ -5493,6 +5597,21 @@ const Members = () => {
                                     tooltipTitle={t.membersPage.sharedContactTooltip}
                                   />
                                 ) : null}
+                                {(() => {
+                                  const duplicateFlag = getMemberDuplicateReview(
+                                    duplicateReviewMap,
+                                    "roster",
+                                    member.id,
+                                  );
+                                  return duplicateFlag ? (
+                                    <DuplicateReviewBadge
+                                      flag={duplicateFlag}
+                                      label={t.membersPage.duplicateReviewBadge}
+                                      tooltipTitle={t.membersPage.duplicateReviewTooltip}
+                                      reasonLabels={duplicateReviewReasonLabels}
+                                    />
+                                  ) : null;
+                                })()}
                                 {(() => {
                                   const master = masterByMembershipId[member.id];
                                   const hhGroup = findHouseholdGroupForMember(
@@ -5658,6 +5777,8 @@ const Members = () => {
                                     openMember: t.membersPage.sharedContactOpenMember,
                                     importPreview: t.membersPage.sharedContactImportPreview,
                                   }}
+                                  duplicateMemberKeys={duplicateReviewKeys}
+                                  duplicateWarning={t.membersPage.duplicateReviewPanelWarning}
                                   onShowAll={(email) => applySharedContactFilter(email)}
                                   onOpenMember={(linkedMember) => applySharedContactFilter(group.email, linkedMember)}
                                 />

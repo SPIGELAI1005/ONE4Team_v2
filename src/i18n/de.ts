@@ -1503,6 +1503,18 @@ export const de: Translations = {
     sharedContactFilterClear: "Verknüpfungsfilter zurücksetzen",
     sharedContactOpenMember: "{name} anzeigen",
     sharedContactImportPreview: "Import-Vorschau",
+    duplicateReviewBadge: "Duplikat prüfen",
+    duplicateReviewTooltip:
+      "Dieser Eintrag könnte ein Import-Duplikat sein. Verknüpfte Konten öffnen und überzählige Einträge entfernen oder zusammenführen.",
+    duplicateReviewBannerTitle: "Doppelte Konten prüfen",
+    duplicateReviewBannerDesc:
+      "{count} Kader- oder Listen-Einträge wirken wie Import-Duplikate (gleiche Mitgliedsnummer oder gleicher Name und E-Mail). Jeden markierten Eintrag prüfen, bevor Einladungen oder Beiträge erfasst werden.",
+    duplicateReviewPanelWarning:
+      "Mögliches Import-Duplikat — verknüpfte Konten prüfen und überzählige Einträge entfernen oder zusammenführen.",
+    duplicateReviewStat: "Prüfung nötig",
+    duplicateReviewReasonClubNumber: "Gleiche Mitgliedsnummer bei anderem Eintrag",
+    duplicateReviewReasonNameEmail: "Gleicher Name und E-Mail bei anderem Eintrag",
+    duplicateReviewReasonRosterDraft: "Gleichzeitig im Kader und in der gespeicherten Liste",
     householdDiscountBadge: "Familienrabatt · {count}",
     householdDiscountTooltip: "Gleiche E-Mail, Nachname und Adresse, in Zahlungen für Familienpreise prüfen.",
     registryHouseholdDiscountSummaryTitle: "Familienrabatt-Gruppen erkannt",

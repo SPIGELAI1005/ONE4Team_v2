@@ -1484,6 +1484,18 @@ export const en = {
     sharedContactFilterClear: "Clear linked-account filter",
     sharedContactOpenMember: "Show {name}",
     sharedContactImportPreview: "Import preview",
+    duplicateReviewBadge: "Review duplicate",
+    duplicateReviewTooltip:
+      "This record may duplicate another roster or saved-list entry from import. Open linked accounts, then remove or merge the extra entry.",
+    duplicateReviewBannerTitle: "Duplicate accounts need review",
+    duplicateReviewBannerDesc:
+      "{count} roster or saved-list entries look like import duplicates (same club member number or same name and email). Inspect each flagged member before inviting or recording payments.",
+    duplicateReviewPanelWarning:
+      "Possible import duplicate — inspect linked accounts and remove or merge extras before inviting.",
+    duplicateReviewStat: "Needs review",
+    duplicateReviewReasonClubNumber: "Same club member number on another entry",
+    duplicateReviewReasonNameEmail: "Same name and email on another entry",
+    duplicateReviewReasonRosterDraft: "On roster and saved list at the same time",
     householdDiscountBadge: "Family discount · {count}",
     householdDiscountTooltip: "Same email, surname, and address, verify in Payments for family pricing.",
     registryHouseholdDiscountSummaryTitle: "Family discount groups detected",

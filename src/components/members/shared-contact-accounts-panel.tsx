@@ -17,6 +17,8 @@ interface SharedContactAccountsPanelProps {
   labels: SharedContactAccountsPanelLabels;
   onShowAll: (email: string) => void;
   onOpenMember: (member: SharedContactEmailMember) => void;
+  duplicateMemberKeys?: ReadonlySet<string>;
+  duplicateWarning?: string;
   className?: string;
 }
 
@@ -26,17 +28,27 @@ export function SharedContactAccountsPanel({
   labels,
   onShowAll,
   onOpenMember,
+  duplicateMemberKeys,
+  duplicateWarning,
   className,
 }: SharedContactAccountsPanelProps) {
   if (group.members.length < 2) return null;
 
+  const hasDuplicateMembers = duplicateMemberKeys
+    ? group.members.some((member) => duplicateMemberKeys.has(`${member.source}:${member.id}`))
+    : false;
+
   return (
     <div
       className={cn(
-        "rounded-lg border border-sky-500/20 bg-sky-500/5 p-3",
+        "rounded-lg border p-3",
+        hasDuplicateMembers ? "border-amber-500/30 bg-amber-500/5" : "border-sky-500/20 bg-sky-500/5",
         className,
       )}
     >
+      {hasDuplicateMembers && duplicateWarning ? (
+        <p className="mb-2 text-[11px] text-amber-300">{duplicateWarning}</p>
+      ) : null}
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs font-medium text-sky-300">
           <Users className="h-3.5 w-3.5 shrink-0" />
@@ -58,6 +70,7 @@ export function SharedContactAccountsPanel({
           const isCurrent = member.id === currentId;
           const canOpen = !isCurrent && member.source !== "import";
           const memberLabel = `${member.name}${member.memberNumber ? ` [${member.memberNumber}]` : ""}`;
+          const isDuplicate = duplicateMemberKeys?.has(`${member.source}:${member.id}`) ?? false;
 
           return (
             <li
@@ -76,7 +89,12 @@ export function SharedContactAccountsPanel({
                   {memberLabel}
                 </Button>
               ) : (
-                <span className="min-w-0 text-sm font-medium text-foreground">
+                <span
+                  className={cn(
+                    "min-w-0 text-sm font-medium",
+                    isDuplicate ? "text-amber-300" : "text-foreground",
+                  )}
+                >
                   {memberLabel}
                   {isCurrent ? (
                     <span className="ml-1 text-xs font-normal text-muted-foreground">({labels.current})</span>
