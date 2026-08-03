@@ -833,7 +833,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       setLoadingData(false);
     };
     void run();
-  }, [club?.id, user]);
+  }, [club?.id, club?.micrositePrivacy, user]);
 
   useEffect(() => {
     if (!user) return;
