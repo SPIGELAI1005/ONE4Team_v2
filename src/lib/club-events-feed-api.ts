@@ -1,20 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  clubRowToPublicPageConfig,
   getClubPageDraftConfig,
   parseClubPublicPageConfig,
-  publicPageConfigToJson,
-  saveClubPageDraftConfig,
-  type ClubPublicPageConfig,
 } from "@/lib/club-public-page-config";
 import {
   EMPTY_CLUB_EVENTS_FEED,
   normalizeClubEventsFeed,
+  pickSavedEventsFeed,
   resolveEffectiveEventsFeed,
   type ClubEventsFeedConfig,
 } from "@/lib/club-events-feed";
 
-function extractFeedFromConfig(config: ClubPublicPageConfig | null | undefined): ClubEventsFeedConfig | null {
+function extractFeedFromConfig(config: { eventsFeed?: ClubEventsFeedConfig | null } | null | undefined): ClubEventsFeedConfig | null {
   if (!config) return null;
   return config.eventsFeed ?? null;
 }
@@ -24,59 +21,45 @@ export async function loadClubEventsFeed(
   clubId: string,
   club?: { name?: string | null; slug?: string | null } | null,
 ): Promise<{ data: ClubEventsFeedConfig; error: Error | null }> {
-  const { data: row, error } = await supabase
-    .from("clubs")
-    .select("name, slug, public_page_published_config")
-    .eq("id", clubId)
-    .maybeSingle();
+  const [{ data: row, error }, draftResult] = await Promise.all([
+    supabase.from("clubs").select("name, slug, public_page_published_config").eq("id", clubId).maybeSingle(),
+    getClubPageDraftConfig(supabase, clubId),
+  ]);
+
   if (error) return { data: resolveEffectiveEventsFeed(null, club), error: new Error(error.message) };
 
   const clubMeta = club ?? { name: row?.name, slug: row?.slug };
   const published = parseClubPublicPageConfig(row?.public_page_published_config);
-  const fromPublished = extractFeedFromConfig(published);
-  if (fromPublished != null) {
-    return { data: resolveEffectiveEventsFeed(fromPublished, clubMeta), error: null };
+  const picked = pickSavedEventsFeed(
+    extractFeedFromConfig(draftResult.data),
+    extractFeedFromConfig(published),
+  );
+  if (draftResult.error && !picked) {
+    return { data: resolveEffectiveEventsFeed(null, clubMeta), error: draftResult.error };
   }
-
-  const draft = await getClubPageDraftConfig(supabase, clubId);
-  if (draft.error) return { data: resolveEffectiveEventsFeed(null, clubMeta), error: draft.error };
-  const fromDraft = extractFeedFromConfig(draft.data);
-  return { data: resolveEffectiveEventsFeed(fromDraft, clubMeta), error: null };
+  return { data: resolveEffectiveEventsFeed(picked, clubMeta), error: null };
 }
 
 export async function saveClubEventsFeed(
   supabase: SupabaseClient,
   clubId: string,
   feed: ClubEventsFeedConfig,
-  adminUserId: string | null,
+  _adminUserId: string | null,
 ): Promise<{ error: Error | null }> {
   const normalized: ClubEventsFeedConfig = {
     ...normalizeClubEventsFeed(feed),
     enabled: true,
   };
 
-  const { data: row, error: loadError } = await supabase
-    .from("clubs")
-    .select("*")
-    .eq("id", clubId)
-    .maybeSingle();
-  if (loadError) return { error: new Error(loadError.message) };
-  if (!row) return { error: new Error("club_not_found") };
+  const { data, error } = await supabase.rpc("patch_club_events_feed", {
+    p_club_id: clubId,
+    p_feed: normalized,
+  });
 
-  const base = clubRowToPublicPageConfig(row as Record<string, unknown>);
-  const draftResult = await getClubPageDraftConfig(supabase, clubId);
-  const draftBase = draftResult.data ?? base;
-  const nextDraft: ClubPublicPageConfig = { ...draftBase, eventsFeed: normalized };
-  const draftSave = await saveClubPageDraftConfig(supabase, clubId, nextDraft, adminUserId);
-  if (draftSave.error) return draftSave;
-
-  const publishedBase = parseClubPublicPageConfig(row.public_page_published_config) ?? base;
-  const nextPublished: ClubPublicPageConfig = { ...publishedBase, eventsFeed: normalized };
-  const { error: pubError } = await supabase
-    .from("clubs")
-    .update({ public_page_published_config: publicPageConfigToJson(nextPublished) })
-    .eq("id", clubId);
-  if (pubError) return { error: new Error(pubError.message) };
+  if (error) return { error: new Error(error.message) };
+  if (data && typeof data === "object" && (data as { ok?: boolean }).ok !== true) {
+    return { error: new Error("events_feed_save_failed") };
+  }
   return { error: null };
 }
 

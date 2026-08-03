@@ -171,6 +171,18 @@ export function resolveEffectiveEventsFeed(
   return { ...EMPTY_CLUB_EVENTS_FEED };
 }
 
+/** Prefer draft feed over published so trainer saves show before full page publish. */
+export function pickSavedEventsFeed(
+  draftFeed: ClubEventsFeedConfig | null | undefined,
+  publishedFeed: ClubEventsFeedConfig | null | undefined,
+): ClubEventsFeedConfig | null {
+  const draft = draftFeed != null ? normalizeClubEventsFeed(draftFeed) : null;
+  const published = publishedFeed != null ? normalizeClubEventsFeed(publishedFeed) : null;
+  if (draft?.enabled && draft.items.length > 0) return draft;
+  if (published?.enabled && published.items.length > 0) return published;
+  return null;
+}
+
 export function clubFeedItemsSorted(config: ClubEventsFeedConfig): ClubEventsFeedItem[] {
   return [...config.items].sort((a, b) => {
     const dateCmp = b.date.localeCompare(a.date);
