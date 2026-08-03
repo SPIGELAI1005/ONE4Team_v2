@@ -1416,7 +1416,7 @@ export const de: Translations = {
     savedMemberListEmpty: "Noch keine gespeicherten Mitglieder. Nutze „Mitglied hinzufügen“, um die Liste vorzubereiten.",
     savedMemberCount: "{draftCount} Entwurf · {invitedCount} eingeladen",
     savedMemberListMore: "+{count} weitere",
-    showAllDrafts: "Alle anzeigen",
+    showAllDrafts: "Gesamte Liste anzeigen ({count})",
     showLessDrafts: "Weniger anzeigen",
     draftUpdated: "Entwurf aktualisiert",
     masterDataSavedTitle: "Mitgliederdaten gespeichert",

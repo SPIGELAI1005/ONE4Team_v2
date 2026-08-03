@@ -1399,7 +1399,7 @@ export const en = {
     savedMemberListEmpty: "No saved members yet. Use Add Member to prepare your list.",
     savedMemberCount: "{draftCount} draft · {invitedCount} invited",
     savedMemberListMore: "+{count} more",
-    showAllDrafts: "Show all",
+    showAllDrafts: "View complete list ({count})",
     showLessDrafts: "Show less",
     draftUpdated: "Draft updated",
     masterDataSavedTitle: "Member data saved",

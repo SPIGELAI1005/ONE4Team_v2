@@ -462,6 +462,8 @@ const MEMBERS_SERVER_PAGE_SIZE = 100;
 const DRAFT_LIST_PAGE_SIZE = 500;
 const DRAFT_LIST_MAX_ROWS = 5000;
 const DRAFT_SEARCH_MAX_ROWS = 2000;
+/** Default rows shown in Gespeicherte Mitgliederliste before expanding. */
+const SAVED_MEMBER_LIST_PREVIEW_COUNT = 12;
 
 function mapSearchRpcRowToMember(row: Record<string, unknown>): MemberRow {
   const userId = String(row.user_id ?? "");
@@ -2218,24 +2220,38 @@ const Members = () => {
 
   const sharedContactFilterActive = Boolean(sharedContactFilterEmail);
 
-  const visibleDrafts = useMemo(() => {
+  /** Full saved-list rows for the current filter context (before preview slice). */
+  const savedDraftsForDisplay = useMemo(() => {
     if (statsFilter === "needs_review") {
       return memberDrafts.filter((draft) => memberNeedsDuplicateReview(duplicateReviewMap, "draft", draft.id));
     }
     if (isSearchActive || statsFilter || sharedContactFilterActive) {
       return filteredDrafts;
     }
-    if (showAllDrafts) return memberDrafts;
-    return memberDrafts.slice(0, 8);
+    return memberDrafts;
   }, [
     duplicateReviewMap,
     filteredDrafts,
     isSearchActive,
     memberDrafts,
     sharedContactFilterActive,
-    showAllDrafts,
     statsFilter,
   ]);
+
+  const savedDraftsPreviewApplicable =
+    !isSearchActive && savedDraftsForDisplay.length > SAVED_MEMBER_LIST_PREVIEW_COUNT;
+
+  const visibleDrafts = useMemo(() => {
+    if (isSearchActive) return filteredDrafts;
+    if (!showAllDrafts && savedDraftsPreviewApplicable) {
+      return savedDraftsForDisplay.slice(0, SAVED_MEMBER_LIST_PREVIEW_COUNT);
+    }
+    return savedDraftsForDisplay;
+  }, [filteredDrafts, isSearchActive, savedDraftsForDisplay, savedDraftsPreviewApplicable, showAllDrafts]);
+
+  useEffect(() => {
+    setShowAllDrafts(false);
+  }, [clubId]);
 
   const applyStatsFilter = useCallback(
     (next: MembersStatsFilter) => {
@@ -2244,7 +2260,6 @@ const Members = () => {
       if (nextFilter === "players") setRoleFilter("player");
       else if (nextFilter === "trainers") setRoleFilter("trainer");
       else if (nextFilter === null || nextFilter === "total") setRoleFilter("all");
-      if (nextFilter && nextFilter !== "total") setShowAllDrafts(true);
       requestAnimationFrame(() => {
         savedMemberListRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
@@ -4340,7 +4355,6 @@ const Members = () => {
     if (!normalized) return;
 
     setSharedContactFilterEmail(normalized);
-    setShowAllDrafts(true);
 
     const scrollToSavedList = () => {
       window.requestAnimationFrame(() => {
@@ -5013,11 +5027,11 @@ const Members = () => {
                           .replace("{draftCount}", String(memberDraftTotalCount || memberDrafts.filter((row) => row.status === "draft").length))
                           .replace("{invitedCount}", String(memberDrafts.filter((row) => row.status === "invited").length))}
                   </div>
-                  {!statsFilter && !sharedContactFilterActive && memberDrafts.length > 8 && !showAllDrafts ? (
+                  {!isSearchActive && savedDraftsPreviewApplicable && !showAllDrafts ? (
                     <Button variant="link" size="sm" className="h-auto p-0 text-[11px]" onClick={() => setShowAllDrafts(true)}>
-                      {t.membersPage.showAllDrafts}
+                      {t.membersPage.showAllDrafts.replace("{count}", String(savedDraftsForDisplay.length))}
                     </Button>
-                  ) : !statsFilter && !sharedContactFilterActive && memberDrafts.length > 8 && showAllDrafts ? (
+                  ) : !isSearchActive && savedDraftsPreviewApplicable && showAllDrafts ? (
                     <Button variant="link" size="sm" className="h-auto p-0 text-[11px]" onClick={() => setShowAllDrafts(false)}>
                       {t.membersPage.showLessDrafts}
                     </Button>
@@ -5660,9 +5674,12 @@ const Members = () => {
                       </div>
                     )
                   ))}
-                  {memberDrafts.length > 8 && !showAllDrafts && !isSearchActive && !statsFilter && !sharedContactFilterActive ? (
-                    <button className="text-[11px] text-primary hover:underline pt-1" onClick={() => setShowAllDrafts(true)}>
-                      {t.membersPage.savedMemberListMore.replace("{count}", String(memberDrafts.length - 8))}
+                  {savedDraftsPreviewApplicable && !showAllDrafts && !isSearchActive ? (
+                    <button type="button" className="text-[11px] text-primary hover:underline pt-1" onClick={() => setShowAllDrafts(true)}>
+                      {t.membersPage.savedMemberListMore.replace(
+                        "{count}",
+                        String(savedDraftsForDisplay.length - SAVED_MEMBER_LIST_PREVIEW_COUNT),
+                      )}
                     </button>
                   ) : null}
                 </div>
