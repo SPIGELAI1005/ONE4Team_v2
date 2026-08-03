@@ -32,6 +32,10 @@ import { resolveMyMemberDataLoadError } from "@/lib/member-my-data-errors";
 
 const PROFILE_AVATAR_BUCKET = "images-avatars";
 
+function selectedMembershipStorageKey(clubId: string) {
+  return `one4team:my-data:selected-membership:${clubId}`;
+}
+
 function mapEditActor(row: EditableMemberMasterRow["edit_actor"]): MemberMasterEditActor {
   if (row === "manager") return "manager";
   if (row === "trainer") return "trainer";
@@ -144,11 +148,17 @@ export default function MyMemberData() {
     }
     const rows = data ?? [];
     setEditableRows(rows);
-    if (rows.length && !selectedId) {
-      setSelectedId(rows[0].membership_id);
+    if (rows.length) {
+      const storedId =
+        typeof window !== "undefined" ? window.sessionStorage.getItem(selectedMembershipStorageKey(clubId)) : null;
+      const preferredId =
+        (storedId && rows.some((row) => row.membership_id === storedId) ? storedId : null) ??
+        rows.find((row) => row.relationship === "self")?.membership_id ??
+        rows[0].membership_id;
+      setSelectedId((current) => current ?? preferredId);
     }
     setLoading(false);
-  }, [clubId, selectedId, t]);
+  }, [clubId, t]);
 
   const loadBundle = useCallback(async (membershipId: string) => {
     const { data, error } = await getMemberMasterBundle(membershipId);
@@ -174,8 +184,10 @@ export default function MyMemberData() {
     if (clubLoading) return;
     if (!clubId) {
       setLoading(false);
+      setSelectedId(null);
       return;
     }
+    setSelectedId(null);
     void loadEditableList();
   }, [clubId, clubLoading, loadEditableList]);
 
@@ -183,6 +195,11 @@ export default function MyMemberData() {
     if (!selectedId) return;
     void loadBundle(selectedId);
   }, [selectedId, loadBundle]);
+
+  useEffect(() => {
+    if (!clubId || !selectedId) return;
+    window.sessionStorage.setItem(selectedMembershipStorageKey(clubId), selectedId);
+  }, [clubId, selectedId]);
 
   const setField = (key: keyof ClubMemberMasterRecord, value: string | number | null) => {
     setForm((previous) => ({
@@ -217,10 +234,11 @@ export default function MyMemberData() {
     setSaving(true);
     try {
       const payload = filterMasterPayloadForActor(form, editActor);
-      const { error } = await saveMemberMasterRecord(selectedId, payload);
+      const { data: savedRecord, error } = await saveMemberMasterRecord(selectedId, payload);
       if (error) throw error;
       const activeRow = editableRows.find((row) => row.membership_id === selectedId);
-      if (editActor === "self" && activeRow?.relationship === "self" && user) {
+      const savedForSelf = activeRow?.relationship === "self";
+      if (editActor === "self" && savedForSelf && user) {
         const photoUrl =
           typeof payload.photo_url === "string" && payload.photo_url.trim()
             ? payload.photo_url.trim()
@@ -232,11 +250,17 @@ export default function MyMemberData() {
         if (avatarSyncError) throw avatarSyncError;
         setOwnProfileAvatarUrl(photoUrl);
       }
+      const personName =
+        [savedRecord?.first_name, savedRecord?.last_name].filter(Boolean).join(" ").trim() ||
+        activeRow?.display_name?.trim() ||
+        bundleMeta?.displayName?.trim() ||
+        "";
       toast({
         title: t.myMemberDataPage.saveSuccessTitle,
-        description:
-          editActor === "self"
-            ? t.myMemberDataPage.saveSuccessDescSelf
+        description: savedForSelf
+          ? t.myMemberDataPage.saveSuccessDescSelf
+          : personName
+            ? t.myMemberDataPage.saveSuccessDescOtherNamed.replace("{name}", personName)
             : t.myMemberDataPage.saveSuccessDescOther,
       });
       await loadBundle(selectedId);
@@ -380,7 +404,6 @@ export default function MyMemberData() {
                   email={bundleMeta.email}
                   clubId={clubId}
                   membershipId={selectedId}
-                  email={bundleMeta.email}
                   allowedFieldKeys={fieldPolicy}
                   allowedGroups={groupPolicy}
                   hideClubNumberGenerator={editActor !== "manager"}

@@ -1,6 +1,6 @@
 # ONE4Team — Comprehensive project audit
 
-**Audit date:** 2026-08-03 (Role-aware dashboards · player-focused Trainings · LOC **167,902**)  
+**Audit date:** 2026-08-03 (Events/Matches admin · `/my-data` save fix · LOC **169,689**)  
 **Scope:** Codebase, architecture, UX/design, production readiness, competitive positioning, market value, and value-growth levers  
 **Primary reference (existing):** [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) — strict production-readiness review with risk register, readiness scores, and remediation sprints  
 
@@ -48,10 +48,10 @@ This document **extends** the ops audit with product, UX, competitive, and valua
 
 | Metric | Value (2026-08-03) | Notes |
 |--------|------:|-------|
-| TypeScript/TSX files (`src/`) | ~814 | Measured by `loc:count` (includes role-aware dashboard + player Trainings scope) |
-| Lines of code (`src/` total, measured) | **167,902** | `npm run loc:count` → **`src/generated/app-loc.json`**; Operator Financials reads this |
-| Lines of code (key surfaces) | i18n EN/DE ~6k each; Members ~7k; Teams ~5.9k; DashboardContent ~940 | Registry + team-scoped UX |
-| SQL migrations | ~169 | Includes **`20260809180000`** (my-data RPC casts) |
+| TypeScript/TSX files (`src/`) | ~823 | Measured by `loc:count` (includes Events/Matches admin + my-data scope) |
+| Lines of code (`src/` total, measured) | **169,689** | `npm run loc:count` → **`src/generated/app-loc.json`**; Operator Financials reads this |
+| Lines of code (key surfaces) | i18n EN/DE ~6k each; Members ~7k; Teams ~5.9k; Matches ~1.9k; DashboardContent ~940 | Registry + match history split |
+| SQL migrations | ~170 | Includes **`20260810120000`** (my-data list scope) |
 | Edge Functions | **13** active dirs | co-trainer, ai4team-agent, chat-bridge, stripe-*, digests, invite email, health, … |
 | Unit/integration test files | **~106** | Heavy on `src/lib/*`; RLS + operator security suites |
 | E2E specs | **8** | + marketplace dual-role / RBAC |
@@ -65,7 +65,7 @@ This document **extends** the ops audit with product, UX, competitive, and valua
 | `src/i18n/en.ts` / `de.ts` | **~5,850** each | Translation monolith; merge conflict prone |
 | `src/pages/Communication.tsx` | **~2,460** | Realtime, attachments, bridge, pagination |
 | `src/pages/ClubPageAdmin.tsx` | **~1,780** | Public site CMS complexity |
-| `src/pages/Matches.tsx` | **~1,750** | Competitions + tournaments + standings |
+| `src/pages/Matches.tsx` | **~1,900** | Competitions + tournaments + standings + 24h history |
 
 **Recommendation:** Finish splitting `Members.tsx` onto `src/features/members/*` routes/panels; colocate i18n by domain before adding more member features.
 
@@ -220,7 +220,7 @@ Scores from [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINES
 
 | Factor | Estimate |
 |--------|----------|
-| ~168k LOC production TS/TSX under `src/` (measured via `npm run loc:count` → `src/generated/app-loc.json`, **167,902** as of 2026-08-03) + migrations + Edge Functions | **12–24 person-months** |
+| ~170k LOC production TS/TSX under `src/` (measured via `npm run loc:count` → `src/generated/app-loc.json`, **169,689** as of 2026-08-03 late) + migrations + Edge Functions | **12–24 person-months** |
 | At €80–120k fully loaded dev cost / year equivalent | **~€250k–€600k** replacement cost |
 | Plus design, QA, ops docs, pilot iteration (TSV Allach) | **+€50k–€150k** |
 

@@ -6,6 +6,49 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ---
 
+## SPRINT 2026-08-03 (late) — `/my-data` save fix · Events/Matches admin · 24h match history · favicon
+
+**Goal:** Fix `/my-data` refresh showing wrong member after save; editable festival/camp content on Events + Matches; hide matches older than 24h in current view; restore ONE4Team favicon.
+
+| Track | Focus | Task IDs |
+|-------|--------|----------|
+| **M** | `/my-data` scope + save | MYDATA-004 … MYDATA-006 |
+| **N** | Events admin + dates | EVENT-ADMIN-001 … EVENT-ADMIN-003 |
+| **O** | Matches 24h + history | MATCH-24H-001 … MATCH-24H-003 |
+| **P** | Site favicon | FAV-001 |
+
+### `/my-data` save fix
+
+- [x] **MYDATA-004** Migration **`20260810120000`** — scope list + edit_actor priority + sort *(operator apply)*
+- [x] **MYDATA-005** Persist selection + default own profile + save validation (`MyMemberData.tsx`, `member-master-api.ts`)
+- [x] **MYDATA-006** Toast names relationship + saved person
+
+### Events admin + timeline dates
+
+- [x] **EVENT-ADMIN-001** **`feed-date-labels.ts`** + Sommerfest hub date pills/grouping
+- [x] **EVENT-ADMIN-002** Football camp edit dialog + **`saveClubCampEvent()`**
+- [x] **EVENT-ADMIN-003** **`EventsFeedAdmin`** + **`club-events-feed*`** persisted config on **`/events`**
+
+### Matches 24h + history
+
+- [x] **MATCH-24H-001** **`match-list-window.ts`** + current query filter on **`/matches`**
+- [x] **MATCH-24H-002** Collapsible match history section + pagination
+- [x] **MATCH-24H-003** Sommerfest schedule current/history split; **`EventsFeedAdmin`** on **`/matches`**
+
+### Site favicon
+
+- [x] **FAV-001** **`public/favicon.png`** + **`index.html`** shortcut/apple-touch icons
+
+### Operator LOC
+
+- [x] **OPS-LOC-003** Regenerate **`src/generated/app-loc.json`** — **169,689** lines / **823** files (2026-08-03 late)
+
+### Doc sync
+
+- [x] **DOC-2026-08-03-LATE** **`MEMORY_BANK.md`**, **`CHANGELOG.md`**, **`PROJECT_STATUS.md`**, **`docs/operator-control-center.md`**, **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**, **`TASKS.md`**
+
+---
+
 ## SPRINT 2026-08-03 (evening) — Role-aware dashboards · player Trainings · `/my-data` UX
 
 **Goal:** Align Team Management dashboard with Club Admin AI 4 T structure; simplify player Trainings/Assets; improve `/my-data` errors; team-scoped schedule KPIs for all sports personas.

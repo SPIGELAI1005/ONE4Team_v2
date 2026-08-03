@@ -9,20 +9,26 @@ import {
   type ClubCampEventRow,
 } from "@/lib/club-football-camp-api";
 import { CLUB_FOOTBALL_CAMP_TEMPLATES } from "@/lib/club-football-camp-templates";
+import {
+  ClubFootballCampEditButton,
+  ClubFootballCampEditDialog,
+} from "@/components/events/club-football-camp-edit-dialog";
 
 interface ClubFootballCampAdminProps {
   clubId: string;
   userId: string;
   publishedKeys: Set<string>;
+  campEvents: ClubCampEventRow[];
   onPublished: (rows: ClubCampEventRow[]) => void;
 }
 
-export function ClubFootballCampAdmin({ clubId, userId, publishedKeys, onPublished }: ClubFootballCampAdminProps) {
+export function ClubFootballCampAdmin({ clubId, userId, publishedKeys, campEvents, onPublished }: ClubFootballCampAdminProps) {
   const { t, language } = useLanguage();
   const { toast } = useToast();
   const copy = t.clubFootballCamps;
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [busyAll, setBusyAll] = useState(false);
+  const [editKey, setEditKey] = useState<string | null>(null);
 
   async function publishOne(importKey: string) {
     const template = CLUB_FOOTBALL_CAMP_TEMPLATES.find((row) => row.importKey === importKey);
@@ -105,26 +111,43 @@ export function ClubFootballCampAdmin({ clubId, userId, publishedKeys, onPublish
                   <p className="mt-2 text-[11px] font-medium text-[#16a34a]">{copy.alreadyPublished}</p>
                 ) : null}
               </div>
-              <Button
-                size="sm"
-                variant={isPublished ? "outline" : "default"}
-                disabled={busyKey === template.importKey || busyAll}
-                className={!isPublished ? "bg-gradient-gold-static text-primary-foreground hover:brightness-110" : undefined}
-                onClick={() => void publishOne(template.importKey)}
-              >
-                {busyKey === template.importKey ? (
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="mr-1.5 h-4 w-4" />
-                )}
-                {isPublished ? copy.republish : copy.publishOne}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <ClubFootballCampEditButton onClick={() => setEditKey(template.importKey)} />
+                <Button
+                  size="sm"
+                  variant={isPublished ? "outline" : "default"}
+                  disabled={busyKey === template.importKey || busyAll}
+                  className={!isPublished ? "bg-gradient-gold-static text-primary-foreground hover:brightness-110" : undefined}
+                  onClick={() => void publishOne(template.importKey)}
+                >
+                  {busyKey === template.importKey ? (
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="mr-1.5 h-4 w-4" />
+                  )}
+                  {isPublished ? copy.republish : copy.publishOne}
+                </Button>
+              </div>
             </div>
           );
         })}
       </div>
 
       <p className="mt-4 text-[11px] text-muted-foreground">{copy.adminFootnote}</p>
+
+      {editKey ? (
+        <ClubFootballCampEditDialog
+          open
+          onOpenChange={(next) => {
+            if (!next) setEditKey(null);
+          }}
+          clubId={clubId}
+          userId={userId}
+          importKey={editKey}
+          publishedEvent={campEvents.find((row) => row.import_key === editKey) ?? null}
+          onSaved={(row) => onPublished([row])}
+        />
+      ) : null}
     </section>
   );
 }

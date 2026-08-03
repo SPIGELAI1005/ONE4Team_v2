@@ -3,6 +3,34 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-08-03 (late) — `/my-data` save fix · Events/Matches admin · 24h match history · favicon
+
+### `/my-data` — save appeared to revert after refresh
+- **Root cause:** Team Management users saw the **whole club** on `/my-data`; refresh reset **`selectedId`** to unstable list order, so saves for self could show another member’s row after reload.
+- **Migration **`20260810120000_fix_my_data_membership_list_scope.sql`**** — scope editable list to self / guardian / household / trainer team players (not whole club for managers); prefer self/guardian/household before trainer in **`get_member_master_edit_actor`**; stable sort (own profile first, then name).
+- **`MyMemberData.tsx`** — persist **`selectedId`** in **`sessionStorage`**; default to own profile; toast names relationship + person; validate save RPC returns **`ok: true`** + record.
+- **`member-master-api.ts`** — post-save validation of RPC response.
+
+### `/events` — dates on timeline + editable admin content
+- **`feed-date-labels.ts`** + tests — calendar date pills (today/tomorrow/weekday) on Sommerfest feed items.
+- **`sommerfest-events-hub.tsx`** — date grouping + schedule lines with dates (fixes “heute” without calendar context).
+- **Football camps:** **`club-football-camp-edit-dialog.tsx`** + **`saveClubCampEvent()`** in **`club-football-camp-api.ts`**; **Bearbeiten** on **`club-football-camp-admin.tsx`**.
+- **Festival feed:** persisted in club public page config — **`club-events-feed.ts`**, **`club-events-feed-api.ts`**, **`events-feed-admin.tsx`**; wired on **`Events.tsx`**.
+- **`club-public-page-config.ts`** — **`eventsFeed`** field; i18n **`eventsPage.feedAdmin`**, **`clubFootballCamps.edit*`**.
+
+### `/matches` — 24h current view + history + admin feed
+- **`match-list-window.ts`** + tests — matches older than **24 hours** excluded from current list.
+- **`Matches.tsx`** — current query uses **`match_date >= now - 24h`**; collapsible **Match history** section with pagination; **`EventsFeedAdmin`** for TSV Allach trainers (shared config with **`/events`**).
+- **`sommerfest-match-schedule.tsx`** — Sommerfest slots split into current vs history (same 24h rule).
+- i18n **`matchesPage.historyTitle`**, **`currentEmpty`**, pagination labels.
+
+### Site favicon (ONE4Team, not platform default)
+- **`public/favicon.png`** added from **`src/assets/one4team-logo.png`** (was referenced in **`index.html`** but missing from repo; live **`/favicon.png`** returned errors).
+- **`index.html`** — **`shortcut icon`** + **`apple-touch-icon`** links.
+
+### Operator LOC
+- Measured **169,689** lines across **823** files (`npm run loc:count` → **`src/generated/app-loc.json`**, 2026-08-03 late).
+
 ## 2026-08-03 (Role-aware dashboards · player-focused Trainings · `/my-data` UX)
 
 ### Dashboard responsive layout (AI 4 T cards)

@@ -43,10 +43,15 @@ import {
   resolveEffectiveEventsHighlight,
   type ClubEventsHighlightConfig,
 } from "@/lib/club-events-highlight";
+import {
+  normalizeClubEventsFeed,
+  type ClubEventsFeedConfig,
+} from "@/lib/club-events-feed";
 
 export type { HomepageModuleId, HomepageModuleSetting, MicroPageSettings, PrivacyPack, PublicMicroPageId } from "@/lib/club-page-settings-helpers";
 export type { ClubSiteBannerConfig } from "@/lib/club-site-banner";
 export type { ClubEventsHighlightConfig } from "@/lib/club-events-highlight";
+export type { ClubEventsFeedConfig } from "@/lib/club-events-feed";
 
 export const CLUB_PUBLIC_PAGE_CONFIG_SCHEMA_VERSION = 1 as const;
 
@@ -154,6 +159,11 @@ export interface ClubPublicPageConfig {
    * `null` / omitted = no saved preference (Allach keeps historical Sommerfest default until first save).
    */
   eventsHighlight: ClubEventsHighlightConfig | null;
+  /**
+   * Dashboard `/events` festival day + timeline feed.
+   * `null` / omitted = no saved preference (Allach keeps historical Sommerfest default until first save).
+   */
+  eventsFeed: ClubEventsFeedConfig | null;
 }
 
 export interface ClubPublicPageDraftRow {
@@ -349,6 +359,10 @@ export function parseClubPublicPageConfig(raw: unknown): ClubPublicPageConfig | 
       o.eventsHighlight === undefined
         ? null
         : normalizeClubEventsHighlight(o.eventsHighlight),
+    eventsFeed:
+      o.eventsFeed === undefined
+        ? null
+        : normalizeClubEventsFeed(o.eventsFeed),
   };
 }
 
@@ -546,6 +560,7 @@ function buildLegacyClubRowPublicPageConfig(row: Record<string, unknown>): ClubP
     publicPageConfig: undefined,
     siteBanner: null,
     eventsHighlight: null,
+    eventsFeed: null,
   };
 }
 
@@ -589,6 +604,7 @@ export function publicPageConfigToJson(config: ClubPublicPageConfig): Record<str
       : {}),
     ...(config.siteBanner != null ? { siteBanner: { ...config.siteBanner } } : {}),
     ...(config.eventsHighlight != null ? { eventsHighlight: { ...config.eventsHighlight } } : {}),
+    ...(config.eventsFeed != null ? { eventsFeed: { ...config.eventsFeed, items: [...config.eventsFeed.items] } } : {}),
   };
 }
 

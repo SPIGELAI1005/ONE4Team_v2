@@ -63,6 +63,14 @@ export function sommerfestEffectiveKickoffTime(
   return template.time;
 }
 
+/** Effective kickoff ISO for sorting and freshness checks. */
+export function sommerfestEffectiveMatchDateIso(
+  template: SommerfestMatch,
+  dbMatch?: { match_date: string } | null,
+): string {
+  return dbMatch?.match_date ?? sommerfestMatchDateIso(template.time);
+}
+
 /** Convert `<input type="datetime-local">` value to ISO using Sommerfest Berlin offset. */
 export function sommerfestDatetimeLocalToIso(localValue: string): string {
   const match = localValue.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);

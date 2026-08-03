@@ -22,12 +22,15 @@ import { SommerfestHero } from "@/components/sommerfest/sommerfest-hero";
 import { SommerfestEventsHub } from "@/components/sommerfest/sommerfest-events-hub";
 import { ClubFootballCampAdmin } from "@/components/events/club-football-camp-admin";
 import { EventsHighlightAdmin } from "@/components/events/events-highlight-admin";
+import { EventsFeedAdmin } from "@/components/events/events-feed-admin";
 import { isCampEvent, type ClubCampEventRow } from "@/lib/club-football-camp-api";
 import {
   EMPTY_CLUB_EVENTS_HIGHLIGHT,
   type ClubEventsHighlightConfig,
 } from "@/lib/club-events-highlight";
 import { loadClubEventsHighlight } from "@/lib/club-events-highlight-api";
+import { defaultSommerfestEventsFeed, type ClubEventsFeedConfig } from "@/lib/club-events-feed";
+import { loadClubEventsFeed } from "@/lib/club-events-feed-api";
 // logo is rendered by AppHeader
 import type { EventRow, MembershipWithProfile, ParticipantWithMembershipProfile } from "@/types/supabase";
 
@@ -63,6 +66,7 @@ const Events = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [eventsHighlight, setEventsHighlight] = useState<ClubEventsHighlightConfig>(EMPTY_CLUB_EVENTS_HIGHLIGHT);
+  const [eventsFeed, setEventsFeed] = useState<ClubEventsFeedConfig>(defaultSommerfestEventsFeed());
   const showHighlight = eventsHighlight.enabled;
   const [showAdd, setShowAdd] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -111,6 +115,7 @@ const Events = () => {
     setParticipants([]);
     setMembers([]);
     setEventsHighlight(EMPTY_CLUB_EVENTS_HIGHLIGHT);
+    setEventsFeed(defaultSommerfestEventsFeed());
     setLoading(true);
     setLoadingDetail(false);
   }, [clubId]);
@@ -133,8 +138,13 @@ const Events = () => {
   useEffect(() => {
     if (!clubId) return;
     let cancelled = false;
-    void loadClubEventsHighlight(supabase, clubId, activeClub).then(({ data }) => {
-      if (!cancelled) setEventsHighlight(data);
+    void Promise.all([
+      loadClubEventsHighlight(supabase, clubId, activeClub),
+      loadClubEventsFeed(supabase, clubId, activeClub),
+    ]).then(([highlightRes, feedRes]) => {
+      if (cancelled) return;
+      setEventsHighlight(highlightRes.data);
+      setEventsFeed(feedRes.data);
     });
     return () => {
       cancelled = true;
@@ -272,10 +282,16 @@ const Events = () => {
                     clubId={clubId}
                     userId={user.id}
                     publishedKeys={publishedCampKeys}
+                    campEvents={campEvents}
                     onPublished={mergePublishedCamps}
                   />
                 ) : null}
-                {showAllachExtras ? <SommerfestEventsHub campEvents={campEvents} /> : null}
+                {showAllachExtras && perms.isTrainer && user && clubId ? (
+                  <EventsFeedAdmin clubId={clubId} userId={user.id} value={eventsFeed} onSaved={setEventsFeed} />
+                ) : null}
+                {showAllachExtras ? (
+                  <SommerfestEventsHub campEvents={campEvents} feedConfig={eventsFeed} club={activeClub} />
+                ) : null}
               </>
             ) : null}
 

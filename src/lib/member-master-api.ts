@@ -68,8 +68,14 @@ export async function saveMemberMasterRecord(
   });
   if (error) return { data: null, error: new Error(error.message) };
   const payload = (data ?? {}) as { ok?: boolean; actor?: string; record?: Partial<ClubMemberMasterRecord> };
+  if (payload.ok !== true || !payload.record) {
+    return {
+      data: null,
+      error: new Error("Save did not persist — no record returned from server."),
+    };
+  }
   return {
-    data: payload.record ?? null,
+    data: payload.record,
     actor: payload.actor,
     error: null,
   };

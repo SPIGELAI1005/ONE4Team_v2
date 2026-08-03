@@ -12,16 +12,26 @@ import {
 } from "lucide-react";
 import { useLanguage } from "@/hooks/use-language";
 import {
-  SOMMERFEST_DATE,
   SOMMERFEST_PITCHES,
   sommerfestFeedSorted,
   type SommerfestFeedItem,
 } from "@/lib/tsv-allach-sommerfest-2026";
 import type { ClubCampEventRow } from "@/lib/club-football-camp-api";
 import { ClubFootballCampCard } from "@/components/events/club-football-camp-card";
-import { cn } from "@/lib/utils";
-
-const FILTER_IDS = ["all", "club", "teams", "pitches", "news", "camps"] as const;
+import {
+  clubFeedItemsSorted,
+  resolveEffectiveEventsFeed,
+  sommerfestItemFromClubFeed,
+  type ClubEventsFeedConfig,
+} from "@/lib/club-events-feed";
+import {
+  formatFeedDayHeading,
+  formatFeedSchedulePrimary,
+  formatFeedValidUntilLine,
+  groupItemsByIsoDate,
+  type FeedDateLabels,
+} from "@/lib/feed-date-labels";
+import { cn } from "@/lib/utils"; = ["all", "club", "teams", "pitches", "news", "camps"] as const;
 type FeedFilter = (typeof FILTER_IDS)[number];
 
 const accentStyles: Record<SommerfestFeedItem["accent"], string> = {
@@ -57,41 +67,79 @@ function matchesFilter(item: SommerfestFeedItem, filter: FeedFilter): boolean {
   return true;
 }
 
-export function SommerfestEventsHub({ campEvents = [] }: { campEvents?: ClubCampEventRow[] }) {
+export function SommerfestEventsHub({
+  campEvents = [],
+  feedConfig = null,
+  club = null,
+}: {
+  campEvents?: ClubCampEventRow[];
+  feedConfig?: ClubEventsFeedConfig | null;
+  club?: { name?: string | null; slug?: string | null } | null;
+}) {
   const { t, language } = useLanguage();
   const copy = t.sommerfest2026;
   const locale = language === "de" ? "de-DE" : "en-GB";
   const [filter, setFilter] = useState<FeedFilter>("all");
   const [expandedNewsId, setExpandedNewsId] = useState<string | null>(null);
 
+  const resolvedFeed = useMemo(
+    () => resolveEffectiveEventsFeed(feedConfig, club),
+    [feedConfig, club],
+  );
+
+  const festivalDate = resolvedFeed.festivalDate;
+  const dayProgram = language === "de" ? resolvedFeed.dayProgram : resolvedFeed.dayProgramEn || resolvedFeed.dayProgram;
+  const eveningProgram =
+    language === "de" ? resolvedFeed.eveningProgram : resolvedFeed.eveningProgramEn || resolvedFeed.eveningProgram;
+
+  const sourceFeed = useMemo((): SommerfestFeedItem[] => {
+    if (resolvedFeed.items.length > 0) {
+      return clubFeedItemsSorted(resolvedFeed).map(sommerfestItemFromClubFeed);
+    }
+    return sommerfestFeedSorted();
+  }, [resolvedFeed]);
+
   const feed = useMemo(() => {
     if (filter === "camps") return [];
-    return sommerfestFeedSorted().filter((item) => matchesFilter(item, filter));
-  }, [filter]);
+    return sourceFeed.filter((item) => matchesFilter(item, filter));
+  }, [filter, sourceFeed]);
+
+  const feedDateLabels = useMemo(
+    (): FeedDateLabels => ({
+      today: copy.feedDateToday,
+      tomorrow: copy.feedDateTomorrow,
+      yesterday: copy.feedDateYesterday,
+      validUntil: copy.feedValidUntil,
+    }),
+    [copy.feedDateToday, copy.feedDateTomorrow, copy.feedDateYesterday, copy.feedValidUntil],
+  );
+
+  const groupedFeed = useMemo(() => groupItemsByIsoDate(feed), [feed]);
 
   const showCamps = filter === "all" || filter === "camps";
 
-  const dayLabel = new Date(`${SOMMERFEST_DATE}T12:00:00`).toLocaleDateString(locale, {
+  const dayLabel = new Date(`${festivalDate}T12:00:00`).toLocaleDateString(locale, {
     weekday: "short",
     day: "numeric",
     month: "short",
   });
+  const festivalDayNumber = festivalDate ? new Date(`${festivalDate}T12:00:00`).getDate() : 11;
 
   return (
     <div className="grid gap-5 xl:grid-cols-[220px_minmax(0,1fr)]">
       <aside className="space-y-4">
         <div className="rounded-2xl border border-[#14532d]/20 bg-gradient-to-b from-[#14532d] to-[#166534] p-4 text-white shadow-md">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-[#86efac]">{copy.calendarLabel}</p>
-          <p className="mt-2 font-display text-3xl font-bold leading-none">11</p>
-          <p className="text-sm text-white/85">{dayLabel} 2026</p>
+          <p className="mt-2 font-display text-3xl font-bold leading-none">{festivalDayNumber}</p>
+          <p className="text-sm text-white/85">{dayLabel} {festivalDate ? new Date(`${festivalDate}T12:00:00`).getFullYear() : 2026}</p>
           <div className="mt-4 space-y-2 text-[11px] text-white/80">
             <p className="flex items-center gap-1.5">
               <CalendarDays className="h-3.5 w-3.5" />
-              {copy.dayProgram}
+              {dayProgram || copy.dayProgram}
             </p>
             <p className="flex items-center gap-1.5">
               <Music2 className="h-3.5 w-3.5" />
-              {copy.eveningProgram}
+              {eveningProgram || copy.eveningProgram}
             </p>
           </div>
         </div>
@@ -148,13 +196,26 @@ export function SommerfestEventsHub({ campEvents = [] }: { campEvents?: ClubCamp
             <>
           <div className="absolute left-[18px] top-3 bottom-3 w-px bg-border" aria-hidden />
           <AnimatePresence initial={false}>
-            {feed.map((item, index) => {
+            {groupedFeed.map(({ date, items }) => (
+              <div key={date} className="pb-2">
+                <div className="relative mb-3 pl-10">
+                  <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/90 px-3 py-1 text-[11px] font-semibold text-foreground shadow-sm">
+                    <CalendarDays className="h-3.5 w-3.5 text-[#16a34a]" />
+                    {formatFeedDayHeading(date, locale, feedDateLabels)}
+                  </div>
+                </div>
+                {items.map((item, index) => {
               const Icon = feedIcon(item);
               const title = language === "de" ? item.titleDe : item.titleEn;
               const summary = language === "de" ? item.summaryDe : item.summaryEn;
               const body = language === "de" ? item.bodyDe : item.bodyEn;
               const author = language === "de" ? item.authorDe : item.authorEn;
               const isNews = item.kind === "news";
+              const schedulePrimary = formatFeedSchedulePrimary(item, locale, feedDateLabels);
+              const validUntilLine =
+                item.effectiveUntil != null
+                  ? formatFeedValidUntilLine(item.effectiveUntil, locale, copy.feedValidUntil)
+                  : null;
 
               return (
                 <motion.article
@@ -174,24 +235,35 @@ export function SommerfestEventsHub({ campEvents = [] }: { campEvents?: ClubCamp
                       accentStyles[item.accent],
                     )}
                   >
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                        <span className="font-semibold text-foreground">{item.time}</span>
-                        {item.endTime ? <span>– {item.endTime}</span> : null}
+                    <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {isNews ? (
+                            <span className="inline-flex items-center rounded-full bg-background/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground">
+                              {copy.feedKindNews}
+                            </span>
+                          ) : null}
+                          <span className="text-[11px] font-semibold leading-snug text-foreground">
+                            {schedulePrimary}
+                          </span>
+                        </div>
+                        {validUntilLine ? (
+                          <p className="text-[10px] font-medium text-muted-foreground">{validUntilLine}</p>
+                        ) : null}
                         {item.pitchLabel ? (
-                          <span className="inline-flex items-center gap-1">
+                          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                             <MapPin className="h-3 w-3" />
                             {item.pitchLabel}
                           </span>
                         ) : null}
                       </div>
                       {item.teamScope ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-background/70 px-2 py-0.5 text-[10px] font-medium">
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-background/70 px-2 py-0.5 text-[10px] font-medium">
                           <Users className="h-3 w-3" />
                           {item.teamScope}
                         </span>
                       ) : (
-                        <span className="rounded-full bg-background/70 px-2 py-0.5 text-[10px] font-medium">
+                        <span className="shrink-0 rounded-full bg-background/70 px-2 py-0.5 text-[10px] font-medium">
                           {copy.clubWide}
                         </span>
                       )}
@@ -239,7 +311,9 @@ export function SommerfestEventsHub({ campEvents = [] }: { campEvents?: ClubCamp
                   </div>
                 </motion.article>
               );
-            })}
+                })}
+              </div>
+            ))}
           </AnimatePresence>
             </>
           ) : filter === "camps" && campEvents.length === 0 ? (

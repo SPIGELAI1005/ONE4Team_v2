@@ -37,11 +37,15 @@ import { resolveCanonicalYouthTeamName } from "@/lib/youth-team-label";
 import { SommerfestHero } from "@/components/sommerfest/sommerfest-hero";
 import { SommerfestMatchSchedule } from "@/components/sommerfest/sommerfest-match-schedule";
 import { EventsHighlightAdmin } from "@/components/events/events-highlight-admin";
+import { EventsFeedAdmin } from "@/components/events/events-feed-admin";
 import {
   EMPTY_CLUB_EVENTS_HIGHLIGHT,
   type ClubEventsHighlightConfig,
 } from "@/lib/club-events-highlight";
 import { loadClubEventsHighlight } from "@/lib/club-events-highlight-api";
+import { defaultSommerfestEventsFeed, type ClubEventsFeedConfig } from "@/lib/club-events-feed";
+import { loadClubEventsFeed } from "@/lib/club-events-feed-api";
+import { matchCurrentCutoffIso, isMatchInCurrentWindow } from "@/lib/match-list-window";
 import {
   COMPETITION_TYPE_FILTERS,
   computeMatchStandings,
@@ -173,6 +177,13 @@ const Matches = () => {
   const [openingSommerfestId, setOpeningSommerfestId] = useState<string | null>(null);
   const [publishingSommerfest, setPublishingSommerfest] = useState(false);
   const [eventsHighlight, setEventsHighlight] = useState<ClubEventsHighlightConfig>(EMPTY_CLUB_EVENTS_HIGHLIGHT);
+  const [eventsFeed, setEventsFeed] = useState<ClubEventsFeedConfig>(defaultSommerfestEventsFeed());
+  const [historyMatches, setHistoryMatches] = useState<Match[]>([]);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotalCount, setHistoryTotalCount] = useState(0);
+  const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const historyPageKeysetRef = useRef<Record<number, { match_date: string; id: string }>>({});
   const showHighlight = eventsHighlight.enabled;
 
   // Modals
@@ -199,6 +210,12 @@ const Matches = () => {
     setSommerfestDbMatches(new Map());
     setOpeningSommerfestId(null);
     setEventsHighlight(EMPTY_CLUB_EVENTS_HIGHLIGHT);
+    setEventsFeed(defaultSommerfestEventsFeed());
+    setHistoryMatches([]);
+    setHistoryPage(1);
+    setHistoryTotalCount(0);
+    setHistoryExpanded(false);
+    setHistoryLoading(false);
     setLoading(true);
     setLoadingDetail(false);
   }, [clubId]);
@@ -206,8 +223,13 @@ const Matches = () => {
   useEffect(() => {
     if (!clubId) return;
     let cancelled = false;
-    void loadClubEventsHighlight(supabase, clubId, activeClub).then(({ data }) => {
-      if (!cancelled) setEventsHighlight(data);
+    void Promise.all([
+      loadClubEventsHighlight(supabase, clubId, activeClub),
+      loadClubEventsFeed(supabase, clubId, activeClub),
+    ]).then(([highlightRes, feedRes]) => {
+      if (cancelled) return;
+      setEventsHighlight(highlightRes.data);
+      setEventsFeed(feedRes.data);
     });
     return () => {
       cancelled = true;
@@ -400,6 +422,7 @@ const Matches = () => {
           { count: "exact" },
         )
         .eq("club_id", clubId)
+        .gte("match_date", matchCurrentCutoffIso())
         .order("match_date", { ascending: false })
         .order("id", { ascending: false })
         .limit(MATCHES_PAGE_SIZE);
@@ -446,6 +469,86 @@ const Matches = () => {
     };
     void fetchAll();
   }, [clubId, matchesPage, matchesRetryTick, matchDataScope.teamIds]);
+
+  useEffect(() => {
+    if (!clubId) return;
+    let cancelled = false;
+    const cutoff = matchCurrentCutoffIso();
+    let countQuery = supabase
+      .from("matches")
+      .select("id", { count: "exact", head: true })
+      .eq("club_id", clubId)
+      .lt("match_date", cutoff);
+    if (matchDataScope.teamIds !== "all" && matchDataScope.teamIds.length > 0) {
+      countQuery = countQuery.in("team_id", matchDataScope.teamIds);
+    }
+    void countQuery.then(({ count, error }) => {
+      if (cancelled) return;
+      if (error) {
+        setHistoryTotalCount(0);
+        return;
+      }
+      setHistoryTotalCount(count ?? 0);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [clubId, matchesRetryTick, matchDataScope.teamIds]);
+
+  useEffect(() => {
+    if (!clubId || !historyExpanded) return;
+    const fetchHistory = async () => {
+      setHistoryLoading(true);
+      if (historyPage === 1) {
+        historyPageKeysetRef.current = {};
+      } else {
+        const before = historyPageKeysetRef.current[historyPage - 1];
+        if (!before) {
+          setHistoryPage(1);
+          setHistoryLoading(false);
+          return;
+        }
+      }
+
+      const cutoff = matchCurrentCutoffIso();
+      let historyQuery = supabase
+        .from("matches")
+        .select(
+          "id, opponent, is_home, match_date, location, status, home_score, away_score, competition_id, team_id, notes, opponent_logo_url, competitions(name), teams(name)",
+          { count: "exact" },
+        )
+        .eq("club_id", clubId)
+        .lt("match_date", cutoff)
+        .order("match_date", { ascending: false })
+        .order("id", { ascending: false })
+        .limit(MATCHES_PAGE_SIZE);
+      if (historyPage > 1) {
+        const before = historyPageKeysetRef.current[historyPage - 1];
+        if (before) historyQuery = historyQuery.or(matchesKeysetOrFilter(before.match_date, before.id));
+      }
+      if (matchDataScope.teamIds !== "all" && matchDataScope.teamIds.length > 0) {
+        historyQuery = historyQuery.in("team_id", matchDataScope.teamIds);
+      }
+
+      const { data, error, count } = await historyQuery;
+      if (error) {
+        setHistoryMatches([]);
+        setHistoryLoading(false);
+        return;
+      }
+      const rows = (data as unknown as Match[]) || [];
+      if (rows.length > 0) {
+        const oldest = rows[rows.length - 1];
+        if (oldest?.match_date && oldest?.id) {
+          historyPageKeysetRef.current[historyPage] = { match_date: oldest.match_date, id: oldest.id };
+        }
+      }
+      setHistoryMatches(rows);
+      if (count != null) setHistoryTotalCount(count);
+      setHistoryLoading(false);
+    };
+    void fetchHistory();
+  }, [clubId, historyExpanded, historyPage, matchesRetryTick, matchDataScope.teamIds]);
 
   useEffect(() => {
     if (!clubId || !showSommerfest) {
@@ -746,7 +849,7 @@ const Matches = () => {
       metadata: { has_team: Boolean(teamId) },
     });
     setMatchesTotalCount((previous) => previous + 1);
-    if (matchesPage === 1) {
+    if (matchesPage === 1 && isMatchInCurrentWindow((data as Match).match_date)) {
       setMatches(prev => [data as unknown as Match, ...prev].slice(0, MATCHES_PAGE_SIZE));
     }
     setShowAddMatch(false);
@@ -755,6 +858,53 @@ const Matches = () => {
   };
 
   const matchesTotalPages = Math.max(1, Math.ceil(matchesTotalCount / MATCHES_PAGE_SIZE));
+  const historyTotalPages = Math.max(1, Math.ceil(historyTotalCount / MATCHES_PAGE_SIZE));
+
+  const renderMatchCard = (m: Match, i: number) => (
+    <motion.div
+      key={m.id}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: i * 0.03, type: "spring", stiffness: 300, damping: 25 }}
+      className="rounded-2xl glass-card p-5 cursor-pointer hover:border-primary/20 transition-all duration-200 haptic-press"
+      onClick={() => openMatchDetail(m)}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-foreground">
+            {formatMatchHeadline(m, teams)}
+          </span>
+          {m.teams?.name && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+              {resolveCanonicalYouthTeamName(teams, m.teams.name)}
+            </span>
+          )}
+        </div>
+        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${statusColors[m.status]}`}>{m.status}</span>
+      </div>
+      {m.status === "completed" && (
+        <div className="text-2xl font-bold font-display text-foreground mb-2">
+          {m.home_score ?? "-"} : {m.away_score ?? "-"}
+        </div>
+      )}
+      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <Clock className="w-3 h-3" />{" "}
+          {new Date(m.match_date).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+        </span>
+        {m.location && (
+          <span className="flex items-center gap-1">
+            <MapPin className="w-3 h-3" /> {m.location}
+          </span>
+        )}
+        {m.competitions?.name && (
+          <span className="flex items-center gap-1">
+            <Trophy className="w-3 h-3" /> {m.competitions.name}
+          </span>
+        )}
+      </div>
+    </motion.div>
+  );
 
   const handleCreateComp = async () => {
     if (!perms.isTrainer) {
@@ -975,6 +1125,9 @@ const Matches = () => {
                     onSaved={setEventsHighlight}
                   />
                 ) : null}
+                {showAllachExtras && perms.isTrainer && user && clubId ? (
+                  <EventsFeedAdmin clubId={clubId} userId={user.id} value={eventsFeed} onSaved={setEventsFeed} />
+                ) : null}
                 {showSommerfest ? (
                 <>
                 <div className="space-y-3">
@@ -1072,8 +1225,11 @@ const Matches = () => {
             <div className="rounded-xl bg-card border border-border px-3 py-2 flex items-center justify-between">
               <div className="text-xs text-muted-foreground">
                 {matchesTotalCount === 0
-                  ? "Showing 0 matches"
-                  : `Showing ${(matchesPage - 1) * MATCHES_PAGE_SIZE + 1}-${Math.min(matchesPage * MATCHES_PAGE_SIZE, matchesTotalCount)} of ${matchesTotalCount}`}
+                  ? t.matchesPage.showingMatchesEmpty
+                  : t.matchesPage.showingMatches
+                      .replace("{from}", String((matchesPage - 1) * MATCHES_PAGE_SIZE + 1))
+                      .replace("{to}", String(Math.min(matchesPage * MATCHES_PAGE_SIZE, matchesTotalCount)))
+                      .replace("{total}", String(matchesTotalCount))}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -1084,7 +1240,7 @@ const Matches = () => {
                   disabled={matchesPage <= 1}
                   onClick={() => setMatchesPage((current) => Math.max(1, current - 1))}
                 >
-                  Previous
+                  {t.matchesPage.paginationPrevious}
                 </Button>
                 <span className="text-xs text-muted-foreground">{matchesPage}/{matchesTotalPages}</span>
                 <Button
@@ -1095,7 +1251,7 @@ const Matches = () => {
                   disabled={matchesPage >= matchesTotalPages}
                   onClick={() => setMatchesPage((current) => Math.min(matchesTotalPages, current + 1))}
                 >
-                  Next
+                  {t.matchesPage.paginationNext}
                 </Button>
               </div>
             </div>
@@ -1106,36 +1262,86 @@ const Matches = () => {
               </div>
             )}
             {matches.length === 0 ? (
-              <div className="rounded-2xl glass-card p-8 text-center text-muted-foreground text-[13px]">No matches scheduled.</div>
-            ) : matches.map((m, i) => (
-               <motion.div key={m.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03, type: "spring", stiffness: 300, damping: 25 }}
-                className="rounded-2xl glass-card p-5 cursor-pointer hover:border-primary/20 transition-all duration-200 haptic-press"
-                onClick={() => openMatchDetail(m)}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-foreground">
-                      {formatMatchHeadline(m, teams)}
-                    </span>
-                    {m.teams?.name && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                        {resolveCanonicalYouthTeamName(teams, m.teams.name)}
-                      </span>
+              <div className="rounded-2xl glass-card p-8 text-center text-muted-foreground text-[13px]">
+                {t.matchesPage.currentEmpty}
+              </div>
+            ) : (
+              matches.map((m, i) => renderMatchCard(m, i))
+            )}
+
+            {historyTotalCount > 0 ? (
+              <div className="rounded-2xl border border-border bg-card/50 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHistoryExpanded((open) => {
+                      const next = !open;
+                      if (next) setHistoryPage(1);
+                      return next;
+                    });
+                  }}
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/30"
+                >
+                  <div>
+                    <p className="font-display text-sm font-semibold text-foreground">{t.matchesPage.historyTitle}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t.matchesPage.historyLead.replace("{count}", String(historyTotalCount))}
+                    </p>
+                  </div>
+                  <ChevronDown
+                    className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${historyExpanded ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {historyExpanded ? (
+                  <div className="space-y-4 border-t border-border/70 px-3 pb-3 pt-3">
+                    {historyLoading ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                      </div>
+                    ) : historyMatches.length === 0 ? (
+                      <p className="py-6 text-center text-sm text-muted-foreground">{t.matchesPage.historyEmpty}</p>
+                    ) : (
+                      <>
+                        <div className="rounded-xl bg-card border border-border px-3 py-2 flex items-center justify-between">
+                          <div className="text-xs text-muted-foreground">
+                            {t.matchesPage.showingMatches
+                              .replace("{from}", String((historyPage - 1) * MATCHES_PAGE_SIZE + 1))
+                              .replace("{to}", String(Math.min(historyPage * MATCHES_PAGE_SIZE, historyTotalCount)))
+                              .replace("{total}", String(historyTotalCount))}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs"
+                              disabled={historyPage <= 1}
+                              onClick={() => setHistoryPage((current) => Math.max(1, current - 1))}
+                            >
+                              {t.matchesPage.paginationPrevious}
+                            </Button>
+                            <span className="text-xs text-muted-foreground">
+                              {historyPage}/{historyTotalPages}
+                            </span>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs"
+                              disabled={historyPage >= historyTotalPages}
+                              onClick={() => setHistoryPage((current) => Math.min(historyTotalPages, current + 1))}
+                            >
+                              {t.matchesPage.paginationNext}
+                            </Button>
+                          </div>
+                        </div>
+                        {historyMatches.map((m, i) => renderMatchCard(m, i))}
+                      </>
                     )}
                   </div>
-                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${statusColors[m.status]}`}>{m.status}</span>
-                </div>
-                {m.status === "completed" && (
-                  <div className="text-2xl font-bold font-display text-foreground mb-2">
-                    {m.home_score ?? "-"} : {m.away_score ?? "-"}
-                  </div>
-                )}
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(m.match_date).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
-                  {m.location && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {m.location}</span>}
-                  {m.competitions?.name && <span className="flex items-center gap-1"><Trophy className="w-3 h-3" /> {m.competitions.name}</span>}
-                </div>
-              </motion.div>
-            ))}
+                ) : null}
+              </div>
+            ) : null}
             </div>
           </div>
         ) : tab === "competitions" ? (

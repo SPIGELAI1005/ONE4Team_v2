@@ -20,8 +20,12 @@ export interface SommerfestMatch {
 export interface SommerfestFeedItem {
   id: string;
   kind: "festival" | "tournament" | "news" | "evening" | "pitch_booking" | "club_wide";
+  /** Calendar date (ISO YYYY-MM-DD) for display and grouping. */
+  date: string;
   time: string;
   endTime?: string;
+  /** News: last day the notice applies (ISO date). */
+  effectiveUntil?: string;
   titleDe: string;
   titleEn: string;
   summaryDe?: string;
@@ -65,6 +69,7 @@ export const SOMMERFEST_FEED: SommerfestFeedItem[] = [
   {
     id: "feed-open",
     kind: "festival",
+    date: SOMMERFEST_DATE,
     time: "11:00",
     endTime: "18:30",
     titleDe: "Sommerfest beim TSV Allach 09",
@@ -83,6 +88,8 @@ export const SOMMERFEST_FEED: SommerfestFeedItem[] = [
   {
     id: "feed-news-heat",
     kind: "news",
+    date: "2026-08-01",
+    effectiveUntil: "2026-08-04",
     time: "08:30",
     titleDe: "Training entfällt: Hitzewarnung BFV",
     titleEn: "Training cancelled: BFV heat warning",
@@ -100,6 +107,7 @@ export const SOMMERFEST_FEED: SommerfestFeedItem[] = [
   {
     id: "feed-kleinfeld",
     kind: "tournament",
+    date: SOMMERFEST_DATE,
     time: "11:00",
     endTime: "15:00",
     titleDe: "Kinder-Eltern-Turnier · Junioren Kleinfeld",
@@ -114,6 +122,7 @@ export const SOMMERFEST_FEED: SommerfestFeedItem[] = [
   {
     id: "feed-kompakt",
     kind: "tournament",
+    date: SOMMERFEST_DATE,
     time: "14:00",
     endTime: "16:30",
     titleDe: "Junioren-Turnier · Kompaktfeld",
@@ -128,6 +137,7 @@ export const SOMMERFEST_FEED: SommerfestFeedItem[] = [
   {
     id: "feed-damen",
     kind: "pitch_booking",
+    date: SOMMERFEST_DATE,
     time: "15:30",
     endTime: "16:30",
     titleDe: "Damen · Freundschaftsspiel",
@@ -142,6 +152,7 @@ export const SOMMERFEST_FEED: SommerfestFeedItem[] = [
   {
     id: "feed-herren",
     kind: "pitch_booking",
+    date: SOMMERFEST_DATE,
     time: "16:45",
     endTime: "19:00",
     titleDe: "Herren · Großfeld Hauptplatz",
@@ -156,6 +167,7 @@ export const SOMMERFEST_FEED: SommerfestFeedItem[] = [
   {
     id: "feed-evening",
     kind: "evening",
+    date: SOMMERFEST_DATE,
     time: "19:00",
     endTime: "23:00",
     titleDe: "Allacher Sommerglühen",
@@ -188,6 +200,18 @@ export function sommerfestMatchesByPitch(pitchId: SommerfestPitchId | "all"): So
   return SOMMERFEST_MATCHES.filter((m) => m.pitchId === pitchId);
 }
 
+function feedKindSortOrder(kind: SommerfestFeedItem["kind"]): number {
+  if (kind === "news") return 0;
+  if (kind === "festival") return 1;
+  return 2;
+}
+
 export function sommerfestFeedSorted(): SommerfestFeedItem[] {
-  return [...SOMMERFEST_FEED].sort((a, b) => a.time.localeCompare(b.time));
+  return [...SOMMERFEST_FEED].sort((a, b) => {
+    const dateCmp = b.date.localeCompare(a.date);
+    if (dateCmp !== 0) return dateCmp;
+    const kindCmp = feedKindSortOrder(a.kind) - feedKindSortOrder(b.kind);
+    if (kindCmp !== 0) return kindCmp;
+    return a.time.localeCompare(b.time);
+  });
 }
