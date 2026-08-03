@@ -86,6 +86,12 @@ interface MasterDataTabsProps {
   safetyTabExtraEnabled?: boolean;
   /** Rendered below Safety & Emergencies fields (e.g. linked guardians). */
   safetyTabExtra?: ReactNode;
+  /** When set, only these field keys are shown/editable. */
+  allowedFieldKeys?: Set<keyof ClubMemberMasterRecord>;
+  /** When set, only these tab groups are shown (e.g. hide club/financial for trainers). */
+  allowedGroups?: Set<string>;
+  /** Hide internal club-number generator (self-service editors). */
+  hideClubNumberGenerator?: boolean;
 }
 
 function formatFieldLabel(column: string) {
@@ -116,6 +122,9 @@ export function MasterDataTabs({
   displayName, clubName, logoSrc, membershipRole, isPlayer = false, teamLabel, clubId, membershipId, avatarUpload,
   safetyTabExtraEnabled = false,
   safetyTabExtra,
+  allowedFieldKeys,
+  allowedGroups,
+  hideClubNumberGenerator = false,
 }: MasterDataTabsProps) {
   const { t } = useLanguage();
   const { clubId: activeClubId } = useClubId();
@@ -172,7 +181,17 @@ export function MasterDataTabs({
     if (memberIdNo) setClubPassModalOpen(true);
   };
 
-  const allTabs = [...FIELD_TABS, CARD_TAB];
+  const visibleFieldTabs = FIELD_TABS.filter(({ key }) => {
+    if (allowedGroups && !allowedGroups.has(key)) return false;
+    const fields = MEMBER_MASTER_FIELDS.filter((f) => f.group === key);
+    if (!fields.length) return false;
+    if (!allowedFieldKeys) return true;
+    return fields.some((f) => allowedFieldKeys.has(f.key));
+  });
+  const showClubCard =
+    (!allowedGroups || allowedGroups.has("clubcard")) &&
+    (!allowedFieldKeys || allowedFieldKeys.has("internal_club_number") || Boolean(values.internal_club_number));
+  const allTabs = showClubCard ? [...visibleFieldTabs, CARD_TAB] : visibleFieldTabs;
 
   const panelHeightClass = compact ? "lg:h-[520px]" : "lg:h-[560px]";
   const fieldGridClass = compact
@@ -216,8 +235,12 @@ export function MasterDataTabs({
         </TabsList>
       </div>
 
-      {FIELD_TABS.map(({ key, accent }) => {
-        const fields = MEMBER_MASTER_FIELDS.filter((f) => f.group === key);
+      {visibleFieldTabs.map(({ key, accent }) => {
+        const fields = MEMBER_MASTER_FIELDS.filter((f) => {
+          if (f.group !== key) return false;
+          if (allowedFieldKeys && !allowedFieldKeys.has(f.key)) return false;
+          return true;
+        });
         if (!fields.length) return null;
         return (
           <TabsContent key={key} value={key} className="mt-0 w-full min-w-0 outline-none">
@@ -524,6 +547,7 @@ export function MasterDataTabs({
         );
       })}
 
+      {showClubCard ? (
       <TabsContent value="clubcard" className="mt-0 w-full min-w-0 outline-none">
         <div className="flex w-full min-w-0 flex-col overflow-visible rounded-2xl border border-border/40 bg-muted/10 p-3 max-lg:p-4">
           <p className="mb-4 text-sm text-muted-foreground">{labels.clubCardHint}</p>
@@ -550,7 +574,7 @@ export function MasterDataTabs({
             teamLabel={teamLabel}
             readOnly={readOnly}
             showControls={!readOnly}
-            onGenerateId={readOnly ? undefined : handleGenerateId}
+            onGenerateId={readOnly || hideClubNumberGenerator ? undefined : handleGenerateId}
             onMemberIdClick={memberIdNo ? openClubPassModal : undefined}
             onDownloadComplete={() => onChange?.("club_pass_generated_at", new Date().toISOString())}
             skillsSummary={isPlayer ? skillsSummary : null}
@@ -578,13 +602,14 @@ export function MasterDataTabs({
           isPlayer={isPlayer}
           teamLabel={teamLabel}
           readOnly={readOnly}
-          onGenerateId={readOnly ? undefined : handleGenerateId}
+          onGenerateId={readOnly || hideClubNumberGenerator ? undefined : handleGenerateId}
           onDownloadComplete={() => onChange?.("club_pass_generated_at", new Date().toISOString())}
           clubId={resolvedClubId}
           membershipId={resolvedMembershipId}
           labels={clubPassLabels}
         />
       </TabsContent>
+      ) : null}
     </Tabs>
   );
 }

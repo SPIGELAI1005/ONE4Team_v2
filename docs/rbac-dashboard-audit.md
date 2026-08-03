@@ -1,6 +1,6 @@
 # RBAC & dashboard — architecture audit
 
-**Date:** 2026-08-01 (optional email on saved member list + shared-contact filter + household discount review)  
+**Date:** 2026-08-03 (Team Management club page/shop + audit; member master self-service; optional-email saved list)  
 **Status:** Audit snapshot — no functional changes in this pass  
 **Principle:** One intelligent dashboard shell; menu, routes, data scope, and widgets adapt via RBAC — not separate apps per role.
 
@@ -29,6 +29,10 @@ ONE4Team already follows a **single dashboard shell** pattern:
 **Persona data scoping (2026-07-01):** Messages and tasks visibility in **`Communication.tsx`**, **`Tasks.tsx`**, and public **Messages** hub now follow **`useModuleGateRole`** — player = team channels + own tasks; member = club-wide announcements/general (no team channels). See **`docs/rbac-dashboard-plan.md`** §12 and **`CHANGELOG.md`** § 2026-07-01 (Persona data scoping…).
 
 **Members shared contact + household discount (2026-08-01):** **`/members`** surfaces shared contact email groups (family accounts on one email) with linked-account filter; registry import can add saved-list drafts **without email** (club member number or name); **`/payments`** household discount verification panel for same email + surname + address groups. Does not change route RBAC — admin/member-management permissions unchanged. Migration **`20260807130000_club_member_drafts_optional_email.sql`**. See **`CHANGELOG.md`** § **2026-08-01 (TSV Allach member registry reconciliation…)**.
+
+**Team Management club content (2026-08-03):** RBAC matrix already granted **`club_page: full`** and **`club_shop: full`** to **`team_management`**, but RLS was admin-only. Migrations **`20260807140000`**, **`20260807150000`** align Postgres with matrix: **`can_manage_club_public_page`**, **`can_manage_club_shop`**, audit timelines on **`/club-page-admin`** and **`/shop`**. Frontend: **`use-can-manage-club-content.ts`**.
+
+**Member master self-service (2026-08-03):** Route **`/my-data`** (any signed-in member with editable membership). Field-level policy by actor (**self** / **trainer** / **manager** / guardian via shared login email). Trainers scoped to assigned teams; managers notified on member saves; members + Team Management notified on trainer saves. Migration **`20260808120000_member_master_self_service_trainer_edit.sql`**. Does not grant finance or role-admin paths.
 
 ---
 

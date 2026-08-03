@@ -1,6 +1,6 @@
 # ONE4Team — Comprehensive project audit
 
-**Audit date:** 2026-08-01 (optional email on saved member list; TSV Allach member registry reconciliation; prior re-score: 2026-07-18 Operator CC health, AI fair-use caps, billing recovery, marketplace + digests + guided setup)  
+**Audit date:** 2026-08-03 (Team Management club page/shop + audit; member master self-service; DE i18n; LOC **166,921**)  
 **Scope:** Codebase, architecture, UX/design, production readiness, competitive positioning, market value, and value-growth levers  
 **Primary reference (existing):** [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) — strict production-readiness review with risk register, readiness scores, and remediation sprints  
 
@@ -14,9 +14,9 @@ ONE4Team is a **mature-in-code, early-in-market** multi-tenant club management S
 
 | Dimension | Assessment | Prior | **Now** |
 |-----------|------------|:-----:|:-------:|
-| **Feature breadth** | Above typical regional club apps; AI agent + public site builder + marketplace + digests + TSV-scale registry import | 87 | **88** |
-| **Code & architecture** | Strong foundations; Members feature modules started but **`Members.tsx`** still large (~7k lines after reconciliation sprint) | 69 | **69** |
-| **UX & design** | Distinctive glass UI; Guided setup; Support FAQ refreshed; DE market fit | 74 | **78** |
+| **Feature breadth** | Above typical regional club apps; AI agent + public site builder + marketplace + digests + TSV-scale registry import + member self-service master data | 87 | **89** |
+| **Code & architecture** | Strong foundations; Members feature modules started but **`Members.tsx`** still large (~7k lines after reconciliation sprint) | 69 | **70** |
+| **UX & design** | Distinctive glass UI; Guided setup; Support FAQ refreshed; DE market fit (Club Page Admin umlaut pass) | 74 | **79** |
 | **Production readiness** | Conditionally ready for controlled multi-club rollout (ops audit **68** overall) | 61 | **68** |
 | **Test & quality gates** | ~106 unit test files; 8 e2e specs; CI guardrails + bundle budget | 62 | **73** |
 | **Commercial readiness** | Billing portal + past_due recovery; plan catalog; marketplace monetization path | 55 | **62** |
@@ -46,11 +46,12 @@ This document **extends** the ops audit with product, UX, competitive, and valua
 
 ## 3. Codebase metrics (snapshot)
 
-| Metric | Value (2026-08-01) | Notes |
+| Metric | Value (2026-08-03) | Notes |
 |--------|------:|-------|
-| TypeScript/TSX files (`src/`) | ~750 | Includes member reconciliation libs + shared-contact UI |
-| Lines of code (`src/` key surfaces) | i18n EN/DE ~5.9k each; Members ~7k | Registry reconciliation sprint grew **`Members.tsx`** |
-| SQL migrations | ~164 | Includes **`20260807120000`** household discount fields |
+| TypeScript/TSX files (`src/`) | ~810 | Measured by `loc:count` (includes club-content audit + member self-service) |
+| Lines of code (`src/` total, measured) | **166,921** | `npm run loc:count` → **`src/generated/app-loc.json`**; Operator Financials reads this |
+| Lines of code (key surfaces) | i18n EN/DE ~6k each; Members ~7k | Registry reconciliation + master-data RPC path |
+| SQL migrations | ~168 | Includes **`20260807140000`**–**`20260808120000`** (TM club content + member self-service) |
 | Edge Functions | **13** active dirs | co-trainer, ai4team-agent, chat-bridge, stripe-*, digests, invite email, health, … |
 | Unit/integration test files | **~106** | Heavy on `src/lib/*`; RLS + operator security suites |
 | E2E specs | **8** | + marketplace dual-role / RBAC |
@@ -219,7 +220,7 @@ Scores from [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINES
 
 | Factor | Estimate |
 |--------|----------|
-| ~160k+ LOC production TS/TSX under `src/` (measured via `npm run loc:count` → `src/generated/app-loc.json`) + migrations + Edge Functions | **12–24 person-months** |
+| ~167k LOC production TS/TSX under `src/` (measured via `npm run loc:count` → `src/generated/app-loc.json`, **166,921** as of 2026-08-03) + migrations + Edge Functions | **12–24 person-months** |
 | At €80–120k fully loaded dev cost / year equivalent | **~€250k–€600k** replacement cost |
 | Plus design, QA, ops docs, pilot iteration (TSV Allach) | **+€50k–€150k** |
 

@@ -3,8 +3,9 @@ import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShoppingBag, Plus, Search, Package, Tag, Truck, X, Info, Loader2, ImagePlus, AlertTriangle, ExternalLink, Download } from "lucide-react";
-import { usePermissions } from "@/hooks/use-permissions";
+import { ShoppingBag, Plus, Search, Package, Tag, Truck, X, Info, Loader2, ImagePlus, AlertTriangle, ExternalLink, Download, History } from "lucide-react";
+import { useCanManageClubShop } from "@/hooks/use-can-manage-club-content";
+import { ClubContentAuditTimeline } from "@/components/club-content/club-content-audit-timeline";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
 import { useClubId } from "@/hooks/use-club-id";
@@ -67,16 +68,15 @@ interface Category {
 const FALLBACK_CATEGORIES = ["Jerseys", "Training Gear", "Fan Articles", "Accessories"];
 
 export default function Shop() {
-  const perms = usePermissions();
   const { t, language } = useLanguage();
   const { toast } = useToast();
   const { clubId, loading: clubLoading } = useClubId();
   const { activeClub } = useActiveClub();
-  const canManage = perms.isAdmin;
+  const { canManage, loading: manageLoading } = useCanManageClubShop(clubId);
   const isTsvAllach = isTsvAllachClub(activeClub);
   const priceLocale = language === "de" ? "de-DE" : "en-US";
 
-  const [tab, setTab] = useState<"products" | "orders" | "categories">("products");
+  const [tab, setTab] = useState<"products" | "orders" | "categories" | "history">("products");
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -361,11 +361,20 @@ export default function Shop() {
     cancelled: "text-red-500 bg-red-500/10 border-red-500/20",
   };
 
-  const tabs = [
-    { id: "products" as const, label: t.shopPage.tabs.products, icon: Package },
-    { id: "orders" as const, label: t.shopPage.tabs.orders, icon: Truck },
-    { id: "categories" as const, label: t.shopPage.tabs.categories, icon: Tag },
-  ];
+  const shopAuditEventLabels = useMemo(
+    () => t.shopPage.audit.eventTypes as Record<string, string>,
+    [t.shopPage.audit.eventTypes],
+  );
+
+  const tabs = useMemo(() => {
+    const all = [
+      { id: "products" as const, label: t.shopPage.tabs.products, icon: Package },
+      { id: "orders" as const, label: t.shopPage.tabs.orders, icon: Truck },
+      { id: "categories" as const, label: t.shopPage.tabs.categories, icon: Tag },
+      { id: "history" as const, label: t.shopPage.tabs.history, icon: History },
+    ];
+    return canManage ? all : all.filter((entry) => entry.id !== "history");
+  }, [canManage, t.shopPage.tabs]);
 
   return (
     <div className={DASHBOARD_PAGE_ROOT}>
@@ -656,6 +665,18 @@ export default function Shop() {
                 </div>
               )
             )}
+
+            {tab === "history" && canManage ? (
+              <ClubContentAuditTimeline
+                clubId={clubId}
+                rpcName="get_club_shop_audit_timeline"
+                eventTypeLabels={shopAuditEventLabels}
+                title={t.shopPage.audit.title}
+                intro={t.shopPage.audit.intro}
+                emptyMessage={t.shopPage.audit.emptyTimeline}
+                migrationHint={t.shopPage.audit.migrationHint}
+              />
+            ) : null}
           </>
         )}
       </div>

@@ -3,6 +3,27 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-08-03 (Team Management club content · member self-service · DE i18n)
+
+### Club page + shop — Team Management access + audit
+- **Team Management** can save/publish the public club page and manage the shop (was admin-only in RLS despite RBAC matrix granting access).
+- **SQL:** `can_manage_club_public_page()`, `can_manage_club_shop()`; RLS + storage policies for drafts, published pages, shop products/images; audit tables **`club_public_page_audit_events`**, **`club_shop_audit_events`**; timeline RPCs **`get_club_public_page_audit_timeline`**, **`get_club_shop_audit_timeline`**; audit hooks in publish/unpublish/upsert RPCs.
+- Migrations **`20260807140000_upsert_club_public_page_draft_rpc.sql`**, **`20260807150000_team_management_club_page_shop_access_and_audit.sql`** — apply with **`npx supabase db push`**.
+- **Frontend:** **`use-can-manage-club-content.ts`**; **`club-content-audit-timeline.tsx`**; History tab on **`/club-page-admin`** and **`/shop`**.
+
+### Member master data — self-service + trainer edits
+- **`/my-data`:** Members edit their own master data; guardians with shared login email can edit linked wards.
+- **Trainers:** Edit master data for players on teams where they are nominated trainers; save notifies affected members (players) and Team Management.
+- **Members admin:** Saves via RPC **`save_member_master_record`** with field filtering by actor (**self** / **trainer** / **manager**); **`MasterDataTabs`** respects **`allowedFieldKeys`** / **`allowedGroups`**.
+- Migration **`20260808120000_member_master_self_service_trainer_edit.sql`** — helpers (`is_trainer_for_member`, `is_guardian_for_member`, `shares_login_email_with_membership`), list/get/save RPCs, notifications, audit event types **`registry_updated_by_member`**, **`registry_updated_by_trainer`**.
+- Lib: **`member-master-api.ts`**, **`member-master-field-policy.ts`**; Settings link to **`/my-data`**.
+
+### German i18n — Club Page Admin umlauts
+- Fixed ASCII digraphs in **`clubPageAdmin`** DE strings: e.g. **Übersetzung**, **Zusätzlich**, **veröffentlichen**, **können**, **öffentlichen**, **Fußball**, **Gerät**, **Prüfung**, **Längengrad**, **Empfänger**, **ausgewählt**.
+
+### Operator LOC
+- Measured **166,921** lines across **810** files (`npm run loc:count` → **`src/generated/app-loc.json`**, 2026-08-03). Operator **Financials** development cost model reads this snapshot on load.
+
 ## 2026-08-01 (TSV Allach member registry reconciliation · shared contact · household discount)
 
 ### Members — registry import & reconciliation

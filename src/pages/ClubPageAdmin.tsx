@@ -37,6 +37,7 @@ import {
   UserPlus,
   Megaphone,
   Lock,
+  History,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { supabaseDynamic } from "@/lib/supabase-dynamic";
@@ -77,6 +78,8 @@ import { DEFAULT_CLUB_HERO_ASSETS } from "@/lib/club-hero-default-assets";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useActiveClub } from "@/hooks/use-active-club";
+import { useCanManageClubPublicPage } from "@/hooks/use-can-manage-club-content";
+import { ClubContentAuditTimeline } from "@/components/club-content/club-content-audit-timeline";
 import { useLanguage } from "@/hooks/use-language";
 import { usePlanGuard } from "@/hooks/use-plan-guard";
 import { useToast } from "@/hooks/use-toast";
@@ -266,6 +269,7 @@ const CLUB_PAGE_ADMIN_TAB_IDS = [
   "contact",
   "seo",
   "publish",
+  "history",
 ] as const;
 
 type ClubPageAdminTabId = (typeof CLUB_PAGE_ADMIN_TAB_IDS)[number];
@@ -273,6 +277,7 @@ type ClubPageAdminTabId = (typeof CLUB_PAGE_ADMIN_TAB_IDS)[number];
 export default function ClubPageAdmin() {
   const { activeClub, activeClubId, loading: clubLoading } = useActiveClub();
   const { user } = useAuth();
+  const { canManage: canManagePage, loading: pageManageLoading } = useCanManageClubPublicPage(activeClubId);
   const { t } = useLanguage();
   const { toast } = useToast();
   const { canUseFeature, planId, loading: planLoading } = usePlanGuard();
@@ -313,8 +318,14 @@ export default function ClubPageAdmin() {
         { id: "contact" as const, label: t.clubPageAdmin.tabContactSocial, icon: Share2 },
         { id: "seo" as const, label: t.clubPageAdmin.tabSeo, icon: SearchIcon },
         { id: "publish" as const, label: t.clubPageAdmin.tabPublish, icon: Rocket },
+        { id: "history" as const, label: t.clubPageAdmin.tabHistory, icon: History },
       ] satisfies { id: ClubPageAdminTabId; label: string; icon: typeof Globe }[],
     [t.clubPageAdmin],
+  );
+
+  const clubPageAuditEventLabels = useMemo(
+    () => t.clubPageAdmin.audit.eventTypes as Record<string, string>,
+    [t.clubPageAdmin.audit.eventTypes],
   );
 
   const fetchClubData = useCallback(
@@ -561,6 +572,14 @@ export default function ClubPageAdmin() {
     key: "logo_url" | "favicon_url" | "cover_image_url" | "hero_image_url" | "reference_images" | "seo_og_image_url"
   ) => {
     if (!file) return;
+    if (!canManagePage) {
+      toast({
+        title: t.clubPageAdmin.draftSaveManagerOnlyTitle,
+        description: t.clubPageAdmin.draftSaveManagerOnlyDesc,
+        variant: "destructive",
+      });
+      return;
+    }
     setUploadingKey(key);
     try {
       const url = await uploadAsset(file, key);
@@ -596,6 +615,14 @@ export default function ClubPageAdmin() {
 
   const saveChanges = async () => {
     if (!activeClubId || saving) return;
+    if (!canManagePage) {
+      toast({
+        title: t.clubPageAdmin.draftSaveManagerOnlyTitle,
+        description: t.clubPageAdmin.draftSaveManagerOnlyDesc,
+        variant: "destructive",
+      });
+      return;
+    }
     const current = formRef.current;
     if (!current.name.trim() || !current.slug.trim()) {
       toast({ title: t.common.error, description: t.clubPageAdmin.fillRequiredNameSlug, variant: "destructive" });
@@ -626,6 +653,14 @@ export default function ClubPageAdmin() {
 
   const publishChanges = async () => {
     if (!activeClubId || publishing) return;
+    if (!canManagePage) {
+      toast({
+        title: t.clubPageAdmin.draftSaveManagerOnlyTitle,
+        description: t.clubPageAdmin.draftSaveManagerOnlyDesc,
+        variant: "destructive",
+      });
+      return;
+    }
     const current = formRef.current;
     if (!current.name.trim() || !current.slug.trim()) {
       toast({ title: t.common.error, description: t.clubPageAdmin.fillRequiredNameSlug, variant: "destructive" });
@@ -662,6 +697,14 @@ export default function ClubPageAdmin() {
 
   const unpublishWebsite = async () => {
     if (!activeClubId || unpublishing) return;
+    if (!canManagePage) {
+      toast({
+        title: t.clubPageAdmin.draftSaveManagerOnlyTitle,
+        description: t.clubPageAdmin.draftSaveManagerOnlyDesc,
+        variant: "destructive",
+      });
+      return;
+    }
     setUnpublishing(true);
     try {
       const { error } = await unpublishClubPublicWebsite(supabase, activeClubId);
@@ -741,7 +784,7 @@ export default function ClubPageAdmin() {
                 </Button>
               </>
             ) : null}
-            <Button size="sm" variant="secondary" onClick={saveChanges} disabled={saving || publishing}>
+            <Button size="sm" variant="secondary" onClick={saveChanges} disabled={saving || publishing || !canManagePage || pageManageLoading}>
               {saving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Save className="mr-1 h-4 w-4" />}
               {saving ? t.clubPageAdmin.saving : t.clubPageAdmin.saveChanges}
             </Button>
@@ -749,7 +792,7 @@ export default function ClubPageAdmin() {
               size="sm"
               className="bg-gradient-gold-static font-semibold text-primary-foreground hover:brightness-110"
               onClick={() => void publishChanges()}
-              disabled={saving || publishing}
+              disabled={saving || publishing || !canManagePage || pageManageLoading}
             >
               {publishing ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Rocket className="mr-1 h-4 w-4" />}
               {publishing ? t.clubPageAdmin.publishing : t.clubPageAdmin.publishChanges}
@@ -760,6 +803,12 @@ export default function ClubPageAdmin() {
 
       <div className="border-b border-border/60">
         <div className={`${DASHBOARD_PAGE_INNER_SM} space-y-2`}>
+          {!pageManageLoading && !canManagePage ? (
+            <Alert variant="destructive" className="border-amber-500/50 bg-amber-500/10 text-amber-950 dark:text-amber-50">
+              <AlertTitle className="text-sm">{t.clubPageAdmin.draftSaveManagerOnlyTitle}</AlertTitle>
+              <AlertDescription className="text-sm">{t.clubPageAdmin.draftSaveManagerOnlyDesc}</AlertDescription>
+            </Alert>
+          ) : null}
           <div className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-muted/40 px-4 py-2.5 text-[11px]">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-semibold text-foreground">{t.clubPageAdmin.publishStatusLabel}</span>
@@ -1847,6 +1896,18 @@ export default function ClubPageAdmin() {
                 </Button>
               </div>
             </SectionCard>
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-6">
+            <ClubContentAuditTimeline
+              clubId={activeClubId}
+              rpcName="get_club_public_page_audit_timeline"
+              eventTypeLabels={clubPageAuditEventLabels}
+              title={t.clubPageAdmin.audit.title}
+              intro={t.clubPageAdmin.audit.intro}
+              emptyMessage={t.clubPageAdmin.audit.emptyTimeline}
+              migrationHint={t.clubPageAdmin.audit.migrationHint}
+            />
           </TabsContent>
         </Tabs>
       </div>

@@ -1,9 +1,13 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-08-01 (optional email on saved member list · registry import null-safety)
+Last updated: 2026-08-03 (Team Management club content · member self-service · DE i18n)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
+- **Team Management club page + shop + audit (2026-08-03):** Team Management role can save/publish public club page and manage shop; change-history tabs on **`/club-page-admin`** and **`/shop`**. Migrations **`20260807140000`**, **`20260807150000`**. See **`CHANGELOG.md`** § **2026-08-03**.
+- **Member master self-service + trainer edits (2026-08-03):** **`/my-data`** for member/guardian self-service; trainer team-scoped master edits with notifications. Migration **`20260808120000`**. See **`CHANGELOG.md`** same section.
+- **German Club Page Admin i18n (2026-08-03):** Umlaut fixes in club page admin DE copy (Übersetzung, Zusätzlich, veröffentlichen, etc.).
+- **Operator LOC (2026-08-03):** **166,921** measured lines (`src/generated/app-loc.json`); Operator Financials development cost model auto-reads snapshot.
 - **Saved member list without email (2026-08-01):** Registry import adds unmatched members by club number or name even when spreadsheet rows lack email; **`club_member_drafts.email`** nullable — migration **`20260807130000`**. Invites still require email. See **`CHANGELOG.md`** § **TSV Allach member registry reconciliation**.
 - **TSV Allach member registry reconciliation (2026-08-01):** Smart registry import, club-number matching, saved-list add for unmatched imports, shared-contact linked-account filter, household discount review on **`/payments`**, draft search improvements, **`MemberHistory`** timeline fix. Migrations **`20260807120000`**, **`20260807130000`**. See **`CHANGELOG.md`** § **TSV Allach member registry reconciliation**.
 - **AI 4 T GPT Internet (2026-08-01):** Pro+ Internet research mode on **`/co-trainer`** (Tavily + consent + admin toggle + plan caps + cited sources). Migrations **`20260806130000`**, **`20260806140000`**. Deploy **`co-trainer`** + set **`TAVILY_API_KEY`**. See **`CHANGELOG.md`** § **2026-08-01 (AI 4 T GPT Internet…)** and **`DEPLOYMENT.md`** § AI 4 T.

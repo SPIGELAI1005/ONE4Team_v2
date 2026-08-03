@@ -27,3 +27,9 @@ Example (2026-08-01): **`20260806130000_ai_internet_research.sql`** was initiall
 Example (2026-08-01): **`20260807120000_member_household_discount_fields.sql`** — household discount verification fields on member master records for **`/payments`** (apply after **`20260806140000`**).
 
 Example (2026-08-01): **`20260807130000_club_member_drafts_optional_email.sql`** — nullable **`club_member_drafts.email`** so registry import and saved member list can record members without contact email; apply after **`20260807120000`** (invites still require email at app layer).
+
+Example (2026-08-03): **`20260807140000_upsert_club_public_page_draft_rpc.sql`** — upsert RPC for public page drafts (Team Management path).
+
+Example (2026-08-03): **`20260807150000_team_management_club_page_shop_access_and_audit.sql`** — `can_manage_club_public_page` / `can_manage_club_shop`, RLS + storage for TM, audit tables + timeline RPCs; apply after **`20260807140000`**.
+
+Example (2026-08-03): **`20260808120000_member_master_self_service_trainer_edit.sql`** — member self-service master data, trainer team-scoped edits, notifications, audit; apply after **`20260807150000`**.

@@ -92,6 +92,7 @@ const LiveScores = lazy(() => import("./pages/LiveScores"));
 const Shop = lazy(() => import("./pages/Shop"));
 const ClubPageAdmin = lazy(() => import("./pages/ClubPageAdmin"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
+const MyMemberData = lazy(() => import("./pages/MyMemberData"));
 const SupportFaq = lazy(() => import("./pages/SupportFaq"));
 const About = lazy(() => import("./pages/About"));
 const Pricing = lazy(() => import("./pages/Pricing"));
@@ -607,6 +608,14 @@ const AnimatedRoutes = () => {
                   </PlanGate>
                 </Suspense>
               </RequireModule>
+            }
+          />
+          <Route
+            path="/my-data"
+            element={
+              <Suspense fallback={<RouteFallback />}>
+                <MyMemberData />
+              </Suspense>
             }
           />
           <Route

@@ -17,6 +17,8 @@ import {
   UserMinus,
   Pencil,
   Shield,
+  UserCircle2,
+  Dumbbell,
 } from "lucide-react";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { Button } from "@/components/ui/button";
@@ -94,6 +96,8 @@ function MemberHistory() {
         invite_sent: { icon: Link2, tone: "text-primary bg-primary/10" },
         invite_resent: { icon: RefreshCw, tone: "text-cyan-400 bg-cyan-500/10" },
         registry_updated: { icon: FileSpreadsheet, tone: "text-orange-400 bg-orange-500/10" },
+        registry_updated_by_member: { icon: UserCircle2, tone: "text-violet-400 bg-violet-500/10" },
+        registry_updated_by_trainer: { icon: Dumbbell, tone: "text-sky-400 bg-sky-500/10" },
         registry_import_row: { icon: FileSpreadsheet, tone: "text-orange-300 bg-orange-500/10" },
       }) as Record<string, { icon: typeof History; tone: string }>,
     [],

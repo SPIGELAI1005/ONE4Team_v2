@@ -3544,7 +3544,7 @@ export const de: Translations = {
           },
           {
             q: "Warum ist eine Funktion gesperrt?",
-            a: "Euer Tarif schließt ggf. Premium-Bereiche wie AI 4 T, Shop, eine zweisprachige oeffentliche Vereinsseite (EN/DE) oder Module aus. Ausgewählte Pilotvereine können eine zeitlich begrenzte Feature-Testphase erhalten, ohne den gesamten Plan zu wechseln. Gesperrte Bereiche verweisen wo möglich auf Upgrade-Optionen.",
+            a: "Euer Tarif schließt ggf. Premium-Bereiche wie AI 4 T, Shop, eine zweisprachige öffentliche Vereinsseite (EN/DE) oder Module aus. Ausgewählte Pilotvereine können eine zeitlich begrenzte Feature-Testphase erhalten, ohne den gesamten Plan zu wechseln. Gesperrte Bereiche verweisen wo möglich auf Upgrade-Optionen.",
           },
           {
             q: "Was ist eine Feature-Testphase?",
@@ -3722,7 +3722,7 @@ export const de: Translations = {
     demoFallbackSuffix: "(Demo-Fallback)",
     schemaNotReady: "Shop-Datenbankschema ist noch nicht verfügbar.",
     selectClubForShop: "Wähle einen Verein, um auf Shop-Daten zuzugreifen.",
-    tabs: { products: "Produkte", orders: "Bestellungen", categories: "Kategorien" },
+    tabs: { products: "Produkte", orders: "Bestellungen", categories: "Kategorien", history: "Verlauf" },
     addProduct: "Produkt hinzufügen",
     editProduct: "Produkt bearbeiten",
     productName: "Produktname",
@@ -3789,6 +3789,23 @@ export const de: Translations = {
     sustainable: "Nachhaltig",
     orderAtJako: "Im JAKO Teamshop bestellen",
     brandJako: "JAKO",
+    audit: {
+      title: "Shop-Änderungsverlauf",
+      intro:
+        "Chronologisches Protokoll von Produkt-, Kategorie- und Bestellstatus-Änderungen. Neue Einträge erscheinen automatisch, wenn Katalog-Verantwortliche speichern.",
+      emptyTimeline: "Noch keine Shop-Änderungen protokolliert. Produkt- und Kategorie-Bearbeitungen erscheinen künftig hier.",
+      migrationHint:
+        "Shop-Änderungsverlauf erfordert Migration supabase/migrations/20260807150000_team_management_club_page_shop_access_and_audit.sql (z. B. npx supabase db push).",
+      eventTypes: {
+        product_created: "Produkt hinzugefügt",
+        product_updated: "Produkt aktualisiert",
+        product_deleted: "Produkt entfernt",
+        category_created: "Kategorie hinzugefügt",
+        category_updated: "Kategorie aktualisiert",
+        category_deleted: "Kategorie entfernt",
+        order_status_updated: "Bestellstatus aktualisiert",
+      },
+    },
   },
 
   // ─── Club Page Admin ───
@@ -3806,6 +3823,9 @@ export const de: Translations = {
     requiredFieldsLegendCore: "Mit * gekennzeichnete Felder sind Pflicht (Vereinsname und URL-Kurzel).",
     fillRequiredNameSlug: "Bitte Vereinsname und URL-Kurzel ausfüllen, bevor Sie speichern.",
     fillRequiredAddress: "Bitte eine Straßenanschrift eintragen, bevor Sie speichern. Sie erscheint auf der öffentlichen Vereinsseite und ist Pflicht.",
+    draftSaveManagerOnlyTitle: "Vereinsseiten-Verwaltung erforderlich",
+    draftSaveManagerOnlyDesc:
+      "Nur Vereins-Admins und Team Management können Entwürfe speichern oder veröffentlichen. Bitte wende dich an eine Person mit diesen Rollen.",
     contactRequiredHint: "Die Straßenanschrift ist erforderlich, damit Besucher den Verein finden.",
     fetchClubFailedGeneric: "Vereinsdaten konnten nicht vom Server geladen werden.",
     reloadFailedAfterSave: "Änderungen wurden möglicherweise gespeichert, aber das Neuladen des Formulars ist fehlgeschlagen. Bitte Seite aktualisieren.",
@@ -3909,7 +3929,7 @@ export const de: Translations = {
     lowContrastPrimaryForeground:
       "Geringer Kontrast erkannt. Die Lesbarkeit auf der öffentlichen Seite kann beeinträchtigt sein (Primär- und Vordergrundfarbe).",
     heroImageGuidanceTitle: "Empfohlenes Hero-Bild",
-    heroImageGuidanceRatio: "Seitenverhaltnis 16:9",
+    heroImageGuidanceRatio: "Seitenverhältnis 16:9",
     heroImageGuidanceMinSize: "Mindestens ca. 1600 × 900 px für scharfe Darstellung",
     heroImageGuidanceNoText: "Keinen Text ins Bild einbetten (kollidiert leicht mit Overlays)",
     heroImageGuidanceFaces: "Keine erkennbaren Gesichter ohne Einwilligung",
@@ -3925,8 +3945,8 @@ export const de: Translations = {
     uploadFailed: "Bildupload fehlgeschlagen",
     uploadBucketHint: "Der Storage-Bucket 'images-clubs' fehlt. Bitte in Supabase Storage anlegen und erneut versuchen.",
     storageDiagLabel: "Storage-Diagnose:",
-    storageDiagChecking: "prufe Lese-/Schreibzugriff...",
-    storageDiagOk: "ok - Lese/Schreib/Loschzugriff ist konfiguriert",
+    storageDiagChecking: "prüfe Lese-/Schreibzugriff...",
+    storageDiagOk: "ok - Lese/Schreib/Löschzugriff ist konfiguriert",
     storageDiagErrorPrefix: "Problem erkannt",
     storageDiagLastChecked: "zuletzt geprüft um",
     storageDiagRecheck: "erneut prüfen",
@@ -4002,6 +4022,7 @@ export const de: Translations = {
     tabContactSocial: "Kontakt & Social",
     tabSeo: "SEO",
     tabPublish: "Veröffentlichen",
+    tabHistory: "Verlauf",
     tabMicroHome: "Start",
     tabMicroNews: "News",
     tabMicroTeams: "Teams",
@@ -4074,22 +4095,22 @@ export const de: Translations = {
     joinAutoInvitedOnlyLabel: "Nur eingeladene Nutzer automatisch freigeben",
     joinAutoInvitedOnlyDesc:
       "Bei Auto-Freigabe bevorzugt Nutzer über Einladungslinks (für spätere Durchsetzung vorgemerkt).",
-    joinNotifyEmailsLabel: "Benachrichtigungs-Empfanger (E-Mails)",
+    joinNotifyEmailsLabel: "Benachrichtigungs-Empfänger (E-Mails)",
     joinNotifyEmailsPlaceholder: "vorstand@verein.de, sekretariat@verein.de",
     joinNotifyEmailsHint:
       "Kommagetrennte Liste für Ihre Unterlagen; automatischer E-Mail-Versand kann weitere Einrichtung brauchen.",
     clubCategoryLabel: "Vereinskategorie",
-    clubCategoryPlaceholder: "z. B. Fussball, Handball",
+    clubCategoryPlaceholder: "z. B. Fußball, Handball",
     defaultLanguageLabel: "Standardsprache",
     languageEnglish: "Englisch",
     languageGerman: "Deutsch",
-    secondaryLanguageEnabledLabel: "Zusaetzlich in einer zweiten Sprache veroeffentlichen",
-    secondaryLanguageEnabledDesc: "Pro-Funktion: Besucher koennen auf der oeffentlichen Vereinsseite zwischen Englisch und Deutsch wechseln.",
+    secondaryLanguageEnabledLabel: "Zusätzlich in einer zweiten Sprache veröffentlichen",
+    secondaryLanguageEnabledDesc: "Pro-Funktion: Besucher können auf der öffentlichen Vereinsseite zwischen Englisch und Deutsch wechseln.",
     multilingualUpgradeTitle: "Zweisprachige Vereinsseite (Pro)",
     multilingualUpgradeDesc:
       "Die Veröffentlichung in zwei Sprachen ist ab Pro enthälten. Ihr aktueller {planName}-Tarif unterstützt nur eine Sprache.",
-    primaryLanguageContentHint: "Die Felder unten werden auf der oeffentlichen Seite in {language} angezeigt.",
-    secondaryLanguageContentTitle: "Uebersetzung ({language})",
+    primaryLanguageContentHint: "Die Felder unten werden auf der öffentlichen Seite in {language} angezeigt.",
+    secondaryLanguageContentTitle: "Übersetzung ({language})",
     copyFromPrimary: "Leere Felder aus Primärsprache übernehmen",
     secondaryIncompleteHint: "In der Zweitsprache fehlen Pflichtübersetzungen (Beschreibung / Meta-Titel).",
     joinFunnel: {
@@ -4110,10 +4131,10 @@ export const de: Translations = {
     mutedColorHelper: "Beschriftungen, Untertitel, Daten und Zusatztexte (z. B. „Teams“, „Kommende Trainings“).",
     mutedColorAuto: "Automatisch",
     themePreferenceLabel: "Themen-Präferenz öffentliche Seite",
-    themeSystem: "Wie Gerat des Besuchers",
+    themeSystem: "Wie Gerät des Besuchers",
     themeLight: "Hell",
     themeDark: "Dunkel",
-    contrastWarningTitle: "Kontrast-Prufung",
+    contrastWarningTitle: "Kontrast-Prüfung",
     heroImageUrlLabel: "Hero-Bild-URL",
     uploadHero: "Hero-Bild hochladen",
     defaultHeroStyleLabel: "Standard-Hero-Stil",
@@ -4127,7 +4148,7 @@ export const de: Translations = {
     altTextCover: "Cover-Bild Alt-Text",
     altTextHero: "Hero-Bild Alt-Text",
     mapLatLabel: "Karten-Breitengrad",
-    mapLngLabel: "Karten-Laengengrad",
+    mapLngLabel: "Karten-Längengrad",
     publicLocationNotesLabel: "Öffentliche Orts-/Zugangs-Hinweise",
     publicLocationNotesPlaceholder: "Platz-Zugang, Parken, was Besucher wissen sollten…",
     youtubeLabel: "YouTube-URL",
@@ -4142,8 +4163,21 @@ export const de: Translations = {
     unpublishSuccessTitle: "Seite nicht mehr öffentlich",
     unpublishSuccessDesc:
       "Ihr Verein ist nicht mehr als öffentlich markiert. Entwurfsdaten bleiben erhalten, bis Sie erneut bearbeiten oder veröffentlichen.",
-    noClub: "Kein Verein ausgewahlt",
-    noClubDesc: "Bitte wahlen Sie einen Verein im Vereins-Umschalter, um dessen Seite zu verwalten.",
+    audit: {
+      title: "Vereinsseiten-Änderungsverlauf",
+      intro:
+        "Chronologisches Protokoll von Entwurfs-Speicherungen, Veröffentlichungen und Ausblendungen der öffentlichen Vereinswebsite. Jeder Eintrag zeigt, wer wann geändert hat.",
+      emptyTimeline: "Noch keine Vereinsseiten-Änderungen protokolliert. Speichern oder veröffentlichen Sie einen Entwurf, um den Verlauf zu starten.",
+      migrationHint:
+        "Vereinsseiten-Verlauf erfordert Migration supabase/migrations/20260807150000_team_management_club_page_shop_access_and_audit.sql (z. B. npx supabase db push).",
+      eventTypes: {
+        draft_saved: "Entwurf gespeichert",
+        page_published: "Live veröffentlicht",
+        page_unpublished: "Seite ausgeblendet",
+      },
+    },
+    noClub: "Kein Verein ausgewählt",
+    noClubDesc: "Bitte wählen Sie einen Verein im Vereins-Umschalter, um dessen Seite zu verwalten.",
   },
 
   // ─── Settings Page ───
@@ -4190,6 +4224,8 @@ export const de: Translations = {
     emailAddress: "E-Mail-Adresse",
     emailReadOnly: "Die E-Mail wird über Ihren Authentifizierungsanbieter verwaltet.",
     saveProfile: "Profil speichern",
+    openMyRegistryData: "Meine Registerdaten öffnen",
+    openMyRegistryDataDesc: "Adresse, Notfallkontakte, medizinische Hinweise und Konfektionsgrößen für sich und verknüpfte Familienmitglieder aktualisieren.",
     profileSaved: "Profil erfolgreich aktualisiert",
     // Club tab
     clubSettings: "Vereinseinstellungen",
@@ -5195,6 +5231,30 @@ export const de: Translations = {
     subtitle: "Überblick, Historie, Anwesenheit",
   },
 
+  myMemberDataPage: {
+    title: "Meine Registerdaten",
+    subtitle: "Vereins-Stammdaten prüfen und aktualisieren",
+    intro:
+      "Halten Sie Adresse, Notfallkontakte, medizinische Hinweise und Konfektionsgrößen aktuell. Beim Speichern wird Team Management automatisch benachrichtigt.",
+    selectPerson: "Person zum Bearbeiten wählen",
+    save: "Änderungen speichern",
+    saving: "Speichern…",
+    saveSuccessTitle: "Registerdaten gespeichert",
+    saveSuccessDescSelf: "Ihre Änderungen wurden gespeichert. Team Management wurde benachrichtigt.",
+    saveSuccessDescOther: "Änderungen für diese Person wurden gespeichert.",
+    saveFailed: "Registerdaten konnten nicht gespeichert werden.",
+    loadFailed: "Registerdaten konnten nicht geladen werden.",
+    empty: "In diesem Verein sind keine bearbeitbaren Registerdatensätze mit Ihrem Konto verknüpft.",
+    noClub: "Wählen Sie einen Verein, um Ihre Registerdaten zu verwalten.",
+    migrationHint:
+      "Self-Service-Registerbearbeitung erfordert Migration supabase/migrations/20260808120000_member_master_self_service_trainer_edit.sql (z. B. npx supabase db push).",
+    relationshipSelf: "Ihr Profil",
+    relationshipGuardian: "Verknüpftes Familienmitglied",
+    relationshipHouseholdEmail: "Gleiche Login-E-Mail",
+    relationshipTrainer: "Teammitglied (Trainer-Bearbeitung)",
+    relationshipManager: "Vereinsleitung",
+  },
+
   memberHistoryPage: {
     title: "Mitgliedsaktivität",
     subtitleFallback: "Vereinsmitglied",
@@ -5232,6 +5292,8 @@ export const de: Translations = {
       invite_sent: "Einladung gesendet",
       invite_resent: "Einladung erneut (neuer Link)",
       registry_updated: "Register aktualisiert",
+      registry_updated_by_member: "Mitglied hat Register aktualisiert",
+      registry_updated_by_trainer: "Trainer hat Register aktualisiert",
       registry_import_row: "Register-Import",
     },
   },

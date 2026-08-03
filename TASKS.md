@@ -6,6 +6,39 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ---
 
+## SPRINT 2026-08-03 — Team Management club content · member self-service · DE i18n
+
+**Goal:** Team Management can manage public club page + shop with audit trail; members/trainers edit master data with notifications; fix Club Page Admin German umlauts.
+
+| Track | Focus | Task IDs |
+|-------|--------|----------|
+| **G** | Club page + shop TM access | CLUB-TM-001 … CLUB-TM-003 |
+| **H** | Member master self-service | MEM-SELF-001 … MEM-SELF-004 |
+| **I** | DE i18n club page admin | I18N-DE-001 |
+
+### Club page + shop (Team Management)
+
+- [x] **CLUB-TM-001** RLS/RPCs: `can_manage_club_public_page`, `can_manage_club_shop`, draft/shop policies — migrations **`20260807140000`**, **`20260807150000`** *(operator apply)*
+- [x] **CLUB-TM-002** Audit tables + timeline RPCs; History tab on **`ClubPageAdmin`** + **`Shop`**
+- [x] **CLUB-TM-003** **`use-can-manage-club-content.ts`** replaces admin-only gate in UI
+
+### Member master self-service + trainer edits
+
+- [x] **MEM-SELF-001** Migration **`20260808120000`** — actor helpers, list/get/save RPCs, notifications, audit *(operator apply)*
+- [x] **MEM-SELF-002** **`/my-data`** page + Settings link; guardian/shared-email edit path
+- [x] **MEM-SELF-003** Trainer master-only edit on **`/members`**; field policy in **`member-master-field-policy.ts`**
+- [x] **MEM-SELF-004** **`MemberHistory.tsx`** event types for member/trainer registry updates
+
+### German i18n
+
+- [x] **I18N-DE-001** Club Page Admin umlaut restoration in **`src/i18n/de.ts`** (`clubPageAdmin`)
+
+### Operator LOC
+
+- [x] **OPS-LOC-001** Regenerate **`src/generated/app-loc.json`** — **166,921** lines / **810** files (2026-08-03)
+
+---
+
 ## SPRINT 2026-08-01 — TSV Allach member registry reconciliation
 
 **Goal:** Reconcile TSV Allach export vs ONE4Team; support shared family emails; household discount verification in Payments.

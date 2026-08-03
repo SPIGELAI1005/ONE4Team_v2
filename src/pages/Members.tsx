@@ -67,6 +67,13 @@ import { Badge } from "@/components/ui/badge";
 import { badgeVariants } from "@/components/ui/badge-variants";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { appendMemberAuditEvent } from "@/lib/member-audit";
+import { saveMemberMasterRecord } from "@/lib/member-master-api";
+import {
+  editableFieldKeysForActor,
+  editableGroupsForActor,
+  type MemberMasterEditActor,
+} from "@/lib/member-master-field-policy";
+import { listEditableMemberMasterMemberships } from "@/lib/member-master-api";
 import { sendClubInviteEmail, type SendClubInviteEmailResult } from "@/lib/send-club-invite-email";
 import { buildClubInviteLandingUrl } from "@/lib/club-invite-links";
 import { cn } from "@/lib/utils";
@@ -704,6 +711,7 @@ const Members = () => {
   const [savingJoinNoteId, setSavingJoinNoteId] = useState<string | null>(null);
 
   const [masterByMembershipId, setMasterByMembershipId] = useState<Record<string, ClubMemberMasterRecord | null>>({});
+  const [editableMasterActorById, setEditableMasterActorById] = useState<Record<string, MemberMasterEditActor>>({});
   const [membershipEmails, setMembershipEmails] = useState<Record<string, string>>({});
   const [guardianLinks, setGuardianLinks] = useState<GuardianLinkRow[]>([]);
   const [showMasterDialog, setShowMasterDialog] = useState(false);
@@ -1581,6 +1589,39 @@ const Members = () => {
     getModuleAccess(gateRole, "invites") === "full" ||
     (perms.isTrainer && joinReviewerPolicy === "admin_trainer");
   const canAccessMembersPage = canAccessModule(gateRole, "members") || canManageMembers || perms.isTrainer;
+
+  const canEditMemberMaster = useCallback(
+    (membershipId: string) => canManageMembers || Boolean(editableMasterActorById[membershipId]),
+    [canManageMembers, editableMasterActorById],
+  );
+
+  const masterEditActorFor = useCallback(
+    (membershipId: string): MemberMasterEditActor =>
+      canManageMembers ? "manager" : editableMasterActorById[membershipId] ?? "self",
+    [canManageMembers, editableMasterActorById],
+  );
+
+  useEffect(() => {
+    if (!clubId) {
+      setEditableMasterActorById({});
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const { data } = await listEditableMemberMasterMemberships(clubId);
+      if (cancelled) return;
+      const map: Record<string, MemberMasterEditActor> = {};
+      for (const row of data ?? []) {
+        if (row.edit_actor === "manager") map[row.membership_id] = "manager";
+        else if (row.edit_actor === "trainer") map[row.membership_id] = "trainer";
+        else map[row.membership_id] = "self";
+      }
+      setEditableMasterActorById(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [clubId]);
 
   const fetchMembers = useCallback(async () => {
     if (!clubId) return;
@@ -2538,17 +2579,11 @@ const Members = () => {
       payload: Partial<ClubMemberMasterRecord>,
       options?: { suppressToast?: boolean },
     ) => {
-      if (!clubId || !canManageMembers) {
+      if (!clubId || !canEditMemberMaster(member.id)) {
         toast({ title: t.common.notAuthorized, description: t.membersPage.onlyAdminsMembers, variant: "destructive" });
         return;
       }
-      const row = {
-        ...payload,
-        membership_id: member.id,
-        club_id: clubId,
-        membership_kind: payload.membership_kind || "active_participant",
-      };
-      const { data, error } = await supabase.from("club_member_master_records").upsert(row, { onConflict: "membership_id" }).select("*").maybeSingle();
+      const { data, error } = await saveMemberMasterRecord(member.id, payload);
       if (error) {
         toast({ title: t.common.error, description: error.message, variant: "destructive" });
         throw new Error(error.message);
@@ -2569,17 +2604,8 @@ const Members = () => {
           description: t.membersPage.masterDataSavedDescRoster.replace("{name}", savedName),
         });
       }
-      const fieldKeys = Object.keys(payload).filter((k) => k !== "membership_id" && k !== "club_id");
-      void appendMemberAuditEvent({
-        clubId,
-        membershipId: member.id,
-        correlationEmail: membershipEmails[member.id] ?? null,
-        eventType: "registry_updated",
-        summary: "Registry updated",
-        detail: { fields: fieldKeys },
-      });
     },
-    [clubId, canManageMembers, membershipEmails, t, toast],
+    [canEditMemberMaster, clubId, t, toast],
   );
 
   const emailToMembershipIdFromEmail = useCallback(
@@ -3525,8 +3551,32 @@ const Members = () => {
 
   const saveMemberPanelInline = async (member: MemberRow) => {
     if (!clubId) return;
-    if (!canManageMembers) {
+    if (!canEditMemberMaster(member.id)) {
       toast({ title: t.common.notAuthorized, description: t.membersPage.onlyAdminsMembers, variant: "destructive" });
+      return;
+    }
+    if (!canManageMembers) {
+      setMemberPanelSaving(true);
+      try {
+        const mergedMaster = { ...(masterByMembershipId[member.id] ?? {}), ...memberMasterEditDraft };
+        await handleSaveMasterRecord(member, mergedMaster, { suppressToast: true });
+        const savedName = getMemberRosterName(member);
+        toast({
+          title: t.membersPage.masterDataSavedTitle,
+          description: t.membersPage.masterDataSavedDescRoster.replace("{name}", savedName),
+        });
+        setMemberPanelSaveConfirmedId(member.id);
+        window.setTimeout(() => {
+          setMemberPanelSaveConfirmedId((current) => (current === member.id ? null : current));
+        }, 4000);
+        setMemberPanelEditModeId(null);
+        setMemberMasterEditDraft({});
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : t.common.error;
+        toast({ title: t.common.error, description: message, variant: "destructive" });
+      } finally {
+        setMemberPanelSaving(false);
+      }
       return;
     }
     setMemberPanelSaving(true);
@@ -5906,7 +5956,7 @@ const Members = () => {
                               );
                             })()}
 
-                            {memberPanelEditModeId === member.id ? (
+                            {memberPanelEditModeId === member.id && canManageMembers ? (
                               <div className="space-y-3 rounded-lg border border-primary/25 bg-muted/5 p-3">
                                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                   <Select
@@ -6052,7 +6102,7 @@ const Members = () => {
                                 clubId={clubId}
                                 membershipId={member.id}
                                 avatarUpload={
-                                  memberPanelEditModeId === member.id && canManageMembers
+                                  memberPanelEditModeId === member.id && canEditMemberMaster(member.id)
                                     ? {
                                         uploading: memberPanelAvatarUploading,
                                         onUpload: (file) => void uploadMemberPanelAvatar(member.id, file),
@@ -6083,6 +6133,9 @@ const Members = () => {
                                 }
                                 safetyTabExtraEnabled={isPlayerRole(rosterGuardianRole)}
                                 safetyTabExtra={renderGuardiansSafetyTabExtra(member, rosterGuardianRole)}
+                                allowedFieldKeys={editableFieldKeysForActor(masterEditActorFor(member.id))}
+                                allowedGroups={editableGroupsForActor(masterEditActorFor(member.id))}
+                                hideClubNumberGenerator={!canManageMembers}
                               />
                             </div>
 
@@ -6135,7 +6188,7 @@ const Members = () => {
                                     {t.common.save}
                                   </Button>
                                 </>
-                              ) : (
+                              ) : canEditMemberMaster(member.id) ? (
                                 <>
                                   <Button
                                     size="sm"
@@ -6171,6 +6224,7 @@ const Members = () => {
                                   >
                                     {t.common.edit}
                                   </Button>
+                                  {canManageMembers ? (
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -6179,8 +6233,9 @@ const Members = () => {
                                   >
                                     {t.common.remove}
                                   </Button>
+                                  ) : null}
                                 </>
-                              )}
+                              ) : null}
                             </div>
                           </div>
                         </motion.div>

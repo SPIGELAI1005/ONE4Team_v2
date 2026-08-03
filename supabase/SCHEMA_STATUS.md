@@ -154,6 +154,14 @@ Apply after gamification / pricing migrations above (strict filename order):
 
 **Status (2026-07-28):** All above **applied** on linked remote. Verify with **`supabase db lint --linked`** (expect no schema errors). Manual checklist: **`docs/club-roles-verification-checklist.md`**.
 
+## Team Management club content + member self-service (2026-08-03)
+When Team Management should manage the public club page/shop (not admin-only) and members/trainers should edit master data with audit/notifications, apply (in order):
+- `20260807140000_upsert_club_public_page_draft_rpc.sql` — draft upsert RPC
+- `20260807150000_team_management_club_page_shop_access_and_audit.sql` — `can_manage_club_public_page`, `can_manage_club_shop`, RLS, storage, audit tables + timeline RPCs
+- `20260808120000_member_master_self_service_trainer_edit.sql` — self/trainer/guardian master-data RPCs, field filtering, notifications
+
+**Status (2026-08-03):** Pending operator apply on linked remote (`npx supabase db push`).
+
 ## Verification artifact
 - Run `supabase/PHASE12_VERIFY.sql` after applying the migrations above.
 - Treat any `ok = false` row as a rollout blocker.

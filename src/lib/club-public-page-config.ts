@@ -697,14 +697,12 @@ export async function saveClubPageDraftConfig(
   supabase: SupabaseClient,
   clubId: string,
   config: ClubPublicPageConfig,
-  adminUserId: string | null
+  _adminUserId: string | null
 ): Promise<{ error: Error | null }> {
-  const payload = {
-    club_id: clubId,
-    config: publicPageConfigToJson(config),
-    updated_by: adminUserId,
-  };
-  const { error } = await supabase.from("club_public_page_drafts").upsert(payload, { onConflict: "club_id" });
+  const { error } = await supabase.rpc("upsert_club_public_page_draft", {
+    p_club_id: clubId,
+    p_config: publicPageConfigToJson(config),
+  });
   return { error: error ? new Error(error.message) : null };
 }
 

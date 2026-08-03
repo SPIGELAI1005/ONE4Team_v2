@@ -1030,6 +1030,13 @@ export default function Settings() {
                       </div>
                     )}
                   </div>
+                  <div className="mb-4 rounded-xl border border-border/60 bg-muted/20 p-4">
+                    <div className="text-sm font-semibold text-foreground">{t.settingsPage.openMyRegistryData}</div>
+                    <p className="mt-1 text-xs text-muted-foreground">{t.settingsPage.openMyRegistryDataDesc}</p>
+                    <Button variant="outline" size="sm" className="mt-3" asChild>
+                      <Link to="/my-data">{t.settingsPage.openMyRegistryData}</Link>
+                    </Button>
+                  </div>
                   <div className="flex justify-end pt-2">
                     <Button
                       className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110"

@@ -3695,7 +3695,7 @@ export const en = {
     demoFallbackSuffix: "(demo fallback)",
     schemaNotReady: "Shop database schema is not available yet.",
     selectClubForShop: "Select a club to access shop data.",
-    tabs: { products: "Products", orders: "Orders", categories: "Categories" },
+    tabs: { products: "Products", orders: "Orders", categories: "Categories", history: "History" },
     addProduct: "Add Product",
     editProduct: "Edit Product",
     productName: "Product Name",
@@ -3762,6 +3762,23 @@ export const en = {
     sustainable: "Sustainable",
     orderAtJako: "Order at JAKO teamshop",
     brandJako: "JAKO",
+    audit: {
+      title: "Shop change history",
+      intro:
+        "Chronological log of product, category, and order status changes. New entries appear automatically when catalog managers save changes.",
+      emptyTimeline: "No shop changes recorded yet. Product and category edits will appear here going forward.",
+      migrationHint:
+        "Shop change history requires migration supabase/migrations/20260807150000_team_management_club_page_shop_access_and_audit.sql (e.g. npx supabase db push).",
+      eventTypes: {
+        product_created: "Product added",
+        product_updated: "Product updated",
+        product_deleted: "Product removed",
+        category_created: "Category added",
+        category_updated: "Category updated",
+        category_deleted: "Category removed",
+        order_status_updated: "Order status updated",
+      },
+    },
   },
 
   // ─── Club Page Admin ───
@@ -3779,6 +3796,9 @@ export const en = {
     requiredFieldsLegendCore: "Fields marked with * are required (club name and URL slug).",
     fillRequiredNameSlug: "Please enter a club name and URL slug before saving.",
     fillRequiredAddress: "Please enter a street address before saving. It appears on your public club page and is required.",
+    draftSaveManagerOnlyTitle: "Club page manager access required",
+    draftSaveManagerOnlyDesc:
+      "Only club administrators and Team Management can save or publish club page drafts. Ask someone with those roles to update the public site.",
     contactRequiredHint: "Street address is required so visitors can find your club.",
     fetchClubFailedGeneric: "Could not load club data from the server.",
     reloadFailedAfterSave: "Changes may have saved, but reloading the form failed. Refresh the page to verify.",
@@ -3974,6 +3994,7 @@ export const en = {
     tabContactSocial: "Contact & social",
     tabSeo: "SEO",
     tabPublish: "Publish",
+    tabHistory: "History",
     tabMicroHome: "Home",
     tabMicroNews: "News",
     tabMicroTeams: "Teams",
@@ -4108,6 +4129,19 @@ export const en = {
     unpublishWebsite: "Unpublish (hide public site)",
     unpublishSuccessTitle: "Site unpublished",
     unpublishSuccessDesc: "Your club is no longer marked public. Draft data is kept until you edit or publish again.",
+    audit: {
+      title: "Club page change history",
+      intro:
+        "Chronological log of draft saves, publishes, and unpublishes for the public club website. Each entry records who made the change and when.",
+      emptyTimeline: "No club page changes recorded yet. Save a draft or publish to start the timeline.",
+      migrationHint:
+        "Club page change history requires migration supabase/migrations/20260807150000_team_management_club_page_shop_access_and_audit.sql (e.g. npx supabase db push).",
+      eventTypes: {
+        draft_saved: "Draft saved",
+        page_published: "Published live",
+        page_unpublished: "Site hidden",
+      },
+    },
     noClub: "No club selected",
     noClubDesc: "Please select a club from the club switcher to manage its page.",
   },
@@ -4156,6 +4190,8 @@ export const en = {
     emailAddress: "Email Address",
     emailReadOnly: "Email is managed through your authentication provider.",
     saveProfile: "Save Profile",
+    openMyRegistryData: "Open my registry data",
+    openMyRegistryDataDesc: "Update address, emergency contacts, medical notes, and kit sizes for yourself and linked family members.",
     profileSaved: "Profile updated successfully",
     // Club tab
     clubSettings: "Club Settings",
@@ -5166,6 +5202,30 @@ export const en = {
     subtitle: "Overview, history, attendance",
   },
 
+  myMemberDataPage: {
+    title: "My registry data",
+    subtitle: "Review and update your club master data",
+    intro:
+      "Keep your address, emergency contacts, medical notes, and kit sizes up to date. When you save, Team Management is notified automatically.",
+    selectPerson: "Select person to edit",
+    save: "Save changes",
+    saving: "Saving…",
+    saveSuccessTitle: "Registry data saved",
+    saveSuccessDescSelf: "Your changes were saved. Team Management has been notified.",
+    saveSuccessDescOther: "Changes were saved for this person.",
+    saveFailed: "Could not save registry data.",
+    loadFailed: "Could not load registry data.",
+    empty: "No editable registry records are linked to your account in this club.",
+    noClub: "Select a club to manage your registry data.",
+    migrationHint:
+      "Self-service registry editing requires migration supabase/migrations/20260808120000_member_master_self_service_trainer_edit.sql (e.g. npx supabase db push).",
+    relationshipSelf: "Your profile",
+    relationshipGuardian: "Linked family member",
+    relationshipHouseholdEmail: "Same login email",
+    relationshipTrainer: "Team member (trainer edit)",
+    relationshipManager: "Club manager access",
+  },
+
   memberHistoryPage: {
     title: "Member activity",
     subtitleFallback: "Club member",
@@ -5203,6 +5263,8 @@ export const en = {
       invite_sent: "Invite sent",
       invite_resent: "Invite resent (new link)",
       registry_updated: "Registry updated",
+      registry_updated_by_member: "Member updated registry",
+      registry_updated_by_trainer: "Trainer updated registry",
       registry_import_row: "Registry import",
     },
   },

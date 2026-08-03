@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -150,6 +151,22 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { activeClubId, activeClub, setActiveClubId } = useActiveClub();
   const { t, language, setLanguage } = useLanguage();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
+  const copyRef = useRef({
+    errorTitle: t.common.error,
+    draftPreviewSignInTitle: t.clubPage.draftPreviewSignInTitle,
+    draftPreviewSignInDesc: t.clubPage.draftPreviewSignInDesc,
+    draftPreviewDeniedTitle: t.clubPage.draftPreviewDeniedTitle,
+    draftPreviewDeniedDesc: t.clubPage.draftPreviewDeniedDesc,
+  });
+  copyRef.current = {
+    errorTitle: t.common.error,
+    draftPreviewSignInTitle: t.clubPage.draftPreviewSignInTitle,
+    draftPreviewSignInDesc: t.clubPage.draftPreviewSignInDesc,
+    draftPreviewDeniedTitle: t.clubPage.draftPreviewDeniedTitle,
+    draftPreviewDeniedDesc: t.clubPage.draftPreviewDeniedDesc,
+  };
 
   const isPreviewMode = searchParams.get("preview") === "1";
   const isDraftPreviewMode = searchParams.get("draft") === "1";
@@ -314,7 +331,13 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       }
 
       if (loadError) {
-        if (!options?.quiet) toast({ title: t.common.error, description: loadError.message, variant: "destructive" });
+        if (!options?.quiet) {
+          toastRef.current({
+            title: copyRef.current.errorTitle,
+            description: loadError.message,
+            variant: "destructive",
+          });
+        }
         setClub(null);
       } else if (record) {
         let displayRecord = record;
@@ -323,9 +346,9 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
           if (!user) {
             setDraftPreviewBlocked(true);
             if (!options?.quiet) {
-              toast({
-                title: t.clubPage.draftPreviewSignInTitle,
-                description: t.clubPage.draftPreviewSignInDesc,
+              toastRef.current({
+                title: copyRef.current.draftPreviewSignInTitle,
+                description: copyRef.current.draftPreviewSignInDesc,
                 variant: "destructive",
               });
             }
@@ -337,9 +360,9 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
             if (adminErr || !isAdmin) {
               setDraftPreviewBlocked(true);
               if (!options?.quiet) {
-                toast({
-                  title: t.clubPage.draftPreviewDeniedTitle,
-                  description: t.clubPage.draftPreviewDeniedDesc,
+                toastRef.current({
+                  title: copyRef.current.draftPreviewDeniedTitle,
+                  description: copyRef.current.draftPreviewDeniedDesc,
                   variant: "destructive",
                 });
               }
@@ -364,12 +387,6 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       clubSlug,
       isDraftPreviewMode,
       isPreviewMode,
-      t.clubPage.draftPreviewDeniedDesc,
-      t.clubPage.draftPreviewDeniedTitle,
-      t.clubPage.draftPreviewSignInDesc,
-      t.clubPage.draftPreviewSignInTitle,
-      t.common.error,
-      toast,
       user,
     ]
   );
@@ -570,19 +587,33 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
           .limit(24),
       ]);
 
-      if (teamsRes.error) toast({ title: t.common.error, description: teamsRes.error.message, variant: "destructive" });
+      if (teamsRes.error) {
+        toastRef.current({
+          title: copyRef.current.errorTitle,
+          description: teamsRes.error.message,
+          variant: "destructive",
+        });
+      }
       if (sessionsRes.error && !isMissingRelationError(sessionsRes.error)) {
         const sMsg = String(sessionsRes.error.message ?? "");
         const missingSessionPublish = sMsg.includes("publish_to_public_schedule");
         if (!missingSessionPublish) {
-          toast({ title: t.common.error, description: sessionsRes.error.message, variant: "destructive" });
+          toastRef.current({
+            title: copyRef.current.errorTitle,
+            description: sessionsRes.error.message,
+            variant: "destructive",
+          });
         }
       }
       if (activityTrainingsRes.error) {
         const aMsg = String(activityTrainingsRes.error.message ?? "");
         const missingActivityPublish = aMsg.includes("publish_to_public_schedule");
         if (!missingActivityPublish && !isMissingRelationError(activityTrainingsRes.error)) {
-          toast({ title: t.common.error, description: activityTrainingsRes.error.message, variant: "destructive" });
+          toastRef.current({
+            title: copyRef.current.errorTitle,
+            description: activityTrainingsRes.error.message,
+            variant: "destructive",
+          });
         }
       }
       if (eventsRes.error) {
@@ -595,7 +626,11 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
           evMsg.includes("registration_external") ||
           evMsg.includes("public_event_detail");
         if (!missingEventCols && !isMissingRelationError(eventsRes.error)) {
-          toast({ title: t.common.error, description: eventsRes.error.message, variant: "destructive" });
+          toastRef.current({
+            title: copyRef.current.errorTitle,
+            description: eventsRes.error.message,
+            variant: "destructive",
+          });
         }
       }
       if (newsRes.error) {
@@ -608,7 +643,11 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
           msg.includes("scheduled_publish_at") ||
           msg.includes("is_draft");
         if (!missingNewsColumns && !isMissingRelationError(newsRes.error)) {
-          toast({ title: t.common.error, description: newsRes.error.message, variant: "destructive" });
+          toastRef.current({
+            title: copyRef.current.errorTitle,
+            description: newsRes.error.message,
+            variant: "destructive",
+          });
         }
       }
       if (matchesRes.error) {
@@ -618,7 +657,11 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
           mMsg.includes("opponent_logo_url") ||
           mMsg.includes("public_match_detail");
         if (!missingMatchCols && !isMissingRelationError(matchesRes.error)) {
-          toast({ title: t.common.error, description: matchesRes.error.message, variant: "destructive" });
+          toastRef.current({
+            title: copyRef.current.errorTitle,
+            description: matchesRes.error.message,
+            variant: "destructive",
+          });
         }
       }
       if (matchesUpRes.error && !isMissingRelationError(matchesUpRes.error)) {
@@ -628,11 +671,19 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
           m2.includes("opponent_logo_url") ||
           m2.includes("public_match_detail");
         if (!missingUp) {
-          toast({ title: t.common.error, description: matchesUpRes.error.message, variant: "destructive" });
+          toastRef.current({
+            title: copyRef.current.errorTitle,
+            description: matchesUpRes.error.message,
+            variant: "destructive",
+          });
         }
       }
       if (partnersRes.error && !String(partnersRes.error.message ?? "").includes("show_on_public_club_page")) {
-        toast({ title: t.common.error, description: partnersRes.error.message, variant: "destructive" });
+        toastRef.current({
+          title: copyRef.current.errorTitle,
+          description: partnersRes.error.message,
+          variant: "destructive",
+        });
       }
 
       const pv = club.micrositePrivacy;
@@ -782,7 +833,7 @@ export function PublicClubProvider({ children }: { children: ReactNode }) {
       setLoadingData(false);
     };
     void run();
-  }, [club, t.common.error, toast, user]);
+  }, [club?.id, user]);
 
   useEffect(() => {
     if (!user) return;
