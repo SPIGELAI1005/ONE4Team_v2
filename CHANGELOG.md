@@ -3,6 +3,35 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-08-03 (Role-aware dashboards · player-focused Trainings · `/my-data` UX)
+
+### Role-aware dashboards (Team Management + all personas)
+- **`DashboardContent.tsx`** refactored: **`isOpsAdminDashboardRole`** (`club_admin`, `admin`, `team_management`) shares **AI 4 T Control Center** (NaturalLanguageStats, contextual insights, weekly digest CTA, AdminNotificationSender, Ai4tAdminUsageCard, Ai4tValueMetricsCard).
+- **Team Management KPIs:** Members, Teams, Trainings (7 days), Upcoming — live from **`fetchAdminDashboardSnapshot`**; no financial summary or dues KPI.
+- **Week at a glance** for ops admins; **`AdminWeekAtAGlanceCard hideFinance`** for Team Management.
+- **Trainer / team staff / player / parent:** Team-scoped KPIs + upcoming via **`fetchTeamScopedDashboardSnapshot`** / **`fetchTeamScopedDashboardUpcoming`** + **`useModuleDataScope("trainings")`**.
+- **Player dashboard:** Removed analytics widgets from section flags; focus hint; next training/match KPIs.
+- **Parent dashboard:** Dedicated title + family-focused hint; team-scoped schedule + club events.
+- **`TrainerTodaySessionCard`:** Optional **`teamIds`** filter for coach-assigned teams.
+- Lib: **`dashboard-persona.ts`** (`isOpsAdminDashboardRole`, `isClubFinanceDashboardRole`, `isTeamScopedSportsDashboardRole`); **`club-dashboard-snapshot.ts`** team-scoped fetchers; tests in **`dashboard-persona.test.ts`**.
+
+### Player-focused Trainings & Assets
+- **`/teams`:** **`isPlayerFocusedView`** from **`useModuleDataScope("trainings")`** — hide admin KPI grid, conflict badges, Teams/History tabs, non-training layer filters, AI shortcuts; highlight own team on day schedule; default training layer + booked pitch view.
+- **`/activities`:** Team-scoped activities for players; club-wide events retained; **`TrainingAttendanceOverview`** trainers-only; simplified filters + player hint.
+
+### `/my-data` + Settings
+- **`member-my-data-errors.ts`** — friendly PostgREST/empty-state messages.
+- **`MyMemberData.tsx`** — expanded empty state; inline error panel.
+- **`master-data-tabs.tsx`** — login email on Address & Contact (from auth, not registry).
+- Migration **`20260809180000_fix_list_editable_member_master_return_types.sql`** — RPC return type casts.
+- **`Settings.tsx`** — hide Club tab for non-admin personas.
+
+### Members polish
+- **`Members.tsx`** — **`IdCard`** icon for full registry; saved-list preview count **12**.
+
+### Operator LOC
+- Measured **167,902** lines across **814** files (`npm run loc:count` → **`src/generated/app-loc.json`**, 2026-08-03 evening).
+
 ## 2026-08-03 (Team Management club content · member self-service · DE i18n)
 
 ### Club page + shop — Team Management access + audit
@@ -22,7 +51,7 @@ It records notable changes, features, and hardening steps.
 - Fixed ASCII digraphs in **`clubPageAdmin`** DE strings: e.g. **Übersetzung**, **Zusätzlich**, **veröffentlichen**, **können**, **öffentlichen**, **Fußball**, **Gerät**, **Prüfung**, **Längengrad**, **Empfänger**, **ausgewählt**.
 
 ### Operator LOC
-- Measured **166,921** lines across **810** files (`npm run loc:count` → **`src/generated/app-loc.json`**, 2026-08-03). Operator **Financials** development cost model reads this snapshot on load.
+- Measured **166,921** lines across **810** files (`npm run loc:count` → **`src/generated/app-loc.json`**, 2026-08-03 morning).
 
 ## 2026-08-01 (TSV Allach member registry reconciliation · shared contact · household discount)
 

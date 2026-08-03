@@ -1,6 +1,6 @@
 # ONE4Team — Comprehensive project audit
 
-**Audit date:** 2026-08-03 (Team Management club page/shop + audit; member master self-service; DE i18n; LOC **166,921**)  
+**Audit date:** 2026-08-03 (Role-aware dashboards · player-focused Trainings · LOC **167,902**)  
 **Scope:** Codebase, architecture, UX/design, production readiness, competitive positioning, market value, and value-growth levers  
 **Primary reference (existing):** [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) — strict production-readiness review with risk register, readiness scores, and remediation sprints  
 
@@ -48,10 +48,10 @@ This document **extends** the ops audit with product, UX, competitive, and valua
 
 | Metric | Value (2026-08-03) | Notes |
 |--------|------:|-------|
-| TypeScript/TSX files (`src/`) | ~810 | Measured by `loc:count` (includes club-content audit + member self-service) |
-| Lines of code (`src/` total, measured) | **166,921** | `npm run loc:count` → **`src/generated/app-loc.json`**; Operator Financials reads this |
-| Lines of code (key surfaces) | i18n EN/DE ~6k each; Members ~7k | Registry reconciliation + master-data RPC path |
-| SQL migrations | ~168 | Includes **`20260807140000`**–**`20260808120000`** (TM club content + member self-service) |
+| TypeScript/TSX files (`src/`) | ~814 | Measured by `loc:count` (includes role-aware dashboard + player Trainings scope) |
+| Lines of code (`src/` total, measured) | **167,902** | `npm run loc:count` → **`src/generated/app-loc.json`**; Operator Financials reads this |
+| Lines of code (key surfaces) | i18n EN/DE ~6k each; Members ~7k; Teams ~5.9k; DashboardContent ~940 | Registry + team-scoped UX |
+| SQL migrations | ~169 | Includes **`20260809180000`** (my-data RPC casts) |
 | Edge Functions | **13** active dirs | co-trainer, ai4team-agent, chat-bridge, stripe-*, digests, invite email, health, … |
 | Unit/integration test files | **~106** | Heavy on `src/lib/*`; RLS + operator security suites |
 | E2E specs | **8** | + marketplace dual-role / RBAC |
@@ -132,7 +132,7 @@ flowchart TB
 
 ### UX strengths
 
-- **Role-based dashboard** — admin sees finances/setup; trainer/player see sports widgets (`dashboard-section-visibility.ts`).
+- **Role-based dashboard** — ops admin personas (Club Admin + Team Management) share AI 4 T Control Center + live KPIs; trainer/player/parent get team-scoped schedule widgets (`dashboard-section-visibility.ts`, `DashboardContent.tsx`, `useModuleDataScope`).
 - **Public club microsite** — mobile header, team filter (`?team=`), RSVP on schedule/matches, Messages hub (**Open Messages**), embedded Communication with forward-to-WhatsApp, readable composer, **mobile channel dropdown + scrollable chat thread** (2026-07-06), **accurate pagination footer** (2026-07-06), Sommerfest live board with team logos/goals KPI/mobile live bar, **Info** duration popover + **persisted kickoff times** (2026-07-06), mobile hero club logo + pulse (2026-07-05).
 - **AI 4 T Agent** — contextual entry from Members/Teams/Activities; propose → confirm → execute reduces admin busywork.
 - **Member ops** — Excel/CSV import, draft → invite workflow (saved list accepts members **without email** when club number or name is present; invites still need email), club card PNG export, team assignment from members and teams; TSV Allach registry reconciliation with shared-contact and household discount review (2026-08-01).
@@ -220,7 +220,7 @@ Scores from [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINES
 
 | Factor | Estimate |
 |--------|----------|
-| ~167k LOC production TS/TSX under `src/` (measured via `npm run loc:count` → `src/generated/app-loc.json`, **166,921** as of 2026-08-03) + migrations + Edge Functions | **12–24 person-months** |
+| ~168k LOC production TS/TSX under `src/` (measured via `npm run loc:count` → `src/generated/app-loc.json`, **167,902** as of 2026-08-03) + migrations + Edge Functions | **12–24 person-months** |
 | At €80–120k fully loaded dev cost / year equivalent | **~€250k–€600k** replacement cost |
 | Plus design, QA, ops docs, pilot iteration (TSV Allach) | **+€50k–€150k** |
 

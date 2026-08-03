@@ -78,3 +78,26 @@ export function resolveModuleGateRole(
   }
   return authorized ?? "member";
 }
+
+/** Club-wide ops personas that share admin-style dashboard widgets (without finance for team_management). */
+export function isOpsAdminDashboardRole(role: string | null | undefined): boolean {
+  const normalized = normalizeDashboardRole(role);
+  return normalized === "club_admin" || normalized === "admin" || normalized === "team_management";
+}
+
+/** Personas that see financial summary and dues KPIs on the dashboard. */
+export function isClubFinanceDashboardRole(role: string | null | undefined): boolean {
+  const normalized = normalizeDashboardRole(role);
+  return normalized === "club_admin" || normalized === "admin";
+}
+
+/** Sports roles with team-scoped schedule KPIs on the dashboard. */
+export function isTeamScopedSportsDashboardRole(role: string | null | undefined): boolean {
+  const normalized = normalizeDashboardRole(role);
+  return (
+    normalized === "trainer"
+    || normalized === "team_staff"
+    || normalized === "player"
+    || normalized === "parent_supporter"
+  );
+}

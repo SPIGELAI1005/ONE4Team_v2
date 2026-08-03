@@ -75,10 +75,10 @@ const PLAYER_SECTIONS: DashboardSectionFlags = {
   clubSetup: false,
   liveMatchTicker: true,
   financialSummary: false,
-  analyticsWidgets: true,
-  seasonProgression: true,
+  analyticsWidgets: false,
+  seasonProgression: false,
   teamChemistry: false,
-  achievementBadges: true,
+  achievementBadges: false,
   naturalLanguageStats: false,
   seasonAwards: false,
   adminNotificationSender: false,
@@ -209,7 +209,7 @@ export function getDashboardSections(role: string | undefined): DashboardSection
     case "member":
       return MEMBER_SECTIONS;
     case "team_management":
-      return { ...CLUB_ADMIN_SECTIONS, financialSummary: false, myDues: false };
+      return { ...CLUB_ADMIN_SECTIONS, financialSummary: false, myDues: false, marketplaceCards: false };
     case "fan":
     case "supporter":
       return {

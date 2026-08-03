@@ -44,6 +44,8 @@ import {
   fetchClubSetupProfile,
   fetchClubWideDashboardUpcoming,
   fetchDashboardUpcoming,
+  fetchTeamScopedDashboardSnapshot,
+  fetchTeamScopedDashboardUpcoming,
   type AdminDashboardSnapshot,
   type ClubSetupProfile,
 } from "@/lib/club-dashboard-snapshot";
@@ -59,10 +61,14 @@ import {
 import { getDashboardSections } from "@/lib/dashboard-section-visibility";
 import {
   defaultDashboardPersonaSlug,
+  isClubFinanceDashboardRole,
   isDashboardPersonaAllowed,
+  isOpsAdminDashboardRole,
+  isTeamScopedSportsDashboardRole,
 } from "@/lib/dashboard-persona";
 import { isExternalRole, normalizeDashboardRole } from "@/lib/rbac-config";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useModuleDataScope } from "@/hooks/use-module-data-scope";
 import {
   fetchClubFinancialSnapshot,
   formatMoneyFromCents,
@@ -168,6 +174,26 @@ const DashboardContent = () => {
           { id: "unpaidDues", label: t.financial.outstanding, value: "-", change: "", icon: TrendingUp },
         ],
       },
+      team_management: {
+        title: t.dashboard.teamManagementDashboard,
+        greeting: t.dashboard.welcomeBackOps,
+        kpis: [
+          { id: "totalMembers", label: t.dashboard.totalMembers, value: "-", change: "", icon: Users },
+          { id: "activeTeams", label: t.dashboard.activeTeams, value: "-", change: "", icon: Trophy },
+          { id: "trainingsNext7d", label: t.dashboard.trainingsNext7d, value: "-", change: "", icon: Calendar },
+          { id: "upcoming", label: t.dashboard.upcoming, value: "-", change: "", icon: Clock },
+        ],
+      },
+      team_staff: {
+        title: t.dashboard.teamStaffDashboard,
+        greeting: t.dashboard.welcomeBackCoach,
+        kpis: [
+          { id: "myPlayers", label: t.dashboard.myPlayers, value: "-", change: "", icon: Users },
+          { id: "sessionsThisWeek", label: t.dashboard.sessionsThisWeek, value: "-", change: "", icon: Calendar },
+          { id: "nextMatch", label: t.dashboard.nextMatch, value: "-", change: "", icon: Trophy },
+          { id: "upcoming", label: t.dashboard.upcoming, value: "-", change: "", icon: Clock },
+        ],
+      },
       trainer: {
         title: t.dashboard.trainerDashboard,
         greeting: t.dashboard.welcomeBackCoach,
@@ -183,9 +209,19 @@ const DashboardContent = () => {
         greeting: t.dashboard.welcomeBack,
         kpis: [
           { id: "nextTraining", label: t.dashboard.nextTraining, value: "-", change: "", icon: Calendar },
-          { id: "matchesPlayed", label: t.dashboard.matchesPlayed, value: "-", change: "", icon: Trophy },
-          { id: "attendance", label: t.dashboard.attendance, value: "-", change: "", icon: Activity },
-          { id: "teamRank", label: t.dashboard.teamRank, value: "-", change: "", icon: TrendingUp },
+          { id: "nextMatch", label: t.dashboard.nextMatch, value: "-", change: "", icon: Trophy },
+          { id: "upcoming", label: t.dashboard.upcoming, value: "-", change: "", icon: Clock },
+          { id: "clubEvents", label: t.dashboard.clubEvents, value: "-", change: "", icon: Activity },
+        ],
+      },
+      parent_supporter: {
+        title: t.dashboard.parentDashboard,
+        greeting: t.dashboard.welcomeBack,
+        kpis: [
+          { id: "nextTraining", label: t.dashboard.nextTraining, value: "-", change: "", icon: Calendar },
+          { id: "nextMatch", label: t.dashboard.nextMatch, value: "-", change: "", icon: Trophy },
+          { id: "upcoming", label: t.dashboard.upcoming, value: "-", change: "", icon: Clock },
+          { id: "clubEvents", label: t.dashboard.clubEvents, value: "-", change: "", icon: Activity },
         ],
       },
       member: {
@@ -234,7 +270,11 @@ const DashboardContent = () => {
 
   const sections = useMemo(() => getDashboardSections(role), [role]);
   const normalizedRole = useMemo(() => normalizeDashboardRole(role), [role]);
-  const isClubAdminPersona = normalizedRole === "club_admin";
+  const trainingScope = useModuleDataScope("trainings");
+  const scopedTeamIds = trainingScope.teamIds;
+  const isOpsAdminPersona = isOpsAdminDashboardRole(normalizedRole);
+  const isClubFinancePersona = isClubFinanceDashboardRole(normalizedRole);
+  const isTeamScopedSportsPersona = isTeamScopedSportsDashboardRole(normalizedRole);
   const externalPersona = useMemo(
     () => isExternalRole(normalizedRole),
     [normalizedRole],
@@ -333,12 +373,12 @@ const DashboardContent = () => {
           return;
         }
 
-        if (isClubAdminPersona) {
+        if (isOpsAdminPersona) {
           const [snapshot, schedule, profile, financial] = await Promise.all([
             fetchAdminDashboardSnapshot(activeClubId),
             fetchDashboardUpcoming(activeClubId, 7),
             profilePromise,
-            fetchClubFinancialSnapshot(activeClubId),
+            isClubFinancePersona ? fetchClubFinancialSnapshot(activeClubId) : Promise.resolve(null),
           ]);
           if (cancelled) return;
 
@@ -367,8 +407,9 @@ const DashboardContent = () => {
                 };
               }
               if (k.id === "activeTeams") return { ...k, value: String(snapshot.teamsCount) };
+              if (k.id === "trainingsNext7d") return { ...k, value: String(snapshot.trainingsNext7d) };
               if (k.id === "upcoming") return { ...k, value: String(snapshot.upcomingCount7d) };
-              if (k.id === "unpaidDues") {
+              if (k.id === "unpaidDues" && financial) {
                 return {
                   ...k,
                   value: formatMoneyFromCents(financial.outstandingTotalCents, financial.currency),
@@ -391,23 +432,35 @@ const DashboardContent = () => {
               t.dashboard.aiInsightPendingDrafts.replace("{count}", String(snapshot.pendingDrafts)),
             );
           }
-          if (snapshot.teamsCount > 0) {
+          if (normalizedRole === "team_management") {
+            insights.push(
+              t.dashboard.aiInsightOpsOverview
+                .replace("{members}", String(snapshot.membersActive))
+                .replace("{teams}", String(snapshot.teamsCount))
+                .replace("{trainings}", String(snapshot.trainingsNext7d)),
+            );
+          } else if (snapshot.teamsCount > 0) {
             insights.push(
               t.dashboard.aiInsightTeamsMatches
                 .replace("{teams}", String(snapshot.teamsCount))
                 .replace("{matches}", String(snapshot.upcomingMatches)),
             );
           }
-          if (financial.outstandingTotalCents > 0) {
+          if (isClubFinancePersona && financial && financial.outstandingTotalCents > 0) {
             insights.push(
               t.financial.aiInsightOutstanding.replace(
                 "{amount}",
                 formatMoneyFromCents(financial.outstandingTotalCents, financial.currency),
               ),
             );
-          } else if (snapshot.unpaidDues > 0) {
+          } else if (isClubFinancePersona && snapshot.unpaidDues > 0) {
             insights.push(
               t.dashboard.aiInsightUnpaidDues.replace("{count}", String(snapshot.unpaidDues)),
+            );
+          }
+          if (snapshot.trainingsNext7d > 0 && normalizedRole === "team_management") {
+            insights.push(
+              t.dashboard.aiInsightTrainingsNext7d.replace("{count}", String(snapshot.trainingsNext7d)),
             );
           }
           if (snapshot.completedMatches > 0) {
@@ -422,65 +475,82 @@ const DashboardContent = () => {
           return;
         }
 
-        const now = new Date();
-        const to = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        if (isTeamScopedSportsPersona) {
+          const teamIds = scopedTeamIds;
+          const [snapshot, schedule, profile] = await Promise.all([
+            fetchTeamScopedDashboardSnapshot(activeClubId, teamIds),
+            fetchTeamScopedDashboardUpcoming(activeClubId, teamIds, 7, true),
+            profilePromise,
+          ]);
+          if (cancelled) return;
 
-        const [{ data: acts }, { data: members }, { data: dues }, profile] = await Promise.all([
-          supabase
-            .from("activities")
-            .select("title, type, starts_at")
-            .eq("club_id", activeClubId)
-            .gte("starts_at", now.toISOString())
-            .lt("starts_at", to.toISOString())
-            .order("starts_at", { ascending: true })
-            .limit(6),
-          supabase
-            .from("club_memberships")
-            .select("id")
-            .eq("club_id", activeClubId)
-            .eq("status", "active")
-            .limit(1000),
-          supabase
-            .from("membership_dues")
-            .select("id")
-            .eq("club_id", activeClubId)
-            .eq("status", "due")
-            .limit(1000),
+          setClubSetupProfile(profile);
+          setAdminSnapshot(null);
+          setUpcoming(
+            schedule.map((item) => ({
+              title: item.title,
+              time: item.time,
+              type: item.type,
+            })),
+          );
+
+          setKpis((prev) =>
+            prev.map((k) => {
+              if (k.id === "myPlayers") return { ...k, value: String(snapshot.rosterCount) };
+              if (k.id === "sessionsThisWeek") return { ...k, value: String(snapshot.sessionsThisWeek) };
+              if (k.id === "nextTraining") {
+                return { ...k, value: snapshot.nextTrainingLabel ?? "-" };
+              }
+              if (k.id === "nextMatch") {
+                return { ...k, value: snapshot.nextMatchLabel ?? "-" };
+              }
+              if (k.id === "upcoming") return { ...k, value: String(schedule.length) };
+              if (k.id === "clubEvents") return { ...k, value: String(snapshot.clubEvents7d) };
+              if (k.id === "matchesPlayed") return { ...k, value: String(snapshot.completedMatches) };
+              return k;
+            }),
+          );
+
+          const insights: string[] = [];
+          if (snapshot.sessionsThisWeek > 0) {
+            insights.push(
+              t.dashboard.aiInsightTrainingsNext7d.replace("{count}", String(snapshot.sessionsThisWeek)),
+            );
+          }
+          if (snapshot.upcomingMatches > 0) {
+            insights.push(
+              t.dashboard.aiInsightTeamsMatches
+                .replace("{teams}", teamIds === "all" ? "—" : String(teamIds.length))
+                .replace("{matches}", String(snapshot.upcomingMatches)),
+            );
+          }
+          if (insights.length === 0) {
+            insights.push(t.dashboard.aiTip1, t.dashboard.aiTip2, t.dashboard.aiTip3);
+          }
+          setAiInsights(insights);
+          return;
+        }
+
+        const [schedule, profile] = await Promise.all([
+          fetchDashboardUpcoming(activeClubId, 7),
           profilePromise,
         ]);
-
         if (cancelled) return;
 
         setClubSetupProfile(profile);
-
-        const nextUpcoming: UpcomingItem[] = (acts ?? []).map((a) => ({
-          title: (a as { title: string }).title,
-          type: (a as { type: string }).type,
-          time: new Date((a as { starts_at: string }).starts_at).toLocaleString([], {
-            weekday: "short",
-            hour: "2-digit",
-            minute: "2-digit",
-            month: "short",
-            day: "numeric",
-          }),
-        }));
-
-        setUpcoming(nextUpcoming);
+        setAdminSnapshot(null);
+        setUpcoming(
+          schedule.map((item) => ({
+            title: item.title,
+            time: item.time,
+            type: item.type,
+          })),
+        );
         setAiInsights([t.dashboard.aiTip1, t.dashboard.aiTip2, t.dashboard.aiTip3]);
-
-        const membersCount = (members ?? []).length;
-        const dueCount = (dues ?? []).length;
-
         setKpis((prev) =>
           prev.map((k) => {
-            if (k.id === "myPlayers") return { ...k, value: String(membersCount) };
-            if (k.id === "totalMembers") return { ...k, value: String(membersCount) };
-            if (k.id === "upcoming") return { ...k, value: String(nextUpcoming.length) };
-            if (k.id === "sessionsThisWeek") {
-              return { ...k, value: String(nextUpcoming.filter((x) => x.type === "training").length) };
-            }
-            if (k.id === "unpaidDues") return { ...k, value: String(dueCount) };
-            return k;
+            if (k.id === "upcoming") return { ...k, value: String(schedule.length) };
+            return { ...k, value: "-", change: "" };
           }),
         );
       } catch {
@@ -497,21 +567,32 @@ const DashboardContent = () => {
     return () => {
       cancelled = true;
     };
-  }, [activeClubId, config.kpis, externalPersona, isClubAdminPersona, normalizedRole, role, t]);
+  }, [
+    activeClubId,
+    config.kpis,
+    externalPersona,
+    isClubFinancePersona,
+    isOpsAdminPersona,
+    isTeamScopedSportsPersona,
+    normalizedRole,
+    role,
+    scopedTeamIds,
+    t,
+  ]);
 
   const showGettingStarted = useMemo(() => {
     if (!activeClubId) return true;
-    if (isClubAdminPersona && adminSnapshot) {
+    if (isOpsAdminPersona && adminSnapshot) {
       const hasPeople = adminSnapshot.membersActive > 0 || adminSnapshot.pendingDrafts > 0;
       const hasSchedule =
         adminSnapshot.upcomingCount7d > 0 || adminSnapshot.upcomingMatches > 0;
       return !hasPeople || !hasSchedule;
     }
-    if (role === "trainer") {
+    if (role === "trainer" || role === "team_staff") {
       return upcoming.length === 0;
     }
     return false;
-  }, [activeClubId, adminSnapshot, isClubAdminPersona, role, upcoming.length]);
+  }, [activeClubId, adminSnapshot, isOpsAdminPersona, role, upcoming.length]);
 
   const registrationSummary = useMemo(() => {
     const fromMetadata = parseRegistrationSummary((user?.user_metadata as Record<string, unknown> | undefined) ?? null);
@@ -532,9 +613,9 @@ const DashboardContent = () => {
     if (externalPersona) {
       return registrationSummary?.registration_track === "partner";
     }
-    if (isClubAdminPersona && activeClubId) return true;
+    if (isOpsAdminPersona && activeClubId) return true;
     return Boolean(registrationSummary?.registration_track);
-  }, [activeClubId, externalPersona, isClubAdminPersona, registrationSummary]);
+  }, [activeClubId, externalPersona, isOpsAdminPersona, registrationSummary]);
 
   const clubSetupDisplay = useMemo(() => {
     const isClubAdmin =
@@ -576,7 +657,7 @@ const DashboardContent = () => {
     }
 
     const teamsMembers =
-      adminSnapshot && isClubAdminPersona
+      adminSnapshot && isOpsAdminPersona
         ? `${adminSnapshot.teamsCount} · ${adminSnapshot.membersActive + adminSnapshot.pendingDrafts}`
         : null;
 
@@ -591,7 +672,7 @@ const DashboardContent = () => {
       slug: clubSetupProfile?.slug || activeClub?.slug || null,
       timezone: clubSetupProfile?.timezone || null,
     };
-  }, [activeClub, adminSnapshot, clubSetupProfile, isClubAdminPersona, registrationSummary, t]);
+  }, [activeClub, adminSnapshot, clubSetupProfile, isOpsAdminPersona, registrationSummary, t]);
 
   const dashboardGreeting = `${t.dashboard.welcomeBack}${firstName ? `, ${firstName}` : ""}${activeClub?.name ? ` · ${activeClub.name}` : ""}`;
 
@@ -600,11 +681,15 @@ const DashboardContent = () => {
       <DashboardHeaderSlot title={config.title} greeting={dashboardGreeting} showBack={false} />
 
       <div className={`${DASHBOARD_PAGE_INNER} space-y-5 max-lg:space-y-6`}>
-        {showGettingStarted && (role === "trainer" || isClubAdminPersona) && (
+        {showGettingStarted && (role === "trainer" || role === "team_staff" || isOpsAdminPersona) && (
           <div className="rounded-2xl glass-card p-5">
             <div className="font-display font-semibold text-foreground text-[15px] flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-primary" />{" "}
-              {isClubAdminPersona ? t.dashboard.gettingStartedAdmin : t.dashboard.gettingStarted}
+              {isOpsAdminPersona
+                ? isClubFinancePersona
+                  ? t.dashboard.gettingStartedAdmin
+                  : t.dashboard.gettingStartedOps
+                : t.dashboard.gettingStarted}
             </div>
             <div className="mt-3 grid gap-2 text-[13px] text-muted-foreground">
               <div>
@@ -688,7 +773,7 @@ const DashboardContent = () => {
                       <ExternalLink className="w-3 h-3" />
                       {t.dashboard.clubSetupViewPage}
                     </a>
-                    {isClubAdminPersona ? (
+                    {isOpsAdminPersona ? (
                       <Link
                         to="/club-page-admin"
                         className="inline-flex items-center gap-1 text-primary hover:underline"
@@ -712,10 +797,20 @@ const DashboardContent = () => {
         <GraceWriteBanner />
         <FoundingClubStatusCard />
 
-        {sections.weekAtAGlance && isClubAdminPersona ? <AdminWeekAtAGlanceCard /> : null}
+        {normalizedRole === "player" ? (
+          <p className="text-sm text-muted-foreground leading-relaxed">{t.dashboard.playerDashboardHint}</p>
+        ) : null}
+
+        {normalizedRole === "parent_supporter" ? (
+          <p className="text-sm text-muted-foreground leading-relaxed">{t.dashboard.parentDashboardHint}</p>
+        ) : null}
+
+        {sections.weekAtAGlance && isOpsAdminPersona ? (
+          <AdminWeekAtAGlanceCard hideFinance={!isClubFinancePersona} />
+        ) : null}
 
         {sections.trainerToday && (role === "trainer" || role === "team_staff") ? (
-          <TrainerTodaySessionCard />
+          <TrainerTodaySessionCard teamIds={scopedTeamIds} />
         ) : null}
 
         {sections.tasksSummary ? <TasksSummaryCard /> : null}
@@ -755,7 +850,7 @@ const DashboardContent = () => {
         </div>
         ) : null}
 
-        {sections.financialSummary && isClubAdminPersona ? <FinancialSummary compact /> : null}
+        {sections.financialSummary && isClubFinancePersona ? <FinancialSummary compact /> : null}
 
         {sections.analyticsWidgets ? (
           <Suspense fallback={<div className="h-48 animate-pulse rounded-2xl bg-muted/40" />}>
@@ -765,9 +860,9 @@ const DashboardContent = () => {
         {sections.seasonProgression ? <SeasonProgressionChart /> : null}
         {sections.teamChemistry ? <TeamChemistry /> : null}
         {sections.achievementBadges ? <AchievementBadges /> : null}
-        {sections.naturalLanguageStats && !isClubAdminPersona ? <NaturalLanguageStats /> : null}
+        {sections.naturalLanguageStats && !isOpsAdminPersona ? <NaturalLanguageStats /> : null}
 
-        {sections.ai4teamWeeklyDigest && !isClubAdminPersona ? (
+        {sections.ai4teamWeeklyDigest && !isOpsAdminPersona ? (
           <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <div className="text-sm font-semibold text-foreground">
@@ -788,9 +883,9 @@ const DashboardContent = () => {
 
         {sections.seasonAwards ? <SeasonAwards /> : null}
 
-        {sections.adminNotificationSender && !isClubAdminPersona ? <AdminNotificationSender /> : null}
+        {sections.adminNotificationSender && !isOpsAdminPersona ? <AdminNotificationSender /> : null}
 
-        {isClubAdminPersona && activeClubId ? (
+        {isOpsAdminPersona && activeClubId ? (
           <div className="space-y-4 rounded-3xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
             <div className="flex flex-col gap-1">
               <div className="text-sm font-semibold text-foreground">
@@ -860,9 +955,9 @@ const DashboardContent = () => {
         ) : null}
 
         {sections.upcomingAndAi ? (
-        <div className={isClubAdminPersona ? "grid grid-cols-1 gap-5" : "grid lg:grid-cols-3 gap-5"}>
+        <div className={isOpsAdminPersona ? "grid grid-cols-1 gap-5" : "grid lg:grid-cols-3 gap-5"}>
           {/* Upcoming */}
-          <div className={isClubAdminPersona ? DASHBOARD_CARD : `lg:col-span-2 ${DASHBOARD_CARD}`}>
+          <div className={isOpsAdminPersona ? DASHBOARD_CARD : `lg:col-span-2 ${DASHBOARD_CARD}`}>
             <h2 className={`${DASHBOARD_TYPE_SECTION_TITLE} mb-4 flex items-center gap-2`}>
               <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Calendar className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
@@ -900,7 +995,7 @@ const DashboardContent = () => {
             </div>
           </div>
 
-          {!isClubAdminPersona ? (
+          {!isOpsAdminPersona ? (
             <div className={`${DASHBOARD_CARD} relative overflow-hidden`}>
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
               <h2 className={`${DASHBOARD_TYPE_SECTION_TITLE} mb-4 relative`}>

@@ -54,6 +54,9 @@ export interface MasterDataTabsLabels {
   uploadingAvatar: string;
   removeAvatar: string;
   avatarUrl: string;
+  loginEmailLabel?: string;
+  loginEmailHint?: string;
+  loginEmailMissing?: string;
   photoValidityHint?: string;
   photoRenewalDue?: string;
   photoValidUntilLabel?: string;
@@ -125,7 +128,7 @@ function isLongTextField(key: string): boolean {
 
 export function MasterDataTabs({
   values, labels, readOnly, onChange, compact,
-  displayName, clubName, logoSrc, membershipRole, isPlayer = false, teamLabel, clubId, membershipId, avatarUpload,
+  displayName, clubName, logoSrc, membershipRole, isPlayer = false, teamLabel, email, clubId, membershipId, avatarUpload,
   safetyTabExtraEnabled = false,
   safetyTabExtra,
   allowedFieldKeys,
@@ -278,8 +281,21 @@ export function MasterDataTabs({
                   fieldGridClass,
                   "max-lg:overflow-visible lg:max-h-full lg:overflow-y-auto",
                 )}
-              >
-                {fields.map((field) => {
+            >
+              {key === "contact" && (labels.loginEmailLabel || labels.loginEmailHint) ? (
+                <div className="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-4 rounded-xl border border-border/60 bg-background/40 p-3 space-y-1.5">
+                  <div className="text-xs font-semibold text-foreground">{labels.loginEmailLabel}</div>
+                  {email?.trim() ? (
+                    <div className="text-sm font-medium break-all text-foreground">{email.trim()}</div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">{labels.loginEmailMissing}</div>
+                  )}
+                  {labels.loginEmailHint ? (
+                    <p className="text-xs text-muted-foreground leading-relaxed">{labels.loginEmailHint}</p>
+                  ) : null}
+                </div>
+              ) : null}
+              {fields.map((field) => {
                   const val = values[field.key];
                 if (readOnly) {
                   if (field.key === "photo_url") {

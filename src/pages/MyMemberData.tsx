@@ -28,6 +28,7 @@ import {
 import {
   syncOwnProfileAvatarFromMasterPhoto,
 } from "@/lib/member-photo-display";
+import { resolveMyMemberDataLoadError } from "@/lib/member-my-data-errors";
 
 const PROFILE_AVATAR_BUCKET = "images-avatars";
 
@@ -58,6 +59,7 @@ export default function MyMemberData() {
     teamLabel: string | null;
   } | null>(null);
   const [missingMigration, setMissingMigration] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [ownProfileAvatarUrl, setOwnProfileAvatarUrl] = useState<string | null>(null);
 
   const masterTabLabels = useMemo(
@@ -84,6 +86,9 @@ export default function MyMemberData() {
       photoFromRegistry: t.membersPage.photoFromRegistry,
       photoFromAccount: t.membersPage.photoFromAccount,
       photoAccountFallbackHint: t.membersPage.photoAccountFallbackHint,
+      loginEmailLabel: t.membersPage.masterLoginEmailLabel,
+      loginEmailHint: t.membersPage.masterLoginEmailHint,
+      loginEmailMissing: t.membersPage.masterLoginEmailMissing,
     }),
     [t],
   );
@@ -116,13 +121,23 @@ export default function MyMemberData() {
     if (!clubId) return;
     setLoading(true);
     setMissingMigration(false);
+    setLoadError(null);
     const { data, error } = await listEditableMemberMasterMemberships(clubId);
     if (error) {
       if (error.message.includes("function") && error.message.includes("does not exist")) {
         setMissingMigration(true);
         setEditableRows([]);
       } else {
-        toast({ title: t.common.error, description: error.message, variant: "destructive" });
+        setLoadError(
+          resolveMyMemberDataLoadError(error.message, {
+            loadFailedGeneric: t.myMemberDataPage.loadFailedGeneric,
+            loadFailedNotAuthenticated: t.myMemberDataPage.loadFailedNotAuthenticated,
+            loadFailedNotAuthorized: t.myMemberDataPage.loadFailedNotAuthorized,
+            loadFailedServer: t.myMemberDataPage.loadFailedServer,
+            loadFailedMigration: t.myMemberDataPage.loadFailedMigration,
+          }),
+        );
+        setEditableRows([]);
       }
       setLoading(false);
       return;
@@ -133,7 +148,7 @@ export default function MyMemberData() {
       setSelectedId(rows[0].membership_id);
     }
     setLoading(false);
-  }, [clubId, selectedId, t.common.error, toast]);
+  }, [clubId, selectedId, t]);
 
   const loadBundle = useCallback(async (membershipId: string) => {
     const { data, error } = await getMemberMasterBundle(membershipId);
@@ -279,13 +294,29 @@ export default function MyMemberData() {
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-6 text-sm text-muted-foreground">
             {t.myMemberDataPage.migrationHint}
           </div>
+        ) : loadError ? (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-sm space-y-2">
+            <div className="font-semibold text-destructive">{t.myMemberDataPage.loadFailedTitle}</div>
+            <p className="text-muted-foreground leading-relaxed">{loadError}</p>
+          </div>
         ) : !clubId ? (
           <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
             {t.myMemberDataPage.noClub}
           </div>
         ) : editableRows.length === 0 ? (
-          <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
-            {t.myMemberDataPage.empty}
+          <div className="rounded-xl border border-border bg-card p-6 sm:p-8 text-sm space-y-4">
+            <div>
+              <div className="font-semibold text-foreground">{t.myMemberDataPage.emptyTitle}</div>
+              <p className="mt-2 text-muted-foreground leading-relaxed">{t.myMemberDataPage.emptyIntro}</p>
+            </div>
+            <ul className="list-disc space-y-2 pl-5 text-muted-foreground leading-relaxed">
+              <li>{t.myMemberDataPage.emptyReasonUnlinked}</li>
+              <li>{t.myMemberDataPage.emptyReasonInactive}</li>
+              <li>{t.myMemberDataPage.emptyReasonEmailMismatch}</li>
+              <li>{t.myMemberDataPage.emptyReasonGuardian}</li>
+              <li>{t.myMemberDataPage.emptyReasonWrongClub}</li>
+            </ul>
+            <p className="text-muted-foreground leading-relaxed">{t.myMemberDataPage.emptyAdminHint}</p>
           </div>
         ) : (
           <>
@@ -349,6 +380,7 @@ export default function MyMemberData() {
                   email={bundleMeta.email}
                   clubId={clubId}
                   membershipId={selectedId}
+                  email={bundleMeta.email}
                   allowedFieldKeys={fieldPolicy}
                   allowedGroups={groupPolicy}
                   hideClubNumberGenerator={editActor !== "manager"}

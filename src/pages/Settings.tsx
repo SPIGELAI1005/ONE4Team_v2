@@ -145,6 +145,8 @@ export default function Settings() {
   const navigate = useNavigate();
   const gateRole = useModuleGateRole();
   const isPartnerPersona = isExternalRole(gateRole);
+  /** Club-wide settings (language, payments, LLM) — club admins only. */
+  const showClubSettingsTab = !isPartnerPersona && perms.isAdmin;
 
   const [tab, setTab] = useState<SettingsTab>("profile");
 
@@ -229,7 +231,10 @@ export default function Settings() {
     if (!isPartnerPersona && tab === "partner") {
       setTab("profile");
     }
-  }, [isPartnerPersona, tab]);
+    if (!showClubSettingsTab && tab === "club") {
+      setTab("profile");
+    }
+  }, [isPartnerPersona, showClubSettingsTab, tab]);
 
   const activePersonaSlug = useActiveDashboardPersonaSlug();
 
@@ -725,12 +730,14 @@ export default function Settings() {
       { id: "profile" as const, label: t.settingsPage.tabs.profile, icon: User },
       ...(isPartnerPersona
         ? [{ id: "partner" as const, label: t.settingsPage.tabs.partner, icon: Store }]
-        : [{ id: "club" as const, label: t.settingsPage.tabs.club, icon: Building2 }]),
+        : showClubSettingsTab
+          ? [{ id: "club" as const, label: t.settingsPage.tabs.club, icon: Building2 }]
+          : []),
       { id: "notifications" as const, label: t.settingsPage.tabs.notifications, icon: Bell },
       { id: "account" as const, label: t.settingsPage.tabs.account, icon: Shield },
     ];
     return all;
-  }, [isPartnerPersona, t.settingsPage.tabs]);
+  }, [isPartnerPersona, showClubSettingsTab, t.settingsPage.tabs]);
 
   const Toggle = ({ checked, onChange, label, description }: { checked: boolean; onChange: () => void; label: string; description: string }) => (
     <div className="flex items-center justify-between py-3">
@@ -1105,7 +1112,7 @@ export default function Settings() {
         )}
 
         {/* ── Club ── */}
-        {tab === "club" && !isPartnerPersona && (
+        {tab === "club" && showClubSettingsTab && (
           <div className="space-y-4">
             <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-5">
               <div className="flex items-center gap-3 mb-4">

@@ -1587,6 +1587,9 @@ const Members = () => {
     photoFromRegistry: t.membersPage.photoFromRegistry,
     photoFromAccount: t.membersPage.photoFromAccount,
     photoAccountFallbackHint: t.membersPage.photoAccountFallbackHint,
+    loginEmailLabel: t.membersPage.masterLoginEmailLabel,
+    loginEmailHint: t.membersPage.masterLoginEmailHint,
+    loginEmailMissing: t.membersPage.masterLoginEmailMissing,
   }), [t]);
   const clubPassLabels = useMemo(() => buildClubMemberPassLabels(t), [t]);
   const canReviewJoinRequests =

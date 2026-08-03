@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useModuleGateRole } from "@/hooks/use-module-gate-role";
+import { filterRowsByTeamScope, useModuleDataScope } from "@/hooks/use-module-data-scope";
 import { resolveTeamAssignmentAccess } from "@/lib/team-assignment-access";
 import { useLanguage } from "@/hooks/use-language";
 import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_INNER_SM, DASHBOARD_PAGE_ROOT, DASHBOARD_TYPE_CAPTION, DASHBOARD_TYPE_MICRO } from "@/lib/dashboard-page-shell";
@@ -430,6 +431,10 @@ const Teams = () => {
   const perms = usePermissions();
   const gateRole = useModuleGateRole();
   const { t } = useLanguage();
+  const trainingScope = useModuleDataScope("trainings");
+  /** Players (and other team-scoped roles) see a simplified schedule — own-team trainings, no admin KPIs. */
+  const isPlayerFocusedView = !trainingScope.isClubWide;
+  const scopedTeamIds = trainingScope.teamIds;
   const teamAccess = useMemo(() => resolveTeamAssignmentAccess(gateRole), [gateRole]);
   const canManage = teamAccess.canManageTeams;
   const canAssignPlayers = teamAccess.canAssignPlayers;
@@ -625,6 +630,21 @@ const Teams = () => {
     if (!isAssetLayersPage) return;
     if (activeTab !== "pitches") setActiveTab("pitches");
   }, [activeTab, isAssetLayersPage]);
+
+  useEffect(() => {
+    if (isAssetLayersPage || !isPlayerFocusedView) return;
+    if (activeTab === "teams" || activeTab === "history") {
+      setActiveTab("sessions");
+    }
+  }, [activeTab, isAssetLayersPage, isPlayerFocusedView]);
+
+  const playerViewDefaultsApplied = useRef(false);
+  useEffect(() => {
+    if (!isPlayerFocusedView || playerViewDefaultsApplied.current) return;
+    playerViewDefaultsApplied.current = true;
+    setActiveLayerId(TRAINING_LAYER_FILTER_ID);
+    setPitchViewMode("booked");
+  }, [isPlayerFocusedView]);
 
   useEffect(() => {
     if (!clubId) return;
@@ -1134,6 +1154,21 @@ const Teams = () => {
   }, [membershipNameById, teamCoachIdsByTeamId, teams]);
 
   const trimmedTeamListSearch = teamListSearch.trim();
+  const displaySessions = useMemo(
+    () => filterRowsByTeamScope(sessions, isPlayerFocusedView ? scopedTeamIds : "all"),
+    [isPlayerFocusedView, scopedTeamIds, sessions],
+  );
+  const playerDayScopedSessions = useMemo(
+    () => filterRowsByTeamScope(dayScopedSessions, isPlayerFocusedView ? scopedTeamIds : "all"),
+    [dayScopedSessions, isPlayerFocusedView, scopedTeamIds],
+  );
+  const isOwnTeamSchedule = useCallback(
+    (teamId: string | null | undefined) => {
+      if (!teamId || scopedTeamIds === "all") return false;
+      return scopedTeamIds.includes(teamId);
+    },
+    [scopedTeamIds],
+  );
   const filteredTeams = useMemo(() => {
     const query = trimmedTeamListSearch.toLowerCase();
     if (!query) return teams;
@@ -1245,6 +1280,9 @@ const Teams = () => {
     const relevantSessions = (trainingCalendarView === "calendar" ? calendarSessions : sessions).filter((s) => {
       const startsAt = new Date(s.starts_at);
       if (startsAt < trainingCalendarRange.start || startsAt > trainingCalendarRange.end) return false;
+      if (isPlayerFocusedView && scopedTeamIds !== "all") {
+        if (!s.team_id || !scopedTeamIds.includes(s.team_id)) return false;
+      }
       return true;
     });
 
@@ -1273,7 +1311,7 @@ const Teams = () => {
     }));
 
     return [...sessionEvents, ...bookingEvents].sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
-  }, [bookings, calendarSessions, pitchNameById, sessions, teamNameById, trainingCalendarPitchId, trainingCalendarRange.end, trainingCalendarRange.start, trainingCalendarView]);
+  }, [bookings, calendarSessions, isPlayerFocusedView, pitchNameById, scopedTeamIds, sessions, teamNameById, trainingCalendarPitchId, trainingCalendarRange.end, trainingCalendarRange.start, trainingCalendarView]);
 
   const trainingEventsByDay = useMemo(() => {
     const map = new Map<string, TrainingCalendarEvent[]>();
@@ -1634,13 +1672,13 @@ const Teams = () => {
     // that fall outside the active layer filter (trainings without pitch stay visible).
     return buildDayScheduleItems({
       bookings: dayScopedBookings,
-      sessions: dayScopedSessions,
+      sessions: playerDayScopedSessions,
     }).filter((item) => {
       if (item.kind !== "booking" || !item.pitchId) return true;
       const pitch = pitchById.get(item.pitchId);
       return Boolean(pitch && matchesActiveLayerFilter(pitch));
     });
-  }, [dayScopedBookings, dayScopedSessions, matchesActiveLayerFilter, pitchById]);
+  }, [dayScopedBookings, matchesActiveLayerFilter, pitchById, playerDayScopedSessions]);
 
   const dayBookingById = useMemo(() => {
     const map = new Map<string, EnrichedPitchBooking>();
@@ -3399,11 +3437,17 @@ const Teams = () => {
     <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot
         title={isAssetLayersPage ? t.sidebar.assetLayers : t.teamsPage.title}
-        subtitle={canManage ? t.teamsPage.subtitleManage : t.teamsPage.subtitleView}
+        subtitle={
+          canManage
+            ? t.teamsPage.subtitleManage
+            : isPlayerFocusedView
+              ? t.teamsPage.subtitlePlayer
+              : t.teamsPage.subtitleView
+        }
         toolbarRevision={teamsToolbarRevision}
         rightSlot={
           <DashboardToolbarActions
-            leading={<AiAgentHeaderButton intent="create_training" />}
+            leading={isPlayerFocusedView ? undefined : <AiAgentHeaderButton intent="create_training" />}
             actions={teamsToolbarActions}
             maxVisibleMobile={1}
           />
@@ -3417,9 +3461,13 @@ const Teams = () => {
             onChange={setActiveTab}
             tabs={[
               { id: "pitches", label: t.teamsPage.tabs.pitches, icon: LayoutGrid },
-              { id: "teams", label: t.teamsPage.tabs.teams, icon: Trophy },
+              ...(isPlayerFocusedView
+                ? []
+                : [
+                    { id: "teams" as const, label: t.teamsPage.tabs.teams, icon: Trophy },
+                    { id: "history" as const, label: t.teamsPage.tabs.history, icon: History },
+                  ]),
               { id: "sessions", label: t.teamsPage.tabs.sessions, icon: Calendar },
-              { id: "history", label: t.teamsPage.tabs.history, icon: History },
             ]}
           />
         </div>
@@ -3556,9 +3604,9 @@ const Teams = () => {
           </div>
         ) : currentTab === "sessions" ? (
           <div>
-            <AiAgentTeamsShortcuts />
+            {!isPlayerFocusedView ? <AiAgentTeamsShortcuts /> : null}
             <h2 className="font-display font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Dumbbell className="w-4 h-4 text-primary" /> {t.teamsPage.tabs.sessions} ({sessions.length})
+              <Dumbbell className="w-4 h-4 text-primary" /> {t.teamsPage.tabs.sessions} ({displaySessions.length})
             </h2>
             <div className="mb-4 flex items-center justify-between gap-3 flex-wrap">
               <div className="inline-flex rounded-xl border border-border/60 bg-card/40 p-1">
@@ -3694,6 +3742,7 @@ const Teams = () => {
                         const trainingCount = dayEvents.filter((e) => e.kind === "training").length;
                         const bookingCount = dayEvents.filter((e) => e.kind === "booking").length;
                         const total = dayEvents.length;
+                        if (isPlayerFocusedView) return null;
                         return (
                           <>
                             <div className="rounded-lg border border-border/50 bg-card/30 px-2.5 py-2">
@@ -4110,11 +4159,11 @@ const Teams = () => {
                   )}
                 </div>
               </div>
-            ) : sessions.length === 0 ? (
+            ) : displaySessions.length === 0 ? (
               <div className="rounded-xl bg-card border border-border p-8 text-center text-muted-foreground text-sm">{t.teamsPage.noSessions}</div>
             ) : (
               <div className="space-y-3">
-                {sessions.map((s, i) => (
+                {displaySessions.map((s, i) => (
                   <motion.div key={s.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                     onClick={() => handleEditSession(s)}
                     onKeyDown={(event) => {
@@ -4236,15 +4285,17 @@ const Teams = () => {
                 </div>
               </div>
               <div className="mt-3 flex gap-2 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => setActiveLayerId("all")}
-                  className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
-                    activeLayerId === "all" ? "bg-primary/15 text-primary border-primary/40" : "text-muted-foreground border-border/60 hover:text-foreground"
-                  }`}
-                >
-                  {t.teamsPage.layersAll}
-                </button>
+                {!isPlayerFocusedView ? (
+                  <button
+                    type="button"
+                    onClick={() => setActiveLayerId("all")}
+                    className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                      activeLayerId === "all" ? "bg-primary/15 text-primary border-primary/40" : "text-muted-foreground border-border/60 hover:text-foreground"
+                    }`}
+                  >
+                    {t.teamsPage.layersAll}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => setActiveLayerId(TRAINING_LAYER_FILTER_ID)}
@@ -4254,6 +4305,8 @@ const Teams = () => {
                 >
                   {t.teamsPage.layerPurposes.training}
                 </button>
+                {!isPlayerFocusedView ? (
+                  <>
                 <button
                   type="button"
                   onClick={() => setActiveLayerId(ADMIN_LAYER_FILTER_ID)}
@@ -4276,9 +4329,12 @@ const Teams = () => {
                     {layer.name} ({t.teamsPage.layerPurposes[layer.purpose]})
                   </button>
                 ))}
+                  </>
+                ) : null}
               </div>
             </div>
 
+            {!isPlayerFocusedView ? (
             <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-3">
               <div className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
                 <div className={DASHBOARD_TYPE_MICRO}>{t.teamsPage.kpis.totalBookings}</div>
@@ -4298,6 +4354,9 @@ const Teams = () => {
                 <div className={DASHBOARD_TYPE_MICRO}>{usageSummary.topPitchCount} {t.teamsPage.bookingsShort}</div>
               </div>
             </div>
+            ) : (
+              <p className="text-sm text-muted-foreground leading-relaxed">{t.teamsPage.playerScheduleHint}</p>
+            )}
 
             <div className="grid min-w-0 gap-6 xl:grid-cols-3 xl:items-stretch">
               <div className="flex min-h-0 min-w-0 flex-col xl:col-span-2">
@@ -4968,17 +5027,28 @@ const Teams = () => {
                                 setSelectedBookingId(null);
                               }
                             }}
-                            className={`w-full text-left rounded-xl border bg-background/50 p-3 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${isExpanded ? "border-primary/50 ring-1 ring-primary/40" : "border-border/60"}`}
+                            className={`w-full text-left rounded-xl border bg-background/50 p-3 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                              isExpanded ? "border-primary/50 ring-1 ring-primary/40" : "border-border/60"
+                            } ${isPlayerFocusedView && isOwnTeamSchedule(item.teamId) ? "border-primary/35 bg-primary/5" : ""}`}
                           >
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex min-w-0 items-center gap-1.5">
                                 <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                                 <div className="text-xs font-semibold text-foreground truncate">{item.title}</div>
+                                {isPlayerFocusedView && isOwnTeamSchedule(item.teamId) ? (
+                                  <span className="shrink-0 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                                    {t.teamsPage.myTeamBadge}
+                                  </span>
+                                ) : null}
                               </div>
                               <div className="flex items-center gap-1">
-                                {booking ? (
+                                {!isPlayerFocusedView && booking ? (
                                   <span className={`text-[10px] px-2 py-0.5 rounded-full border ${booking.hasConflict ? "bg-accent/15 text-accent border-accent/30" : "bg-primary/15 text-primary border-primary/30"}`}>
                                     {booking.hasConflict ? t.teamsPage.conflict : t.teamsPage.ok}
+                                  </span>
+                                ) : booking ? (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full border border-border/60 bg-background/60 text-muted-foreground">
+                                    {typeLabel}
                                   </span>
                                 ) : (
                                   <span className="text-[10px] px-2 py-0.5 rounded-full border border-border/60 bg-background/60 text-muted-foreground">

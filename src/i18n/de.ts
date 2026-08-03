@@ -1563,6 +1563,10 @@ export const de: Translations = {
     photoFromAccount: "Kontoprofilbild",
     photoAccountFallbackHint:
       "Es wird Ihr Kontoprofilbild angezeigt, weil noch kein Vereinsregister-Foto hinterlegt ist. Laden Sie hier oder in den Einstellungen ein Register-Foto hoch, damit es auf Ihrer Mitgliedskarte erscheint.",
+    masterLoginEmailLabel: "Login-E-Mail (Kontoverknüpfung)",
+    masterLoginEmailHint:
+      "Das ist die E-Mail des verknüpften ONE4Team-Logins — sie gehört nicht zum Adress-Register. Sie verbindet die Person mit dem Kader-Eintrag. Zum Ändern erneut einladen oder Team Management bitten, das Konto zu verknüpfen. Mitglieder können die Login-E-Mail in den Einstellungen anpassen.",
+    masterLoginEmailMissing: "Noch kein Login-Konto verknüpft — Einladung über die Mitgliederseite senden.",
     guardians: "Verknüpfte Betreuer:innen / Eltern",
     guardiansEmpty: "Noch keine Betreuer:innen. Verknüpfe Eltern oder Erziehungsberechtigte.",
     linkGuardian: "Eltern- oder Betreuerkonto verknüpfen",
@@ -2784,7 +2788,11 @@ export const de: Translations = {
   // ─── Dashboard ───
   dashboard: {
     clubAdminDashboard: "Vereins-Admin Dashboard",
+    teamManagementDashboard: "Team-Management Dashboard",
+    parentDashboard: "Eltern-Dashboard",
+    teamStaffDashboard: "Team-Staff Dashboard",
     welcomeBackAdmin: "Willkommen zurück, Admin",
+    welcomeBackOps: "Willkommen zurück",
     trainerDashboard: "Trainer-Dashboard",
     welcomeBackCoach: "Willkommen zurück, Coach",
     playerDashboard: "Spieler-Dashboard",
@@ -2795,6 +2803,7 @@ export const de: Translations = {
     totalMembers: "Gesamtmitglieder",
     activeTeams: "Aktive Teams",
     upcoming: "Anstehend",
+    trainingsNext7d: "Trainings (7 Tage)",
     unpaidDues: "Offene Beiträge",
     myPlayers: "Meine Spieler",
     sessionsThisWeek: "Einheiten diese Woche",
@@ -2812,6 +2821,9 @@ export const de: Translations = {
     invitePlayers: "Spieler einladen",
     gettingStarted: "Erste Schritte (Trainer)",
     gettingStartedAdmin: "Erste Schritte (Admin)",
+    gettingStartedOps: "Erste Schritte (Betrieb)",
+    playerDashboardHint: "Zeitplan deiner Mannschaft, Vereins-Events und offene Beiträge — ohne Admin-Statistiken.",
+    parentDashboardHint: "Zeitplan deiner Familie, Vereins-Events und Mitgliedsbeiträge auf einen Blick.",
     invitePlayersLink: "Spieler einladen",
     scheduleTheWeek: "Woche planen",
     trackConfirmations: "Bestätigungen verfolgen in",
@@ -2883,6 +2895,8 @@ export const de: Translations = {
     aiInsightTeamsMatches: "{teams} Teams angelegt · {matches} anstehende Spiele.",
     aiInsightUnpaidDues: "{count} offene Beiträge in Zahlungen nachverfolgen.",
     aiInsightLogMatches: "{count} abgeschlossene Spiele. Events protokollieren für bessere Reports.",
+    aiInsightTrainingsNext7d: "{count} Team-Trainings in den nächsten 7 Tagen geplant.",
+    aiInsightOpsOverview: "{members} aktive Mitglieder · {teams} Teams · {trainings} Trainings diese Woche.",
     registrationSummaryTitle: "Deine Vereinskonfiguration",
     registrationSummaryDesc: "Live-Übersicht aus deinem gepflegten Vereinsprofil und den öffentlichen Seiteneinstellungen.",
     clubSetupPublicPage: "Öffentliche Seite",
@@ -2927,6 +2941,9 @@ export const de: Translations = {
     title: "Teams & Trainings",
     subtitleManage: "Teams, Ebenen und Belegungen verwalten",
     subtitleView: "Teams, Ebenen und Belegungen anzeigen",
+    subtitlePlayer: "Trainings deiner Mannschaft und Platzbelegung",
+    playerScheduleHint: "Sieh, welche Plätze heute belegt sind und wo deine Mannschaft trainiert. Andere Teams können denselben Slot nutzen — die vollständige Belegung wird ohne Admin-Statistiken angezeigt.",
+    myTeamBadge: "Meine Mannschaft",
     aiAgentShortcutsTitle: "AI 4 T Schnellaktionen",
     tabs: {
       pitches: "Asset-Karten",
@@ -4960,6 +4977,7 @@ export const de: Translations = {
     title: "Zeitplan",
     subtitleTrainer: "Woche planen + Anwesenheit",
     subtitlePlayer: "Deine Woche",
+    playerHint: "Trainings und Spiele deiner Mannschaft sowie Vereins-Events.",
     noClubTitle: "Kein Verein ausgewählt",
     noClubDesc: "Wähle einen Verein, um den Wochenplan zu sehen.",
     newActivity: "Neu",
@@ -5250,7 +5268,30 @@ export const de: Translations = {
     saveSuccessDescOther: "Änderungen für diese Person wurden gespeichert.",
     saveFailed: "Registerdaten konnten nicht gespeichert werden.",
     loadFailed: "Registerdaten konnten nicht geladen werden.",
+    loadFailedTitle: "Registerdaten konnten nicht geladen werden",
+    loadFailedGeneric: "Bitte prüfen Sie Ihre Verbindung und versuchen Sie es gleich erneut.",
+    loadFailedNotAuthenticated: "Bitte melden Sie sich erneut an und öffnen Sie diese Seite noch einmal.",
+    loadFailedNotAuthorized: "Sie haben keinen Zugriff auf Registerdaten im aktuell ausgewählten Verein.",
+    loadFailedServer:
+      "Beim Laden Ihrer Registerdaten ist ein Serverfehler aufgetreten. Wenn das anhält, wenden Sie sich an Team Management.",
+    loadFailedMigration:
+      "Die Self-Service-Registerbearbeitung ist noch nicht vollständig verfügbar (Datenbank-Update ausstehend). Team Management kann Ihre Daten weiterhin unter Mitglieder bearbeiten. Bitte versuchen Sie es erneut, nachdem die neuesten Datenbank-Migrationen angewendet wurden.",
     empty: "In diesem Verein sind keine bearbeitbaren Registerdatensätze mit Ihrem Konto verknüpft.",
+    emptyTitle: "Kein Registerprofil mit Ihrem Login verknüpft",
+    emptyIntro:
+      "Die Seite „Meine Registerdaten“ funktioniert nur, wenn Ihr Login-Konto mit einer aktiven Mitgliedschaft in diesem Verein verknüpft ist.",
+    emptyReasonUnlinked:
+      "Ihr Kader-Eintrag existiert möglicherweise, aber es ist noch kein ONE4Team-Login verknüpft (Einladung nicht angenommen oder Import ohne Kontoverknüpfung).",
+    emptyReasonInactive:
+      "Ihre Mitgliedschaft ist möglicherweise noch nicht aktiv (ausstehende Einladung oder inaktiver Status).",
+    emptyReasonEmailMismatch:
+      "Die E-Mail Ihres Logins weicht möglicherweise von der im Verein hinterlegten E-Mail ab.",
+    emptyReasonGuardian:
+      "Wenn Sie als Elternteil die Daten eines Kindes bearbeiten möchten, muss zuerst eine Betreuer-Verknüpfung im Mitgliederregister angelegt werden.",
+    emptyReasonWrongClub:
+      "Im Vereinswechsler ist möglicherweise ein anderer Verein ausgewählt — wechseln Sie zum Verein, in dem Sie aktiv sind.",
+    emptyAdminHint:
+      "Bitte Team Management bitten, Ihren Kader-Eintrag zu prüfen: aktiver Status, korrekte Login-E-Mail und verknüpftes Konto. Die Registerdaten können auch unter Mitglieder bearbeitet werden.",
     noClub: "Wählen Sie einen Verein, um Ihre Registerdaten zu verwalten.",
     migrationHint:
       "Self-Service-Registerbearbeitung erfordert Migration supabase/migrations/20260808120000_member_master_self_service_trainer_edit.sql (z. B. npx supabase db push).",

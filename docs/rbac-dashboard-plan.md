@@ -1,7 +1,7 @@
 # RBAC & dashboard access — audit and implementation plan
 
-**Date:** 2026-07-01 (persona data scoping for messages/tasks)  
-**Status:** Phase B partial — sidebar RBAC + marketplace portal + partner portal routes; Partner Page admin; persona switching — route guards largely done via `RequireModule`  
+**Date:** 2026-08-03 (role-aware dashboards · player Trainings scope · `/my-data` UX)  
+**Status:** Phase B partial — sidebar RBAC + marketplace portal + partner portal routes; **Phase 3 dashboard widgets partial** (Team Management AI 4 T Control Center, team-scoped sports KPIs) — see **`docs/rbac-dashboard-audit.md`** §12  
 **Related:** [`PHASE0_RBAC_CHECKLIST.md`](../PHASE0_RBAC_CHECKLIST.md) · [`ops/TENANT_ACCESS_MATRIX.md`](../ops/TENANT_ACCESS_MATRIX.md) · [`src/lib/rbac-config.ts`](../src/lib/rbac-config.ts) · [`src/lib/marketplace-models.ts`](../src/lib/marketplace-models.ts) · [`src/lib/marketplace-access.ts`](../src/lib/marketplace-access.ts)
 
 ---

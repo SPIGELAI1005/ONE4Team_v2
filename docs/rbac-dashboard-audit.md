@@ -1,7 +1,7 @@
 # RBAC & dashboard — architecture audit
 
-**Date:** 2026-08-03 (Team Management club page/shop + audit; member master self-service; optional-email saved list)  
-**Status:** Audit snapshot — no functional changes in this pass  
+**Date:** 2026-08-03 (Role-aware dashboards · player-focused Trainings · `/my-data` UX)  
+**Status:** Audit snapshot — **Phase 3 dashboard widgets partially implemented** (see §12)  
 **Principle:** One intelligent dashboard shell; menu, routes, data scope, and widgets adapt via RBAC — not separate apps per role.
 
 **Related docs**
@@ -32,7 +32,11 @@ ONE4Team already follows a **single dashboard shell** pattern:
 
 **Team Management club content (2026-08-03):** RBAC matrix already granted **`club_page: full`** and **`club_shop: full`** to **`team_management`**, but RLS was admin-only. Migrations **`20260807140000`**, **`20260807150000`** align Postgres with matrix: **`can_manage_club_public_page`**, **`can_manage_club_shop`**, audit timelines on **`/club-page-admin`** and **`/shop`**. Frontend: **`use-can-manage-club-content.ts`**.
 
-**Member master self-service (2026-08-03):** Route **`/my-data`** (any signed-in member with editable membership). Field-level policy by actor (**self** / **trainer** / **manager** / guardian via shared login email). Trainers scoped to assigned teams; managers notified on member saves; members + Team Management notified on trainer saves. Migration **`20260808120000_member_master_self_service_trainer_edit.sql`**. Does not grant finance or role-admin paths.
+**Member master self-service (2026-08-03):** Route **`/my-data`** (any signed-in member with editable membership). Field-level policy by actor (**self** / **trainer** / **manager** / guardian via shared login email). Trainers scoped to assigned teams; managers notified on member saves; members + Team Management notified on trainer saves. Migration **`20260808120000_member_master_self_service_trainer_edit.sql`**. RPC type fix **`20260809180000`**. Does not grant finance or role-admin paths.
+
+**Role-aware home dashboard (2026-08-03):** **`DashboardContent.tsx`** uses **`isOpsAdminDashboardRole`** so **Team Management** receives the same **AI 4 T Control Center** block as Club Admin (minus finance KPIs and **`FinancialSummary`**). Team-scoped sports personas (**trainer**, **team_staff**, **player**, **parent_supporter**) load KPIs/upcoming via **`fetchTeamScopedDashboardSnapshot`** + **`useModuleDataScope("trainings")`**. Player home sections de-emphasize analytics widgets (**`dashboard-section-visibility.ts`**). Remaining gap: widget branch still keyed primarily on URL **`/dashboard/:role`** slug — align fully with **`resolveModuleGateRole`** in a follow-up.
+
+**Player-focused Trainings & Assets (2026-08-03):** **`/teams`** and **`/activities`** use **`useModuleDataScope("trainings")`** for team-scoped reads; admin occupancy KPIs hidden for limited/team roles; day schedule still shows full pitch occupancy for context.
 
 ---
 
@@ -59,7 +63,7 @@ App.tsx
 | `src/lib/dashboard-nav.ts` | Module → icon, label, route mapping |
 | `src/lib/dashboard-page-shell.ts` | Shared page layout classes |
 
-**Home dashboard:** `/dashboard/:role` → `DashboardContent.tsx` (widgets/KPIs vary by URL role slug, not always by DB authorization).
+**Home dashboard:** `/dashboard/:role` → `DashboardContent.tsx` (widgets/KPIs vary by URL role slug; ops admin personas share AI 4 T Control Center; team-scoped fetchers for sports roles — see 2026-08-03 changelog).
 
 ### 2.2 Single source of truth — RBAC matrix
 
@@ -380,9 +384,10 @@ Aligns with one-shell RBAC — **enhance existing views**, no per-role apps.
 
 ### Phase 3 — Dashboard widgets (medium priority)
 
-1. Extend `dashboard-section-visibility.ts` for `club_admin`, `team_staff`, `parent_supporter`, `member`, provider roles.
-2. Reuse `MarketplaceDashboardCards` pattern for Partners summary on admin home (accepted engagements count).
-3. Keep one `DashboardContent`; branch on `resolveDashboardRole`, not URL slug alone.
+1. ~~Extend `dashboard-section-visibility.ts` for `club_admin`, `team_staff`, `parent_supporter`, `member`, provider roles.~~ **Partial (2026-08-03):** player simplification; team_management marketplace flag fixed; ops admin persona helpers.
+2. ~~Keep one `DashboardContent`; branch on persona tiers (`isOpsAdminDashboardRole`, team-scoped sports).~~ **Done (2026-08-03)** for Team Management + trainer/player/parent KPIs and AI 4 T block.
+3. Reuse `MarketplaceDashboardCards` pattern for Partners summary on admin home (accepted engagements count).
+4. **Remaining:** Branch widget data fetches on `resolveModuleGateRole()` when URL persona differs from authorized role (dual-role users).
 
 ### Phase 4 — Marketplace & Partners polish (lower priority)
 
@@ -405,6 +410,7 @@ Aligns with one-shell RBAC — **enhance existing views**, no per-role apps.
 - [x] Route vs sidebar vs data-scope gaps called out
 - [x] No major functional code changes in this pass
 - [x] Clear implementation order for next work
+- [x] **2026-08-03:** Team Management dashboard parity + player-focused Trainings/Assets documented in CHANGELOG
 
 ---
 

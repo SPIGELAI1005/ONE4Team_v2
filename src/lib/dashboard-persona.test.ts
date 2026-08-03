@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   defaultDashboardPersonaSlug,
+  isClubFinanceDashboardRole,
   isDashboardPersonaAllowed,
+  isOpsAdminDashboardRole,
+  isTeamScopedSportsDashboardRole,
   resolveModuleGateRole,
 } from "@/lib/dashboard-persona";
 
@@ -58,5 +61,20 @@ describe("dashboard-persona", () => {
 
   it("never returns null when membership role is unknown", () => {
     expect(resolveModuleGateRole(null, [], null)).toBe("member");
+  });
+
+  it("classifies ops admin and finance dashboard roles", () => {
+    expect(isOpsAdminDashboardRole("club_admin")).toBe(true);
+    expect(isOpsAdminDashboardRole("team_management")).toBe(true);
+    expect(isOpsAdminDashboardRole("trainer")).toBe(false);
+    expect(isClubFinanceDashboardRole("club_admin")).toBe(true);
+    expect(isClubFinanceDashboardRole("team_management")).toBe(false);
+  });
+
+  it("classifies team-scoped sports dashboard roles", () => {
+    expect(isTeamScopedSportsDashboardRole("player")).toBe(true);
+    expect(isTeamScopedSportsDashboardRole("parent_supporter")).toBe(true);
+    expect(isTeamScopedSportsDashboardRole("team_staff")).toBe(true);
+    expect(isTeamScopedSportsDashboardRole("team_management")).toBe(false);
   });
 });

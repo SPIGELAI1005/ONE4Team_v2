@@ -6,6 +6,44 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ---
 
+## SPRINT 2026-08-03 (evening) — Role-aware dashboards · player Trainings · `/my-data` UX
+
+**Goal:** Align Team Management dashboard with Club Admin AI 4 T structure; simplify player Trainings/Assets; improve `/my-data` errors; team-scoped schedule KPIs for all sports personas.
+
+| Track | Focus | Task IDs |
+|-------|--------|----------|
+| **J** | Role-aware dashboard | DASH-RBAC-001 … DASH-RBAC-004 |
+| **K** | Player-focused Trainings | TRAIN-PLAYER-001 … TRAIN-PLAYER-002 |
+| **L** | `/my-data` + Settings | MYDATA-001 … MYDATA-003 |
+
+### Role-aware dashboard
+
+- [x] **DASH-RBAC-001** **`isOpsAdminDashboardRole`** + AI 4 T Control Center for **Team Management** (`DashboardContent.tsx`, `dashboard-persona.ts`)
+- [x] **DASH-RBAC-002** Team-scoped KPI fetchers (`fetchTeamScopedDashboardSnapshot`, `fetchTeamScopedDashboardUpcoming`)
+- [x] **DASH-RBAC-003** Trainer today session + week-at-a-glance scoped by team; finance hidden for Team Management
+- [x] **DASH-RBAC-004** Player/parent dashboard simplification + i18n titles/hints
+
+### Player-focused Trainings & Assets
+
+- [x] **TRAIN-PLAYER-001** **`/teams`** — `useModuleDataScope`, hide admin KPIs, own-team highlight, training layer default
+- [x] **TRAIN-PLAYER-002** **`/activities`** — team-scoped list, trainer-only attendance overview
+
+### `/my-data` + Settings
+
+- [x] **MYDATA-001** Friendly errors + empty state (`member-my-data-errors.ts`, `MyMemberData.tsx`)
+- [x] **MYDATA-002** Login email on master data contact tab; migration **`20260809180000`** *(operator apply)*
+- [x] **MYDATA-003** Hide Settings Club tab for non-admins
+
+### Operator LOC
+
+- [x] **OPS-LOC-002** Regenerate **`src/generated/app-loc.json`** — **167,902** lines / **814** files (2026-08-03 evening)
+
+### Doc sync
+
+- [x] **DOC-2026-08-03-PM** **`MEMORY_BANK.md`**, **`CHANGELOG.md`**, **`PROJECT_STATUS.md`**, **`docs/rbac-dashboard-audit.md`**, **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**, **`TASKS.md`**
+
+---
+
 ## SPRINT 2026-08-03 — Team Management club content · member self-service · DE i18n
 
 **Goal:** Team Management can manage public club page + shop with audit trail; members/trainers edit master data with notifications; fix Club Page Admin German umlauts.

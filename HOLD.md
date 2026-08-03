@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-08-01 — Linked remote through **`20260806140000`**; **`co-trainer`** redeployed with GPT Internet; **`TAVILY_API_KEY`** set on linked project. Still redeploy **`process-weekly-digests`** after parent-role fix. Cross-reference: `CHANGELOG.md` § **AI 4 T GPT Internet**, § **Supabase function lint repair**, § **Club roles optimization**.
+Last updated: 2026-08-03 — Apply **`20260808120000`** (member master self-service) and **`20260809180000`** (`/my-data` RPC return types) on linked remote if not yet applied. See **`CHANGELOG.md`** § **2026-08-03 (Role-aware dashboards…)** and § **Member master self-service**.
 
 **Applied (2026-08-01):** `20260806130000` (GPT Internet consent/log/settings), `20260806140000` (consent upsert RLS + `record_ai_internet_consent` RPC). Edge: **`co-trainer`** redeployed; **`TAVILY_API_KEY`** secret set.
 

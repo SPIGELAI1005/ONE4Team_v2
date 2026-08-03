@@ -10,7 +10,7 @@ import {
 } from "@/lib/admin-week-at-a-glance";
 import { DASHBOARD_CARD, DASHBOARD_TYPE_SECTION_TITLE } from "@/lib/dashboard-page-shell";
 
-export function AdminWeekAtAGlanceCard() {
+export function AdminWeekAtAGlanceCard({ hideFinance = false }: { hideFinance?: boolean }) {
   const { t } = useLanguage();
   const d = t.dashboard.weekAtAGlance;
   const { activeClubId } = useActiveClub();
@@ -36,14 +36,18 @@ export function AdminWeekAtAGlanceCard() {
   }, [activeClubId]);
 
   const items = [
-    {
-      key: "dues",
-      icon: Wallet,
-      label: d.unpaidDues,
-      value: data.unpaidDues,
-      hint: data.overdueDues > 0 ? d.overdueHint.replace("{count}", String(data.overdueDues)) : null,
-      to: "/dues",
-    },
+    ...(hideFinance
+      ? []
+      : [
+          {
+            key: "dues",
+            icon: Wallet,
+            label: d.unpaidDues,
+            value: data.unpaidDues,
+            hint: data.overdueDues > 0 ? d.overdueHint.replace("{count}", String(data.overdueDues)) : null,
+            to: "/dues",
+          },
+        ]),
     {
       key: "join",
       icon: UserPlus,

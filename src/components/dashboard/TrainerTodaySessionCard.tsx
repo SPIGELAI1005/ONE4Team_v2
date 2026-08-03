@@ -30,7 +30,7 @@ function endOfLocalDay(d = new Date()): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
 }
 
-export function TrainerTodaySessionCard() {
+export function TrainerTodaySessionCard({ teamIds }: { teamIds?: string[] | "all" }) {
   const { t } = useLanguage();
   const d = t.dashboard.trainerToday;
   const { user } = useAuth();
@@ -52,19 +52,26 @@ export function TrainerTodaySessionCard() {
 
       const { data: activities } = await supabase
         .from("activities")
-        .select("id, title, starts_at, location")
+        .select("id, title, starts_at, location, team_id")
         .eq("club_id", activeClubId)
         .gte("starts_at", from)
         .lte("starts_at", to)
         .order("starts_at", { ascending: true })
-        .limit(10);
+        .limit(20);
 
-      const first = ((activities ?? []) as Array<{
+      const scoped = ((activities ?? []) as Array<{
         id: string;
         title: string | null;
         starts_at: string;
         location: string | null;
-      }>)[0];
+        team_id: string | null;
+      }>).filter((row) => {
+        if (!teamIds || teamIds === "all") return true;
+        if (teamIds.length === 0) return false;
+        return row.team_id != null && teamIds.includes(row.team_id);
+      });
+
+      const first = scoped[0];
       if (!first || cancelled) {
         if (!cancelled) {
           setSession(null);
@@ -96,7 +103,7 @@ export function TrainerTodaySessionCard() {
     return () => {
       cancelled = true;
     };
-  }, [activeClubId, d.untitled, user]);
+  }, [activeClubId, d.untitled, teamIds, user]);
 
   const announceHref = session
     ? `/communication?compose=1&announceActivity=${encodeURIComponent(session.id)}&title=${encodeURIComponent(

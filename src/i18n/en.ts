@@ -1542,6 +1542,10 @@ export const en = {
     photoFromAccount: "Account photo",
     photoAccountFallbackHint:
       "Showing your account profile picture because no club registry photo is stored yet. Upload a registry photo here or in Settings to use it on your membership card.",
+    masterLoginEmailLabel: "Login email (account link)",
+    masterLoginEmailHint:
+      "This is the email of the linked ONE4Team login account — not stored in the address registry. It connects the person to their roster entry. To change it, resend an invite to the correct address or ask Team Management to link the account. Members can update their login email in Settings.",
+    masterLoginEmailMissing: "No login account linked yet — send an invite from the Members page.",
     guardians: "Linked guardians / parents",
     guardiansEmpty: "No guardian links yet. Add parents or carers who manage this profile.",
     linkGuardian: "Link a parent or guardian account",
@@ -2759,7 +2763,11 @@ export const en = {
   // ─── Dashboard ───
   dashboard: {
     clubAdminDashboard: "Club Admin Dashboard",
+    teamManagementDashboard: "Team Management Dashboard",
+    parentDashboard: "Parent Dashboard",
+    teamStaffDashboard: "Team Staff Dashboard",
     welcomeBackAdmin: "Welcome back, Admin",
+    welcomeBackOps: "Welcome back",
     trainerDashboard: "Trainer Dashboard",
     welcomeBackCoach: "Welcome back, Coach",
     playerDashboard: "Player Dashboard",
@@ -2770,6 +2778,7 @@ export const en = {
     totalMembers: "Total Members",
     activeTeams: "Active Teams",
     upcoming: "Upcoming",
+    trainingsNext7d: "Trainings (7 days)",
     unpaidDues: "Unpaid Dues",
     myPlayers: "My Players",
     sessionsThisWeek: "Sessions This Week",
@@ -2787,6 +2796,9 @@ export const en = {
     invitePlayers: "Invite your players",
     gettingStarted: "Getting started (trainer)",
     gettingStartedAdmin: "Getting started (admin)",
+    gettingStartedOps: "Getting started (operations)",
+    playerDashboardHint: "Your team's schedule, club events, and open dues — without admin statistics.",
+    parentDashboardHint: "Your family's schedule, club events, and membership dues in one place.",
     invitePlayersLink: "Invite players",
     scheduleTheWeek: "Schedule the week",
     trackConfirmations: "Track confirmations in",
@@ -2858,6 +2870,8 @@ export const en = {
     aiInsightTeamsMatches: "{teams} teams configured · {matches} upcoming matches.",
     aiInsightUnpaidDues: "{count} unpaid dues need follow-up in Payments.",
     aiInsightLogMatches: "{count} completed matches. Keep logging events for richer reports.",
+    aiInsightTrainingsNext7d: "{count} team trainings scheduled in the next 7 days.",
+    aiInsightOpsOverview: "{members} active members · {teams} teams · {trainings} trainings this week.",
     registrationSummaryTitle: "Your club setup",
     registrationSummaryDesc: "Live overview from your maintained club profile and public page settings.",
     clubSetupPublicPage: "Public page",
@@ -2902,6 +2916,9 @@ export const en = {
     title: "Teams & Trainings",
     subtitleManage: "Manage teams, asset maps and bookings",
     subtitleView: "View teams, asset maps and bookings",
+    subtitlePlayer: "Your team's training schedule and pitch occupancy",
+    playerScheduleHint: "See which pitches are booked today and where your team trains. Other teams may share the same slot — full occupancy is shown without admin statistics.",
+    myTeamBadge: "My team",
     aiAgentShortcutsTitle: "AI 4 T quick actions",
     tabs: {
       pitches: "Asset Maps",
@@ -4930,6 +4947,7 @@ export const en = {
     title: "Schedule",
     subtitleTrainer: "Plan week + track attendance",
     subtitlePlayer: "Your week",
+    playerHint: "Trainings and matches for your team, plus club-wide events.",
     noClubTitle: "No club selected",
     noClubDesc: "Select a club to view the weekly schedule.",
     newActivity: "New",
@@ -5221,7 +5239,29 @@ export const en = {
     saveSuccessDescOther: "Changes were saved for this person.",
     saveFailed: "Could not save registry data.",
     loadFailed: "Could not load registry data.",
+    loadFailedTitle: "Registry data could not be loaded",
+    loadFailedGeneric: "Please check your connection and try again in a moment.",
+    loadFailedNotAuthenticated: "Please sign in again, then reopen this page.",
+    loadFailedNotAuthorized: "You do not have access to registry data in the currently selected club.",
+    loadFailedServer: "A server error occurred while loading your registry data. If this keeps happening, contact Team Management.",
+    loadFailedMigration:
+      "Self-service registry editing is not fully available yet (database update pending). Team Management can still edit your data under Members. Please try again after the club administrator applies the latest database migrations.",
     empty: "No editable registry records are linked to your account in this club.",
+    emptyTitle: "No registry profile linked to your login",
+    emptyIntro:
+      "The page “My registry data” only works when your login account is connected to an active membership in this club.",
+    emptyReasonUnlinked:
+      "Your roster entry may exist, but no ONE4Team login is linked yet (invite not accepted or import without account link).",
+    emptyReasonInactive:
+      "Your membership may not be active yet (pending invite or inactive status).",
+    emptyReasonEmailMismatch:
+      "The email on your login account may differ from the email stored for your membership in the club.",
+    emptyReasonGuardian:
+      "If you are a parent editing a child’s data, a guardian link must be set up in the member registry first.",
+    emptyReasonWrongClub:
+      "Another club may be selected in the club switcher — switch to the club where you are an active member.",
+    emptyAdminHint:
+      "Ask Team Management to verify your roster entry: active status, correct login email, and linked account. They can also edit your registry data under Members.",
     noClub: "Select a club to manage your registry data.",
     migrationHint:
       "Self-service registry editing requires migration supabase/migrations/20260808120000_member_master_self_service_trainer_edit.sql (e.g. npx supabase db push).",

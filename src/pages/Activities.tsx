@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { useMembershipId } from "@/hooks/use-membership-id";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useModuleDataScope } from "@/hooks/use-module-data-scope";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
@@ -117,6 +118,9 @@ export default function Activities() {
   const { clubId, loading: clubLoading } = useClubId();
   const { membershipId, loading: membershipLoading } = useMembershipId();
   const perms = usePermissions();
+  const activityScope = useModuleDataScope("trainings");
+  const isPlayerFocusedView = !activityScope.isClubWide;
+  const scopedTeamIds = activityScope.teamIds;
   const { toast } = useToast();
   const { t } = useLanguage();
 
@@ -223,6 +227,23 @@ export default function Activities() {
     void fetchData();
   }, [fetchData]);
 
+  const scopeFilteredActivities = useMemo(() => {
+    if (!isPlayerFocusedView) return activities;
+    return activities.filter((activity) => {
+      if (activity.type === "event") return true;
+      if (!activity.team_id) return false;
+      if (scopedTeamIds === "all") return true;
+      if (scopedTeamIds.length === 0) return false;
+      return scopedTeamIds.includes(activity.team_id);
+    });
+  }, [activities, isPlayerFocusedView, scopedTeamIds]);
+
+  const playerTeamOptions = useMemo(() => {
+    if (!isPlayerFocusedView || scopedTeamIds === "all") return teams;
+    const allowed = new Set(scopedTeamIds);
+    return teams.filter((team) => allowed.has(team.id));
+  }, [isPlayerFocusedView, scopedTeamIds, teams]);
+
   const myAttendanceByActivity = useMemo(() => {
     const map: Record<string, AttendanceRow> = {};
     if (!membershipId) return map;
@@ -235,19 +256,19 @@ export default function Activities() {
   const attendanceByActivity = useMemo(() => {
     const map: Record<string, ReturnType<typeof buildActivityAttendanceOverview>> = {};
     if (!membershipId) return map;
-    for (const activity of activities) {
+    for (const activity of scopeFilteredActivities) {
       if (activity.type !== "training" && activity.type !== "match") continue;
       const roster = buildActivityRosterFromRows(activity, memberships, teamPlayers);
       const rows = attendance.filter((row) => row.activity_id === activity.id);
       map[activity.id] = buildActivityAttendanceOverview({ roster, attendanceRows: rows });
     }
     return map;
-  }, [activities, attendance, membershipId, memberships, teamPlayers]);
+  }, [scopeFilteredActivities, attendance, membershipId, memberships, teamPlayers]);
 
   const drawerActivity = useMemo(() => {
     if (!drawerActivityId) return null;
-    return activities.find((a) => a.id === drawerActivityId) ?? null;
-  }, [activities, drawerActivityId]);
+    return scopeFilteredActivities.find((a) => a.id === drawerActivityId) ?? null;
+  }, [scopeFilteredActivities, drawerActivityId]);
 
   const drawerRoster = useMemo(() => {
     if (!drawerActivity) return [];
@@ -257,7 +278,7 @@ export default function Activities() {
   const visibleActivities = useMemo(() => {
     const now = Date.now();
 
-    return activities
+    return scopeFilteredActivities
       .filter((a) => (filterShowPast ? true : new Date(a.starts_at).getTime() >= now - 1000 * 60 * 60 * 24))
       .filter((a) => (filterType === "all" ? true : a.type === filterType))
       .filter((a) => (filterTeamId ? a.team_id === filterTeamId : true))
@@ -266,7 +287,7 @@ export default function Activities() {
         const att = myAttendanceByActivity[a.id];
         return att?.status === "confirmed" || att?.status === "attended";
       });
-  }, [activities, filterShowPast, filterType, filterTeamId, filterMine, myAttendanceByActivity]);
+  }, [scopeFilteredActivities, filterShowPast, filterType, filterTeamId, filterMine, myAttendanceByActivity]);
 
   const grouped = useMemo(() => {
     const byDay: Record<string, ActivityRow[]> = {};
@@ -505,7 +526,7 @@ export default function Activities() {
         toolbarRevision={`${perms.isTrainer}-${canCreate}`}
         rightSlot={
           <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-end">
-            <AiAgentHeaderButton intent="plan_training_week" />
+            {!isPlayerFocusedView ? <AiAgentHeaderButton intent="plan_training_week" /> : null}
             {perms.isTrainer && (
               <Button size="sm" variant="outline" className="rounded-2xl text-xs sm:text-sm shrink-0" onClick={createWeekTemplate} disabled={!clubId}>
                 <Sparkles className="w-4 h-4 mr-1" /> {t.activitiesPage.weekTemplate}
@@ -544,11 +565,13 @@ export default function Activities() {
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Filter className="w-4 h-4" /> Filters
                 </div>
-                {perms.isTrainer && (
+                {isPlayerFocusedView ? (
+                  <p className="text-[11px] text-muted-foreground">{t.activitiesPage.playerHint}</p>
+                ) : perms.isTrainer ? (
                   <div className="text-[11px] text-muted-foreground">
                     Tip: set a Team filter, then use <span className="text-foreground/80 font-medium">Week template</span>.
                   </div>
-                )}
+                ) : null}
               </div>
 
               <div className="flex flex-wrap gap-2 mt-3">
@@ -571,20 +594,23 @@ export default function Activities() {
                   </button>
                 ))}
 
-                <Select value={filterTeamId || "__all"} onValueChange={(value) => setFilterTeamId(value === "__all" ? "" : value)}>
-                  <SelectTrigger className="h-9 w-full sm:w-[180px] rounded-xl border-border/60 bg-background/40 px-3 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__all">All teams</SelectItem>
-                    {teams.map((team) => (
-                      <SelectItem key={team.id} value={team.id}>
-                        {team.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {!isPlayerFocusedView || playerTeamOptions.length > 1 ? (
+                  <Select value={filterTeamId || "__all"} onValueChange={(value) => setFilterTeamId(value === "__all" ? "" : value)}>
+                    <SelectTrigger className="h-9 w-full sm:w-[180px] rounded-xl border-border/60 bg-background/40 px-3 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {!isPlayerFocusedView ? <SelectItem value="__all">All teams</SelectItem> : null}
+                      {(isPlayerFocusedView ? playerTeamOptions : teams).map((team) => (
+                        <SelectItem key={team.id} value={team.id}>
+                          {team.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : null}
 
+                {!isPlayerFocusedView ? (
                 <button
                   onClick={() => setFilterMine((v) => !v)}
                   className={`px-3 py-2 rounded-2xl text-xs font-medium border transition-colors ${
@@ -593,6 +619,7 @@ export default function Activities() {
                 >
                   My sessions
                 </button>
+                ) : null}
 
                 <button
                   onClick={() => setFilterShowPast((v) => !v)}
@@ -666,7 +693,7 @@ export default function Activities() {
                             ) : null}
                           </div>
 
-                          {sum && showAttendance ? (
+                          {sum && showAttendance && perms.isTrainer ? (
                             <TrainingAttendanceOverview
                               overview={sum}
                               labels={{
