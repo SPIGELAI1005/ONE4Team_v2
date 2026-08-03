@@ -22,6 +22,7 @@ interface EventsFeedAdminProps {
   userId: string;
   value: ClubEventsFeedConfig;
   onSaved: (next: ClubEventsFeedConfig) => void;
+  feedLoading?: boolean;
 }
 
 function newNewsItem(): ClubEventsFeedItem {
@@ -42,7 +43,7 @@ function newNewsItem(): ClubEventsFeedItem {
   };
 }
 
-export function EventsFeedAdmin({ clubId, userId, value, onSaved }: EventsFeedAdminProps) {
+export function EventsFeedAdmin({ clubId, userId, value, onSaved, feedLoading = false }: EventsFeedAdminProps) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const copy = t.eventsPage.feedAdmin;
@@ -117,7 +118,7 @@ export function EventsFeedAdmin({ clubId, userId, value, onSaved }: EventsFeedAd
             type="button"
             size="sm"
             className="bg-gradient-gold-static text-primary-foreground hover:brightness-110"
-            disabled={saving}
+            disabled={saving || feedLoading}
             onClick={() => void handleSave()}
           >
             {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}

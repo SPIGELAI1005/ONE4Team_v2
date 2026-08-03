@@ -36,15 +36,15 @@ import { isTsvAllachClub } from "@/lib/is-tsv-allach-club";
 import { resolveCanonicalYouthTeamName } from "@/lib/youth-team-label";
 import { SommerfestHero } from "@/components/sommerfest/sommerfest-hero";
 import { SommerfestMatchSchedule } from "@/components/sommerfest/sommerfest-match-schedule";
+import { SommerfestEventsHub } from "@/components/sommerfest/sommerfest-events-hub";
 import { EventsHighlightAdmin } from "@/components/events/events-highlight-admin";
 import { EventsFeedAdmin } from "@/components/events/events-feed-admin";
+import { useClubEventsFeed } from "@/hooks/use-club-events-feed";
 import {
   EMPTY_CLUB_EVENTS_HIGHLIGHT,
   type ClubEventsHighlightConfig,
 } from "@/lib/club-events-highlight";
 import { loadClubEventsHighlight } from "@/lib/club-events-highlight-api";
-import { defaultSommerfestEventsFeed, type ClubEventsFeedConfig } from "@/lib/club-events-feed";
-import { loadClubEventsFeed } from "@/lib/club-events-feed-api";
 import { matchCurrentCutoffIso, isMatchInCurrentWindow } from "@/lib/match-list-window";
 import {
   COMPETITION_TYPE_FILTERS,
@@ -161,6 +161,7 @@ const Matches = () => {
   const { activeClub } = useActiveClub();
   const showAllachExtras = isTsvAllachClub(activeClub);
   const showSommerfest = showAllachExtras;
+  const { eventsFeed, handleFeedSaved, feedLoading } = useClubEventsFeed(clubId);
 
   const [tab, setTab] = useState<"matches" | "competitions" | "standings">("matches");
   const [matches, setMatches] = useState<Match[]>([]);
@@ -177,7 +178,6 @@ const Matches = () => {
   const [openingSommerfestId, setOpeningSommerfestId] = useState<string | null>(null);
   const [publishingSommerfest, setPublishingSommerfest] = useState(false);
   const [eventsHighlight, setEventsHighlight] = useState<ClubEventsHighlightConfig>(EMPTY_CLUB_EVENTS_HIGHLIGHT);
-  const [eventsFeed, setEventsFeed] = useState<ClubEventsFeedConfig>(defaultSommerfestEventsFeed());
   const [historyMatches, setHistoryMatches] = useState<Match[]>([]);
   const [historyPage, setHistoryPage] = useState(1);
   const [historyTotalCount, setHistoryTotalCount] = useState(0);
@@ -210,7 +210,6 @@ const Matches = () => {
     setSommerfestDbMatches(new Map());
     setOpeningSommerfestId(null);
     setEventsHighlight(EMPTY_CLUB_EVENTS_HIGHLIGHT);
-    setEventsFeed(defaultSommerfestEventsFeed());
     setHistoryMatches([]);
     setHistoryPage(1);
     setHistoryTotalCount(0);
@@ -223,13 +222,9 @@ const Matches = () => {
   useEffect(() => {
     if (!clubId) return;
     let cancelled = false;
-    void Promise.all([
-      loadClubEventsHighlight(supabase, clubId, activeClub),
-      loadClubEventsFeed(supabase, clubId, activeClub),
-    ]).then(([highlightRes, feedRes]) => {
+    void loadClubEventsHighlight(supabase, clubId, activeClub).then(({ data }) => {
       if (cancelled) return;
-      setEventsHighlight(highlightRes.data);
-      setEventsFeed(feedRes.data);
+      setEventsHighlight(data);
     });
     return () => {
       cancelled = true;
@@ -1113,7 +1108,7 @@ const Matches = () => {
         ) : !clubId ? (
           <div className="text-center py-20 text-muted-foreground">{t.communicationPage.noClubFound}</div>
         ) : tab === "matches" ? (
-          <div className="mx-auto max-w-4xl space-y-6">
+          <div className="mx-auto max-w-5xl space-y-6">
             {showHighlight || showSommerfest || perms.isAdmin ? (
               <>
                 {showHighlight ? <SommerfestHero variant="matches" highlight={eventsHighlight} /> : null}
@@ -1126,7 +1121,16 @@ const Matches = () => {
                   />
                 ) : null}
                 {showAllachExtras && perms.isTrainer && user && clubId ? (
-                  <EventsFeedAdmin clubId={clubId} userId={user.id} value={eventsFeed} onSaved={setEventsFeed} />
+                  <EventsFeedAdmin
+                    clubId={clubId}
+                    userId={user.id}
+                    value={eventsFeed}
+                    feedLoading={feedLoading}
+                    onSaved={handleFeedSaved}
+                  />
+                ) : null}
+                {showAllachExtras ? (
+                  <SommerfestEventsHub feedConfig={eventsFeed} club={activeClub} />
                 ) : null}
                 {showSommerfest ? (
                 <>
