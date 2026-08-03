@@ -8,6 +8,11 @@ import { useActiveClub } from "@/hooks/use-active-club";
 import { useSubscription } from "@/hooks/use-subscription";
 import { supabase } from "@/integrations/supabase/client";
 import { buildAiUsageMeterState } from "@/lib/ai-usage-meter";
+import {
+  DASHBOARD_STAT_MINI_GRID,
+  DASHBOARD_STAT_MINI_LABEL,
+  DASHBOARD_STAT_MINI_VALUE,
+} from "@/lib/dashboard-page-shell";
 
 interface AiUsageStats {
   agent_runs_total?: number;
@@ -73,15 +78,18 @@ export function Ai4tAdminUsageCard() {
   const successRate = total > 0 ? Math.round((executed / total) * 100) : null;
 
   return (
-    <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
+    <div className="min-w-0 rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4 sm:p-5">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+        <div className="min-w-0">
           <div className="font-display font-bold">
             <Ai4TInlineLabel text={t.dashboard.ai4tUsageTitle} logoClassName="h-4 w-4" />
           </div>
-          <p className="text-sm text-muted-foreground mt-1">{t.dashboard.ai4tUsageSubtitleMonthly}</p>
+          <p className="text-sm text-muted-foreground mt-1 leading-snug">{t.dashboard.ai4tUsageSubtitleMonthly}</p>
         </div>
-        <Link to="/co-trainer?tab=history" className="text-sm text-primary hover:underline shrink-0">
+        <Link
+          to="/co-trainer?tab=history"
+          className="text-sm text-primary hover:underline shrink-0 self-start sm:self-auto"
+        >
           {t.dashboard.ai4tUsageViewHistory}
         </Link>
       </div>
@@ -92,22 +100,22 @@ export function Ai4tAdminUsageCard() {
       ) : (
         <>
           {meter ? <AiUsageMeter meter={meter} className="mt-4" /> : null}
-          <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
-              <div className="text-xs text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageAgentRuns}</div>
-              <div className="text-xl font-semibold mt-1">{total}</div>
+          <div className={`mt-4 ${DASHBOARD_STAT_MINI_GRID}`}>
+            <div className="min-w-0 rounded-2xl border border-border/60 bg-background/40 p-3">
+              <div className={DASHBOARD_STAT_MINI_LABEL}>{t.dashboard.ai4tUsageAgentRuns}</div>
+              <div className={DASHBOARD_STAT_MINI_VALUE}>{total}</div>
             </div>
-            <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
-              <div className="text-xs text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageExecuted}</div>
-              <div className="text-xl font-semibold mt-1">{executed}</div>
+            <div className="min-w-0 rounded-2xl border border-border/60 bg-background/40 p-3">
+              <div className={DASHBOARD_STAT_MINI_LABEL}>{t.dashboard.ai4tUsageExecuted}</div>
+              <div className={DASHBOARD_STAT_MINI_VALUE}>{executed}</div>
             </div>
-            <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
-              <div className="text-xs text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageSuccessRate}</div>
-              <div className="text-xl font-semibold mt-1">{successRate != null ? `${successRate}%` : "-"}</div>
+            <div className="min-w-0 rounded-2xl border border-border/60 bg-background/40 p-3">
+              <div className={DASHBOARD_STAT_MINI_LABEL}>{t.dashboard.ai4tUsageSuccessRate}</div>
+              <div className={DASHBOARD_STAT_MINI_VALUE}>{successRate != null ? `${successRate}%` : "-"}</div>
             </div>
-            <div className="rounded-2xl border border-border/60 bg-background/40 p-3">
-              <div className="text-xs text-muted-foreground uppercase tracking-wide">{t.dashboard.ai4tUsageChats}</div>
-              <div className="text-xl font-semibold mt-1">{stats?.conversations_updated ?? 0}</div>
+            <div className="min-w-0 rounded-2xl border border-border/60 bg-background/40 p-3">
+              <div className={DASHBOARD_STAT_MINI_LABEL}>{t.dashboard.ai4tUsageChats}</div>
+              <div className={DASHBOARD_STAT_MINI_VALUE}>{stats?.conversations_updated ?? 0}</div>
             </div>
           </div>
         </>

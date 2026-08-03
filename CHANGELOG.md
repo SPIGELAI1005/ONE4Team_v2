@@ -5,6 +5,12 @@ It records notable changes, features, and hardening steps.
 
 ## 2026-08-03 (Role-aware dashboards · player-focused Trainings · `/my-data` UX)
 
+### Dashboard responsive layout (AI 4 T cards)
+- **AI 4 T usage/value stat grids** stay **2 columns until `lg`** (was 4 at `sm`) — fixes cramped German labels like “Chats aktualisiert”.
+- **`AiUsageMeter`** — usage bar labels stack on narrow screens; long DE strings wrap with `break-words`.
+- **KPI tiles** — smaller value type on mobile, `line-clamp-3`, change badges constrained.
+- Shared tokens: **`DASHBOARD_STAT_MINI_GRID`** / label/value in **`dashboard-page-shell.ts`**.
+
 ### Role-aware dashboards (Team Management + all personas)
 - **`DashboardContent.tsx`** refactored: **`isOpsAdminDashboardRole`** (`club_admin`, `admin`, `team_management`) shares **AI 4 T Control Center** (NaturalLanguageStats, contextual insights, weekly digest CTA, AdminNotificationSender, Ai4tAdminUsageCard, Ai4tValueMetricsCard).
 - **Team Management KPIs:** Members, Teams, Trainings (7 days), Upcoming — live from **`fetchAdminDashboardSnapshot`**; no financial summary or dues KPI.

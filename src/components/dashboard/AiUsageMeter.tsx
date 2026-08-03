@@ -24,7 +24,7 @@ export function AiUsageMeter({ meter, className }: AiUsageMeterProps) {
           {meter.isAtCap ? t.settingsPage.aiUsageAtCap : t.settingsPage.aiUsageNearCap}
         </div>
       )}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 grid-cols-1 md:grid-cols-2">
         <UsageBar
           label={t.settingsPage.aiUsageAgentRuns}
           used={meter.usage.agentRuns}
@@ -43,7 +43,7 @@ export function AiUsageMeter({ meter, className }: AiUsageMeterProps) {
             used={meter.usage.internetResearch}
             cap={meter.caps.internetResearch}
             pct={meter.internetResearchPct}
-            className="sm:col-span-2"
+            className="md:col-span-2"
           />
         ) : null}
       </div>
@@ -65,10 +65,12 @@ function UsageBar({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-xl border border-border/50 bg-background/30 p-3", className)}>
-      <div className="flex items-center justify-between text-xs mb-2">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium text-foreground">{formatAiCapLabel(used, cap)}</span>
+    <div className={cn("min-w-0 rounded-xl border border-border/50 bg-background/30 p-3", className)}>
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-2 text-xs mb-2">
+        <span className="text-muted-foreground min-w-0 leading-snug break-words [overflow-wrap:anywhere]">
+          {label}
+        </span>
+        <span className="font-medium text-foreground shrink-0 tabular-nums">{formatAiCapLabel(used, cap)}</span>
       </div>
       <div className="h-2 rounded-full bg-muted overflow-hidden">
         <div

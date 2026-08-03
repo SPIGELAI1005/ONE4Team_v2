@@ -828,23 +828,23 @@ const DashboardContent = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.08, type: "spring", stiffness: 300, damping: 25 }}
-              className={`${DASHBOARD_CARD} haptic-press cursor-default`}
+              className={`${DASHBOARD_CARD} haptic-press cursor-default min-w-0`}
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className="w-9 h-9 max-lg:w-10 max-lg:h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="w-9 h-9 max-lg:w-10 max-lg:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                   <kpi.icon className="w-4 h-4 max-lg:w-[18px] max-lg:h-[18px] text-primary" strokeWidth={1.5} />
                 </div>
-                {kpi.change && (
-                  <span className={`${DASHBOARD_TYPE_MICRO} font-medium text-primary flex items-center gap-0.5 ios-pill bg-primary/8 border-primary/20 px-2 py-0.5`}>
-                    <ArrowUpRight className="w-3 h-3" />
+                {kpi.change ? (
+                  <span className={`${DASHBOARD_TYPE_MICRO} font-medium text-primary flex items-center gap-0.5 ios-pill bg-primary/8 border-primary/20 px-2 py-0.5 shrink-0 max-w-[55%] text-right leading-snug`}>
+                    <ArrowUpRight className="w-3 h-3 shrink-0" />
                     {kpi.change}
                   </span>
-                )}
+                ) : null}
               </div>
-              <div className="text-2xl max-lg:text-[1.75rem] font-display font-bold text-foreground tracking-tight">
+              <div className="text-base sm:text-xl lg:text-2xl font-display font-bold text-foreground tracking-tight break-words [overflow-wrap:anywhere] line-clamp-3 min-w-0">
                 {dashboardLoading && kpi.value === "-" ? "…" : kpi.value}
               </div>
-              <div className={`${DASHBOARD_TYPE_CAPTION} mt-1`}>{kpi.label}</div>
+              <div className={`${DASHBOARD_TYPE_CAPTION} mt-1 break-words`}>{kpi.label}</div>
             </motion.div>
           ))}
         </div>
@@ -886,7 +886,7 @@ const DashboardContent = () => {
         {sections.adminNotificationSender && !isOpsAdminPersona ? <AdminNotificationSender /> : null}
 
         {isOpsAdminPersona && activeClubId ? (
-          <div className="space-y-4 rounded-3xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
+          <div className="min-w-0 space-y-4 rounded-3xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
             <div className="flex flex-col gap-1">
               <div className="text-sm font-semibold text-foreground">
                 <Ai4TInlineLabel text={t.dashboard.ai4tControlCenterTitle} logoClassName="h-4 w-4" />
@@ -947,7 +947,7 @@ const DashboardContent = () => {
               {sections.adminNotificationSender ? <AdminNotificationSender /> : null}
             </div>
 
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid min-w-0 gap-4 lg:grid-cols-2">
               <Ai4tAdminUsageCard />
               <Ai4tValueMetricsCard />
             </div>

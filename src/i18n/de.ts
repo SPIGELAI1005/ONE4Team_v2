@@ -2844,7 +2844,7 @@ export const de: Translations = {
     ai4tUsageAgentRuns: "Agent-Läufe",
     ai4tUsageExecuted: "Ausgeführt",
     ai4tUsageSuccessRate: "Erfolgsquote",
-    ai4tUsageChats: "Chats aktualisiert",
+    ai4tUsageChats: "Chats",
     ai4tUsageViewHistory: "Verlauf öffnen",
     ai4tValueTitle: "AI 4 T Nutzen diesen Monat",
     ai4tValueSubtitle: "Vorgeschlagen vs. ausgeführt. Wert des Add-ons.",

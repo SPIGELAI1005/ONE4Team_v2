@@ -4,6 +4,11 @@ import { Ai4TInlineLabel } from "@/components/ai/Ai4TBrand";
 import { useActiveClub } from "@/hooks/use-active-club";
 import { useLanguage } from "@/hooks/use-language";
 import { fetchClubAiValueMetrics, type AiValueMetrics } from "@/lib/ai-value-metrics";
+import {
+  DASHBOARD_STAT_MINI_GRID,
+  DASHBOARD_STAT_MINI_LABEL,
+  DASHBOARD_STAT_MINI_VALUE,
+} from "@/lib/dashboard-page-shell";
 
 export function Ai4tValueMetricsCard() {
   const { t } = useLanguage();
@@ -44,11 +49,11 @@ export function Ai4tValueMetricsCard() {
   if (!activeClubId) return null;
 
   return (
-    <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
+    <div className="min-w-0 rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4 sm:p-5">
       <div className="font-display font-bold">
         <Ai4TInlineLabel text={t.dashboard.ai4tValueTitle} logoClassName="h-4 w-4" />
       </div>
-      <p className="text-sm text-muted-foreground mt-1">{t.dashboard.ai4tValueSubtitle}</p>
+      <p className="text-sm text-muted-foreground mt-1 leading-snug">{t.dashboard.ai4tValueSubtitle}</p>
 
       {loading ? (
         <div className="flex items-center gap-2 mt-4 text-sm text-muted-foreground">
@@ -59,16 +64,16 @@ export function Ai4tValueMetricsCard() {
         <p className="mt-3 text-sm text-destructive">{error}</p>
       ) : metrics ? (
         <div className="mt-4 space-y-3">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className={DASHBOARD_STAT_MINI_GRID}>
             {[
               { label: t.dashboard.ai4tValueProposed, value: metrics.proposed },
               { label: t.dashboard.ai4tValueExecuted, value: metrics.executed },
               { label: t.dashboard.ai4tValueFailed, value: metrics.failed },
               { label: t.dashboard.ai4tValueDeclined, value: metrics.declined },
             ].map((item) => (
-              <div key={item.label} className="rounded-xl border border-border/50 bg-background/40 px-3 py-2">
-                <div className="text-xs text-muted-foreground">{item.label}</div>
-                <div className="text-lg font-semibold tabular-nums text-foreground">{item.value}</div>
+              <div key={item.label} className="min-w-0 rounded-xl border border-border/50 bg-background/40 px-3 py-2.5">
+                <div className={DASHBOARD_STAT_MINI_LABEL}>{item.label}</div>
+                <div className={DASHBOARD_STAT_MINI_VALUE}>{item.value}</div>
               </div>
             ))}
           </div>

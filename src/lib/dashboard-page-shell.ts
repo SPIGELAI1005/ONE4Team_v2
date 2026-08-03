@@ -53,6 +53,17 @@ export const DASHBOARD_HEADER_ACTIONS = "dashboard-header-actions flex shrink-0 
 /** Card surface — extra padding on phone */
 export const DASHBOARD_CARD = "rounded-2xl glass-card p-4 max-lg:p-5 sm:p-5";
 
+/** KPI / mini-stat grid — 2 columns until large screens (avoids cramped DE labels) */
+export const DASHBOARD_STAT_MINI_GRID = "grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3";
+
+/** Label inside a mini-stat cell */
+export const DASHBOARD_STAT_MINI_LABEL =
+  "text-[11px] sm:text-xs text-muted-foreground leading-snug break-words [overflow-wrap:anywhere]";
+
+/** Value inside a mini-stat cell */
+export const DASHBOARD_STAT_MINI_VALUE =
+  "text-lg sm:text-xl font-semibold mt-1 tabular-nums text-foreground";
+
 /** KPI / stat grid */
 export const DASHBOARD_KPI_GRID = "grid grid-cols-2 lg:grid-cols-4 gap-3 max-lg:gap-4";
 
