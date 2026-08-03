@@ -4561,6 +4561,10 @@ export const de: Translations = {
     toastNotAuthorizedInvite: "Nur Trainer/Admins können Teilnehmer einladen.",
     toastEventCreated: "Event erstellt",
     toastInvitationSent: "Einladung gesendet",
+    pageAdmin: {
+      title: "Inhalte verwalten",
+      subtitle: "Hero-Bereich und Timeline für Events und Spiele bearbeiten.",
+    },
     highlightAdmin: {
       editButton: "Highlight bearbeiten",
       badge: "Highlight",

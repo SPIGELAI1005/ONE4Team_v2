@@ -22,9 +22,11 @@ interface EventsHighlightAdminProps {
   userId: string;
   value: ClubEventsHighlightConfig;
   onSaved: (next: ClubEventsHighlightConfig) => void;
+  /** When true, renders inside the shared page admin bar (no extra outer card chrome). */
+  embedded?: boolean;
 }
 
-export function EventsHighlightAdmin({ clubId, userId, value, onSaved }: EventsHighlightAdminProps) {
+export function EventsHighlightAdmin({ clubId, userId, value, onSaved, embedded = false }: EventsHighlightAdminProps) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const copy = t.eventsPage.highlightAdmin;
@@ -78,8 +80,29 @@ export function EventsHighlightAdmin({ clubId, userId, value, onSaved }: EventsH
 
   if (!open) {
     return (
-      <div className="flex justify-end">
-        <Button type="button" size="sm" variant="outline" onClick={() => setOpen(true)}>
+      <div
+        className={
+          embedded
+            ? "flex flex-col gap-3 rounded-xl border border-border/70 bg-card/60 p-3 sm:flex-row sm:items-center sm:justify-between"
+            : "rounded-2xl border border-dashed border-primary/30 bg-muted/20 p-3 sm:p-4"
+        }
+      >
+        <div className={embedded ? "min-w-0 flex-1" : "mb-3 sm:mb-0"}>
+          {!embedded ? (
+            <div className="mb-1 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#16a34a]">
+              <Sparkles className="h-3.5 w-3.5" />
+              {copy.badge}
+            </div>
+          ) : null}
+          <div className="font-medium text-sm text-foreground">{copy.title}</div>
+          <p className="mt-0.5 text-xs text-muted-foreground">{copy.lead}</p>
+        </div>
+        <Button
+          type="button"
+          size="sm"
+          className="shrink-0 bg-gradient-gold-static text-primary-foreground hover:brightness-110"
+          onClick={() => setOpen(true)}
+        >
           <Pencil className="mr-1.5 h-3.5 w-3.5" />
           {copy.editButton}
         </Button>

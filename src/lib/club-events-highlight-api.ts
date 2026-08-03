@@ -1,15 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  clubRowToPublicPageConfig,
   getClubPageDraftConfig,
   parseClubPublicPageConfig,
-  publicPageConfigToJson,
-  saveClubPageDraftConfig,
   type ClubPublicPageConfig,
 } from "@/lib/club-public-page-config";
 import {
   EMPTY_CLUB_EVENTS_HIGHLIGHT,
   normalizeClubEventsHighlight,
+  pickSavedEventsHighlight,
   resolveEffectiveEventsHighlight,
   type ClubEventsHighlightConfig,
 } from "@/lib/club-events-highlight";
@@ -19,65 +17,44 @@ function extractHighlightFromConfig(config: ClubPublicPageConfig | null | undefi
   return config.eventsHighlight ?? null;
 }
 
-/** Load effective highlight for a club (published wins; draft only if nothing published yet). */
 export async function loadClubEventsHighlight(
   supabase: SupabaseClient,
   clubId: string,
   club?: { name?: string | null; slug?: string | null } | null,
 ): Promise<{ data: ClubEventsHighlightConfig; error: Error | null }> {
-  const { data: row, error } = await supabase
-    .from("clubs")
-    .select("name, slug, public_page_published_config")
-    .eq("id", clubId)
-    .maybeSingle();
-  if (error) return { data: { ...EMPTY_CLUB_EVENTS_HIGHLIGHT }, error: new Error(error.message) };
+  const [{ data: row, error }, draftResult] = await Promise.all([
+    supabase.from("clubs").select("name, slug, public_page_published_config").eq("id", clubId).maybeSingle(),
+    getClubPageDraftConfig(supabase, clubId),
+  ]);
+
+  if (error) return { data: resolveEffectiveEventsHighlight(null, club), error: new Error(error.message) };
 
   const clubMeta = club ?? { name: row?.name, slug: row?.slug };
   const published = parseClubPublicPageConfig(row?.public_page_published_config);
+  const fromDraft = draftResult.error ? null : extractHighlightFromConfig(draftResult.data);
   const fromPublished = extractHighlightFromConfig(published);
-  if (fromPublished != null) {
-    return { data: resolveEffectiveEventsHighlight(fromPublished, clubMeta), error: null };
-  }
-
-  const draft = await getClubPageDraftConfig(supabase, clubId);
-  if (draft.error) return { data: resolveEffectiveEventsHighlight(null, clubMeta), error: draft.error };
-  const fromDraft = extractHighlightFromConfig(draft.data);
-  return { data: resolveEffectiveEventsHighlight(fromDraft, clubMeta), error: null };
+  const picked = pickSavedEventsHighlight(fromDraft, fromPublished);
+  return { data: resolveEffectiveEventsHighlight(picked, clubMeta), error: null };
 }
 
-/**
- * Persist highlight into draft + published snapshot so members see it immediately.
- * Does not run a full page publish (other draft fields stay unpublished).
- */
 export async function saveClubEventsHighlight(
   supabase: SupabaseClient,
   clubId: string,
   highlight: ClubEventsHighlightConfig,
-  adminUserId: string | null,
+  _adminUserId: string | null,
 ): Promise<{ error: Error | null }> {
   const normalized = normalizeClubEventsHighlight(highlight);
 
-  const { data: row, error: loadError } = await supabase
-    .from("clubs")
-    .select("*")
-    .eq("id", clubId)
-    .maybeSingle();
-  if (loadError) return { error: new Error(loadError.message) };
-  if (!row) return { error: new Error("club_not_found") };
+  const { data, error } = await supabase.rpc("patch_club_events_highlight", {
+    p_club_id: clubId,
+    p_highlight: normalized,
+  });
 
-  const base = clubRowToPublicPageConfig(row as Record<string, unknown>);
-  const draftResult = await getClubPageDraftConfig(supabase, clubId);
-  const draftBase = draftResult.data ?? base;
-  const nextDraft: ClubPublicPageConfig = { ...draftBase, eventsHighlight: normalized };
-  const draftSave = await saveClubPageDraftConfig(supabase, clubId, nextDraft, adminUserId);
-  if (draftSave.error) return draftSave;
-
-  const publishedBase = parseClubPublicPageConfig(row.public_page_published_config) ?? base;
-  const nextPublished: ClubPublicPageConfig = { ...publishedBase, eventsHighlight: normalized };
-  const { error: pubError } = await supabase
-    .from("clubs")
-    .update({ public_page_published_config: publicPageConfigToJson(nextPublished) })
-    .eq("id", clubId);
-  if (pubError) return { error: new Error(pubError.message) };
+  if (error) return { error: new Error(error.message) };
+  if (data && typeof data === "object" && (data as { ok?: boolean }).ok !== true) {
+    return { error: new Error("events_highlight_save_failed") };
+  }
   return { error: null };
 }
+
+export { EMPTY_CLUB_EVENTS_HIGHLIGHT };

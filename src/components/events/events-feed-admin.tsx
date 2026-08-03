@@ -23,6 +23,7 @@ interface EventsFeedAdminProps {
   value: ClubEventsFeedConfig;
   onSaved: (next: ClubEventsFeedConfig) => void;
   feedLoading?: boolean;
+  embedded?: boolean;
 }
 
 function newNewsItem(): ClubEventsFeedItem {
@@ -43,7 +44,7 @@ function newNewsItem(): ClubEventsFeedItem {
   };
 }
 
-export function EventsFeedAdmin({ clubId, userId, value, onSaved, feedLoading = false }: EventsFeedAdminProps) {
+export function EventsFeedAdmin({ clubId, userId, value, onSaved, feedLoading = false, embedded = false }: EventsFeedAdminProps) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const copy = t.eventsPage.feedAdmin;
@@ -90,8 +91,26 @@ export function EventsFeedAdmin({ clubId, userId, value, onSaved, feedLoading = 
 
   if (!open) {
     return (
-      <div className="flex justify-end">
-        <Button type="button" size="sm" variant="outline" onClick={() => setOpen(true)}>
+      <div
+        className={
+          embedded
+            ? "flex flex-col gap-3 rounded-xl border border-border/70 bg-card/60 p-3 sm:flex-row sm:items-center sm:justify-between"
+            : "flex justify-end"
+        }
+      >
+        {embedded ? (
+          <div className="min-w-0 flex-1">
+            <div className="font-medium text-sm text-foreground">{copy.title}</div>
+            <p className="mt-0.5 text-xs text-muted-foreground">{copy.lead}</p>
+          </div>
+        ) : null}
+        <Button
+          type="button"
+          size="sm"
+          className={embedded ? "shrink-0 bg-gradient-gold-static text-primary-foreground hover:brightness-110" : undefined}
+          variant={embedded ? undefined : "outline"}
+          onClick={() => setOpen(true)}
+        >
           <Pencil className="mr-1.5 h-3.5 w-3.5" />
           {copy.editButton}
         </Button>

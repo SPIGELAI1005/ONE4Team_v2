@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   defaultSommerfestEventsHighlight,
   normalizeClubEventsHighlight,
+  pickSavedEventsHighlight,
   resolveEffectiveEventsHighlight,
 } from "@/lib/club-events-highlight";
 import { parseClubPublicPageConfig, publicPageConfigToJson } from "@/lib/club-public-page-config";
@@ -39,6 +40,23 @@ describe("club-events-highlight", () => {
   it("keeps other clubs disabled when unset", () => {
     const resolved = resolveEffectiveEventsHighlight(null, { slug: "other-club", name: "Other" });
     expect(resolved.enabled).toBe(false);
+  });
+
+  it("prefers draft highlight over published snapshot", () => {
+    const draft = normalizeClubEventsHighlight({
+      enabled: true,
+      imageUrl: "https://cdn.example/draft.png",
+      badge: "Draft badge",
+      title: "Draft title",
+      eventsLead: "Draft events",
+      matchesLead: "Draft matches",
+      location: "Draft location",
+      posterAlt: "Draft alt",
+    });
+    const published = defaultSommerfestEventsHighlight();
+    published.title = "Published title";
+    const picked = pickSavedEventsHighlight(draft, published);
+    expect(picked?.title).toBe("Draft title");
   });
 
   it("round-trips through public page config JSON", () => {

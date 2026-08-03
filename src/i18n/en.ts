@@ -4529,6 +4529,10 @@ export const en = {
     toastNotAuthorizedInvite: "Only trainers/admins can invite participants.",
     toastEventCreated: "Event created",
     toastInvitationSent: "Invitation sent",
+    pageAdmin: {
+      title: "Manage content",
+      subtitle: "Edit the hero section and timeline on Events and Matches.",
+    },
     highlightAdmin: {
       editButton: "Edit highlight",
       badge: "Highlight",

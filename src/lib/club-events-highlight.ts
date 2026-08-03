@@ -70,3 +70,15 @@ export function resolveEffectiveEventsHighlight(
   if (isTsvAllachClub(club)) return defaultSommerfestEventsHighlight();
   return { ...EMPTY_CLUB_EVENTS_HIGHLIGHT };
 }
+
+/** Prefer draft highlight over published so recent saves show before a full page publish. */
+export function pickSavedEventsHighlight(
+  draftHighlight: ClubEventsHighlightConfig | null | undefined,
+  publishedHighlight: ClubEventsHighlightConfig | null | undefined,
+): ClubEventsHighlightConfig | null {
+  const draft = draftHighlight != null ? normalizeClubEventsHighlight(draftHighlight) : null;
+  const published = publishedHighlight != null ? normalizeClubEventsHighlight(publishedHighlight) : null;
+  if (draft != null) return draft;
+  if (published != null) return published;
+  return null;
+}

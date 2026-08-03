@@ -37,14 +37,10 @@ import { resolveCanonicalYouthTeamName } from "@/lib/youth-team-label";
 import { SommerfestHero } from "@/components/sommerfest/sommerfest-hero";
 import { SommerfestMatchSchedule } from "@/components/sommerfest/sommerfest-match-schedule";
 import { SommerfestEventsHub } from "@/components/sommerfest/sommerfest-events-hub";
-import { EventsHighlightAdmin } from "@/components/events/events-highlight-admin";
-import { EventsFeedAdmin } from "@/components/events/events-feed-admin";
+import { EventsPageContentAdmin } from "@/components/events/events-page-content-admin";
 import { useClubEventsFeed } from "@/hooks/use-club-events-feed";
-import {
-  EMPTY_CLUB_EVENTS_HIGHLIGHT,
-  type ClubEventsHighlightConfig,
-} from "@/lib/club-events-highlight";
-import { loadClubEventsHighlight } from "@/lib/club-events-highlight-api";
+import { useClubEventsHighlight } from "@/hooks/use-club-events-highlight";
+import { useCanManageClubPublicPage } from "@/hooks/use-can-manage-club-content";
 import { matchCurrentCutoffIso, isMatchInCurrentWindow } from "@/lib/match-list-window";
 import {
   COMPETITION_TYPE_FILTERS,
@@ -162,6 +158,9 @@ const Matches = () => {
   const showAllachExtras = isTsvAllachClub(activeClub);
   const showSommerfest = showAllachExtras;
   const { eventsFeed, handleFeedSaved, feedLoading } = useClubEventsFeed(clubId);
+  const { eventsHighlight, handleHighlightSaved } = useClubEventsHighlight(clubId);
+  const { canManage: canManageClubPage } = useCanManageClubPublicPage(clubId);
+  const showHighlight = eventsHighlight.enabled;
 
   const [tab, setTab] = useState<"matches" | "competitions" | "standings">("matches");
   const [matches, setMatches] = useState<Match[]>([]);
@@ -177,14 +176,12 @@ const Matches = () => {
   const [sommerfestDbMatches, setSommerfestDbMatches] = useState<Map<string, Match>>(new Map());
   const [openingSommerfestId, setOpeningSommerfestId] = useState<string | null>(null);
   const [publishingSommerfest, setPublishingSommerfest] = useState(false);
-  const [eventsHighlight, setEventsHighlight] = useState<ClubEventsHighlightConfig>(EMPTY_CLUB_EVENTS_HIGHLIGHT);
   const [historyMatches, setHistoryMatches] = useState<Match[]>([]);
   const [historyPage, setHistoryPage] = useState(1);
   const [historyTotalCount, setHistoryTotalCount] = useState(0);
   const [historyExpanded, setHistoryExpanded] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const historyPageKeysetRef = useRef<Record<number, { match_date: string; id: string }>>({});
-  const showHighlight = eventsHighlight.enabled;
 
   // Modals
   const [showAddMatch, setShowAddMatch] = useState(false);
@@ -209,7 +206,6 @@ const Matches = () => {
     setLineup([]);
     setSommerfestDbMatches(new Map());
     setOpeningSommerfestId(null);
-    setEventsHighlight(EMPTY_CLUB_EVENTS_HIGHLIGHT);
     setHistoryMatches([]);
     setHistoryPage(1);
     setHistoryTotalCount(0);
@@ -218,18 +214,6 @@ const Matches = () => {
     setLoading(true);
     setLoadingDetail(false);
   }, [clubId]);
-
-  useEffect(() => {
-    if (!clubId) return;
-    let cancelled = false;
-    void loadClubEventsHighlight(supabase, clubId, activeClub).then(({ data }) => {
-      if (cancelled) return;
-      setEventsHighlight(data);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [clubId, activeClub]);
 
   const [openPanels, setOpenPanels] = useState({
     details: true,
@@ -1109,24 +1093,19 @@ const Matches = () => {
           <div className="text-center py-20 text-muted-foreground">{t.communicationPage.noClubFound}</div>
         ) : tab === "matches" ? (
           <div className="mx-auto max-w-5xl space-y-6">
-            {showHighlight || showSommerfest || perms.isAdmin ? (
+            {showHighlight || showSommerfest || canManageClubPage || perms.isAdmin ? (
               <>
                 {showHighlight ? <SommerfestHero variant="matches" highlight={eventsHighlight} /> : null}
-                {perms.isAdmin && user && clubId ? (
-                  <EventsHighlightAdmin
+                {user && clubId ? (
+                  <EventsPageContentAdmin
                     clubId={clubId}
                     userId={user.id}
-                    value={eventsHighlight}
-                    onSaved={setEventsHighlight}
-                  />
-                ) : null}
-                {showAllachExtras && perms.isTrainer && user && clubId ? (
-                  <EventsFeedAdmin
-                    clubId={clubId}
-                    userId={user.id}
-                    value={eventsFeed}
+                    club={activeClub}
+                    eventsHighlight={eventsHighlight}
+                    onHighlightSaved={handleHighlightSaved}
+                    eventsFeed={eventsFeed}
+                    onFeedSaved={handleFeedSaved}
                     feedLoading={feedLoading}
-                    onSaved={handleFeedSaved}
                   />
                 ) : null}
                 {showAllachExtras ? (

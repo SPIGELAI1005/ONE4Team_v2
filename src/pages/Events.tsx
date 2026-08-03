@@ -21,15 +21,11 @@ import { isTsvAllachClub } from "@/lib/is-tsv-allach-club";
 import { SommerfestHero } from "@/components/sommerfest/sommerfest-hero";
 import { SommerfestEventsHub } from "@/components/sommerfest/sommerfest-events-hub";
 import { ClubFootballCampAdmin } from "@/components/events/club-football-camp-admin";
-import { EventsHighlightAdmin } from "@/components/events/events-highlight-admin";
-import { EventsFeedAdmin } from "@/components/events/events-feed-admin";
+import { EventsPageContentAdmin } from "@/components/events/events-page-content-admin";
 import { isCampEvent, type ClubCampEventRow } from "@/lib/club-football-camp-api";
 import { useClubEventsFeed } from "@/hooks/use-club-events-feed";
-import {
-  EMPTY_CLUB_EVENTS_HIGHLIGHT,
-  type ClubEventsHighlightConfig,
-} from "@/lib/club-events-highlight";
-import { loadClubEventsHighlight } from "@/lib/club-events-highlight-api";
+import { useClubEventsHighlight } from "@/hooks/use-club-events-highlight";
+import { useCanManageClubPublicPage } from "@/hooks/use-can-manage-club-content";
 // logo is rendered by AppHeader
 import type { EventRow, MembershipWithProfile, ParticipantWithMembershipProfile } from "@/types/supabase";
 
@@ -62,11 +58,12 @@ const Events = () => {
   const { activeClub } = useActiveClub();
   const showAllachExtras = isTsvAllachClub(activeClub);
   const { eventsFeed, handleFeedSaved, feedLoading } = useClubEventsFeed(clubId);
+  const { eventsHighlight, handleHighlightSaved } = useClubEventsHighlight(clubId);
+  const { canManage: canManageClubPage } = useCanManageClubPublicPage(clubId);
+  const showHighlight = eventsHighlight.enabled;
 
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [eventsHighlight, setEventsHighlight] = useState<ClubEventsHighlightConfig>(EMPTY_CLUB_EVENTS_HIGHLIGHT);
-  const showHighlight = eventsHighlight.enabled;
   const [showAdd, setShowAdd] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -113,7 +110,6 @@ const Events = () => {
     setSelectedEvent(null);
     setParticipants([]);
     setMembers([]);
-    setEventsHighlight(EMPTY_CLUB_EVENTS_HIGHLIGHT);
     setLoading(true);
     setLoadingDetail(false);
   }, [clubId]);
@@ -132,18 +128,6 @@ const Events = () => {
     };
     fetchEvents();
   }, [clubId]);
-
-  useEffect(() => {
-    if (!clubId) return;
-    let cancelled = false;
-    void loadClubEventsHighlight(supabase, clubId, activeClub).then(({ data }) => {
-      if (cancelled) return;
-      setEventsHighlight(data);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [clubId, activeClub]);
 
   const openEventDetail = async (event: Event) => {
     setSelectedEvent(event);
@@ -260,15 +244,19 @@ const Events = () => {
           <div className="text-center py-20 text-muted-foreground">{t.communicationPage.noClubFound}</div>
         ) : (
           <div className="mx-auto max-w-5xl space-y-6">
-            {showHighlight || showAllachExtras || perms.isAdmin ? (
+            {showHighlight || showAllachExtras || canManageClubPage || perms.isAdmin ? (
               <>
                 {showHighlight ? <SommerfestHero variant="events" highlight={eventsHighlight} /> : null}
-                {perms.isAdmin && user && clubId ? (
-                  <EventsHighlightAdmin
+                {user && clubId ? (
+                  <EventsPageContentAdmin
                     clubId={clubId}
                     userId={user.id}
-                    value={eventsHighlight}
-                    onSaved={setEventsHighlight}
+                    club={activeClub}
+                    eventsHighlight={eventsHighlight}
+                    onHighlightSaved={handleHighlightSaved}
+                    eventsFeed={eventsFeed}
+                    onFeedSaved={handleFeedSaved}
+                    feedLoading={feedLoading}
                   />
                 ) : null}
                 {showAllachExtras && perms.isTrainer && user && clubId ? (
@@ -278,15 +266,6 @@ const Events = () => {
                     publishedKeys={publishedCampKeys}
                     campEvents={campEvents}
                     onPublished={mergePublishedCamps}
-                  />
-                ) : null}
-                {showAllachExtras && perms.isTrainer && user && clubId ? (
-                  <EventsFeedAdmin
-                    clubId={clubId}
-                    userId={user.id}
-                    value={eventsFeed}
-                    feedLoading={feedLoading}
-                    onSaved={handleFeedSaved}
                   />
                 ) : null}
                 {showAllachExtras ? (
