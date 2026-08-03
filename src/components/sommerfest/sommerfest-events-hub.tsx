@@ -31,7 +31,9 @@ import {
   groupItemsByIsoDate,
   type FeedDateLabels,
 } from "@/lib/feed-date-labels";
-import { cn } from "@/lib/utils"; = ["all", "club", "teams", "pitches", "news", "camps"] as const;
+import { cn } from "@/lib/utils";
+
+const FILTER_IDS = ["all", "club", "teams", "pitches", "news", "camps"] as const;
 type FeedFilter = (typeof FILTER_IDS)[number];
 
 const accentStyles: Record<SommerfestFeedItem["accent"], string> = {
