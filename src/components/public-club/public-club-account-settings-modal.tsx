@@ -19,6 +19,7 @@ import {
 import { publicClubCssVars } from "@/components/public-club/club-theme-provider";
 import { usePublicClub } from "@/contexts/public-club-context";
 import { cn } from "@/lib/utils";
+import { syncAccountAvatarToOwnMasterPhotos } from "@/lib/member-photo-display";
 
 const PROFILE_AVATAR_BUCKET = "images-avatars";
 
@@ -108,6 +109,11 @@ export function PublicClubAccountSettingsModal({ open, onOpenChange }: PublicClu
       if (error) throw error;
       const { data } = supabase.storage.from(PROFILE_AVATAR_BUCKET).getPublicUrl(filePath);
       setAvatarUrl(data.publicUrl);
+      const { error: syncError } = await syncAccountAvatarToOwnMasterPhotos({
+        userId: user.id,
+        avatarUrl: data.publicUrl,
+      });
+      if (syncError) throw syncError;
       toast({ title: t.settingsPage.avatarUploadSuccess });
     } catch (err) {
       const message = err instanceof Error ? err.message : t.settingsPage.uploadFailed;
@@ -136,6 +142,11 @@ export function PublicClubAccountSettingsModal({ open, onOpenChange }: PublicClu
         } as Record<string, unknown>)
         .eq("user_id", user.id);
       if (error) throw error;
+      const { error: syncError } = await syncAccountAvatarToOwnMasterPhotos({
+        userId: user.id,
+        avatarUrl: avatarUrl.trim() || null,
+      });
+      if (syncError) throw syncError;
       toast({ title: t.settingsPage.profileSaved });
       onOpenChange(false);
     } catch (err) {
@@ -305,6 +316,7 @@ export function PublicClubAccountSettingsModal({ open, onOpenChange }: PublicClu
                         ) : null}
                       </div>
                     </div>
+                    <p className="text-xs leading-relaxed text-neutral-600">{t.settingsPage.avatarClubSyncHint}</p>
                   </div>
 
                   <div className="space-y-1.5">

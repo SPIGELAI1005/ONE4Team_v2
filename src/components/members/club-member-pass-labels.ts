@@ -49,6 +49,8 @@ export function buildClubMemberPassLabels(t: {
     clubPassNoProgress: string;
     clubPassLevel: string;
     clubPassXp: string;
+    photoFromRegistry: string;
+    photoFromAccount: string;
   };
   common: { close: string };
 }): ClubMemberPassCardLabels & { title: string; close: string } {
@@ -98,6 +100,8 @@ export function buildClubMemberPassLabels(t: {
     noProgress: t.membersPage.clubPassNoProgress,
     level: t.membersPage.clubPassLevel,
     xp: t.membersPage.clubPassXp,
+    photoFromRegistry: t.membersPage.photoFromRegistry,
+    photoFromAccount: t.membersPage.photoFromAccount,
     title: t.membersPage.clubPassModalTitle,
     close: t.common.close,
   };

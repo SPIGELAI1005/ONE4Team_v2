@@ -41,6 +41,8 @@ export interface ClubMemberPassModalProps {
   /** Enables skills back + AI market value when membership is known. */
   clubId?: string | null;
   membershipId?: string | null;
+  /** Login profile avatar — fallback for own membership only. */
+  profileAvatarUrl?: string | null;
   labels: ClubMemberPassCardLabels & {
     title: string;
     close: string;
@@ -63,6 +65,7 @@ export function ClubMemberPassModal({
   appearance = "default",
   clubId: clubIdProp,
   membershipId: membershipIdProp,
+  profileAvatarUrl,
   labels,
 }: ClubMemberPassModalProps) {
   const cardRef = useRef<ClubMemberPassCardHandle>(null);
@@ -156,6 +159,7 @@ export function ClubMemberPassModal({
                 ? () => void refreshEstimate()
                 : undefined
             }
+            profileAvatarUrl={profileAvatarUrl}
             labels={labels}
           />
         </div>

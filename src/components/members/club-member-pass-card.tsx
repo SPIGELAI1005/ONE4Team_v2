@@ -8,6 +8,7 @@ import type { ClubMemberMasterRecord } from "@/lib/member-master-schema";
 import type { ClubPassSkillsSummary } from "@/lib/club-member-pass-skills";
 import { CLUB_PASS_EMPTY_VALUE } from "@/lib/club-member-pass-skills";
 import { captureClubPassAsPng } from "@/lib/club-pass-capture";
+import { resolveMemberPhotoDisplay } from "@/lib/member-photo-display";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/use-language";
@@ -172,6 +173,8 @@ export interface ClubMemberPassCardLabels {
   noProgress: string;
   level: string;
   xp: string;
+  photoFromRegistry?: string;
+  photoFromAccount?: string;
 }
 
 export interface ClubMemberPassCardProps {
@@ -198,6 +201,8 @@ export interface ClubMemberPassCardProps {
   estimateGeneratedAt?: string | null;
   estimateRefreshing?: boolean;
   onRefreshEstimate?: () => void;
+  /** Login profile avatar — fallback for own membership only. */
+  profileAvatarUrl?: string | null;
   labels: ClubMemberPassCardLabels;
   className?: string;
 }
@@ -259,6 +264,7 @@ export const ClubMemberPassCard = forwardRef<ClubMemberPassCardHandle, ClubMembe
       estimateGeneratedAt,
       estimateRefreshing = false,
       onRefreshEstimate,
+      profileAvatarUrl,
       labels,
       className,
     },
@@ -315,6 +321,13 @@ export const ClubMemberPassCard = forwardRef<ClubMemberPassCardHandle, ClubMembe
     const birthDate = values.birth_date ? String(values.birth_date) : null;
     const memberIdNo = values.internal_club_number ? String(values.internal_club_number) : null;
     const passNumber = values.player_passport_number ? String(values.player_passport_number) : null;
+    const resolvedPhoto = resolveMemberPhotoDisplay(values.photo_url, profileAvatarUrl);
+    const photoSourceLabel =
+      resolvedPhoto?.source === "registry"
+        ? labels.photoFromRegistry
+        : resolvedPhoto?.source === "account"
+          ? labels.photoFromAccount
+          : null;
 
     const passExportBackground =
       cardTheme === "light" ? "#f4f5f7" : cardTheme === "gold" ? "#2a1b0b" : "#0c0c0f";
@@ -603,11 +616,11 @@ export const ClubMemberPassCard = forwardRef<ClubMemberPassCardHandle, ClubMembe
                 <div className={cn("relative px-5 pt-4 pb-5", canFlip && "flex-1")}>
                   <div className="flex items-start gap-3">
                     <div
-                      className="flex h-16 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl"
+                      className="flex h-16 w-14 shrink-0 flex-col items-center justify-center overflow-hidden rounded-2xl"
                       style={{ background: cardVars.soft, border: `1px solid ${cardVars.softBorder}` }}
                     >
-                      {typeof values.photo_url === "string" && values.photo_url.trim() ? (
-                        <img src={values.photo_url.trim()} alt="" className="h-full w-full object-cover" />
+                      {resolvedPhoto?.url ? (
+                        <img src={resolvedPhoto.url} alt="" className="h-full w-full object-cover" />
                       ) : (
                         <UserCircle2 className="h-8 w-8" style={{ color: cardVars.muted }} />
                       )}
@@ -617,6 +630,18 @@ export const ClubMemberPassCard = forwardRef<ClubMemberPassCardHandle, ClubMembe
                       <div className="break-words text-[15px] font-bold leading-snug" style={{ color: cardVars.fg }}>
                         {memberName}
                       </div>
+                      {photoSourceLabel ? (
+                        <div
+                          className="mt-1 inline-flex max-w-full rounded-md border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
+                          style={{
+                            borderColor: resolvedPhoto?.isAccountFallback ? "rgba(56,189,248,0.35)" : cardVars.softBorder,
+                            background: resolvedPhoto?.isAccountFallback ? "rgba(56,189,248,0.12)" : cardVars.soft,
+                            color: resolvedPhoto?.isAccountFallback ? "rgba(56,189,248,0.95)" : cardVars.muted,
+                          }}
+                        >
+                          {photoSourceLabel}
+                        </div>
+                      ) : null}
                       <div className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-2.5 text-[11px]">
                         <div className="min-w-0">
                           <div className="font-bold leading-4" style={{ color: cardVars.muted }}>

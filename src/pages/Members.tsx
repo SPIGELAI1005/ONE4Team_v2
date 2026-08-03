@@ -9,7 +9,7 @@ import {
   Shield, Dumbbell, Crown, UserCheck, Heart, MoreHorizontal,
   Phone, Calendar, Loader2,
   Link2, Copy, Check, Inbox, UserPlus, Clock, X, Upload, UploadCloud, Download, AlertTriangle,
-  Sparkles, FileSpreadsheet, UserCircle2, Pencil, ChevronDown, ChevronRight, RefreshCw, History, IdCard,
+  FileSpreadsheet, UserCircle2, Pencil, ChevronDown, ChevronRight, RefreshCw, History, IdCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1584,6 +1584,9 @@ const Members = () => {
     photoValidityHint: t.membersPage.photoValidityHint,
     photoRenewalDue: t.membersPage.photoRenewalDue,
     photoValidUntilLabel: t.membersPage.photoValidUntilLabel,
+    photoFromRegistry: t.membersPage.photoFromRegistry,
+    photoFromAccount: t.membersPage.photoFromAccount,
+    photoAccountFallbackHint: t.membersPage.photoAccountFallbackHint,
   }), [t]);
   const clubPassLabels = useMemo(() => buildClubMemberPassLabels(t), [t]);
   const canReviewJoinRequests =
@@ -6118,6 +6121,7 @@ const Members = () => {
                                 email={membershipEmails[member.id] ?? null}
                                 clubId={clubId}
                                 membershipId={member.id}
+                                profileAvatarUrl={member.profiles?.avatar_url ?? null}
                                 avatarUpload={
                                   memberPanelEditModeId === member.id && canEditMemberMaster(member.id)
                                     ? {
@@ -6212,7 +6216,7 @@ const Members = () => {
                                     className="w-full bg-gradient-gold-static font-semibold text-primary-foreground hover:brightness-110 sm:flex-1"
                                     onClick={() => setShowMasterDialog(true)}
                                   >
-                                    <Sparkles className="mr-2 h-4 w-4" /> {t.membersPage.openFullRegistry}
+                                    <IdCard className="mr-2 h-4 w-4" /> {t.membersPage.openFullRegistry}
                                   </Button>
                                   {canAccessMembersPage ? (
                                     <Button
@@ -7278,6 +7282,7 @@ const Members = () => {
               : null)
           }
           membershipId={clubPassModalMember.id}
+          profileAvatarUrl={clubPassModalMember.profiles?.avatar_url ?? null}
           labels={clubPassLabels}
         />
       ) : null}

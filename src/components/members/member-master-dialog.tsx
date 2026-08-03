@@ -256,6 +256,7 @@ export function MemberMasterDialog({
                 teamLabel={teamLabel}
                 email={email}
                 membershipId={membershipId}
+                profileAvatarUrl={profileAvatarUrl}
                 avatarUpload={{
                   uploading: avatarUploading,
                   onUpload: (file) => void uploadRegistryAvatar(file),

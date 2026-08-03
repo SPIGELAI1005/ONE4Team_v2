@@ -56,6 +56,7 @@ export function PublicClubProfileMenu({ className }: { className?: string }) {
   } = usePublicClub();
 
   const [masterRecord, setMasterRecord] = useState<Partial<ClubMemberMasterRecord> | null>(null);
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
   const [teamLabel, setTeamLabel] = useState("");
   const [loadingCard, setLoadingCard] = useState(false);
   const [cardOpen, setCardOpen] = useState(false);
@@ -74,6 +75,27 @@ export function PublicClubProfileMenu({ className }: { className?: string }) {
     }
     return user?.email?.split("@")[0] ?? t.clubPage.profileMenu;
   }, [t.clubPage.profileMenu, user]);
+
+  useEffect(() => {
+    if (!user) {
+      setProfileAvatarUrl(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("avatar_url")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!cancelled) {
+        setProfileAvatarUrl((data?.avatar_url as string | null) ?? null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   useEffect(() => {
     if (!membershipId) {
@@ -232,6 +254,7 @@ export function PublicClubProfileMenu({ className }: { className?: string }) {
         appearance="publicClub"
         clubId={club.id}
         membershipId={membershipId}
+        profileAvatarUrl={profileAvatarUrl}
         labels={clubPassLabels}
       />
 

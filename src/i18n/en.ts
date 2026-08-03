@@ -1538,6 +1538,10 @@ export const en = {
     photoValidityHint: "Club photos are valid for 2 years. After that, renew the picture so IDs stay current.",
     photoRenewalDue: "This photo is older than 2 years and should be renewed. For players under 18, parents are notified in the dashboard.",
     photoValidUntilLabel: "Valid until {date}",
+    photoFromRegistry: "Registry photo",
+    photoFromAccount: "Account photo",
+    photoAccountFallbackHint:
+      "Showing your account profile picture because no club registry photo is stored yet. Upload a registry photo here or in Settings to use it on your membership card.",
     guardians: "Linked guardians / parents",
     guardiansEmpty: "No guardian links yet. Add parents or carers who manage this profile.",
     linkGuardian: "Link a parent or guardian account",
@@ -4159,6 +4163,8 @@ export const en = {
     // Profile tab
     displayName: "Display Name",
     avatarPreview: "Profile Picture",
+    avatarClubSyncHint:
+      "Your profile picture is copied to your own membership registry and club ID card. Linked family members must be updated separately in their registry data.",
     uploadAvatar: "Upload Picture",
     uploadingAvatar: "Uploading...",
     removeAvatar: "Remove Picture",

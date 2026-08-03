@@ -25,6 +25,9 @@ import {
   saveMemberMasterRecord,
   type EditableMemberMasterRow,
 } from "@/lib/member-master-api";
+import {
+  syncOwnProfileAvatarFromMasterPhoto,
+} from "@/lib/member-photo-display";
 
 const PROFILE_AVATAR_BUCKET = "images-avatars";
 
@@ -55,6 +58,7 @@ export default function MyMemberData() {
     teamLabel: string | null;
   } | null>(null);
   const [missingMigration, setMissingMigration] = useState(false);
+  const [ownProfileAvatarUrl, setOwnProfileAvatarUrl] = useState<string | null>(null);
 
   const masterTabLabels = useMemo(
     (): MasterDataTabsLabels => ({
@@ -77,12 +81,36 @@ export default function MyMemberData() {
       photoValidityHint: t.membersPage.photoValidityHint,
       photoRenewalDue: t.membersPage.photoRenewalDue,
       photoValidUntilLabel: t.membersPage.photoValidUntilLabel,
+      photoFromRegistry: t.membersPage.photoFromRegistry,
+      photoFromAccount: t.membersPage.photoFromAccount,
+      photoAccountFallbackHint: t.membersPage.photoAccountFallbackHint,
     }),
     [t],
   );
 
   const fieldPolicy = useMemo(() => editableFieldKeysForActor(editActor), [editActor]);
   const groupPolicy = useMemo(() => editableGroupsForActor(editActor), [editActor]);
+
+  useEffect(() => {
+    if (!user) {
+      setOwnProfileAvatarUrl(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("avatar_url")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!cancelled) {
+        setOwnProfileAvatarUrl((data?.avatar_url as string | null) ?? null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const loadEditableList = useCallback(async () => {
     if (!clubId) return;
@@ -162,6 +190,7 @@ export default function MyMemberData() {
       const { data } = supabase.storage.from(PROFILE_AVATAR_BUCKET).getPublicUrl(filePath);
       setField("photo_url", data.publicUrl);
     } catch (error) {
+      const message = error instanceof Error ? error.message : t.settingsPage.uploadFailed;
       toast({ title: t.common.error, description: message, variant: "destructive" });
     } finally {
       setAvatarUploading(false);
@@ -175,6 +204,19 @@ export default function MyMemberData() {
       const payload = filterMasterPayloadForActor(form, editActor);
       const { error } = await saveMemberMasterRecord(selectedId, payload);
       if (error) throw error;
+      const activeRow = editableRows.find((row) => row.membership_id === selectedId);
+      if (editActor === "self" && activeRow?.relationship === "self" && user) {
+        const photoUrl =
+          typeof payload.photo_url === "string" && payload.photo_url.trim()
+            ? payload.photo_url.trim()
+            : null;
+        const { error: avatarSyncError } = await syncOwnProfileAvatarFromMasterPhoto({
+          userId: user.id,
+          photoUrl,
+        });
+        if (avatarSyncError) throw avatarSyncError;
+        setOwnProfileAvatarUrl(photoUrl);
+      }
       toast({
         title: t.myMemberDataPage.saveSuccessTitle,
         description:
@@ -310,6 +352,7 @@ export default function MyMemberData() {
                   allowedFieldKeys={fieldPolicy}
                   allowedGroups={groupPolicy}
                   hideClubNumberGenerator={editActor !== "manager"}
+                  profileAvatarUrl={selectedRow.relationship === "self" ? ownProfileAvatarUrl : null}
                   avatarUpload={{
                     uploading: avatarUploading,
                     onUpload: (file) => void uploadPhoto(file),

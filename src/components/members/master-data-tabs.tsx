@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MEMBER_MASTER_FIELDS } from "@/lib/member-master-schema";
 import type { ClubMemberMasterRecord } from "@/lib/member-master-schema";
 import { photoValidUntil, shouldShowPhotoRenewalHint } from "@/lib/member-photo-validity";
+import { resolveMemberPhotoDisplay } from "@/lib/member-photo-display";
 import { cn } from "@/lib/utils";
 import { ClubMemberPassCard } from "@/components/members/club-member-pass-card";
 import { ClubMemberPassModal } from "@/components/members/club-member-pass-modal";
@@ -56,6 +57,9 @@ export interface MasterDataTabsLabels {
   photoValidityHint?: string;
   photoRenewalDue?: string;
   photoValidUntilLabel?: string;
+  photoFromRegistry?: string;
+  photoFromAccount?: string;
+  photoAccountFallbackHint?: string;
 }
 
 export interface MasterDataTabsAvatarUpload {
@@ -92,6 +96,8 @@ interface MasterDataTabsProps {
   allowedGroups?: Set<string>;
   /** Hide internal club-number generator (self-service editors). */
   hideClubNumberGenerator?: boolean;
+  /** Login profile avatar — used as fallback for own membership only. */
+  profileAvatarUrl?: string | null;
 }
 
 function formatFieldLabel(column: string) {
@@ -125,6 +131,7 @@ export function MasterDataTabs({
   allowedFieldKeys,
   allowedGroups,
   hideClubNumberGenerator = false,
+  profileAvatarUrl,
 }: MasterDataTabsProps) {
   const { t } = useLanguage();
   const { clubId: activeClubId } = useClubId();
@@ -166,6 +173,21 @@ export function MasterDataTabs({
     "Member";
 
   const memberIdNo = values.internal_club_number ? String(values.internal_club_number) : null;
+
+  const resolvedMemberPhoto = resolveMemberPhotoDisplay(values.photo_url, profileAvatarUrl);
+
+  const photoSourceBadge = resolvedMemberPhoto ? (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-medium",
+        resolvedMemberPhoto.source === "registry"
+          ? "border-primary/30 bg-primary/10 text-primary"
+          : "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-200",
+      )}
+    >
+      {resolvedMemberPhoto.source === "registry" ? labels.photoFromRegistry : labels.photoFromAccount}
+    </span>
+  ) : null;
 
   const labelMap: Record<string, string> = {
     ...labels,
@@ -261,16 +283,26 @@ export function MasterDataTabs({
                   const val = values[field.key];
                 if (readOnly) {
                   if (field.key === "photo_url") {
-                    const photoUrl = typeof val === "string" && val.trim() ? val.trim() : "";
+                    const registryUrl = typeof val === "string" && val.trim() ? val.trim() : "";
+                    const displayUrl = resolvedMemberPhoto?.url ?? "";
                     return (
                       <div key={field.key} className={cn("p-2.5 rounded-lg border border-border/40 bg-background/30", photoUrlColSpan)}>
-                        <div className={cn("text-sm mb-2", accent)}>{formatFieldLabel(field.column)}</div>
-                        {photoUrl ? (
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <div className={cn("text-sm", accent)}>{formatFieldLabel(field.column)}</div>
+                          {displayUrl ? photoSourceBadge : null}
+                        </div>
+                        {displayUrl ? (
                           <div className="flex items-start gap-3 min-w-0">
                             <div className="w-12 h-12 rounded-xl border border-border/60 bg-background/60 overflow-hidden flex items-center justify-center shrink-0">
-                              <img src={photoUrl} alt="" className="w-full h-full object-cover" />
+                              <img src={displayUrl} alt="" className="w-full h-full object-cover" />
                             </div>
-                            <div className="text-sm font-medium break-all min-w-0 text-foreground">{photoUrl}</div>
+                            <div className="min-w-0 space-y-1">
+                              {registryUrl ? (
+                                <div className="text-sm font-medium break-all min-w-0 text-foreground">{registryUrl}</div>
+                              ) : labels.photoAccountFallbackHint ? (
+                                <div className="text-xs text-muted-foreground leading-relaxed">{labels.photoAccountFallbackHint}</div>
+                              ) : null}
+                            </div>
                           </div>
                         ) : (
                           <div className="text-sm font-medium text-muted-foreground/40">-</div>
@@ -350,15 +382,16 @@ export function MasterDataTabs({
                 }
 
                 if (field.key === "photo_url" && avatarUpload) {
-                  const urlStr = val != null ? String(val) : "";
+                  const registryUrl = val != null ? String(val).trim() : "";
+                  const displayUrl = resolvedMemberPhoto?.url ?? "";
                   // Prefer stored stamp; if a photo exists without one (legacy / mid-edit), use now for display.
                   const uploadedAt =
                     values.photo_uploaded_at ??
-                    (urlStr.trim() ? new Date().toISOString() : null);
-                  const renewalDue = shouldShowPhotoRenewalHint(urlStr, values.photo_uploaded_at);
+                    (registryUrl ? new Date().toISOString() : null);
+                  const renewalDue = shouldShowPhotoRenewalHint(registryUrl, values.photo_uploaded_at);
                   const validUntil = photoValidUntil(uploadedAt);
                   const validUntilText =
-                    urlStr.trim() && validUntil && labels.photoValidUntilLabel
+                    registryUrl && validUntil && labels.photoValidUntilLabel
                       ? labels.photoValidUntilLabel.replace(
                           "{date}",
                           validUntil.toLocaleDateString(undefined, {
@@ -371,13 +404,19 @@ export function MasterDataTabs({
                   return (
                     <div key={field.key} className={cn("min-w-0 space-y-3", photoUrlColSpan)}>
                       <div>
-                        <label className={cn("text-sm font-medium", accent)}>{formatFieldLabel(field.column)}</label>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <label className={cn("text-sm font-medium", accent)}>{formatFieldLabel(field.column)}</label>
+                          {displayUrl ? photoSourceBadge : null}
+                        </div>
                         <div className="mt-1 text-xs text-muted-foreground">{labels.avatarPreview}</div>
+                        {resolvedMemberPhoto?.isAccountFallback && labels.photoAccountFallbackHint ? (
+                          <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{labels.photoAccountFallbackHint}</p>
+                        ) : null}
                       </div>
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                         <div className="w-16 h-16 rounded-2xl border border-border/60 bg-background/60 overflow-hidden flex items-center justify-center shrink-0">
-                          {urlStr ? (
-                            <img src={urlStr} alt="" className="w-full h-full object-cover" />
+                          {displayUrl ? (
+                            <img src={displayUrl} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <UserCircle2 className="w-9 h-9 text-muted-foreground" />
                           )}
@@ -404,7 +443,7 @@ export function MasterDataTabs({
                               {avatarUpload.uploading ? labels.uploadingAvatar : labels.uploadAvatar}
                             </span>
                           </label>
-                          {urlStr && avatarUpload.onRemove ? (
+                          {registryUrl && avatarUpload.onRemove ? (
                             <Button
                               type="button"
                               variant="outline"
@@ -415,25 +454,25 @@ export function MasterDataTabs({
                               {labels.removeAvatar}
                             </Button>
                           ) : null}
-                          {urlStr && renewalDue && labels.photoRenewalDue ? (
+                          {registryUrl && renewalDue && labels.photoRenewalDue ? (
                             <span className="inline-flex h-10 items-center rounded-md border border-amber-500/40 bg-amber-500/10 px-3 text-xs font-medium text-amber-700 dark:text-amber-200 sm:max-w-[16rem]">
                               {labels.photoRenewalDue}
                             </span>
-                          ) : urlStr && validUntilText ? (
+                          ) : registryUrl && validUntilText ? (
                             <span className="inline-flex h-10 items-center text-xs font-medium text-muted-foreground whitespace-nowrap">
                               {validUntilText}
                             </span>
                           ) : null}
                         </div>
                       </div>
-                      {!urlStr && labels.photoValidityHint ? (
+                      {!registryUrl && labels.photoValidityHint ? (
                         <div className="text-xs text-muted-foreground">{labels.photoValidityHint}</div>
                       ) : null}
                       <div className="min-w-0">
                         <div className="text-xs text-muted-foreground mb-1">{labels.avatarUrl}</div>
                         <Input
                           className="h-10 w-full min-w-0 text-sm"
-                          value={urlStr}
+                          value={registryUrl}
                           onChange={(e) => {
                             const next = e.target.value || null;
                             onChange?.(field.key, next);
@@ -455,12 +494,13 @@ export function MasterDataTabs({
 
                 // Read-only photo: still show validity next to the preview.
                 if (field.key === "photo_url" && !avatarUpload) {
-                  const urlStr = val != null ? String(val) : "";
+                  const registryUrl = val != null ? String(val).trim() : "";
+                  const displayUrl = resolvedMemberPhoto?.url ?? "";
                   const uploadedAt = values.photo_uploaded_at ?? null;
-                  const renewalDue = shouldShowPhotoRenewalHint(urlStr, uploadedAt);
+                  const renewalDue = shouldShowPhotoRenewalHint(registryUrl, uploadedAt);
                   const validUntil = photoValidUntil(uploadedAt);
                   const validUntilText =
-                    urlStr.trim() && validUntil && labels.photoValidUntilLabel
+                    registryUrl && validUntil && labels.photoValidUntilLabel
                       ? labels.photoValidUntilLabel.replace(
                           "{date}",
                           validUntil.toLocaleDateString(undefined, {
@@ -473,33 +513,39 @@ export function MasterDataTabs({
                   return (
                     <div key={field.key} className={cn("min-w-0 space-y-3", photoUrlColSpan)}>
                       <div>
-                        <label className={cn("text-sm font-medium", accent)}>{formatFieldLabel(field.column)}</label>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <label className={cn("text-sm font-medium", accent)}>{formatFieldLabel(field.column)}</label>
+                          {displayUrl ? photoSourceBadge : null}
+                        </div>
                         <div className="mt-1 text-xs text-muted-foreground">{labels.avatarPreview}</div>
+                        {resolvedMemberPhoto?.isAccountFallback && labels.photoAccountFallbackHint ? (
+                          <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{labels.photoAccountFallbackHint}</p>
+                        ) : null}
                       </div>
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                         <div className="w-16 h-16 rounded-2xl border border-border/60 bg-background/60 overflow-hidden flex items-center justify-center shrink-0">
-                          {urlStr ? (
-                            <img src={urlStr} alt="" className="w-full h-full object-cover" />
+                          {displayUrl ? (
+                            <img src={displayUrl} alt="" className="w-full h-full object-cover" />
                           ) : (
                             <UserCircle2 className="w-9 h-9 text-muted-foreground" />
                           )}
                         </div>
-                        {urlStr && renewalDue && labels.photoRenewalDue ? (
+                        {registryUrl && renewalDue && labels.photoRenewalDue ? (
                           <span className="inline-flex items-center rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-700 dark:text-amber-200">
                             {labels.photoRenewalDue}
                           </span>
-                        ) : urlStr && validUntilText ? (
+                        ) : registryUrl && validUntilText ? (
                           <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
                             {validUntilText}
                           </span>
-                        ) : urlStr && labels.photoValidityHint ? (
+                        ) : !displayUrl && labels.photoValidityHint ? (
                           <span className="text-xs text-muted-foreground">{labels.photoValidityHint}</span>
                         ) : null}
                       </div>
-                      {urlStr ? (
+                      {registryUrl ? (
                         <div className="min-w-0">
                           <div className="text-xs text-muted-foreground mb-1">{labels.avatarUrl}</div>
-                          <Input className="h-10 w-full min-w-0 text-sm" value={urlStr} readOnly disabled />
+                          <Input className="h-10 w-full min-w-0 text-sm" value={registryUrl} readOnly disabled />
                         </div>
                       ) : null}
                     </div>
@@ -574,6 +620,7 @@ export function MasterDataTabs({
             teamLabel={teamLabel}
             readOnly={readOnly}
             showControls={!readOnly}
+            profileAvatarUrl={profileAvatarUrl}
             onGenerateId={readOnly || hideClubNumberGenerator ? undefined : handleGenerateId}
             onMemberIdClick={memberIdNo ? openClubPassModal : undefined}
             onDownloadComplete={() => onChange?.("club_pass_generated_at", new Date().toISOString())}
@@ -602,6 +649,7 @@ export function MasterDataTabs({
           isPlayer={isPlayer}
           teamLabel={teamLabel}
           readOnly={readOnly}
+          profileAvatarUrl={profileAvatarUrl}
           onGenerateId={readOnly || hideClubNumberGenerator ? undefined : handleGenerateId}
           onDownloadComplete={() => onChange?.("club_pass_generated_at", new Date().toISOString())}
           clubId={resolvedClubId}

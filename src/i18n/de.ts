@@ -1559,6 +1559,10 @@ export const de: Translations = {
     photoValidityHint: "Vereinsfotos sind 2 Jahre gültig. Danach bitte das Bild erneuern, damit Ausweise aktuell bleiben.",
     photoRenewalDue: "Dieses Foto ist älter als 2 Jahre und sollte erneuert werden. Bei Spielern unter 18 werden Eltern im Dashboard benachrichtigt.",
     photoValidUntilLabel: "Gültig bis {date}",
+    photoFromRegistry: "Vereinsregister-Foto",
+    photoFromAccount: "Kontoprofilbild",
+    photoAccountFallbackHint:
+      "Es wird Ihr Kontoprofilbild angezeigt, weil noch kein Vereinsregister-Foto hinterlegt ist. Laden Sie hier oder in den Einstellungen ein Register-Foto hoch, damit es auf Ihrer Mitgliedskarte erscheint.",
     guardians: "Verknüpfte Betreuer:innen / Eltern",
     guardiansEmpty: "Noch keine Betreuer:innen. Verknüpfe Eltern oder Erziehungsberechtigte.",
     linkGuardian: "Eltern- oder Betreuerkonto verknüpfen",
@@ -4193,6 +4197,8 @@ export const de: Translations = {
     // Profile tab
     displayName: "Anzeigename",
     avatarPreview: "Profilbild",
+    avatarClubSyncHint:
+      "Ihr Profilbild wird in Ihr eigenes Vereinsregister und auf Ihre Mitgliedskarte übernommen. Verknüpfte Familienmitglieder müssen separat in deren Registerdaten aktualisiert werden.",
     uploadAvatar: "Bild hochladen",
     uploadingAvatar: "Wird hochgeladen...",
     removeAvatar: "Bild entfernen",

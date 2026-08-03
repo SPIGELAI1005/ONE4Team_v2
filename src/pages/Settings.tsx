@@ -45,6 +45,7 @@ import { PastDueBillingBanner } from "@/components/billing/PastDueBillingBanner"
 import { FoundingClubStatusCard } from "@/components/billing/FoundingClubStatusCard";
 import { GraceWriteBanner } from "@/components/billing/GraceWriteBanner";
 import { cn } from "@/lib/utils";
+import { syncAccountAvatarToOwnMasterPhotos } from "@/lib/member-photo-display";
 
 const LS_NOTIF_KEY = "one4team.notifications";
 const PROFILE_AVATAR_BUCKET = "images-avatars";
@@ -557,6 +558,12 @@ export default function Settings() {
         } as Record<string, unknown>)
         .eq("user_id", user.id);
       if (error) throw error;
+      const syncedAvatar = avatarUrl.trim() || null;
+      const { error: syncError } = await syncAccountAvatarToOwnMasterPhotos({
+        userId: user.id,
+        avatarUrl: syncedAvatar,
+      });
+      if (syncError) throw syncError;
       toast({ title: t.settingsPage.profileSaved });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t.settingsPage.saveFailed;
@@ -579,6 +586,11 @@ export default function Settings() {
 
       const { data } = supabase.storage.from(PROFILE_AVATAR_BUCKET).getPublicUrl(filePath);
       setAvatarUrl(data.publicUrl);
+      const { error: syncError } = await syncAccountAvatarToOwnMasterPhotos({
+        userId: user.id,
+        avatarUrl: data.publicUrl,
+      });
+      if (syncError) throw syncError;
       toast({ title: t.settingsPage.avatarUploadSuccess });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t.settingsPage.uploadFailed;
@@ -807,6 +819,7 @@ export default function Settings() {
                         )}
                       </div>
                     </div>
+                    <p className="mt-2 text-xs text-muted-foreground leading-relaxed">{t.settingsPage.avatarClubSyncHint}</p>
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground mb-1">{t.settingsPage.avatarUrl}</div>
