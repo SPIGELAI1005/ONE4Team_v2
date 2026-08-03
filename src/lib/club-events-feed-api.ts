@@ -30,13 +30,9 @@ export async function loadClubEventsFeed(
 
   const clubMeta = club ?? { name: row?.name, slug: row?.slug };
   const published = parseClubPublicPageConfig(row?.public_page_published_config);
-  const picked = pickSavedEventsFeed(
-    extractFeedFromConfig(draftResult.data),
-    extractFeedFromConfig(published),
-  );
-  if (draftResult.error && !picked) {
-    return { data: resolveEffectiveEventsFeed(null, clubMeta), error: draftResult.error };
-  }
+  const fromDraft = draftResult.error ? null : extractFeedFromConfig(draftResult.data);
+  const fromPublished = extractFeedFromConfig(published);
+  const picked = pickSavedEventsFeed(fromDraft, fromPublished);
   return { data: resolveEffectiveEventsFeed(picked, clubMeta), error: null };
 }
 

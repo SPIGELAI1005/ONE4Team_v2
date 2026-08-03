@@ -56,4 +56,16 @@ describe("club-events-feed", () => {
     expect(picked?.dayProgram).toBe("Draft label");
     expect(picked?.items[0]?.id).toBe("news-draft");
   });
+
+  it("honors an intentionally empty saved feed instead of Sommerfest defaults", () => {
+    const emptySaved = normalizeClubEventsFeed({
+      enabled: true,
+      festivalDate: "2026-07-11",
+      dayProgram: "Leer",
+      items: [],
+    });
+    const resolved = resolveEffectiveEventsFeed(emptySaved, { slug: "tsv-allach-09" });
+    expect(resolved.items).toHaveLength(0);
+    expect(resolved.dayProgram).toBe("Leer");
+  });
 });

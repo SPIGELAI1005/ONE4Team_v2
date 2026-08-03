@@ -166,7 +166,7 @@ export function resolveEffectiveEventsFeed(
   club?: { name?: string | null; slug?: string | null } | null,
 ): ClubEventsFeedConfig {
   const normalized = feed != null ? normalizeClubEventsFeed(feed) : null;
-  if (normalized?.enabled && normalized.items.length > 0) return normalized;
+  if (normalized?.enabled) return normalized;
   if (isTsvAllachClub(club)) return defaultSommerfestEventsFeed();
   return { ...EMPTY_CLUB_EVENTS_FEED };
 }
@@ -178,8 +178,8 @@ export function pickSavedEventsFeed(
 ): ClubEventsFeedConfig | null {
   const draft = draftFeed != null ? normalizeClubEventsFeed(draftFeed) : null;
   const published = publishedFeed != null ? normalizeClubEventsFeed(publishedFeed) : null;
-  if (draft?.enabled && draft.items.length > 0) return draft;
-  if (published?.enabled && published.items.length > 0) return published;
+  if (draft?.enabled) return draft;
+  if (published?.enabled) return published;
   return null;
 }
 

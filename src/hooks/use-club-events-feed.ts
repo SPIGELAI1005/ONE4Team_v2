@@ -32,8 +32,7 @@ export function useClubEventsFeed(clubId: string | null | undefined) {
   }, [clubId, location.pathname, reloadFeed]);
 
   function handleFeedSaved(next: ClubEventsFeedConfig) {
-    setEventsFeed(next);
-    void reloadFeed();
+    setEventsFeed({ ...next, enabled: true });
   }
 
   return {

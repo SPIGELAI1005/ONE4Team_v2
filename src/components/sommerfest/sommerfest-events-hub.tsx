@@ -20,6 +20,7 @@ import type { ClubCampEventRow } from "@/lib/club-football-camp-api";
 import { ClubFootballCampCard } from "@/components/events/club-football-camp-card";
 import {
   clubFeedItemsSorted,
+  normalizeClubEventsFeed,
   resolveEffectiveEventsFeed,
   sommerfestItemFromClubFeed,
   type ClubEventsFeedConfig,
@@ -95,11 +96,15 @@ export function SommerfestEventsHub({
     language === "de" ? resolvedFeed.eveningProgram : resolvedFeed.eveningProgramEn || resolvedFeed.eveningProgram;
 
   const sourceFeed = useMemo((): SommerfestFeedItem[] => {
+    const savedFeed = feedConfig != null ? normalizeClubEventsFeed(feedConfig) : null;
+    if (savedFeed?.enabled) {
+      return clubFeedItemsSorted(resolvedFeed).map(sommerfestItemFromClubFeed);
+    }
     if (resolvedFeed.items.length > 0) {
       return clubFeedItemsSorted(resolvedFeed).map(sommerfestItemFromClubFeed);
     }
     return sommerfestFeedSorted();
-  }, [resolvedFeed]);
+  }, [feedConfig, resolvedFeed]);
 
   const feed = useMemo(() => {
     if (filter === "camps") return [];
