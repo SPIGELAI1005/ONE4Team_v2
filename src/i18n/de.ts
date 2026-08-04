@@ -5333,6 +5333,8 @@ export const de: Translations = {
     saveSuccessDescOther: "Änderungen für diese Person wurden gespeichert.",
     saveSuccessDescOtherNamed: "Änderungen für {name} wurden gespeichert.",
     saveFailed: "Registerdaten konnten nicht gespeichert werden.",
+    saveFailedNoEditableFields:
+      "Es wurden keine bearbeitbaren Felder zum Speichern erkannt. Bitte prüfen Sie Vorname, Nachname und weitere Pflichtfelder und versuchen Sie es erneut.",
     loadFailed: "Registerdaten konnten nicht geladen werden.",
     loadFailedTitle: "Registerdaten konnten nicht geladen werden",
     loadFailedGeneric: "Bitte prüfen Sie Ihre Verbindung und versuchen Sie es gleich erneut.",

@@ -14,9 +14,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 import type { ClubMemberMasterRecord } from "@/lib/member-master-schema";
 import {
+  buildMemberMasterSavePayload,
   editableFieldKeysForActor,
   editableGroupsForActor,
-  filterMasterPayloadForActor,
+  masterRecordDisplayName,
   type MemberMasterEditActor,
 } from "@/lib/member-master-field-policy";
 import {
@@ -28,7 +29,7 @@ import {
 import {
   syncOwnProfileAvatarFromMasterPhoto,
 } from "@/lib/member-photo-display";
-import { resolveMyMemberDataLoadError } from "@/lib/member-my-data-errors";
+import { resolveMyMemberDataLoadError, resolveMyMemberDataSaveError } from "@/lib/member-my-data-errors";
 
 const PROFILE_AVATAR_BUCKET = "images-avatars";
 
@@ -160,7 +161,7 @@ export default function MyMemberData() {
     setLoading(false);
   }, [clubId, t]);
 
-  const loadBundle = useCallback(async (membershipId: string) => {
+  const loadBundle = useCallback(async (membershipId: string, clubIdForForm: string) => {
     const { data, error } = await getMemberMasterBundle(membershipId);
     if (error || !data) {
       toast({
@@ -168,16 +169,18 @@ export default function MyMemberData() {
         description: error?.message ?? t.myMemberDataPage.loadFailed,
         variant: "destructive",
       });
-      return;
+      return null;
     }
     setEditActor(mapEditActor(data.edit_actor));
-    setForm({ ...(data.master ?? {}), membership_id: membershipId, club_id: data.club_id });
+    setForm({ ...(data.master ?? {}), membership_id: membershipId, club_id: clubIdForForm });
+    const displayName = masterRecordDisplayName(data.master, data.display_name);
     setBundleMeta({
-      displayName: data.display_name,
+      displayName: displayName || data.display_name,
       role: data.role,
       email: data.email,
       teamLabel: data.team_label,
     });
+    return data;
   }, [t.common.error, t.myMemberDataPage.loadFailed, toast]);
 
   useEffect(() => {
@@ -192,9 +195,17 @@ export default function MyMemberData() {
   }, [clubId, clubLoading, loadEditableList]);
 
   useEffect(() => {
-    if (!selectedId) return;
-    void loadBundle(selectedId);
-  }, [selectedId, loadBundle]);
+    if (!selectedId || !clubId) return;
+    let cancelled = false;
+    setForm({ membership_id: selectedId, club_id: clubId });
+    setBundleMeta(null);
+    void loadBundle(selectedId, clubId).then(() => {
+      if (cancelled) return;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId, clubId, loadBundle]);
 
   useEffect(() => {
     if (!clubId || !selectedId) return;
@@ -233,7 +244,15 @@ export default function MyMemberData() {
     if (!selectedId || saving) return;
     setSaving(true);
     try {
-      const payload = filterMasterPayloadForActor(form, editActor);
+      const payload = buildMemberMasterSavePayload(form, editActor);
+      if (!payload) {
+        toast({
+          title: t.common.error,
+          description: t.myMemberDataPage.saveFailedNoEditableFields,
+          variant: "destructive",
+        });
+        return;
+      }
       const { data: savedRecord, error } = await saveMemberMasterRecord(selectedId, payload);
       if (error) throw error;
       const activeRow = editableRows.find((row) => row.membership_id === selectedId);
@@ -251,10 +270,17 @@ export default function MyMemberData() {
         setOwnProfileAvatarUrl(photoUrl);
       }
       const personName =
-        [savedRecord?.first_name, savedRecord?.last_name].filter(Boolean).join(" ").trim() ||
-        activeRow?.display_name?.trim() ||
+        masterRecordDisplayName(savedRecord, activeRow?.display_name) ||
         bundleMeta?.displayName?.trim() ||
         "";
+      if (personName) {
+        setBundleMeta((previous) => (previous ? { ...previous, displayName: personName } : previous));
+        setEditableRows((previous) =>
+          previous.map((row) =>
+            row.membership_id === selectedId ? { ...row, display_name: personName } : row,
+          ),
+        );
+      }
       toast({
         title: t.myMemberDataPage.saveSuccessTitle,
         description: savedForSelf
@@ -263,10 +289,22 @@ export default function MyMemberData() {
             ? t.myMemberDataPage.saveSuccessDescOtherNamed.replace("{name}", personName)
             : t.myMemberDataPage.saveSuccessDescOther,
       });
-      await loadBundle(selectedId);
+      if (savedRecord && clubId) {
+        setForm({ ...savedRecord, membership_id: selectedId, club_id: clubId });
+      } else {
+        await loadBundle(selectedId, clubId!);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : t.myMemberDataPage.saveFailed;
-      toast({ title: t.common.error, description: message, variant: "destructive" });
+      toast({
+        title: t.common.error,
+        description: resolveMyMemberDataSaveError(message, {
+          saveFailedGeneric: t.myMemberDataPage.saveFailed,
+          saveFailedNoEditableFields: t.myMemberDataPage.saveFailedNoEditableFields,
+          saveFailedNotAuthorized: t.myMemberDataPage.loadFailedNotAuthorized,
+        }),
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }

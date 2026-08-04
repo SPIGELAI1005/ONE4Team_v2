@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveMyMemberDataLoadError } from "@/lib/member-my-data-errors";
+import { resolveMyMemberDataLoadError, resolveMyMemberDataSaveError } from "@/lib/member-my-data-errors";
 
 const labels = {
   loadFailedGeneric: "generic",
@@ -7,6 +7,12 @@ const labels = {
   loadFailedNotAuthorized: "forbidden",
   loadFailedServer: "server",
   loadFailedMigration: "migration",
+};
+
+const saveLabels = {
+  saveFailedGeneric: "generic save",
+  saveFailedNoEditableFields: "no fields",
+  saveFailedNotAuthorized: "forbidden save",
 };
 
 describe("resolveMyMemberDataLoadError", () => {
@@ -18,5 +24,11 @@ describe("resolveMyMemberDataLoadError", () => {
 
   it("maps not authorized", () => {
     expect(resolveMyMemberDataLoadError("Not authorized", labels)).toBe("forbidden");
+  });
+});
+
+describe("resolveMyMemberDataSaveError", () => {
+  it("maps no_editable_fields", () => {
+    expect(resolveMyMemberDataSaveError("no_editable_fields", saveLabels)).toBe("no fields");
   });
 });

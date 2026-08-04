@@ -6,6 +6,12 @@ interface MyMemberDataErrorLabels {
   loadFailedMigration: string;
 }
 
+interface MyMemberDataSaveErrorLabels {
+  saveFailedGeneric: string;
+  saveFailedNoEditableFields: string;
+  saveFailedNotAuthorized: string;
+}
+
 /** Map Supabase/Postgres RPC errors to member-friendly copy for /my-data. */
 export function resolveMyMemberDataLoadError(
   message: string,
@@ -35,4 +41,21 @@ export function resolveMyMemberDataLoadError(
   }
 
   return labels.loadFailedServer;
+}
+
+/** Map save RPC errors to member-friendly copy for /my-data. */
+export function resolveMyMemberDataSaveError(
+  message: string,
+  labels: MyMemberDataSaveErrorLabels,
+): string {
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes("no_editable_fields")) {
+    return labels.saveFailedNoEditableFields;
+  }
+  if (normalized.includes("not authorized") || normalized.includes("not_authenticated")) {
+    return labels.saveFailedNotAuthorized;
+  }
+
+  return labels.saveFailedGeneric;
 }

@@ -5304,6 +5304,8 @@ export const en = {
     saveSuccessDescOther: "Changes were saved for this person.",
     saveSuccessDescOtherNamed: "Changes for {name} were saved.",
     saveFailed: "Could not save registry data.",
+    saveFailedNoEditableFields:
+      "No editable fields were detected to save. Please check first name, last name, and other required fields, then try again.",
     loadFailed: "Could not load registry data.",
     loadFailedTitle: "Registry data could not be loaded",
     loadFailedGeneric: "Please check your connection and try again in a moment.",

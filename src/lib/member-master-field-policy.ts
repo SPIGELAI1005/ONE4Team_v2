@@ -89,3 +89,20 @@ export function filterMasterPayloadForActor(
   }
   return out;
 }
+
+/** Build RPC payload; returns null when nothing editable would be sent (avoids no_editable_fields). */
+export function buildMemberMasterSavePayload(
+  form: Partial<ClubMemberMasterRecord>,
+  actor: MemberMasterEditActor,
+): Partial<ClubMemberMasterRecord> | null {
+  const payload = filterMasterPayloadForActor(form, actor);
+  return Object.keys(payload).length > 0 ? payload : null;
+}
+
+export function masterRecordDisplayName(
+  master: Partial<ClubMemberMasterRecord> | null | undefined,
+  fallback?: string | null,
+): string {
+  const fromMaster = [master?.first_name, master?.last_name].filter(Boolean).join(" ").trim();
+  return fromMaster || fallback?.trim() || "";
+}
