@@ -1,8 +1,8 @@
 {
-  "linesOfCode": 169689,
-  "measuredAt": "2026-08-03T21:15:14.618Z",
+  "linesOfCode": 170160,
+  "measuredAt": "2026-08-05T22:04:04.355Z",
   "scope": "src/**/*.{ts,tsx,js,jsx,css,scss,mjs,cjs} (excluding generated/app-loc.json)",
-  "fileCount": 823,
+  "fileCount": 828,
   "previousBaselines": [
     84000,
     157592,
@@ -14,6 +14,8 @@
     161680,
     162530,
     166921,
-    167902
+    167902,
+    169689,
+    170126
   ]
 }

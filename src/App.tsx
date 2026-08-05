@@ -13,6 +13,7 @@ import { useLanguage } from "@/hooks/use-language";
 import PageTransition from "@/components/layout/PageTransition";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { CookieConsent } from "@/components/ui/cookie-consent";
+import { VercelInsights } from "@/components/VercelInsights";
 import { RequireAdmin } from "@/components/auth/require-role";
 import { RequireModule } from "@/components/auth/require-module";
 import { RequireAnyModule } from "@/components/auth/require-any-module";
@@ -876,6 +877,7 @@ const App = () => {
             <ScrollToTop />
             <AppShell />
             <CookieConsent />
+            <VercelInsights />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

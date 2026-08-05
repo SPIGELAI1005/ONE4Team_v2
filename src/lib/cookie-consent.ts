@@ -46,6 +46,7 @@ export function writeCookieConsent(prefs: CookiePreferences) {
       savedAt: new Date().toISOString(),
     }),
   );
+  window.dispatchEvent(new CustomEvent("one4team:cookie-consent-updated"));
 }
 
 /** Open the cookie preference centre from the footer or elsewhere (signed-out shell). */
