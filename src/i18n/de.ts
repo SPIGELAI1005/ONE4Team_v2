@@ -5335,6 +5335,8 @@ export const de: Translations = {
     saveFailed: "Registerdaten konnten nicht gespeichert werden.",
     saveFailedNoEditableFields:
       "Es wurden keine bearbeitbaren Felder zum Speichern erkannt. Bitte prüfen Sie Vorname, Nachname und weitere Pflichtfelder und versuchen Sie es erneut.",
+    saveFailedNoChanges:
+      "Es wurden keine Änderungen erkannt. Bitte passen Sie mindestens ein Feld an (z. B. Nachname) und speichern Sie erneut.",
     loadFailed: "Registerdaten konnten nicht geladen werden.",
     loadFailedTitle: "Registerdaten konnten nicht geladen werden",
     loadFailedGeneric: "Bitte prüfen Sie Ihre Verbindung und versuchen Sie es gleich erneut.",

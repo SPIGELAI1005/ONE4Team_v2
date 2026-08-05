@@ -26,6 +26,7 @@ describe("member-master-field-policy", () => {
     const payload = buildMemberMasterSavePayload(
       { membership_id: "m1", club_id: "c1" },
       "self",
+      {},
     );
     expect(payload).toBeNull();
   });
@@ -40,8 +41,19 @@ describe("member-master-field-policy", () => {
         sex: "female",
       },
       "self",
+      { first_name: "Fabia", last_name: "Klag", sex: "female" },
     );
-    expect(payload?.last_name).toBe("Christmann");
+    expect(payload).toEqual({ last_name: "Christmann" });
+  });
+
+  it("returns null when nothing changed", () => {
+    const baseline = { first_name: "Fabia", last_name: "Klag", sex: "female" as const };
+    const payload = buildMemberMasterSavePayload(
+      { ...baseline, membership_id: "m1", club_id: "c1" },
+      "self",
+      baseline,
+    );
+    expect(payload).toBeNull();
   });
 
   it("prefers master names for display labels", () => {

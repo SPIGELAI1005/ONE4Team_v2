@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Save, UserCircle2, Users } from "lucide-react";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,9 @@ export default function MyMemberData() {
   const [editableRows, setEditableRows] = useState<EditableMemberMasterRow[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<Partial<ClubMemberMasterRecord>>({});
+  const [baseline, setBaseline] = useState<Partial<ClubMemberMasterRecord>>({});
   const [editActor, setEditActor] = useState<MemberMasterEditActor>("self");
+  const [bundleLoading, setBundleLoading] = useState(false);
   const [bundleMeta, setBundleMeta] = useState<{
     displayName: string | null;
     role: string;
@@ -172,7 +174,9 @@ export default function MyMemberData() {
       return null;
     }
     setEditActor(mapEditActor(data.edit_actor));
-    setForm({ ...(data.master ?? {}), membership_id: membershipId, club_id: clubIdForForm });
+    const master = { ...(data.master ?? {}) };
+    setBaseline(master);
+    setForm({ ...master, membership_id: membershipId, club_id: clubIdForForm });
     const displayName = masterRecordDisplayName(data.master, data.display_name);
     setBundleMeta({
       displayName: displayName || data.display_name,
@@ -183,29 +187,38 @@ export default function MyMemberData() {
     return data;
   }, [t.common.error, t.myMemberDataPage.loadFailed, toast]);
 
+  const loadBundleRef = useRef(loadBundle);
+  loadBundleRef.current = loadBundle;
+
   useEffect(() => {
     if (clubLoading) return;
     if (!clubId) {
       setLoading(false);
       setSelectedId(null);
+      setBundleMeta(null);
+      setBaseline({});
+      setForm({});
       return;
     }
     setSelectedId(null);
+    setBundleMeta(null);
+    setBaseline({});
+    setForm({});
     void loadEditableList();
   }, [clubId, clubLoading, loadEditableList]);
 
   useEffect(() => {
     if (!selectedId || !clubId) return;
     let cancelled = false;
-    setForm({ membership_id: selectedId, club_id: clubId });
+    setBundleLoading(true);
     setBundleMeta(null);
-    void loadBundle(selectedId, clubId).then(() => {
-      if (cancelled) return;
+    void loadBundleRef.current(selectedId, clubId).finally(() => {
+      if (!cancelled) setBundleLoading(false);
     });
     return () => {
       cancelled = true;
     };
-  }, [selectedId, clubId, loadBundle]);
+  }, [selectedId, clubId]);
 
   useEffect(() => {
     if (!clubId || !selectedId) return;
@@ -240,15 +253,18 @@ export default function MyMemberData() {
     }
   };
 
+  const canSave =
+    Boolean(selectedId && clubId && bundleMeta && !bundleLoading && !loading && !clubLoading && !saving);
+
   const handleSave = async () => {
-    if (!selectedId || saving) return;
+    if (!selectedId || !clubId || saving || bundleLoading || !bundleMeta) return;
     setSaving(true);
     try {
-      const payload = buildMemberMasterSavePayload(form, editActor);
+      const payload = buildMemberMasterSavePayload(form, editActor, baseline);
       if (!payload) {
         toast({
           title: t.common.error,
-          description: t.myMemberDataPage.saveFailedNoEditableFields,
+          description: t.myMemberDataPage.saveFailedNoChanges,
           variant: "destructive",
         });
         return;
@@ -290,9 +306,11 @@ export default function MyMemberData() {
             : t.myMemberDataPage.saveSuccessDescOther,
       });
       if (savedRecord && clubId) {
-        setForm({ ...savedRecord, membership_id: selectedId, club_id: clubId });
+        const nextMaster = { ...savedRecord };
+        setBaseline(nextMaster);
+        setForm({ ...nextMaster, membership_id: selectedId, club_id: clubId });
       } else {
-        await loadBundle(selectedId, clubId!);
+        await loadBundle(selectedId, clubId);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : t.myMemberDataPage.saveFailed;
@@ -301,6 +319,7 @@ export default function MyMemberData() {
         description: resolveMyMemberDataSaveError(message, {
           saveFailedGeneric: t.myMemberDataPage.saveFailed,
           saveFailedNoEditableFields: t.myMemberDataPage.saveFailedNoEditableFields,
+          saveFailedNoChanges: t.myMemberDataPage.saveFailedNoChanges,
           saveFailedNotAuthorized: t.myMemberDataPage.loadFailedNotAuthorized,
         }),
         variant: "destructive",
@@ -338,7 +357,7 @@ export default function MyMemberData() {
           <Button
             size="sm"
             className="bg-gradient-gold-static font-semibold text-primary-foreground hover:brightness-110"
-            disabled={!selectedId || saving || loading}
+            disabled={!canSave}
             onClick={() => void handleSave()}
           >
             {saving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Save className="mr-1 h-4 w-4" />}
@@ -412,7 +431,11 @@ export default function MyMemberData() {
               </div>
             ) : null}
 
-            {selectedRow && bundleMeta ? (
+            {bundleLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : selectedRow && bundleMeta ? (
               <div className="rounded-2xl border border-border/70 bg-card/80 p-4 sm:p-5">
                 <div className="mb-4 flex flex-wrap items-center gap-2">
                   <UserCircle2 className="h-5 w-5 text-primary" />

@@ -90,13 +90,31 @@ export function filterMasterPayloadForActor(
   return out;
 }
 
-/** Build RPC payload; returns null when nothing editable would be sent (avoids no_editable_fields). */
+function masterFieldValueEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (a == null && b == null) return true;
+  if (a == null || b == null) return false;
+  return String(a).trim() === String(b).trim();
+}
+
+/**
+ * Build RPC payload with only editable, changed fields.
+ * Returns null when nothing would be sent (avoids no_editable_fields and bulk overwrites).
+ */
 export function buildMemberMasterSavePayload(
   form: Partial<ClubMemberMasterRecord>,
   actor: MemberMasterEditActor,
+  baseline: Partial<ClubMemberMasterRecord> | null = null,
 ): Partial<ClubMemberMasterRecord> | null {
-  const payload = filterMasterPayloadForActor(form, actor);
-  return Object.keys(payload).length > 0 ? payload : null;
+  const allowed = editableFieldKeysForActor(actor);
+  const out: Partial<ClubMemberMasterRecord> = {};
+  for (const key of allowed) {
+    if (!(key in form)) continue;
+    const nextValue = form[key];
+    if (baseline && masterFieldValueEqual(baseline[key], nextValue)) continue;
+    (out as Record<string, unknown>)[key as string] = nextValue;
+  }
+  return Object.keys(out).length > 0 ? out : null;
 }
 
 export function masterRecordDisplayName(

@@ -9,6 +9,7 @@ interface MyMemberDataErrorLabels {
 interface MyMemberDataSaveErrorLabels {
   saveFailedGeneric: string;
   saveFailedNoEditableFields: string;
+  saveFailedNoChanges?: string;
   saveFailedNotAuthorized: string;
 }
 
@@ -52,6 +53,9 @@ export function resolveMyMemberDataSaveError(
 
   if (normalized.includes("no_editable_fields")) {
     return labels.saveFailedNoEditableFields;
+  }
+  if (normalized.includes("no_changes_detected")) {
+    return labels.saveFailedNoChanges ?? labels.saveFailedGeneric;
   }
   if (normalized.includes("not authorized") || normalized.includes("not_authenticated")) {
     return labels.saveFailedNotAuthorized;
