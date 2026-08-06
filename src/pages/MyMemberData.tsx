@@ -59,6 +59,10 @@ export default function MyMemberData() {
   const [baseline, setBaseline] = useState<Partial<ClubMemberMasterRecord>>({});
   const [editActor, setEditActor] = useState<MemberMasterEditActor>("self");
   const [bundleLoading, setBundleLoading] = useState(false);
+  const [masterLoaded, setMasterLoaded] = useState(false);
+  const [bundleLoadError, setBundleLoadError] = useState<string | null>(null);
+  const [dirtyKeys, setDirtyKeys] = useState<Set<keyof ClubMemberMasterRecord>>(() => new Set());
+  const loadGenerationRef = useRef(0);
   const [bundleMeta, setBundleMeta] = useState<{
     displayName: string | null;
     role: string;
@@ -163,20 +167,21 @@ export default function MyMemberData() {
     setLoading(false);
   }, [clubId, t]);
 
-  const loadBundle = useCallback(async (membershipId: string, clubIdForForm: string) => {
+  const loadBundle = useCallback(async (membershipId: string, clubIdForForm: string, generation: number) => {
     const { data, error } = await getMemberMasterBundle(membershipId);
+    if (generation !== loadGenerationRef.current) return null;
     if (error || !data) {
-      toast({
-        title: t.common.error,
-        description: error?.message ?? t.myMemberDataPage.loadFailed,
-        variant: "destructive",
-      });
+      setMasterLoaded(false);
+      setBundleLoadError(error?.message ?? t.myMemberDataPage.loadFailed);
       return null;
     }
+    setBundleLoadError(null);
     setEditActor(mapEditActor(data.edit_actor));
     const master = { ...(data.master ?? {}) };
     setBaseline(master);
     setForm({ ...master, membership_id: membershipId, club_id: clubIdForForm });
+    setDirtyKeys(new Set());
+    setMasterLoaded(true);
     const displayName = masterRecordDisplayName(data.master, data.display_name);
     setBundleMeta({
       displayName: displayName || data.display_name,
@@ -185,7 +190,7 @@ export default function MyMemberData() {
       teamLabel: data.team_label,
     });
     return data;
-  }, [t.common.error, t.myMemberDataPage.loadFailed, toast]);
+  }, [t.myMemberDataPage.loadFailed]);
 
   const loadBundleRef = useRef(loadBundle);
   loadBundleRef.current = loadBundle;
@@ -198,21 +203,41 @@ export default function MyMemberData() {
       setBundleMeta(null);
       setBaseline({});
       setForm({});
+      setMasterLoaded(false);
+      setDirtyKeys(new Set());
       return;
     }
     setSelectedId(null);
     setBundleMeta(null);
     setBaseline({});
     setForm({});
+    setMasterLoaded(false);
+    setDirtyKeys(new Set());
+    loadGenerationRef.current += 1;
     void loadEditableList();
   }, [clubId, clubLoading, loadEditableList]);
 
   useEffect(() => {
     if (!selectedId || !clubId) return;
+    const row = editableRows.find((item) => item.membership_id === selectedId);
+    if (row) {
+      setBundleMeta({
+        displayName: row.display_name,
+        role: row.role,
+        email: row.email,
+        teamLabel: row.team_label,
+      });
+    }
+  }, [selectedId, clubId, editableRows]);
+
+  useEffect(() => {
+    if (!selectedId || !clubId) return;
+    const generation = ++loadGenerationRef.current;
     let cancelled = false;
     setBundleLoading(true);
-    setBundleMeta(null);
-    void loadBundleRef.current(selectedId, clubId).finally(() => {
+    setMasterLoaded(false);
+    setBundleLoadError(null);
+    void loadBundleRef.current(selectedId, clubId, generation).finally(() => {
       if (!cancelled) setBundleLoading(false);
     });
     return () => {
@@ -226,6 +251,11 @@ export default function MyMemberData() {
   }, [clubId, selectedId]);
 
   const setField = (key: keyof ClubMemberMasterRecord, value: string | number | null) => {
+    setDirtyKeys((previous) => {
+      const next = new Set(previous);
+      next.add(key);
+      return next;
+    });
     setForm((previous) => ({
       ...previous,
       [key]: value,
@@ -233,6 +263,16 @@ export default function MyMemberData() {
         ? { photo_uploaded_at: value ? (previous.photo_uploaded_at ?? new Date().toISOString()) : null }
         : {}),
     }));
+  };
+
+  const retryBundleLoad = () => {
+    if (!selectedId || !clubId) return;
+    const generation = ++loadGenerationRef.current;
+    setBundleLoading(true);
+    setBundleLoadError(null);
+    void loadBundleRef.current(selectedId, clubId, generation).finally(() => {
+      setBundleLoading(false);
+    });
   };
 
   const uploadPhoto = async (file: File) => {
@@ -254,13 +294,21 @@ export default function MyMemberData() {
   };
 
   const canSave =
-    Boolean(selectedId && clubId && bundleMeta && !bundleLoading && !loading && !clubLoading && !saving);
+    Boolean(
+      selectedId &&
+        clubId &&
+        masterLoaded &&
+        !bundleLoading &&
+        !loading &&
+        !clubLoading &&
+        !saving,
+    );
 
   const handleSave = async () => {
-    if (!selectedId || !clubId || saving || bundleLoading || !bundleMeta) return;
+    if (!selectedId || !clubId || saving || bundleLoading || !masterLoaded) return;
     setSaving(true);
     try {
-      const payload = buildMemberMasterSavePayload(form, editActor, baseline);
+      const payload = buildMemberMasterSavePayload(form, editActor, baseline, dirtyKeys);
       if (!payload) {
         toast({
           title: t.common.error,
@@ -309,8 +357,10 @@ export default function MyMemberData() {
         const nextMaster = { ...savedRecord };
         setBaseline(nextMaster);
         setForm({ ...nextMaster, membership_id: selectedId, club_id: clubId });
+        setDirtyKeys(new Set());
       } else {
-        await loadBundle(selectedId, clubId);
+        const generation = ++loadGenerationRef.current;
+        await loadBundle(selectedId, clubId, generation);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : t.myMemberDataPage.saveFailed;
@@ -431,11 +481,20 @@ export default function MyMemberData() {
               </div>
             ) : null}
 
+            {bundleLoadError ? (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm space-y-3">
+                <p className="text-muted-foreground leading-relaxed">{bundleLoadError}</p>
+                <Button size="sm" variant="outline" onClick={retryBundleLoad}>
+                  {t.common.refresh}
+                </Button>
+              </div>
+            ) : null}
+
             {bundleLoading ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
-            ) : selectedRow && bundleMeta ? (
+            ) : selectedRow && masterLoaded && bundleMeta ? (
               <div className="rounded-2xl border border-border/70 bg-card/80 p-4 sm:p-5">
                 <div className="mb-4 flex flex-wrap items-center gap-2">
                   <UserCircle2 className="h-5 w-5 text-primary" />

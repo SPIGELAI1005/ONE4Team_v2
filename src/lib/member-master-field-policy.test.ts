@@ -61,4 +61,16 @@ describe("member-master-field-policy", () => {
       masterRecordDisplayName({ first_name: "Fabia", last_name: "Christmann" }, "Fabia Klag"),
     ).toBe("Fabia Christmann");
   });
+
+  it("includes user-edited fields even when baseline already matches", () => {
+    const baseline = { first_name: "Fabia", last_name: "Christmann", sex: "female" as const };
+    const dirty = new Set<keyof ClubMemberMasterRecord>(["last_name"]);
+    const payload = buildMemberMasterSavePayload(
+      { ...baseline, membership_id: "m1", club_id: "c1" },
+      "self",
+      baseline,
+      dirty,
+    );
+    expect(payload).toEqual({ last_name: "Christmann" });
+  });
 });

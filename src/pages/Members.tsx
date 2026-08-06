@@ -69,6 +69,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { appendMemberAuditEvent } from "@/lib/member-audit";
 import { saveMemberMasterRecord } from "@/lib/member-master-api";
 import {
+  buildMemberMasterSavePayload,
   editableFieldKeysForActor,
   editableGroupsForActor,
   type MemberMasterEditActor,
@@ -2604,7 +2605,18 @@ const Members = () => {
         toast({ title: t.common.notAuthorized, description: t.membersPage.onlyAdminsMembers, variant: "destructive" });
         return;
       }
-      const { data, error } = await saveMemberMasterRecord(member.id, payload);
+      const actor = masterEditActorFor(member.id);
+      const baseline = masterByMembershipId[member.id] ?? {};
+      const diff = buildMemberMasterSavePayload(payload, actor, baseline);
+      if (!diff) {
+        toast({
+          title: t.common.error,
+          description: t.myMemberDataPage.saveFailedNoChanges,
+          variant: "destructive",
+        });
+        throw new Error("no_changes_detected");
+      }
+      const { data, error } = await saveMemberMasterRecord(member.id, diff);
       if (error) {
         toast({ title: t.common.error, description: error.message, variant: "destructive" });
         throw new Error(error.message);
@@ -2626,7 +2638,7 @@ const Members = () => {
         });
       }
     },
-    [canEditMemberMaster, clubId, t, toast],
+    [canEditMemberMaster, clubId, masterByMembershipId, masterEditActorFor, t, toast],
   );
 
   const emailToMembershipIdFromEmail = useCallback(

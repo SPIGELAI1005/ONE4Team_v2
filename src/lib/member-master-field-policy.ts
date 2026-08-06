@@ -105,13 +105,16 @@ export function buildMemberMasterSavePayload(
   form: Partial<ClubMemberMasterRecord>,
   actor: MemberMasterEditActor,
   baseline: Partial<ClubMemberMasterRecord> | null = null,
+  dirtyKeys?: ReadonlySet<keyof ClubMemberMasterRecord>,
 ): Partial<ClubMemberMasterRecord> | null {
   const allowed = editableFieldKeysForActor(actor);
   const out: Partial<ClubMemberMasterRecord> = {};
   for (const key of allowed) {
     if (!(key in form)) continue;
     const nextValue = form[key];
-    if (baseline && masterFieldValueEqual(baseline[key], nextValue)) continue;
+    const unchanged = baseline ? masterFieldValueEqual(baseline[key], nextValue) : false;
+    const userEdited = dirtyKeys?.has(key) ?? false;
+    if (unchanged && !userEdited) continue;
     (out as Record<string, unknown>)[key as string] = nextValue;
   }
   return Object.keys(out).length > 0 ? out : null;
