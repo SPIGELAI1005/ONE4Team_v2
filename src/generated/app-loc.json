@@ -1,8 +1,13 @@
 {
-  "linesOfCode": 170160,
-  "measuredAt": "2026-08-05T22:04:04.355Z",
+  "linesOfCode": 170246,
+  "measuredAt": "2026-08-07T18:13:51.102Z",
   "scope": "src/**/*.{ts,tsx,js,jsx,css,scss,mjs,cjs} (excluding generated/app-loc.json)",
   "fileCount": 828,
+  "operatorScope": {
+    "linesOfCode": 17985,
+    "fileCount": 87,
+    "scope": "src/{components, pages}/operator/**, src/i18n/operator/**, src/lib/operator*.{ts,tsx}"
+  },
   "previousBaselines": [
     84000,
     157592,
@@ -16,6 +21,7 @@
     166921,
     167902,
     169689,
-    170126
+    170126,
+    170160
   ]
 }

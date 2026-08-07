@@ -3,6 +3,33 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-08-07 — `/my-data` save hardening · Vercel Analytics · operator LOC tracking
+
+### `/my-data` — name saves, load races, registry change detection (Fabia retest wave)
+- **Root causes:** Stale **`getMemberMasterBundle`** could reset **`form`** + **`baseline`** together after edits; save gated on slow RPC (**`bundleMeta`** cleared each load); Members dialog sent full merged record; server **`no_changes_detected`** from snapshot taken before upsert.
+- **`MyMemberData.tsx`** — **`loadGenerationRef`** ignores stale bundle loads; **`dirtyKeys`** tracks edited fields; interim **`bundleMeta`** from list row enables save before RPC; retry UI on load failure; save uses dirty-key fallback.
+- **`member-master-field-policy.ts`** — optional **`dirtyKeys`** in **`buildMemberMasterSavePayload()`** when baseline/form align incorrectly.
+- **`Members.tsx`** — **`handleSaveMasterRecord`** diffs via **`buildMemberMasterSavePayload`** (changed fields only).
+- Migration **`20260810220000_fix_member_master_save_change_detection.sql`** — re-read DB row after upsert before change detection; trim text for comparison.
+- Prior round (commits **`28dc47f`**, **`5628fde`**): session-persisted selection, changed-fields-only client saves, profile name sync migrations **`20260810200000`**, **`20260810210000`**.
+
+### Mobile viewport
+- **`index.html`** — **`viewport-fit=cover`** for iOS safe areas (pinch/zoom layout after login).
+
+### Vercel Analytics + Speed Insights
+- Packages **`@vercel/analytics`**, **`@vercel/speed-insights`** (React imports, not Next.js).
+- **`src/components/VercelInsights.tsx`** — mounts in production only after analytics cookie consent.
+- **`App.tsx`** — **`<VercelInsights />`** beside **`<CookieConsent />`**.
+- **`cookie-consent.ts`** — dispatches **`one4team:cookie-consent-updated`** on save.
+
+### Events/Matches admin (Team Management)
+- **`87b0923`** — Team Management can edit Events/Matches hero with visible admin bar.
+- **`13e14e5`**, **`0deb76a`**, **`99d5691`** — timeline feed saves persist between **`/events`** and **`/matches`** (no revert to Sommerfest defaults after deletions).
+
+### Operator LOC
+- Measured **170,246** lines across **828** files (`npm run loc:count` → **`src/generated/app-loc.json`**, 2026-08-07).
+- **Operator Control Center module:** **17,985** lines / **87** files (components, pages, i18n, **`src/lib/operator*`**); tracked in snapshot **`operatorScope`**.
+
 ## 2026-08-03 (late) — `/my-data` save fix · Events/Matches admin · 24h match history · favicon
 
 ### `/my-data` — save appeared to revert after refresh

@@ -49,11 +49,41 @@ function readPreviousSnapshot() {
   }
 }
 
+const OPERATOR_DIRS = [
+  path.join(SRC_DIR, "components", "operator"),
+  path.join(SRC_DIR, "pages", "operator"),
+  path.join(SRC_DIR, "i18n", "operator"),
+];
+
+function collectOperatorFiles() {
+  const files = [];
+  for (const dir of OPERATOR_DIRS) {
+    walk(dir, files);
+  }
+  const libDir = path.join(SRC_DIR, "lib");
+  if (fs.existsSync(libDir)) {
+    for (const entry of fs.readdirSync(libDir, { withFileTypes: true })) {
+      if (!entry.isFile()) continue;
+      if (!entry.name.startsWith("operator")) continue;
+      const ext = path.extname(entry.name).toLowerCase();
+      if (!INCLUDE_EXT.has(ext)) continue;
+      files.push(path.join(libDir, entry.name));
+    }
+  }
+  return files;
+}
+
 function main() {
   const files = walk(SRC_DIR);
   let linesOfCode = 0;
   for (const file of files) {
     linesOfCode += countLines(file);
+  }
+
+  const operatorFiles = collectOperatorFiles();
+  let operatorLinesOfCode = 0;
+  for (const file of operatorFiles) {
+    operatorLinesOfCode += countLines(file);
   }
 
   const previous = readPreviousSnapshot();
@@ -73,6 +103,12 @@ function main() {
     measuredAt: new Date().toISOString(),
     scope: "src/**/*.{ts,tsx,js,jsx,css,scss,mjs,cjs} (excluding generated/app-loc.json)",
     fileCount: files.length,
+    operatorScope: {
+      linesOfCode: operatorLinesOfCode,
+      fileCount: operatorFiles.length,
+      scope:
+        "src/{components, pages}/operator/**, src/i18n/operator/**, src/lib/operator*.{ts,tsx}",
+    },
     previousBaselines: [...previousBaselines].sort((a, b) => a - b),
   };
 
@@ -80,7 +116,7 @@ function main() {
   fs.writeFileSync(OUT_FILE, `${JSON.stringify(snapshot, null, 2)}\n`, "utf8");
 
   console.log(
-    `[count-app-loc] ${snapshot.linesOfCode.toLocaleString("en-US")} lines across ${snapshot.fileCount} files → ${path.relative(ROOT, OUT_FILE)}`,
+    `[count-app-loc] ${snapshot.linesOfCode.toLocaleString("en-US")} lines across ${snapshot.fileCount} files; operator ${snapshot.operatorScope.linesOfCode.toLocaleString("en-US")} / ${snapshot.operatorScope.fileCount} → ${path.relative(ROOT, OUT_FILE)}`,
   );
 }
 

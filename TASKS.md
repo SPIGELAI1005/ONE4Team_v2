@@ -6,6 +6,37 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ---
 
+## SPRINT 2026-08-07 — `/my-data` save hardening · Vercel Analytics · operator LOC
+
+**Goal:** Fix Fabia `/my-data` name save races and registry detection; add Vercel Analytics/Speed Insights; refresh LOC snapshot with operator module tracking.
+
+| Track | Focus | Task IDs |
+|-------|--------|----------|
+| **Q** | `/my-data` hardening | MYDATA-007 … MYDATA-010 |
+| **R** | Vercel Analytics | VERCEL-AN-001 |
+| **S** | Operator LOC | OPS-LOC-004 |
+
+### `/my-data` save hardening
+
+- [x] **MYDATA-007** **`loadGenerationRef`** + **`dirtyKeys`** + interim **`bundleMeta`** (`MyMemberData.tsx`)
+- [x] **MYDATA-008** **`dirtyKeys`** fallback in **`buildMemberMasterSavePayload`**
+- [x] **MYDATA-009** Members changed-only save via field policy (`Members.tsx`)
+- [x] **MYDATA-010** Migration **`20260810220000`** — reliable server change detection *(operator apply)*
+
+### Vercel Analytics
+
+- [x] **VERCEL-AN-001** **`VercelInsights.tsx`** + cookie consent gating (commit **`77bc7d8`**)
+
+### Operator LOC
+
+- [x] **OPS-LOC-004** Regenerate **`src/generated/app-loc.json`** — **170,246** lines / **828** files; **`operatorScope`** **17,985** / **87** (2026-08-07)
+
+### Doc sync
+
+- [x] **DOC-2026-08-07** **`MEMORY_BANK.md`**, **`CHANGELOG.md`**, **`PROJECT_STATUS.md`**, **`docs/operator-control-center.md`**, **`docs/PROJECT_COMPREHENSIVE_AUDIT.md`**, **`TASKS.md`**, **`src/generated/README.md`**
+
+---
+
 ## SPRINT 2026-08-03 (late) — `/my-data` save fix · Events/Matches admin · 24h match history · favicon
 
 **Goal:** Fix `/my-data` refresh showing wrong member after save; editable festival/camp content on Events + Matches; hide matches older than 24h in current view; restore ONE4Team favicon.

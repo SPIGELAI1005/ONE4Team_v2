@@ -1,21 +1,25 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-08-03 (Events/Matches admin · `/my-data` save fix · 24h match history · favicon · LOC ~170k)
+Last updated: 2026-08-07 (`/my-data` save hardening · Vercel Analytics · operator LOC **170,246**)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
+- **`/my-data` save hardening (2026-08-07):** Load race fix (**`loadGenerationRef`**), **`dirtyKeys`**, interim **`bundleMeta`**, changed-only Members saves, migration **`20260810220000`**. Mobile **`viewport-fit=cover`**. See **`CHANGELOG.md`** § **2026-08-07**.
+- **Vercel Analytics + Speed Insights (2026-08-07):** Cookie-consent-gated **`VercelInsights`** component; commit **`77bc7d8`**. Activate in Vercel dashboard; data after analytics consent.
+- **Events/Matches admin sync (2026-08-05):** Team Management hero editing; timeline feed persistence between **`/events`** and **`/matches`**. Commits **`87b0923`**, **`13e14e5`**, **`0deb76a`**, **`99d5691`**.
+- **Operator LOC (2026-08-07):** **170,246** measured lines / **828** files total; **17,985** / **87** operator module (`operatorScope` in **`app-loc.json`**).
 - **`/my-data` save fix (2026-08-03 late):** List scope migration **`20260810120000`**; session-persisted selection; save RPC validation. See **`CHANGELOG.md`** § **2026-08-03 (late)**.
 - **Events/Matches admin + feed dates (2026-08-03 late):** Editable football camps + festival feed on **`/events`** and **`/matches`**; Sommerfest timeline date labels. Lib **`club-events-feed*`**, **`feed-date-labels`**, **`match-list-window`**. See **`CHANGELOG.md`** same section.
 - **`/matches` 24h history (2026-08-03 late):** Current view excludes matches older than 24h; collapsible history section + Sommerfest schedule split.
 - **Site favicon (2026-08-03 late):** **`public/favicon.png`** + **`index.html`** touch/shortcut icons.
-- **Operator LOC (2026-08-03 late):** **169,689** measured lines / **823** files (`src/generated/app-loc.json`).
+- **Operator LOC (2026-08-03 late):** **169,689** measured lines / **823** files (`src/generated/app-loc.json`). **2026-08-07 update:** **170,246** / **828** total; operator module **17,985** / **87**.
 - **Role-aware dashboards (2026-08-03):** Team Management shares Club Admin **AI 4 T Control Center** + ops KPIs (members, teams, trainings) without finance. Trainer/player/parent/team staff get team-scoped schedule KPIs via **`useModuleDataScope`**. Player dashboard simplified. See **`CHANGELOG.md`** § **2026-08-03 (Role-aware dashboards…)**.
 - **Player-focused Trainings & Assets (2026-08-03):** **`/teams`** and **`/activities`** scoped to assigned team(s) for players; admin statistics hidden; pitch occupancy retained. See **`CHANGELOG.md`** same section.
 - **`/my-data` UX + RPC fix (2026-08-03):** Friendly errors, login email display, migration **`20260809180000`**. Settings Club tab hidden for non-admins.
 - **Team Management club page + shop + audit (2026-08-03):** Team Management role can save/publish public club page and manage shop; change-history tabs on **`/club-page-admin`** and **`/shop`**. Migrations **`20260807140000`**, **`20260807150000`**. See **`CHANGELOG.md`** § **2026-08-03**.
 - **Member master self-service + trainer edits (2026-08-03):** **`/my-data`** for member/guardian self-service; trainer team-scoped master edits with notifications. Migration **`20260808120000`**. See **`CHANGELOG.md`** same section.
 - **German Club Page Admin i18n (2026-08-03):** Umlaut fixes in club page admin DE copy (Übersetzung, Zusätzlich, veröffentlichen, etc.).
-- **Operator LOC (2026-08-03):** **167,902** measured lines (`src/generated/app-loc.json`); Operator Financials development cost model auto-reads snapshot. **Late update:** **169,689** / **823** files after Events/Matches/my-data/favicon wave.
+- **Operator LOC (2026-08-03):** **167,902** measured lines (`src/generated/app-loc.json`); Operator Financials development cost model auto-reads snapshot. **Late update:** **169,689** / **823** files after Events/Matches/my-data/favicon wave. **2026-08-07:** **170,246** / **828** total; operator module **17,985** / **87**.
 - **Saved member list without email (2026-08-01):** Registry import adds unmatched members by club number or name even when spreadsheet rows lack email; **`club_member_drafts.email`** nullable — migration **`20260807130000`**. Invites still require email. See **`CHANGELOG.md`** § **TSV Allach member registry reconciliation**.
 - **TSV Allach member registry reconciliation (2026-08-01):** Smart registry import, club-number matching, saved-list add for unmatched imports, shared-contact linked-account filter, household discount review on **`/payments`**, draft search improvements, **`MemberHistory`** timeline fix. Migrations **`20260807120000`**, **`20260807130000`**. See **`CHANGELOG.md`** § **TSV Allach member registry reconciliation**.
 - **AI 4 T GPT Internet (2026-08-01):** Pro+ Internet research mode on **`/co-trainer`** (Tavily + consent + admin toggle + plan caps + cited sources). Migrations **`20260806130000`**, **`20260806140000`**. Deploy **`co-trainer`** + set **`TAVILY_API_KEY`**. See **`CHANGELOG.md`** § **2026-08-01 (AI 4 T GPT Internet…)** and **`DEPLOYMENT.md`** § AI 4 T.

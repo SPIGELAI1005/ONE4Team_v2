@@ -1,6 +1,6 @@
 # ONE4Team — Comprehensive project audit
 
-**Audit date:** 2026-08-03 (Events/Matches admin · `/my-data` save fix · LOC **169,689**)  
+**Audit date:** 2026-08-07 (`/my-data` save hardening · Vercel Analytics · LOC **170,246** / operator **17,985**)  
 **Scope:** Codebase, architecture, UX/design, production readiness, competitive positioning, market value, and value-growth levers  
 **Primary reference (existing):** [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) — strict production-readiness review with risk register, readiness scores, and remediation sprints  
 
@@ -46,10 +46,11 @@ This document **extends** the ops audit with product, UX, competitive, and valua
 
 ## 3. Codebase metrics (snapshot)
 
-| Metric | Value (2026-08-03) | Notes |
+| Metric | Value (2026-08-07) | Notes |
 |--------|------:|-------|
-| TypeScript/TSX files (`src/`) | ~823 | Measured by `loc:count` (includes Events/Matches admin + my-data scope) |
-| Lines of code (`src/` total, measured) | **169,689** | `npm run loc:count` → **`src/generated/app-loc.json`**; Operator Financials reads this |
+| TypeScript/TSX files (`src/`) | ~828 | Measured by `loc:count` |
+| Lines of code (`src/` total, measured) | **170,246** | `npm run loc:count` → **`src/generated/app-loc.json`**; Operator Financials reads this |
+| Operator Control Center module (`operatorScope`) | **17,985** lines / **87** files | `components/operator`, `pages/operator`, `i18n/operator`, `lib/operator*` |
 | Lines of code (key surfaces) | i18n EN/DE ~6k each; Members ~7k; Teams ~5.9k; Matches ~1.9k; DashboardContent ~940 | Registry + match history split |
 | SQL migrations | ~170 | Includes **`20260810120000`** (my-data list scope) |
 | Edge Functions | **13** active dirs | co-trainer, ai4team-agent, chat-bridge, stripe-*, digests, invite email, health, … |
@@ -220,7 +221,7 @@ Scores from [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINES
 
 | Factor | Estimate |
 |--------|----------|
-| ~170k LOC production TS/TSX under `src/` (measured via `npm run loc:count` → `src/generated/app-loc.json`, **169,689** as of 2026-08-03 late) + migrations + Edge Functions | **12–24 person-months** |
+| ~170k LOC production TS/TSX under `src/` (measured via `npm run loc:count` → `src/generated/app-loc.json`, **170,246** as of 2026-08-07; operator module **17,985**) + migrations + Edge Functions | **12–24 person-months** |
 | At €80–120k fully loaded dev cost / year equivalent | **~€250k–€600k** replacement cost |
 | Plus design, QA, ops docs, pilot iteration (TSV Allach) | **+€50k–€150k** |
 

@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-08-03 — Apply **`20260808120000`** (member master self-service) and **`20260809180000`** (`/my-data` RPC return types) on linked remote if not yet applied. See **`CHANGELOG.md`** § **2026-08-03 (Role-aware dashboards…)** and § **Member master self-service**.
+Last updated: 2026-08-07 — Apply **`20260810220000`** (`/my-data` save change detection) on linked remote if not yet applied. Also verify **`20260810120000`**, **`20260810200000`**, **`20260810210000`** from the Aug save-fix wave. See **`CHANGELOG.md`** § **2026-08-07**.
 
 **Applied (2026-08-01):** `20260806130000` (GPT Internet consent/log/settings), `20260806140000` (consent upsert RLS + `record_ai_internet_consent` RPC). Edge: **`co-trainer`** redeployed; **`TAVILY_API_KEY`** secret set.
 

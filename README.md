@@ -30,7 +30,7 @@ Club/team management SaaS with an iOS-style glass UI, full internationalization 
 - **Support & FAQ (`/support`)**: Expanded FAQs for AI 4 T, billing trials, imports, and reports — written for club users (no backend setup jargon); DE bridge FAQ uses **Externe Bridge** wording.
 - **Partner showcase**: TSV Allach 09 + Sportecke München with images and testimonials
 - **Test Mode Banner**: Dismissible beta disclaimer across all pages
-- **Operator Control Center (`/operator`, 2026-07-08)**: Internal platform admin for `platform_users` — clubs, users, modules, analytics, **financials** (MRR, editable cost model, development investment charts with **series show/hide toggles**), marketplace, performance, issues, audit, support, **legal** (editable templates + PDF), settings. Recharts on overview/analytics/financials; **mobile-responsive** card layout; full EN/DE. See **`docs/operator-control-center.md`**.
+- **Operator Control Center (`/operator`, 2026-07-08)**: Internal platform admin for `platform_users` — clubs, users, modules, analytics, **financials** (MRR, editable cost model, development investment charts with **series show/hide toggles**; LOC from measured **`app-loc.json`**, **~170k** total / **~18k** operator module as of 2026-08-07), marketplace, performance, issues, audit, support, **legal** (editable templates + PDF), settings. Recharts on overview/analytics/financials; **mobile-responsive** card layout; full EN/DE. See **`docs/operator-control-center.md`**.
 - **Plan gates (subscription limits)**: Locked features show upgrade screen with ONE4Team logo + star, **View Plans**, and **Contact ONE4Team** (`support@one4team.com` prefilled email); limits from **`plan-catalog`**; guided setup team creation on **`/guided-setup`** (client fix for `teams` schema)
 - **i18n**: Full **EN/DE** including operator Control Center; 2026-07-16 DE cleanup (umlauts, leftover English, club/partner/marketplace)
 ## Stack
@@ -38,7 +38,7 @@ Club/team management SaaS with an iOS-style glass UI, full internationalization 
 - shadcn-ui + Radix UI + Tailwind CSS
 - Framer Motion (animations)
 - Supabase (Auth + Postgres)
-- Vercel (deployment-ready)
+- Vercel (deployment-ready; **Analytics + Speed Insights** after analytics cookie consent, 2026-08-07)
 
 ## Local development
 
