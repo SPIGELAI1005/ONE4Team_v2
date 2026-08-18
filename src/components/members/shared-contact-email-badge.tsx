@@ -21,7 +21,7 @@ export function SharedContactEmailBadge({
       <TooltipTrigger asChild>
         <span
           className={cn(
-            "inline-flex items-center gap-1 rounded-full border border-sky-500/25 bg-sky-500/10 px-2 py-0.5 text-[10px] font-medium text-sky-300",
+            "inline-flex items-center gap-1 rounded-full border border-sky-500/25 bg-sky-500/10 px-2 py-0.5 text-[10px] font-semibold text-sky-800 dark:text-sky-200",
             className,
           )}
         >

@@ -122,7 +122,10 @@ export function MarketplaceEngagementReviewsPanel({ clubId }: MarketplaceEngagem
                   aria-label={`${n}`}
                 >
                   <Star
-                    className={cn("h-5 w-5", active ? "fill-amber-400 text-amber-400" : "text-muted-foreground")}
+                    className={cn(
+                      "h-5 w-5",
+                      active ? "fill-amber-600 text-amber-700 dark:fill-amber-400 dark:text-amber-300" : "text-muted-foreground",
+                    )}
                   />
                 </button>
               );

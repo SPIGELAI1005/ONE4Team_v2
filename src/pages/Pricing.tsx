@@ -1009,7 +1009,7 @@ function PriceCalculator({ plans }: { plans: PlanConfig[] }) {
                     ? "bg-gradient-gold-static text-primary-foreground shadow-gold"
                     : fits
                       ? "glass-card text-foreground hover:border-primary/20"
-                      : "glass-card text-muted-foreground/50 cursor-not-allowed opacity-60"
+                      : "glass-card cursor-not-allowed text-muted-foreground/80 opacity-75"
                 }`}
               >
                 {p.name}

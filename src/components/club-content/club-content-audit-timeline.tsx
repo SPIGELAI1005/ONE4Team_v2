@@ -53,16 +53,16 @@ export function ClubContentAuditTimeline({
   const eventMeta = useMemo(
     () =>
       ({
-        draft_saved: "text-amber-400 bg-amber-500/10",
-        page_published: "text-emerald-400 bg-emerald-500/10",
-        page_unpublished: "text-rose-400 bg-rose-500/10",
-        product_created: "text-violet-400 bg-violet-500/10",
-        product_updated: "text-sky-400 bg-sky-500/10",
-        product_deleted: "text-rose-400 bg-rose-500/10",
-        category_created: "text-cyan-400 bg-cyan-500/10",
-        category_updated: "text-sky-400 bg-sky-500/10",
+        draft_saved: "text-amber-800 dark:text-amber-300 bg-amber-500/10",
+        page_published: "text-emerald-700 dark:text-emerald-300 bg-emerald-500/10",
+        page_unpublished: "text-rose-700 dark:text-rose-300 bg-rose-500/10",
+        product_created: "text-violet-700 dark:text-violet-300 bg-violet-500/10",
+        product_updated: "text-sky-700 dark:text-sky-300 bg-sky-500/10",
+        product_deleted: "text-rose-700 dark:text-rose-300 bg-rose-500/10",
+        category_created: "text-cyan-800 dark:text-cyan-300 bg-cyan-500/10",
+        category_updated: "text-sky-700 dark:text-sky-300 bg-sky-500/10",
         category_deleted: "text-muted-foreground bg-muted",
-        order_status_updated: "text-orange-400 bg-orange-500/10",
+        order_status_updated: "text-orange-800 dark:text-orange-300 bg-orange-500/10",
       }) as Record<string, string>,
     [],
   );

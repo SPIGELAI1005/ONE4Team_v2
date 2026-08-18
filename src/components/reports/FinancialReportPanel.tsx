@@ -180,7 +180,7 @@ const FinancialReportPanel = () => {
                 <KpiTile
                   label={t.financial.collected}
                   value={formatMoneyFromCents(snapshot.collectedTotalCents)}
-                  tone="text-emerald-400"
+                  tone="text-emerald-700 dark:text-emerald-300"
                 />
                 <KpiTile
                   label={t.financial.outstanding}
@@ -194,7 +194,7 @@ const FinancialReportPanel = () => {
                 <KpiTile
                   label={t.financial.net}
                   value={formatMoneyFromCents(snapshot.netCents)}
-                  tone={snapshot.netCents >= 0 ? "text-emerald-400" : "text-destructive"}
+                  tone={snapshot.netCents >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-destructive"}
                 />
                 <KpiTile
                   label={t.financial.sourcePayments}
@@ -353,7 +353,7 @@ const FinancialReportPanel = () => {
                 {snapshot.feeTypeBreakdown.map((row) => (
                   <div key={row.name} className="flex items-center justify-between text-sm py-1.5 border-b border-border/40 last:border-0">
                     <span className="text-foreground">{row.name}</span>
-                    <span className="font-semibold tabular-nums text-emerald-400">
+                    <span className="font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
                       {formatMoneyFromCents(row.collectedCents)}
                     </span>
                   </div>
@@ -407,7 +407,7 @@ const FinancialReportPanel = () => {
 
           <div className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-xs text-muted-foreground flex items-start gap-2">
             {snapshot.netCents >= 0 ? (
-              <TrendingUp className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700 dark:text-emerald-300" />
             ) : (
               <TrendingDown className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
             )}

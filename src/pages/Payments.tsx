@@ -119,7 +119,7 @@ async function loadClubMembershipsWithProfiles(clubId: string): Promise<{
 
 const statusConfig: Record<PaymentRecordStatus, { icon: React.ElementType; color: string }> = {
   pending: { icon: Clock, color: "text-primary bg-primary/10" },
-  paid: { icon: CheckCircle2, color: "text-emerald-400 bg-emerald-500/10" },
+  paid: { icon: CheckCircle2, color: "text-emerald-700 dark:text-emerald-300 bg-emerald-500/10" },
   overdue: { icon: AlertTriangle, color: "text-accent bg-accent/10" },
   cancelled: { icon: Ban, color: "text-muted-foreground bg-muted" },
 };
@@ -527,7 +527,7 @@ const Payments = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               {[
-                { label: t.payments.totalCollected, value: `€${totalRevenue.toFixed(2)}`, color: "text-emerald-400" },
+                { label: t.payments.totalCollected, value: `€${totalRevenue.toFixed(2)}`, color: "text-emerald-700 dark:text-emerald-300" },
                 { label: t.common.pending, value: `€${pendingAmount.toFixed(2)}`, color: "text-primary" },
                 { label: t.payments.overdue, value: overdueCount.toString(), color: "text-accent" },
               ].map((kpi, i) => (

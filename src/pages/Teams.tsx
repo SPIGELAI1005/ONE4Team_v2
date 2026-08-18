@@ -4221,7 +4221,7 @@ const Teams = () => {
               <Clock className="w-4 h-4 text-primary" /> {t.teamsPage.history.title} ({changeHistory.length})
             </h2>
             {!supportsChangeHistory && (
-              <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-400">
+              <div className="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
                 {t.teamsPage.history.migrationHint}
               </div>
             )}
@@ -5753,7 +5753,7 @@ const Teams = () => {
                 </div>
               </div>
               {bookingDetails.needs_reconfirmation && (
-                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-2 text-xs text-amber-400">
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-2 text-xs text-amber-900 dark:text-amber-200">
                   {t.teamsPage.bookingDetails.reconfirmationNeeded}
                 </div>
               )}

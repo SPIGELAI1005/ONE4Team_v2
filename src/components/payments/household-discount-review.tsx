@@ -117,7 +117,7 @@ export function HouseholdDiscountReviewPanel({ clubId, canManage }: HouseholdDis
   return (
     <div className="rounded-xl border border-violet-500/25 bg-violet-500/5 p-4 space-y-3">
       <div className="flex items-start gap-2">
-        <Percent className="w-4 h-4 text-violet-300 mt-0.5 shrink-0" />
+        <Percent className="mt-0.5 h-4 w-4 shrink-0 text-violet-700 dark:text-violet-300" />
         <div>
           <div className="text-sm font-medium text-foreground">{t.payments.householdDiscountReviewTitle}</div>
           <p className="text-xs text-muted-foreground mt-1">{t.payments.householdDiscountReviewDesc}</p>

@@ -1349,7 +1349,7 @@ export function AiAgentWorkspace({
             <p className="mt-1 text-xs text-muted-foreground">{p.agentComposerHint}</p>
           </div>
           {nlClarifyQuestion ? (
-            <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-snug text-amber-100">
+            <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-medium leading-snug text-amber-900 dark:text-amber-100">
               {nlClarifyQuestion}
             </p>
           ) : null}

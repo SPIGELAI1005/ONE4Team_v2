@@ -19,7 +19,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 228 15% 12%;
 
-    --primary: 42 76% 42%;
+    --primary: 42 76% 32%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 228 12% 92%;
@@ -36,7 +36,7 @@
 
     --border: 228 12% 88%;
     --input: 228 12% 88%;
-    --ring: 42 76% 42%;
+    --ring: 42 76% 32%;
 
     --radius: 1rem;
 
@@ -57,12 +57,12 @@
 
     --sidebar-background: 228 12% 97%;
     --sidebar-foreground: 228 12% 20%;
-    --sidebar-primary: 42 76% 42%;
+    --sidebar-primary: 42 76% 32%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 228 12% 92%;
     --sidebar-accent-foreground: 228 12% 20%;
     --sidebar-border: 228 12% 90%;
-    --sidebar-ring: 42 76% 42%;
+    --sidebar-ring: 42 76% 32%;
 
     --gradient-gold: linear-gradient(135deg, hsl(42 76% 42%), hsl(42 80% 55%));
     --gradient-gold-subtle: linear-gradient(135deg, hsl(42 76% 42% / 0.10), hsl(42 80% 55% / 0.04));

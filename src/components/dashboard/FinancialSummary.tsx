@@ -91,7 +91,7 @@ const FinancialSummary = ({ compact = false }: FinancialSummaryProps) => {
         <>
           <div className={`grid gap-3 ${compact ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 lg:grid-cols-5"}`}>
             <div className="rounded-xl bg-card/80 border border-border p-3 text-center">
-              <div className="text-lg font-display font-bold text-emerald-400 tabular-nums">
+              <div className="font-display text-lg font-bold tabular-nums text-emerald-700 dark:text-emerald-300">
                 {formatMoneyFromCents(snapshot.collectedTotalCents, snapshot.currency)}
               </div>
               <div className="text-[10px] text-muted-foreground mt-1">{t.financial.collected}</div>
@@ -117,7 +117,7 @@ const FinancialSummary = ({ compact = false }: FinancialSummaryProps) => {
             <div className="rounded-xl bg-card/80 border border-primary/30 p-3 text-center col-span-2 lg:col-span-1">
               <div
                 className={`text-lg font-display font-bold tabular-nums flex items-center justify-center gap-1 ${
-                  snapshot.netCents >= 0 ? "text-emerald-400" : "text-destructive"
+                  snapshot.netCents >= 0 ? "text-emerald-700 dark:text-emerald-300" : "text-destructive"
                 }`}
               >
                 {snapshot.netCents >= 0 ? (

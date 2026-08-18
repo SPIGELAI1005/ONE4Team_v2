@@ -8,7 +8,7 @@ Do not edit the JSON by hand — rerun the script after large code changes, or r
 
 | Field | Purpose |
 |-------|---------|
-| `linesOfCode` | Total physical lines under `src/` (excludes this file) — **179,075** as of 2026-08-18 |
+| `linesOfCode` | Total physical lines under `src/` (excludes this file) — **179,101** as of 2026-08-18 |
 | `fileCount` | Source files counted — **884** |
 | `operatorScope.linesOfCode` | Operator Control Center module (`components/operator`, `pages/operator`, `i18n/operator`, `lib/operator*`) — **17,985** |
 | `operatorScope.fileCount` | Files in operator module — **87** |

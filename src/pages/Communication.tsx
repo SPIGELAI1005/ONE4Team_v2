@@ -185,7 +185,7 @@ const MESSAGE_PAGE_SIZE = 50;
 const priorityColors: Record<string, string> = {
   low: "bg-muted text-muted-foreground",
   normal: "bg-primary/10 text-primary",
-  high: "bg-orange-500/10 text-orange-400",
+  high: "bg-orange-500/10 text-orange-800 dark:text-orange-300",
   urgent: "bg-accent/10 text-accent",
 };
 

@@ -11,6 +11,8 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Team Ops verification handoff (2026-08-18):** Dashboard crash fixed; local release gates green; all 14 Team Ops Playwright specs executed with zero skips. Production verification remains gated by distinct role-correct fixtures, deterministic active-club selection, selector cleanup, invite JWT refresh/retry, and reminder cron evidence — see `CHANGELOG.md` § **2026-08-18**, `TASKS.md`, and the operator acceptance guide.
 
+**Light-mode accessibility + stable Members roster (2026-08-18):** AA-safe primary/status text, stronger member role badges, stable scope-driven fetches, stale-response rejection, and removal of row fade replay — see `CHANGELOG.md` § **2026-08-18**.
+
 **Guardian dual-role + family Members (2026-08-13):** Player-parent and trainer-parent via dashboard persona switch; family **`/members`** = self + linked children; DB **`20260812320000`** assigns **`parent`** on guardian link; duplicate review dismiss — see `CHANGELOG.md` § **2026-08-13**, `MEMORY_BANK.md`, `TASKS.md` Sprint 2026-08-13.
 
 **Guardian / parent Members + Settings (2026-08-09):** Family-scoped **`/members`** for `parent_supporter` and guardian-linked accounts; **Settings → Profile** family panel; Roles tab RLS fix **`20260812290000`** — see `CHANGELOG.md` § **2026-08-09**, `MEMORY_BANK.md`, `TASKS.md` Sprint 2026-08-09.

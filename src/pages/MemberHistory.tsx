@@ -87,18 +87,18 @@ function MemberHistory() {
   const eventMeta = useMemo(
     () =>
       ({
-        membership_joined: { icon: UserPlus, tone: "text-emerald-400 bg-emerald-500/10" },
-        membership_profile_updated: { icon: Pencil, tone: "text-sky-400 bg-sky-500/10" },
-        membership_removed: { icon: UserMinus, tone: "text-rose-400 bg-rose-500/10" },
-        draft_saved: { icon: ClipboardList, tone: "text-amber-400 bg-amber-500/10" },
-        draft_added_to_list: { icon: Users, tone: "text-violet-400 bg-violet-500/10" },
+        membership_joined: { icon: UserPlus, tone: "text-emerald-700 dark:text-emerald-300 bg-emerald-500/10" },
+        membership_profile_updated: { icon: Pencil, tone: "text-sky-700 dark:text-sky-300 bg-sky-500/10" },
+        membership_removed: { icon: UserMinus, tone: "text-rose-700 dark:text-rose-300 bg-rose-500/10" },
+        draft_saved: { icon: ClipboardList, tone: "text-amber-800 dark:text-amber-300 bg-amber-500/10" },
+        draft_added_to_list: { icon: Users, tone: "text-violet-700 dark:text-violet-300 bg-violet-500/10" },
         draft_removed: { icon: UserMinus, tone: "text-muted-foreground bg-muted" },
         invite_sent: { icon: Link2, tone: "text-primary bg-primary/10" },
-        invite_resent: { icon: RefreshCw, tone: "text-cyan-400 bg-cyan-500/10" },
-        registry_updated: { icon: FileSpreadsheet, tone: "text-orange-400 bg-orange-500/10" },
-        registry_updated_by_member: { icon: UserCircle2, tone: "text-violet-400 bg-violet-500/10" },
-        registry_updated_by_trainer: { icon: Dumbbell, tone: "text-sky-400 bg-sky-500/10" },
-        registry_import_row: { icon: FileSpreadsheet, tone: "text-orange-300 bg-orange-500/10" },
+        invite_resent: { icon: RefreshCw, tone: "text-cyan-800 dark:text-cyan-300 bg-cyan-500/10" },
+        registry_updated: { icon: FileSpreadsheet, tone: "text-orange-800 dark:text-orange-300 bg-orange-500/10" },
+        registry_updated_by_member: { icon: UserCircle2, tone: "text-violet-700 dark:text-violet-300 bg-violet-500/10" },
+        registry_updated_by_trainer: { icon: Dumbbell, tone: "text-sky-700 dark:text-sky-300 bg-sky-500/10" },
+        registry_import_row: { icon: FileSpreadsheet, tone: "text-orange-800 dark:text-orange-300 bg-orange-500/10" },
       }) as Record<string, { icon: typeof History; tone: string }>,
     [],
   );
@@ -433,7 +433,7 @@ function MemberHistory() {
             </motion.div>
 
             {missingFn ? (
-              <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-amber-200/90">
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-200">
                 {t.memberHistoryPage.migrationHint}
               </div>
             ) : null}

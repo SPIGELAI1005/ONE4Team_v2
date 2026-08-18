@@ -170,7 +170,7 @@ const LiveScores = () => {
 
         {matches.length === 0 && !loading ? (
           <div className="text-center py-20">
-            <Trophy className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+            <Trophy className="mx-auto mb-4 h-12 w-12 text-muted-foreground/60" />
             <h2 className="font-display text-lg font-semibold text-foreground mb-2">
               {t.liveScores.noMatchesInProgress}
             </h2>

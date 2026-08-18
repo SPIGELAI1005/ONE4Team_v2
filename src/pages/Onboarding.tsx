@@ -366,7 +366,7 @@ const Onboarding = () => {
                     </motion.div>
 
                     <div className="relative flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
                         <CheckCircle2 className="w-5 h-5" />
                       </div>
                       <div className="min-w-0">

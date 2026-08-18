@@ -58,13 +58,13 @@ export function SharedContactAccountsPanel({
     >
       {hasDuplicateMembers && duplicateWarning ? (
         <div className="mb-2 space-y-2">
-          <p className="text-[11px] text-amber-300">{duplicateWarning}</p>
+          <p className="text-[11px] font-medium text-amber-900 dark:text-amber-200">{duplicateWarning}</p>
           {currentFlaggedAsDuplicate && onClearDuplicateReview && labels.clearNotDuplicate ? (
             <Button
               type="button"
               variant="outline"
               size="sm"
-              className="h-7 rounded-lg border-emerald-500/40 bg-emerald-500/10 text-xs text-emerald-200 hover:bg-emerald-500/20 hover:text-emerald-100"
+              className="h-7 rounded-lg border-emerald-500/40 bg-emerald-500/10 text-xs font-semibold text-emerald-800 hover:bg-emerald-500/20 hover:text-emerald-950 dark:text-emerald-200 dark:hover:text-emerald-100"
               disabled={clearDuplicateBusy}
               data-testid="duplicate-review-clear-not-duplicate"
               onClick={onClearDuplicateReview}
@@ -75,7 +75,7 @@ export function SharedContactAccountsPanel({
         </div>
       ) : null}
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-xs font-medium text-sky-300">
+        <div className="flex items-center gap-2 text-xs font-medium text-sky-800 dark:text-sky-300">
           <Users className="h-3.5 w-3.5 shrink-0" />
           {labels.title}
         </div>
@@ -117,7 +117,7 @@ export function SharedContactAccountsPanel({
                 <span
                   className={cn(
                     "min-w-0 text-sm font-medium",
-                    isDuplicate ? "text-amber-300" : "text-foreground",
+                    isDuplicate ? "text-amber-900 dark:text-amber-200" : "text-foreground",
                   )}
                 >
                   {memberLabel}

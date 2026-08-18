@@ -21,13 +21,13 @@ import { useClubId } from "@/hooks/use-club-id";
 import { useClubPassSkills } from "@/hooks/use-club-pass-skills";
 
 const FIELD_TABS = [
-  { key: "identity",    icon: User,        accent: "text-violet-400",  activeBg: "data-[state=active]:bg-violet-500/15 data-[state=active]:text-violet-300" },
-  { key: "contact",     icon: MapPin,      accent: "text-sky-400",     activeBg: "data-[state=active]:bg-sky-500/15 data-[state=active]:text-sky-300" },
-  { key: "sport",       icon: Dumbbell,    accent: "text-emerald-400", activeBg: "data-[state=active]:bg-emerald-500/15 data-[state=active]:text-emerald-300" },
-  { key: "performance", icon: Trophy,      accent: "text-amber-400",   activeBg: "data-[state=active]:bg-amber-500/15 data-[state=active]:text-amber-300" },
-  { key: "club",        icon: Building2,   accent: "text-blue-400",    activeBg: "data-[state=active]:bg-blue-500/15 data-[state=active]:text-blue-300" },
-  { key: "financial",   icon: Landmark,    accent: "text-orange-400",  activeBg: "data-[state=active]:bg-orange-500/15 data-[state=active]:text-orange-300" },
-  { key: "safety",      icon: ShieldAlert, accent: "text-red-400",     activeBg: "data-[state=active]:bg-red-500/15 data-[state=active]:text-red-300" },
+  { key: "identity",    icon: User,        accent: "text-violet-700 dark:text-violet-300",  activeBg: "data-[state=active]:bg-violet-500/15 data-[state=active]:text-violet-700 dark:data-[state=active]:text-violet-300" },
+  { key: "contact",     icon: MapPin,      accent: "text-sky-700 dark:text-sky-300",     activeBg: "data-[state=active]:bg-sky-500/15 data-[state=active]:text-sky-700 dark:data-[state=active]:text-sky-300" },
+  { key: "sport",       icon: Dumbbell,    accent: "text-emerald-700 dark:text-emerald-300", activeBg: "data-[state=active]:bg-emerald-500/15 data-[state=active]:text-emerald-700 dark:data-[state=active]:text-emerald-300" },
+  { key: "performance", icon: Trophy,      accent: "text-amber-800 dark:text-amber-300",   activeBg: "data-[state=active]:bg-amber-500/15 data-[state=active]:text-amber-800 dark:data-[state=active]:text-amber-300" },
+  { key: "club",        icon: Building2,   accent: "text-blue-700 dark:text-blue-300",    activeBg: "data-[state=active]:bg-blue-500/15 data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-300" },
+  { key: "financial",   icon: Landmark,    accent: "text-orange-800 dark:text-orange-300",  activeBg: "data-[state=active]:bg-orange-500/15 data-[state=active]:text-orange-800 dark:data-[state=active]:text-orange-300" },
+  { key: "safety",      icon: ShieldAlert, accent: "text-red-700 dark:text-red-300",     activeBg: "data-[state=active]:bg-red-500/15 data-[state=active]:text-red-700 dark:data-[state=active]:text-red-300" },
 ] as const;
 
 const CARD_TAB = {
@@ -321,7 +321,7 @@ export function MasterDataTabs({
                             </div>
                           </div>
                         ) : (
-                          <div className="text-sm font-medium text-muted-foreground/40">-</div>
+                          <div className="text-sm font-medium text-muted-foreground/70">-</div>
                         )}
                       </div>
                     );
@@ -339,7 +339,7 @@ export function MasterDataTabs({
                       <div
                         className={cn(
                           "text-sm font-medium",
-                          hasVal ? "text-foreground" : "text-muted-foreground/40",
+                          hasVal ? "text-foreground" : "text-muted-foreground/70",
                           isLongTextField(String(field.key)) ? "whitespace-pre-wrap break-words" : "truncate",
                         )}
                       >

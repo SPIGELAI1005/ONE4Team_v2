@@ -6,13 +6,15 @@ It records notable changes, features, and hardening steps.
 ## 2026-08-18 — Team Ops verification · dashboard stability · release handoff
 
 - **Dashboard crash fixed:** restored the missing `MyDuesCard` import in `DashboardContent.tsx`; the `MyDuesCard is not defined` error no longer blocks dashboard rendering.
+- **Light-mode contrast:** replaced dark-theme-only pale amber/sky/violet/emerald status colors on white and tinted cards across Members, Tasks, Teams, Payments, Auth, reports, audit history, onboarding, AI notices, and test-mode UI. Light primary text now measures **4.92:1** on white; member status/role badges measure **6.46:1–7.38:1**. Dark-mode variants are preserved.
+- **Members list stability:** roster scope dependencies are normalized to stable keys, stale overlapping fetches are ignored with a generation guard, hydrated rows remain visible during background refresh, and per-row opacity entrance animation was removed. This prevents RBAC/team/family hydration from appearing as repeated full-list flicker; Vite HMR still reloads the page while source files are actively edited.
 - **Authenticated Playwright diagnostics:** 14 Team Ops tests ran with zero skips; 3 unauthenticated route-guard tests passed and 11 fixture-dependent scenarios failed. Primary causes are missing active-club selection, overlapping ordinary-player/dual-parent accounts, absent role assignments, and duplicate transition-time selectors—not confirmed P1 regressions.
 - **Fixture evidence:** the supplied admin account can authenticate and has a guardian link to the Alexander membership in TSV Allach 09. The second account is currently a base `member` without player/trainer/parent assignments and cannot represent both negative and dual-role fixtures.
 - **Staging cleanup:** four activities created in unrelated clubs during the diagnostic run were deleted; no records from that run remain.
 - **Invite email diagnosis:** invite creation succeeds, but a stale browser JWT can produce `Unauthorized` before Resend is called. A fresh JWT reaches `send-club-invite-email` successfully. Operator action: revoke exposed links, sign in again, and recreate; client refresh/retry hardening remains follow-up work.
 - **Verification:** ESLint passes, **754 unit tests pass** (**14 credential-gated integration tests skipped**), phase-0 audit passes, production build succeeds, and bundle budget passes. Vite reports non-blocking chunk/code-splitting warnings.
-- **Operator LOC:** refreshed `src/generated/app-loc.json` to **179,075 lines / 884 files** total; operator scope remains **17,985 / 87**.
-- **Release status:** suitable for a feature-branch commit/draft PR; production merge remains blocked on distinct staging personas, deterministic active-club selection, Playwright selector cleanup, and cron-log evidence.
+- **Operator LOC:** refreshed `src/generated/app-loc.json` to **179,101 lines / 884 files** total; operator scope remains **17,985 / 87**.
+- **Release status:** Team Ops is on `main`; production acceptance evidence remains incomplete until distinct staging personas, deterministic active-club selection, Playwright selector cleanup, and cron logs are complete.
 
 ## 2026-08-16 — Team Ops production-review hardening
 

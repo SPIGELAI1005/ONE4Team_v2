@@ -934,22 +934,22 @@ const Auth = () => {
                       </div>
 
                       <div className="grid gap-1 text-[11px] rounded-xl border border-border/60 bg-background/30 p-3">
-                        <div className={fastTrackPasswordChecks.minLength ? "text-emerald-400" : "text-muted-foreground"}>
+                        <div className={fastTrackPasswordChecks.minLength ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"}>
                           {fastTrackPasswordChecks.minLength ? "✓" : "•"} {t.onboarding.passwordRuleMinLength}
                         </div>
-                        <div className={fastTrackPasswordChecks.lowercase ? "text-emerald-400" : "text-muted-foreground"}>
+                        <div className={fastTrackPasswordChecks.lowercase ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"}>
                           {fastTrackPasswordChecks.lowercase ? "✓" : "•"} {t.onboarding.passwordRuleLowercase}
                         </div>
-                        <div className={fastTrackPasswordChecks.uppercase ? "text-emerald-400" : "text-muted-foreground"}>
+                        <div className={fastTrackPasswordChecks.uppercase ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"}>
                           {fastTrackPasswordChecks.uppercase ? "✓" : "•"} {t.onboarding.passwordRuleUppercase}
                         </div>
-                        <div className={fastTrackPasswordChecks.number ? "text-emerald-400" : "text-muted-foreground"}>
+                        <div className={fastTrackPasswordChecks.number ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"}>
                           {fastTrackPasswordChecks.number ? "✓" : "•"} {t.onboarding.passwordRuleNumber}
                         </div>
-                        <div className={fastTrackPasswordChecks.special ? "text-emerald-400" : "text-muted-foreground"}>
+                        <div className={fastTrackPasswordChecks.special ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"}>
                           {fastTrackPasswordChecks.special ? "✓" : "•"} {t.onboarding.passwordRuleSpecial}
                         </div>
-                        {fastTrackPasswordsMatch && <div className="text-emerald-400">✓ {t.onboarding.passwordsMatch}</div>}
+                        {fastTrackPasswordsMatch && <div className="text-emerald-700 dark:text-emerald-300">✓ {t.onboarding.passwordsMatch}</div>}
                       </div>
 
                       <label className="flex items-center gap-2 text-xs text-foreground">
@@ -1347,22 +1347,22 @@ const Auth = () => {
                               />
                             </div>
                             <div className="grid gap-1 text-[11px]">
-                              <div className={detailedPasswordChecks.minLength ? "text-emerald-400" : "text-muted-foreground"}>
+                              <div className={detailedPasswordChecks.minLength ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"}>
                                 {detailedPasswordChecks.minLength ? "✓" : "•"} {t.onboarding.passwordRuleMinLength}
                               </div>
-                              <div className={detailedPasswordChecks.lowercase ? "text-emerald-400" : "text-muted-foreground"}>
+                              <div className={detailedPasswordChecks.lowercase ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"}>
                                 {detailedPasswordChecks.lowercase ? "✓" : "•"} {t.onboarding.passwordRuleLowercase}
                               </div>
-                              <div className={detailedPasswordChecks.uppercase ? "text-emerald-400" : "text-muted-foreground"}>
+                              <div className={detailedPasswordChecks.uppercase ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"}>
                                 {detailedPasswordChecks.uppercase ? "✓" : "•"} {t.onboarding.passwordRuleUppercase}
                               </div>
-                              <div className={detailedPasswordChecks.number ? "text-emerald-400" : "text-muted-foreground"}>
+                              <div className={detailedPasswordChecks.number ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"}>
                                 {detailedPasswordChecks.number ? "✓" : "•"} {t.onboarding.passwordRuleNumber}
                               </div>
-                              <div className={detailedPasswordChecks.special ? "text-emerald-400" : "text-muted-foreground"}>
+                              <div className={detailedPasswordChecks.special ? "text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"}>
                                 {detailedPasswordChecks.special ? "✓" : "•"} {t.onboarding.passwordRuleSpecial}
                               </div>
-                              {passwordsMatch && <div className="text-emerald-400">✓ {t.onboarding.passwordsMatch}</div>}
+                              {passwordsMatch && <div className="text-emerald-700 dark:text-emerald-300">✓ {t.onboarding.passwordsMatch}</div>}
                             </div>
                           </div>
 

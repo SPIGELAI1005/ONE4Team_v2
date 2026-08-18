@@ -457,17 +457,17 @@ const roleIcons: Record<string, React.ElementType> = {
 const roleColors: Record<string, string> = {
   admin: "bg-primary/10 text-primary",
   trainer: "bg-accent/10 text-accent",
-  player: "bg-blue-500/10 text-blue-400",
-  staff: "bg-emerald-500/10 text-emerald-400",
-  team_management: "bg-teal-500/10 text-teal-400",
+  player: "bg-blue-500/10 text-blue-800 dark:text-blue-300",
+  staff: "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300",
+  team_management: "bg-teal-500/10 text-teal-800 dark:text-teal-300",
   member: "bg-muted text-muted-foreground",
-  parent: "bg-pink-500/10 text-pink-400",
-  fan: "bg-sky-500/10 text-sky-400",
-  supporter: "bg-amber-500/10 text-amber-400",
+  parent: "bg-pink-500/10 text-pink-800 dark:text-pink-300",
+  fan: "bg-sky-500/10 text-sky-800 dark:text-sky-300",
+  supporter: "bg-amber-500/10 text-amber-800 dark:text-amber-300",
   sponsor: "bg-primary/10 text-primary",
-  supplier: "bg-orange-500/10 text-orange-400",
-  service_provider: "bg-violet-500/10 text-violet-400",
-  consultant: "bg-cyan-500/10 text-cyan-400",
+  supplier: "bg-orange-500/10 text-orange-800 dark:text-orange-300",
+  service_provider: "bg-violet-500/10 text-violet-800 dark:text-violet-300",
+  consultant: "bg-cyan-500/10 text-cyan-800 dark:text-cyan-300",
 };
 
 const MEMBERS_VISIBLE_PAGE_SIZE = 40;
@@ -656,6 +656,17 @@ const Members = () => {
     canManageMembers,
     gateRole,
   });
+  const memberTeamScopeKey =
+    memberDataScope.teamIds === "all" ? "all" : [...memberDataScope.teamIds].sort().join("\0");
+  const stableMemberTeamScope = useMemo<string[] | "all">(
+    () => (memberTeamScopeKey === "all" ? "all" : memberTeamScopeKey ? memberTeamScopeKey.split("\0") : []),
+    [memberTeamScopeKey],
+  );
+  const familyMembershipScopeKey = [...guardianFamily.familyMembershipIds].sort().join("\0");
+  const stableFamilyMembershipIds = useMemo(
+    () => (familyMembershipScopeKey ? familyMembershipScopeKey.split("\0") : []),
+    [familyMembershipScopeKey],
+  );
   const [searchParams, setSearchParams] = useSearchParams();
   const agentPageContext = useMemo(() => ({ source: "members" as const }), []);
   useRegisterAiAgentContext(agentPageContext);
@@ -672,6 +683,8 @@ const Members = () => {
     trainers: number;
   } | null>(null);
   const membersPivotRef = useRef<string>("");
+  const membersFetchGenerationRef = useRef(0);
+  const hasMembersHydratedRef = useRef(false);
   const [members, setMembers] = useState<MemberRow[]>([]);
 
   useEffect(() => {
@@ -952,6 +965,8 @@ const Members = () => {
 
   // Reset page state on club switch to prevent cross-club flashes
   useEffect(() => {
+    membersFetchGenerationRef.current += 1;
+    hasMembersHydratedRef.current = false;
     setMembers([]);
     setMemberTeamNamesById({});
     setMemberPlayerTeamIdsById({});
@@ -1682,18 +1697,22 @@ const Members = () => {
 
   const fetchMembers = useCallback(async () => {
     if (!clubId) return;
+    const fetchGeneration = ++membersFetchGenerationRef.current;
+    const isCurrentFetch = () => membersFetchGenerationRef.current === fetchGeneration;
     const finishMembersFetch = () => {
+      if (!isCurrentFetch()) return;
+      hasMembersHydratedRef.current = true;
       setHasMembersHydrated(true);
       setLoading(false);
     };
     if (isGuardianMembersView && guardianFamily.loading) {
-      setLoading(true);
+      if (!hasMembersHydratedRef.current) setLoading(true);
       return;
     }
-    const teamScope = memberDataScope.teamIds;
+    const teamScope = stableMemberTeamScope;
     let scopedMembershipIds: Set<string> | null = null;
     if (isGuardianMembersView) {
-      const familyIds = guardianFamily.familyMembershipIds;
+      const familyIds = stableFamilyMembershipIds;
       if (familyIds.length === 0) {
         setMembers([]);
         setMembersDbTotalCount(0);
@@ -1714,6 +1733,7 @@ const Members = () => {
         supabase.from("team_players").select("membership_id").in("team_id", teamScope),
         supabase.from("team_coaches").select("membership_id").in("team_id", teamScope),
       ]);
+      if (!isCurrentFetch()) return;
       scopedMembershipIds = new Set<string>();
       for (const row of (playersRes.data ?? []) as { membership_id: string }[]) {
         scopedMembershipIds.add(String(row.membership_id));
@@ -1735,7 +1755,7 @@ const Members = () => {
         return;
       }
     }
-    setLoading(true);
+    if (!hasMembersHydratedRef.current) setLoading(true);
     const from = (membersServerPage - 1) * MEMBERS_SERVER_PAGE_SIZE;
     const to = from + MEMBERS_SERVER_PAGE_SIZE - 1; // upper bound for PostgREST range()
 
@@ -1776,6 +1796,7 @@ const Members = () => {
         supabase.from("club_member_guardian_links").select("*").eq("club_id", clubId),
         supabase.rpc("list_club_membership_emails", { _club_id: clubId }),
       ]);
+      if (!isCurrentFetch()) return;
 
       const teamsById = new Map<string, string>();
       ((teamRowsRes.data as Array<Record<string, unknown>> | null) || []).forEach((row) => {
@@ -1869,6 +1890,7 @@ const Members = () => {
         }),
         supabaseDynamic.rpc("get_club_member_stats", { _club_id: clubId }),
       ]);
+      if (!isCurrentFetch()) return;
       applyStats(statsRes);
       const { data: rawSearch, error: rpcErr } = rpcRes;
       if (rpcErr) {
@@ -1909,6 +1931,7 @@ const Members = () => {
       membershipQuery.range(from, to),
       supabaseDynamic.rpc("get_club_member_stats", { _club_id: clubId }),
     ]);
+    if (!isCurrentFetch()) return;
 
     const { data: membershipData, error: membershipError, count } = memRes;
     applyStats(statsRes);
@@ -1934,6 +1957,7 @@ const Members = () => {
         .from("profiles")
         .select("display_name, avatar_url, phone, user_id")
         .in("user_id", userIds);
+      if (!isCurrentFetch()) return;
 
       if (profileError) {
         toast({ title: t.membersPage.errorLoadingMembers, description: profileError.message, variant: "destructive" });
@@ -1959,10 +1983,10 @@ const Members = () => {
     roleFilter,
     toast,
     t,
-    memberDataScope.teamIds,
+    stableMemberTeamScope,
     isGuardianMembersView,
     guardianFamily.loading,
-    guardianFamily.familyMembershipIds,
+    stableFamilyMembershipIds,
   ]);
 
   useEffect(() => {
@@ -3514,7 +3538,7 @@ const Members = () => {
       <div className="space-y-3" data-testid="guardian-links-section">
         <div className="text-sm font-semibold text-foreground">{t.membersPage.guardians}</div>
         {needsUnder18Guardian ? (
-          <div className="text-sm rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-200">
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
             {t.membersPage.under18GuardianHint}
           </div>
         ) : null}
@@ -5130,7 +5154,7 @@ const Members = () => {
                     key: "players" as const,
                     label: t.common.players,
                     value: clubMemberStats?.players ?? members.filter((m) => m.role === "player").length,
-                    color: "text-blue-400",
+                    color: "text-blue-700 dark:text-blue-300",
                   },
                   {
                     key: "trainers" as const,
@@ -5142,13 +5166,13 @@ const Members = () => {
                     key: "pending" as const,
                     label: t.membersPage.pendingImport,
                     value: isSearchActive ? filteredDrafts.length : memberDraftTotalCount,
-                    color: "text-violet-400",
+                    color: "text-violet-700 dark:text-violet-300",
                   },
                   {
                     key: "needs_review" as const,
                     label: t.membersPage.duplicateReviewStat,
                     value: duplicateReviewCount,
-                    color: "text-amber-400",
+                    color: "text-amber-800 dark:text-amber-300",
                   },
                 ] as const
               ).map((s) => {
@@ -5173,9 +5197,9 @@ const Members = () => {
               })}
             </div>
             {duplicateReviewCount > 0 ? (
-              <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-100/90">
-                <div className="font-medium text-amber-200">{t.membersPage.duplicateReviewBannerTitle}</div>
-                <p className="mt-1 text-amber-100/80">
+              <div className="mb-4 rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs text-amber-950 dark:text-amber-100">
+                <div className="font-semibold text-amber-950 dark:text-amber-100">{t.membersPage.duplicateReviewBannerTitle}</div>
+                <p className="mt-1 text-amber-900 dark:text-amber-200">
                   {t.membersPage.duplicateReviewBannerDesc.replace("{count}", String(duplicateReviewCount))}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -5184,7 +5208,7 @@ const Members = () => {
                       type="button"
                       variant="link"
                       size="sm"
-                      className="h-8 px-0 text-xs text-amber-300 hover:text-amber-200"
+                      className="h-8 px-0 text-xs font-semibold text-amber-800 hover:text-amber-950 dark:text-amber-300 dark:hover:text-amber-100"
                       onClick={() => applyStatsFilter("needs_review")}
                     >
                       {t.membersPage.duplicateReviewStat}
@@ -5231,7 +5255,7 @@ const Members = () => {
               </div>
             ) : null}
             {sharedContactFilterActive ? (
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-sky-500/25 bg-sky-500/5 px-3 py-2 text-xs text-sky-200/90">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs text-sky-950 dark:text-sky-100">
                 <span>
                   {t.membersPage.sharedContactFilterActive
                     .replace("{count}", String(sharedContactFilterCount))
@@ -5241,7 +5265,7 @@ const Members = () => {
                   type="button"
                   variant="link"
                   size="sm"
-                  className="h-auto p-0 text-xs text-sky-300"
+                  className="h-auto p-0 text-xs font-semibold text-sky-800 hover:text-sky-950 dark:text-sky-300 dark:hover:text-sky-100"
                   onClick={() => setSharedContactFilterEmail(null)}
                 >
                   {t.membersPage.sharedContactFilterClear}
@@ -5293,7 +5317,7 @@ const Members = () => {
               className="rounded-xl bg-card border border-border p-4 mb-6"
             >
               {memberDraftsTruncated ? (
-                <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-200/90">
+                <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
                   {t.membersPage.savedMemberListTruncated
                     .replace("{loaded}", String(memberDrafts.length))
                     .replace("{total}", String(memberDraftTotalCount))}
@@ -5361,7 +5385,7 @@ const Members = () => {
                                 </div>
                                 <div className="text-[11px] text-primary/80 mt-1">{t.membersPage.searchResultsTapToOpen}</div>
                               </div>
-                              <span className={`text-xs font-medium px-2.5 py-1 rounded-full shrink-0 ${roleColors[member.role] || "bg-muted text-muted-foreground"}`}>
+                              <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${roleColors[member.role] || "bg-muted text-muted-foreground"}`}>
                                 {getRoleLabel(member.role)}
                               </span>
                             </div>
@@ -5745,7 +5769,7 @@ const Members = () => {
                         )}
                         <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
                           {draftSaveConfirmedAt && editingDraftId === draft.id ? (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 sm:mr-auto">
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 sm:mr-auto">
                               <Check className="h-3.5 w-3.5" />
                               {t.membersPage.masterDataSavedHint}
                             </span>
@@ -5908,7 +5932,7 @@ const Members = () => {
                             className={cn(
                               savedMemberListRowChipClass,
                               draft.status === "invited"
-                                ? "bg-emerald-500/10 text-emerald-400"
+                                ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
                                 : "bg-muted text-muted-foreground",
                             )}
                           >
@@ -6063,15 +6087,12 @@ const Members = () => {
                     </Button>
                   </div>
                 </div>
-                {rosterForDisplay.map((member, i) => {
+                {rosterForDisplay.map((member) => {
                   const isOpen = selectedMember?.id === member.id;
                   return (
                     <Fragment key={member.id}>
-                      <motion.div
+                      <div
                         id={`roster-member-${member.id}`}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: i * 0.03 }}
                         onClick={() =>
                           setSelectedMember((cur) => {
                             if (cur?.id === member.id) {
@@ -6181,14 +6202,14 @@ const Members = () => {
                               </span>
                             </RosterPillTooltip>
                             {masterByMembershipId[member.id]?.membership_kind === "supporting_member" ? (
-                              <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-violet-500/10 text-violet-300">
+                              <span className="rounded-full bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-700 dark:text-violet-300">
                                 {t.membersPage.supportingMember}
                               </span>
                             ) : null}
                             <RosterPillTooltip tip={getRoleTooltip(member.role)}>
                               <span
                                 className={cn(
-                                  "rounded-full px-2.5 py-1 text-xs font-medium",
+                                  "rounded-full px-2.5 py-1 text-xs font-semibold",
                                   roleColors[member.role] || "bg-muted text-muted-foreground",
                                 )}
                               >
@@ -6218,9 +6239,9 @@ const Members = () => {
                             >
                               <span
                                 className={cn(
-                                  "rounded-full px-2.5 py-1 text-xs font-medium",
+                                  "rounded-full px-2.5 py-1 text-xs font-semibold",
                                   member.status === "active"
-                                    ? "bg-emerald-500/10 text-emerald-400"
+                                    ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
                                     : "bg-muted text-muted-foreground",
                                 )}
                               >
@@ -6229,7 +6250,7 @@ const Members = () => {
                             </RosterPillTooltip>
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
 
                       {isOpen && (
                         <motion.div
@@ -6523,7 +6544,7 @@ const Members = () => {
 
                             <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:items-center">
                               {memberPanelSaveConfirmedId === member.id ? (
-                                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400 sm:mr-auto">
+                                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 sm:mr-auto">
                                   <Check className="h-3.5 w-3.5" />
                                   {t.membersPage.masterDataSavedHint}
                                 </span>
@@ -6741,9 +6762,9 @@ const Members = () => {
                                 </div>
                                 <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
                                   entry.severity === "high"
-                                    ? "bg-red-500/15 text-red-300"
+                                    ? "bg-red-500/15 text-red-800 dark:text-red-300"
                                     : entry.severity === "medium"
-                                      ? "bg-amber-500/15 text-amber-300"
+                                      ? "bg-amber-500/15 text-amber-900 dark:text-amber-300"
                                       : "bg-primary/10 text-primary"
                                 }`}>
                                   {entry.severity}
@@ -6817,7 +6838,7 @@ const Members = () => {
                                   <div className="text-xs text-muted-foreground truncate">{r.email}</div>
                                 </div>
                                 <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                                  r.status === "pending" ? "bg-primary/10 text-primary" : r.status === "approved" ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"
+                                  r.status === "pending" ? "bg-primary/10 text-primary" : r.status === "approved" ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-muted text-muted-foreground"
                                 }`}>{r.status}</span>
                               </div>
                               {(r.interested_role || r.interested_team || r.phone || r.source) ? (
@@ -7006,7 +7027,7 @@ const Members = () => {
                                   <div className="text-xs text-muted-foreground">{t.onboarding.role}: {getRoleLabel(inv.role)}</div>
                                 </div>
                                 <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                                  inv.used_at ? "bg-emerald-500/10 text-emerald-400" : "bg-primary/10 text-primary"
+                                  inv.used_at ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "bg-primary/10 text-primary"
                                 }`}>{inv.used_at ? t.common.used : t.common.unused}</span>
                               </div>
                               <div className="flex items-center justify-between mt-3 text-[10px] text-muted-foreground">
@@ -7501,7 +7522,7 @@ const Members = () => {
                       <td className="px-2 py-2">
                         <div className="flex flex-wrap gap-1">
                           {(bulkRowIssues.get(row.id) ?? []).length === 0 ? (
-                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
+                            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
                               {t.membersPage.ready}
                             </span>
                           ) : (
@@ -7515,7 +7536,7 @@ const Members = () => {
                                   issue === "household_discount_candidate"
                                     ? "bg-amber-500/10 text-amber-500"
                                     : issue === "already_in_saved_list"
-                                      ? "bg-orange-500/10 text-orange-400"
+                                      ? "bg-orange-500/10 text-orange-800 dark:text-orange-300"
                                     : "bg-accent/10 text-accent"
                                 }`}
                               >

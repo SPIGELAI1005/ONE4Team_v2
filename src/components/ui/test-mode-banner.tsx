@@ -59,14 +59,14 @@ export function TestModeBanner() {
               {t.testModeBanner.title}
             </span>
             <span className="h-1 w-1 rounded-full bg-red-500/50" />
-            <span className="text-[10px] text-red-400/70 font-medium">v0.1</span>
+            <span className="text-[10px] font-medium text-red-800/80 dark:text-red-300/80">v0.1</span>
           </div>
           <p className="text-[12px] sm:text-[13px] leading-relaxed text-red-900/70 dark:text-red-200/80">
             {t.testModeBanner.message}
           </p>
           <button
             onClick={handleReport}
-            className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-medium text-red-500 hover:text-red-400 transition-colors"
+            className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-medium text-red-700 transition-colors hover:text-red-900 dark:text-red-300 dark:hover:text-red-100"
           >
             <MessageSquareWarning className="w-3 h-3" />
             {t.testModeBanner.reportCta}

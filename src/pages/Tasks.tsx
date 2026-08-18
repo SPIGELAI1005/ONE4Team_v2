@@ -95,9 +95,9 @@ const TASK_PANEL_CLASS =
 function priorityBadgeClass(priority: ClubTaskPriority): string {
   switch (priority) {
     case "urgent":
-      return "bg-red-500/15 text-red-400 ring-1 ring-red-500/25";
+      return "bg-red-500/15 text-red-800 dark:text-red-300 ring-1 ring-red-500/25";
     case "high":
-      return "bg-orange-500/15 text-orange-400 ring-1 ring-orange-500/25";
+      return "bg-orange-500/15 text-orange-800 dark:text-orange-300 ring-1 ring-orange-500/25";
     case "low":
       return "bg-muted/80 text-muted-foreground";
     default:
@@ -108,9 +108,9 @@ function priorityBadgeClass(priority: ClubTaskPriority): string {
 function statusBadgeClass(status: ClubTaskStatus): string {
   switch (status) {
     case "done":
-      return "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/25";
+      return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/25";
     case "in_progress":
-      return "bg-sky-500/15 text-sky-400 ring-1 ring-sky-500/25";
+      return "bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/25";
     case "cancelled":
       return "bg-muted/80 text-muted-foreground";
     default:
@@ -587,7 +587,7 @@ export default function Tasks() {
                                 <Circle
                                   className={cn(
                                     "h-5 w-5",
-                                    overdue ? "text-orange-400" : "text-muted-foreground",
+                                    overdue ? "text-orange-800 dark:text-orange-300" : "text-muted-foreground",
                                   )}
                                 />
                               )}
@@ -621,7 +621,7 @@ export default function Tasks() {
                                     className={cn(
                                       "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
                                       overdue
-                                        ? "bg-orange-500/15 text-orange-400"
+                                        ? "bg-orange-500/15 text-orange-800 dark:text-orange-300"
                                         : "bg-muted/60 text-muted-foreground",
                                     )}
                                   >

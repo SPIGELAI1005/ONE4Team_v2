@@ -9,8 +9,10 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 ## SPRINT 2026-08-18 — Verification and release handoff
 
 - [x] **DASH-STABILITY-001** Restore `MyDuesCard` import and remove dashboard runtime crash
+- [x] **UI-CONTRAST-001** Audit light-mode text/status surfaces; enforce AA-safe primary and tinted badge variants
+- [x] **MEMBERS-STABILITY-001** Stabilize roster scope dependencies, reject stale fetches, preserve hydrated rows, and remove row fade replay
 - [x] **VERIFY-LOCAL-20260818** ESLint; 754 passing tests; phase-0 audit; production build; bundle budget
-- [x] **LOC-20260818** Refresh operator snapshot: **179,075 / 884** total; **17,985 / 87** operator scope
+- [x] **LOC-20260818** Refresh operator snapshot: **179,101 / 884** total; **17,985 / 87** operator scope
 - [x] **E2E-DIAG-001** Run all 14 Team Ops specs with zero skips and classify 11 failures
 - [x] **E2E-CLEANUP-001** Delete four activities created outside the intended staging club
 - [ ] **E2E-FIXTURES-002** **NOW** — use separate ordinary-player, player+parent, and trainer+parent users with correct assignments

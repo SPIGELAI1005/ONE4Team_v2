@@ -202,7 +202,7 @@ export function MemberMasterDialog({
                 {pct}%
               </Badge>
               {form.membership_kind === "supporting_member" ? (
-                <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-violet-500/10 text-violet-300">
+                <span className="rounded-full bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-700 dark:text-violet-300">
                   {supportingMemberLabel}
                 </span>
               ) : null}
@@ -211,7 +211,9 @@ export function MemberMasterDialog({
               </span>
               <span
                 className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                  memberStatus === "active" ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground"
+                  memberStatus === "active"
+                    ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                    : "bg-muted text-muted-foreground"
                 }`}
               >
                 {memberStatus === "active" ? activeLabel : memberStatus}
