@@ -27,7 +27,7 @@ export type SystemChannelKey =
 
 export interface MessageChannelLike {
   id: string;
-  kind: "announcements" | "chat";
+  kind: "announcements" | "chat" | "polls";
   teamId: string | null;
   isTrainersChannel?: boolean;
   customChannelId?: string | null;
@@ -138,6 +138,7 @@ export function filterMessageChannelsForUser<T extends MessageChannelLike>(
     const invited = inviteKey ? hasInvitedSystemKey(inviteKey, invitedSystemKeys) : false;
 
     if (channel.kind === "announcements") return true;
+    if (channel.kind === "polls") return true;
 
     if (channel.isTrainersChannel) {
       if (invited) return true;

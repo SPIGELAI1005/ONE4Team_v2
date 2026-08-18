@@ -1,6 +1,6 @@
 # HOLD — items requiring Supabase / external setup
 
-Last updated: 2026-08-07 — Apply **`20260810220000`** (`/my-data` save change detection) on linked remote if not yet applied. Also verify **`20260810120000`**, **`20260810200000`**, **`20260810210000`** from the Aug save-fix wave. See **`CHANGELOG.md`** § **2026-08-07**.
+Last updated: 2026-08-18 — Team Ops hardening migrations through **`20260816130000`** and the family-aware `calendar-ics` function are deployed. External verification still required: create distinct role-correct staging personas, make E2E select the intended club, rerun 14 Team Ops specs with zero failures, capture hourly reminder logs, and rotate/revoke any invite or test credentials exposed during diagnostics. The invite-email client also needs session refresh plus one HTTP 401 retry. See **`CHANGELOG.md`** § **2026-08-18** and the operator acceptance guide.
 
 **Applied (2026-08-01):** `20260806130000` (GPT Internet consent/log/settings), `20260806140000` (consent upsert RLS + `record_ai_internet_consent` RPC). Edge: **`co-trainer`** redeployed; **`TAVILY_API_KEY`** secret set.
 

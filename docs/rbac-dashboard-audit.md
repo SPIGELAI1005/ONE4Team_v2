@@ -34,6 +34,10 @@ ONE4Team already follows a **single dashboard shell** pattern:
 
 **Member master self-service (2026-08-03):** Route **`/my-data`** (any signed-in member with editable membership). Field-level policy by actor (**self** / **trainer** / **manager** / guardian via shared login email). Trainers scoped to assigned teams; managers notified on member saves; members + Team Management notified on trainer saves. Migration **`20260808120000_member_master_self_service_trainer_edit.sql`**. RPC type fix **`20260809180000`**. Does not grant finance or role-admin paths.
 
+**Guardian / parent Members view (2026-08-09; dual-role 2026-08-13):** **`parent_supporter.members: "own"`** with **`getDataScopeForModule` → `"family"`** — sidebar **Members** module; roster on **`/members`** filtered to **self + **`club_member_guardian_links`** wards** (no imports/drafts/stats/invites). **Dual-role:** trainer-parent sees **team roster** in Trainer persona, **family roster** in Parent persona; player-parent sees family roster when guardian-linked or Parent persona. **`parent`** assignment or guardian links unlock Members nav + route via **`canAccessMembersModule`**. **Settings → Profile** and **`/my-data`** show **`GuardianFamilyPanel`**. DB **`20260812320000`** auto-assigns **`parent`** on guardian link. Draft **`__draft_guardian_membership_ids`** still do not count until active roster + link row. See **`CHANGELOG.md`** § **2026-08-09**, **§ 2026-08-13**.
+
+**Role assignments write (2026-08-09):** Migration **`20260812290000_club_role_assignments_member_manager_write.sql`** — Team Management can UPDATE **`club_role_assignments`**; **`role-manager.tsx`** verifies `.select()` after update.
+
 **Role-aware home dashboard (2026-08-03):** **`DashboardContent.tsx`** uses **`isOpsAdminDashboardRole`** so **Team Management** receives the same **AI 4 T Control Center** block as Club Admin (minus finance KPIs and **`FinancialSummary`**). Team-scoped sports personas (**trainer**, **team_staff**, **player**, **parent_supporter**) load KPIs/upcoming via **`fetchTeamScopedDashboardSnapshot`** + **`useModuleDataScope("trainings")`**. Player home sections de-emphasize analytics widgets (**`dashboard-section-visibility.ts`**). Remaining gap: widget branch still keyed primarily on URL **`/dashboard/:role`** slug — align fully with **`resolveModuleGateRole`** in a follow-up.
 
 **Player-focused Trainings & Assets (2026-08-03):** **`/teams`** and **`/activities`** use **`useModuleDataScope("trainings")`** for team-scoped reads; admin occupancy KPIs hidden for limited/team roles; day schedule still shows full pitch occupancy for context.
@@ -176,7 +180,7 @@ Invites set `club_memberships.role` (legacy). Scoped assignments are **additive*
 | `admin`, `club_admin` | Full menu incl. Marketplace + Partners |
 | `trainer`, `team_staff` | Sports ops; **no** Marketplace, Partners, Payments (trainer) |
 | `player` | Trainings, matches, events, messages, tasks, shop |
-| `parent_supporter` | + payments (family scope) |
+| `parent_supporter` | + payments (family scope), **members (family scope — linked children only)** |
 | `member` | Events, payments, messages, tasks — minimal sports |
 | `sponsor` | Marketplace, reports (limited), club page read |
 | `supplier`, `service_provider`, `consultant` | Marketplace + own-scope modules |
@@ -220,7 +224,7 @@ Invites set `club_memberships.role` (legacy). Scoped assignments are **additive*
 | Dashboard | `/dashboard/:role` | `DashboardContent` | Auth | Persona-driven widgets |
 | Assets | `/asset-layers` | `Teams.tsx` | Admin | Pitch/asset map |
 | Trainings | `/teams` | `Teams.tsx` | Trainer | Same component, different entry |
-| Members | `/members` | `Members.tsx` | Trainer | Admin vs trainer split inside page |
+| Members | `/members` | `Members.tsx` | Trainer (+ guardian/parent family view) | Admin vs trainer vs **guardian family** split inside page |
 | Matches | `/matches` | `Matches.tsx` | **Auth only** | Match management access helpers exist |
 | Events | `/events` | `Events.tsx` | **Auth only** | |
 | Reports | `/reports` | `PlayerStats.tsx` | **Auth only** | |

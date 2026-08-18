@@ -18,7 +18,7 @@ export type { ClubTaskAccessOptions } from "@/lib/club-task-access";
 export type ClubTaskFilter = "all" | "mine" | "overdue";
 
 const TASK_SELECT =
-  "id, club_id, title, description, status, priority, due_at, team_id, assignee_user_id, partner_id, source_type, source_id, created_by, completed_at, created_at, updated_at";
+  "id, club_id, title, description, status, priority, due_at, team_id, assignee_user_id, partner_id, source_type, source_id, created_by, completed_at, created_at, updated_at, claimable, slots_total, slots_filled, activity_id, template_key";
 
 export function useClubTasks(
   clubId: string | null,
@@ -46,7 +46,10 @@ export function useClubTasks(
     if (filter === "mine" && user) {
       query = query.eq("assignee_user_id", user.id);
     } else if (access && !access.canManageTasks && access.scope === "own" && user) {
-      query = query.eq("assignee_user_id", user.id);
+      // Own tasks plus open claimable duties (Wave 3).
+      query = query.or(
+        `assignee_user_id.eq.${user.id},and(claimable.eq.true,status.in.(open,in_progress))`,
+      );
     }
 
     const { data, error } = await query;
@@ -161,8 +164,14 @@ export async function createClubTask(
     team_id?: string | null;
     assignee_user_id?: string | null;
     partner_id?: string | null;
+    claimable?: boolean;
+    slots_total?: number | null;
+    source_type?: ClubTaskRow["source_type"];
+    template_key?: string | null;
+    activity_id?: string | null;
   },
 ): Promise<{ data: ClubTaskRow | null; error: Error | null }> {
+  const claimable = Boolean(payload.claimable);
   const { data, error } = await supabase
     .from("club_tasks")
     .insert({
@@ -172,10 +181,15 @@ export async function createClubTask(
       priority: payload.priority,
       due_at: payload.due_at || null,
       team_id: payload.team_id || null,
-      assignee_user_id: payload.assignee_user_id || null,
+      assignee_user_id: claimable ? null : payload.assignee_user_id || null,
       partner_id: payload.partner_id || null,
-      source_type: "manual",
-    })
+      source_type: payload.source_type ?? (claimable ? "duty" : "manual"),
+      claimable,
+      slots_total: payload.slots_total ?? null,
+      slots_filled: 0,
+      template_key: payload.template_key?.trim() || null,
+      activity_id: payload.activity_id || null,
+    } as never)
     .select(TASK_SELECT)
     .single();
 
@@ -198,6 +212,10 @@ export async function updateClubTask(
       | "assignee_user_id"
       | "partner_id"
       | "completed_at"
+      | "claimable"
+      | "slots_total"
+      | "slots_filled"
+      | "source_type"
     >
   >,
 ): Promise<{ error: Error | null }> {
@@ -205,7 +223,7 @@ export async function updateClubTask(
     patch.status !== undefined ? clubTaskStatusOnComplete(patch.status as ClubTaskStatus) : {};
   const { error } = await supabase
     .from("club_tasks")
-    .update({ ...patch, ...statusPatch })
+    .update({ ...patch, ...statusPatch } as never)
     .eq("id", taskId)
     .eq("club_id", clubId);
   return { error: error ? new Error(error.message) : null };

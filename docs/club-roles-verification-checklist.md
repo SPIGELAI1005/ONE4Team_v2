@@ -30,6 +30,16 @@ Use after applying migration `20260804180000_club_roles_team_management_fan_supp
 - [ ] Player under 18 shows guardian hint on Safety tab
 - [ ] Linking a parent does **not** change the child’s role from Player
 - [ ] Child remains `player`; guardian row in `club_member_guardian_links`
+- [ ] Parent (`parent_supporter`) sees **Members** in sidebar with **self + linked children** on roster (2026-08-09; self added 2026-08-13)
+- [ ] **Trainer-parent:** Trainer persona → team roster on `/members`; Parent persona → family roster (2026-08-13)
+- [ ] **Player-parent:** Player persona with guardian links → family roster; can switch to Parent persona in Settings (2026-08-13)
+- [ ] Linking a guardian on child Safety tab auto-adds **`parent`** role assignment (migration **`20260812320000`**) without removing player/trainer role
+- [ ] Parent can edit child registry from **Members**, **`/my-data`**, or **Settings → Profile** family panel when link + active membership exist
+- [ ] Draft-only guardian on saved member list does **not** show child on parent account until roster link exists
+
+## Role assignments (Roles tab)
+- [ ] Team Management can change assignment role/scope/team and change persists after refresh (migration **`20260812290000`**)
+- [ ] Toast “Role updated” only when DB row actually updated (`.select()` verification)
 
 ## Automated
 - [ ] `npx vitest run src/lib/rbac-config.test.ts src/lib/match-management-access.test.ts src/lib/my-dues.test.ts src/lib/under-18.test.ts`

@@ -1,6 +1,13 @@
 export type ClubTaskStatus = "open" | "in_progress" | "done" | "cancelled";
 export type ClubTaskPriority = "low" | "normal" | "high" | "urgent";
-export type ClubTaskSourceType = "manual" | "ai_agent" | "event" | "partner";
+export type ClubTaskSourceType =
+  | "manual"
+  | "ai_agent"
+  | "event"
+  | "partner"
+  | "duty"
+  | "checklist"
+  | "template";
 
 export interface ClubTaskRow {
   id: string;
@@ -19,6 +26,11 @@ export interface ClubTaskRow {
   completed_at: string | null;
   created_at: string;
   updated_at: string;
+  claimable?: boolean;
+  slots_total?: number | null;
+  slots_filled?: number;
+  activity_id?: string | null;
+  template_key?: string | null;
 }
 
 export interface ClubTaskAssigneeOption {

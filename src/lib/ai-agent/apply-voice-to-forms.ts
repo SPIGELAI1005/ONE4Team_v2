@@ -49,13 +49,50 @@ export interface DuplicateWeekFormPatch extends AgentFormStatePatch {
   teamId: string;
 }
 
+export interface MissingRsvpFormPatch extends AgentFormStatePatch {
+  intent: "summarize_missing_rsvps" | "draft_attendance_reminder";
+  activityId: string;
+}
+
+export interface ClaimableDutyFormPatch extends AgentFormStatePatch {
+  intent: "propose_claimable_duty";
+  title: string;
+  description: string;
+  checklistText: string;
+  teamId: string;
+}
+
+export interface ActivityChecklistFormPatch extends AgentFormStatePatch {
+  intent: "propose_activity_checklist";
+  titlesText: string;
+  taskTitle: string;
+}
+
+export interface AttendanceMetricsFormPatch extends AgentFormStatePatch {
+  intent: "summarize_attendance_metrics";
+  teamId: string;
+  days: string;
+}
+
+export interface DraftPollFormPatch extends AgentFormStatePatch {
+  intent: "draft_poll_question";
+  title: string;
+  optionsText: string;
+  description: string;
+}
+
 export type VoiceFormPatch =
   | CreateTrainingFormPatch
   | CancelTrainingFormPatch
   | MemberDraftFormPatch
   | NotifyFormPatch
   | PlanWeekFormPatch
-  | DuplicateWeekFormPatch;
+  | DuplicateWeekFormPatch
+  | MissingRsvpFormPatch
+  | ClaimableDutyFormPatch
+  | ActivityChecklistFormPatch
+  | AttendanceMetricsFormPatch
+  | DraftPollFormPatch;
 
 function isoToLocalDatetimeInput(iso: string): string {
   const d = new Date(iso);
@@ -154,6 +191,57 @@ export function buildFormPatchFromParams(
     return {
       intent: "duplicate_training_week",
       teamId: typeof params.team_id === "string" ? params.team_id : "",
+    };
+  }
+
+  if (intent === "summarize_missing_rsvps" || intent === "draft_attendance_reminder") {
+    return {
+      intent,
+      activityId: typeof params.activity_id === "string" ? params.activity_id : "",
+    };
+  }
+
+  if (intent === "propose_claimable_duty") {
+    const checklist = Array.isArray(params.checklist_titles)
+      ? (params.checklist_titles as unknown[]).map((t) => String(t)).filter(Boolean)
+      : [];
+    return {
+      intent: "propose_claimable_duty",
+      title: typeof params.title === "string" ? params.title : "",
+      description: params.description != null ? String(params.description) : "",
+      checklistText: checklist.join(", "),
+      teamId: typeof params.team_id === "string" ? params.team_id : "",
+    };
+  }
+
+  if (intent === "propose_activity_checklist") {
+    const titles = Array.isArray(params.titles)
+      ? (params.titles as unknown[]).map((t) => String(t)).filter(Boolean)
+      : [];
+    return {
+      intent: "propose_activity_checklist",
+      titlesText: titles.join("\n"),
+      taskTitle: params.task_title != null ? String(params.task_title) : "",
+    };
+  }
+
+  if (intent === "summarize_attendance_metrics") {
+    return {
+      intent: "summarize_attendance_metrics",
+      teamId: typeof params.team_id === "string" ? params.team_id : "",
+      days: params.days != null ? String(params.days) : "28",
+    };
+  }
+
+  if (intent === "draft_poll_question") {
+    const options = Array.isArray(params.options)
+      ? (params.options as unknown[]).map((o) => String(o)).filter(Boolean)
+      : [];
+    return {
+      intent: "draft_poll_question",
+      title: typeof params.title === "string" ? params.title : "",
+      optionsText: options.join("\n"),
+      description: params.description != null ? String(params.description) : "",
     };
   }
 

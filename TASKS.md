@@ -6,6 +6,175 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ---
 
+## SPRINT 2026-08-18 — Verification and release handoff
+
+- [x] **DASH-STABILITY-001** Restore `MyDuesCard` import and remove dashboard runtime crash
+- [x] **VERIFY-LOCAL-20260818** ESLint; 754 passing tests; phase-0 audit; production build; bundle budget
+- [x] **LOC-20260818** Refresh operator snapshot: **179,075 / 884** total; **17,985 / 87** operator scope
+- [x] **E2E-DIAG-001** Run all 14 Team Ops specs with zero skips and classify 11 failures
+- [x] **E2E-CLEANUP-001** Delete four activities created outside the intended staging club
+- [ ] **E2E-FIXTURES-002** **NOW** — use separate ordinary-player, player+parent, and trainer+parent users with correct assignments
+- [ ] **E2E-CLUB-001** **NOW** — make fixture login select/assert the intended active club
+- [ ] **E2E-SELECTORS-001** Deduplicate transition-time test IDs such as `tasks-create-open`
+- [ ] **INVITE-AUTH-001** Refresh the Supabase session before `send-club-invite-email`; retry once on HTTP 401
+- [ ] **CRON-PROOF-001** Capture hourly attendance-reminder execution logs
+- [ ] **VERIFY-STAGING-20260818** Run Team Ops Playwright with zero failures after fixture corrections
+
+Release state: feature branch/draft PR permitted; production approval remains blocked by the five open verification items above.
+
+## SPRINT 2026-08-16 — Team Ops production-review hardening
+
+- [x] **P1-001** Guardian RLS + family-safe member search
+- [x] **P1-002** Guardian role mutator removed from client RPC access
+- [x] **P1-003** Assignment-gated Parent persona + calendar scope authorization
+- [x] **P1-004** Atomic attendance capacity/waitlist + reminder preference enforcement
+- [x] **QUALITY-001** Lint and Supabase select-audit fixes; direct-route PWA registration
+- [x] **E2E-001** Deterministic duty, family/persona and ledger approval specs + credential preflight
+- [x] **DEPLOY-001** Apply `20260816120000`; redeploy `calendar-ics`
+- [x] **VERIFY-LOCAL** Lint, tests, phase-0 audit, build and bundle budget
+- [ ] **VERIFY-STAGING** **BLOCKED** — current credentials authenticate, but do not represent seven distinct role-correct fixtures; run authenticated E2E with zero failures and capture cron logs
+
+Operator runbook: `docs/TEAM_OPS_OPERATOR_ACCEPTANCE_2026-08-16.md`.
+
+## SPRINT 2026-08-13 — Guardian dual-role · family roster · duplicate review dismiss
+
+**Goal:** Support player-parent and trainer-parent in one account; family Members roster includes self; guardian link assigns parent role; dismiss false-positive duplicate review.
+
+| Track | Focus | Task IDs |
+|-------|--------|----------|
+| **G2** | Dual-role guardians | GUARD-007 … GUARD-012 |
+| **D2** | Duplicate review dismiss | DUP-001 … DUP-003 |
+| **LOC** | Operator Financials snapshot | LOC-2026-08-13 |
+
+### Guardian dual-role + family roster
+
+- [x] **GUARD-007** **`guardian-family-scope.ts`** — `familyMembershipIds`, persona-aware **`isFamilyMembersView`**, **`canAccessMembersModule`**
+- [x] **GUARD-008** **`Members.tsx`** — family query scoped to self + wards; server **`.in("id", …)`**
+- [x] **GUARD-009** **`use-dashboard-nav.ts`** + **`RequireModule`** — Members nav/route for parent assignment or guardian links
+- [x] **GUARD-010** Persona options derive dual-role Parent access from real role assignments (hardened 2026-08-16)
+- [x] **GUARD-011** Migration **`20260812320000`** — guardian link → **`parent`** assignment + membership promote + backfill
+- [x] **GUARD-012** Tests **`guardian-family-scope.test.ts`**, **`rbac-config.test.ts`**
+
+### Duplicate review dismiss
+
+- [x] **DUP-001** Migration **`20260812310000`** — **`member_duplicate_review_clearances`**
+- [x] **DUP-002** **`SharedContactAccountsPanel`** — Not a duplicate button + clearance API
+- [x] **DUP-003** Tests **`member-duplicate-review.test.ts`**
+
+### Doc sync + operator LOC
+
+- [x] **DOC-2026-08-13** **`MEMORY_BANK.md`**, **`CHANGELOG.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`ROADMAP.md`**, **`README.md`**, **`docs/rbac-dashboard-audit.md`**, **`docs/rbac-dashboard-plan.md`**, **`docs/club-roles-verification-checklist.md`**, **`supabase/SCHEMA_STATUS.md`**, **`HOLD.md`**, **`src/generated/README.md`**
+- [x] **LOC-2026-08-13** **`npm run loc:count`** → **178,986** / **883** (operator **17,985** / **87**)
+
+**Operator:** `npm run db:push` for **`20260812310000`**, **`20260812320000`** if not applied.
+
+**Club ops:** Link parent on child **Safety tab**; dual-role users switch **Parent** persona in Settings for family **`/members`**.
+
+---
+
+## SPRINT 2026-08-09 — Guardian / parent Members · Settings family · Roles tab RLS
+
+**Goal:** Parents and guardian-linked accounts can see and edit linked children from Settings, My Data, and a filtered Members roster.
+
+| Track | Focus | Task IDs |
+|-------|--------|----------|
+| **G** | Guardian family scope | GUARD-001 … GUARD-006 |
+| **R** | Role assignments RLS | ROLES-001 … ROLES-002 |
+| **D** | Draft guardian UX | DRAFT-G-001 … DRAFT-G-003 |
+
+### Guardian / parent access
+
+- [x] **GUARD-001** RBAC `parent_supporter.members: "own"` + family data scope (`rbac-config.ts`)
+- [x] **GUARD-002** Hook **`use-guardian-family-scope.ts`** + **`listGuardianWardSummaries`**
+- [x] **GUARD-003** **`/members`** family-scoped roster; hide admin surfaces; **`?focus=`** deep link
+- [x] **GUARD-004** **Settings → Profile** + **`/my-data`** **`GuardianFamilyPanel`**
+- [x] **GUARD-005** Sidebar inject Members when guardian wards exist (`use-dashboard-nav.ts`)
+- [x] **GUARD-006** **`RequireModule`** guardian bypass for `/members`
+
+### Role assignments
+
+- [x] **ROLES-001** Migration **`20260812290000`** — Team Management write on **`club_role_assignments`**
+- [x] **ROLES-002** **`role-manager.tsx`** post-update `.select()` verification + filtered picker
+
+### Draft guardian UX
+
+- [x] **DRAFT-G-001** Flush pending guardian on draft Save (`Members.tsx`)
+- [x] **DRAFT-G-002** **Close** on roster/draft edit; invited-draft **Send invite** + toast copy
+- [x] **DRAFT-G-003** Remove duplicate guardian UI from nested draft **`MasterDataTabs`**
+
+### Doc sync
+
+- [x] **DOC-2026-08-09** **`MEMORY_BANK.md`**, **`CHANGELOG.md`**, **`PROJECT_STATUS.md`**, **`TASKS.md`**, **`docs/rbac-dashboard-audit.md`**, **`docs/rbac-dashboard-plan.md`**, **`docs/club-roles-verification-checklist.md`**, **`docs/TEAM_OPS_E2E_FIXTURES.md`**, **`README.md`**
+
+**Operator:** `npm run db:push` for **`20260812290000`** if not applied.
+
+**E2E backlog:** Scenario 1 (`team-ops-rsvp.spec.ts`) still requires staging roster + **`club_member_guardian_links`** for **`E2E_PARENT_EMAIL`** — not draft-only links.
+
+---
+
+## SPRINT 2026-08-08 — Team Operations expansion (Waves 1–7)
+
+**Goal:** Ship team-ops through Realtime / ICS polish (Wave 7).
+
+| Track | Focus | Task IDs |
+|-------|--------|----------|
+| **TO** | Gap analysis | TO-AUDIT-001 |
+| **TO** | Wave 1 foundation | TO-WAVE-1 |
+| **TO** | Wave 2 daily ops | TO-WAVE-2 |
+| **TO** | Wave 3 coordination | TO-WAVE-3 |
+| **TO** | Wave 4 logistics | TO-WAVE-4 |
+| **TO** | Wave 5 finance + analytics | TO-WAVE-5 |
+| **TO** | Wave 6 AI intents | TO-WAVE-6 |
+| **TO** | Wave 7 polish | TO-WAVE-7 |
+
+- [x] **TO-AUDIT-001** Read-only audit → **`docs/team-operations-gap-analysis.md`**
+- [x] **TO-WAVE-1** Route/finance gate + attendance strengthen · **`20260811120000`** *(operator apply)*
+- [x] **TO-WAVE-2** Availability, deadlines, guardian picker, reminders · **`20260811140000`** *(operator apply)*
+- [x] **TO-WAVE-3** Duties, checklists, polls · **`20260812120000`** *(operator apply)*
+- [x] **TO-WAVE-4** Transport, guests, ICS tokens · **`20260812140000`** *(operator apply)*
+- [x] **TO-WAVE-5** Team cashbox + attendance metric definitions / Reports · **`20260812160000`** *(operator apply)*
+- [x] **TO-WAVE-6** AI 4 T attendance/duty/checklist/poll intents · **`20260812180000`** *(operator apply; never auto-send reminders)*
+- [x] **TO-WAVE-7** ICS Edge feed + Realtime ops + mobile safe-area · **`20260812200000`** *(operator apply; deploy `calendar-ics --no-verify-jwt`)*
+- [x] **TO-FOLLOW-RLS** Wave 1 unit proofs + optional JWT probes · `team-ops-wave1-proofs.test.ts` / `rls.integration.test.ts`
+- [x] **TO-FOLLOW-TPL** Duty template seed/spawn + `slots_total` UI on Tasks
+- [x] **TO-P17** Prompt 17 entitlements · `docs/PROMPT_17_PLAN_ENTITLEMENTS.md` + plan keys / PlanGate
+- [x] **TO-GUEST-CONV** Guest → membership A+B (link / draft+invite) · trainers + club admins
+- [x] **TO-LEDGER-APPR** Team ledger approvals (all entries; edit & resubmit)
+- [x] **TO-REMIND-CRON** Attendance reminders Edge + cron helper (`process-attendance-reminders`)
+
+**Deferred:** dashboard installable PWA / SW, push notifications.
+
+**Operator:** migrations applied; hourly cron for `process-attendance-reminders` scheduled.
+
+**Close-out Phases 18–26:** recommended track done. Phase 22: JWT Scenario 1 in `e2e/team-ops-rsvp.spec.ts` (env-gated). **Expansion audit (2026-08-10):** core prompts implemented — see **`docs/TEAM_OPS_EXPANSION_STATUS.md`**. Remaining: E2E 2–6, i18n sweep, guest invite RPC, deferred PWA/waitlist.
+
+---
+
+## SPRINT 2026-08-10 — Team Ops expansion audit & forward plan
+
+**Goal:** Confirm Desktop expansion prompt set (Prompts 0–27) vs repo; document gaps.
+
+| Track | Focus | Task IDs |
+|-------|--------|----------|
+| **A** | Expansion audit | TO-AUDIT-002 |
+| **F** | Forward plan | TO-NEXT-01 … TO-NEXT-15 |
+
+- [x] **TO-AUDIT-002** Review expansion prompt set → **`docs/TEAM_OPS_EXPANSION_STATUS.md`**
+- [x] **TO-AUDIT-002b** Sync **`team-operations-gap-analysis.md`**, closeout, TASKS, MEMORY, CHANGELOG
+- [x] **TO-NEXT-01** Playwright scenarios 2–6 — `e2e/team-ops-*.spec.ts`
+- [x] **TO-NEXT-02** Guest draft+invite RPC — `20260812300000`
+- [x] **TO-NEXT-03** Phase 21 i18n completion
+- [x] **TO-NEXT-04** JWT RLS probes extended
+- [x] **TO-NEXT-05** … **TO-NEXT-13** — see CHANGELOG 2026-08-10 Tier forward
+- [x] **TO-NEXT-14** Dashboard PWA manifest + network-only SW
+- [ ] **TO-NEXT-15** Push notifications (operator: FCM/APNs)
+- [ ] **TO-NEXT-11** Events RSVP convergence (deferred)
+- [ ] **TO-NEXT-12** Full recurring series editor (scaffold only: `series_id`)
+
+Full prioritized backlog: **`docs/TEAM_OPS_EXPANSION_STATUS.md`**.
+
+---
+
 ## SPRINT 2026-08-07 — `/my-data` save hardening · Vercel Analytics · operator LOC
 
 **Goal:** Fix Fabia `/my-data` name save races and registry detection; add Vercel Analytics/Speed Insights; refresh LOC snapshot with operator module tracking.

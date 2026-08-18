@@ -12,11 +12,13 @@ import type { PublicMatchLite, TrainingSessionRowLite } from "@/lib/public-club-
 import {
   buildActivityAttendanceOverview,
   buildActivityRoster,
+  isActivityRsvpOpen,
   isMemberInvitedToActivity,
-  isTrainingRsvpOpen,
   type ActivityAttendanceOverview,
+  type TrainingAttendanceResponseReason,
   type TrainingAttendanceRow,
 } from "@/lib/training-attendance";
+import { upsertActivityAttendanceResponse } from "@/lib/activity-attendance-api";
 
 type AttendanceRow = TrainingAttendanceRow & { club_id: string };
 
@@ -88,7 +90,7 @@ export function usePublicClubAttendanceState() {
       ] = await Promise.all([
         supabase
           .from("activity_attendance")
-          .select("id, club_id, activity_id, membership_id, status, notes")
+          .select("id, club_id, activity_id, membership_id, status, notes, response_reason, responded_by, responded_at")
           .eq("club_id", club.id)
           .eq("membership_id", membershipId)
           .order("updated_at", { ascending: false })
@@ -96,7 +98,8 @@ export function usePublicClubAttendanceState() {
         activityIds.length
           ? supabase
               .from("activity_attendance")
-              .select("id, activity_id, membership_id, status, notes")
+              // Public club overview: status only — never fetch peers' notes/reasons
+              .select("id, activity_id, membership_id, status, responded_by, responded_at")
               .eq("club_id", club.id)
               .in("activity_id", activityIds)
           : Promise.resolve({ data: [] as TrainingAttendanceRow[], error: null }),
@@ -206,17 +209,28 @@ export function usePublicClubAttendanceState() {
   const isRsvpOpenForTarget = useCallback(
     (target: PublicClubRsvpTarget) => {
       if (target.kind === "match") return true;
-      return isTrainingRsvpOpen(target.startsAt);
+      return isActivityRsvpOpen({ type: "training", startsAt: target.startsAt });
     },
     [],
   );
 
   const respond = useCallback(
-    async (activityId: string, status: "confirmed" | "declined", notes?: string | null) => {
+    async (
+      activityId: string,
+      status: "confirmed" | "declined" | "maybe",
+      notes?: string | null,
+      responseReason?: TrainingAttendanceResponseReason | null,
+    ) => {
       if (!club?.id || !membershipId) return;
 
       const activity = rsvpActivities.find((a) => a.id === activityId);
-      if (activity?.type === "training" && !isTrainingRsvpOpen(activity.starts_at)) {
+      if (
+        activity &&
+        !isActivityRsvpOpen({
+          type: activity.type,
+          startsAt: activity.starts_at,
+        })
+      ) {
         throw new Error("RSVP window closed");
       }
 
@@ -226,35 +240,20 @@ export function usePublicClubAttendanceState() {
 
       setBusyActivityId(activityId);
       try {
-        const existing = attendanceByActivityId[activityId];
-        const payload = {
+        const result = await upsertActivityAttendanceResponse({
+          activityId,
+          membershipId,
           status,
           notes: status === "declined" ? notes?.trim() || null : null,
-        };
-
-        if (existing) {
-          const { error } = await supabase
-            .from("activity_attendance")
-            .update(payload)
-            .eq("club_id", club.id)
-            .eq("id", existing.id);
-          if (error) throw error;
-        } else {
-          const { error } = await supabase.from("activity_attendance").insert({
-            club_id: club.id,
-            activity_id: activityId,
-            membership_id: membershipId,
-            ...payload,
-          });
-          if (error) throw error;
-        }
-
+          responseReason: status === "declined" ? responseReason ?? null : null,
+        });
+        if (!result.ok) throw new Error(result.error);
         await reload();
       } finally {
         setBusyActivityId(null);
       }
     },
-    [attendanceByActivityId, canMemberRespond, club?.id, membershipId, reload, rsvpActivities],
+    [canMemberRespond, club?.id, membershipId, reload, rsvpActivities],
   );
 
   return {

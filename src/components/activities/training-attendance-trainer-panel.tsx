@@ -1,4 +1,4 @@
-import { Copy, MessageSquareText, Sparkles, Users } from "lucide-react";
+import { Bell, Copy, Loader2, MessageSquareText, Sparkles, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { TrainingAttendanceSummaryBar } from "@/components/activities/training-attendance-summary-bar";
@@ -22,6 +22,10 @@ interface TrainingAttendanceTrainerPanelProps {
   roster: { membershipId: string; name: string; role: string; jerseyNumber?: number | null }[];
   attendance: TrainingAttendanceRow[];
   onNudgeUnconfirmed: () => void;
+  onRemindMissing?: () => void;
+  onMarkAttended?: (membershipId: string) => void;
+  markBusyId?: string | null;
+  remindBusy?: boolean;
   labels: {
     title: string;
     coming: string;
@@ -30,18 +34,38 @@ interface TrainingAttendanceTrainerPanelProps {
     summaryComing: string;
     tabComing: string;
     tabDeclined: string;
+    tabMaybe?: string;
     tabPending: string;
     nudge: string;
+    remindMissing?: string;
     noPlayers: string;
     reasonPrefix: string;
     rosterScopeTeam: string;
     rosterScopeClub: string;
     nudgeFootnote: string;
     copyList: string;
+    markAttended?: string;
   };
 }
 
-function AttendanceMemberRow({ line, reasonPrefix }: { line: RosterAttendanceLine; reasonPrefix: string }) {
+function AttendanceMemberRow({
+  line,
+  reasonPrefix,
+  onMarkAttended,
+  markBusyId,
+  markAttendedLabel,
+}: {
+  line: RosterAttendanceLine;
+  reasonPrefix: string;
+  onMarkAttended?: (membershipId: string) => void;
+  markBusyId?: string | null;
+  markAttendedLabel?: string;
+}) {
+  const canMark =
+    onMarkAttended &&
+    markAttendedLabel &&
+    (line.status === "confirmed" || line.status === "maybe" || line.status === "waitlisted");
+
   return (
     <div className="flex items-start gap-3 rounded-xl border border-border/50 bg-background/40 px-3 py-2.5">
       <div
@@ -51,7 +75,9 @@ function AttendanceMemberRow({ line, reasonPrefix }: { line: RosterAttendanceLin
             ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
             : line.status === "declined"
               ? "bg-rose-500/15 text-rose-700 dark:text-rose-300"
-              : "bg-muted text-muted-foreground",
+              : line.status === "waitlisted"
+                ? "bg-amber-500/15 text-amber-700 dark:text-amber-300"
+                : "bg-muted text-muted-foreground",
         )}
       >
         {memberInitials(line.name)}
@@ -75,6 +101,19 @@ function AttendanceMemberRow({ line, reasonPrefix }: { line: RosterAttendanceLin
           </div>
         ) : null}
       </div>
+      {canMark ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-7 shrink-0 rounded-lg text-[10px]"
+          disabled={markBusyId === line.membershipId}
+          data-testid="trainer-mark-attended"
+          onClick={() => onMarkAttended(line.membershipId)}
+        >
+          {markAttendedLabel}
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -89,6 +128,10 @@ export function TrainingAttendanceTrainerPanel({
   roster,
   attendance,
   onNudgeUnconfirmed,
+  onRemindMissing,
+  onMarkAttended,
+  markBusyId = null,
+  remindBusy = false,
   labels,
 }: TrainingAttendanceTrainerPanelProps) {
   const attendanceByMember: Record<string, TrainingAttendanceRow> = {};
@@ -107,6 +150,7 @@ export function TrainingAttendanceTrainerPanel({
 
   const coming = lines.filter((l) => l.status === "confirmed" || l.status === "attended");
   const declined = lines.filter((l) => l.status === "declined");
+  const maybe = lines.filter((l) => l.status === "maybe");
   const pending = lines.filter((l) => l.status === "invited");
 
   return (
@@ -125,9 +169,10 @@ export function TrainingAttendanceTrainerPanel({
           </p>
         </SheetHeader>
 
-        <div className="mt-4 grid grid-cols-3 gap-2">
+        <div className="mt-4 grid grid-cols-4 gap-2">
           {[
             { label: labels.tabComing, count: coming.length, tone: "text-emerald-600 dark:text-emerald-400" },
+            { label: labels.tabMaybe ?? "Maybe", count: maybe.length, tone: "text-amber-600 dark:text-amber-400" },
             { label: labels.tabDeclined, count: declined.length, tone: "text-rose-600 dark:text-rose-400" },
             { label: labels.tabPending, count: pending.length, tone: "text-muted-foreground" },
           ].map((stat) => (
@@ -148,11 +193,28 @@ export function TrainingAttendanceTrainerPanel({
           statPending={labels.pending}
         />
 
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           <Button type="button" size="sm" variant="outline" className="rounded-xl" onClick={onNudgeUnconfirmed}>
             <Sparkles className="mr-1.5 h-4 w-4" />
             {labels.nudge}
           </Button>
+          {onRemindMissing && labels.remindMissing ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="rounded-xl"
+              disabled={remindBusy || pending.length === 0}
+              onClick={onRemindMissing}
+            >
+              {remindBusy ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <Bell className="mr-1.5 h-4 w-4" />
+              )}
+              {labels.remindMissing.replace("{count}", String(pending.length))}
+            </Button>
+          ) : null}
           <Button
             type="button"
             size="sm"
@@ -162,6 +224,7 @@ export function TrainingAttendanceTrainerPanel({
               const msg = [
                 `${activityTitle} - ${labels.tabComing}: ${comingCount(summary)}`,
                 ...coming.map((l) => `✅ ${l.name}`),
+                ...maybe.map((l) => `❔ ${l.name}`),
                 ...declined.map((l) => `❌ ${l.name}${l.declineReason ? ` (${l.declineReason})` : ""}`),
               ].join("\n");
               void navigator.clipboard.writeText(msg);
@@ -175,6 +238,7 @@ export function TrainingAttendanceTrainerPanel({
         <div className="mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
           {[
             { title: labels.tabComing, rows: coming },
+            { title: labels.tabMaybe ?? "Maybe", rows: maybe },
             { title: labels.tabDeclined, rows: declined },
             { title: labels.tabPending, rows: pending },
           ].map((section) => (
@@ -187,7 +251,14 @@ export function TrainingAttendanceTrainerPanel({
               ) : (
                 <div className="space-y-2">
                   {section.rows.map((line) => (
-                    <AttendanceMemberRow key={line.membershipId} line={line} reasonPrefix={labels.reasonPrefix} />
+                    <AttendanceMemberRow
+                      key={line.membershipId}
+                      line={line}
+                      reasonPrefix={labels.reasonPrefix}
+                      onMarkAttended={onMarkAttended}
+                      markBusyId={markBusyId}
+                      markAttendedLabel={labels.markAttended}
+                    />
                   ))}
                 </div>
               )}

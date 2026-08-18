@@ -48,3 +48,6 @@ scripts/tmp_*
 
 # Supabase local CLI cache
 /supabase/.temp/
+
+# Local reconciliation workbooks may contain member personal data.
+/data/reconciliation/*.xlsx

@@ -12,7 +12,13 @@ export type AgentIntent =
   | "send_club_announcement"
   | "plan_training_week"
   | "duplicate_training_week"
-  | "notify_trainers";
+  | "notify_trainers"
+  | "summarize_missing_rsvps"
+  | "draft_attendance_reminder"
+  | "propose_claimable_duty"
+  | "propose_activity_checklist"
+  | "summarize_attendance_metrics"
+  | "draft_poll_question";
 
 export interface TeamTrainerSuggestion {
   membership_id: string;
@@ -152,6 +158,12 @@ export function parseAgentIntent(raw: unknown): AgentIntent | null {
     "plan_training_week",
     "duplicate_training_week",
     "notify_trainers",
+    "summarize_missing_rsvps",
+    "draft_attendance_reminder",
+    "propose_claimable_duty",
+    "propose_activity_checklist",
+    "summarize_attendance_metrics",
+    "draft_poll_question",
   ];
   if (typeof raw === "string" && allowed.includes(raw as AgentIntent)) {
     return raw as AgentIntent;
@@ -426,6 +438,188 @@ export function buildProposalFromIntent(
     };
   }
 
+  if (intent === "summarize_missing_rsvps" || intent === "draft_attendance_reminder") {
+    const activityTitle = String(params.activity_title ?? (de ? "Einheit" : "Session"));
+    const missingCount = Number(params.missing_count ?? 0);
+    const eligibleCount = Number(params.eligible_count ?? 0);
+    const respondedCount = Number(params.responded_count ?? 0);
+    const names = Array.isArray(params.missing_names)
+      ? (params.missing_names as unknown[]).map((n) => String(n)).filter(Boolean)
+      : [];
+    const nameList = names.length ? names.slice(0, 20).join(", ") : de ? "(keine Namen)" : "(no names)";
+    const reminderBody =
+      params.reminder_body != null
+        ? String(params.reminder_body)
+        : de
+          ? `Erinnerung: Bitte für „${activityTitle}“ zusagen oder absagen. Noch offen: ${nameList}.`
+          : `Reminder: Please RSVP for "${activityTitle}". Still missing: ${nameList}.`;
+
+    if (intent === "summarize_missing_rsvps") {
+      return {
+        title: de ? "Fehlende RSVPs zusammenfassen" : "Summarize missing RSVPs",
+        summary: de
+          ? `${activityTitle}: ${respondedCount}/${eligibleCount} geantwortet, ${missingCount} offen. ${nameList}`
+          : `${activityTitle}: ${respondedCount}/${eligibleCount} responded, ${missingCount} missing. ${nameList}`,
+        steps: [
+          {
+            tool: "ack_summary",
+            label: de ? "Zusammenfassung bestätigen (kein Versand)" : "Acknowledge summary (no send)",
+            params: {
+              activity_id: params.activity_id ?? null,
+              missing_count: missingCount,
+              eligible_count: eligibleCount,
+              responded_count: respondedCount,
+              missing_names: names,
+            },
+          },
+        ],
+        warnings: [
+          de
+            ? "Es werden keine Erinnerungen gesendet. Nutzen Sie Activities → Remind für den Versand."
+            : "No reminders will be sent. Use Activities → Remind to deliver notifications.",
+        ],
+      };
+    }
+
+    return {
+      title: de ? "RSVP-Erinnerungstext entwerfen" : "Draft attendance reminder text",
+      summary: de
+        ? `Entwurf für ${missingCount} fehlende Antwort(en) zu „${activityTitle}“. Kein automatischer Versand.`
+        : `Draft for ${missingCount} missing reply(ies) on "${activityTitle}". No automatic send.`,
+      steps: [
+        {
+          tool: "ack_summary",
+          label: de ? "Entwurf speichern (kein Versand)" : "Keep draft (no send)",
+          params: {
+            activity_id: params.activity_id ?? null,
+            reminder_title: params.reminder_title ?? (de ? `RSVP: ${activityTitle}` : `RSVP: ${activityTitle}`),
+            reminder_body: reminderBody,
+            missing_count: missingCount,
+          },
+        },
+      ],
+      warnings: [
+        de
+          ? "Wave 6: Agent versendet keine Erinnerungen. Text kopieren oder später manuell erinnern."
+          : "Wave 6: Agent never sends reminders. Copy the text or remind manually later.",
+      ],
+    };
+  }
+
+  if (intent === "summarize_attendance_metrics") {
+    const days = Number(params.days ?? 28);
+    const acts = Number(params.activities_in_window ?? 0);
+    const avgResponse = params.avg_response_rate != null ? Number(params.avg_response_rate) : null;
+    const avgComing = params.avg_coming_rate != null ? Number(params.avg_coming_rate) : null;
+    const missing = Number(params.total_missing ?? 0);
+    const gaps = Number(params.rsvp_gap_activities ?? 0);
+    const pct = (v: number | null) => (v == null ? "—" : `${Math.round(v * 100)}%`);
+    return {
+      title: de ? "Anwesenheitskennzahlen" : "Attendance metrics",
+      summary: de
+        ? `Letzte ${days} Tage: ${acts} Einheiten, Ø Antwort ${pct(avgResponse)}, Ø Teilnahme ${pct(avgComing)}, ${missing} fehlende Antworten, ${gaps} Einheiten mit Lücken.`
+        : `Last ${days} days: ${acts} sessions, avg response ${pct(avgResponse)}, avg coming ${pct(avgComing)}, ${missing} missing replies, ${gaps} sessions with gaps.`,
+      steps: [
+        {
+          tool: "ack_summary",
+          label: de ? "Kennzahlen bestätigen (nur Lesen)" : "Acknowledge metrics (read-only)",
+          params: { ...params },
+        },
+      ],
+    };
+  }
+
+  if (intent === "propose_claimable_duty") {
+    const title = String(params.title ?? (de ? "Duty" : "Duty"));
+    const checklist = Array.isArray(params.checklist_titles)
+      ? (params.checklist_titles as unknown[]).map((t) => String(t).trim()).filter(Boolean)
+      : [];
+    return {
+      title: de ? "Übernehmbare Duty vorschlagen" : "Propose claimable duty",
+      summary: de
+        ? `Claimable Aufgabe „${title}“ anlegen${checklist.length ? ` mit ${checklist.length} Checklistenpunkten` : ""}.`
+        : `Create claimable task "${title}"${checklist.length ? ` with ${checklist.length} checklist item(s)` : ""}.`,
+      steps: [
+        {
+          tool: "create_claimable_duty",
+          label: de ? "Duty in Aufgaben anlegen" : "Create duty on Tasks",
+          params: {
+            title,
+            description: params.description != null ? String(params.description) : null,
+            team_id: params.team_id ?? null,
+            activity_id: params.activity_id ?? null,
+            due_at: params.due_at ?? null,
+            checklist_titles: checklist,
+          },
+        },
+      ],
+    };
+  }
+
+  if (intent === "propose_activity_checklist") {
+    const titles = Array.isArray(params.titles)
+      ? (params.titles as unknown[]).map((t) => String(t).trim()).filter(Boolean)
+      : [];
+    if (titles.length === 0) {
+      throw new Error(de ? "Mindestens einen Checklistenpunkt angeben." : "Provide at least one checklist item.");
+    }
+    return {
+      title: de ? "Aktivitäts-Checkliste vorschlagen" : "Propose activity checklist",
+      summary: de
+        ? `${titles.length} Checklistenpunkt(e) anlegen.`
+        : `Create ${titles.length} checklist item(s).`,
+      steps: [
+        {
+          tool: "create_activity_checklist",
+          label: de ? "Checkliste speichern" : "Save checklist",
+          params: {
+            titles,
+            task_id: params.task_id ?? null,
+            activity_id: params.activity_id ?? null,
+            team_id: params.team_id ?? null,
+            task_title: params.task_title ?? null,
+          },
+        },
+      ],
+    };
+  }
+
+  if (intent === "draft_poll_question") {
+    const title = String(params.title ?? "").trim();
+    const options = Array.isArray(params.options)
+      ? (params.options as unknown[]).map((o) => String(o).trim()).filter(Boolean)
+      : [];
+    if (!title || options.length < 2) {
+      throw new Error(
+        de ? "Umfrage braucht Titel und mindestens zwei Optionen." : "Poll needs a title and at least two options.",
+      );
+    }
+    return {
+      title: de ? "Umfrage entwerfen" : "Draft poll",
+      summary: de
+        ? `Umfrage „${title}“ mit ${options.length} Optionen erstellen (nach Bestätigung).`
+        : `Create poll "${title}" with ${options.length} options (after confirm).`,
+      steps: [
+        {
+          tool: "create_club_poll",
+          label: de ? "Umfrage in Kommunikation anlegen" : "Create poll in Communication",
+          params: {
+            title,
+            description: params.description != null ? String(params.description) : null,
+            options,
+            team_id: params.team_id ?? null,
+            allow_multi: Boolean(params.allow_multi),
+          },
+        },
+      ],
+      warnings: [
+        de
+          ? "Erst nach Bestätigung wird die Umfrage erstellt und Mitglieder können benachrichtigt werden."
+          : "The poll is created only after you confirm; members may be notified then.",
+      ],
+    };
+  }
+
   throw new Error(`Unknown intent: ${intent}`);
 }
 
@@ -488,6 +682,58 @@ export async function executeProposalStep(
     return (data as Record<string, unknown>) ?? { ok: true };
   }
 
+  if (step.tool === "ack_summary") {
+    return { ok: true, kind: "summary", ...p };
+  }
+
+  if (step.tool === "create_claimable_duty") {
+    const checklist = Array.isArray(p.checklist_titles)
+      ? (p.checklist_titles as unknown[]).map((t) => String(t))
+      : [];
+    const { data, error } = await admin.rpc("agent_create_claimable_duty", {
+      _club_id: clubId,
+      _user_id: userId,
+      _title: String(p.title ?? "Duty"),
+      _description: p.description != null ? String(p.description) : null,
+      _team_id: p.team_id ?? null,
+      _activity_id: p.activity_id ?? null,
+      _due_at: p.due_at ?? null,
+      _checklist_titles: checklist.length ? checklist : null,
+    });
+    if (error) throw new Error(error.message);
+    return (data as Record<string, unknown>) ?? { ok: true };
+  }
+
+  if (step.tool === "create_activity_checklist") {
+    const titles = Array.isArray(p.titles) ? (p.titles as unknown[]).map((t) => String(t)) : [];
+    const { data, error } = await admin.rpc("agent_create_activity_checklist", {
+      _club_id: clubId,
+      _user_id: userId,
+      _titles: titles,
+      _task_id: p.task_id ?? null,
+      _activity_id: p.activity_id ?? null,
+      _team_id: p.team_id ?? null,
+      _task_title: p.task_title != null ? String(p.task_title) : null,
+    });
+    if (error) throw new Error(error.message);
+    return (data as Record<string, unknown>) ?? { ok: true };
+  }
+
+  if (step.tool === "create_club_poll") {
+    const options = Array.isArray(p.options) ? (p.options as unknown[]).map((o) => String(o)) : [];
+    const { data, error } = await admin.rpc("agent_create_club_poll", {
+      _club_id: clubId,
+      _user_id: userId,
+      _title: String(p.title),
+      _options: options,
+      _description: p.description != null ? String(p.description) : null,
+      _team_id: p.team_id ?? null,
+      _allow_multi: Boolean(p.allow_multi),
+    });
+    if (error) throw new Error(error.message);
+    return (data as Record<string, unknown>) ?? { ok: true };
+  }
+
   throw new Error(`Unknown tool: ${step.tool}`);
 }
 
@@ -530,6 +776,18 @@ export function buildResultLinks(
         `/communication?announcement=${announcementId}`,
       );
     }
+    const taskId = row.task_id != null ? String(row.task_id) : "";
+    if (taskId) {
+      pushUniqueLink(links, de ? "Aufgabe öffnen" : "Open task", `/tasks?task=${taskId}`);
+    }
+    const pollId = row.poll_id != null ? String(row.poll_id) : "";
+    if (pollId) {
+      pushUniqueLink(
+        links,
+        de ? "Umfrage öffnen" : "Open poll",
+        `/communication?channel=polls&poll=${pollId}`,
+      );
+    }
   }
 
   if (
@@ -549,9 +807,25 @@ export function buildResultLinks(
     intent === "notify_trainers" ||
     intent === "cancel_training_with_parent_notice" ||
     intent === "plan_training_week" ||
-    intent === "duplicate_training_week"
+    intent === "duplicate_training_week" ||
+    intent === "draft_poll_question" ||
+    intent === "draft_attendance_reminder"
   ) {
     pushUniqueLink(links, de ? "Kommunikation" : "Communication", "/communication");
+  }
+  if (
+    intent === "summarize_missing_rsvps" ||
+    intent === "draft_attendance_reminder" ||
+    intent === "summarize_attendance_metrics"
+  ) {
+    pushUniqueLink(links, de ? "Zeitplan" : "Schedule", "/activities");
+    pushUniqueLink(links, de ? "Berichte" : "Reports", "/reports");
+  }
+  if (intent === "propose_claimable_duty" || intent === "propose_activity_checklist") {
+    pushUniqueLink(links, de ? "Aufgaben" : "Tasks", "/tasks");
+  }
+  if (intent === "draft_poll_question") {
+    pushUniqueLink(links, de ? "Umfragen" : "Polls", "/communication?channel=polls");
   }
   return links;
 }

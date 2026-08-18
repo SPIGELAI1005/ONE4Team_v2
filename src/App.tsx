@@ -79,6 +79,7 @@ const SupplierPageAdmin = lazy(() => import("./pages/supplier/SupplierPageAdmin"
 const PublicSupplierPage = lazy(() => import("./pages/public-supplier/PublicSupplierPage"));
 const PublicProviderProfilePage = lazy(() => import("./pages/public-provider/PublicProviderProfilePage"));
 const Payments = lazy(() => import("./pages/Payments"));
+const TeamLedger = lazy(() => import("./pages/TeamLedger"));
 const Events = lazy(() => import("./pages/Events"));
 const Matches = lazy(() => import("./pages/Matches"));
 const Activities = lazy(() => import("./pages/Activities"));
@@ -359,6 +360,20 @@ const AnimatedRoutes = () => {
                 <Suspense fallback={<RouteFallback />}>
                   <PlanGate feature="payments">
                     <Payments />
+                  </PlanGate>
+                </Suspense>
+              </RequireModule>
+            }
+          />
+          <Route
+            path="/team-ledger"
+            element={
+              <RequireModule module="trainings">
+                <Suspense fallback={<RouteFallback />}>
+                  <PlanGate feature="teamCashbox">
+                    <ClubOnlyRoute clubPath="/team-ledger">
+                      <TeamLedger />
+                    </ClubOnlyRoute>
                   </PlanGate>
                 </Suspense>
               </RequireModule>

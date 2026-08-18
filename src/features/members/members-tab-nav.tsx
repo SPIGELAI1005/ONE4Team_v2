@@ -7,6 +7,7 @@ interface MembersTabNavProps {
   tab: MembersPageTab;
   onTabChange: (tab: MembersPageTab) => void;
   showRoles: boolean;
+  showInvites?: boolean;
   labels: {
     members: string;
     invites: string;
@@ -14,7 +15,7 @@ interface MembersTabNavProps {
   };
 }
 
-export function MembersTabNav({ tab, onTabChange, showRoles, labels }: MembersTabNavProps) {
+export function MembersTabNav({ tab, onTabChange, showRoles, showInvites = true, labels }: MembersTabNavProps) {
   return (
     <div className={DASHBOARD_TABS_ROW}>
       <div className={DASHBOARD_TABS_INNER_SCROLL}>
@@ -27,15 +28,17 @@ export function MembersTabNav({ tab, onTabChange, showRoles, labels }: MembersTa
         >
           <Users className="w-4 h-4" /> {labels.members}
         </button>
-        <button
-          type="button"
-          onClick={() => onTabChange("invites")}
-          className={`${DASHBOARD_TAB_BUTTON} ${
-            tab === "invites" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Inbox className="w-4 h-4" /> {labels.invites}
-        </button>
+        {showInvites ? (
+          <button
+            type="button"
+            onClick={() => onTabChange("invites")}
+            className={`${DASHBOARD_TAB_BUTTON} ${
+              tab === "invites" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Inbox className="w-4 h-4" /> {labels.invites}
+          </button>
+        ) : null}
         {showRoles ? (
           <button
             type="button"

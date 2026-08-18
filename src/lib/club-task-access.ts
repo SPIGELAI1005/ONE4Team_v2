@@ -11,6 +11,7 @@ export interface ClubTaskLike {
   assignee_user_id?: string | null;
   created_by?: string;
   team_id?: string | null;
+  claimable?: boolean | null;
 }
 
 export interface ClubTaskAccessOptions {
@@ -67,15 +68,19 @@ export function isClubTaskVisibleToUser(
   const { scope, userTeamIds } = options;
 
   if (scope === "own") {
-    return row.created_by === userId;
+    if (row.created_by === userId) return true;
+    // Claimable club-wide duties appear for players even in own-scoped task lists.
+    return Boolean(row.claimable) && !row.team_id;
   }
 
   if (scope === "assigned") {
-    return false;
+    return Boolean(row.claimable);
   }
 
-  if (scope === "team" && row.team_id && userTeamIds.includes(row.team_id)) {
-    return true;
+  if (scope === "team") {
+    if (row.team_id && userTeamIds.includes(row.team_id)) return true;
+    if (row.claimable && !row.team_id) return true;
+    return false;
   }
 
   return false;

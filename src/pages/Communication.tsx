@@ -19,6 +19,7 @@ import {
   Pencil,
   Trash2,
   UserPlus,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
+import { useMembershipId } from "@/hooks/use-membership-id";
 import { supabase } from "@/integrations/supabase/client";
 import {
   messagePaginationRange,
@@ -48,6 +50,7 @@ import { GraceWriteBanner } from "@/components/billing/GraceWriteBanner";
 import { correlationHeaders } from "@/lib/observability";
 import { supabaseErrorMessage } from "@/lib/supabase-error-message";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ClubPollsPanel } from "@/components/communication/club-polls-panel";
 import { PUBLIC_NEWS_CATEGORIES } from "@/lib/public-club-news";
 import {
   filterAnnouncementsForUser,
@@ -126,7 +129,7 @@ type TeamChannel = {
   name: string;
 };
 
-type ChannelKind = "announcements" | "chat";
+type ChannelKind = "announcements" | "chat" | "polls";
 
 type Channel = {
   id: string;
@@ -289,6 +292,7 @@ export function CommunicationWorkspace({
   const { user } = useAuth();
   const { clubId: hookClubId, loading: clubLoading } = useClubId();
   const clubId = clubIdOverride ?? hookClubId;
+  const { membershipId } = useMembershipId();
   const { toast } = useToast();
   const perms = usePermissions();
   const { canUseFeature, effective } = usePlanGuard();
@@ -301,6 +305,7 @@ export function CommunicationWorkspace({
   const canUseChat = embeddedClubSession || canUseFeature("chat");
   const canUseAnnouncements =
     embeddedClubSession || canUseFeature("announcements") || canUseFeature("communication");
+  const canUsePolls = embeddedClubSession || canUseFeature("polls");
   const canMutate = embeddedClubSession || canMutateClubData(effective);
   const gateRole = useModuleGateRole();
   const { isClubAdmin } = useClubAdmin(clubId);
@@ -455,6 +460,14 @@ export function CommunicationWorkspace({
           teamId: null,
         });
       }
+      if (canUsePolls) {
+        base.push({
+          id: "polls",
+          label: t.communicationPage.pollsChannel,
+          kind: "polls",
+          teamId: null,
+        });
+      }
       if (canUseChat) {
         base.push({
           id: "club-general",
@@ -499,12 +512,14 @@ export function CommunicationWorkspace({
     [
       canUseAnnouncements,
       canUseChat,
+      canUsePolls,
       customChannels,
       invitedSystemKeys,
       messageAccess,
       supportsCustomChannels,
       supportsTrainersChannel,
       t.communicationPage.announcementsChannel,
+      t.communicationPage.pollsChannel,
       t.communicationPage.clubGeneralChannel,
       t.communicationPage.trainersChannel,
       teams,
@@ -1722,6 +1737,8 @@ export function CommunicationWorkspace({
                       >
                         {channel.kind === "announcements" ? (
                           <Megaphone className="w-4 h-4 shrink-0" />
+                        ) : channel.kind === "polls" ? (
+                          <BarChart3 className="w-4 h-4 shrink-0" />
                         ) : channel.isTrainersChannel ? (
                           <Users className="w-4 h-4 shrink-0" />
                         ) : (
@@ -1891,7 +1908,39 @@ export function CommunicationWorkspace({
                 </div>
               ) : null}
 
-              {selectedChannel.kind === "announcements" ? (
+              {selectedChannel.kind === "polls" ? (
+                <div
+                  className={cn(
+                    "min-h-0 flex-1 overflow-y-auto overscroll-contain p-4",
+                    embedded ? "bg-neutral-50/80" : undefined,
+                  )}
+                >
+                  {clubId ? (
+                    <ClubPollsPanel
+                      clubId={clubId}
+                      membershipId={membershipId}
+                      canManage={Boolean(canPostAnnouncements || perms.isTrainer)}
+                      labels={{
+                        title: t.communicationPage.pollsTitle,
+                        subtitle: t.communicationPage.pollsSubtitle,
+                        create: t.communicationPage.pollsCreate,
+                        empty: t.communicationPage.pollsEmpty,
+                        vote: t.communicationPage.pollsVote,
+                        close: t.communicationPage.pollsClose,
+                        closed: t.communicationPage.pollsClosed,
+                        optionsHint: t.communicationPage.pollsOptionsHint,
+                        titleLabel: t.communicationPage.pollsTitleLabel,
+                        optionPlaceholder: t.communicationPage.pollsOptionPlaceholder,
+                        allowMulti: t.communicationPage.pollsAllowMulti,
+                        saved: t.communicationPage.pollsSaved,
+                        failed: t.communicationPage.pollsFailed,
+                        votesCount: t.communicationPage.pollsVotesCount,
+                      }}
+                      onToast={(payload) => toast(payload)}
+                    />
+                  ) : null}
+                </div>
+              ) : selectedChannel.kind === "announcements" ? (
                 <>
                 {viewingAnnouncement ? (
                   <AnnouncementDetailView

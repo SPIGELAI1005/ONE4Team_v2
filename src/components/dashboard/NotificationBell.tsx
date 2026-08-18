@@ -55,6 +55,14 @@ const NotificationBell = () => {
       setOpen(false);
       return;
     }
+    if (notification.notification_type === "poll") {
+      const suffix = notification.reference_id
+        ? `?${communicationChannelQuery("polls")}&poll=${encodeURIComponent(notification.reference_id)}`
+        : `?${communicationChannelQuery("polls")}`;
+      navigate(`/communication${suffix}`);
+      setOpen(false);
+      return;
+    }
     if (notification.notification_type === "photo_renewal") {
       navigate("/members");
       setOpen(false);

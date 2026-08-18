@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   buildMemberDuplicateReviewMap,
+  duplicateReviewEntryKey,
+  filterDuplicateReviewEntries,
   getMemberDuplicateReview,
   isPlaceholderClubMemberNumber,
   planDuplicateDraftRemovals,
@@ -70,6 +72,31 @@ describe("member-duplicate-review", () => {
       },
     ]);
 
+    expect(map.size).toBe(0);
+  });
+
+  it("excludes cleared entries before building duplicate map", () => {
+    const entries = [
+      {
+        id: "m1",
+        source: "roster" as const,
+        email: "george.neacsu@gmx.de",
+        name: "Alexander Neacsu",
+        memberNumber: "11281",
+      },
+      {
+        id: "d1",
+        source: "draft" as const,
+        email: "george.neacsu@gmx.de",
+        name: "Alexander Neacsu",
+        memberNumber: "11281",
+      },
+    ];
+    const cleared = new Set([duplicateReviewEntryKey("roster", "m1")]);
+    const filtered = filterDuplicateReviewEntries(entries, cleared);
+    const map = buildMemberDuplicateReviewMap(filtered);
+
+    expect(filtered).toHaveLength(1);
     expect(map.size).toBe(0);
   });
 });

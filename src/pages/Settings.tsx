@@ -46,6 +46,13 @@ import { FoundingClubStatusCard } from "@/components/billing/FoundingClubStatusC
 import { GraceWriteBanner } from "@/components/billing/GraceWriteBanner";
 import { cn } from "@/lib/utils";
 import { syncAccountAvatarToOwnMasterPhotos } from "@/lib/member-photo-display";
+import { useGuardianFamilyScope } from "@/hooks/use-guardian-family-scope";
+import { GuardianFamilyPanel } from "@/components/members/guardian-family-panel";
+
+import {
+  loadMemberNotificationPrefs,
+  saveMemberNotificationPrefs,
+} from "@/lib/member-notification-prefs-api";
 
 const LS_NOTIF_KEY = "one4team.notifications";
 const PROFILE_AVATAR_BUCKET = "images-avatars";
@@ -144,6 +151,7 @@ export default function Settings() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const gateRole = useModuleGateRole();
+  const guardianFamily = useGuardianFamilyScope(activeClubId);
   const isPartnerPersona = isExternalRole(gateRole);
   /** Club-wide settings (language, payments, LLM) — club admins only. */
   const showClubSettingsTab = !isPartnerPersona && perms.isAdmin;
@@ -193,6 +201,35 @@ export default function Settings() {
 
   // Notifications
   const [notifs, setNotifs] = useState<NotifPrefs>(loadNotifPrefs);
+
+  useEffect(() => {
+    if (!user) return;
+    void (async () => {
+      const { data } = await loadMemberNotificationPrefs(activeClubId ?? null);
+      if (data) {
+        setNotifs({
+          email: data.email,
+          push: data.push,
+          matchReminders: data.matchReminders,
+          trainingReminders: data.trainingReminders,
+          paymentReminders: data.paymentReminders,
+          weeklyDigestEmail: data.weeklyDigestEmail,
+        });
+        localStorage.setItem(LS_NOTIF_KEY, JSON.stringify(data));
+      }
+    })();
+  }, [user, activeClubId]);
+
+  const persistNotifPrefs = useCallback(
+    async (next: NotifPrefs) => {
+      localStorage.setItem(LS_NOTIF_KEY, JSON.stringify(next));
+      const result = await saveMemberNotificationPrefs(activeClubId ?? null, next);
+      if (!result.ok) {
+        toast({ title: t.common.error, description: result.error ?? undefined, variant: "destructive" });
+      }
+    },
+    [activeClubId, t.common.error, toast],
+  );
 
   // Account
   const [resetSending, setResetSending] = useState(false);
@@ -614,7 +651,7 @@ export default function Settings() {
   const toggleNotif = (key: keyof NotifPrefs) => {
     setNotifs((prev) => {
       const next = { ...prev, [key]: !prev[key] };
-      localStorage.setItem(LS_NOTIF_KEY, JSON.stringify(next));
+      void persistNotifPrefs(next);
       return next;
     });
   };
@@ -872,6 +909,7 @@ export default function Settings() {
                                 <button
                                   key={role}
                                   type="button"
+                                  data-testid={`persona-switch-${role}`}
                                   onClick={() => switchDashboardPersona(role)}
                                   className={personaSwitchButtonClass(isSelected)}
                                 >
@@ -914,6 +952,7 @@ export default function Settings() {
                                 <button
                                   key={role}
                                   type="button"
+                                  data-testid={`persona-switch-${role}`}
                                   onClick={() => switchDashboardPersona(role)}
                                   className={personaSwitchButtonClass(isSelected)}
                                 >
@@ -1050,6 +1089,21 @@ export default function Settings() {
                       </div>
                     )}
                   </div>
+                  <GuardianFamilyPanel
+                    wards={guardianFamily.wards}
+                    labels={{
+                      title: t.myMemberDataPage.guardianFamilyTitle,
+                      subtitle: t.myMemberDataPage.guardianFamilySubtitle,
+                      emptyTitle: t.myMemberDataPage.guardianFamilyEmptyTitle,
+                      emptyDesc: t.myMemberDataPage.guardianFamilyEmptyDesc,
+                      editRegistry: t.myMemberDataPage.guardianFamilyEditRegistry,
+                      openActivities: t.myMemberDataPage.guardianFamilyOpenActivities,
+                      inactiveBadge: t.myMemberDataPage.guardianFamilyInactive,
+                    }}
+                    getRoleLabel={formatDashboardRoleLabel}
+                    unknownMemberLabel={t.membersPage.unknownMember}
+                    onSelectWard={(wardMembershipId) => navigate(`/members?focus=${wardMembershipId}`)}
+                  />
                   <div className="mb-4 rounded-xl border border-border/60 bg-muted/20 p-4">
                     <div className="text-sm font-semibold text-foreground">{t.settingsPage.openMyRegistryData}</div>
                     <p className="mt-1 text-xs text-muted-foreground">{t.settingsPage.openMyRegistryDataDesc}</p>

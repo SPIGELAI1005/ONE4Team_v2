@@ -245,7 +245,14 @@ serve(async (req) => {
 
       if (
         intent &&
-        (intent === "cancel_training" || intent === "cancel_training_with_parent_notice")
+        (intent === "cancel_training" ||
+          intent === "cancel_training_with_parent_notice" ||
+          intent === "summarize_missing_rsvps" ||
+          intent === "draft_attendance_reminder" ||
+          intent === "propose_claimable_duty" ||
+          intent === "propose_activity_checklist" ||
+          intent === "draft_poll_question" ||
+          intent === "summarize_attendance_metrics")
       ) {
         const ctx = await loadClubAgentContext(admin, clubId);
         const timezone =
@@ -317,6 +324,70 @@ serve(async (req) => {
           days_shift: dupRow.days_shift ?? daysShift,
           source_count: dupRow.source_count,
         };
+      }
+
+      if (intent === "summarize_missing_rsvps" || intent === "draft_attendance_reminder") {
+        const activityId = String(params.activity_id ?? "").trim();
+        if (!activityId) {
+          return jsonResponse(
+            {
+              error: language === "de"
+                ? "Bitte eine Aktivität (activity_id) angeben."
+                : "Please provide an activity_id.",
+            },
+            400,
+            corsHeaders,
+          );
+        }
+        const { data: missData, error: missError } = await admin.rpc("agent_summarize_missing_attendance", {
+          _club_id: clubId,
+          _user_id: userId,
+          _activity_id: activityId,
+        });
+        if (missError) {
+          return jsonResponse({ error: missError.message }, 400, corsHeaders);
+        }
+        const missRow = (missData ?? {}) as Record<string, unknown>;
+        if (!missRow.ok) {
+          return jsonResponse({ error: String(missRow.error ?? "summary_failed") }, 400, corsHeaders);
+        }
+        const missing = Array.isArray(missRow.missing) ? missRow.missing as Record<string, unknown>[] : [];
+        const missingNames = missing.map((m) => String(m.display_name ?? "")).filter(Boolean);
+        const activityTitle = String(missRow.activity_title ?? "Session");
+        params = {
+          ...params,
+          activity_id: missRow.activity_id,
+          activity_title: activityTitle,
+          starts_at: missRow.starts_at,
+          team_id: missRow.team_id,
+          eligible_count: missRow.eligible_count,
+          responded_count: missRow.responded_count,
+          missing_count: missRow.missing_count,
+          missing_names: missingNames,
+          reminder_title: language === "de" ? `RSVP: ${activityTitle}` : `RSVP: ${activityTitle}`,
+          reminder_body: language === "de"
+            ? `Erinnerung: Bitte für „${activityTitle}“ zusagen oder absagen. Noch offen: ${missingNames.join(", ") || "—"}.`
+            : `Reminder: Please RSVP for "${activityTitle}". Still missing: ${missingNames.join(", ") || "—"}.`,
+        };
+      }
+
+      if (intent === "summarize_attendance_metrics") {
+        const teamId = params.team_id != null ? String(params.team_id).trim() : null;
+        const days = params.days != null ? Number(params.days) : 28;
+        const { data: metData, error: metError } = await admin.rpc("agent_summarize_attendance_metrics", {
+          _club_id: clubId,
+          _user_id: userId,
+          _team_id: teamId || null,
+          _days: Number.isFinite(days) ? days : 28,
+        });
+        if (metError) {
+          return jsonResponse({ error: metError.message }, 400, corsHeaders);
+        }
+        const metRow = (metData ?? {}) as Record<string, unknown>;
+        if (!metRow.ok) {
+          return jsonResponse({ error: String(metRow.error ?? "metrics_failed") }, 400, corsHeaders);
+        }
+        params = { ...params, ...metRow };
       }
 
       let proposal: AgentProposalPayload;

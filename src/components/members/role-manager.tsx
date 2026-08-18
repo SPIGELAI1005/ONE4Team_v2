@@ -7,6 +7,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useClubId } from "@/hooks/use-club-id";
 import { useLanguage } from "@/hooks/use-language";
 import type { ClubRoleKind, ClubRoleScope, ClubRoleAssignmentRow } from "@/lib/club-role-assignments";
+import {
+  canEditRoleAssignment,
+  filterAssignableRoleKinds,
+} from "@/lib/club-role-assignment-access";
+import { useClubAdmin } from "@/hooks/use-club-admin";
 import { cn } from "@/lib/utils";
 
 interface MemberOption {
@@ -70,12 +75,16 @@ function RoleAssignmentEditor({
   assignment,
   memberName,
   teams,
+  assignableRoleKinds,
+  canEdit,
   onUpdate,
   onRemove,
 }: {
   assignment: ClubRoleAssignmentRow;
   memberName: string;
   teams: TeamOption[];
+  assignableRoleKinds: { value: ClubRoleKind; label: string }[];
+  canEdit: boolean;
   onUpdate: (id: string, payload: RoleAssignmentUpdate) => Promise<boolean>;
   onRemove: (id: string) => Promise<void>;
 }) {
@@ -160,7 +169,7 @@ function RoleAssignmentEditor({
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             <Select
               value={roleKind}
-              disabled={saving}
+              disabled={saving || !canEdit}
               onValueChange={(value) => {
                 const next = value as ClubRoleKind;
                 setRoleKind(next);
@@ -174,7 +183,7 @@ function RoleAssignmentEditor({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ROLE_KINDS.map((rk) => (
+                {assignableRoleKinds.map((rk) => (
                   <SelectItem key={rk.value} value={rk.value}>
                     {roleLabels[rk.label as keyof typeof roleLabels]}
                   </SelectItem>
@@ -184,7 +193,7 @@ function RoleAssignmentEditor({
 
             <Select
               value={scope}
-              disabled={saving}
+              disabled={saving || !canEdit}
               onValueChange={(value) => {
                 const nextScope = value as ClubRoleScope;
                 setScope(nextScope);
@@ -214,7 +223,7 @@ function RoleAssignmentEditor({
             {scope === "team" ? (
               <Select
                 value={teamId || "__none"}
-                disabled={saving}
+                disabled={saving || !canEdit}
                 onValueChange={(value) => {
                   const nextTeamId = value === "__none" ? "" : value;
                   setTeamId(nextTeamId);
@@ -245,7 +254,7 @@ function RoleAssignmentEditor({
             variant="ghost"
             size="sm"
             className={cn("shrink-0 text-destructive hover:text-destructive", saving && "pointer-events-none opacity-50")}
-            disabled={saving}
+            disabled={saving || !canEdit}
             aria-label={t.membersPage.roles.removeRole}
             onClick={() => void onRemove(assignment.id)}
           >
@@ -259,8 +268,10 @@ function RoleAssignmentEditor({
 
 export function RoleManager() {
   const { clubId } = useClubId();
+  const { isClubAdmin } = useClubAdmin(clubId);
   const { toast } = useToast();
   const { t } = useLanguage();
+  const assignableRoleKinds = filterAssignableRoleKinds(ROLE_KINDS, isClubAdmin);
 
   const [assignments, setAssignments] = useState<ClubRoleAssignmentRow[]>([]);
   const [members, setMembers] = useState<MemberOption[]>([]);
@@ -339,9 +350,21 @@ export function RoleManager() {
       payload.scope_team_id = selectedTeamId;
     }
 
-    const { error } = await supabaseDynamic.from("club_role_assignments").insert(payload);
+    const { data, error } = await supabaseDynamic
+      .from("club_role_assignments")
+      .insert(payload)
+      .select("id")
+      .maybeSingle();
     if (error) {
       toast({ title: t.common.error, description: error.message, variant: "destructive" });
+      return;
+    }
+    if (!data) {
+      toast({
+        title: t.common.error,
+        description: t.membersPage.roles.saveFailed,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -358,7 +381,7 @@ export function RoleManager() {
     async (id: string, payload: RoleAssignmentUpdate): Promise<boolean> => {
       if (!clubId) return false;
 
-      const { error } = await supabaseDynamic
+      const { data, error } = await supabaseDynamic
         .from("club_role_assignments")
         .update({
           role_kind: payload.role_kind,
@@ -366,10 +389,20 @@ export function RoleManager() {
           scope_team_id: payload.scope_team_id,
         })
         .eq("id", id)
-        .eq("club_id", clubId);
+        .eq("club_id", clubId)
+        .select("id")
+        .maybeSingle();
 
       if (error) {
         toast({ title: t.common.error, description: error.message, variant: "destructive" });
+        return false;
+      }
+      if (!data) {
+        toast({
+          title: t.common.error,
+          description: t.membersPage.roles.saveFailed,
+          variant: "destructive",
+        });
         return false;
       }
 
@@ -377,14 +410,28 @@ export function RoleManager() {
       await loadData();
       return true;
     },
-    [clubId, toast, t.common.error, t.membersPage.roles.toastUpdated, loadData],
+    [clubId, toast, t.common.error, t.membersPage.roles.saveFailed, t.membersPage.roles.toastUpdated, loadData],
   );
 
   const handleRemove = async (id: string) => {
     if (!clubId) return;
-    const { error } = await supabaseDynamic.from("club_role_assignments").delete().eq("id", id).eq("club_id", clubId);
+    const { data, error } = await supabaseDynamic
+      .from("club_role_assignments")
+      .delete()
+      .eq("id", id)
+      .eq("club_id", clubId)
+      .select("id")
+      .maybeSingle();
     if (error) {
       toast({ title: t.common.error, description: error.message, variant: "destructive" });
+      return;
+    }
+    if (!data) {
+      toast({
+        title: t.common.error,
+        description: t.membersPage.roles.saveFailed,
+        variant: "destructive",
+      });
       return;
     }
     toast({ title: t.membersPage.roles.toastRemoved });
@@ -453,7 +500,7 @@ export function RoleManager() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ROLE_KINDS.map((rk) => (
+                  {assignableRoleKinds.map((rk) => (
                     <SelectItem key={rk.value} value={rk.value}>
                       {t.membersPage.roles.roleKinds[rk.label as keyof typeof t.membersPage.roles.roleKinds]}
                     </SelectItem>
@@ -518,6 +565,8 @@ export function RoleManager() {
               assignment={assignment}
               memberName={getMemberName(assignment.membership_id)}
               teams={teams}
+              assignableRoleKinds={assignableRoleKinds}
+              canEdit={canEditRoleAssignment(isClubAdmin, assignment.role_kind)}
               onUpdate={handleUpdate}
               onRemove={handleRemove}
             />

@@ -270,6 +270,29 @@ export function readDraftGuardianMembershipIds(masterData: Record<string, unknow
   return [...new Set(ids)];
 }
 
+export function mergeDraftGuardianMembershipIds(
+  masterData: Record<string, unknown>,
+  pendingGuardianMembershipId?: string | null,
+): string[] {
+  const ids = readDraftGuardianMembershipIds(masterData);
+  const pending = (pendingGuardianMembershipId ?? "").trim();
+  if (!pending || ids.includes(pending)) return ids;
+  return [...ids, pending];
+}
+
+export function writeDraftGuardianMembershipIds(
+  masterData: Record<string, unknown>,
+  guardianMembershipIds: string[],
+): Record<string, unknown> {
+  const next = { ...masterData };
+  if (guardianMembershipIds.length === 0) {
+    delete next[DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY];
+  } else {
+    next[DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY] = guardianMembershipIds;
+  }
+  return next;
+}
+
 export function normalizeImportEmail(value: string | null | undefined): string {
   return (value ?? "")
     .trim()

@@ -37,6 +37,11 @@ export const GRANULAR_FEATURE_KEYS = [
   "webhooks",
   "prioritySupport",
   "multiLocation",
+  /** Prompt 17 — Team Ops */
+  "polls",
+  "calendarIcs",
+  "teamCashbox",
+  "carpoolGuests",
   // Legacy aliases (derived in withLegacyAliases)
   "communication",
   "payments",
@@ -81,6 +86,10 @@ export type GranularEntitlements = {
   webhooks: boolean;
   prioritySupport: boolean;
   multiLocation: boolean;
+  polls: boolean;
+  calendarIcs: boolean;
+  teamCashbox: boolean;
+  carpoolGuests: boolean;
 };
 
 export type PlanFeatureMap = GranularEntitlements & {
@@ -135,6 +144,10 @@ export function allFeaturesOff(): GranularEntitlements {
     webhooks: false,
     prioritySupport: false,
     multiLocation: false,
+    polls: false,
+    calendarIcs: false,
+    teamCashbox: false,
+    carpoolGuests: false,
   };
 }
 
@@ -182,6 +195,10 @@ export function kickoffGranularEntitlements(opts?: { chat?: boolean }): Granular
     webhooks: false,
     prioritySupport: false,
     multiLocation: false,
+    polls: true,
+    calendarIcs: true,
+    teamCashbox: false,
+    carpoolGuests: false,
   };
 }
 
@@ -214,6 +231,8 @@ export function proGranularEntitlements(): GranularEntitlements {
     customBranding: true,
     auditLog: true,
     prioritySupport: true,
+    teamCashbox: true,
+    carpoolGuests: true,
   };
 }
 
@@ -259,6 +278,10 @@ export const FEATURE_DISPLAY_NAMES: Record<FeatureKey, string> = {
   webhooks: "Webhooks",
   prioritySupport: "Priority support",
   multiLocation: "Multi-location",
+  polls: "Club polls",
+  calendarIcs: "Calendar ICS feeds",
+  teamCashbox: "Team cashbox",
+  carpoolGuests: "Carpool & guest players",
   communication: "Communication",
   payments: "Payments",
   analytics: "Analytics",

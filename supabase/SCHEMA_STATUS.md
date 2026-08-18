@@ -5,6 +5,24 @@
 - Baseline bootstrap for fresh projects: `supabase/APPLY_BUNDLE_*.sql` (see `supabase/APPLY_ORDER_GUIDE.md`)
 - `supabase/MVP_SCHEMA_RLS.sql` remains a planning/reference artifact and must not be treated as deployed state.
 
+## 2026-08-18 verification
+
+No schema delta was required after the 2026-08-16 hardening. Authenticated E2E failures were traced primarily to active-club/role fixture mismatches. The invite-email `Unauthorized` result is a stale client JWT path at the Edge boundary, not a missing migration; keep `verify_jwt` enabled.
+
+## 2026-08-16 Team Ops review hardening
+
+Migrations `20260816120000_review_hardening_family_calendar_reminders.sql` and
+`20260816130000_team_ops_db_lint_fixes.sql` are synchronized to the linked project:
+
+- Guardian RLS and family-safe member search (self + linked wards for non-staff).
+- Guardian parent-role helper removed from authenticated RPC access.
+- Authorized self/team/club calendar subscription scopes.
+- Activity-row locking for capacity and waitlist promotion.
+- Training/match reminder and email preference enforcement.
+- Correct notification-preference upsert conflict target and guest draft role cast.
+
+The updated `calendar-ics` Edge Function is deployed; self subscriptions include linked ward schedules.
+
 ## Current communication-critical schema dependencies
 The Communication module now expects all of the following to exist in the active Supabase project:
 - `public.messages` (plus RLS + realtime publication)
@@ -161,6 +179,16 @@ When Team Management should manage the public club page/shop (not admin-only) an
 - `20260808120000_member_master_self_service_trainer_edit.sql` — self/trainer/guardian master-data RPCs, field filtering, notifications
 
 **Status (2026-08-03):** Pending operator apply on linked remote (`npx supabase db push`).
+
+## Role assignments + guardian parent UI (2026-08-09; dual-role 2026-08-13)
+When Team Management should update **`club_role_assignments`** from the Roles tab and parents should see linked children on Members/Settings:
+- `20260812290000_club_role_assignments_member_manager_write.sql` — Team Management UPDATE on **`club_role_assignments`**
+- `20260812310000_member_duplicate_review_clearances.sql` — dismiss “possible duplicate” after manual review
+- `20260812320000_guardian_parent_role_sync.sql` — guardian link → **`parent`** assignment + membership promote + backfill
+
+**Client:** `parent_supporter.members: "own"` family scope; **`guardian-family-scope.ts`**, **`use-guardian-family-scope.ts`**; **`GuardianFamilyPanel`** on Settings + `/my-data` + filtered `/members` (self + wards); persona-aware dual player/trainer + parent.
+
+**Status (2026-08-13):** Apply **`20260812310000`**, **`20260812320000`** on linked remote if not yet applied. **`20260812290000`** if Roles tab updates silently fail.
 
 ## Verification artifact
 - Run `supabase/PHASE12_VERIFY.sql` after applying the migrations above.

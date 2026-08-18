@@ -1,11 +1,41 @@
 export const TRAINING_RSVP_CUTOFF_MS = 60 * 60 * 1000;
 
-/** Trainings accept RSVP changes until one hour before start. */
+/** Trainings accept RSVP changes until one hour before start (when no response_deadline). */
 export function isTrainingRsvpOpen(startsAt: string, nowMs = Date.now()): boolean {
   return new Date(startsAt).getTime() - nowMs > TRAINING_RSVP_CUTOFF_MS;
 }
 
-export type TrainingAttendanceStatus = "invited" | "confirmed" | "declined" | "attended";
+/** Prefer activity.response_deadline when set; otherwise training default cutoff. */
+export function isActivityRsvpOpen(input: {
+  type: string;
+  startsAt: string;
+  responseDeadline?: string | null;
+  nowMs?: number;
+}): boolean {
+  const nowMs = input.nowMs ?? Date.now();
+  if (input.responseDeadline) {
+    return new Date(input.responseDeadline).getTime() > nowMs;
+  }
+  if (input.type === "training") return isTrainingRsvpOpen(input.startsAt, nowMs);
+  return true;
+}
+
+export type TrainingAttendanceStatus =
+  | "invited"
+  | "confirmed"
+  | "declined"
+  | "attended"
+  | "maybe"
+  | "waitlisted";
+
+export type TrainingAttendanceResponseReason =
+  | "illness"
+  | "injury"
+  | "holiday"
+  | "school"
+  | "family"
+  | "work"
+  | "other";
 
 export interface TrainingAttendanceRow {
   id: string;
@@ -13,6 +43,9 @@ export interface TrainingAttendanceRow {
   membership_id: string;
   status: TrainingAttendanceStatus;
   notes: string | null;
+  response_reason?: TrainingAttendanceResponseReason | null;
+  responded_by?: string | null;
+  responded_at?: string | null;
 }
 
 export interface TrainingAttendanceSummary {
@@ -20,25 +53,45 @@ export interface TrainingAttendanceSummary {
   confirmed: number;
   declined: number;
   attended: number;
+  maybe: number;
+  unanswered: number;
   responded: number;
   total: number;
 }
 
 export function emptyTrainingAttendanceSummary(): TrainingAttendanceSummary {
-  return { invited: 0, confirmed: 0, declined: 0, attended: 0, responded: 0, total: 0 };
+  return {
+    invited: 0,
+    confirmed: 0,
+    declined: 0,
+    attended: 0,
+    maybe: 0,
+    unanswered: 0,
+    responded: 0,
+    total: 0,
+  };
+}
+
+export function isAttendanceResponded(status: TrainingAttendanceStatus): boolean {
+  return status === "confirmed" || status === "declined" || status === "attended" || status === "maybe";
+}
+
+export function isAttendanceComing(status: TrainingAttendanceStatus): boolean {
+  return status === "confirmed" || status === "attended";
 }
 
 export function summarizeTrainingAttendance(rows: TrainingAttendanceRow[]): TrainingAttendanceSummary {
   const summary = emptyTrainingAttendanceSummary();
   summary.total = rows.length;
   for (const row of rows) {
-    if (row.status === "invited") summary.invited++;
-    else if (row.status === "confirmed") summary.confirmed++;
+    if (row.status === "invited") {
+      summary.invited++;
+      summary.unanswered++;
+    } else if (row.status === "confirmed") summary.confirmed++;
     else if (row.status === "declined") summary.declined++;
     else if (row.status === "attended") summary.attended++;
-    if (row.status === "confirmed" || row.status === "declined" || row.status === "attended") {
-      summary.responded++;
-    }
+    else if (row.status === "maybe") summary.maybe++;
+    if (isAttendanceResponded(row.status)) summary.responded++;
   }
   return summary;
 }
@@ -54,6 +107,8 @@ export interface RosterAttendanceLine {
   jerseyNumber: number | null;
   status: TrainingAttendanceStatus;
   declineReason: string | null;
+  responseReason: TrainingAttendanceResponseReason | null;
+  respondedBy: string | null;
 }
 
 export function buildRosterAttendanceLines(input: {
@@ -71,6 +126,8 @@ export function buildRosterAttendanceLines(input: {
         jerseyNumber: member.jerseyNumber ?? null,
         status,
         declineReason: status === "declined" ? row?.notes?.trim() || null : null,
+        responseReason: status === "declined" ? row?.response_reason ?? null : null,
+        respondedBy: row?.responded_by ?? null,
       };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -151,8 +208,34 @@ export function buildActivityAttendanceOverview(input: {
       membership_id: line.membershipId,
       status: line.status,
       notes: attendanceByMember[line.membershipId]?.notes ?? null,
+      response_reason: attendanceByMember[line.membershipId]?.response_reason ?? null,
+      responded_by: attendanceByMember[line.membershipId]?.responded_by ?? null,
+      responded_at: attendanceByMember[line.membershipId]?.responded_at ?? null,
     })),
   );
 
   return { summary, lines };
+}
+
+/** Map UI decline preset ids to typed response_reason values. */
+export function responseReasonFromPresetId(presetId: string | null | undefined): TrainingAttendanceResponseReason | null {
+  switch (presetId) {
+    case "injury":
+      return "injury";
+    case "illness":
+      return "illness";
+    case "school":
+      return "school";
+    case "work":
+      return "work";
+    case "vacation":
+    case "holiday":
+      return "holiday";
+    case "family":
+      return "family";
+    case "other":
+      return "other";
+    default:
+      return presetId ? "other" : null;
+  }
 }

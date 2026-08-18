@@ -32,9 +32,11 @@ export function PublicClubAttendanceRsvp({ title, target, className, compact = f
   const labels = {
     coming: t.clubPage.attendanceComing,
     notComing: t.clubPage.attendanceNotComing,
+    maybe: t.clubPage.attendanceMaybe,
     changeResponse: t.clubPage.attendanceYourResponse,
     statusComing: t.clubPage.attendanceStatusComing,
     statusNotComing: t.clubPage.attendanceStatusNotComing,
+    statusMaybe: t.clubPage.attendanceStatusMaybe,
     statusPending: t.clubPage.attendanceStatusPending,
     declineTitle: t.clubPage.attendanceDeclineTitle,
     declineDescription: t.clubPage.attendanceDeclineDescription,
@@ -114,11 +116,16 @@ export function PublicClubAttendanceRsvp({ title, target, className, compact = f
         clubDialogStyle={publicClubCssVars(club)}
         rsvpClosed={!rsvpOpen}
         rsvpClosedMessage={t.clubPage.attendanceRsvpClosedTraining}
-        onRespond={async (status, notes) => {
+        onRespond={async (status, notes, reason) => {
           try {
-            await respond(activityId, status, notes);
+            await respond(activityId, status, notes, reason);
             toast({
-              title: status === "confirmed" ? t.clubPage.attendanceConfirmedToast : t.clubPage.attendanceDeclinedToast,
+              title:
+                status === "confirmed"
+                  ? t.clubPage.attendanceConfirmedToast
+                  : status === "maybe"
+                    ? t.clubPage.attendanceMaybeToast
+                    : t.clubPage.attendanceDeclinedToast,
             });
           } catch (err: unknown) {
             const msg =

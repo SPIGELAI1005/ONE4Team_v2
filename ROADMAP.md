@@ -9,6 +9,12 @@ Assumption: 1–2 devs, quality-first, weekly releases. Adjust timelines as need
 
 **Recently shipped (2026-03-28):** ONE4AI (`/co-trainer`) with club LLM settings, edge health check, chat persistence (`ai_conversations`), and member audit timeline migrations — see `CHANGELOG.md` § 2026-03-28 and `MEMORY_BANK.md`.
 
+**Team Ops verification handoff (2026-08-18):** Dashboard crash fixed; local release gates green; all 14 Team Ops Playwright specs executed with zero skips. Production verification remains gated by distinct role-correct fixtures, deterministic active-club selection, selector cleanup, invite JWT refresh/retry, and reminder cron evidence — see `CHANGELOG.md` § **2026-08-18**, `TASKS.md`, and the operator acceptance guide.
+
+**Guardian dual-role + family Members (2026-08-13):** Player-parent and trainer-parent via dashboard persona switch; family **`/members`** = self + linked children; DB **`20260812320000`** assigns **`parent`** on guardian link; duplicate review dismiss — see `CHANGELOG.md` § **2026-08-13**, `MEMORY_BANK.md`, `TASKS.md` Sprint 2026-08-13.
+
+**Guardian / parent Members + Settings (2026-08-09):** Family-scoped **`/members`** for `parent_supporter` and guardian-linked accounts; **Settings → Profile** family panel; Roles tab RLS fix **`20260812290000`** — see `CHANGELOG.md` § **2026-08-09**, `MEMORY_BANK.md`, `TASKS.md` Sprint 2026-08-09.
+
 **AI 4 T GPT Internet + Members/Roles (2026-08-01):** Pro+ Internet research mode (Tavily, consent, cited sources); registry XLSX includes member drafts; Roles tab inline edits; CI/E2E fixes — see `CHANGELOG.md` § **2026-08-01 (AI 4 T GPT Internet…)**, `MEMORY_BANK.md`, `TASKS.md` Sprint 2026-08-01.
 
 **TSV Allach member registry reconciliation (2026-08-01):** Smart registry import, club-number matching, saved-list add for unmatched rows **with or without email**, shared-contact linked-account filter, household discount review on **`/payments`**, comparison workbook import — migrations **`20260807120000`**, **`20260807130000`** — see `CHANGELOG.md` § **TSV Allach member registry reconciliation**, `MEMORY_BANK.md`, `TASKS.md` **MEM-REG-*** / **PAY-HH-***.

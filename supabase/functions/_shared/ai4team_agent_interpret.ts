@@ -261,7 +261,12 @@ export function normalizeInterpretedParams(
     return enrichTrainingTimes(params);
   }
 
-  if (intent === "cancel_training" || intent === "cancel_training_with_parent_notice") {
+  if (
+    intent === "cancel_training" ||
+    intent === "cancel_training_with_parent_notice" ||
+    intent === "summarize_missing_rsvps" ||
+    intent === "draft_attendance_reminder"
+  ) {
     const teamHint =
       (typeof params.team_id === "string" && params.team_id) ||
       (typeof params.team_name === "string" && params.team_name) ||
@@ -286,6 +291,60 @@ export function normalizeInterpretedParams(
     delete params.date_hint;
     delete params.relative_date;
     delete params.team;
+    return params;
+  }
+
+  if (intent === "propose_claimable_duty") {
+    if (typeof params.title === "string") params.title = params.title.trim();
+    if (typeof params.description === "string") params.description = params.description.trim();
+    if (typeof params.checklist_titles === "string") {
+      params.checklist_titles = String(params.checklist_titles)
+        .split(/[,;\n]/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+    const teamHint =
+      (typeof params.team_id === "string" && params.team_id) ||
+      (typeof params.team_name === "string" && params.team_name) ||
+      null;
+    const teamId = resolveTeamId(teamHint, ctx.teams);
+    if (teamId) params.team_id = teamId;
+    return params;
+  }
+
+  if (intent === "propose_activity_checklist") {
+    if (typeof params.titles === "string") {
+      params.titles = String(params.titles)
+        .split(/[,;\n]/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+    if (typeof params.task_title === "string") params.task_title = params.task_title.trim();
+    return params;
+  }
+
+  if (intent === "draft_poll_question") {
+    if (typeof params.title === "string") params.title = params.title.trim();
+    if (typeof params.options === "string") {
+      params.options = String(params.options)
+        .split(/[,;\n]/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+    return params;
+  }
+
+  if (intent === "summarize_attendance_metrics") {
+    if (params.days != null) {
+      const days = Number(params.days);
+      params.days = Number.isFinite(days) ? Math.min(Math.max(Math.round(days), 1), 365) : 28;
+    }
+    const teamHint =
+      (typeof params.team_id === "string" && params.team_id) ||
+      (typeof params.team_name === "string" && params.team_name) ||
+      null;
+    const teamId = resolveTeamId(teamHint, ctx.teams);
+    if (teamId) params.team_id = teamId;
     return params;
   }
 
@@ -396,6 +455,51 @@ export function validateWorkflowParams(
     }
   }
 
+  if (intent === "summarize_missing_rsvps" || intent === "draft_attendance_reminder") {
+    if (!params.activity_id) {
+      return {
+        clarify: {
+          field: "activity_id",
+          question: de
+            ? "Für welche Einheit fehlen RSVPs? Bitte Team und Datum nennen (z. B. U12-1 morgen)."
+            : "Which session's RSVPs should we check? Please name the team and date (e.g. U12-1 tomorrow).",
+        },
+      };
+    }
+  }
+
+  if (intent === "propose_claimable_duty") {
+    const title = params.title != null ? String(params.title).trim() : "";
+    if (!title) {
+      return { error: de ? "Duty-Titel fehlt." : "Duty title is required." };
+    }
+  }
+
+  if (intent === "propose_activity_checklist") {
+    const titles = Array.isArray(params.titles)
+      ? params.titles.map((t) => String(t).trim()).filter(Boolean)
+      : [];
+    if (titles.length === 0) {
+      return {
+        error: de ? "Mindestens einen Checklistenpunkt angeben." : "Provide at least one checklist item.",
+      };
+    }
+  }
+
+  if (intent === "draft_poll_question") {
+    const title = params.title != null ? String(params.title).trim() : "";
+    const options = Array.isArray(params.options)
+      ? params.options.map((o) => String(o).trim()).filter(Boolean)
+      : [];
+    if (!title || options.length < 2) {
+      return {
+        error: de
+          ? "Umfrage braucht Titel und mindestens zwei Optionen."
+          : "Poll needs a title and at least two options.",
+      };
+    }
+  }
+
   return null;
 }
 
@@ -427,7 +531,22 @@ User: "Wie können wir die Pressing-Höhe verbessern?"
 → {"kind":"chat"}
 
 User: "Informiere alle Trainer: Hallenbelegung am Freitag geändert"
-→ {"kind":"workflow","confidence":0.88,"intent":"notify_trainers","params":{"title":"Hallenbelegung geändert","content":"..."}}`;
+→ {"kind":"workflow","confidence":0.88,"intent":"notify_trainers","params":{"title":"Hallenbelegung geändert","content":"..."}}
+
+User: "Wer hat für das nächste Training noch nicht geantwortet?"
+→ {"kind":"workflow","confidence":0.9,"intent":"summarize_missing_rsvps","params":{"activity_id":"...aus Kontext...","activity_hint":"nächstes Training"}}
+
+User: "Entwirf eine Erinnerung für fehlende RSVPs"
+→ {"kind":"workflow","confidence":0.88,"intent":"draft_attendance_reminder","params":{"activity_id":"..."}}
+
+User: "Lege eine claimable Duty Fahrdienst an mit Checkliste Schlüssel und Wasser"
+→ {"kind":"workflow","confidence":0.9,"intent":"propose_claimable_duty","params":{"title":"Fahrdienst","checklist_titles":["Schlüssel","Wasser"]}}
+
+User: "Zeige Anwesenheitsquoten der letzten 4 Wochen"
+→ {"kind":"workflow","confidence":0.9,"intent":"summarize_attendance_metrics","params":{"days":28}}
+
+User: "Starte eine Umfrage: Heimspiel Snacks? Optionen Ja/Nein"
+→ {"kind":"workflow","confidence":0.9,"intent":"draft_poll_question","params":{"title":"Heimspiel Snacks?","options":["Ja","Nein"]}}`;
   }
   return `
 EXAMPLES:
@@ -444,7 +563,22 @@ User: "How can we improve our pressing shape?"
 → {"kind":"chat"}
 
 User: "Notify trainers the hall booking changed on Friday"
-→ {"kind":"workflow","confidence":0.88,"intent":"notify_trainers","params":{"title":"Hall booking update","content":"..."}}`;
+→ {"kind":"workflow","confidence":0.88,"intent":"notify_trainers","params":{"title":"Hall booking update","content":"..."}}
+
+User: "Who hasn't replied to the next training?"
+→ {"kind":"workflow","confidence":0.9,"intent":"summarize_missing_rsvps","params":{"activity_id":"...from context...","activity_hint":"next training"}}
+
+User: "Draft a reminder for missing RSVPs"
+→ {"kind":"workflow","confidence":0.88,"intent":"draft_attendance_reminder","params":{"activity_id":"..."}}
+
+User: "Create a claimable duty carpool with checklist keys and water"
+→ {"kind":"workflow","confidence":0.9,"intent":"propose_claimable_duty","params":{"title":"Carpool","checklist_titles":["Keys","Water"]}}
+
+User: "Show attendance rates for the last 4 weeks"
+→ {"kind":"workflow","confidence":0.9,"intent":"summarize_attendance_metrics","params":{"days":28}}
+
+User: "Start a poll: Home match snacks? Options Yes/No"
+→ {"kind":"workflow","confidence":0.9,"intent":"draft_poll_question","params":{"title":"Home match snacks?","options":["Yes","No"]}}`;
 }
 
 function buildInterpretSystemPrompt(
@@ -492,6 +626,12 @@ function buildInterpretSystemPrompt(
     "- duplicate_training_week (copy last week's trainings forward 7 days; team_id required for non-admins)",
     "- notify_trainers",
     "- add_member_draft (admin only)",
+    "- summarize_missing_rsvps (read-only; needs activity_id; NEVER send reminders)",
+    "- draft_attendance_reminder (draft text only; NEVER auto-send)",
+    "- propose_claimable_duty (claimable club_tasks + optional checklist)",
+    "- propose_activity_checklist (checklist items on a task)",
+    "- summarize_attendance_metrics (read-only rates window)",
+    "- draft_poll_question (create poll only after user confirms)",
     "",
     fewShotBlock(language),
     "",

@@ -1,8 +1,8 @@
 {
-  "linesOfCode": 170246,
-  "measuredAt": "2026-08-07T18:13:51.102Z",
+  "linesOfCode": 179075,
+  "measuredAt": "2026-08-18T20:24:29.709Z",
   "scope": "src/**/*.{ts,tsx,js,jsx,css,scss,mjs,cjs} (excluding generated/app-loc.json)",
-  "fileCount": 828,
+  "fileCount": 884,
   "operatorScope": {
     "linesOfCode": 17985,
     "fileCount": 87,
@@ -22,6 +22,10 @@
     167902,
     169689,
     170126,
-    170160
+    170160,
+    170246,
+    178986,
+    179062,
+    179074
   ]
 }

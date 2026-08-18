@@ -7,6 +7,12 @@ export const AGENT_INTENT_TEMPLATES: { id: AgentIntent; schedule?: boolean; memb
   { id: "plan_training_week", schedule: true },
   { id: "duplicate_training_week", schedule: true },
   { id: "notify_trainers", schedule: true },
+  { id: "summarize_missing_rsvps", schedule: true },
+  { id: "draft_attendance_reminder", schedule: true },
+  { id: "propose_claimable_duty", schedule: true },
+  { id: "propose_activity_checklist", schedule: true },
+  { id: "summarize_attendance_metrics", schedule: true },
+  { id: "draft_poll_question", schedule: true },
   { id: "add_member_draft", members: true },
 ];
 

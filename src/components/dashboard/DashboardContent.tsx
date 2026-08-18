@@ -22,11 +22,12 @@ const AnalyticsWidgets = lazy(() => import("@/components/dashboard/AnalyticsWidg
 import AchievementBadges from "@/components/dashboard/AchievementBadges";
 import LiveMatchTicker from "@/components/dashboard/LiveMatchTicker";
 import { TasksSummaryCard } from "@/components/dashboard/TasksSummaryCard";
+import { MyDuesCard } from "@/components/dashboard/MyDuesCard";
 import { MarketplaceDashboardCards } from "@/components/dashboard/MarketplaceDashboardCards";
 import AdminNotificationSender from "@/components/dashboard/AdminNotificationSender";
 import { Ai4tAdminUsageCard } from "@/components/dashboard/Ai4tAdminUsageCard";
 import { Ai4tValueMetricsCard } from "@/components/dashboard/Ai4tValueMetricsCard";
-import { MyDuesCard } from "@/components/dashboard/MyDuesCard";
+import { ParentNextTrainingRsvpCard } from "@/components/dashboard/ParentNextTrainingRsvpCard";
 import { FoundingClubStatusCard } from "@/components/billing/FoundingClubStatusCard";
 import { GraceWriteBanner } from "@/components/billing/GraceWriteBanner";
 import { AdminWeekAtAGlanceCard } from "@/components/dashboard/AdminWeekAtAGlanceCard";
@@ -802,7 +803,10 @@ const DashboardContent = () => {
         ) : null}
 
         {normalizedRole === "parent_supporter" ? (
-          <p className="text-sm text-muted-foreground leading-relaxed">{t.dashboard.parentDashboardHint}</p>
+          <>
+            <p className="text-sm text-muted-foreground leading-relaxed">{t.dashboard.parentDashboardHint}</p>
+            <ParentNextTrainingRsvpCard clubId={activeClubId} />
+          </>
         ) : null}
 
         {sections.weekAtAGlance && isOpsAdminPersona ? (

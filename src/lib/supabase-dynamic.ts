@@ -2,12 +2,14 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface DynamicQueryBuilder {
   select: (...args: unknown[]) => DynamicQueryBuilder;
-  insert: (...args: unknown[]) => Promise<{ data: unknown; error: { message?: string } | null }>;
+  insert: (...args: unknown[]) => DynamicQueryBuilder;
   update: (...args: unknown[]) => DynamicQueryBuilder;
   delete: (...args: unknown[]) => DynamicQueryBuilder;
-  upsert: (...args: unknown[]) => Promise<{ data: unknown; error: { message?: string } | null }>;
+  upsert: (...args: unknown[]) => DynamicQueryBuilder;
   eq: (...args: unknown[]) => DynamicQueryBuilder;
+  in: (...args: unknown[]) => DynamicQueryBuilder;
   gte: (...args: unknown[]) => DynamicQueryBuilder;
+  gt: (...args: unknown[]) => DynamicQueryBuilder;
   lt: (...args: unknown[]) => DynamicQueryBuilder;
   order: (...args: unknown[]) => DynamicQueryBuilder;
   limit: (...args: unknown[]) => DynamicQueryBuilder;
@@ -19,10 +21,13 @@ interface DynamicSupabaseClient {
   from: (table: string) => DynamicQueryBuilder;
   rpc: (
     fn: string,
-    args?: Record<string, unknown>
+    args?: Record<string, unknown>,
   ) => Promise<{ data: unknown; error: { message?: string } | null }>;
   functions: {
-    invoke: (fn: string, options?: { body?: unknown; headers?: Record<string, string> }) => Promise<{ data: unknown; error: { message?: string } | null }>;
+    invoke: (
+      fn: string,
+      options?: { body?: unknown; headers?: Record<string, string> },
+    ) => Promise<{ data: unknown; error: { message?: string } | null }>;
   };
 }
 

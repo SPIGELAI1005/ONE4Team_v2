@@ -8,7 +8,7 @@ export function shouldTryAgentInterpretation(message: string): boolean {
   const pureQuestion =
     /^(what|how|why|when|where|who|which|can you explain|tell me about|help me understand|explain|was ist|wie kann|warum |wann |wo |wer |erkläre|erklär)\b/i;
   const hasAction =
-    /\b(create|schedule|cancel|add|plan|notify|book|set up|remove|delete|post|send|duplicate|copy|absag|planen|erstell|anlegen|eintragen|informier|ankündig|mitglied|training|einheit|session|lege|leg |mach |stell |trag |schreib|termin|kopier|duplizier|wiederhol)\b/i;
+    /\b(create|schedule|cancel|add|plan|notify|book|set up|remove|delete|post|send|duplicate|copy|summarize|draft|claim|rsvp|attendance|missing|replied|reminder|duty|checklist|poll|absag|planen|erstell|anlegen|eintragen|informier|ankündig|mitglied|training|einheit|session|lege|leg |mach |stell |trag |schreib|termin|kopier|duplizier|wiederhol|fehlend|erinner|anwesen|umfrage|checkliste|pflicht|zusag|absag)\b/i;
 
   if (pureQuestion.test(m) && !hasAction.test(m)) return false;
 

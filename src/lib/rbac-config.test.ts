@@ -3,6 +3,8 @@ import {
   canAccessModule,
   canWriteModule,
   getDataScopeForModule,
+  getDashboardPersonaOptions,
+  getEffectiveDashboardPersonas,
   getModuleAccess,
   getSidebarMenuItems,
   isExternalRole,
@@ -72,7 +74,28 @@ describe("module access baseline", () => {
   it("scopes parent supporter to family-oriented access", () => {
     expect(getModuleAccess("parent_supporter", "payments")).toBe("own");
     expect(getDataScopeForModule("parent_supporter", "payments")).toBe("family");
+    expect(getModuleAccess("parent_supporter", "members")).toBe("own");
+    expect(getDataScopeForModule("parent_supporter", "members")).toBe("family");
+    expect(getSidebarMenuItems("parent_supporter")).toContain("members");
     expect(getModuleAccess("parent_supporter", "matches")).toBe("team");
+  });
+
+  it("offers parent persona only when a parent role is assigned", () => {
+    expect(getDashboardPersonaOptions("trainer")).not.toContain("parent_supporter");
+    expect(getDashboardPersonaOptions("player")).not.toContain("parent_supporter");
+    expect(getDashboardPersonaOptions("parent_supporter")).not.toContain("player");
+
+    const parentAssignment = {
+      id: "parent-role",
+      club_id: "club",
+      membership_id: "member",
+      role_kind: "parent" as const,
+      scope: "club" as const,
+      scope_team_id: null,
+      created_at: "",
+    };
+    expect(getEffectiveDashboardPersonas("trainer", [parentAssignment])).toContain("parent_supporter");
+    expect(getEffectiveDashboardPersonas("player", [parentAssignment])).toContain("parent_supporter");
   });
 
   it("restricts player trainings/matches to limited (no team write)", () => {

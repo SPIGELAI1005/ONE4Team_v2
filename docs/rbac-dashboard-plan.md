@@ -462,6 +462,28 @@ See [`marketplace-implementation-plan.md`](./marketplace-implementation-plan.md)
 
 Active **dashboard persona** (`one4team.activeRole` via **`useModuleGateRole`**) now gates **client-side** message and task visibility. Underlying membership admin flag no longer bypasses persona scope in Communication/Tasks.
 
+### Guardian family scope (2026-08-09; dual-role 2026-08-13)
+
+| Module | `parent_supporter` access | Data scope | UI behavior |
+|--------|---------------------------|------------|---------------|
+| `payments` | `own` | `family` | My Dues — self + linked wards |
+| `members` | `own` | `family` | **`/members`** — roster rows for **self + linked children**; registry edit via same RPCs as **`/my-data`** |
+
+**Any role** with **`club_member_guardian_links`** or a **`parent`** **`club_role_assignments`** row receives **Members** in sidebar and may open **`/members`** even when base RBAC has `members: "none"` (e.g. **`player`** acting as guardian). Hook: **`use-guardian-family-scope.ts`**; helpers: **`guardian-family-scope.ts`**; route guard: **`canAccessMembersModule`**.
+
+**Dual-role (common in clubs):**
+
+| Account shape | Trainer persona on `/members` | Parent persona on `/members` | Player + guardian links |
+|---------------|------------------------------|------------------------------|-------------------------|
+| Trainer + parent of juniors | Team roster (assigned teams) | Family roster (self + children) | — |
+| Adult player + parent | — | Family roster | Family roster (parent duties) |
+
+Switch persona in **Settings → Profile → Role Access** (`switch-dashboard-persona.ts`). Persona options include **Parent** from trainer/player chains (2026-08-13).
+
+**DB:** Insert into **`club_member_guardian_links`** triggers **`ensure_guardian_parent_role`** (**`20260812320000`**) — adds **`parent`** assignment; promotes **`member`/`fan`/`supporter`** label to **`parent`** (keeps **`player`** / **`trainer`** labels intact).
+
+**Not in scope for family view:** full roster, saved member list, imports, invites tab, role assignments admin, delete member.
+
 | Persona | Messages | Tasks | Dashboard upcoming |
 |---------|----------|-------|-------------------|
 | **Player** | Assigned **team channels** only; no Club General | **Own** assignments only (`scope: "own"`) | Team-scoped sports widgets (unchanged) |

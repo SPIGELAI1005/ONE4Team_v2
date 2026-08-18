@@ -143,6 +143,18 @@ export function AiAgentWorkspace({
   const [planNotify, setPlanNotify] = useState(false);
   const [planNotifyTitle, setPlanNotifyTitle] = useState("");
   const [planNotifyContent, setPlanNotifyContent] = useState("");
+  const [opsActivityId, setOpsActivityId] = useState("");
+  const [dutyTitle, setDutyTitle] = useState("");
+  const [dutyDescription, setDutyDescription] = useState("");
+  const [dutyChecklistText, setDutyChecklistText] = useState("");
+  const [dutyTeamId, setDutyTeamId] = useState("");
+  const [checklistTitlesText, setChecklistTitlesText] = useState("");
+  const [checklistTaskTitle, setChecklistTaskTitle] = useState("");
+  const [metricsTeamId, setMetricsTeamId] = useState("");
+  const [metricsDays, setMetricsDays] = useState("28");
+  const [pollTitle, setPollTitle] = useState("");
+  const [pollOptionsText, setPollOptionsText] = useState("");
+  const [pollDescription, setPollDescription] = useState("");
   const [outcomeLinks, setOutcomeLinks] = useState<{ label: string; href: string }[]>([]);
   const [nlInput, setNlInput] = useState("");
   const [nlLoading, setNlLoading] = useState(false);
@@ -249,6 +261,18 @@ export function AiAgentWorkspace({
         case "notify_trainers":
         case "send_club_announcement":
           return p.intentNotifyTrainers;
+        case "summarize_missing_rsvps":
+          return p.intentSummarizeMissingRsvps;
+        case "draft_attendance_reminder":
+          return p.intentDraftAttendanceReminder;
+        case "propose_claimable_duty":
+          return p.intentProposeClaimableDuty;
+        case "propose_activity_checklist":
+          return p.intentProposeActivityChecklist;
+        case "summarize_attendance_metrics":
+          return p.intentSummarizeAttendanceMetrics;
+        case "draft_poll_question":
+          return p.intentDraftPollQuestion;
         default:
           return intent;
       }
@@ -274,6 +298,18 @@ export function AiAgentWorkspace({
         case "notify_trainers":
         case "send_club_announcement":
           return p.intentNotifyTrainersDesc;
+        case "summarize_missing_rsvps":
+          return p.intentSummarizeMissingRsvpsDesc;
+        case "draft_attendance_reminder":
+          return p.intentDraftAttendanceReminderDesc;
+        case "propose_claimable_duty":
+          return p.intentProposeClaimableDutyDesc;
+        case "propose_activity_checklist":
+          return p.intentProposeActivityChecklistDesc;
+        case "summarize_attendance_metrics":
+          return p.intentSummarizeAttendanceMetricsDesc;
+        case "draft_poll_question":
+          return p.intentDraftPollQuestionDesc;
         default:
           return "";
       }
@@ -473,6 +509,65 @@ export function AiAgentWorkspace({
             content: planNotifyContent.trim(),
           };
         }
+      } else if (intent === "summarize_missing_rsvps" || intent === "draft_attendance_reminder") {
+        if (!opsActivityId) {
+          toast({ title: p.validationSelectTraining, variant: "destructive" });
+          return;
+        }
+        const picked = trainingOptions.find((x) => x.id === opsActivityId);
+        params = {
+          activity_id: opsActivityId,
+          activity_title: picked?.title ?? null,
+          starts_at: picked?.starts_at ?? null,
+        };
+      } else if (intent === "propose_claimable_duty") {
+        if (!dutyTitle.trim()) {
+          toast({ title: p.validationDutyTitle, variant: "destructive" });
+          return;
+        }
+        const checklist = dutyChecklistText
+          .split(/[,;\n]/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+        params = {
+          title: dutyTitle.trim(),
+          description: dutyDescription.trim() || null,
+          team_id: dutyTeamId || null,
+          checklist_titles: checklist,
+        };
+      } else if (intent === "propose_activity_checklist") {
+        const titles = checklistTitlesText
+          .split(/[\n,;]/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+        if (titles.length === 0) {
+          toast({ title: p.validationChecklistItems, variant: "destructive" });
+          return;
+        }
+        params = {
+          titles,
+          task_title: checklistTaskTitle.trim() || null,
+        };
+      } else if (intent === "summarize_attendance_metrics") {
+        const days = Number(metricsDays);
+        params = {
+          team_id: metricsTeamId || null,
+          days: Number.isFinite(days) && days > 0 ? days : 28,
+        };
+      } else if (intent === "draft_poll_question") {
+        const options = pollOptionsText
+          .split(/[\n,;]/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+        if (!pollTitle.trim() || options.length < 2) {
+          toast({ title: p.validationPoll, variant: "destructive" });
+          return;
+        }
+        params = {
+          title: pollTitle.trim(),
+          options,
+          description: pollDescription.trim() || null,
+        };
       }
 
       await propose(intent, params, {
@@ -1002,6 +1097,228 @@ export function AiAgentWorkspace({
             >
               {workflowBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               {p.reviewPlanWeek}
+            </Button>
+          </div>
+        ) : null}
+
+        {activeIntent === "summarize_missing_rsvps" || activeIntent === "draft_attendance_reminder" ? (
+          <div
+            className={cn(
+              "grid gap-3 rounded-xl border p-4",
+              compact ? "border-neutral-200/80 bg-white/95" : "border-border/50 bg-background/30",
+            )}
+          >
+            <p className="text-xs text-muted-foreground">
+              {activeIntent === "draft_attendance_reminder" ? p.draftReminderHint : p.missingRsvpHint}
+            </p>
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldTrainingSession}</Label>
+              <Select value={opsActivityId || "__none__"} onValueChange={(v) => setOpsActivityId(v === "__none__" ? "" : v)}>
+                <SelectTrigger className={cn("h-9", compactFieldClass)}>
+                  <SelectValue placeholder={p.fieldTrainingPlaceholder} />
+                </SelectTrigger>
+                <SelectContent className={compactSelectContentClass}>
+                  <SelectItem className={compactSelectItemClass} value="__none__">
+                    {p.fieldTrainingPlaceholder}
+                  </SelectItem>
+                  {trainingOptions.map((a) => (
+                    <SelectItem className={compactSelectItemClass} key={a.id} value={a.id}>
+                      {a.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              type="button"
+              disabled={workflowBusy}
+              className="bg-gradient-gold-static text-primary-foreground"
+              onClick={() => void handlePropose(activeIntent)}
+            >
+              {workflowBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              {activeIntent === "draft_attendance_reminder" ? p.reviewDraftReminder : p.reviewMissingRsvps}
+            </Button>
+          </div>
+        ) : null}
+
+        {activeIntent === "propose_claimable_duty" ? (
+          <div
+            className={cn(
+              "grid gap-3 rounded-xl border p-4",
+              compact ? "border-neutral-200/80 bg-white/95" : "border-border/50 bg-background/30",
+            )}
+          >
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldDutyTitle}</Label>
+              <Input value={dutyTitle} onChange={(e) => setDutyTitle(e.target.value)} className={cn("h-9", compactFieldClass)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldDutyDescription}</Label>
+              <Textarea
+                value={dutyDescription}
+                onChange={(e) => setDutyDescription(e.target.value)}
+                rows={2}
+                className={cn("text-sm", compactFieldClass)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldDutyChecklist}</Label>
+              <Input
+                value={dutyChecklistText}
+                onChange={(e) => setDutyChecklistText(e.target.value)}
+                placeholder={p.fieldDutyChecklistPlaceholder}
+                className={cn("h-9", compactFieldClass)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldTeam}</Label>
+              <Select value={dutyTeamId || "__none__"} onValueChange={(v) => setDutyTeamId(v === "__none__" ? "" : v)}>
+                <SelectTrigger className={cn("h-9", compactFieldClass)}>
+                  <SelectValue placeholder={p.fieldTeamOptional} />
+                </SelectTrigger>
+                <SelectContent className={compactSelectContentClass}>
+                  <SelectItem className={compactSelectItemClass} value="__none__">{p.fieldTeamOptional}</SelectItem>
+                  {teams.map((team) => (
+                    <SelectItem className={compactSelectItemClass} key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              type="button"
+              disabled={workflowBusy}
+              className="bg-gradient-gold-static text-primary-foreground"
+              onClick={() => void handlePropose("propose_claimable_duty")}
+            >
+              {workflowBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              {p.reviewClaimableDuty}
+            </Button>
+          </div>
+        ) : null}
+
+        {activeIntent === "propose_activity_checklist" ? (
+          <div
+            className={cn(
+              "grid gap-3 rounded-xl border p-4",
+              compact ? "border-neutral-200/80 bg-white/95" : "border-border/50 bg-background/30",
+            )}
+          >
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldChecklistItems}</Label>
+              <Textarea
+                value={checklistTitlesText}
+                onChange={(e) => setChecklistTitlesText(e.target.value)}
+                rows={3}
+                placeholder={p.fieldChecklistItemsPlaceholder}
+                className={cn("text-sm", compactFieldClass)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldChecklistTaskTitle}</Label>
+              <Input
+                value={checklistTaskTitle}
+                onChange={(e) => setChecklistTaskTitle(e.target.value)}
+                placeholder={p.fieldChecklistTaskTitlePlaceholder}
+                className={cn("h-9", compactFieldClass)}
+              />
+            </div>
+            <Button
+              type="button"
+              disabled={workflowBusy}
+              className="bg-gradient-gold-static text-primary-foreground"
+              onClick={() => void handlePropose("propose_activity_checklist")}
+            >
+              {workflowBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              {p.reviewActivityChecklist}
+            </Button>
+          </div>
+        ) : null}
+
+        {activeIntent === "summarize_attendance_metrics" ? (
+          <div
+            className={cn(
+              "grid gap-3 rounded-xl border p-4",
+              compact ? "border-neutral-200/80 bg-white/95" : "border-border/50 bg-background/30",
+            )}
+          >
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldTeam}</Label>
+              <Select value={metricsTeamId || "__none__"} onValueChange={(v) => setMetricsTeamId(v === "__none__" ? "" : v)}>
+                <SelectTrigger className={cn("h-9", compactFieldClass)}>
+                  <SelectValue placeholder={p.fieldTeamOptional} />
+                </SelectTrigger>
+                <SelectContent className={compactSelectContentClass}>
+                  <SelectItem className={compactSelectItemClass} value="__none__">{p.fieldTeamOptional}</SelectItem>
+                  {teams.map((team) => (
+                    <SelectItem className={compactSelectItemClass} key={team.id} value={team.id}>
+                      {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldMetricsDays}</Label>
+              <Input
+                value={metricsDays}
+                onChange={(e) => setMetricsDays(e.target.value)}
+                inputMode="numeric"
+                className={cn("h-9", compactFieldClass)}
+              />
+            </div>
+            <Button
+              type="button"
+              disabled={workflowBusy}
+              className="bg-gradient-gold-static text-primary-foreground"
+              onClick={() => void handlePropose("summarize_attendance_metrics")}
+            >
+              {workflowBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              {p.reviewAttendanceMetrics}
+            </Button>
+          </div>
+        ) : null}
+
+        {activeIntent === "draft_poll_question" ? (
+          <div
+            className={cn(
+              "grid gap-3 rounded-xl border p-4",
+              compact ? "border-neutral-200/80 bg-white/95" : "border-border/50 bg-background/30",
+            )}
+          >
+            <p className="text-xs text-muted-foreground">{p.draftPollHint}</p>
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldPollTitle}</Label>
+              <Input value={pollTitle} onChange={(e) => setPollTitle(e.target.value)} className={cn("h-9", compactFieldClass)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldPollOptions}</Label>
+              <Textarea
+                value={pollOptionsText}
+                onChange={(e) => setPollOptionsText(e.target.value)}
+                rows={3}
+                placeholder={p.fieldPollOptionsPlaceholder}
+                className={cn("text-sm", compactFieldClass)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className={cn("text-xs", compactLabelClass)}>{p.fieldPollDescription}</Label>
+              <Textarea
+                value={pollDescription}
+                onChange={(e) => setPollDescription(e.target.value)}
+                rows={2}
+                className={cn("text-sm", compactFieldClass)}
+              />
+            </div>
+            <Button
+              type="button"
+              disabled={workflowBusy}
+              className="bg-gradient-gold-static text-primary-foreground"
+              onClick={() => void handlePropose("draft_poll_question")}
+            >
+              {workflowBusy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              {p.reviewDraftPoll}
             </Button>
           </div>
         ) : null}

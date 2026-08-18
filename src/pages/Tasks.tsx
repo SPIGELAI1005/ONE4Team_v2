@@ -15,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { Ai4TInlineLabel } from "@/components/ai/Ai4TBrand";
+import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +48,7 @@ import {
 import { useAuth } from "@/contexts/useAuth";
 import { useClubId } from "@/hooks/use-club-id";
 import { useModuleGateRole } from "@/hooks/use-module-gate-role";
+import { useRegisterAiAgentContext } from "@/hooks/use-register-ai-agent-context";
 import { useUserTeamIds } from "@/hooks/use-user-team-ids";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/hooks/use-language";
@@ -67,6 +69,17 @@ import {
   isClubTaskOpen,
   isClubTaskOverdue,
 } from "@/lib/club-task-models";
+import { claimClubTask } from "@/lib/club-task-coordination-api";
+import { isClaimableDuty, slotsLabel } from "@/lib/club-task-coordination";
+import {
+  ensureStarterTaskTemplates,
+  listClubTaskTemplates,
+  spawnClubTaskFromTemplate,
+} from "@/lib/club-task-templates-api";
+import type { ClubTaskTemplateRow } from "@/lib/club-task-templates";
+import { starterSlotsForKey } from "@/lib/club-task-templates";
+import { TaskChecklistPanel } from "@/components/tasks/task-checklist-panel";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 import {
   buildTaskAccessFromGateRole,
@@ -118,6 +131,8 @@ export default function Tasks() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const agentPageContext = useMemo(() => ({ source: "tasks" as const }), []);
+  useRegisterAiAgentContext(agentPageContext);
 
   const canSeeAllTasks = canBrowseAllClubTasks(taskAccess);
   const filterParam = (searchParams.get("filter") as ClubTaskFilter | null) ?? (canSeeAllTasks ? "all" : "mine");
@@ -146,6 +161,13 @@ export default function Tasks() {
   const [teamId, setTeamId] = useState(UNASSIGNED);
   const [assigneeUserId, setAssigneeUserId] = useState(UNASSIGNED);
   const [partnerId, setPartnerId] = useState(UNASSIGNED);
+  const [claimable, setClaimable] = useState(false);
+  const [slotsTotal, setSlotsTotal] = useState("");
+  const [claimBusy, setClaimBusy] = useState(false);
+  const [templates, setTemplates] = useState<ClubTaskTemplateRow[]>([]);
+  const [templateBusy, setTemplateBusy] = useState(false);
+  const [spawnTemplateId, setSpawnTemplateId] = useState("");
+  const [spawnTeamId, setSpawnTeamId] = useState(UNASSIGNED);
 
   const selectedTask = useMemo(
     () => tasks.find((row) => row.id === selectedId) ?? null,
@@ -185,6 +207,8 @@ export default function Tasks() {
     setTeamId(UNASSIGNED);
     setAssigneeUserId(UNASSIGNED);
     setPartnerId(UNASSIGNED);
+    setClaimable(false);
+    setSlotsTotal("");
   }, []);
 
   const openCreate = useCallback(() => {
@@ -202,8 +226,23 @@ export default function Tasks() {
     setTeamId(task.team_id ?? UNASSIGNED);
     setAssigneeUserId(task.assignee_user_id ?? UNASSIGNED);
     setPartnerId(task.partner_id ?? UNASSIGNED);
+    setClaimable(Boolean(task.claimable));
+    setSlotsTotal(task.slots_total != null ? String(task.slots_total) : "");
     setDialogOpen(true);
   }, []);
+
+  const reloadTemplates = useCallback(async () => {
+    if (!clubId || !canManage) {
+      setTemplates([]);
+      return;
+    }
+    const { data } = await listClubTaskTemplates(clubId);
+    setTemplates(data);
+  }, [canManage, clubId]);
+
+  useEffect(() => {
+    void reloadTemplates();
+  }, [reloadTemplates]);
 
   useEffect(() => {
     if (searchParams.get("new") === "1" && canManage) {
@@ -228,6 +267,13 @@ export default function Tasks() {
     setSearchParams(params, { replace: true });
   };
 
+  const parseSlotsTotal = (): number | null => {
+    if (!claimable) return null;
+    const n = Number(slotsTotal);
+    if (!slotsTotal.trim() || !Number.isFinite(n) || n < 1) return null;
+    return Math.min(20, Math.round(n));
+  };
+
   const handleSave = async () => {
     if (!clubId || !title.trim()) return;
     setSaving(true);
@@ -237,8 +283,11 @@ export default function Tasks() {
       priority,
       due_at: dueAt ? new Date(dueAt).toISOString() : null,
       team_id: teamId === UNASSIGNED ? null : teamId,
-      assignee_user_id: assigneeUserId === UNASSIGNED ? null : assigneeUserId,
+      assignee_user_id: claimable ? null : assigneeUserId === UNASSIGNED ? null : assigneeUserId,
       partner_id: partnerId === UNASSIGNED ? null : partnerId,
+      claimable,
+      slots_total: parseSlotsTotal(),
+      source_type: claimable ? ("duty" as const) : ("manual" as const),
     };
 
     if (editing) {
@@ -267,6 +316,47 @@ export default function Tasks() {
     void reload();
   };
 
+  const handleSeedTemplates = async () => {
+    if (!clubId) return;
+    setTemplateBusy(true);
+    const result = await ensureStarterTaskTemplates(clubId);
+    setTemplateBusy(false);
+    if (result.error) {
+      toast({ title: t.common.error, description: result.error.message, variant: "destructive" });
+      return;
+    }
+    setTemplates(result.data);
+    toast({
+      title: result.created > 0 ? t.tasksPage.templatesSeeded : t.tasksPage.templatesAlreadySeeded,
+    });
+  };
+
+  const handleSpawnTemplate = async () => {
+    if (!clubId || !spawnTemplateId) return;
+    const template = templates.find((row) => row.id === spawnTemplateId);
+    if (!template) return;
+    setTemplateBusy(true);
+    const result = await spawnClubTaskFromTemplate({
+      clubId,
+      template,
+      teamId: spawnTeamId === UNASSIGNED ? null : spawnTeamId,
+      slotsTotal: starterSlotsForKey(template.key),
+    });
+    setTemplateBusy(false);
+    if (result.error || !result.data) {
+      toast({
+        title: t.common.error,
+        description: result.error?.message ?? t.tasksPage.templateSpawnFailed,
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({ title: t.tasksPage.templateSpawned });
+    setSpawnTemplateId("");
+    void reload();
+    selectTask(result.data.id);
+  };
+
   const handleQuickStatus = async (task: ClubTaskRow, nextStatus: ClubTaskStatus) => {
     if (!clubId) return;
     const { error } = await updateClubTask(task.id, clubId, { status: nextStatus });
@@ -274,6 +364,22 @@ export default function Tasks() {
       toast({ title: t.common.error, description: error.message, variant: "destructive" });
       return;
     }
+    void reload();
+  };
+
+  const handleClaim = async (task: ClubTaskRow) => {
+    setClaimBusy(true);
+    const result = await claimClubTask(task.id);
+    setClaimBusy(false);
+    if (!result.ok) {
+      toast({
+        title: t.common.error,
+        description: result.error || t.tasksPage.claimFailed,
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({ title: result.already ? t.tasksPage.claimAlready : t.tasksPage.claimSuccess });
     void reload();
   };
 
@@ -321,12 +427,15 @@ export default function Tasks() {
         title={t.tasksPage.title}
         subtitle={t.tasksPage.subtitle}
         rightSlot={
-          canManage ? (
-            <Button size="sm" className="gap-1.5" onClick={openCreate}>
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">{t.tasksPage.newTask}</span>
-            </Button>
-          ) : null
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-end">
+            {canManage ? <AiAgentHeaderButton intent="propose_claimable_duty" /> : null}
+            {canManage ? (
+              <Button size="sm" className="gap-1.5" data-testid="tasks-create-open" onClick={openCreate}>
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">{t.tasksPage.newTask}</span>
+              </Button>
+            ) : null}
+          </div>
         }
       />
 
@@ -369,6 +478,65 @@ export default function Tasks() {
             </div>
           </div>
 
+          {canManage ? (
+            <div className="flex shrink-0 flex-col gap-2 border-b border-border/40 bg-muted/20 px-4 py-3 sm:px-5">
+              <div className="text-xs font-semibold text-foreground">{t.tasksPage.templatesTitle}</div>
+              <p className="text-[11px] text-muted-foreground">{t.tasksPage.templatesHint}</p>
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="min-w-[10rem] flex-1 space-y-1">
+                  <Label className="text-[11px]">{t.tasksPage.templatesPick}</Label>
+                  <Select value={spawnTemplateId || "__none__"} onValueChange={(v) => setSpawnTemplateId(v === "__none__" ? "" : v)}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder={t.tasksPage.templatesPick} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">{t.tasksPage.templatesPick}</SelectItem>
+                      {templates.map((tpl) => (
+                        <SelectItem key={tpl.id} value={tpl.id}>
+                          {tpl.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="min-w-[8rem] space-y-1">
+                  <Label className="text-[11px]">{t.tasksPage.fieldTeam}</Label>
+                  <Select value={spawnTeamId} onValueChange={setSpawnTeamId}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder={t.tasksPage.clubWide} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={UNASSIGNED}>{t.tasksPage.clubWide}</SelectItem>
+                      {teams.map((row) => (
+                        <SelectItem key={row.id} value={row.id}>
+                          {row.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  size="sm"
+                  className="h-9"
+                  disabled={templateBusy || !spawnTemplateId}
+                  onClick={() => void handleSpawnTemplate()}
+                >
+                  {templateBusy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+                  {t.tasksPage.templatesSpawn}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-9"
+                  disabled={templateBusy}
+                  onClick={() => void handleSeedTemplates()}
+                >
+                  {t.tasksPage.templatesSeed}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
           <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,22rem)]">
             <section className="flex min-h-0 min-h-[14rem] flex-col border-b border-border/60 lg:border-b-0 lg:border-r">
               <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
@@ -402,6 +570,7 @@ export default function Tasks() {
                         <li key={task.id}>
                           <button
                             type="button"
+                            data-testid="tasks-task-row"
                             onClick={() => selectTask(task.id)}
                             className={cn(
                               "flex w-full gap-3 rounded-2xl border px-3.5 py-3 text-left transition-all sm:px-4",
@@ -553,10 +722,47 @@ export default function Tasks() {
                         </div>
                       ) : null}
                     </dl>
+
+                    {clubId && selectedTask ? (
+                      <TaskChecklistPanel
+                        clubId={clubId}
+                        taskId={selectedTask.id}
+                        userId={user?.id ?? null}
+                        canManage={canManage}
+                        labels={{
+                          title: t.tasksPage.checklistTitle,
+                          add: t.tasksPage.checklistAdd,
+                          empty: t.tasksPage.checklistEmpty,
+                          progress: t.tasksPage.checklistProgress,
+                          failed: t.tasksPage.checklistFailed,
+                        }}
+                        onToast={(payload) => toast(payload)}
+                      />
+                    ) : null}
                   </div>
 
                   <div className="shrink-0 space-y-2 border-t border-border/60 p-4 sm:p-5">
                     <div className="flex flex-wrap gap-2">
+                      {isClaimableDuty({
+                        claimable: Boolean(selectedTask.claimable),
+                        status: selectedTask.status,
+                        assignee_user_id: selectedTask.assignee_user_id,
+                        slots_total: selectedTask.slots_total,
+                        slots_filled: selectedTask.slots_filled,
+                      }) && selectedTask.assignee_user_id !== user?.id ? (
+                        <Button size="sm" disabled={claimBusy} data-testid="tasks-claim-duty" onClick={() => void handleClaim(selectedTask)}>
+                          {t.tasksPage.claimDuty}
+                          {slotsLabel({
+                            slotsTotal: selectedTask.slots_total,
+                            slotsFilled: selectedTask.slots_filled,
+                          })
+                            ? ` (${slotsLabel({
+                                slotsTotal: selectedTask.slots_total,
+                                slotsFilled: selectedTask.slots_filled,
+                              })})`
+                            : ""}
+                        </Button>
+                      ) : null}
                       {selectedTask.status !== "done" && selectedTask.assignee_user_id === user?.id ? (
                         <Button size="sm" onClick={() => void handleQuickStatus(selectedTask, "done")}>
                           <CheckCircle2 className="mr-1.5 h-4 w-4" />
@@ -618,7 +824,7 @@ export default function Tasks() {
           <div className="space-y-4 py-2">
             <div className="space-y-2">
               <Label htmlFor="task-title">{t.tasksPage.fieldTitle}</Label>
-              <Input id="task-title" value={title} onChange={(e) => setTitle(e.target.value)} />
+              <Input id="task-title" data-testid="tasks-title" value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="task-desc">{t.tasksPage.fieldDescription}</Label>
@@ -656,7 +862,11 @@ export default function Tasks() {
             </div>
             <div className="space-y-2">
               <Label>{t.tasksPage.fieldAssignee}</Label>
-              <Select value={assigneeUserId} onValueChange={setAssigneeUserId}>
+              <Select
+                value={assigneeUserId}
+                onValueChange={setAssigneeUserId}
+                disabled={claimable}
+              >
                 <SelectTrigger><SelectValue placeholder={t.tasksPage.unassigned} /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value={UNASSIGNED}>{t.tasksPage.unassigned}</SelectItem>
@@ -668,6 +878,24 @@ export default function Tasks() {
                 </SelectContent>
               </Select>
             </div>
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <Checkbox data-testid="tasks-claimable" checked={claimable} onCheckedChange={(c) => setClaimable(c === true)} />
+              {t.tasksPage.claimableLabel}
+            </label>
+            <p className="text-[11px] text-muted-foreground">{t.tasksPage.claimableHint}</p>
+            {claimable ? (
+              <div className="space-y-2">
+                <Label htmlFor="task-slots">{t.tasksPage.fieldSlots}</Label>
+                <Input
+                  id="task-slots"
+                  inputMode="numeric"
+                  value={slotsTotal}
+                  onChange={(e) => setSlotsTotal(e.target.value)}
+                  placeholder={t.tasksPage.fieldSlotsPlaceholder}
+                />
+                <p className="text-[11px] text-muted-foreground">{t.tasksPage.fieldSlotsHint}</p>
+              </div>
+            ) : null}
             <div className="space-y-2">
               <Label>{t.tasksPage.fieldPartner}</Label>
               <Select value={partnerId} onValueChange={setPartnerId}>
@@ -695,7 +923,7 @@ export default function Tasks() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>{t.common.cancel}</Button>
-            <Button disabled={saving || !title.trim()} onClick={() => void handleSave()}>
+            <Button data-testid="tasks-save" disabled={saving || !title.trim()} onClick={() => void handleSave()}>
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : t.common.save}
             </Button>
           </DialogFooter>

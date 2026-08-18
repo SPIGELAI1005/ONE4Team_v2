@@ -3,6 +3,9 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useAuth } from "@/contexts/useAuth";
 import { useModuleGateRole, readActiveDashboardPersonaRaw } from "@/hooks/use-module-gate-role";
 import { defaultPartnerPortalPath } from "@/lib/partner-portal-routes";
+import { useActiveClub } from "@/hooks/use-active-club";
+import { useGuardianFamilyScope } from "@/hooks/use-guardian-family-scope";
+import { canAccessMembersModule, hasParentRoleAssignment } from "@/lib/guardian-family-scope";
 import { canAccessModule } from "@/lib/rbac-config";
 import type { DashboardModule } from "@/lib/rbac-config";
 import { ModuleAccessDenied } from "@/components/auth/module-access-denied";
@@ -28,6 +31,8 @@ export function RequireModule({
 }: RequireModuleProps) {
   const { user, loading: authLoading } = useAuth();
   const perms = usePermissions();
+  const { activeClub } = useActiveClub();
+  const guardianFamily = useGuardianFamilyScope(activeClub?.id ?? null);
   const gateRole = useModuleGateRole();
   const location = useLocation();
 
@@ -44,7 +49,7 @@ export function RequireModule({
     return <Navigate to={`/auth?returnTo=${encodeURIComponent(returnTo)}`} replace />;
   }
 
-  if (perms.activeClubLoading || perms.assignmentsLoading) {
+  if (perms.activeClubLoading || perms.assignmentsLoading || guardianFamily.loading) {
     return (
       <div className="min-h-[40vh] w-full px-6 py-10 text-sm text-stone-500 dark:text-stone-400">
         Loading…
@@ -60,7 +65,17 @@ export function RequireModule({
       ? ("club_admin" as const)
       : null);
 
-  if (!roleForGate || !canAccessModule(roleForGate, module)) {
+  const moduleAllowed =
+    (roleForGate != null && canAccessModule(roleForGate, module)) ||
+    (module === "members" &&
+      canAccessMembersModule({
+        gateRole: roleForGate,
+        hasGuardianWards: guardianFamily.hasGuardianWards,
+        hasParentAssignment: hasParentRoleAssignment(perms.assignments),
+        isTrainer: perms.isTrainer,
+      }));
+
+  if (!moduleAllowed) {
     if (deniedMode === "lock") {
       return <ModuleAccessDenied module={module} />;
     }

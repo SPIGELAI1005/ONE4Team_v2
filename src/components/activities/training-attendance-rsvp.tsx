@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from "react";
-import { Check, Loader2, MessageSquareText, X } from "lucide-react";
+import { Check, HelpCircle, Loader2, MessageSquareText, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,7 +10,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import type { TrainingAttendanceRow, TrainingAttendanceStatus } from "@/lib/training-attendance";
+import type {
+  TrainingAttendanceResponseReason,
+  TrainingAttendanceRow,
+  TrainingAttendanceStatus,
+} from "@/lib/training-attendance";
+import { isAttendanceComing, responseReasonFromPresetId } from "@/lib/training-attendance";
 import { cn } from "@/lib/utils";
 import {
   clubAttendanceComingActiveClass,
@@ -31,13 +36,19 @@ interface TrainingAttendanceRsvpProps {
   clubDialogStyle?: CSSProperties;
   rsvpClosed?: boolean;
   rsvpClosedMessage?: string;
-  onRespond: (status: "confirmed" | "declined", notes?: string | null) => Promise<void>;
+  onRespond: (
+    status: "confirmed" | "declined" | "maybe",
+    notes?: string | null,
+    responseReason?: TrainingAttendanceResponseReason | null,
+  ) => Promise<void>;
   labels: {
     coming: string;
     notComing: string;
+    maybe?: string;
     changeResponse: string;
     statusComing: string;
     statusNotComing: string;
+    statusMaybe?: string;
     statusPending: string;
     declineTitle: string;
     declineDescription: string;
@@ -66,9 +77,12 @@ export function TrainingAttendanceRsvp({
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
   const status: TrainingAttendanceStatus | "none" = myAttendance?.status ?? "none";
-  const isComing = status === "confirmed" || status === "attended";
+  const isComing = status !== "none" && isAttendanceComing(status);
   const isDeclined = status === "declined";
-  const hasResponse = isComing || isDeclined;
+  const isMaybe = status === "maybe";
+  const hasResponse = isComing || isDeclined || isMaybe;
+  const maybeLabel = labels.maybe ?? "Maybe";
+  const statusMaybeLabel = labels.statusMaybe ?? maybeLabel;
 
   function resetDeclineForm() {
     setDeclineReason("");
@@ -89,12 +103,19 @@ export function TrainingAttendanceRsvp({
       : declineReason
     ).trim();
     if (!reason) return;
-    await onRespond("declined", reason);
+    await onRespond("declined", reason, responseReasonFromPresetId(selectedPreset) ?? "other");
     setDeclineOpen(false);
     resetDeclineForm();
   }
 
   const isClub = variant === "club";
+  const statusBadgeLabel = isComing
+    ? labels.statusComing
+    : isDeclined
+      ? labels.statusNotComing
+      : isMaybe
+        ? statusMaybeLabel
+        : labels.statusPending;
 
   return (
     <div
@@ -105,7 +126,7 @@ export function TrainingAttendanceRsvp({
           : "border-border/60 bg-background/35",
       )}
     >
-        <div className="mb-2 flex items-center justify-between gap-2">
+      <div className="mb-2 flex items-center justify-between gap-2">
         <div
           className={cn(
             "text-[11px] font-semibold uppercase tracking-wide",
@@ -123,9 +144,10 @@ export function TrainingAttendanceRsvp({
                   ? "bg-white/90 text-[#3f6212] ring-1 ring-white/80"
                   : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"),
               isDeclined && "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+              isMaybe && "bg-amber-500/15 text-amber-800 dark:text-amber-300",
             )}
           >
-            {isComing ? labels.statusComing : labels.statusNotComing}
+            {statusBadgeLabel}
           </span>
         ) : (
           <span
@@ -159,24 +181,39 @@ export function TrainingAttendanceRsvp({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <Button
           type="button"
           size="sm"
+          data-testid="attendance-rsvp-coming"
           disabled={busy || rsvpClosed}
           variant={variant === "club" ? (isComing ? "default" : "outline") : isComing ? "default" : "outline"}
           className={cn(
-            "h-10 rounded-xl font-semibold transition-colors",
+            "h-10 rounded-xl px-2 font-semibold transition-colors",
             variant === "club"
               ? isComing
                 ? clubAttendanceComingActiveClass
                 : clubAttendanceComingStandbyClass
               : isComing && "bg-emerald-600 text-white hover:bg-emerald-600/90",
           )}
-          onClick={() => void onRespond("confirmed", null)}
+          onClick={() => void onRespond("confirmed", null, null)}
         >
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="mr-1.5 h-4 w-4" />}
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="mr-1 h-4 w-4" />}
           {labels.coming}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          disabled={busy || rsvpClosed}
+          variant={isMaybe ? "default" : "outline"}
+          className={cn(
+            "h-10 rounded-xl px-2 font-semibold transition-colors",
+            isMaybe && "bg-amber-500 text-white hover:bg-amber-500/90",
+          )}
+          onClick={() => void onRespond("maybe", null, null)}
+        >
+          <HelpCircle className="mr-1 h-4 w-4" />
+          {maybeLabel}
         </Button>
         <Button
           type="button"
@@ -184,7 +221,7 @@ export function TrainingAttendanceRsvp({
           disabled={busy || rsvpClosed}
           variant={variant === "club" ? (isDeclined ? "default" : "outline") : isDeclined ? "default" : "outline"}
           className={cn(
-            "h-10 rounded-xl font-semibold transition-colors",
+            "h-10 rounded-xl px-2 font-semibold transition-colors",
             variant === "club"
               ? isDeclined
                 ? "border-rose-600 bg-rose-600 text-white hover:bg-rose-600/90 hover:text-white"
@@ -192,8 +229,9 @@ export function TrainingAttendanceRsvp({
               : isDeclined && "bg-rose-600 text-white hover:bg-rose-600/90",
           )}
           onClick={openDecline}
+          data-testid="attendance-rsvp-not-coming"
         >
-          <X className="mr-1.5 h-4 w-4" />
+          <X className="mr-1 h-4 w-4" />
           {labels.notComing}
         </Button>
       </div>

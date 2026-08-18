@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, Fragment, type ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useLanguage } from "@/hooks/use-language";
 import { motion } from "framer-motion";
 import { DashboardHeaderSlot } from "@/components/layout/DashboardHeaderSlot";
@@ -21,8 +21,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useClubId } from "@/hooks/use-club-id";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useModuleGateRole } from "@/hooks/use-module-gate-role";
-import { canAccessModule, getModuleAccess } from "@/lib/rbac-config";
+import { formatDashboardRoleLabel, getModuleAccess } from "@/lib/rbac-config";
 import { useModuleDataScope } from "@/hooks/use-module-data-scope";
+import { useGuardianFamilyScope } from "@/hooks/use-guardian-family-scope";
+import { isFamilyMembersView, canAccessMembersModule, hasParentRoleAssignment } from "@/lib/guardian-family-scope";
+import { GuardianFamilyPanel } from "@/components/members/guardian-family-panel";
 import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
 import {
   generateInviteToken,
@@ -38,7 +41,7 @@ import { useRegisterAiAgentContext } from "@/hooks/use-register-ai-agent-context
 import { trackEvent } from "@/lib/telemetry";
 import { trackJoinFunnelEvent } from "@/lib/track-join-funnel";
 import { trackUsageEvent } from "@/lib/usage-events";
-import { isUnder18 } from "@/lib/under-18";
+import { isUnder18, shouldShowGuardianSafetySection, isGuardianEligibleWardRole, shouldPersistDraftGuardianMembershipIds } from "@/lib/under-18";
 import { photoValidUntil } from "@/lib/member-photo-validity";
 import type { ClubMemberMasterRecord } from "@/lib/member-master-schema";
 import {
@@ -50,6 +53,8 @@ import {
   normalizeImportEmail,
   parseMembershipKind,
   readDraftGuardianMembershipIds,
+  mergeDraftGuardianMembershipIds,
+  writeDraftGuardianMembershipIds,
 } from "@/lib/member-master-schema";
 import {
   buildMemberImportTemplateWorkbook,
@@ -119,11 +124,18 @@ import {
 import {
   buildMemberDuplicateReviewMap,
   countMemberDuplicateReviewEntries,
+  duplicateReviewEntryKey,
+  filterDuplicateReviewEntries,
   getMemberDuplicateReview,
   memberNeedsDuplicateReview,
   planDuplicateDraftRemovals,
   type MemberDuplicateReviewReason,
+  type MemberDuplicateReviewSource,
 } from "@/lib/member-duplicate-review";
+import {
+  clearDuplicateReviewEntry,
+  listDuplicateReviewClearances,
+} from "@/lib/member-duplicate-review-clearance-api";
 import { resolveRegistryImportMatch } from "@/lib/member-registry-import-match";
 import {
   buildSharedContactEmailGroups,
@@ -547,7 +559,9 @@ function buildInvitePayloadFromDraftFields(
   age_group: string | null | undefined,
   position: string | null | undefined,
 ) {
-  const guardianIds = isPlayerRole(role) ? readDraftGuardianMembershipIds(masterData) : [];
+  const guardianIds = shouldPersistDraftGuardianMembershipIds(role, masterData, age_group)
+    ? mergeDraftGuardianMembershipIds(masterData)
+    : [];
   const tn = (team ?? "").trim();
   const ag = (age_group ?? "").trim();
   const pos = (position ?? "").trim();
@@ -562,6 +576,22 @@ function buildInvitePayloadFromDraftFields(
     ...(pos ? { position: pos } : {}),
     ...(guardianIds.length > 0 ? { guardian_membership_ids: guardianIds } : {}),
   };
+}
+
+function resolveDraftInviteMasterSource(
+  draft: MemberDraftRow,
+  editingDraftId: string | null,
+  editingDraftForm: {
+    masterData: Partial<ClubMemberMasterRecord>;
+  },
+  draftGuardianPickId: string,
+): Record<string, unknown> {
+  const raw =
+    editingDraftId === draft.id
+      ? (editingDraftForm.masterData as Record<string, unknown>)
+      : ((draft.master_data as Record<string, unknown> | null) ?? {});
+  if (editingDraftId !== draft.id) return raw;
+  return writeDraftGuardianMembershipIds(raw, mergeDraftGuardianMembershipIds(raw, draftGuardianPickId));
 }
 
 function isMissingRelationError(error: unknown): boolean {
@@ -617,6 +647,16 @@ const Members = () => {
   const canManageMembers = getModuleAccess(gateRole, "members") === "full";
   const canManageRoles = getModuleAccess(gateRole, "roles") === "full";
   const memberDataScope = useModuleDataScope("members");
+  const guardianFamily = useGuardianFamilyScope(clubId);
+  const hasParentAssignment = hasParentRoleAssignment(perms.assignments);
+  const isGuardianMembersView = isFamilyMembersView({
+    membersDataScope: memberDataScope.scope,
+    hasGuardianWards: guardianFamily.hasGuardianWards,
+    hasParentAssignment,
+    canManageMembers,
+    gateRole,
+  });
+  const [searchParams, setSearchParams] = useSearchParams();
   const agentPageContext = useMemo(() => ({ source: "members" as const }), []);
   useRegisterAiAgentContext(agentPageContext);
   const [tab, setTab] = useState<MembersPageTab>("members");
@@ -675,6 +715,8 @@ const Members = () => {
   const [searchDraftsLoading, setSearchDraftsLoading] = useState(false);
   const [memberDraftTotalCount, setMemberDraftTotalCount] = useState(0);
   const [memberDraftsTruncated, setMemberDraftsTruncated] = useState(false);
+  const [duplicateReviewClearedKeys, setDuplicateReviewClearedKeys] = useState<Set<string>>(() => new Set());
+  const [duplicateReviewClearBusyKey, setDuplicateReviewClearBusyKey] = useState<string | null>(null);
   const [draftsLoading, setDraftsLoading] = useState(false);
   const [draftActionId, setDraftActionId] = useState<string | null>(null);
   const [duplicateDraftRemovalBusy, setDuplicateDraftRemovalBusy] = useState(false);
@@ -1597,7 +1639,13 @@ const Members = () => {
     canManageMembers ||
     getModuleAccess(gateRole, "invites") === "full" ||
     (perms.isTrainer && joinReviewerPolicy === "admin_trainer");
-  const canAccessMembersPage = canAccessModule(gateRole, "members") || canManageMembers || perms.isTrainer;
+  const canAccessMembersPage = canAccessMembersModule({
+    gateRole,
+    hasGuardianWards: guardianFamily.hasGuardianWards,
+    hasParentAssignment,
+    isTrainer: perms.isTrainer,
+    canManageMembers,
+  });
 
   const canEditMemberMaster = useCallback(
     (membershipId: string) => canManageMembers || Boolean(editableMasterActorById[membershipId]),
@@ -1638,9 +1686,23 @@ const Members = () => {
       setHasMembersHydrated(true);
       setLoading(false);
     };
+    if (isGuardianMembersView && guardianFamily.loading) {
+      setLoading(true);
+      return;
+    }
     const teamScope = memberDataScope.teamIds;
     let scopedMembershipIds: Set<string> | null = null;
-    if (teamScope !== "all") {
+    if (isGuardianMembersView) {
+      const familyIds = guardianFamily.familyMembershipIds;
+      if (familyIds.length === 0) {
+        setMembers([]);
+        setMembersDbTotalCount(0);
+        setClubMemberStats(null);
+        finishMembersFetch();
+        return;
+      }
+      scopedMembershipIds = new Set(familyIds);
+    } else if (teamScope !== "all") {
       if (teamScope.length === 0) {
         setMembers([]);
         setMembersDbTotalCount(0);
@@ -1836,6 +1898,9 @@ const Members = () => {
       .select("id, club_id, user_id, role, position, age_group, team, status, created_at", { count: "exact" })
       .eq("club_id", clubId)
       .order("created_at", { ascending: false });
+    if (scopedMembershipIds && scopedMembershipIds.size > 0) {
+      membershipQuery = membershipQuery.in("id", [...scopedMembershipIds]);
+    }
     if (roleFilter !== "all") {
       membershipQuery = membershipQuery.eq("role", roleFilter);
     }
@@ -1846,18 +1911,20 @@ const Members = () => {
     ]);
 
     const { data: membershipData, error: membershipError, count } = memRes;
-    setMembersDbTotalCount(
-      scopedMembershipIds ? memberships.length : typeof count === "number" ? count : null,
-    );
     applyStats(statsRes);
 
     if (membershipError) {
-      toast({ title: t.membersPage.errorLoadingMembers, description: membershipError.message, variant: "destructive" });
+      if (!String(membershipError.message).includes("AbortError")) {
+        toast({ title: t.membersPage.errorLoadingMembers, description: membershipError.message, variant: "destructive" });
+      }
       finishMembersFetch();
       return;
     }
 
     const memberships = applyTeamScope((membershipData as unknown as MemberRow[]) || []);
+    setMembersDbTotalCount(
+      scopedMembershipIds ? memberships.length : typeof count === "number" ? count : null,
+    );
     const userIds = Array.from(new Set(memberships.map((item) => item.user_id))).filter(Boolean);
     const membershipIds = memberships.map((item) => item.id);
 
@@ -1885,11 +1952,32 @@ const Members = () => {
 
     await loadSidecarsForMemberships(membershipIds);
     finishMembersFetch();
-  }, [clubId, debouncedSearch, membersServerPage, roleFilter, toast, t, memberDataScope.teamIds]);
+  }, [
+    clubId,
+    debouncedSearch,
+    membersServerPage,
+    roleFilter,
+    toast,
+    t,
+    memberDataScope.teamIds,
+    isGuardianMembersView,
+    guardianFamily.loading,
+    guardianFamily.familyMembershipIds,
+  ]);
 
   useEffect(() => {
     void fetchMembers();
   }, [fetchMembers]);
+
+  useEffect(() => {
+    const focus = searchParams.get("focus");
+    if (!focus) return;
+    pendingFocusMembershipIdRef.current = focus;
+    setTab("members");
+    const next = new URLSearchParams(searchParams);
+    next.delete("focus");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     if (tab !== "invites") return;
@@ -2141,7 +2229,7 @@ const Members = () => {
     [masterByMembershipId, t.membersPage.unknownMember],
   );
 
-  const duplicateReviewEntries = useMemo(
+  const duplicateReviewEntriesRaw = useMemo(
     () => [
       ...members.map((member) => ({
         id: member.id,
@@ -2164,6 +2252,42 @@ const Members = () => {
       }),
     ],
     [getMemberRosterName, masterByMembershipId, memberDrafts, members, membershipEmails],
+  );
+
+  const duplicateReviewEntries = useMemo(
+    () => filterDuplicateReviewEntries(duplicateReviewEntriesRaw, duplicateReviewClearedKeys),
+    [duplicateReviewClearedKeys, duplicateReviewEntriesRaw],
+  );
+
+  useEffect(() => {
+    if (!clubId || !canManageMembers) {
+      setDuplicateReviewClearedKeys(new Set());
+      return;
+    }
+    void listDuplicateReviewClearances(clubId).then(({ keys, error }) => {
+      if (!error) setDuplicateReviewClearedKeys(keys);
+    });
+  }, [clubId, canManageMembers]);
+
+  const handleClearDuplicateReview = useCallback(
+    async (source: MemberDuplicateReviewSource, entityId: string) => {
+      if (!clubId || !canManageMembers) return;
+      const key = duplicateReviewEntryKey(source, entityId);
+      setDuplicateReviewClearBusyKey(key);
+      const result = await clearDuplicateReviewEntry({ clubId, source, entityId });
+      setDuplicateReviewClearBusyKey(null);
+      if (!result.ok) {
+        toast({
+          title: t.common.error,
+          description: result.error ?? t.membersPage.duplicateReviewClearFailed,
+          variant: "destructive",
+        });
+        return;
+      }
+      setDuplicateReviewClearedKeys((prev) => new Set([...prev, key]));
+      toast({ title: t.membersPage.duplicateReviewClearDone });
+    },
+    [canManageMembers, clubId, t.common.error, t.membersPage.duplicateReviewClearDone, t.membersPage.duplicateReviewClearFailed, toast],
   );
 
   const duplicateReviewMap = useMemo(
@@ -3356,14 +3480,38 @@ const Members = () => {
     toast({ title: t.common.updated });
   };
 
-  const renderGuardiansSafetyTabExtra = (ward: MemberRow, effectiveRole: string) => {
-    if (!isPlayerRole(effectiveRole)) return null;
+  const resolveGuardianWardContext = useCallback(
+    (ward: MemberRow) => {
+      const editingInline = memberPanelEditModeId === ward.id;
+      const role = editingInline ? editMemberForm.role : ward.role;
+      const rawAgeGroup = editingInline ? editMemberForm.ageGroup : ward.age_group;
+      const ageGroup = rawAgeGroup?.trim() || null;
+      const birthDate = masterByMembershipId[ward.id]?.birth_date ?? null;
+      const wardLinksCount = guardianLinks.filter((g) => g.ward_membership_id === ward.id).length;
+      return { role, ageGroup, birthDate, wardLinksCount };
+    },
+    [memberPanelEditModeId, editMemberForm, guardianLinks, masterByMembershipId],
+  );
+
+  const renderGuardiansSafetyTabExtra = (ward: MemberRow) => {
+    const { role, ageGroup, birthDate, wardLinksCount } = resolveGuardianWardContext(ward);
     const wardLinks = guardianLinks.filter((g) => g.ward_membership_id === ward.id);
-    const birthDate = masterByMembershipId[ward.id]?.birth_date ?? null;
     const needsUnder18Guardian = isUnder18(birthDate) && wardLinks.length === 0;
-    if (wardLinks.length === 0 && !canManageMembers && !needsUnder18Guardian) return null;
+
+    if (
+      !shouldShowGuardianSafetySection({
+        role,
+        wardLinksCount,
+        birthDate,
+        ageGroup,
+        canManageMembers,
+      })
+    ) {
+      return null;
+    }
+
     return (
-      <>
+      <div className="space-y-3" data-testid="guardian-links-section">
         <div className="text-sm font-semibold text-foreground">{t.membersPage.guardians}</div>
         {needsUnder18Guardian ? (
           <div className="text-sm rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-200">
@@ -3422,9 +3570,35 @@ const Members = () => {
             </div>
           </div>
         ) : null}
-      </>
+      </div>
     );
   };
+
+  const guardianSafetySectionEnabled = useCallback(
+    (ward: MemberRow) => {
+      const { role, ageGroup, birthDate, wardLinksCount } = resolveGuardianWardContext(ward);
+      return shouldShowGuardianSafetySection({
+        role,
+        wardLinksCount,
+        birthDate,
+        ageGroup,
+        canManageMembers,
+      });
+    },
+    [canManageMembers, resolveGuardianWardContext],
+  );
+
+  const draftGuardianSafetySectionEnabled = useMemo(() => {
+    const md = editingDraftForm.masterData as Record<string, unknown>;
+    const birthDate = typeof md.birth_date === "string" ? md.birth_date : null;
+    return shouldShowGuardianSafetySection({
+      role: editingDraftForm.role,
+      wardLinksCount: readDraftGuardianMembershipIds(md).length,
+      birthDate,
+      ageGroup: editingDraftForm.ageGroup?.trim() || null,
+      canManageMembers,
+    });
+  }, [canManageMembers, editingDraftForm.ageGroup, editingDraftForm.masterData, editingDraftForm.role]);
 
   const addDraftGuardian = useCallback(() => {
     if (!draftGuardianPickId) return;
@@ -3452,12 +3626,11 @@ const Members = () => {
   }, []);
 
   const renderDraftGuardiansSafetyTabExtra = () => {
-    if (!isPlayerRole(editingDraftForm.role)) return null;
+    if (!draftGuardianSafetySectionEnabled) return null;
     const md = editingDraftForm.masterData as Record<string, unknown>;
     const ids = readDraftGuardianMembershipIds(md);
-    if (ids.length === 0 && !canManageMembers) return null;
     return (
-      <>
+      <div className="space-y-3" data-testid="guardian-links-section">
         <div className="text-sm font-semibold text-foreground">{t.membersPage.guardians}</div>
         {ids.length > 0 ? (
           <div className="space-y-1.5">
@@ -3521,7 +3694,7 @@ const Members = () => {
             </div>
           </div>
         ) : null}
-      </>
+      </div>
     );
   };
 
@@ -3614,6 +3787,10 @@ const Members = () => {
     }
     setMemberPanelSaving(true);
     try {
+      if (guardianPickId && guardianPickId !== member.id) {
+        await handleAddGuardianLink(member.id);
+      }
+
       const reconciled = reconcileMemberTeamEditState({
         clubTeams,
         playerTeamIds: editMemberTeamIds,
@@ -3660,7 +3837,11 @@ const Members = () => {
         previous && previous.id === member.id ? mergedMember : previous,
       );
 
-      if (!isPlayerRole(editMemberForm.role)) {
+      const mergedMaster = { ...(masterByMembershipId[member.id] ?? {}), ...memberMasterEditDraft };
+      const wardBirthDate =
+        typeof mergedMaster.birth_date === "string" ? mergedMaster.birth_date : null;
+
+      if (!isGuardianEligibleWardRole(editMemberForm.role, wardBirthDate, nextAgeGroup)) {
         const { error: guardianDelErr } = await supabase
           .from("club_member_guardian_links")
           .delete()
@@ -3671,7 +3852,6 @@ const Members = () => {
         }
       }
 
-      const mergedMaster = { ...(masterByMembershipId[member.id] ?? {}), ...memberMasterEditDraft };
       await handleSaveMasterRecord(mergedMember, mergedMaster, { suppressToast: true });
 
       const assignment = await syncMembershipTeamAssignments({
@@ -3945,10 +4125,12 @@ const Members = () => {
   const handleSendInviteForDraft = async (draft: MemberDraftRow) => {
     if (!clubId || draftActionId) return;
     setDraftActionId(draft.id);
-    const inviteMasterSource =
-      editingDraftId === draft.id
-        ? (editingDraftForm.masterData as Record<string, unknown>)
-        : ((draft.master_data as Record<string, unknown> | null) ?? {});
+    const inviteMasterSource = resolveDraftInviteMasterSource(
+      draft,
+      editingDraftId,
+      editingDraftForm,
+      draftGuardianPickId,
+    );
     const draftRole =
       editingDraftId === draft.id ? editingDraftForm.role : draft.role;
     const displayNameForInvite =
@@ -4131,10 +4313,12 @@ const Members = () => {
       }
     }
 
-    const inviteMasterSource =
-      editingDraftId === draft.id
-        ? (editingDraftForm.masterData as Record<string, unknown>)
-        : ((draft.master_data as Record<string, unknown> | null) ?? {});
+    const inviteMasterSource = resolveDraftInviteMasterSource(
+      draft,
+      editingDraftId,
+      editingDraftForm,
+      draftGuardianPickId,
+    );
     const draftRole = editingDraftId === draft.id ? editingDraftForm.role : draft.role;
     const displayNameForInvite =
       editingDraftId === draft.id
@@ -4496,19 +4680,28 @@ const Members = () => {
       return;
     }
     const combinedName = buildDisplayNameFromParts(editingDraftForm.firstName, editingDraftForm.lastName);
+    const masterDataRecord = editingDraftForm.masterData as Record<string, unknown>;
+    const guardianIdsForSave = mergeDraftGuardianMembershipIds(masterDataRecord, draftGuardianPickId);
     const nextMaster: Partial<ClubMemberMasterRecord> = {
       ...editingDraftForm.masterData,
       first_name: editingDraftForm.firstName.trim() || null,
       last_name: editingDraftForm.lastName.trim() || null,
     };
+    const nextMasterRecord = writeDraftGuardianMembershipIds(
+      nextMaster as Record<string, unknown>,
+      shouldPersistDraftGuardianMembershipIds(
+        editingDraftForm.role,
+        { ...(nextMaster as Record<string, unknown>), birth_date: nextMaster.birth_date ?? null },
+        editingDraftForm.age_group,
+      )
+        ? guardianIdsForSave
+        : [],
+    );
     const masterPayload = Object.fromEntries(
-      Object.entries(nextMaster as Record<string, unknown>).filter(
+      Object.entries(nextMasterRecord).filter(
         ([, v]) => v !== null && v !== undefined && v !== "",
       ),
     ) as Record<string, unknown>;
-    if (!isPlayerRole(editingDraftForm.role)) {
-      delete masterPayload[DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY];
-    }
 
     let resolvedInviteId: string | null = currentDraft.invite_id;
     if (currentDraft.status === "invited" && !resolvedInviteId) {
@@ -4576,7 +4769,7 @@ const Members = () => {
         const invitePayload = buildInvitePayloadFromDraftFields(
           combinedName || null,
           editingDraftForm.role,
-          editingDraftForm.masterData as Record<string, unknown>,
+          masterPayload,
           editingDraftForm.team,
           editingDraftForm.age_group,
           editingDraftForm.position,
@@ -4624,8 +4817,38 @@ const Members = () => {
     const savedDisplayName = combinedName || editingDraftForm.email.trim() || t.membersPage.unknownMember;
     toast({
       title: t.membersPage.masterDataSavedTitle,
-      description: t.membersPage.masterDataSavedDescDraft.replace("{name}", savedDisplayName),
+      description:
+        currentDraft.status === "invited"
+          ? t.membersPage.masterDataSavedDescInvitedDraft.replace("{name}", savedDisplayName)
+          : t.membersPage.masterDataSavedDescDraft.replace("{name}", savedDisplayName),
     });
+    setEditingDraftForm((previous) => ({
+      ...previous,
+      masterData: masterPayload as Partial<ClubMemberMasterRecord>,
+    }));
+    setDraftGuardianPickId("");
+
+    const guardianIdsSaved = readDraftGuardianMembershipIds(masterPayload);
+    const wardMembershipId = emailToMembershipIdFromEmail(editingDraftForm.email);
+    if (clubId && wardMembershipId && guardianIdsSaved.length > 0) {
+      for (const guardianMembershipId of guardianIdsSaved) {
+        if (guardianMembershipId === wardMembershipId) continue;
+        const { data: linkRow, error: linkErr } = await supabase
+          .from("club_member_guardian_links")
+          .insert({
+            club_id: clubId,
+            guardian_membership_id: guardianMembershipId,
+            ward_membership_id: wardMembershipId,
+            relationship: "guardian",
+          })
+          .select("*")
+          .maybeSingle();
+        if (!linkErr && linkRow) {
+          setGuardianLinks((previous) => [...previous, linkRow as unknown as GuardianLinkRow]);
+        }
+      }
+    }
+
     if (inviteSyncSkippedUsed) {
       window.setTimeout(() => {
         toast({ title: t.membersPage.draftUpdated, description: t.membersPage.inviteSyncSkippedAlreadyJoined });
@@ -4637,6 +4860,22 @@ const Members = () => {
   };
 
   const handleCancelDraftEdit = () => {
+    if (editingDraftId) {
+      const draft = resolveDraftById(editingDraftId);
+      if (draft) handleStartEditDraft(draft);
+      else {
+        setEditingDraftId(null);
+        setDraftGuardianPickId("");
+      }
+      return;
+    }
+    setEditingDraftId(null);
+    setEditDraftTeamIds([]);
+    setDraftGuardianPickId("");
+    setSharedContactFilterEmail(null);
+  };
+
+  const handleCloseDraftEdit = () => {
     setEditingDraftId(null);
     setEditDraftTeamIds([]);
     setDraftGuardianPickId("");
@@ -4682,8 +4921,18 @@ const Members = () => {
     <div className={DASHBOARD_PAGE_ROOT}>
       <DashboardHeaderSlot
         title={t.membersPage.title}
-        subtitle={tab === "members" ? t.membersPage.roster : tab === "roles" ? t.membersPage.roles.subtitle : (clubName ? `${clubName} · ${t.membersPage.invites}` : t.membersPage.invites)}
-        toolbarRevision={`${tab}-${canManageMembers}-${canReviewJoinRequests}`}
+        subtitle={
+          tab === "members"
+            ? isGuardianMembersView
+              ? t.membersPage.guardianViewSubtitle
+              : t.membersPage.roster
+            : tab === "roles"
+              ? t.membersPage.roles.subtitle
+              : clubName
+                ? `${clubName} · ${t.membersPage.invites}`
+                : t.membersPage.invites
+        }
+        toolbarRevision={`${tab}-${canManageMembers}-${canReviewJoinRequests}-${isGuardianMembersView}`}
         rightSlot={
           <div className="flex gap-2 flex-wrap justify-end">
             <AiAgentHeaderButton intent="add_member_draft" />
@@ -4713,6 +4962,7 @@ const Members = () => {
         tab={tab}
         onTabChange={setTab}
         showRoles={canManageRoles}
+        showInvites={!isGuardianMembersView && canReviewJoinRequests}
         labels={{
           members: t.membersPage.title,
           invites: t.membersPage.invites,
@@ -4721,7 +4971,7 @@ const Members = () => {
       />
 
       <div className={DASHBOARD_PAGE_INNER}>
-        {(clubLoading || (loading && !hasMembersHydrated)) ? (
+        {(clubLoading || (isGuardianMembersView && guardianFamily.loading) || (loading && !hasMembersHydrated)) ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
@@ -4743,7 +4993,7 @@ const Members = () => {
           <>
             {tab === "roles" && canManageRoles && <MembersRolesPanel />}
             {tab === "members" ? (
-              !canManageMembers ? (
+              !canManageMembers && !isGuardianMembersView ? (
                 <div className="rounded-xl bg-card border border-border p-8 text-center">
                   <h2 className="font-display text-lg font-bold text-foreground mb-2">{t.membersPage.membersTabRestrictedTitle}</h2>
                   <p className="text-muted-foreground mb-4">{t.membersPage.membersTabRestrictedDesc}</p>
@@ -4753,6 +5003,29 @@ const Members = () => {
               <MembersRosterPanel
                 toolbar={
                   <>
+            {isGuardianMembersView ? (
+              <div className="mb-4">
+                <GuardianFamilyPanel
+                  wards={guardianFamily.wards}
+                  labels={{
+                    title: t.myMemberDataPage.guardianFamilyTitle,
+                    subtitle: t.myMemberDataPage.guardianFamilySubtitle,
+                    emptyTitle: t.myMemberDataPage.guardianFamilyEmptyTitle,
+                    emptyDesc: t.myMemberDataPage.guardianFamilyEmptyDesc,
+                    editRegistry: t.myMemberDataPage.guardianFamilyEditRegistry,
+                    openActivities: t.myMemberDataPage.guardianFamilyOpenActivities,
+                    inactiveBadge: t.myMemberDataPage.guardianFamilyInactive,
+                  }}
+                  getRoleLabel={formatDashboardRoleLabel}
+                  unknownMemberLabel={t.membersPage.unknownMember}
+                  onSelectWard={(wardMembershipId) => {
+                    pendingFocusMembershipIdRef.current = wardMembershipId;
+                    const member = members.find((row) => row.id === wardMembershipId);
+                    if (member) focusRosterMember(member);
+                  }}
+                />
+              </div>
+            ) : null}
             {clubId && canManageMembers ? (
               <div className="mb-4">
                 <MembersImportPanel
@@ -4805,7 +5078,8 @@ const Members = () => {
                 ) : null}
               </div>
               <div className="flex min-w-0 gap-2 overflow-x-auto pb-1 sm:max-w-[min(100%,28rem)] sm:shrink-0 lg:max-w-none">
-                {allRoles.map((r) => (
+                {!isGuardianMembersView
+                  ? allRoles.map((r) => (
                   <button
                     key={r}
                     type="button"
@@ -4818,12 +5092,15 @@ const Members = () => {
                   >
                     {r === "all" ? t.membersPage.allRoles : getRoleLabel(r)}
                   </button>
-                ))}
+                ))
+                  : null}
               </div>
             </div>
                   </>
                 }
               >
+            {!isGuardianMembersView ? (
+            <>
             {/* Stats (club-wide via RPC; tap to filter Saved Member List) */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
               {(
@@ -5301,9 +5578,12 @@ const Members = () => {
                               value={editingDraftForm.role}
                               onValueChange={(v) =>
                                 setEditingDraftForm((f) => {
-                                  if (isPlayerRole(v)) return { ...f, role: v };
                                   const md = { ...(f.masterData as Record<string, unknown>) };
-                                  delete md[DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY];
+                                  if (
+                                    !shouldPersistDraftGuardianMembershipIds(v, md, f.age_group)
+                                  ) {
+                                    delete md[DRAFT_GUARDIAN_MEMBERSHIP_IDS_KEY];
+                                  }
                                   return { ...f, role: v, masterData: md as typeof f.masterData };
                                 })
                               }
@@ -5361,20 +5641,31 @@ const Members = () => {
                             <SharedContactAccountsPanel
                               group={group}
                               currentId={editingDraftId}
+                              currentSource="draft"
                               labels={{
                                 title: t.membersPage.sharedContactAccountsTitle,
                                 current: t.membersPage.sharedContactAccountsCurrent,
                                 showAll: t.membersPage.sharedContactFilterShowAll,
                                 openMember: t.membersPage.sharedContactOpenMember,
                                 importPreview: t.membersPage.sharedContactImportPreview,
+                                clearNotDuplicate: t.membersPage.duplicateReviewClearNotDuplicate,
                               }}
                               duplicateMemberKeys={duplicateReviewKeys}
                               duplicateWarning={t.membersPage.duplicateReviewPanelWarning}
                               onShowAll={(email) => applySharedContactFilter(email)}
                               onOpenMember={(member) => applySharedContactFilter(group.email, member)}
+                              onClearDuplicateReview={
+                                canManageMembers
+                                  ? () => void handleClearDuplicateReview("draft", editingDraftId)
+                                  : undefined
+                              }
+                              clearDuplicateBusy={
+                                duplicateReviewClearBusyKey === duplicateReviewEntryKey("draft", editingDraftId)
+                              }
                             />
                           );
                         })()}
+                        {draftGuardianSafetySectionEnabled ? renderDraftGuardiansSafetyTabExtra() : null}
                         <button
                           type="button"
                           className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
@@ -5447,8 +5738,8 @@ const Members = () => {
                                   return { ...f, masterData: { ...f.masterData, [key]: value } };
                                 })
                               }
-                              safetyTabExtraEnabled={isPlayerRole(editingDraftForm.role)}
-                              safetyTabExtra={renderDraftGuardiansSafetyTabExtra()}
+                              safetyTabExtraEnabled={false}
+                              safetyTabExtra={null}
                             />
                           </div>
                         )}
@@ -5497,9 +5788,30 @@ const Members = () => {
                                 {t.membersPage.resendInvite}
                               </Button>
                             )
+                          ) : draft.status === "draft" ? (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="h-9 text-sm"
+                              disabled={draftSaving || draftActionId === draft.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void handleSendInviteForDraft(draft);
+                              }}
+                            >
+                              {draftActionId === draft.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                              ) : (
+                                <Link2 className="w-4 h-4 mr-1" />
+                              )}
+                              {t.membersPage.sendInvite}
+                            </Button>
                           ) : null}
                           <Button size="sm" variant="ghost" onClick={handleCancelDraftEdit} className="h-11 w-full text-sm sm:h-9 sm:w-auto" disabled={draftSaving}>
                             {t.common.cancel}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={handleCloseDraftEdit} className="h-11 w-full text-sm sm:h-9 sm:w-auto" disabled={draftSaving}>
+                            {t.common.close}
                           </Button>
                           <Button
                             size="sm"
@@ -5703,11 +6015,17 @@ const Members = () => {
                 </div>
               )}
             </div>
+            </>
+            ) : null}
 
             <div className="rounded-xl bg-card border border-border overflow-hidden">
               {rosterForDisplay.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground text-sm">
-                  {members.length === 0 ? t.membersPage.noMembersYet : t.membersPage.noMembersFound}
+                  {isGuardianMembersView && members.length === 0
+                    ? t.membersPage.guardianViewEmpty
+                    : members.length === 0
+                      ? t.membersPage.noMembersYet
+                      : t.membersPage.noMembersFound}
                 </div>
               ) : (
                 <>
@@ -5747,8 +6065,6 @@ const Members = () => {
                 </div>
                 {rosterForDisplay.map((member, i) => {
                   const isOpen = selectedMember?.id === member.id;
-                  const rosterGuardianRole =
-                    memberPanelEditModeId === member.id ? editMemberForm.role : member.role;
                   return (
                     <Fragment key={member.id}>
                       <motion.div
@@ -5976,17 +6292,27 @@ const Members = () => {
                                 <SharedContactAccountsPanel
                                   group={group}
                                   currentId={member.id}
+                                  currentSource="roster"
                                   labels={{
                                     title: t.membersPage.sharedContactAccountsTitle,
                                     current: t.membersPage.sharedContactAccountsCurrent,
                                     showAll: t.membersPage.sharedContactFilterShowAll,
                                     openMember: t.membersPage.sharedContactOpenMember,
                                     importPreview: t.membersPage.sharedContactImportPreview,
+                                    clearNotDuplicate: t.membersPage.duplicateReviewClearNotDuplicate,
                                   }}
                                   duplicateMemberKeys={duplicateReviewKeys}
                                   duplicateWarning={t.membersPage.duplicateReviewPanelWarning}
                                   onShowAll={(email) => applySharedContactFilter(email)}
                                   onOpenMember={(linkedMember) => applySharedContactFilter(group.email, linkedMember)}
+                                  onClearDuplicateReview={
+                                    canManageMembers
+                                      ? () => void handleClearDuplicateReview("roster", member.id)
+                                      : undefined
+                                  }
+                                  clearDuplicateBusy={
+                                    duplicateReviewClearBusyKey === duplicateReviewEntryKey("roster", member.id)
+                                  }
                                 />
                               );
                             })()}
@@ -6167,8 +6493,8 @@ const Members = () => {
                                         }))
                                     : undefined
                                 }
-                                safetyTabExtraEnabled={isPlayerRole(rosterGuardianRole)}
-                                safetyTabExtra={renderGuardiansSafetyTabExtra(member, rosterGuardianRole)}
+                                safetyTabExtraEnabled={guardianSafetySectionEnabled(member)}
+                                safetyTabExtra={renderGuardiansSafetyTabExtra(member)}
                                 allowedFieldKeys={editableFieldKeysForActor(masterEditActorFor(member.id))}
                                 allowedGroups={editableGroupsForActor(masterEditActorFor(member.id))}
                                 hideClubNumberGenerator={!canManageMembers}
@@ -6212,6 +6538,15 @@ const Members = () => {
                                     onClick={cancelMemberPanelEdit}
                                   >
                                     {t.common.cancel}
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-11 w-full sm:h-9 sm:flex-1"
+                                    disabled={memberPanelSaving}
+                                    onClick={closeRosterMemberPanel}
+                                  >
+                                    {t.common.close}
                                   </Button>
                                   <Button
                                     size="sm"
@@ -7336,6 +7671,8 @@ const Members = () => {
           onSave={async (payload) => {
             await handleSaveMasterRecord(selectedMember, payload, { suppressToast: true });
           }}
+          safetyTabExtraEnabled={guardianSafetySectionEnabled(selectedMember)}
+          safetyTabExtra={renderGuardiansSafetyTabExtra(selectedMember)}
         />
       ) : null}
 

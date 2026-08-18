@@ -32,6 +32,18 @@ function entryKey(source: MemberDuplicateReviewSource, id: string): string {
   return `${source}:${id}`;
 }
 
+export function duplicateReviewEntryKey(source: MemberDuplicateReviewSource, id: string): string {
+  return entryKey(source, id);
+}
+
+/** Exclude admin-verified rows before recomputing duplicate flags. */
+export function filterDuplicateReviewEntries(
+  entries: MemberDuplicateReviewEntry[],
+  clearedKeys: ReadonlySet<string>,
+): MemberDuplicateReviewEntry[] {
+  return entries.filter((entry) => !clearedKeys.has(entryKey(entry.source, entry.id)));
+}
+
 function normalizePersonName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, " ");
 }

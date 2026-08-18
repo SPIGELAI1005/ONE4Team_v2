@@ -1,1 +1,9 @@
 project_id = "pxfurdvhnijmvhbgfsay"
+
+# Public ICS feed — opaque token in query string; no user JWT.
+[functions.calendar-ics]
+verify_jwt = false
+
+# Attendance reminder cron — service role / cron secret auth inside the function.
+[functions.process-attendance-reminders]
+verify_jwt = false

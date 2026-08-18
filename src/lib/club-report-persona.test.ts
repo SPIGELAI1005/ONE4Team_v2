@@ -11,9 +11,17 @@ describe("club-report-persona", () => {
     expect(resolveClubReportPersona({ legacyRole: "player" })).toBe("player");
   });
 
+  it("maps team_management to trainer report persona (no finance)", () => {
+    expect(resolveClubReportPersona({ legacyRole: "team_management" })).toBe("trainer");
+    expect(
+      canAccessFinancialReports("admin", "dashboard", "team_management"),
+    ).toBe(false);
+  });
+
   it("never exposes financial reports on the public club surface", () => {
     expect(canAccessFinancialReports("admin", "public")).toBe(false);
     expect(canAccessFinancialReports("admin", "dashboard")).toBe(true);
+    expect(canAccessFinancialReports("admin", "dashboard", "club_admin")).toBe(true);
     expect(canAccessFinancialReports("trainer", "dashboard")).toBe(false);
   });
 });

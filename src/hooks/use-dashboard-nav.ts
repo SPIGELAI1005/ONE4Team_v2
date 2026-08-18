@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useActiveClub } from "@/hooks/use-active-club";
 import { useModuleGateRole } from "@/hooks/use-module-gate-role";
+import { usePermissions } from "@/hooks/use-permissions";
 import {
   buildDashboardNavItems,
   type DashboardNavItem,
@@ -15,6 +16,8 @@ import {
   type DashboardRole,
 } from "@/lib/rbac-config";
 
+import { useGuardianFamilyScope } from "@/hooks/use-guardian-family-scope";
+import { hasParentRoleAssignment } from "@/lib/guardian-family-scope";
 import { useActiveDashboardPersonaSlug } from "@/hooks/use-active-dashboard-persona-slug";
 import {
   ACTIVE_DASHBOARD_PERSONA_KEY,
@@ -34,7 +37,16 @@ export interface UseDashboardNavResult {
 export function useDashboardNav(labels: DashboardNavLabels): UseDashboardNavResult {
   const { role: urlRole } = useParams();
   const menuRole = useModuleGateRole();
+  const perms = usePermissions();
+  const { activeClub } = useActiveClub();
+  const guardianFamily = useGuardianFamilyScope(activeClub?.id ?? null);
   const storedSlug = useActiveDashboardPersonaSlug();
+
+  const showMembersForFamily = useMemo(
+    () =>
+      guardianFamily.hasGuardianWards || hasParentRoleAssignment(perms.assignments),
+    [guardianFamily.hasGuardianWards, perms.assignments],
+  );
 
   useEffect(() => {
     if (!urlRole) return;
@@ -48,15 +60,21 @@ export function useDashboardNav(labels: DashboardNavLabels): UseDashboardNavResu
   const personaFromUrl = urlRole ? normalizeDashboardRole(urlRole) : null;
   const personaSlug = personaFromUrl ?? menuRole ?? storedSlug ?? "member";
 
-  const sidebarModules = useMemo(
-    () => getSidebarMenuItems(menuRole),
-    [menuRole],
-  );
+  const sidebarModules = useMemo(() => {
+    const base = getSidebarMenuItems(menuRole);
+    if (showMembersForFamily && !base.includes("members")) {
+      return ["members" as const, ...base];
+    }
+    return base;
+  }, [menuRole, showMembersForFamily]);
 
-  const mobileModules = useMemo(
-    () => getMobileNavModules(menuRole),
-    [menuRole],
-  );
+  const mobileModules = useMemo(() => {
+    const base = getMobileNavModules(menuRole);
+    if (showMembersForFamily && !base.includes("members")) {
+      return ["members" as const, ...base];
+    }
+    return base;
+  }, [menuRole, showMembersForFamily]);
 
   const sidebarItems = useMemo(
     () => buildDashboardNavItems(sidebarModules, labels, personaSlug, menuRole),

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Dialog,
   DialogContent,
@@ -53,6 +53,9 @@ interface MemberMasterDialogProps {
   labels: MemberMasterDialogLabels;
   masterTabLabels: MasterDataTabsLabels;
   onSave: (payload: Partial<ClubMemberMasterRecord>) => Promise<void>;
+  /** Guardian link UI on Safety tab (Members admin only; wired from Members page). */
+  safetyTabExtraEnabled?: boolean;
+  safetyTabExtra?: ReactNode;
 }
 
 export function MemberMasterDialog({
@@ -78,6 +81,8 @@ export function MemberMasterDialog({
   labels,
   masterTabLabels,
   onSave,
+  safetyTabExtraEnabled = false,
+  safetyTabExtra,
 }: MemberMasterDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -265,6 +270,8 @@ export function MemberMasterDialog({
                   },
                 }}
                 onChange={(key, value) => setField(key, value)}
+                safetyTabExtraEnabled={safetyTabExtraEnabled}
+                safetyTabExtra={safetyTabExtra}
               />
             </div>
           </div>

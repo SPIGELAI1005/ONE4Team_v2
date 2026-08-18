@@ -3,6 +3,341 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-08-18 — Team Ops verification · dashboard stability · release handoff
+
+- **Dashboard crash fixed:** restored the missing `MyDuesCard` import in `DashboardContent.tsx`; the `MyDuesCard is not defined` error no longer blocks dashboard rendering.
+- **Authenticated Playwright diagnostics:** 14 Team Ops tests ran with zero skips; 3 unauthenticated route-guard tests passed and 11 fixture-dependent scenarios failed. Primary causes are missing active-club selection, overlapping ordinary-player/dual-parent accounts, absent role assignments, and duplicate transition-time selectors—not confirmed P1 regressions.
+- **Fixture evidence:** the supplied admin account can authenticate and has a guardian link to the Alexander membership in TSV Allach 09. The second account is currently a base `member` without player/trainer/parent assignments and cannot represent both negative and dual-role fixtures.
+- **Staging cleanup:** four activities created in unrelated clubs during the diagnostic run were deleted; no records from that run remain.
+- **Invite email diagnosis:** invite creation succeeds, but a stale browser JWT can produce `Unauthorized` before Resend is called. A fresh JWT reaches `send-club-invite-email` successfully. Operator action: revoke exposed links, sign in again, and recreate; client refresh/retry hardening remains follow-up work.
+- **Verification:** ESLint passes, **754 unit tests pass** (**14 credential-gated integration tests skipped**), phase-0 audit passes, production build succeeds, and bundle budget passes. Vite reports non-blocking chunk/code-splitting warnings.
+- **Operator LOC:** refreshed `src/generated/app-loc.json` to **179,075 lines / 884 files** total; operator scope remains **17,985 / 87**.
+- **Release status:** suitable for a feature-branch commit/draft PR; production merge remains blocked on distinct staging personas, deterministic active-club selection, Playwright selector cleanup, and cron-log evidence.
+
+## 2026-08-16 — Team Ops production-review hardening
+
+- **P1 authorization:** family Members RLS now permits linked wards; `search_club_members_page` limits non-staff users to self + wards; the guardian parent-role mutator is trigger-internal.
+- **Persona eligibility:** Parent is available only from a real parent role/assignment, while true player+parent and trainer+parent accounts retain both personas.
+- **ICS boundaries:** new subscriptions default to `self`; club feeds require club staff; team feeds require team/player/coach/guardian authorization; parent self feeds include linked wards. Updated `calendar-ics` deployed.
+- **Attendance/reminders:** activity-row locking makes capacity/waitlist atomic; reminder recipients honor training/match opt-outs and email preference.
+- **Quality:** scoped attendance-report query fixes phase-0 audit; direct dashboard routes register the service worker; lint warning fixed.
+- **E2E:** deterministic duty claim, family/persona and two-trainer ledger approval coverage; `npm run e2e:team-ops` rejects incomplete credentials.
+- **Database:** `20260816120000_review_hardening_family_calendar_reminders.sql` and DB-lint follow-up `20260816130000_team_ops_db_lint_fixes.sql` applied to linked Supabase.
+- **Verification:** lint, focused tests, phase-0 audit, production build and bundle budget pass. Authenticated staging E2E/cron-log verification remains role-correct-fixture dependent.
+- **Operator guide:** `docs/TEAM_OPS_OPERATOR_ACCEPTANCE_2026-08-16.md`.
+
+## 2026-08-13 — Guardian dual-role (player/trainer + parent) · family roster · duplicate review · operator LOC
+
+### Dual-role guardians (player or trainer who is also a parent)
+- **`src/lib/guardian-family-scope.ts`** — persona-aware **`isFamilyMembersView`**: **Parent** persona → family roster (self + linked children); **Trainer** persona → team roster even when guardian links exist; **Player** + guardian links → family roster for parent duties.
+- **`canAccessMembersModule`** — Members route/nav for guardian links **or** **`parent`** role assignment (not only `parent_supporter` RBAC).
+- **Persona options** — Parent appears only when a real `parent` assignment exists; dual-role assignments still expose both authorized personas.
+- **`use-dashboard-nav.ts`** — mobile + sidebar inject **Members** when guardian wards **or** parent assignment exist.
+
+### Family roster scope
+- **`use-guardian-family-scope.ts`** — **`familyMembershipIds`** = own membership + ward IDs (parents always see themselves on **`/members`**, not only on **`/my-data`**).
+- **`Members.tsx`** — server query **`.in("id", familyIds)`** for family view.
+
+### Database
+- **`20260812310000_member_duplicate_review_clearances.sql`** — admin/trainer can dismiss “possible duplicate” after manual review.
+- **`20260812320000_guardian_parent_role_sync.sql`** — on guardian link insert: add **`parent`** **`club_role_assignments`** row; promote **`member`/`fan`/`supporter`** membership label to **`parent`**; backfill existing links. Fix: **`null::uuid`** for **`scope_team_id`**.
+
+### Duplicate review UX
+- **`SharedContactAccountsPanel`** — **Not a duplicate — dismiss review** button; **`member-duplicate-review-clearance-api.ts`**.
+
+### Operator LOC
+- **`npm run loc:count`** → **`src/generated/app-loc.json`**: **178,986** lines / **883** files (operator module **17,985** / **87**). Operator **Financials** development cost auto-reads total LOC × €/line.
+
+### Tests
+- **`guardian-family-scope.test.ts`**, **`member-duplicate-review.test.ts`**, **`rbac-config.test.ts`** (persona options).
+
+### Operator
+```powershell
+npm run db:push   # 20260812310000, 20260812320000 if not yet applied
+```
+
+## 2026-08-10 — Team Ops Tier 1–4 forward (implementation)
+
+### Database (`20260812300000_team_ops_tier_forward.sql`)
+- **`convert_activity_guest_to_draft_invite`** — security-definer draft + `club_invites` + draft link (fixes trainer RLS gap)
+- **`member_notification_preferences`** + **`upsert_member_notification_preferences`**
+- Activity **`capacity`**, **`waitlisted`** attendance status, **`promote_activity_waitlist`**
+- Transport **pending** seat requests + **`accept_activity_transport_request`** / **`decline_activity_transport_request`**
+- **`activities.series_id`** scaffold for recurring series
+
+### Client
+- Guest panel uses new RPC; transport summary + driver accept UI; trainer **Mark attended**; activity readiness badge + spawn checklist
+- Settings notification prefs sync to DB; parent **Next training RSVP** dashboard card; lineup picker RSVP labels on `/matches`
+- Dashboard PWA: `manifest.webmanifest` + network-only `sw-dashboard.js`
+- Playwright **E2E scenarios 2–6**; extended JWT RLS probes; EN/DE i18n for new strings
+
+### Deferred (operator / product)
+- Push notifications (FCM/APNs)
+- Events `event_participants` ↔ `activity_attendance` convergence
+- Full recurring series editor
+
+## 2026-08-10 — Team Operations expansion audit (prompt set review)
+
+### Verdict
+Desktop **Team Operations Expansion** prompt set (Prompts 0–27) reviewed against repo. **Core implementation complete** (Waves 1–7, Phases 18–26, Prompt 17, guardian family 2026-08-09). Not a greenfield build remaining.
+
+### New documentation
+- **`docs/TEAM_OPS_EXPANSION_STATUS.md`** — prompt-by-prompt DONE/PARTIAL/DEFERRED matrix + Tier 1–4 forward plan
+- Updated **`docs/team-operations-gap-analysis.md`** (§4 attendance RPC, §13 next steps)
+- Updated **`docs/TEAM_OPS_PHASE_18_26_CLOSEOUT.md`**, **`TASKS.md`**, **`MEMORY_BANK.md`**
+
+### Still open (prioritized)
+1. Playwright E2E scenarios 2–6 + staging fixtures
+2. Guest draft+invite security-definer RPC (trainer RLS)
+3. Phase 21 EN/DE i18n sweep
+4. Checklist/template + transport UX polish
+5. **Deferred:** dashboard PWA/push, waitlist/capacity, lineup↔RSVP bridge
+
+## 2026-08-09 — Guardian / parent Members view · Settings family panel · role assignment RLS
+
+### Guardian & parent visibility
+- **`parent_supporter`** RBAC: `members: "own"` (was `"none"`) with **`getDataScopeForModule` → `"family"`** — same pattern as payments/My Dues.
+- **Members sidebar** for `parent_supporter`; also injected when **`useGuardianFamilyScope`** finds wards (e.g. `member` role with guardian links).
+- **`/members` guardian view:** Roster filtered to **`club_member_guardian_links`** ward IDs only; admin UI hidden (imports, saved list, stats, invites, role filters). Inline registry edit when **`list_editable_member_master_memberships`** grants access.
+- **`/members?focus=<membershipId>`** deep-link from Settings / family panel.
+- **`/my-data`:** **Family members you manage** panel (prior session); **`GuardianFamilyPanel`** reused on **Settings → Profile**.
+- **`RequireModule`:** Allows `/members` when user has guardian wards even if base role lacks `members` module access.
+- Hook **`src/hooks/use-guardian-family-scope.ts`**; API **`src/lib/member-guardian-api.ts`** (`listGuardianWardSummaries`).
+
+### Product rule (unchanged, now documented in UI copy)
+- Draft **`__draft_guardian_membership_ids`** on saved member list rows do **not** power Activities RSVP picker or parent Members/My Data until the child has an **active roster membership** and a row in **`club_member_guardian_links`** for the signed-in guardian account.
+
+### Role assignments (Roles tab)
+- Migration **`20260812290000_club_role_assignments_member_manager_write.sql`**: Team Management (and club admin paths) can UPDATE **`club_role_assignments`** under RLS.
+- **`role-manager.tsx`**: After update, `.select()` verifies a row was written — Supabase returns no error on 0-row RLS block.
+- **`club-role-assignment-access.ts`**: Non-admins see filtered role-kind picker.
+
+### Members draft / guardian UX
+- **`Members.tsx`**: Pending guardian in dropdown flushed on Save without requiring separate Link click; draft save syncs invite payload + mirrors to **`club_member_guardian_links`** when draft email matches active membership.
+- **Close** button on roster and draft edit footers (alongside Cancel/Save).
+- **Send invite** visible when editing invited drafts; clearer save toast for invited-draft status.
+- Duplicate guardian section removed from nested **`MasterDataTabs`** inside draft edit (top-level guardian block kept).
+
+### i18n
+- EN/DE: **`membersPage.guardianViewSubtitle`**, **`guardianViewEmpty`**; existing **`myMemberDataPage.guardianFamily*`** keys used on Settings.
+
+### Tests
+- **`src/lib/rbac-config.test.ts`**: `parent_supporter` members access + sidebar includes Members.
+
+### Operator
+```powershell
+npm run db:push   # if 20260812290000 not yet applied
+```
+
+### E2E
+- **`docs/TEAM_OPS_E2E_FIXTURES.md`**: Roster vs draft guardian links; troubleshooting for guardian picker / **`E2E_PARENT_EMAIL`** setup.
+
+## 2026-08-08 — Phases 19 / 23 / 24
+
+### Phase 19 Realtime
+- Migration **`20260812280000`**: publish `club_task_checklist_items`, `activity_guest_participants`.
+- Client debounced subscriptions on guests panel + task checklist panel.
+
+### Phase 23 Perf
+- Notes: **`docs/TEAM_OPS_PHASE_23_PERF_NOTES.md`**.
+- Win: ops tabs avoid mounting transport/guests until selected.
+
+### Phase 24 Activity IA
+- **`ActivityOpsTabs`**: Attendance / Transport / Guests segments on Activities cards.
+
+### Operator
+```powershell
+npm run db:push   # applied 20260812280000
+# still: hourly cron for process-attendance-reminders
+```
+
+## 2026-08-08 — Phases 18–26 close-out progress
+
+### Phase 25 (Medium)
+- Migration **`20260812260000_team_ops_phase25_medium_hardening.sql`**: `club_has_plan_feature`, team-scoped transport/guests/ledger, availability SELECT lockdown, calendar UPDATE removed, plan gates on poll/ICS/cashbox/carpool RPCs.
+
+### Phase 18
+- Surface audit: **`docs/TEAM_OPS_PHASE_18_SURFACE_AUDIT.md`**.
+
+### Phase 22
+- Playwright smoke: **`e2e/team-ops-surfaces.spec.ts`** (unauth redirects).
+
+### Phase 21
+- Activities create dialog EN/DE i18n wired (hardcoded English removed).
+
+### Phase 26
+- Unit: plan-feature mirror + attendance/ledger proofs (run locally).
+
+### Operator
+```powershell
+npm run db:push
+# still: hourly cron for process-attendance-reminders
+```
+
+## 2026-08-08 — Phase 20 High RLS hardening
+
+- **H1:** Public club attendance overview no longer fetches/shows peer decline reasons.
+- **H2:** `team_ledger_entries` authenticated INSERT/UPDATE/DELETE removed — approve/reject/post/resubmit RPCs only (`20260812240000`).
+- **H3:** Trainer remind RPC strips recipient emails (service path unchanged for Edge cron).
+- **Also:** `canManageAttendance` no longer treats parent `"team"` module scope as manage.
+
+### Operator
+```powershell
+npm run db:push
+```
+
+## 2026-08-08 — Prompt 17 decisions (entitlements + guest convert + ledger approvals + reminder cron)
+
+### Plan catalog (`docs/PROMPT_17_PLAN_ENTITLEMENTS.md`)
+- **polls** + **calendarIcs**: Kick-off+ (all paid).
+- **teamCashbox** + **carpoolGuests**: Pro+.
+- PlanGate: `/team-ledger` → `teamCashbox`; Communication polls channel; Activities transport/guests; My Data ICS card.
+
+### Guest → membership
+- Paths **A+B** (link existing member **or** draft + invite). Trainer + club admin. Never auto-creates Auth users.
+- Migration **`20260812220000_team_ops_decisions_ledger_guest_reminders.sql`**: `convert_activity_guest`.
+
+### Team ledger approvals
+- All entries start **pending**; balance = approved only; approve/reject/resubmit (no self-approve).
+
+### RSVP reminder cadence
+- Edge **`process-attendance-reminders`**: in-app + email; types `starts_24h`, `morning_of`, `deadline_custom` (+ existing); only when `automatic_reminders`; optional `custom_reminder_at` on create.
+
+### Operator apply
+```powershell
+npm run db:push
+npx supabase functions deploy process-attendance-reminders --no-verify-jwt
+# Schedule hourly cron (same pattern as weekly digests) with x-cron-secret
+```
+
+## 2026-08-08 — Team Ops follow-ups (RLS proofs + duty templates)
+
+### Wave 1 hardening
+- CI unit proofs: **`src/lib/team-ops-wave1-proofs.test.ts`** (finance gate, team_management ↛ payments, guardian/manage UX, persona ≠ auth).
+- Staging JWT probes extended in **`src/test/rls.integration.test.ts`** (optional trainer/parent/team_mgmt env vars). Docs: **`docs/RLS_INTEGRATION_TEST.md`**.
+
+### Wave 3 template spawn + slots
+- Starter templates seed + spawn (task + checklist + `template_key`) on Tasks.
+- Create/edit claimable duties accept optional **`slots_total`**.
+
+## 2026-08-08 — Team Operations Wave 7 (ICS feed + Realtime + mobile polish)
+
+### Calendar ICS (Wave 4 leftover)
+- Edge **`calendar-ics`**: opaque token → SHA-256 hash → `resolve_calendar_subscription_for_ics` (service role); returns `text/calendar` (club / team / self scopes). Deploy with **`--no-verify-jwt`**.
+- My Data card: copy HTTPS + webcal feed URL (shown once), list + revoke active subscriptions.
+- Migration **`20260812200000_team_ops_wave7_realtime_ics.sql`**.
+
+### Realtime ops
+- Publication adds: `club_tasks`, `activity_attendance`, `club_polls`, `club_poll_votes`, `activity_transport_offers`.
+- Client reloads (debounced): Activities attendance, Communication polls, transport offers. Tasks already subscribed.
+
+### Mobile polish
+- Sheet / Dialog safe-area insets. **No** dashboard PWA/SW (sensitive data stays network-only). Push deferred.
+
+### Operator apply
+```powershell
+npm run db:push
+npx supabase functions deploy calendar-ics --no-verify-jwt
+```
+
+## 2026-08-08 — Team Operations Wave 6 (AI 4 T ops intents)
+
+### Agent intents (propose → confirm → execute)
+- Migration **`20260812180000_team_ops_wave6_ai_agent_intents.sql`**: `agent_summarize_missing_attendance`, `agent_summarize_attendance_metrics`, `agent_create_claimable_duty`, `agent_create_activity_checklist`, `agent_create_club_poll`.
+- New intents: **`summarize_missing_rsvps`**, **`draft_attendance_reminder`** (ack/draft only — **never** calls `remind_missing_activity_attendance`), **`propose_claimable_duty`**, **`propose_activity_checklist`**, **`summarize_attendance_metrics`**, **`draft_poll_question`**.
+- Edge: `ai4team_agent_tools` / `ai4team_agent_interpret` / `ai4team-agent` propose enrichment.
+- Client: CoTrainer forms, slash commands, Activities/Tasks header shortcuts, EN/DE i18n.
+
+### Operator apply
+```powershell
+npm run db:push
+```
+
+## 2026-08-08 — Team Operations Wave 5 (team cashbox + attendance metrics)
+
+### Definitions
+- **`docs/attendance-metric-definitions.md`** — response/coming/missing rates and window aggregates.
+
+### Team ledger (not club finance)
+- Migration **`20260812160000_team_ops_wave5_team_ledger.sql`**: `team_ledger_accounts` / `team_ledger_entries`; RPCs **`post_team_ledger_entry`**, **`team_ledger_balance`**, **`can_manage_team_ledger`**.
+- Page **`/team-ledger`** for trainers / team management / club admins. Does **not** use `payments` / `club_expenses`.
+
+### Reports attendance
+- Operations + trainer Reports show **AttendanceReportPanel** (28-day window). Still gated by `canViewAttendanceAnalytics`, never by `payments:full`.
+
+### Operator apply
+```powershell
+npm run db:push
+```
+
+## 2026-08-08 — Team Operations Wave 4 (transport, guests, ICS tokens)
+
+### Transport (activity-scoped)
+- Migration **`20260812140000_team_ops_wave4_transport_guests_ics.sql`**: `activity_transport_offers` / `activity_transport_requests` + **`request_activity_transport_seat`**.
+- Activities carpool panel (offer seats / request).
+
+### Guests / trials
+- `activity_guest_participants` (no Auth user); trainer panel on Activities.
+
+### Calendar ICS foundation
+- `calendar_subscriptions` stores **token hash only**; RPC returns raw token once. Edge ICS generator still pending.
+
+### Operator apply
+```powershell
+npm run db:push
+```
+
+## 2026-08-08 — Team Operations Wave 3 (duties, checklists, polls)
+
+### Duties + checklists (extend `club_tasks`)
+- Migration **`20260812120000_team_ops_wave3_duties_checklists_polls.sql`**: `claimable` / slots / `activity_id`; **`club_task_checklist_items`**; **`club_task_templates`**; RPC **`claim_club_task`**.
+- Tasks UI: claimable create option, **Claim duty**, checklist panel on task detail.
+
+### Polls (Communication — not Tasks)
+- Tables **`club_polls`** / **`club_poll_options`** / **`club_poll_votes`**; RPCs **`create_club_poll`**, **`vote_club_poll`**, **`close_club_poll`**.
+- Communication channel **Polls** with create/vote/close UI.
+
+### Operator apply
+```powershell
+npm run db:push
+```
+(Apply Waves 1–2 migrations if pending, then Wave 3.)
+
+## 2026-08-08 — Team Operations Wave 2 (availability, deadlines, guardian RSVP, reminders)
+
+### Planned availability
+- Migration **`20260811140000_member_availability_and_attendance_reminders.sql`**: table **`member_availability`** + RPCs **`upsert_member_availability`** / **`delete_member_availability`**.
+- My Data panel for self/guardian; Activities shows **overlap hints only** (never auto-applies RSVP).
+
+### Deadlines + missing-response reminders
+- Activities create form: optional **`response_deadline`**, **`response_required`** (+ automatic reminders flag).
+- RPC **`remind_missing_activity_attendance`** + idempotent **`activity_attendance_reminder_log`**; trainer roster panel **Remind missing**.
+
+### Guardian RSVP UX
+- Activities person picker (self / guardian wards) posts via existing Wave 1 attendance RPC.
+
+### Operator apply
+```powershell
+npm run db:push
+```
+(Apply Wave 1 **`20260811120000`** if not already applied, then Wave 2 **`20260811140000`**.)
+
+## 2026-08-08 — Team Operations Wave 1 (RBAC + attendance foundation)
+
+### Route / permission alignment
+- Reports financial tab gated by **`canAccessClubFinance`** (`payments:full`) via **`resolveClubReportPersona`** / **`canAccessFinancialReports`** — Team Management no longer unlocks club finance through `/reports?section=financial`.
+- Attendance capability helpers in **`src/lib/activity-attendance-access.ts`** (self / guardian UX / manage / analytics / club finance).
+
+### Activity attendance strengthening
+- Migration **`20260811120000_strengthen_activity_attendance_wave1.sql`**: status **`maybe`**; columns **`response_reason`**, **`responded_by`**, **`responded_at`**; **`activities.response_deadline`**; RPC **`upsert_activity_attendance_response`** + **`can_manage_activity_attendance`** (self, guardian, household email, trainers/ops).
+- Client RSVP (dashboard + public) uses the RPC; UI adds **Maybe**; trainer panel lists maybe separately.
+- Domain map: **`docs/activity-domain-model.md`**. Gap audit: **`docs/team-operations-gap-analysis.md`**.
+
+### Operator apply
+```powershell
+npm run db:push
+```
+
 ## 2026-08-07 — `/my-data` save hardening · Vercel Analytics · operator LOC tracking
 
 ### `/my-data` — name saves, load races, registry change detection (Fabia retest wave)

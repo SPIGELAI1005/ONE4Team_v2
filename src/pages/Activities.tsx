@@ -13,6 +13,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/contexts/useAuth";
@@ -24,19 +25,41 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DASHBOARD_PAGE_INNER, DASHBOARD_PAGE_ROOT } from "@/lib/dashboard-page-shell";
 import { useLanguage } from "@/hooks/use-language";
+import { usePlanGuard } from "@/hooks/use-plan-guard";
 import { AiAgentHeaderButton } from "@/components/ai-agent/AiAgentHeaderButton";
 import { useRegisterAiAgentContext } from "@/hooks/use-register-ai-agent-context";
 import { TrainingAttendanceRsvp } from "@/components/activities/training-attendance-rsvp";
 import { TrainingAttendanceOverview } from "@/components/activities/training-attendance-overview";
 import { TrainingAttendanceTrainerPanel } from "@/components/activities/training-attendance-trainer-panel";
+import { ActivityTransportPanel } from "@/components/activities/activity-transport-panel";
+import { ActivityGuestsPanel } from "@/components/activities/activity-guests-panel";
+import { ActivityOpsTabs } from "@/components/activities/activity-ops-tabs";
+import { ActivityReadinessBadge } from "@/components/activities/activity-readiness-badge";
 import {
   buildActivityAttendanceOverview,
   buildActivityRoster,
   buildRosterAttendanceLines,
-  isTrainingRsvpOpen,
+  isActivityRsvpOpen,
   summarizeTrainingAttendance,
+  type TrainingAttendanceResponseReason,
   type TrainingAttendanceRow,
 } from "@/lib/training-attendance";
+import {
+  mapAttendanceRpcError,
+  upsertActivityAttendanceResponse,
+} from "@/lib/activity-attendance-api";
+import { remindMissingActivityAttendance } from "@/lib/activity-attendance-reminders-api";
+import {
+  availabilityHintLabel,
+  findOverlappingAvailability,
+  suggestedRsvpFromAvailability,
+  type MemberAvailabilityRow,
+} from "@/lib/member-availability";
+import { listMemberAvailabilityForMembers } from "@/lib/member-availability-api";
+import {
+  listEditableMemberMasterMemberships,
+  type EditableMemberMasterRow,
+} from "@/lib/member-master-api";
 import { formatSupabaseError, isRlsOrPermissionError } from "@/lib/supabase-error";
 
 type ActivityType = "training" | "match" | "event";
@@ -53,6 +76,10 @@ type ActivityRow = {
   team_id: string | null;
   created_by: string;
   created_at: string;
+  response_deadline?: string | null;
+  response_required?: boolean | null;
+  automatic_reminders?: boolean | null;
+  capacity?: number | null;
 };
 
 type TeamRow = { id: string; name: string };
@@ -113,6 +140,13 @@ function buildActivityRosterFromRows(
   });
 }
 
+/** RSVP picker rows — use relationship; club admins get edit_actor manager on self/ward. */
+function isRsvpParticipantRow(row: EditableMemberMasterRow): boolean {
+  const rel = row.relationship?.trim().toLowerCase();
+  if (rel === "self" || rel === "guardian" || rel === "household_email") return true;
+  return row.edit_actor === "self" || row.edit_actor === "guardian";
+}
+
 export default function Activities() {
   const { user } = useAuth();
   const { clubId, loading: clubLoading } = useClubId();
@@ -123,8 +157,11 @@ export default function Activities() {
   const scopedTeamIds = activityScope.teamIds;
   const { toast } = useToast();
   const { t } = useLanguage();
+  const { canUseFeature } = usePlanGuard();
+  const canUseCarpoolGuests = canUseFeature("carpoolGuests");
 
   const canCreate = perms.isTrainer;
+  const canConvertGuests = perms.isTrainer || perms.isAdmin;
   const agentPageContext = useMemo(() => ({ source: "activities" as const }), []);
   useRegisterAiAgentContext(agentPageContext);
 
@@ -135,12 +172,21 @@ export default function Activities() {
   const [memberships, setMemberships] = useState<MembershipRow[]>([]);
   const [teamPlayers, setTeamPlayers] = useState<TeamPlayerRow[]>([]);
   const [rsvpBusyId, setRsvpBusyId] = useState<string | null>(null);
+  const [rsvpParticipantId, setRsvpParticipantId] = useState<string | null>(null);
+  const [rsvpPeople, setRsvpPeople] = useState<EditableMemberMasterRow[]>([]);
+  const [availabilityRows, setAvailabilityRows] = useState<MemberAvailabilityRow[]>([]);
+  const [remindBusyId, setRemindBusyId] = useState<string | null>(null);
+  const [markAttendedBusyId, setMarkAttendedBusyId] = useState<string | null>(null);
+  const [filterNeedsResponse, setFilterNeedsResponse] = useState(false);
 
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle] = useState("");
   const [type, setType] = useState<ActivityType>("training");
   const [startsAt, setStartsAt] = useState("");
   const [teamId, setTeamId] = useState<string>("");
+  const [responseDeadline, setResponseDeadline] = useState("");
+  const [responseRequired, setResponseRequired] = useState(false);
+  const [customReminderAt, setCustomReminderAt] = useState("");
 
   // Filters
   const [filterType, setFilterType] = useState<ActivityType | "all">("all");
@@ -153,7 +199,10 @@ export default function Activities() {
   const [drawerActivityId, setDrawerActivityId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
-    if (!clubId) return;
+    if (!clubId) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -187,7 +236,7 @@ export default function Activities() {
           actIds.length
             ? supabase
                 .from("activity_attendance")
-                .select("id, club_id, activity_id, membership_id, status, notes")
+                .select("id, club_id, activity_id, membership_id, status, notes, response_reason, responded_by, responded_at")
                 .eq("club_id", clubId)
                 .in("activity_id", actIds)
             : Promise.resolve({ data: [] as AttendanceRow[], error: null } as { data: AttendanceRow[]; error: null }),
@@ -210,10 +259,42 @@ export default function Activities() {
         setAttendance((att as unknown as AttendanceRow[]) ?? []);
         setMemberships((ms as unknown as MembershipRow[]) ?? []);
         setTeamPlayers((tp as unknown as TeamPlayerRow[]) ?? []);
+
+        const { data: editable } = await listEditableMemberMasterMemberships(clubId);
+        const people = (editable ?? []).filter(isRsvpParticipantRow);
+        setRsvpPeople(people);
+        setRsvpParticipantId((prev) => {
+          if (prev && people.some((p) => p.membership_id === prev)) return prev;
+          const self = people.find(
+            (p) => p.relationship?.trim().toLowerCase() === "self" || p.edit_actor === "self",
+          )?.membership_id;
+          return self ?? people[0]?.membership_id ?? membershipId;
+        });
+
+        const participantIds = people.map((p) => p.membership_id);
+        if (participantIds.length && actRows.length) {
+          const fromIsoAvail = actRows[0]?.starts_at ?? fromIso;
+          const toIsoAvail =
+            actRows[actRows.length - 1]?.ends_at ??
+            actRows[actRows.length - 1]?.starts_at ??
+            fromIso;
+          const { data: avail } = await listMemberAvailabilityForMembers({
+            clubId,
+            membershipIds: participantIds,
+            fromIso: fromIsoAvail,
+            toIso: new Date(new Date(toIsoAvail).getTime() + 3 * 60 * 60 * 1000).toISOString(),
+          });
+          setAvailabilityRows(avail);
+        } else {
+          setAvailabilityRows([]);
+        }
       } else {
         setAttendance([]);
         setMemberships([]);
         setTeamPlayers([]);
+        setRsvpPeople([]);
+        setRsvpParticipantId(null);
+        setAvailabilityRows([]);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : t.activitiesPage.loadFailed;
@@ -226,6 +307,32 @@ export default function Activities() {
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (!clubId) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleReload = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        void fetchData();
+      }, 400);
+    };
+
+    const channel = supabase
+      .channel(`activity-attendance-${clubId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "activity_attendance", filter: `club_id=eq.${clubId}` },
+        scheduleReload,
+      )
+      .subscribe();
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      void supabase.removeChannel(channel);
+    };
+  }, [clubId, fetchData]);
 
   const scopeFilteredActivities = useMemo(() => {
     if (!isPlayerFocusedView) return activities;
@@ -244,14 +351,16 @@ export default function Activities() {
     return teams.filter((team) => allowed.has(team.id));
   }, [isPlayerFocusedView, scopedTeamIds, teams]);
 
+  const activeRsvpMembershipId = rsvpParticipantId || membershipId;
+
   const myAttendanceByActivity = useMemo(() => {
     const map: Record<string, AttendanceRow> = {};
-    if (!membershipId) return map;
+    if (!activeRsvpMembershipId) return map;
     for (const row of attendance) {
-      if (row.membership_id === membershipId) map[row.activity_id] = row;
+      if (row.membership_id === activeRsvpMembershipId) map[row.activity_id] = row;
     }
     return map;
-  }, [attendance, membershipId]);
+  }, [attendance, activeRsvpMembershipId]);
 
   const attendanceByActivity = useMemo(() => {
     const map: Record<string, ReturnType<typeof buildActivityAttendanceOverview>> = {};
@@ -286,8 +395,24 @@ export default function Activities() {
         if (!filterMine) return true;
         const att = myAttendanceByActivity[a.id];
         return att?.status === "confirmed" || att?.status === "attended";
+      })
+      .filter((a) => {
+        if (!filterNeedsResponse || !perms.isTrainer) return true;
+        const overview = attendanceByActivity[a.id];
+        if (!overview) return false;
+        return overview.summary.pending > 0 || overview.summary.declined > 0;
       });
-  }, [scopeFilteredActivities, filterShowPast, filterType, filterTeamId, filterMine, myAttendanceByActivity]);
+  }, [
+    scopeFilteredActivities,
+    filterShowPast,
+    filterType,
+    filterTeamId,
+    filterMine,
+    filterNeedsResponse,
+    myAttendanceByActivity,
+    attendanceByActivity,
+    perms.isTrainer,
+  ]);
 
   const grouped = useMemo(() => {
     const byDay: Record<string, ActivityRow[]> = {};
@@ -310,6 +435,7 @@ export default function Activities() {
     return {
       confirmed: lines.filter((l) => l.status === "confirmed" || l.status === "attended"),
       declined: lines.filter((l) => l.status === "declined"),
+      maybe: lines.filter((l) => l.status === "maybe"),
       invited: lines.filter((l) => l.status === "invited"),
     };
   }, [attendance, drawerActivityId, drawerRoster, perms.isTrainer]);
@@ -356,6 +482,11 @@ export default function Activities() {
       starts_at: iso,
       team_id: teamId || null,
       created_by: user.id,
+      response_deadline: responseDeadline ? new Date(responseDeadline).toISOString() : null,
+      response_required: responseRequired,
+      automatic_reminders: responseRequired,
+      custom_reminder_at:
+        responseRequired && customReminderAt ? new Date(customReminderAt).toISOString() : null,
     });
 
     if (error) {
@@ -368,6 +499,9 @@ export default function Activities() {
     setTitle("");
     setStartsAt("");
     setTeamId("");
+    setResponseDeadline("");
+    setResponseRequired(false);
+    setCustomReminderAt("");
     await fetchData();
   };
 
@@ -402,11 +536,23 @@ export default function Activities() {
     await fetchData();
   };
 
-  const rsvp = async (activityId: string, status: "confirmed" | "declined", notes?: string | null) => {
-    if (!user || !clubId || !membershipId) return;
+  const rsvp = async (
+    activityId: string,
+    status: "confirmed" | "declined" | "maybe",
+    notes?: string | null,
+    responseReason?: TrainingAttendanceResponseReason | null,
+  ) => {
+    if (!user || !clubId || !activeRsvpMembershipId) return;
 
     const activity = activities.find((a) => a.id === activityId);
-    if (activity?.type === "training" && !isTrainingRsvpOpen(activity.starts_at)) {
+    if (
+      activity &&
+      !isActivityRsvpOpen({
+        type: activity.type,
+        startsAt: activity.starts_at,
+        responseDeadline: activity.response_deadline,
+      })
+    ) {
       toast({
         title: t.common.error,
         description: t.activitiesPage.attendanceRsvpClosedTraining,
@@ -419,7 +565,7 @@ export default function Activities() {
     const invited =
       !overview?.lines.length ||
       Boolean(myAttendanceByActivity[activityId]) ||
-      overview.lines.some((line) => line.membershipId === membershipId);
+      overview.lines.some((line) => line.membershipId === activeRsvpMembershipId);
     if (!invited) {
       toast({
         title: t.common.error,
@@ -431,43 +577,98 @@ export default function Activities() {
 
     setRsvpBusyId(activityId);
     try {
-      const existing = myAttendanceByActivity[activityId];
-      const payload = {
+      const result = await upsertActivityAttendanceResponse({
+        activityId,
+        membershipId: activeRsvpMembershipId,
         status,
         notes: status === "declined" ? notes?.trim() || null : null,
-      };
+        responseReason: status === "declined" ? responseReason ?? null : null,
+      });
 
-      if (existing) {
-        const { error } = await supabase
-          .from("activity_attendance")
-          .update(payload)
-          .eq("club_id", clubId)
-          .eq("id", existing.id);
-
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("activity_attendance").insert({
-          club_id: clubId,
-          activity_id: activityId,
-          membership_id: membershipId,
-          ...payload,
-        });
-
-        if (error) throw error;
+      if (!result.ok) {
+        throw Object.assign(new Error(result.error), { attendanceCode: result.error });
       }
 
       toast({
-        title: status === "confirmed" ? t.activitiesPage.rsvpConfirmed : t.activitiesPage.rsvpDeclined,
-        description: status === "declined" && notes?.trim() ? notes.trim() : undefined,
+        title:
+          status === "confirmed"
+            ? t.activitiesPage.rsvpConfirmed
+            : status === "maybe"
+              ? t.activitiesPage.rsvpMaybe
+              : status === "declined"
+                ? t.activitiesPage.rsvpDeclined
+                : t.activitiesPage.rsvpDeclined,
+        description:
+          result.attendance.status === "waitlisted"
+            ? t.activitiesPage.rsvpWaitlisted
+            : status === "declined" && notes?.trim()
+              ? notes.trim()
+              : undefined,
       });
       await fetchData();
     } catch (err: unknown) {
-      const msg = isRlsOrPermissionError(err)
-        ? t.activitiesPage.attendanceRsvpPermissionDenied
-        : formatSupabaseError(err) || t.activitiesPage.attendanceRsvpFailed;
+      const code =
+        err && typeof err === "object" && "attendanceCode" in err
+          ? String((err as { attendanceCode: string }).attendanceCode)
+          : "";
+      const msg = code
+        ? mapAttendanceRpcError(code, {
+            closed: t.activitiesPage.attendanceRsvpClosedTraining,
+            forbidden: t.activitiesPage.attendanceRsvpPermissionDenied,
+            notInvited: t.activitiesPage.attendanceNotInvited,
+            reasonRequired: t.activitiesPage.attendanceReasonRequired,
+            failed: t.activitiesPage.attendanceRsvpFailed,
+          })
+        : isRlsOrPermissionError(err)
+          ? t.activitiesPage.attendanceRsvpPermissionDenied
+          : formatSupabaseError(err) || t.activitiesPage.attendanceRsvpFailed;
       toast({ title: t.common.error, description: msg, variant: "destructive" });
     } finally {
       setRsvpBusyId(null);
+    }
+  };
+
+  const markAttended = async (activityId: string, membershipId: string) => {
+    setMarkAttendedBusyId(membershipId);
+    try {
+      const result = await upsertActivityAttendanceResponse({
+        activityId,
+        membershipId,
+        status: "attended",
+      });
+      if (!result.ok) throw new Error(result.error || "mark_failed");
+      toast({ title: t.activitiesPage.attendanceMarkedAttended });
+      await fetchData();
+    } catch (err: unknown) {
+      toast({
+        title: t.common.error,
+        description: formatSupabaseError(err) || t.activitiesPage.attendanceRsvpFailed,
+        variant: "destructive",
+      });
+    } finally {
+      setMarkAttendedBusyId(null);
+    }
+  };
+
+  const sendMissingReminders = async (activityId: string) => {
+    setRemindBusyId(activityId);
+    try {
+      const result = await remindMissingActivityAttendance({ activityId });
+      if (!result.ok) throw new Error(result.error || "remind_failed");
+      toast({
+        title: t.activitiesPage.attendanceRemindSent,
+        description: t.activitiesPage.attendanceRemindSentDesc
+          .replace("{sent}", String(result.sent))
+          .replace("{skipped}", String(result.skipped)),
+      });
+    } catch (err: unknown) {
+      toast({
+        title: t.common.error,
+        description: formatSupabaseError(err) || t.activitiesPage.attendanceRemindFailed,
+        variant: "destructive",
+      });
+    } finally {
+      setRemindBusyId(null);
     }
   };
 
@@ -475,9 +676,11 @@ export default function Activities() {
     () => ({
       coming: t.activitiesPage.attendanceComing,
       notComing: t.activitiesPage.attendanceNotComing,
+      maybe: t.activitiesPage.attendanceMaybe,
       changeResponse: t.activitiesPage.attendanceYourResponse,
       statusComing: t.activitiesPage.attendanceStatusComing,
       statusNotComing: t.activitiesPage.attendanceStatusNotComing,
+      statusMaybe: t.activitiesPage.attendanceStatusMaybe,
       statusPending: t.activitiesPage.attendanceStatusPending,
       declineTitle: t.activitiesPage.attendanceDeclineTitle,
       declineDescription: t.activitiesPage.attendanceDeclineDescription,
@@ -506,27 +709,61 @@ export default function Activities() {
       summaryComing: t.activitiesPage.attendanceSummaryHeadline,
       tabComing: t.activitiesPage.attendanceTabComing,
       tabDeclined: t.activitiesPage.attendanceTabDeclined,
+      tabMaybe: t.activitiesPage.attendanceMaybe,
       tabPending: t.activitiesPage.attendanceTabPending,
       nudge: t.activitiesPage.attendanceNudge,
+      remindMissing: t.activitiesPage.attendanceRemindMissing,
       noPlayers: t.activitiesPage.attendanceNoPlayers,
       reasonPrefix: t.activitiesPage.attendanceReasonPrefix,
       rosterScopeTeam: t.activitiesPage.attendanceRosterTeam,
       rosterScopeClub: t.activitiesPage.attendanceRosterClub,
       nudgeFootnote: t.activitiesPage.attendanceNudgeFootnote,
       copyList: t.activitiesPage.attendanceCopyList,
+      markAttended: t.activitiesPage.attendanceMarkAttended,
     }),
     [t],
   );
 
+  function personLabel(row: EditableMemberMasterRow): string {
+    const name = row.display_name?.trim() || row.membership_id.slice(0, 8);
+    const rel = row.relationship?.trim().toLowerCase();
+    if (rel === "guardian") return `${name} (${t.myMemberDataPage.relationshipGuardian})`;
+    if (rel === "self" || row.edit_actor === "self") return `${name} (${t.myMemberDataPage.relationshipSelf})`;
+    return name;
+  }
+
+  function availabilityHintForActivity(activity: ActivityRow): string | null {
+    if (!activeRsvpMembershipId) return null;
+    const overlaps = findOverlappingAvailability({
+      activityStartsAt: activity.starts_at,
+      activityEndsAt: activity.ends_at,
+      rows: availabilityRows.filter((row) => row.membership_id === activeRsvpMembershipId),
+    });
+    if (!overlaps.length) return null;
+    const suggested = suggestedRsvpFromAvailability(overlaps);
+    const detail = availabilityHintLabel(overlaps[0]!);
+    const suggestKey =
+      suggested === "confirmed"
+        ? t.activitiesPage.availabilitySuggestComing
+        : suggested === "declined"
+          ? t.activitiesPage.availabilitySuggestDeclined
+          : suggested === "maybe"
+            ? t.activitiesPage.availabilitySuggestMaybe
+            : null;
+    return suggestKey
+      ? t.activitiesPage.availabilityHintWithSuggest.replace("{detail}", detail).replace("{suggest}", suggestKey)
+      : t.activitiesPage.availabilityHint.replace("{detail}", detail);
+  }
+
   return (
-    <div className={DASHBOARD_PAGE_ROOT}>
+    <div className={DASHBOARD_PAGE_ROOT} data-testid="activities-page">
       <DashboardHeaderSlot
         title={t.activitiesPage.title}
         subtitle={perms.isTrainer ? t.activitiesPage.subtitleTrainer : t.activitiesPage.subtitlePlayer}
         toolbarRevision={`${perms.isTrainer}-${canCreate}`}
         rightSlot={
           <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-end">
-            {!isPlayerFocusedView ? <AiAgentHeaderButton intent="plan_training_week" /> : null}
+            {!isPlayerFocusedView ? <AiAgentHeaderButton intent="summarize_missing_rsvps" /> : null}
             {perms.isTrainer && (
               <Button size="sm" variant="outline" className="rounded-2xl text-xs sm:text-sm shrink-0" onClick={createWeekTemplate} disabled={!clubId}>
                 <Sparkles className="w-4 h-4 mr-1" /> {t.activitiesPage.weekTemplate}
@@ -535,6 +772,7 @@ export default function Activities() {
             {canCreate ? (
               <Button
                 size="sm"
+                data-testid="activities-create-open"
                 className="bg-gradient-gold-static text-primary-foreground font-semibold hover:brightness-110 text-xs sm:text-sm shrink-0"
                 onClick={() => setShowCreate(true)}
                 disabled={!clubId}
@@ -559,6 +797,31 @@ export default function Activities() {
           </div>
         ) : (
           <div className="space-y-5">
+            {rsvpPeople.length > 1 ? (
+              <div
+                className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4"
+                data-testid="attendance-rsvp-responding-for"
+              >
+                <div className="text-xs text-muted-foreground mb-2">{t.activitiesPage.rsvpRespondingAs}</div>
+                <Select
+                  value={activeRsvpMembershipId || "__none"}
+                  onValueChange={(value) => setRsvpParticipantId(value === "__none" ? null : value)}
+                >
+                  <SelectTrigger className="h-10 w-full sm:max-w-sm rounded-xl border-border/60 bg-background/40 px-3 text-sm">
+                    <SelectValue placeholder={t.activitiesPage.rsvpRespondingAs} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rsvpPeople.map((person) => (
+                      <SelectItem key={person.membership_id} value={person.membership_id}>
+                        {personLabel(person)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="mt-2 text-[11px] text-muted-foreground">{t.activitiesPage.rsvpRespondingAsHint}</p>
+              </div>
+            ) : null}
+
             {/* Filters */}
             <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
               <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -621,6 +884,17 @@ export default function Activities() {
                 </button>
                 ) : null}
 
+                {perms.isTrainer ? (
+                  <button
+                    onClick={() => setFilterNeedsResponse((v) => !v)}
+                    className={`px-3 py-2 rounded-2xl text-xs font-medium border transition-colors ${
+                      filterNeedsResponse ? "bg-primary/10 text-primary border-primary/20" : "bg-background/40 text-foreground border-border/60"
+                    }`}
+                  >
+                    {t.activitiesPage.filterNeedsResponse}
+                  </button>
+                ) : null}
+
                 <button
                   onClick={() => setFilterShowPast((v) => !v)}
                   className={`px-3 py-2 rounded-2xl text-xs font-medium border transition-colors ${
@@ -637,7 +911,7 @@ export default function Activities() {
               <div className="text-center py-16">
                 <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <h2 className="font-display text-xl font-bold text-foreground mb-2">Nothing scheduled</h2>
-                <p className="text-muted-foreground">Create your next training session to kick off the week.</p>
+                <p className="text-muted-foreground">{t.activitiesPage.emptyWeekHint}</p>
               </div>
             ) : (
               Object.entries(grouped).map(([day, items]) => (
@@ -652,11 +926,23 @@ export default function Activities() {
                       const invited =
                         !sum?.lines.length ||
                         Boolean(my) ||
-                        (membershipId ? sum.lines.some((line) => line.membershipId === membershipId) : false);
+                        (activeRsvpMembershipId
+                          ? sum.lines.some((line) => line.membershipId === activeRsvpMembershipId)
+                          : false);
+                      const availabilityHint = showAttendance ? availabilityHintForActivity(a) : null;
+                      const deadlineLabel = a.response_deadline
+                        ? new Date(a.response_deadline).toLocaleString([], {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : null;
 
                       return (
                         <motion.div
                           key={a.id}
+                          data-testid="activity-card"
                           initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
                           className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4 sm:p-5"
@@ -680,9 +966,35 @@ export default function Activities() {
                                     <MapPin className="w-3 h-3" /> {a.location}
                                   </span>
                                 ) : null}
+                                {a.capacity ? (
+                                  <span className="text-[11px] text-muted-foreground">
+                                    {t.activitiesPage.capacityLabel.replace("{count}", String(a.capacity))}
+                                  </span>
+                                ) : null}
+                                {clubId && perms.isTrainer && showAttendance ? (
+                                  <ActivityReadinessBadge
+                                    clubId={clubId}
+                                    activityId={a.id}
+                                    teamId={a.team_id}
+                                    canManage={perms.isTrainer}
+                                    labels={{
+                                      ready: t.activitiesPage.readinessBadge,
+                                      spawnSetup: t.activitiesPage.readinessSpawn,
+                                      spawned: t.activitiesPage.readinessSpawned,
+                                      failed: t.activitiesPage.readinessFailed,
+                                    }}
+                                    onToast={(payload) => toast(payload)}
+                                  />
+                                ) : null}
                               </div>
 
                               <div className="mt-1 font-display text-lg font-bold text-foreground">{a.title}</div>
+                              {deadlineLabel ? (
+                                <p className="mt-1 text-[11px] text-muted-foreground">
+                                  {t.activitiesPage.responseDeadlineLabel}: {deadlineLabel}
+                                  {a.response_required ? ` · ${t.activitiesPage.responseRequiredShort}` : ""}
+                                </p>
+                              ) : null}
                             </div>
 
                             {perms.isTrainer && showAttendance ? (
@@ -693,36 +1005,123 @@ export default function Activities() {
                             ) : null}
                           </div>
 
-                          {sum && showAttendance && perms.isTrainer ? (
-                            <TrainingAttendanceOverview
-                              overview={sum}
+                          {showAttendance ? (
+                            <ActivityOpsTabs
+                              showTransport={Boolean(
+                                clubId && canUseCarpoolGuests && (a.type === "match" || a.type === "training"),
+                              )}
+                              showGuests={Boolean(
+                                clubId && canUseCarpoolGuests && (perms.isTrainer || perms.isAdmin),
+                              )}
                               labels={{
-                                sectionTitle: t.activitiesPage.attendanceTeamOverview,
-                                summaryHeadline: t.activitiesPage.attendanceSummaryHeadline,
-                                statComing: t.activitiesPage.attendanceStatComing,
-                                statDeclined: t.activitiesPage.attendanceStatDeclined,
-                                statPending: t.activitiesPage.attendanceStatPending,
-                                comingList: t.activitiesPage.attendanceComingList,
-                                declinedList: t.activitiesPage.attendanceDeclinedList,
-                                noResponsesYet: t.activitiesPage.attendanceNoRosterYet,
+                                attendance: t.activitiesPage.opsTabAttendance,
+                                transport: t.activitiesPage.opsTabTransport,
+                                guests: t.activitiesPage.opsTabGuests,
                               }}
-                            />
-                          ) : null}
+                              attendance={
+                                <>
+                                  {sum && perms.isTrainer ? (
+                                    <TrainingAttendanceOverview
+                                      overview={sum}
+                                      labels={{
+                                        sectionTitle: t.activitiesPage.attendanceTeamOverview,
+                                        summaryHeadline: t.activitiesPage.attendanceSummaryHeadline,
+                                        statComing: t.activitiesPage.attendanceStatComing,
+                                        statDeclined: t.activitiesPage.attendanceStatDeclined,
+                                        statPending: t.activitiesPage.attendanceStatPending,
+                                        comingList: t.activitiesPage.attendanceComingList,
+                                        declinedList: t.activitiesPage.attendanceDeclinedList,
+                                        noResponsesYet: t.activitiesPage.attendanceNoRosterYet,
+                                      }}
+                                    />
+                                  ) : null}
 
-                          {membershipId && showAttendance && invited ? (
-                            <TrainingAttendanceRsvp
-                              activityTitle={a.title}
-                              myAttendance={my}
-                              busy={rsvpBusyId === a.id}
-                              rsvpClosed={a.type === "training" && !isTrainingRsvpOpen(a.starts_at)}
-                              rsvpClosedMessage={t.activitiesPage.attendanceRsvpClosedTraining}
-                              onRespond={(status, notes) => rsvp(a.id, status, notes)}
-                              labels={rsvpLabels}
-                            />
-                          ) : null}
+                                  {activeRsvpMembershipId && invited ? (
+                                    <>
+                                      {availabilityHint ? (
+                                        <p className="mt-3 rounded-2xl border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-amber-900 dark:text-amber-100">
+                                          {availabilityHint}
+                                        </p>
+                                      ) : null}
+                                      <TrainingAttendanceRsvp
+                                        activityTitle={a.title}
+                                        myAttendance={my}
+                                        busy={rsvpBusyId === a.id}
+                                        rsvpClosed={
+                                          !isActivityRsvpOpen({
+                                            type: a.type,
+                                            startsAt: a.starts_at,
+                                            responseDeadline: a.response_deadline,
+                                          })
+                                        }
+                                        rsvpClosedMessage={t.activitiesPage.attendanceRsvpClosedTraining}
+                                        onRespond={(status, notes, reason) => rsvp(a.id, status, notes, reason)}
+                                        labels={rsvpLabels}
+                                      />
+                                    </>
+                                  ) : null}
 
-                          {membershipId && showAttendance && !invited ? (
-                            <p className="mt-3 text-xs text-muted-foreground">{t.activitiesPage.attendanceNotInvited}</p>
+                                  {activeRsvpMembershipId && !invited ? (
+                                    <p className="mt-3 text-xs text-muted-foreground">
+                                      {t.activitiesPage.attendanceNotInvited}
+                                    </p>
+                                  ) : null}
+                                </>
+                              }
+                              transport={
+                                clubId ? (
+                                  <ActivityTransportPanel
+                                    clubId={clubId}
+                                    activityId={a.id}
+                                    membershipId={membershipId}
+                                    labels={{
+                                      title: t.activitiesPage.transportTitle,
+                                      offer: t.activitiesPage.transportOffer,
+                                      seats: t.activitiesPage.transportSeats,
+                                      meetingPoint: t.activitiesPage.transportMeetingPoint,
+                                      empty: t.activitiesPage.transportEmpty,
+                                      request: t.activitiesPage.transportRequest,
+                                      remaining: t.activitiesPage.transportRemaining,
+                                      saved: t.activitiesPage.transportSaved,
+                                      failed: t.activitiesPage.transportFailed,
+                                      summaryOffered: t.activitiesPage.transportSummaryOffered,
+                                      summaryAssigned: t.activitiesPage.transportSummaryAssigned,
+                                      summaryPending: t.activitiesPage.transportSummaryPending,
+                                      summaryOpen: t.activitiesPage.transportSummaryOpen,
+                                      pendingRequests: t.activitiesPage.transportPendingRequests,
+                                      accept: t.activitiesPage.transportAccept,
+                                      decline: t.activitiesPage.transportDecline,
+                                      requestPending: t.activitiesPage.transportRequestPending,
+                                    }}
+                                    onToast={(payload) => toast(payload)}
+                                  />
+                                ) : null
+                              }
+                              guests={
+                                clubId ? (
+                                  <ActivityGuestsPanel
+                                    clubId={clubId}
+                                    activityId={a.id}
+                                    canConvert={canConvertGuests}
+                                    labels={{
+                                      title: t.activitiesPage.guestsTitle,
+                                      add: t.activitiesPage.guestsAdd,
+                                      name: t.activitiesPage.guestsName,
+                                      email: t.activitiesPage.guestsEmail,
+                                      empty: t.activitiesPage.guestsEmpty,
+                                      saved: t.activitiesPage.guestsSaved,
+                                      failed: t.activitiesPage.guestsFailed,
+                                      linkExisting: t.activitiesPage.guestsLinkExisting,
+                                      createDraftInvite: t.activitiesPage.guestsCreateDraftInvite,
+                                      converted: t.activitiesPage.guestsConverted,
+                                      pickMember: t.activitiesPage.guestsPickMember,
+                                      convertDone: t.activitiesPage.guestsConvertDone,
+                                    }}
+                                    onToast={(payload) => toast(payload)}
+                                  />
+                                ) : null
+                              }
+                            />
                           ) : null}
                         </motion.div>
                       );
@@ -741,42 +1140,42 @@ export default function Activities() {
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowCreate(false)} />
           <div className="relative w-full max-w-lg rounded-3xl border border-border/60 bg-card/60 backdrop-blur-2xl p-5 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <div className="font-display font-bold text-foreground">New activity</div>
+              <div className="font-display font-bold text-foreground">{t.activitiesPage.newActivityTitle}</div>
               <Button variant="ghost" size="sm" onClick={() => setShowCreate(false)}>
-                Close
+                {t.common.close}
               </Button>
             </div>
 
             <div className="grid gap-3">
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Title</div>
+                <div className="text-xs text-muted-foreground mb-1">{t.activitiesPage.phTitleLabel}</div>
                 <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t.activitiesPage.phTitle} />
               </div>
 
               <div className="grid grid-cols-3 gap-2">
-                {(["training", "event", "match"] as ActivityType[]).map((t) => (
+                {(["training", "event", "match"] as ActivityType[]).map((activityType) => (
                   <button
-                    key={t}
-                    onClick={() => setType(t)}
+                    key={activityType}
+                    onClick={() => setType(activityType)}
                     className={`px-3 py-2 rounded-2xl text-xs font-medium border transition-colors ${
-                      type === t
+                      type === activityType
                         ? "bg-primary/10 text-primary border-primary/20"
                         : "bg-background/40 text-foreground border-border/60 hover:bg-muted/30"
                     }`}
                   >
-                    {t}
+                    {activityType}
                   </button>
                 ))}
               </div>
 
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Team (optional)</div>
+                <div className="text-xs text-muted-foreground mb-1">{t.activitiesPage.teamOptional}</div>
                 <Select value={teamId || "__none"} onValueChange={(value) => setTeamId(value === "__none" ? "" : value)}>
                   <SelectTrigger className="w-full h-10 rounded-xl border-border/60 bg-background/50 px-3 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none">No team</SelectItem>
+                    <SelectItem value="__none">{t.activitiesPage.noTeam}</SelectItem>
                     {teams.map((team) => (
                       <SelectItem key={team.id} value={team.id}>
                         {team.name}
@@ -787,13 +1186,45 @@ export default function Activities() {
               </div>
 
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Starts at</div>
+                <div className="text-xs text-muted-foreground mb-1">{t.activitiesPage.startsAtLabel}</div>
                 <Input value={startsAt} onChange={(e) => setStartsAt(e.target.value)} placeholder={t.placeholders.dateTimeLocal} />
-                <div className="mt-1 text-[10px] text-muted-foreground">We parse via Date().</div>
+                <div className="mt-1 text-[10px] text-muted-foreground">{t.activitiesPage.startsAtParseHint}</div>
               </div>
 
+              {(type === "training" || type === "match") ? (
+                <>
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">{t.activitiesPage.responseDeadlineLabel}</div>
+                    <Input
+                      type="datetime-local"
+                      value={responseDeadline}
+                      onChange={(e) => setResponseDeadline(e.target.value)}
+                    />
+                    <div className="mt-1 text-[10px] text-muted-foreground">{t.activitiesPage.responseDeadlineHint}</div>
+                  </div>
+                  <label className="flex items-center gap-2 text-xs text-foreground">
+                    <Checkbox
+                      checked={responseRequired}
+                      onCheckedChange={(checked) => setResponseRequired(checked === true)}
+                    />
+                    {t.activitiesPage.responseRequiredLabel}
+                  </label>
+                  {responseRequired ? (
+                    <div>
+                      <div className="text-xs text-muted-foreground mb-1">{t.activitiesPage.customReminderLabel}</div>
+                      <Input
+                        type="datetime-local"
+                        value={customReminderAt}
+                        onChange={(e) => setCustomReminderAt(e.target.value)}
+                      />
+                      <div className="mt-1 text-[10px] text-muted-foreground">{t.activitiesPage.customReminderHint}</div>
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
+
               <Button className="bg-gradient-gold-static text-primary-foreground font-semibold" onClick={handleCreate}>
-                Create
+                {t.activitiesPage.createActivitySubmit}
               </Button>
             </div>
           </div>
@@ -811,6 +1242,10 @@ export default function Activities() {
           roster={drawerRoster}
           attendance={attendance.filter((row) => row.activity_id === drawerActivity.id)}
           onNudgeUnconfirmed={nudgeUnconfirmed}
+          onRemindMissing={() => void sendMissingReminders(drawerActivity.id)}
+          onMarkAttended={(membershipId) => void markAttended(drawerActivity.id, membershipId)}
+          markBusyId={markAttendedBusyId}
+          remindBusy={remindBusyId === drawerActivity.id}
           labels={trainerPanelLabels}
         />
       ) : null}

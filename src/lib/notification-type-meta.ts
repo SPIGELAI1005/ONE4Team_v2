@@ -1,4 +1,4 @@
-import { Calendar, ClipboardList, Info, Megaphone, MessageSquare, Trophy, UserRound, type LucideIcon } from "lucide-react";
+import { BarChart3, Calendar, ClipboardList, Info, Megaphone, MessageSquare, Trophy, UserRound, type LucideIcon } from "lucide-react";
 
 export interface NotificationTypeMeta {
   value: string;
@@ -13,6 +13,7 @@ export const NOTIFICATION_TYPES: NotificationTypeMeta[] = [
   { value: "announcement", label: "Announcement", icon: Megaphone, color: "text-primary" },
   { value: "message", label: "Message", icon: MessageSquare, color: "text-primary" },
   { value: "task", label: "Task", icon: ClipboardList, color: "text-primary" },
+  { value: "poll", label: "Poll", icon: BarChart3, color: "text-primary" },
   { value: "photo_renewal", label: "Photo renewal", icon: UserRound, color: "text-amber-500" },
   { value: "general", label: "General", icon: Info, color: "text-muted-foreground" },
 ];

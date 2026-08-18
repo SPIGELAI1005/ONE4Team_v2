@@ -11,6 +11,12 @@ describe("run-agent-workflow-utterance helpers", () => {
     expect(shouldTryAgentInterpretation("Cancel U12-1 training today")).toBe(true);
   });
 
+  it("detects attendance / RSVP action phrases", () => {
+    expect(shouldTryAgentInterpretation("Who hasn't replied to the next training?")).toBe(true);
+    expect(shouldTryAgentInterpretation("Draft a reminder for missing RSVPs")).toBe(true);
+    expect(shouldTryAgentInterpretation("Create a claimable duty for carpool")).toBe(true);
+  });
+
   it("parses team and date from clarify answers", () => {
     const merged = mergeActivityClarifyAnswer({}, "U12-1 training today");
     expect(merged.team_name).toBe("U12-1");

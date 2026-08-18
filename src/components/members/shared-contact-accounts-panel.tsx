@@ -9,32 +9,42 @@ interface SharedContactAccountsPanelLabels {
   showAll: string;
   openMember: string;
   importPreview: string;
+  clearNotDuplicate?: string;
 }
 
 interface SharedContactAccountsPanelProps {
   group: SharedContactEmailGroup;
   currentId: string;
+  currentSource?: "roster" | "draft";
   labels: SharedContactAccountsPanelLabels;
   onShowAll: (email: string) => void;
   onOpenMember: (member: SharedContactEmailMember) => void;
   duplicateMemberKeys?: ReadonlySet<string>;
   duplicateWarning?: string;
+  onClearDuplicateReview?: () => void;
+  clearDuplicateBusy?: boolean;
   className?: string;
 }
 
 export function SharedContactAccountsPanel({
   group,
   currentId,
+  currentSource = "roster",
   labels,
   onShowAll,
   onOpenMember,
   duplicateMemberKeys,
   duplicateWarning,
+  onClearDuplicateReview,
+  clearDuplicateBusy = false,
   className,
 }: SharedContactAccountsPanelProps) {
   if (group.members.length < 2) return null;
 
-  const hasDuplicateMembers = duplicateMemberKeys
+  const currentKey = `${currentSource}:${currentId}`;
+  const currentFlaggedAsDuplicate = duplicateMemberKeys?.has(currentKey) ?? false;
+  const hasDuplicateMembers =
+    duplicateMemberKeys
     ? group.members.some((member) => duplicateMemberKeys.has(`${member.source}:${member.id}`))
     : false;
 
@@ -47,7 +57,22 @@ export function SharedContactAccountsPanel({
       )}
     >
       {hasDuplicateMembers && duplicateWarning ? (
-        <p className="mb-2 text-[11px] text-amber-300">{duplicateWarning}</p>
+        <div className="mb-2 space-y-2">
+          <p className="text-[11px] text-amber-300">{duplicateWarning}</p>
+          {currentFlaggedAsDuplicate && onClearDuplicateReview && labels.clearNotDuplicate ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 rounded-lg border-emerald-500/40 bg-emerald-500/10 text-xs text-emerald-200 hover:bg-emerald-500/20 hover:text-emerald-100"
+              disabled={clearDuplicateBusy}
+              data-testid="duplicate-review-clear-not-duplicate"
+              onClick={onClearDuplicateReview}
+            >
+              {labels.clearNotDuplicate}
+            </Button>
+          ) : null}
+        </div>
       ) : null}
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs font-medium text-sky-300">

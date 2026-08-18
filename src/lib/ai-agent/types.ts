@@ -6,7 +6,13 @@ export type AgentIntent =
   | "send_club_announcement"
   | "plan_training_week"
   | "duplicate_training_week"
-  | "notify_trainers";
+  | "notify_trainers"
+  | "summarize_missing_rsvps"
+  | "draft_attendance_reminder"
+  | "propose_claimable_duty"
+  | "propose_activity_checklist"
+  | "summarize_attendance_metrics"
+  | "draft_poll_question";
 
 export type AgentRunStatus =
   | "proposed"

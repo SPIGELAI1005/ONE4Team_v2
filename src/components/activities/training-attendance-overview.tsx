@@ -65,8 +65,8 @@ function NameList({
             )}
           >
             <span className="font-medium">{line.name}</span>
-            {line.declineReason ? (
-              <span className={cn(variant === "club" ? "text-white/70" : "text-muted-foreground")}>
+            {variant !== "club" && line.declineReason ? (
+              <span className="text-muted-foreground">
                 {" "}
                 - {line.declineReason}
               </span>

@@ -246,6 +246,10 @@ export type Database = {
           location: string | null
           pitch_booking_id: string | null
           publish_to_public_schedule: boolean
+          response_deadline: string | null
+          response_required: boolean
+          automatic_reminders: boolean
+          custom_reminder_at: string | null
           starts_at: string
           team_id: string | null
           title: string
@@ -263,6 +267,10 @@ export type Database = {
           location?: string | null
           pitch_booking_id?: string | null
           publish_to_public_schedule?: boolean
+          response_deadline?: string | null
+          response_required?: boolean
+          automatic_reminders?: boolean
+          custom_reminder_at?: string | null
           starts_at: string
           team_id?: string | null
           title: string
@@ -280,6 +288,10 @@ export type Database = {
           location?: string | null
           pitch_booking_id?: string | null
           publish_to_public_schedule?: boolean
+          response_deadline?: string | null
+          response_required?: boolean
+          automatic_reminders?: boolean
+          custom_reminder_at?: string | null
           starts_at?: string
           team_id?: string | null
           title?: string
@@ -318,6 +330,9 @@ export type Database = {
           id: string
           membership_id: string
           notes: string | null
+          response_reason: string | null
+          responded_at: string | null
+          responded_by: string | null
           status: string
           updated_at: string
         }
@@ -328,6 +343,9 @@ export type Database = {
           id?: string
           membership_id: string
           notes?: string | null
+          response_reason?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
           status?: string
           updated_at?: string
         }
@@ -338,6 +356,9 @@ export type Database = {
           id?: string
           membership_id?: string
           notes?: string | null
+          response_reason?: string | null
+          responded_at?: string | null
+          responded_by?: string | null
           status?: string
           updated_at?: string
         }
@@ -4286,6 +4307,20 @@ export type Database = {
       upsert_weekly_digest_rule: {
         Args: { _club_id: string; _enabled: boolean }
         Returns: string
+      }
+      can_manage_activity_attendance: {
+        Args: { _activity_id: string; _user_id: string }
+        Returns: boolean
+      }
+      upsert_activity_attendance_response: {
+        Args: {
+          _activity_id: string
+          _membership_id: string
+          _notes?: string
+          _response_reason?: string
+          _status: string
+        }
+        Returns: Json
       }
       set_public_badges_opt_in: {
         Args: { p_club_id: string; p_opt_in: boolean }

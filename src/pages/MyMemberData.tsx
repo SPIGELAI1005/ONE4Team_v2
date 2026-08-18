@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { MasterDataTabs } from "@/components/members/master-data-tabs";
 import type { MasterDataTabsLabels } from "@/components/members/master-data-tabs";
 import { useClubId } from "@/hooks/use-club-id";
+import { useMembershipId } from "@/hooks/use-membership-id";
 import { useActiveClub } from "@/hooks/use-active-club";
 import { useLanguage } from "@/hooks/use-language";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +31,12 @@ import {
   syncOwnProfileAvatarFromMasterPhoto,
 } from "@/lib/member-photo-display";
 import { resolveMyMemberDataLoadError, resolveMyMemberDataSaveError } from "@/lib/member-my-data-errors";
+import { MemberAvailabilityPanel } from "@/components/members/member-availability-panel";
+import { CalendarSubscriptionCard } from "@/components/members/calendar-subscription-card";
+import { GuardianFamilyPanel } from "@/components/members/guardian-family-panel";
+import { listGuardianWardSummaries, type GuardianWardSummary } from "@/lib/member-guardian-api";
+import { formatDashboardRoleLabel } from "@/lib/rbac-config";
+import { usePlanGuard } from "@/hooks/use-plan-guard";
 
 const PROFILE_AVATAR_BUCKET = "images-avatars";
 
@@ -45,10 +52,13 @@ function mapEditActor(row: EditableMemberMasterRow["edit_actor"]): MemberMasterE
 
 export default function MyMemberData() {
   const { clubId, loading: clubLoading } = useClubId();
+  const { membershipId: ownMembershipId, loading: ownMembershipLoading } = useMembershipId();
   const { activeClub } = useActiveClub();
   const { user } = useAuth();
   const { t } = useLanguage();
   const { toast } = useToast();
+  const { canUseFeature } = usePlanGuard();
+  const canUseCalendarIcs = canUseFeature("calendarIcs");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -72,6 +82,8 @@ export default function MyMemberData() {
   const [missingMigration, setMissingMigration] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [ownProfileAvatarUrl, setOwnProfileAvatarUrl] = useState<string | null>(null);
+  const [guardianWards, setGuardianWards] = useState<GuardianWardSummary[]>([]);
+  const [guardianWardsLoading, setGuardianWardsLoading] = useState(false);
 
   const masterTabLabels = useMemo(
     (): MasterDataTabsLabels => ({
@@ -167,6 +179,21 @@ export default function MyMemberData() {
     setLoading(false);
   }, [clubId, t]);
 
+  const loadGuardianWards = useCallback(async () => {
+    if (!clubId || !ownMembershipId) {
+      setGuardianWards([]);
+      return;
+    }
+    setGuardianWardsLoading(true);
+    const { data, error } = await listGuardianWardSummaries(clubId, ownMembershipId);
+    if (error) {
+      setGuardianWards([]);
+    } else {
+      setGuardianWards(data);
+    }
+    setGuardianWardsLoading(false);
+  }, [clubId, ownMembershipId]);
+
   const loadBundle = useCallback(async (membershipId: string, clubIdForForm: string, generation: number) => {
     const { data, error } = await getMemberMasterBundle(membershipId);
     if (generation !== loadGenerationRef.current) return null;
@@ -216,6 +243,11 @@ export default function MyMemberData() {
     loadGenerationRef.current += 1;
     void loadEditableList();
   }, [clubId, clubLoading, loadEditableList]);
+
+  useEffect(() => {
+    if (clubLoading || ownMembershipLoading) return;
+    void loadGuardianWards();
+  }, [clubLoading, ownMembershipLoading, loadGuardianWards]);
 
   useEffect(() => {
     if (!selectedId || !clubId) return;
@@ -455,6 +487,34 @@ export default function MyMemberData() {
               {t.myMemberDataPage.intro}
             </div>
 
+            {!guardianWardsLoading && ownMembershipId ? (
+              <GuardianFamilyPanel
+                wards={guardianWards}
+                labels={{
+                  title: t.myMemberDataPage.guardianFamilyTitle,
+                  subtitle: t.myMemberDataPage.guardianFamilySubtitle,
+                  emptyTitle: t.myMemberDataPage.guardianFamilyEmptyTitle,
+                  emptyDesc: t.myMemberDataPage.guardianFamilyEmptyDesc,
+                  editRegistry: t.myMemberDataPage.guardianFamilyEditRegistry,
+                  openActivities: t.myMemberDataPage.guardianFamilyOpenActivities,
+                  inactiveBadge: t.myMemberDataPage.guardianFamilyInactive,
+                }}
+                getRoleLabel={formatDashboardRoleLabel}
+                unknownMemberLabel={t.membersPage.unknownMember}
+                onSelectWard={(wardMembershipId) => {
+                  if (editableRows.some((row) => row.membership_id === wardMembershipId)) {
+                    setSelectedId(wardMembershipId);
+                    return;
+                  }
+                  toast({
+                    title: t.myMemberDataPage.guardianFamilyWardNotEditableTitle,
+                    description: t.myMemberDataPage.guardianFamilyWardNotEditableDesc,
+                    variant: "destructive",
+                  });
+                }}
+              />
+            ) : null}
+
             {editableRows.length > 1 ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -534,6 +594,62 @@ export default function MyMemberData() {
                     onRemove: () => setField("photo_url", null),
                   }}
                 />
+
+                {selectedId && clubId && (selectedRow.edit_actor === "self" || selectedRow.edit_actor === "guardian") ? (
+                  <div className="mt-4">
+                    <MemberAvailabilityPanel
+                      clubId={clubId}
+                      membershipId={selectedId}
+                      labels={{
+                        title: t.myMemberDataPage.availabilityTitle,
+                        subtitle: t.myMemberDataPage.availabilitySubtitle,
+                        add: t.myMemberDataPage.availabilityAdd,
+                        status: t.myMemberDataPage.availabilityStatus,
+                        reason: t.myMemberDataPage.availabilityReason,
+                        note: t.myMemberDataPage.availabilityNote,
+                        from: t.myMemberDataPage.availabilityFrom,
+                        to: t.myMemberDataPage.availabilityTo,
+                        save: t.common.save,
+                        empty: t.myMemberDataPage.availabilityEmpty,
+                        delete: t.common.delete,
+                        statusUnavailable: t.myMemberDataPage.availabilityUnavailable,
+                        statusLimited: t.myMemberDataPage.availabilityLimited,
+                        statusAvailable: t.myMemberDataPage.availabilityAvailable,
+                        reasonHoliday: t.activitiesPage.attendancePresetVacation,
+                        reasonIllness: t.activitiesPage.attendancePresetIllness,
+                        reasonInjury: t.activitiesPage.attendancePresetInjury,
+                        reasonSchool: t.activitiesPage.attendancePresetSchool,
+                        reasonFamily: t.myMemberDataPage.availabilityReasonFamily,
+                        reasonWork: t.activitiesPage.attendancePresetWork,
+                        reasonOther: t.myMemberDataPage.availabilityReasonOther,
+                        saved: t.myMemberDataPage.availabilitySaved,
+                        failed: t.myMemberDataPage.availabilityFailed,
+                      }}
+                      onToast={(payload) => toast(payload)}
+                    />
+                    {selectedRow.edit_actor === "self" && canUseCalendarIcs ? (
+                      <CalendarSubscriptionCard
+                        clubId={clubId}
+                        labels={{
+                          title: t.myMemberDataPage.calendarTitle,
+                          subtitle: t.myMemberDataPage.calendarSubtitle,
+                          create: t.myMemberDataPage.calendarCreate,
+                          copy: t.myMemberDataPage.calendarCopy,
+                          copyWebcal: t.myMemberDataPage.calendarCopyWebcal,
+                          created: t.myMemberDataPage.calendarCreated,
+                          failed: t.myMemberDataPage.calendarFailed,
+                          tokenHint: t.myMemberDataPage.calendarTokenHint,
+                          feedUrlLabel: t.myMemberDataPage.calendarFeedUrlLabel,
+                          activeFeeds: t.myMemberDataPage.calendarActiveFeeds,
+                          revoke: t.myMemberDataPage.calendarRevoke,
+                          revoked: t.myMemberDataPage.calendarRevoked,
+                          emptyFeeds: t.myMemberDataPage.calendarEmptyFeeds,
+                        }}
+                        onToast={(payload) => toast(payload)}
+                      />
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </>

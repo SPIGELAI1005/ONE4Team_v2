@@ -250,6 +250,7 @@ export const SIDEBAR_MENU_PROFILES: Record<DashboardRole, readonly DashboardModu
   ],
   parent_supporter: [
     "dashboard",
+    "members",
     "trainings",
     "matches",
     "events",
@@ -554,7 +555,7 @@ const RBAC_MATRIX: Record<DashboardRole, Record<DashboardModule, ModuleAccessLev
   parent_supporter: {
     dashboard: "own",
     assets: "limited",
-    members: "none",
+    members: "own",
     invites: "none",
     roles: "none",
     trainings: "team",
@@ -937,9 +938,13 @@ export function getDataScopeForModule(
     case "team":
       return "team";
     case "own":
-      return module === "payments" && normalizeDashboardRole(String(role)) === "parent_supporter"
-        ? "family"
-        : "own";
+      if (
+        normalizeDashboardRole(String(role)) === "parent_supporter" &&
+        (module === "payments" || module === "members")
+      ) {
+        return "family";
+      }
+      return "own";
     case "assigned":
       return "assigned";
     case "limited": {
@@ -1004,6 +1009,8 @@ export function getDashboardPersonaOptions(
     case "player":
     case "team_staff":
       return ["player"];
+    case "parent_supporter":
+      return ["parent_supporter"];
     default:
       return [normalized];
   }

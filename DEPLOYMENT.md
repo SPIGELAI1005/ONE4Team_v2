@@ -153,6 +153,44 @@ Club workflows use the **`ai4team-agent`** Edge Function and Postgres RPCs. Six 
 4. Schedule a cron (or external scheduler) POST to **`process-weekly-digests`** with service role or **`WEEKLY_DIGEST_CRON_SECRET`**.
 5. Club admins enable automation; members opt in under notification preferences.
 
+### Attendance RSVP reminders (Team Ops 2026-08-08)
+
+1. Migration **`20260812220000_team_ops_decisions_ledger_guest_reminders.sql`** applied (`npm run db:push`).
+2. Deploy:
+   ```powershell
+   npx supabase functions deploy process-attendance-reminders --no-verify-jwt
+   ```
+3. Edge secret (reuse digest secret or set dedicated): **`ATTENDANCE_REMINDER_CRON_SECRET`** or **`WEEKLY_DIGEST_CRON_SECRET`**.
+4. Schedule **hourly** cron POST to **`process-attendance-reminders`** with header `x-cron-secret: <secret>` (or Bearer service role). Same scheduler pattern as weekly digests.
+5. Only activities with **`automatic_reminders = true`** fire; types: `starts_24h`, `morning_of`, `deadline_custom` (+ manual trainer remind).
+
+### Calendar ICS feeds (Team Ops Wave 7)
+
+1. Migration **`20260812200000_team_ops_wave7_realtime_ics.sql`** applied.
+2. Deploy:
+   ```powershell
+   npx supabase functions deploy calendar-ics --no-verify-jwt
+   ```
+3. Members create/revoke feeds under **My Data** (plan key **`calendarIcs`**, Kick-off+).
+
+### 2026-08-16 Team Ops review hardening
+
+1. Apply **`20260816120000_review_hardening_family_calendar_reminders.sql`**.
+   Apply follow-up **`20260816130000_team_ops_db_lint_fixes.sql`** immediately after it.
+2. Redeploy **`calendar-ics`** because self feeds now include linked wards:
+   ```powershell
+   npx supabase functions deploy calendar-ics --no-verify-jwt
+   ```
+3. Confirm the hourly reminder job and logs using **`docs/TEAM_OPS_OPERATOR_ACCEPTANCE_2026-08-16.md`**.
+
+The linked Supabase project already received steps 1–2 on 2026-08-16.
+
+### Club invite email `Unauthorized` (2026-08-18)
+
+`send-club-invite-email` verifies the caller JWT. If invite creation succeeds but email delivery returns `Unauthorized`, first sign out/in to replace a stale browser session, revoke the exposed invite, and create a new invite. A fresh authenticated JWT was verified to reach the linked Edge Function; the observed 401 occurs before Resend delivery.
+
+Before production approval, harden the client to call `refreshSession()` immediately before the function invocation and retry exactly once on HTTP 401. Do not disable JWT verification to mask this client-session issue.
+
 ### TSV Allach public club — Sommerfest + membership application (2026-06-27)
 
 1. Apply migrations (after **`20260626120000`**):
@@ -193,6 +231,25 @@ After pulling latest `main`, apply new SQL in **`supabase/migrations/`** in time
 
 ## Supabase migrations (production readiness — 2026-03-30)
 After the 2026-03-29 wave, apply in filename order from **`20260329103000_platform_admin_rbac.sql`** through **`20260330120000_search_club_members_page.sql`** (see `CHANGELOG.md` § 2026-03-30 and `MEMORY_BANK.md` items 32–42). For **`20260329132000_hotspot_composite_indexes.sql`**, run the **entire migration file** (indexes are created only when `to_regclass` finds `public.events` / `public.event_participants` — do not paste unguarded `CREATE INDEX` fragments). Redeploy Edge functions that import **`supabase/functions/_shared/request_context.ts`** (**`co-trainer`**, **`stripe-checkout`**, **`chat-bridge`**, **`stripe-webhook`**) so correlation logging is active. Validate Members search and analytics pages against the new RPCs after apply.
+
+## Supabase migrations (Team Ops + guardian parent UI — 2026-08-09; dual-role 2026-08-13)
+Recent operator applies for Team Ops close-out and guardian/parent access (see `CHANGELOG.md` § **2026-08-08** / **2026-08-09** / **2026-08-13** and `supabase/SCHEMA_STATUS.md`):
+
+```powershell
+npm run db:push
+```
+
+Notable filenames (apply in timestamp order with other pending migrations):
+
+- **`20260816120000_review_hardening_family_calendar_reminders.sql`** — family/ICS authorization, atomic capacity, reminder preferences
+- **`20260816130000_team_ops_db_lint_fixes.sql`** — reminder email source, notification upsert and guest role DB-lint fixes
+- **`20260812320000_guardian_parent_role_sync.sql`** — guardian link → **`parent`** role assignment + backfill
+- **`20260812310000_member_duplicate_review_clearances.sql`** — dismiss import duplicate review
+- **`20260812300000_team_ops_tier_forward.sql`** — Tier 1–4 Team Ops forward (guest RPC, waitlist, transport accept, …)
+- **`20260812290000_club_role_assignments_member_manager_write.sql`** — Team Management can UPDATE **`club_role_assignments`** (Roles tab)
+- Team Ops waves **`20260811120000`** … **`20260812280000`** (attendance, availability, duties, transport, ledger, RLS hardening, Realtime publication)
+
+No new Edge deploy required for guardian Members UI (client + existing guardian RPCs). Confirm hourly cron for **`process-attendance-reminders`** per **`docs/TEAM_OPS_PHASE_18_26_CLOSEOUT.md`**.
 
 ## Edge function `health` (optional DB depth probe)
 Deploy **`supabase/functions/health`** alongside other functions (`supabase functions deploy health`). It performs a minimal `clubs` select with the service role. The in-app **Health** page (`/health`) calls **`/functions/v1/health`** when a publishable key is set; if the function is not deployed, the check shows `edgeDatabase: skipped`.

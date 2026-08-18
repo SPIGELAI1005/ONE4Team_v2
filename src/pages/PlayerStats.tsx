@@ -40,8 +40,18 @@ import {
   DASHBOARD_TABS_ROW,
 } from "@/lib/dashboard-page-shell";
 import FinancialReportPanel from "@/components/reports/FinancialReportPanel";
+import { AttendanceReportPanel } from "@/components/reports/attendance-report-panel";
+import { canViewAttendanceAnalytics } from "@/lib/activity-attendance-access";
+import { canAccessTeamLedgerUi } from "@/lib/team-ledger";
+import { useModuleGateRole } from "@/hooks/use-module-gate-role";
+import {
+  canAccessFinancialReports,
+  resolveClubReportPersona,
+  type ClubReportPersona,
+} from "@/lib/club-report-persona";
 
 type AdminReportSection = "operations" | "financial" | "performance";
+type ReportPersona = ClubReportPersona;
 
 type PlayerStat = {
   membership_id: string;
@@ -54,8 +64,6 @@ type PlayerStat = {
 
 type Competition = { id: string; name: string; season: string | null };
 type Team = { id: string; name: string };
-
-type ReportPersona = "admin" | "trainer" | "player" | "sponsor" | "member";
 
 interface ReportSnapshot {
   membersActive: number | null;
@@ -137,26 +145,33 @@ const PlayerStats = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { clubId, loading: clubLoading } = useClubId();
   const { activeClub } = useActiveClub();
-  const { isAdmin, isTrainer, role } = usePermissions();
+  const { isAdmin, role, assignments } = usePermissions();
+  const gateRole = useModuleGateRole();
   const { t } = useLanguage();
+  const showAttendanceAnalytics = canViewAttendanceAnalytics(gateRole ?? role);
+  const showTeamLedgerLink = canAccessTeamLedgerUi(gateRole ?? role);
 
   const membershipId = activeClub?.membershipId ?? null;
 
   const persona = useMemo<ReportPersona>(() => {
-    const r = (role || "").toLowerCase();
-    if (r === "sponsor") return "sponsor";
-    if (isAdmin) return "admin";
-    if (isTrainer) return "trainer";
-    if (r === "player") return "player";
-    return "member";
-  }, [isAdmin, isTrainer, role]);
+    return resolveClubReportPersona({
+      legacyRole: role,
+      assignments,
+      isClubAdminRpc: isAdmin,
+    });
+  }, [assignments, isAdmin, role]);
+
+  const canShowFinancial = useMemo(
+    () => canAccessFinancialReports(persona, "dashboard", role),
+    [persona, role],
+  );
 
   const adminSection = useMemo<AdminReportSection>(() => {
     const raw = searchParams.get("section");
-    if (raw === "financial") return "financial";
+    if (raw === "financial" && canShowFinancial) return "financial";
     if (raw === "performance") return "performance";
     return "operations";
-  }, [searchParams]);
+  }, [canShowFinancial, searchParams]);
 
   const setAdminSection = (section: AdminReportSection) => {
     const next = new URLSearchParams(searchParams);
@@ -652,15 +667,21 @@ const PlayerStats = () => {
   const showFilters = seasons.length > 0 || competitions.length > 0 || teamsForSelect.length > 0;
   const showPerformanceSection = persona !== "admin" || adminSection === "performance";
 
-  const adminSectionTabs = useMemo(
-    () =>
-      [
-        { id: "operations" as const, label: t.reportsPage.tabOperations, icon: BarChart3 },
-        { id: "financial" as const, label: t.reportsPage.tabFinancial, icon: Wallet },
-        { id: "performance" as const, label: t.reportsPage.tabPerformance, icon: Trophy },
-      ] as const,
-    [t.reportsPage.tabFinancial, t.reportsPage.tabOperations, t.reportsPage.tabPerformance],
-  );
+  const adminSectionTabs = useMemo(() => {
+    const tabs: { id: AdminReportSection; label: string; icon: typeof BarChart3 }[] = [
+      { id: "operations", label: t.reportsPage.tabOperations, icon: BarChart3 },
+    ];
+    if (canShowFinancial) {
+      tabs.push({ id: "financial", label: t.reportsPage.tabFinancial, icon: Wallet });
+    }
+    tabs.push({ id: "performance", label: t.reportsPage.tabPerformance, icon: Trophy });
+    return tabs;
+  }, [
+    canShowFinancial,
+    t.reportsPage.tabFinancial,
+    t.reportsPage.tabOperations,
+    t.reportsPage.tabPerformance,
+  ]);
 
   return (
     <div className={DASHBOARD_PAGE_ROOT}>
@@ -695,7 +716,7 @@ const PlayerStats = () => {
         </div>
       ) : null}
 
-      {persona === "admin" && clubId && adminSection === "financial" ? (
+      {persona === "admin" && canShowFinancial && clubId && adminSection === "financial" ? (
         <div className={`${DASHBOARD_PAGE_INNER} space-y-4`}>
           <FinancialReportPanel />
         </div>
@@ -869,27 +890,57 @@ const PlayerStats = () => {
                   <Button asChild variant="outline" size="sm" className="rounded-xl">
                     <Link to="/activities"><Calendar className="w-3.5 h-3.5 mr-1" />{t.reportsPage.linkActivities}<ArrowRight className="w-3 h-3 ml-1 opacity-60" /></Link>
                   </Button>
+                  {showTeamLedgerLink ? (
+                    <Button asChild variant="outline" size="sm" className="rounded-xl">
+                      <Link to="/team-ledger"><Wallet className="w-3.5 h-3.5 mr-1" />{t.reportsPage.linkTeamLedger}<ArrowRight className="w-3 h-3 ml-1 opacity-60" /></Link>
+                    </Button>
+                  ) : null}
                   <Button asChild variant="outline" size="sm" className="rounded-xl">
                     <Link to="/training-plan-import"><MapPin className="w-3.5 h-3.5 mr-1" />{t.reportsPage.linkTrainingImport}<ArrowRight className="w-3 h-3 ml-1 opacity-60" /></Link>
                   </Button>
                   <Button asChild variant="outline" size="sm" className="rounded-xl">
                     <Link to="/coach-placeholders"><Users className="w-3.5 h-3.5 mr-1" />{t.reportsPage.linkCoachPlaceholders}<ArrowRight className="w-3 h-3 ml-1 opacity-60" /></Link>
                   </Button>
-                  <Button asChild variant="outline" size="sm" className="rounded-xl">
-                    <Link to="/payments"><Wallet className="w-3.5 h-3.5 mr-1" />{t.reportsPage.linkPayments}<ArrowRight className="w-3 h-3 ml-1 opacity-60" /></Link>
-                  </Button>
-                  <Button asChild variant="outline" size="sm" className="rounded-xl">
-                    <Link to="/dues"><Briefcase className="w-3.5 h-3.5 mr-1" />{t.reportsPage.linkDues}<ArrowRight className="w-3 h-3 ml-1 opacity-60" /></Link>
-                  </Button>
+                  {canShowFinancial ? (
+                    <>
+                      <Button asChild variant="outline" size="sm" className="rounded-xl">
+                        <Link to="/payments"><Wallet className="w-3.5 h-3.5 mr-1" />{t.reportsPage.linkPayments}<ArrowRight className="w-3 h-3 ml-1 opacity-60" /></Link>
+                      </Button>
+                      <Button asChild variant="outline" size="sm" className="rounded-xl">
+                        <Link to="/dues"><Briefcase className="w-3.5 h-3.5 mr-1" />{t.reportsPage.linkDues}<ArrowRight className="w-3 h-3 ml-1 opacity-60" /></Link>
+                      </Button>
+                    </>
+                  ) : null}
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          {showAttendanceAnalytics ? (
+            <AttendanceReportPanel
+              clubId={clubId}
+              teams={teams}
+              labels={{
+                title: t.reportsPage.attendanceTitle,
+                subtitle: t.reportsPage.attendanceSubtitle,
+                allTeams: t.playerStatsPage.allTeams,
+                activities: t.reportsPage.attendanceActivities,
+                avgResponse: t.reportsPage.attendanceAvgResponse,
+                avgComing: t.reportsPage.attendanceAvgComing,
+                missing: t.reportsPage.attendanceMissing,
+                gaps: t.reportsPage.attendanceGaps,
+                loading: t.reportsPage.loadingMetrics,
+                empty: t.reportsPage.attendanceEmpty,
+                failed: t.reportsPage.attendanceFailed,
+                definitionsHint: t.reportsPage.attendanceDefinitionsHint,
+              }}
+            />
+          ) : null}
         </div>
       ) : null}
 
       {persona === "trainer" && clubId ? (
-        <div className={DASHBOARD_PAGE_INNER}>
+        <div className={`${DASHBOARD_PAGE_INNER} space-y-4`}>
           <Card className="border-border/60 bg-card/40">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">{t.reportsPage.sectionCoaching}</CardTitle>
@@ -918,9 +969,38 @@ const PlayerStats = () => {
                 <Button asChild variant="outline" size="sm" className="rounded-xl">
                   <Link to="/matches">{t.reportsPage.linkMatches}</Link>
                 </Button>
+                {showTeamLedgerLink ? (
+                  <Button asChild variant="outline" size="sm" className="rounded-xl">
+                    <Link to="/team-ledger">{t.reportsPage.linkTeamLedger}</Link>
+                  </Button>
+                ) : null}
               </div>
             </CardContent>
           </Card>
+          {showAttendanceAnalytics ? (
+            <AttendanceReportPanel
+              clubId={clubId}
+              teams={
+                snapshot?.coachTeamIds?.length
+                  ? teams.filter((team) => snapshot.coachTeamIds.includes(team.id))
+                  : teams
+              }
+              labels={{
+                title: t.reportsPage.attendanceTitle,
+                subtitle: t.reportsPage.attendanceSubtitleTrainer,
+                allTeams: t.playerStatsPage.allTeams,
+                activities: t.reportsPage.attendanceActivities,
+                avgResponse: t.reportsPage.attendanceAvgResponse,
+                avgComing: t.reportsPage.attendanceAvgComing,
+                missing: t.reportsPage.attendanceMissing,
+                gaps: t.reportsPage.attendanceGaps,
+                loading: t.reportsPage.loadingMetrics,
+                empty: t.reportsPage.attendanceEmpty,
+                failed: t.reportsPage.attendanceFailed,
+                definitionsHint: t.reportsPage.attendanceDefinitionsHint,
+              }}
+            />
+          ) : null}
         </div>
       ) : null}
 

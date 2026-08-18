@@ -73,6 +73,12 @@ import MatchVoting from "@/components/matches/MatchVoting";
 import MatchTimeline from "@/components/matches/MatchTimeline";
 import FormStreak from "@/components/matches/FormStreak";
 import AIMatchAnalysis from "@/components/ai/AIMatchAnalysis";
+import {
+  attendanceStatusLabel,
+  fetchAttendanceStatusByMembership,
+  findActivityForMatch,
+} from "@/lib/match-lineup-attendance";
+import type { TrainingAttendanceStatus } from "@/lib/training-attendance";
 import { BrandedText } from "@/components/ai/Ai4TBrand";
 import { cn } from "@/lib/utils";
 import type { MembershipWithProfile } from "@/types/supabase";
@@ -226,6 +232,9 @@ const Matches = () => {
   const [addLineupStarter, setAddLineupStarter] = useState(true);
   const [addLineupPosition, setAddLineupPosition] = useState("");
   const [addLineupJersey, setAddLineupJersey] = useState("");
+  const [lineupAttendanceByMember, setLineupAttendanceByMember] = useState<
+    Record<string, TrainingAttendanceStatus>
+  >({});
 
   // Match form
   const [opponent, setOpponent] = useState("");
@@ -742,8 +751,26 @@ const Matches = () => {
       supabase.from("match_lineups").select("*").eq("match_id", match.id),
     ]);
     setMatchEvents((evRes.data as MatchEvent[]) || []);
-    setMembers(((memRes.data ?? []) as unknown as Membership[]));
+    const memberRows = (memRes.data ?? []) as unknown as Membership[];
+    setMembers(memberRows);
     setLineup((lineupRes.data as LineupPlayer[]) || []);
+
+    const { activityId } = await findActivityForMatch({
+      clubId: clubId!,
+      teamId: match.team_id ?? null,
+      matchDateIso: match.match_date,
+    });
+    if (activityId && memberRows.length) {
+      const { data: attendanceMap } = await fetchAttendanceStatusByMembership({
+        clubId: clubId!,
+        activityId,
+        membershipIds: memberRows.map((m) => m.id),
+      });
+      setLineupAttendanceByMember(attendanceMap);
+    } else {
+      setLineupAttendanceByMember({});
+    }
+
     setLoadingDetail(false);
   };
 
@@ -1924,9 +1951,22 @@ const Matches = () => {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="__none">Select player</SelectItem>
-                            {members.filter((member) => !lineup.some((lineupMember) => lineupMember.membership_id === member.id)).map((member) => (
-                              <SelectItem key={member.id} value={member.id}>{member.profiles?.display_name || "Member"}</SelectItem>
-                            ))}
+                            {members.filter((member) => !lineup.some((lineupMember) => lineupMember.membership_id === member.id)).map((member) => {
+                              const rsvpLabel = attendanceStatusLabel(lineupAttendanceByMember[member.id], {
+                                coming: t.matchesPage.lineupRsvpComing,
+                                declined: t.matchesPage.lineupRsvpDeclined,
+                                maybe: t.matchesPage.lineupRsvpMaybe,
+                                pending: t.matchesPage.lineupRsvpPending,
+                                attended: t.matchesPage.lineupRsvpAttended,
+                                waitlisted: t.matchesPage.lineupRsvpWaitlisted,
+                              });
+                              const name = member.profiles?.display_name || "Member";
+                              return (
+                                <SelectItem key={member.id} value={member.id}>
+                                  {rsvpLabel ? `${name} · ${rsvpLabel}` : name}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                         <Input placeholder={t.matchesPage.phPosition} value={addLineupPosition} onChange={e => setAddLineupPosition(e.target.value)}

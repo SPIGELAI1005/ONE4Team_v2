@@ -1,8 +1,8 @@
 # ONE4Team — Comprehensive project audit
 
-**Audit date:** 2026-08-07 (`/my-data` save hardening · Vercel Analytics · LOC **170,246** / operator **17,985**)  
-**Scope:** Codebase, architecture, UX/design, production readiness, competitive positioning, market value, and value-growth levers  
-**Primary reference (existing):** [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) — strict production-readiness review with risk register, readiness scores, and remediation sprints  
+**Audit date:** 2026-08-09 (Guardian/parent Members · Settings family · role assignment RLS; prior 2026-08-07 `/my-data` · Vercel Analytics · LOC **170,246** / operator **17,985**)
+**Scope:** Codebase, architecture, UX/design, production readiness, competitive positioning, market value, and value-growth levers
+**Primary reference (existing):** [`ops/PRODUCTION_READINESS_ARTIFACTS.md`](../ops/PRODUCTION_READINESS_ARTIFACTS.md) — strict production-readiness review with risk register, readiness scores, and remediation sprints
 
 **Related docs:** [`PROJECT_STATUS.md`](../PROJECT_STATUS.md) · [`MEMORY_BANK.md`](../MEMORY_BANK.md) · [`ROADMAP.md`](../ROADMAP.md) · [`docs/PRODUCTION_RELEASE_CHECKLIST.md`](PRODUCTION_RELEASE_CHECKLIST.md) · [`DEPLOYMENT.md`](../DEPLOYMENT.md)
 
@@ -14,7 +14,7 @@ ONE4Team is a **mature-in-code, early-in-market** multi-tenant club management S
 
 | Dimension | Assessment | Prior | **Now** |
 |-----------|------------|:-----:|:-------:|
-| **Feature breadth** | Above typical regional club apps; AI agent + public site builder + marketplace + digests + TSV-scale registry import + member self-service master data | 87 | **89** |
+| **Feature breadth** | Above typical regional club apps; AI agent + public site builder + marketplace + digests + TSV-scale registry import + member self-service master data + guardian family Members/Settings (2026-08-09) | 87 | **90** |
 | **Code & architecture** | Strong foundations; Members feature modules started but **`Members.tsx`** still large (~7k lines after reconciliation sprint) | 69 | **70** |
 | **UX & design** | Distinctive glass UI; Guided setup; Support FAQ refreshed; DE market fit (Club Page Admin umlaut pass) | 74 | **79** |
 | **Production readiness** | Conditionally ready for controlled multi-club rollout (ops audit **68** overall) | 61 | **68** |
