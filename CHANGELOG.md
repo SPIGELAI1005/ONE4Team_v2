@@ -3,6 +3,12 @@
 This log is maintained by the agent during local-first execution.
 It records notable changes, features, and hardening steps.
 
+## 2026-08-18 — German master-data labels and club UI i18n
+
+- **Member registry fields:** identity labels such as First name / Last name / Sex were humanized English column names even when the UI language was German. Field labels, enum values (sex, membership kind, strong foot/hand), and select options now use `membersPage.masterFieldLabels` / `masterValues`.
+- **Club surfaces wired to existing DE copy:** Members roster pagination, Dues, Schedule filters, Matches create/lineup/events, Events invite, Shop club-empty state, Player Profile, Teams pitch filter and schedule-delete dialog, and the crash ErrorBoundary.
+- **Coverage test:** `src/lib/member-master-i18n.test.ts` asserts every registry column has a German label distinct from English.
+
 ## 2026-08-18 — Team Ops verification · dashboard stability · release handoff
 
 - **Dashboard crash fixed:** restored the missing `MyDuesCard` import in `DashboardContent.tsx`; the `MyDuesCard is not defined` error no longer blocks dashboard rendering.

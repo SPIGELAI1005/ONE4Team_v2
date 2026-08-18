@@ -6056,10 +6056,16 @@ const Members = () => {
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/20">
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     {loading ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" aria-hidden /> : null}
-                    {rosterForDisplay.length} match{rosterForDisplay.length === 1 ? "" : "es"} on this page ·{" "}
+                    {rosterForDisplay.length === 1
+                      ? t.membersPage.rosterMatchesOnPage.replace("{count}", "1")
+                      : t.membersPage.rosterMatchesOnPage.replace("{count}", String(rosterForDisplay.length))}
+                    {" · "}
                     {membersDbTotalCount != null
-                      ? `database page ${membersServerPage}/${membersServerTotalPages} (${membersDbTotalCount} in filter)`
-                      : `page ${membersServerPage}`}
+                      ? t.membersPage.rosterDatabasePage
+                          .replace("{page}", String(membersServerPage))
+                          .replace("{totalPages}", String(membersServerTotalPages))
+                          .replace("{count}", String(membersDbTotalCount))
+                      : t.membersPage.rosterPageOnly.replace("{page}", String(membersServerPage))}
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -6070,7 +6076,7 @@ const Members = () => {
                       disabled={membersServerPage <= 1}
                       onClick={() => setMembersServerPage((p) => Math.max(1, p - 1))}
                     >
-                      Previous
+                      {t.membersPage.paginationPrevious}
                     </Button>
                     <span className="text-xs text-muted-foreground">
                       {membersServerPage}/{membersServerTotalPages}
@@ -6083,7 +6089,7 @@ const Members = () => {
                       disabled={membersServerPage >= membersServerTotalPages}
                       onClick={() => setMembersServerPage((p) => Math.min(membersServerTotalPages, p + 1))}
                     >
-                      Next
+                      {t.membersPage.paginationNext}
                     </Button>
                   </div>
                 </div>

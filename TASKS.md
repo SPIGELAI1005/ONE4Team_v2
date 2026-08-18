@@ -8,6 +8,8 @@ This file is the execution queue derived from `MVP_PLAN.md`, `ROADMAP.md`, and P
 
 ## SPRINT 2026-08-18 — Verification and release handoff
 
+- [x] **I18N-MASTER-001** Wire member master-data field labels/values to EN/DE; stop humanizing English column names
+- [x] **I18N-CLUB-UI-001** Translate leftover club-facing English on Members pagination, Dues, Schedule, Matches, Events, Shop, Player Profile, Teams, and ErrorBoundary
 - [x] **DASH-STABILITY-001** Restore `MyDuesCard` import and remove dashboard runtime crash
 - [x] **UI-CONTRAST-001** Audit light-mode text/status surfaces; enforce AA-safe primary and tinted badge variants
 - [x] **MEMBERS-STABILITY-001** Stabilize roster scope dependencies, reject stale fetches, preserve hydrated rows, and remove row fade replay

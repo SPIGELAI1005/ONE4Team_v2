@@ -276,7 +276,7 @@ export default function Dues() {
             {canManage && (
               <>
                 <Button size="sm" variant="outline" className="rounded-2xl" onClick={() => setShowBulk(true)} disabled={!clubId}>
-                  <Layers className="w-4 h-4 mr-1" /> Bulk
+                  <Layers className="w-4 h-4 mr-1" /> {t.duesPage.bulk}
                 </Button>
                 <Button
                   size="sm"
@@ -284,7 +284,7 @@ export default function Dues() {
                   onClick={() => setShowCreate(true)}
                   disabled={!clubId}
                 >
-                  <Plus className="w-4 h-4 mr-1" /> New
+                  <Plus className="w-4 h-4 mr-1" /> {t.duesPage.newEntry}
                 </Button>
               </>
             )}
@@ -299,11 +299,11 @@ export default function Dues() {
           </div>
         ) : !clubId ? (
           <div className="text-center py-20">
-            <p className="text-muted-foreground">Select a club to view dues.</p>
+            <p className="text-muted-foreground">{t.duesPage.selectClub}</p>
           </div>
         ) : dues.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-muted-foreground">No dues yet.</p>
+            <p className="text-muted-foreground">{t.duesPage.empty}</p>
           </div>
         ) : (
           <div className="grid gap-3">
@@ -311,7 +311,7 @@ export default function Dues() {
               <div key={d.id} className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="text-xs text-muted-foreground">Due date</div>
+                    <div className="text-xs text-muted-foreground">{t.duesPage.dueDate}</div>
                     <div className="font-display font-bold text-foreground">{d.due_date}</div>
                     <div className="mt-1 text-sm text-muted-foreground">
                       {d.amount_cents !== null ? `${(d.amount_cents / 100).toFixed(2)} ${d.currency ?? "EUR"}` : "-"}
@@ -330,19 +330,23 @@ export default function Dues() {
                           : "border-amber-500/30 bg-amber-500/10 text-amber-600"
                       }`}
                     >
-                      {d.status.toUpperCase()}
+                      {d.status === "paid"
+                        ? t.duesPage.statusPaid
+                        : d.status === "waived"
+                          ? t.duesPage.statusWaived
+                          : t.duesPage.statusDue}
                     </span>
 
                     {canManage && (
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline" className="rounded-2xl" onClick={() => updateStatus(d, "paid")}>
-                          Paid
+                          {t.duesPage.markPaid}
                         </Button>
                         <Button size="sm" variant="outline" className="rounded-2xl" onClick={() => updateStatus(d, "waived")}>
-                          Waive
+                          {t.duesPage.waive}
                         </Button>
                         <Button size="sm" variant="outline" className="rounded-2xl" onClick={() => updateStatus(d, "due")}>
-                          Due
+                          {t.duesPage.markDue}
                         </Button>
                       </div>
                     )}
@@ -360,21 +364,21 @@ export default function Dues() {
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowCreate(false)} />
           <div className="relative w-full max-w-lg rounded-3xl border border-border/60 bg-card/60 backdrop-blur-2xl p-5 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <div className="font-display font-bold text-foreground">New dues entry</div>
+              <div className="font-display font-bold text-foreground">{t.duesPage.newEntryTitle}</div>
               <Button variant="ghost" size="sm" onClick={() => setShowCreate(false)}>
-                Close
+                {t.common.close}
               </Button>
             </div>
 
             <div className="grid gap-3">
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Member</div>
+                <div className="text-xs text-muted-foreground mb-1">{t.duesPage.member}</div>
                 <Select value={newMembershipId || "__none"} onValueChange={(value) => setNewMembershipId(value === "__none" ? "" : value)}>
                   <SelectTrigger className="w-full h-10 rounded-xl border-border/60 bg-background/50 px-3 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none">Select...</SelectItem>
+                    <SelectItem value="__none">{t.duesPage.selectMember}</SelectItem>
                     {memberships
                       .filter((membership) => membership.status === "active")
                       .map((membership) => (
@@ -387,22 +391,22 @@ export default function Dues() {
               </div>
 
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Due date</div>
+                <div className="text-xs text-muted-foreground mb-1">{t.duesPage.dueDate}</div>
                 <Input value={newDueDate} onChange={(e) => setNewDueDate(e.target.value)} placeholder={t.placeholders.dateYyyyMmDd} />
               </div>
 
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Amount (EUR)</div>
+                <div className="text-xs text-muted-foreground mb-1">{t.duesPage.amountEur}</div>
                 <Input value={newAmountEur} onChange={(e) => setNewAmountEur(e.target.value)} placeholder={t.placeholders.amountExample} />
               </div>
 
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Note (optional)</div>
-                <Input value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder="e.g. February dues" />
+                <div className="text-xs text-muted-foreground mb-1">{t.duesPage.noteOptional}</div>
+                <Input value={newNote} onChange={(e) => setNewNote(e.target.value)} placeholder={t.duesPage.phNote} />
               </div>
 
               <Button className="bg-gradient-gold-static text-primary-foreground font-semibold" onClick={createDue}>
-                Create
+                {t.duesPage.create}
               </Button>
             </div>
           </div>
@@ -415,46 +419,46 @@ export default function Dues() {
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowBulk(false)} />
           <div className="relative w-full max-w-lg rounded-3xl border border-border/60 bg-card/60 backdrop-blur-2xl p-5 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <div className="font-display font-bold text-foreground">Bulk create dues</div>
+              <div className="font-display font-bold text-foreground">{t.duesPage.bulkTitle}</div>
               <Button variant="ghost" size="sm" onClick={() => setShowBulk(false)}>
-                Close
+                {t.common.close}
               </Button>
             </div>
 
             <div className="grid gap-3">
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Role filter</div>
+                <div className="text-xs text-muted-foreground mb-1">{t.duesPage.roleFilter}</div>
                 <Select value={bulkRole} onValueChange={setBulkRole}>
                   <SelectTrigger className="w-full h-10 rounded-xl border-border/60 bg-background/50 px-3 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All active members</SelectItem>
-                    <SelectItem value="player">Players</SelectItem>
-                    <SelectItem value="member">Members</SelectItem>
-                    <SelectItem value="parent">Parents</SelectItem>
-                    <SelectItem value="trainer">Trainers</SelectItem>
+                    <SelectItem value="all">{t.duesPage.allActiveMembers}</SelectItem>
+                    <SelectItem value="player">{t.duesPage.rolePlayers}</SelectItem>
+                    <SelectItem value="member">{t.duesPage.roleMembers}</SelectItem>
+                    <SelectItem value="parent">{t.duesPage.roleParents}</SelectItem>
+                    <SelectItem value="trainer">{t.duesPage.roleTrainers}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Due date</div>
+                <div className="text-xs text-muted-foreground mb-1">{t.duesPage.dueDate}</div>
                 <Input value={bulkDueDate} onChange={(e) => setBulkDueDate(e.target.value)} placeholder={t.placeholders.dateYyyyMmDd} />
               </div>
 
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Amount (EUR)</div>
+                <div className="text-xs text-muted-foreground mb-1">{t.duesPage.amountEur}</div>
                 <Input value={bulkAmountEur} onChange={(e) => setBulkAmountEur(e.target.value)} placeholder={t.placeholders.amountExample} />
               </div>
 
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Note (optional)</div>
+                <div className="text-xs text-muted-foreground mb-1">{t.duesPage.noteOptional}</div>
                 <Input value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder={t.duesPage.phNote} />
               </div>
 
               <Button className="bg-gradient-gold-static text-primary-foreground font-semibold" onClick={bulkCreate}>
-                Create for matching members
+                {t.duesPage.createForMatching}
               </Button>
 
               <div className="text-[10px] text-muted-foreground">

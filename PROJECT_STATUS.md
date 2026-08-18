@@ -1,9 +1,10 @@
 # ONE4Team (clubhub-connect) — Project Status
 
-Last updated: 2026-08-18 (Team Ops verification and release handoff)
+Last updated: 2026-08-18 (German master-data i18n)
 
 ## Summary
 The project is **beyond Phase 12 local implementation scope** and now includes a significantly expanded operations layer:
+- **German master-data + club UI i18n (2026-08-18):** member registry tabs already translated, but field labels still showed English column names. Labels and values now come from `de.ts` (`Vorname`, `Geschlecht`, `Aktives Mitglied`, …). Club pages that had `t` available but hardcoded English (Members pagination, Dues, Schedule, Matches, Events, Shop, Player Profile, Teams, ErrorBoundary) now use i18n. Operator console still has leftover English chrome.
 - **Light-mode accessibility + Members stability (2026-08-18):** theme primary and colored status/badge text now use AA-safe light variants with preserved dark variants; measured member label contrast is **6.46:1–7.38:1**. Members roster refresh now normalizes scope dependencies, ignores stale requests, retains hydrated rows, and removes row fade-in replay.
 - **Verification handoff (2026-08-18):** dashboard `MyDuesCard` crash fixed. Local release gates are green: ESLint, **754 tests** (**14 credential-gated integration skips**), phase-0 audit, build, and bundle budget. Team Ops Playwright executed **14 tests with zero skips: 3 passed / 11 failed**; remaining failures require distinct role-correct staging users, deterministic active-club selection, and selector cleanup. Invite email `Unauthorized` is isolated to stale browser JWT handling; fresh JWT invocation reaches the Edge function.
 - **Production-review hardening (2026-08-16):** family roster/search authorization, assignment-gated Parent persona, ICS scope boundaries, atomic attendance capacity/waitlist, notification opt-outs, direct-route PWA registration, deterministic Team Ops E2E, and operator acceptance/cleanup guide. Migrations **`20260816120000`** + **`20260816130000`** and updated **`calendar-ics`** are deployed. Role-correct staging fixtures and cron-log proof remain open.

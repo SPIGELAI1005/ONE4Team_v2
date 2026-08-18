@@ -201,7 +201,7 @@ const PlayerProfile = () => {
       const participations = (participationsRaw ?? []) as unknown as EventParticipationWithEvent[];
       const att: EventAttendance[] = participations.map((p) => ({
         event_id: p.event_id,
-        title: p.events?.title || "Event",
+        title: p.events?.title || t.eventsPage.badgeEvent,
         starts_at: p.events?.starts_at || "",
         status: p.status,
       }));
@@ -245,7 +245,7 @@ const PlayerProfile = () => {
       setLoading(false);
     };
     fetchAll();
-  }, [clubId, membershipId]);
+  }, [clubId, membershipId, t.eventsPage.badgeEvent]);
 
   const eventTypeIcon: Record<string, string> = {
     goal: "⚽", assist: "🅰️", yellow_card: "🟨", red_card: "🟥",
@@ -292,11 +292,11 @@ const PlayerProfile = () => {
               {/* Stat cards */}
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                 {[
-                  { label: "Matches", value: matchesPlayed, icon: Trophy },
-                  { label: "Goals", value: goals, icon: Target },
-                  { label: "Assists", value: assists, icon: Award },
-                  { label: "Yellow", value: yellowCards, icon: AlertTriangle },
-                  { label: "Red", value: redCards, icon: AlertTriangle },
+                  { label: t.playerProfilePage.statMatches, value: matchesPlayed, icon: Trophy },
+                  { label: t.playerProfilePage.statGoals, value: goals, icon: Target },
+                  { label: t.playerProfilePage.statAssists, value: assists, icon: Award },
+                  { label: t.playerProfilePage.statYellowCards, value: yellowCards, icon: AlertTriangle },
+                  { label: t.playerProfilePage.statRedCards, value: redCards, icon: AlertTriangle },
                 ].map(s => (
                   <div key={s.label} className="rounded-lg bg-background border border-border p-3 text-center">
                     <div className="text-lg font-bold font-display text-foreground">{s.value}</div>
@@ -309,16 +309,16 @@ const PlayerProfile = () => {
             {/* Tabs */}
             <div className="border-b border-border flex gap-1 overflow-x-auto">
               {([
-                { id: "overview" as const, label: "Overview" },
-                { id: "matches" as const, label: "Match History" },
-                { id: "attendance" as const, label: "Attendance" },
-                { id: "analytics" as const, label: "Analytics" },
-              ]).map(t => (
-                <button key={t.id} onClick={() => setTab(t.id)}
+                { id: "overview" as const, label: t.playerProfilePage.tabOverview },
+                { id: "matches" as const, label: t.playerProfilePage.tabMatchHistory },
+                { id: "attendance" as const, label: t.playerProfilePage.tabAttendance },
+                { id: "analytics" as const, label: t.playerProfilePage.tabAnalytics },
+              ]).map((tabItem) => (
+                <button key={tabItem.id} onClick={() => setTab(tabItem.id)}
                   className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                    tab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                    tab === tabItem.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
                   }`}>
-                  {t.label}
+                  {tabItem.label}
                 </button>
               ))}
             </div>
@@ -337,15 +337,15 @@ const PlayerProfile = () => {
                   <div className="rounded-lg bg-card border border-border p-4">
                     <div className="text-xs text-muted-foreground">{t.sidebar.dues}</div>
                     <div className="mt-1 text-sm text-foreground">
-                      <span className="font-semibold">{duesDueCount}</span> due · <span className="font-semibold">{duesPaidCount}</span> paid
+                      <span className="font-semibold">{duesDueCount}</span> {t.playerProfilePage.duesDue} · <span className="font-semibold">{duesPaidCount}</span> {t.playerProfilePage.duesPaid}
                     </div>
-                    <div className="mt-2 text-[11px] text-muted-foreground">(Shown for this member only)</div>
+                    <div className="mt-2 text-[11px] text-muted-foreground">{t.playerProfilePage.memberOnlyHint}</div>
                   </div>
                   <div className="rounded-lg bg-card border border-border p-4 sm:col-span-2">
-                    <div className="text-xs text-muted-foreground">Quick links</div>
+                    <div className="text-xs text-muted-foreground">{t.playerProfilePage.quickLinks}</div>
                     <div className="mt-2 grid gap-1 text-[13px]">
-                      <a className="text-primary hover:underline" href="/activities">Schedule</a>
-                      <a className="text-primary hover:underline" href="/matches">Matches</a>
+                      <a className="text-primary hover:underline" href="/activities">{t.playerProfilePage.schedule}</a>
+                      <a className="text-primary hover:underline" href="/matches">{t.playerProfilePage.matches}</a>
                       <a className="text-primary hover:underline" href="/dues">{t.sidebar.dues}</a>
                       <a className="text-primary hover:underline" href="/payments">{t.sidebar.payments}</a>
                     </div>
@@ -353,13 +353,15 @@ const PlayerProfile = () => {
                 </div>
 
                 <AchievementBadges membershipId={membershipId} />
-                <h3 className="text-sm font-semibold text-foreground">Recent Matches</h3>
+                <h3 className="text-sm font-semibold text-foreground">{t.playerProfilePage.recentMatches}</h3>
                 {matchHistory.slice(0, 5).map((m, i) => (
                   <motion.div key={m.match_id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
                     className="rounded-lg bg-card border border-border p-4">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-medium text-foreground">
-                        {m.is_home ? `Club vs ${m.opponent}` : `${m.opponent} vs Club`}
+                        {m.is_home
+                          ? `${t.playerProfilePage.clubName} ${t.playerProfilePage.versus} ${m.opponent}`
+                          : `${m.opponent} ${t.playerProfilePage.versus} ${t.playerProfilePage.clubName}`}
                       </span>
                       {m.status === "completed" && (
                         <span className="text-sm font-bold text-foreground">{m.home_score} - {m.away_score}</span>
@@ -379,20 +381,22 @@ const PlayerProfile = () => {
                     )}
                   </motion.div>
                 ))}
-                {matchHistory.length === 0 && <p className="text-sm text-muted-foreground">No match history yet.</p>}
+                {matchHistory.length === 0 && <p className="text-sm text-muted-foreground">{t.playerProfilePage.noMatchHistory}</p>}
               </div>
             )}
 
             {tab === "matches" && (
               <div className="space-y-3">
                 {matchHistory.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">No matches found.</p>
+                  <p className="text-sm text-muted-foreground text-center py-8">{t.playerProfilePage.noMatches}</p>
                 ) : matchHistory.map((m, i) => (
                   <motion.div key={m.match_id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
                     className="rounded-lg bg-card border border-border p-4">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm font-medium text-foreground">
-                        {m.is_home ? `Club vs ${m.opponent}` : `${m.opponent} vs Club`}
+                        {m.is_home
+                          ? `${t.playerProfilePage.clubName} ${t.playerProfilePage.versus} ${m.opponent}`
+                          : `${m.opponent} ${t.playerProfilePage.versus} ${t.playerProfilePage.clubName}`}
                       </span>
                       {m.status === "completed" && (
                         <span className="text-sm font-bold text-foreground">{m.home_score} - {m.away_score}</span>
@@ -422,7 +426,7 @@ const PlayerProfile = () => {
               <div className="space-y-3">
                 <AttendanceHeatmap membershipId={membershipId} />
                 {attendance.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">No event attendance records.</p>
+                  <p className="text-sm text-muted-foreground text-center py-8">{t.playerProfilePage.noAttendance}</p>
                 ) : attendance.map((a, i) => (
                   <motion.div key={a.event_id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
                     className="flex items-center justify-between rounded-lg bg-card border border-border p-4">

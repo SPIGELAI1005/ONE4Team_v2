@@ -468,7 +468,7 @@ export default function Activities() {
   const handleCreate = async () => {
     if (!user || !clubId) return;
     if (!canCreate) {
-      toast({ title: "Not authorized", description: "Only trainers/admins can create activities.", variant: "destructive" });
+      toast({ title: t.common.notAuthorized, description: t.activitiesPage.toastTrainerOnly, variant: "destructive" });
       return;
     }
     if (!title.trim() || !startsAt) return;
@@ -517,9 +517,9 @@ export default function Activities() {
     const sat = nextDowAt(15, 0, 6);
 
     const rows = [
-      { club_id: clubId, type: "training" as const, title: "Training", starts_at: mon.toISOString(), team_id: team, created_by: user.id },
-      { club_id: clubId, type: "training" as const, title: "Training", starts_at: wed.toISOString(), team_id: team, created_by: user.id },
-      { club_id: clubId, type: "match" as const, title: "Match", starts_at: sat.toISOString(), team_id: team, created_by: user.id },
+      { club_id: clubId, type: "training" as const, title: t.activitiesPage.filterTraining, starts_at: mon.toISOString(), team_id: team, created_by: user.id },
+      { club_id: clubId, type: "training" as const, title: t.activitiesPage.filterTraining, starts_at: wed.toISOString(), team_id: team, created_by: user.id },
+      { club_id: clubId, type: "match" as const, title: t.activitiesPage.filterMatch, starts_at: sat.toISOString(), team_id: team, created_by: user.id },
     ];
 
     const { error } = await supabase.from("activities").insert(rows);
@@ -826,34 +826,35 @@ export default function Activities() {
             <div className="rounded-3xl border border-border/60 bg-card/40 backdrop-blur-2xl p-4">
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Filter className="w-4 h-4" /> Filters
+                  <Filter className="w-4 h-4" /> {t.activitiesPage.filtersLabel}
                 </div>
                 {isPlayerFocusedView ? (
                   <p className="text-[11px] text-muted-foreground">{t.activitiesPage.playerHint}</p>
                 ) : perms.isTrainer ? (
                   <div className="text-[11px] text-muted-foreground">
-                    Tip: set a Team filter, then use <span className="text-foreground/80 font-medium">Week template</span>.
+                    {t.activitiesPage.weekTemplateTip.replace("{template}", t.activitiesPage.weekTemplate)}
                   </div>
                 ) : null}
               </div>
 
               <div className="flex flex-wrap gap-2 mt-3">
                 {([
-                  { id: "all", label: "All" },
-                  { id: "training", label: "Training" },
-                  { id: "match", label: "Match" },
-                  { id: "event", label: "Event" },
-                ] as const).map((t) => (
+                  { id: "all" as const, label: t.activitiesPage.filterAll },
+                  { id: "training" as const, label: t.activitiesPage.filterTraining },
+                  { id: "match" as const, label: t.activitiesPage.filterMatch },
+                  { id: "event" as const, label: t.activitiesPage.filterEvent },
+                ]).map((chip) => (
                   <button
-                    key={t.id}
-                    onClick={() => setFilterType(t.id as ActivityType | "all")}
+                    key={chip.id}
+                    type="button"
+                    onClick={() => setFilterType(chip.id as ActivityType | "all")}
                     className={`px-3 py-2 rounded-2xl text-xs font-medium border transition-colors ${
-                      filterType === t.id
+                      filterType === chip.id
                         ? "bg-primary/10 text-primary border-primary/20"
                         : "bg-background/40 text-foreground border-border/60 hover:bg-muted/30"
                     }`}
                   >
-                    {t.label}
+                    {chip.label}
                   </button>
                 ))}
 
@@ -863,7 +864,7 @@ export default function Activities() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {!isPlayerFocusedView ? <SelectItem value="__all">All teams</SelectItem> : null}
+                      {!isPlayerFocusedView ? <SelectItem value="__all">{t.activitiesPage.allTeams}</SelectItem> : null}
                       {(isPlayerFocusedView ? playerTeamOptions : teams).map((team) => (
                         <SelectItem key={team.id} value={team.id}>
                           {team.name}
@@ -880,7 +881,7 @@ export default function Activities() {
                     filterMine ? "bg-primary/10 text-primary border-primary/20" : "bg-background/40 text-foreground border-border/60"
                   }`}
                 >
-                  My sessions
+                  {t.activitiesPage.mySessions}
                 </button>
                 ) : null}
 
@@ -901,7 +902,7 @@ export default function Activities() {
                     filterShowPast ? "bg-primary/10 text-primary border-primary/20" : "bg-background/40 text-foreground border-border/60"
                   }`}
                 >
-                  Show past
+                  {t.activitiesPage.showPast}
                 </button>
               </div>
             </div>
@@ -910,7 +911,7 @@ export default function Activities() {
             {Object.keys(grouped).length === 0 ? (
               <div className="text-center py-16">
                 <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h2 className="font-display text-xl font-bold text-foreground mb-2">Nothing scheduled</h2>
+                <h2 className="font-display text-xl font-bold text-foreground mb-2">{t.activitiesPage.nothingScheduled}</h2>
                 <p className="text-muted-foreground">{t.activitiesPage.emptyWeekHint}</p>
               </div>
             ) : (

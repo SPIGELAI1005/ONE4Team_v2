@@ -2,6 +2,7 @@ import React from "react";
 import { logger } from "@/lib/logger";
 import { captureExceptionToSentry } from "@/lib/observability";
 import { isStaleChunkLoadError, reloadForStaleChunkOnce } from "@/lib/stale-chunk-reload";
+import { de, en } from "@/i18n";
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -39,12 +40,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   render() {
     if (this.state.hasError) {
-      const title = this.state.isStaleChunk
-        ? "Update available"
-        : "Something went wrong";
-      const description = this.state.isStaleChunk
-        ? "A newer version of ONE4Team was deployed. Reload to continue."
-        : "Please refresh the page. If this keeps happening, enable debug logs and share the console output.";
+      const language = typeof window !== "undefined" && localStorage.getItem("one4team.language") === "de" ? "de" : "en";
+      const t = language === "de" ? de : en;
+      const title = this.state.isStaleChunk ? t.common.staleChunkTitle : t.common.errorTitle;
+      const description = this.state.isStaleChunk ? t.common.staleChunkDesc : t.common.errorDesc;
 
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -53,14 +52,14 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             <div className="mt-2 text-xs text-muted-foreground">{description}</div>
             {!this.state.isStaleChunk ? (
               <pre className="mt-3 text-[10px] text-muted-foreground whitespace-pre-wrap">
-                {this.state.error?.message ?? "Unknown error"}
+                {this.state.error?.message ?? t.common.unknown}
               </pre>
             ) : null}
             <button
               className="mt-4 w-full h-10 rounded-2xl bg-primary/10 text-primary border border-primary/15 text-sm font-medium"
               onClick={() => window.location.reload()}
             >
-              Reload
+              {t.common.reload}
             </button>
           </div>
         </div>

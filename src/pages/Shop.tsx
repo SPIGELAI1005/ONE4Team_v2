@@ -468,7 +468,7 @@ export default function Shop() {
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
         ) : !clubId ? (
-          <div className="text-center py-20 text-muted-foreground">Select a club to access shop data.</div>
+          <div className="text-center py-20 text-muted-foreground">{t.shopPage.selectClubForShop}</div>
         ) : (
           <>
             {tab === "products" && (

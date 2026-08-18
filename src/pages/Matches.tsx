@@ -120,10 +120,27 @@ const MATCH_STATUS_OPTIONS = ["scheduled", "in_progress", "completed", "cancelle
 const MATCH_DETAIL_FIELD_CLASS =
   "box-border h-10 w-full min-w-0 max-w-full rounded-xl border-border bg-card px-3 text-sm [&::-webkit-date-and-time-value]:min-w-0 [&::-webkit-date-and-time-value]:text-left";
 
-const eventTypeLabels: Record<string, string> = {
-  goal: "⚽ Goal", assist: "🅰️ Assist", yellow_card: "🟨 Yellow", red_card: "🟥 Red",
-  substitution_in: "🔄 Sub In", substitution_out: "🔄 Sub Out",
-};
+function eventTypeLabel(
+  type: string,
+  labels: {
+    eventGoal: string;
+    eventAssist: string;
+    eventYellow: string;
+    eventRed: string;
+    eventSubIn: string;
+    eventSubOut: string;
+  },
+): string {
+  const map: Record<string, string> = {
+    goal: `⚽ ${labels.eventGoal}`,
+    assist: `🅰️ ${labels.eventAssist}`,
+    yellow_card: `🟨 ${labels.eventYellow}`,
+    red_card: `🟥 ${labels.eventRed}`,
+    substitution_in: `🔄 ${labels.eventSubIn}`,
+    substitution_out: `🔄 ${labels.eventSubOut}`,
+  };
+  return map[type] ?? type;
+}
 
 function toDatetimeLocalValue(iso: string): string {
   const date = new Date(iso);
@@ -1498,7 +1515,7 @@ const Matches = () => {
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
             className="w-full max-w-[95vw] sm:max-w-md rounded-2xl bg-card border border-border p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display font-bold text-foreground">Schedule Match</h3>
+              <h3 className="font-display font-bold text-foreground">{t.matchesPage.scheduleMatch}</h3>
               <Button variant="ghost" size="icon" onClick={() => setShowAddMatch(false)}><X className="w-4 h-4" /></Button>
             </div>
             <div className="space-y-3">
@@ -1507,20 +1524,20 @@ const Matches = () => {
                 <OpponentLogoField clubId={clubId} value={opponentLogoUrl} onChange={setOpponentLogoUrl} />
               ) : null}
               <div className="flex gap-2">
-                <Button size="sm" variant={isHome ? "default" : "outline"} onClick={() => setIsHome(true)} className={isHome ? "bg-gradient-gold-static text-primary-foreground" : ""}>Home</Button>
-                <Button size="sm" variant={!isHome ? "default" : "outline"} onClick={() => setIsHome(false)} className={!isHome ? "bg-gradient-gold-static text-primary-foreground" : ""}>Away</Button>
+                <Button size="sm" variant={isHome ? "default" : "outline"} onClick={() => setIsHome(true)} className={isHome ? "bg-gradient-gold-static text-primary-foreground" : ""}>{t.matchesPage.homeVenue}</Button>
+                <Button size="sm" variant={!isHome ? "default" : "outline"} onClick={() => setIsHome(false)} className={!isHome ? "bg-gradient-gold-static text-primary-foreground" : ""}>{t.matchesPage.awayVenue}</Button>
               </div>
               <div>
-                <label className="text-[10px] text-muted-foreground mb-1 block">Date & Time *</label>
+                <label className="text-[10px] text-muted-foreground mb-1 block">{t.matchesPage.labelDateTime} *</label>
                 <Input type="datetime-local" value={matchDate} onChange={e => setMatchDate(e.target.value)} className="bg-background" />
               </div>
-              <Input placeholder="Location" value={matchLocation} onChange={e => setMatchLocation(e.target.value)} className="bg-background" />
+              <Input placeholder={t.matchesPage.phLocation} value={matchLocation} onChange={e => setMatchLocation(e.target.value)} className="bg-background" />
               <Select value={matchTeamId || "__none"} onValueChange={(value) => setMatchTeamId(value === "__none" ? "" : value)}>
                 <SelectTrigger className="w-full h-10 rounded-xl border-border bg-background px-3 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none">No team</SelectItem>
+                  <SelectItem value="__none">{t.matchesPage.noTeam}</SelectItem>
                   {manageableTeams.map((team) => <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -1529,12 +1546,12 @@ const Matches = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__none">No competition</SelectItem>
+                  <SelectItem value="__none">{t.matchesPage.noCompetition}</SelectItem>
                   {competitions.map((competition) => <SelectItem key={competition.id} value={competition.id}>{competition.name}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Button onClick={handleCreateMatch} disabled={!opponent.trim() || !matchDate}
-                className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110">Schedule Match</Button>
+                className="w-full bg-gradient-gold-static text-primary-foreground hover:brightness-110">{t.matchesPage.scheduleMatch}</Button>
             </div>
           </motion.div>
         </div>
@@ -1781,16 +1798,16 @@ const Matches = () => {
               {openPanels.score && (
                 <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex-1">
-                  <label className="text-[10px] text-muted-foreground">Home</label>
+                  <label className="text-[10px] text-muted-foreground">{t.matchesPage.homeVenue}</label>
                   <Input type="number" value={homeScore} onChange={e => setHomeScore(e.target.value)} className="bg-card text-center text-lg font-bold" min="0" disabled={!canManageSelectedMatch} />
                 </div>
                 <span className="text-xl font-bold text-muted-foreground hidden sm:inline mt-4">:</span>
                 <div className="flex-1">
-                  <label className="text-[10px] text-muted-foreground">Away</label>
+                  <label className="text-[10px] text-muted-foreground">{t.matchesPage.awayVenue}</label>
                   <Input type="number" value={awayScore} onChange={e => setAwayScore(e.target.value)} className="bg-card text-center text-lg font-bold" min="0" disabled={!canManageSelectedMatch} />
                 </div>
                 {canManageSelectedMatch ? (
-                  <Button size="sm" className="bg-gradient-gold-static text-primary-foreground hover:brightness-110 sm:mt-4 w-full sm:w-auto" onClick={handleUpdateResult}>Save</Button>
+                  <Button size="sm" className="bg-gradient-gold-static text-primary-foreground hover:brightness-110 sm:mt-4 w-full sm:w-auto" onClick={handleUpdateResult}>{t.common.save}</Button>
                 ) : null}
               </div>
               )}
@@ -1820,7 +1837,7 @@ const Matches = () => {
                         substitutes={lineup.filter(l => !l.is_starter)}
                         getMemberName={(mid) => {
                           const player = members.find(m => m.id === mid);
-                          return player?.profiles?.display_name || "Player";
+                          return player?.profiles?.display_name || t.matchesPage.player;
                         }}
                       />
                     </div>
@@ -1830,14 +1847,14 @@ const Matches = () => {
                 {lineupTab === "events" ? (
                   <>
                     {matchEvents.length === 0 ? (
-                      <p className="text-xs text-muted-foreground mb-3">No events recorded.</p>
+                      <p className="text-xs text-muted-foreground mb-3">{t.matchesPage.noEventsRecorded}</p>
                     ) : (
                       <div className="space-y-1 mb-4">
                         {matchEvents.map(ev => {
                           const player = members.find(m => m.id === ev.membership_id);
                           return (
                             <div key={ev.id} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-background border border-border text-xs">
-                              <span>{eventTypeLabels[ev.event_type] || ev.event_type}</span>
+                              <span>{eventTypeLabel(ev.event_type, t.matchesPage)}</span>
                               {ev.minute != null && <span className="text-muted-foreground">{ev.minute}'</span>}
                               <span className="text-foreground">{player?.profiles?.display_name || ""}</span>
                             </div>
@@ -1846,7 +1863,7 @@ const Matches = () => {
                       </div>
                     )}
                     <div className="rounded-xl bg-background border border-border p-3 space-y-2">
-                      <h5 className="text-xs font-semibold text-muted-foreground">ADD EVENT</h5>
+                      <h5 className="text-xs font-semibold text-muted-foreground">{t.matchesPage.addEvent}</h5>
                       {canManageSelectedMatch ? (
                       <div className="flex gap-2 flex-wrap">
                         <Select value={evType} onValueChange={setEvType}>
@@ -1854,12 +1871,12 @@ const Matches = () => {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="goal">⚽ Goal</SelectItem>
-                            <SelectItem value="assist">🅰️ Assist</SelectItem>
-                            <SelectItem value="yellow_card">🟨 Yellow</SelectItem>
-                            <SelectItem value="red_card">🟥 Red</SelectItem>
-                            <SelectItem value="substitution_in">🔄 Sub In</SelectItem>
-                            <SelectItem value="substitution_out">🔄 Sub Out</SelectItem>
+                            <SelectItem value="goal">⚽ {t.matchesPage.eventGoal}</SelectItem>
+                            <SelectItem value="assist">🅰️ {t.matchesPage.eventAssist}</SelectItem>
+                            <SelectItem value="yellow_card">🟨 {t.matchesPage.eventYellow}</SelectItem>
+                            <SelectItem value="red_card">🟥 {t.matchesPage.eventRed}</SelectItem>
+                            <SelectItem value="substitution_in">🔄 {t.matchesPage.eventSubIn}</SelectItem>
+                            <SelectItem value="substitution_out">🔄 {t.matchesPage.eventSubOut}</SelectItem>
                           </SelectContent>
                         </Select>
                         <Select value={evMemberId || "__none"} onValueChange={(value) => setEvMemberId(value === "__none" ? "" : value)}>
@@ -1883,9 +1900,9 @@ const Matches = () => {
                 ) : (
                   <>
                     {/* Starters */}
-                    <h5 className="text-xs font-semibold text-muted-foreground mb-2">STARTING XI ({lineup.filter(l => l.is_starter).length})</h5>
+                    <h5 className="text-xs font-semibold text-muted-foreground mb-2">{t.matchesPage.startingXi.replace("{count}", String(lineup.filter(l => l.is_starter).length))}</h5>
                     {lineup.filter(l => l.is_starter).length === 0 ? (
-                      <p className="text-xs text-muted-foreground mb-3">No starters assigned.</p>
+                      <p className="text-xs text-muted-foreground mb-3">{t.matchesPage.noStartersAssigned}</p>
                     ) : (
                       <div className="space-y-1 mb-4">
                         {lineup.filter(l => l.is_starter).map(l => {
@@ -1894,13 +1911,13 @@ const Matches = () => {
                             <div key={l.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background border border-border text-xs">
                               <div className="flex items-center gap-2">
                                 {l.jersey_number != null && <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary font-bold text-[10px]">{l.jersey_number}</span>}
-                                <span className="font-medium text-foreground">{player?.profiles?.display_name || "Player"}</span>
+                                <span className="font-medium text-foreground">{player?.profiles?.display_name || t.matchesPage.player}</span>
                                 {l.position && <span className="text-muted-foreground">({l.position})</span>}
                               </div>
                               <div className="flex items-center gap-1">
                                 {canManageSelectedMatch ? (
                                   <>
-                                    <button onClick={() => handleToggleStarter(l)} className="text-[10px] text-muted-foreground hover:text-foreground px-1">→ Sub</button>
+                                    <button onClick={() => handleToggleStarter(l)} className="text-[10px] text-muted-foreground hover:text-foreground px-1">{t.matchesPage.moveToSub}</button>
                                     <button onClick={() => handleRemoveFromLineup(l.id)} className="text-destructive hover:text-destructive/80 px-1"><X className="w-3 h-3" /></button>
                                   </>
                                 ) : null}
@@ -1912,9 +1929,9 @@ const Matches = () => {
                     )}
 
                     {/* Substitutes */}
-                    <h5 className="text-xs font-semibold text-muted-foreground mb-2 mt-4">SUBSTITUTES ({lineup.filter(l => !l.is_starter).length})</h5>
+                    <h5 className="text-xs font-semibold text-muted-foreground mb-2 mt-4">{t.matchesPage.substitutesHeading.replace("{count}", String(lineup.filter(l => !l.is_starter).length))}</h5>
                     {lineup.filter(l => !l.is_starter).length === 0 ? (
-                      <p className="text-xs text-muted-foreground mb-3">No substitutes assigned.</p>
+                      <p className="text-xs text-muted-foreground mb-3">{t.matchesPage.noSubstitutesAssigned}</p>
                     ) : (
                       <div className="space-y-1 mb-4">
                         {lineup.filter(l => !l.is_starter).map(l => {
@@ -1923,7 +1940,7 @@ const Matches = () => {
                             <div key={l.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-background border border-border text-xs">
                               <div className="flex items-center gap-2">
                                 {l.jersey_number != null && <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted text-muted-foreground font-bold text-[10px]">{l.jersey_number}</span>}
-                                <span className="font-medium text-foreground">{player?.profiles?.display_name || "Player"}</span>
+                                <span className="font-medium text-foreground">{player?.profiles?.display_name || t.matchesPage.player}</span>
                                 {l.position && <span className="text-muted-foreground">({l.position})</span>}
                               </div>
                               <div className="flex items-center gap-1">
@@ -1943,14 +1960,14 @@ const Matches = () => {
                     {/* Add to lineup */}
                     {canManageSelectedMatch ? (
                     <div className="rounded-xl bg-background border border-border p-3 space-y-2 mt-4">
-                      <h5 className="text-xs font-semibold text-muted-foreground">ADD TO LINEUP</h5>
+                      <h5 className="text-xs font-semibold text-muted-foreground">{t.matchesPage.addToLineup}</h5>
                       <div className="flex gap-2 flex-wrap">
                         <Select value={addLineupMemberId || "__none"} onValueChange={(value) => setAddLineupMemberId(value === "__none" ? "" : value)}>
                           <SelectTrigger className="w-full sm:w-[180px] h-9 rounded-xl border-border bg-card px-2 text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="__none">Select player</SelectItem>
+                            <SelectItem value="__none">{t.matchesPage.selectPlayer}</SelectItem>
                             {members.filter((member) => !lineup.some((lineupMember) => lineupMember.membership_id === member.id)).map((member) => {
                               const rsvpLabel = attendanceStatusLabel(lineupAttendanceByMember[member.id], {
                                 coming: t.matchesPage.lineupRsvpComing,
@@ -1997,14 +2014,14 @@ const Matches = () => {
                     onClick={() => setOpenPanels((p) => ({ ...p, timeline: !p.timeline }))}
                     className="w-full flex items-center justify-between"
                   >
-                    <div className="text-sm font-display font-semibold text-foreground">Timeline</div>
+                    <div className="text-sm font-display font-semibold text-foreground">{t.matchesPage.matchTimeline}</div>
                     <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openPanels.timeline ? "rotate-180" : ""}`} />
                   </button>
                   {openPanels.timeline && (
                     <div className="mt-3">
                       <MatchTimeline events={matchEvents} getMemberName={(mid) => {
                         const player = members.find(m => m.id === mid);
-                        return player?.profiles?.display_name || "Player";
+                        return player?.profiles?.display_name || t.matchesPage.player;
                       }} />
                     </div>
                   )}
@@ -2017,7 +2034,7 @@ const Matches = () => {
                     onClick={() => setOpenPanels((p) => ({ ...p, voting: !p.voting }))}
                     className="w-full flex items-center justify-between"
                   >
-                    <div className="text-sm font-display font-semibold text-foreground">Player of the match</div>
+                    <div className="text-sm font-display font-semibold text-foreground">{t.matchesPage.playerOfTheMatch}</div>
                     <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openPanels.voting ? "rotate-180" : ""}`} />
                   </button>
                   {openPanels.voting && (

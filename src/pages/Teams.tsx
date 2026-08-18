@@ -3648,10 +3648,10 @@ const Teams = () => {
                   </div>
                   <Select value={trainingCalendarPitchId} onValueChange={setTrainingCalendarPitchId}>
                     <SelectTrigger className="h-9 w-full sm:w-[220px] bg-card/40 border-border/60">
-                      <SelectValue placeholder="All pitches" />
+                      <SelectValue placeholder={t.teamsPage.allPitches} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All pitches</SelectItem>
+                      <SelectItem value="all">{t.teamsPage.allPitches}</SelectItem>
                       {pitches.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
                           {p.name}
@@ -3754,7 +3754,7 @@ const Teams = () => {
                               <div className="mt-0.5 text-sm font-semibold text-foreground tabular-nums">{trainingCount}</div>
                             </div>
                             <div className="rounded-lg border border-border/50 bg-card/30 px-2.5 py-2">
-                              <div className="text-[10px] text-muted-foreground">Bookings</div>
+                              <div className="text-[10px] text-muted-foreground">{t.teamsPage.calendarBookings}</div>
                               <div className="mt-0.5 text-sm font-semibold text-foreground tabular-nums">{bookingCount}</div>
                             </div>
                           </>
@@ -3762,7 +3762,7 @@ const Teams = () => {
                       })()}
                     </div>
                     <div className="mt-2 text-[10px] text-muted-foreground">
-                      Pitch filter: <span className="text-foreground/80">{trainingCalendarPitchId === "all" ? "All pitches" : (pitchNameById.get(trainingCalendarPitchId) || "Selected pitch")}</span>
+                      {t.teamsPage.pitchFilterLabel}: <span className="text-foreground/80">{trainingCalendarPitchId === "all" ? t.teamsPage.allPitches : (pitchNameById.get(trainingCalendarPitchId) || t.teamsPage.selectedPitch)}</span>
                     </div>
                   </div>
 
@@ -5847,18 +5847,15 @@ const Teams = () => {
       <AlertDialog open={Boolean(pendingScheduleDelete)} onOpenChange={(open) => { if (!open) setPendingScheduleDelete(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove from schedule?</AlertDialogTitle>
+            <AlertDialogTitle>{t.teamsPage.removeFromScheduleTitle}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete{" "}
-              <span className="text-foreground font-medium">
-                {pendingScheduleDelete?.title || "this item"}
-              </span>{" "}
-              ({pendingScheduleDelete ? format(pendingScheduleDelete.startsAt, "yyyy-MM-dd HH:mm") : "-"}) from the database.
-              This can’t be undone.
+              {t.teamsPage.removeFromScheduleDesc
+                .replace("{title}", pendingScheduleDelete?.title || t.teamsPage.removeFromScheduleFallbackTitle)
+                .replace("{when}", pendingScheduleDelete ? format(pendingScheduleDelete.startsAt, "yyyy-MM-dd HH:mm") : "-")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPendingScheduleDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setPendingScheduleDelete(null)}>{t.teamsPage.common.cancel}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-accent text-accent-foreground hover:brightness-110"
               onClick={() => {
@@ -5872,7 +5869,7 @@ const Teams = () => {
                 void handleDeleteBooking(payload.entityId);
               }}
             >
-              Delete
+              {t.teamsPage.common.delete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

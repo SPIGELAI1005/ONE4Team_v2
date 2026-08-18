@@ -442,7 +442,7 @@ const Events = () => {
                     onClick={() => setOpenPanels((p) => ({ ...p, invite: !p.invite }))}
                     className="w-full flex items-center justify-between"
                   >
-                    <h4 className="text-sm font-display font-semibold text-foreground">Invite members</h4>
+                    <h4 className="text-sm font-display font-semibold text-foreground">{t.eventsPage.inviteMembersSection}</h4>
                     <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${openPanels.invite ? "rotate-180" : ""}`} />
                   </button>
 

@@ -19,6 +19,7 @@ import { buildClubMemberPassLabels } from "@/components/members/club-member-pass
 import { useLanguage } from "@/hooks/use-language";
 import { useClubId } from "@/hooks/use-club-id";
 import { useClubPassSkills } from "@/hooks/use-club-pass-skills";
+import type { Translations } from "@/i18n";
 
 const FIELD_TABS = [
   { key: "identity",    icon: User,        accent: "text-violet-700 dark:text-violet-300",  activeBg: "data-[state=active]:bg-violet-500/15 data-[state=active]:text-violet-700 dark:data-[state=active]:text-violet-300" },
@@ -103,13 +104,24 @@ interface MasterDataTabsProps {
   profileAvatarUrl?: string | null;
 }
 
-function formatFieldLabel(column: string) {
-  return column.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+function formatFieldLabel(
+  column: string,
+  fieldLabels: Translations["membersPage"]["masterFieldLabels"] | undefined,
+) {
+  const translated = fieldLabels?.[column as keyof NonNullable<typeof fieldLabels>];
+  if (typeof translated === "string" && translated.trim()) return translated;
+  return column.replace(/_/g, " ").replace(/^\w/, (character) => character.toUpperCase());
 }
 
-function formatDisplayValue(raw: unknown): string {
+function formatDisplayValue(
+  raw: unknown,
+  valueLabels: Translations["membersPage"]["masterValues"] | undefined,
+): string {
   if (raw === null || raw === undefined || raw === "") return "-";
-  return String(raw).replace(/_/g, " ");
+  const value = String(raw);
+  const translated = valueLabels?.[value as keyof NonNullable<typeof valueLabels>];
+  if (typeof translated === "string" && translated.trim()) return translated;
+  return value.replace(/_/g, " ");
 }
 
 function isLongTextField(key: string): boolean {
@@ -173,7 +185,7 @@ export function MasterDataTabs({
   const memberName =
     memberNameFromMaster ||
     displayName ||
-    "Member";
+    t.membersPage.unknownMember;
 
   const memberIdNo = values.internal_club_number ? String(values.internal_club_number) : null;
 
@@ -304,7 +316,9 @@ export function MasterDataTabs({
                     return (
                       <div key={field.key} className={cn("p-2.5 rounded-lg border border-border/40 bg-background/30", photoUrlColSpan)}>
                         <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <div className={cn("text-sm", accent)}>{formatFieldLabel(field.column)}</div>
+                          <div className={cn("text-sm", accent)}>
+                            {formatFieldLabel(field.column, t.membersPage.masterFieldLabels)}
+                          </div>
                           {displayUrl ? photoSourceBadge : null}
                         </div>
                         {displayUrl ? (
@@ -335,7 +349,9 @@ export function MasterDataTabs({
                         "shadow-[0_10px_26px_rgba(0,0,0,0.06)]",
                       )}
                     >
-                      <div className={cn("text-xs font-medium mb-1", accent)}>{formatFieldLabel(field.column)}</div>
+                      <div className={cn("text-xs font-medium mb-1", accent)}>
+                        {formatFieldLabel(field.column, t.membersPage.masterFieldLabels)}
+                      </div>
                       <div
                         className={cn(
                           "text-sm font-medium",
@@ -343,7 +359,7 @@ export function MasterDataTabs({
                           isLongTextField(String(field.key)) ? "whitespace-pre-wrap break-words" : "truncate",
                         )}
                       >
-                        {formatDisplayValue(val)}
+                        {formatDisplayValue(val, t.membersPage.masterValues)}
                       </div>
                     </div>
                   );
@@ -352,14 +368,16 @@ export function MasterDataTabs({
                 if (field.key === "sex") {
                   return (
                     <div key={field.key} className="min-w-0 rounded-xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3 space-y-2">
-                      <label className={cn("text-xs font-medium", accent)}>{formatFieldLabel(field.column)}</label>
+                      <label className={cn("text-xs font-medium", accent)}>
+                        {formatFieldLabel(field.column, t.membersPage.masterFieldLabels)}
+                      </label>
                       <Select value={String(val ?? "")} onValueChange={(v) => onChange?.(field.key, v || null)}>
                         <SelectTrigger className={selectTriggerClass}><SelectValue placeholder="-" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="male">Male</SelectItem>
-                          <SelectItem value="female">Female</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                          <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                          <SelectItem value="male">{t.membersPage.masterValues.male}</SelectItem>
+                          <SelectItem value="female">{t.membersPage.masterValues.female}</SelectItem>
+                          <SelectItem value="other">{t.membersPage.masterValues.other}</SelectItem>
+                          <SelectItem value="prefer_not_to_say">{t.membersPage.masterValues.prefer_not_to_say}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -369,12 +387,14 @@ export function MasterDataTabs({
                 if (field.key === "membership_kind") {
                   return (
                     <div key={field.key} className="min-w-0 rounded-xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3 space-y-2">
-                      <label className={cn("text-xs font-medium", accent)}>{formatFieldLabel(field.column)}</label>
+                      <label className={cn("text-xs font-medium", accent)}>
+                        {formatFieldLabel(field.column, t.membersPage.masterFieldLabels)}
+                      </label>
                       <Select value={String(val ?? "")} onValueChange={(v) => onChange?.(field.key, v || null)}>
                         <SelectTrigger className={selectTriggerClass}><SelectValue placeholder="-" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="active_participant">Active participant</SelectItem>
-                          <SelectItem value="supporting_member">Supporting member</SelectItem>
+                          <SelectItem value="active_participant">{t.membersPage.masterValues.active_participant}</SelectItem>
+                          <SelectItem value="supporting_member">{t.membersPage.masterValues.supporting_member}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -384,13 +404,15 @@ export function MasterDataTabs({
                 if (field.key === "strong_leg" || field.key === "strong_hand") {
                   return (
                     <div key={field.key} className="min-w-0 rounded-xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3 space-y-2">
-                      <label className={cn("text-xs font-medium", accent)}>{formatFieldLabel(field.column)}</label>
+                      <label className={cn("text-xs font-medium", accent)}>
+                        {formatFieldLabel(field.column, t.membersPage.masterFieldLabels)}
+                      </label>
                       <Select value={String(val ?? "")} onValueChange={(v) => onChange?.(field.key, v || null)}>
                         <SelectTrigger className={selectTriggerClass}><SelectValue placeholder="-" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="left">Left</SelectItem>
-                          <SelectItem value="right">Right</SelectItem>
-                          <SelectItem value="both">Both</SelectItem>
+                          <SelectItem value="left">{t.membersPage.masterValues.left}</SelectItem>
+                          <SelectItem value="right">{t.membersPage.masterValues.right}</SelectItem>
+                          <SelectItem value="both">{t.membersPage.masterValues.both}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -421,7 +443,9 @@ export function MasterDataTabs({
                     <div key={field.key} className={cn("min-w-0 space-y-3", photoUrlColSpan)}>
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <label className={cn("text-sm font-medium", accent)}>{formatFieldLabel(field.column)}</label>
+                          <label className={cn("text-sm font-medium", accent)}>
+                            {formatFieldLabel(field.column, t.membersPage.masterFieldLabels)}
+                          </label>
                           {displayUrl ? photoSourceBadge : null}
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground">{labels.avatarPreview}</div>
@@ -530,7 +554,9 @@ export function MasterDataTabs({
                     <div key={field.key} className={cn("min-w-0 space-y-3", photoUrlColSpan)}>
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <label className={cn("text-sm font-medium", accent)}>{formatFieldLabel(field.column)}</label>
+                          <label className={cn("text-sm font-medium", accent)}>
+                            {formatFieldLabel(field.column, t.membersPage.masterFieldLabels)}
+                          </label>
                           {displayUrl ? photoSourceBadge : null}
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground">{labels.avatarPreview}</div>
@@ -574,7 +600,9 @@ export function MasterDataTabs({
 
                 return (
                   <div key={field.key} className="min-w-0 rounded-xl border border-border/60 bg-card/40 backdrop-blur-2xl p-3 space-y-2">
-                    <label className={cn("text-xs font-medium", accent)}>{formatFieldLabel(field.column)}</label>
+                    <label className={cn("text-xs font-medium", accent)}>
+                      {formatFieldLabel(field.column, t.membersPage.masterFieldLabels)}
+                    </label>
                     {isLong ? (
                       <Textarea
                         className="w-full min-w-0 text-sm min-h-[96px] rounded-xl bg-background/50"
